@@ -4,13 +4,10 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { headerData } from "../Header/Navigation/menuData";
 import Logo from "./Logo";
-import Image from "next/image";
 import HeaderLink from "../Header/Navigation/HeaderLink";
 import MobileHeaderLink from "../Header/Navigation/MobileHeaderLink";
-import Signin from "@/components/Auth/SignIn";
-import SignUp from "@/components/Auth/SignUp";
+
 import { useTheme } from "next-themes";
-import { Icon } from "@iconify/react/dist/iconify.js";
 
 const Header: React.FC = () => {
   const pathUrl = usePathname();
@@ -86,78 +83,26 @@ const Header: React.FC = () => {
             <Link
               href="#"
               className="hidden lg:block bg-primary text-white hover:bg-primary/15 hover:text-primary px-16 py-5 rounded-full text-lg font-medium"
-              onClick={() => {
-                setIsSignInOpen(true);
-              }}
             >
-              Sign In
+              Get the App
             </Link>
-            {isSignInOpen && (
-              <div className="fixed top-0 left-0 w-full h-full bg-black/50 flex items-center justify-center z-50">
-                <div
-                  ref={signInRef}
-                  className="relative mx-auto w-full max-w-md overflow-hidden rounded-lg px-8 pt-14 pb-8 text-center bg-white"
-                >
-                  <button
-                    onClick={() => setIsSignInOpen(false)}
-                    className="absolute top-0 right-0 mr-8 mt-8 dark:invert"
-                    aria-label="Close Sign In Modal"
-                  >
-                    <Icon
-                      icon="tabler:currency-xrp"
-                      className="text-black hover:text-primary text-24 inline-block me-2"
-                    />
-                  </button>
-                  <Signin />
-                </div>
-              </div>
-            )}
-            <Link
-              href="#"
-              className="hidden lg:block bg-primary/15 hover:bg-primary text-primary hover:text-white px-16 py-5 rounded-full text-lg font-medium"
-              onClick={() => {
-                setIsSignUpOpen(true);
-              }}
-            >
-              Sign Up
-            </Link>
-            {isSignUpOpen && (
-              <div className="fixed top-0 left-0 w-full h-full bg-black/50 flex items-center justify-center z-50">
-                <div
-                  ref={signUpRef}
-                  className="relative mx-auto w-full max-w-md overflow-hidden rounded-lg bg-white backdrop-blur-md px-8 pt-14 pb-8 text-center"
-                >
-                  <button
-                    onClick={() => setIsSignUpOpen(false)}
-                    className="absolute top-0 right-0 mr-8 mt-8 dark:invert"
-                    aria-label="Close Sign Up Modal"
-                  >
-                    <Icon
-                      icon="tabler:currency-xrp"
-                      className="text-black hover:text-primary text-24 inline-block me-2"
-                    />
-                  </button>
-                  <SignUp />
-                </div>
-              </div>
-            )}
             <button
               onClick={() => setNavbarOpen(!navbarOpen)}
               className="block lg:hidden p-2 rounded-lg"
               aria-label="Toggle mobile menu"
             >
-              <span className="block w-6 h-0.5 bg-white"></span>
-              <span className="block w-6 h-0.5 bg-white mt-1.5"></span>
-              <span className="block w-6 h-0.5 bg-white mt-1.5"></span>
+              <span className="block w-6 h-0.5 bg-black"></span>
+              <span className="block w-6 h-0.5 bg-black mt-1.5"></span>
+              <span className="block w-6 h-0.5 bg-black mt-1.5"></span>
             </button>
           </div>
         </div>
         {navbarOpen && (
-          <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 z-40" />
+          <div className="fixed top-0 left-0 w-full h-full  z-40" />
         )}
         <div
           ref={mobileMenuRef}
-          className={`lg:hidden fixed top-0 right-0 h-full w-full bg-darkmode shadow-lg transform transition-transform duration-300 max-w-xs ${navbarOpen ? "translate-x-0" : "translate-x-full"
+          className={`lg:hidden fixed top-0 right-0 h-full w-full bg-white shadow-lg transform transition-transform duration-300 max-w-xs ${navbarOpen ? "translate-x-0" : "translate-x-full"
             } z-50`}
         >
           <div className="flex items-center justify-between p-4">
@@ -185,17 +130,7 @@ const Header: React.FC = () => {
                   setNavbarOpen(false);
                 }}
               >
-                Sign In
-              </Link>
-              <Link
-                href="#"
-                className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-                onClick={() => {
-                  setIsSignUpOpen(true);
-                  setNavbarOpen(false);
-                }}
-              >
-                Sign Up
+                Get the App
               </Link>
             </div>
           </nav>

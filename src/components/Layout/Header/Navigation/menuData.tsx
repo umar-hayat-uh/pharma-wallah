@@ -2,9 +2,8 @@ import { HeaderItem } from "@/types/menu";
 
 export const headerData: HeaderItem[] = [
   { label: "Home", href: "/" },
-  { label: "Courses", href: "/#courses" },
-  { label: "Mentor", href: "/#mentor" },
-  { label: "Group", href: "/#portfolio" },
-  { label: "Testimonial", href: "/#testimonial" },
-  { label: "Docs", href: "/documentation" },
+  { label: "Material", href: "material" },
+  { label: "MCQ's Bank", href: "mcqs-bank" },
+  { label: "Calculation Tools", href: "calculation-tools" },
+  { label: "About Us", href: "about-us" },
 ];
