@@ -22,6 +22,9 @@ export const TruestedCompanies: { imgSrc: string }[] = [
   },
   {
     imgSrc: "/images/companies/fedex.svg"
+  },
+  {
+    imgSrc: "/images/companies/stack.svg"
   }
 ]
 

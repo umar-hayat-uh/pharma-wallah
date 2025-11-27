@@ -5,6 +5,7 @@ import Footer from "@/components/Layout/Footer";
 import { ThemeProvider } from "next-themes";
 import ScrollToTop from "@/components/ScrollToTop";
 const font = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"], });
+import { Analytics } from '@vercel/analytics/next';
 
 export default function RootLayout({
   children,
@@ -24,6 +25,7 @@ export default function RootLayout({
           <Footer />
           <ScrollToTop />
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
