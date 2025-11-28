@@ -10,17 +10,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Brand primary colors (taken from your logo)
         brandBlue: "#1C7BD9",
         brandGreen: "#21B67A",
 
-        // Supporting palette
         textDark: "#1A1A1A",
         textLight: "#4A4A4A",
         softBg: "#F4FBFF",
         softBg2: "#E9F7F2",
 
-        // Replace old "primary/secondary/success" with brand versions
         primary: "#1C7BD9",
         secondary: "#21B67A",
         success: "#21B67A",
@@ -46,6 +43,19 @@ const config: Config = {
         "newsletter-bg": "url('/images/newsletter/bgFile.png')",
         "newsletter-bg-2": "url('/images/newsletter/bgFile.png')",
       },
+
+      /** ⭐ ADDING MARQUEE ANIMATION HERE ⭐ **/
+      animation: {
+        marquee: "marquee 25s linear infinite",
+      },
+
+      keyframes: {
+        marquee: {
+          "0%": { transform: "translateX(0%)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
+      },
+      /** ⭐ END MARQUEE ANIMATION ⭐ **/
     },
   },
   plugins: [],
