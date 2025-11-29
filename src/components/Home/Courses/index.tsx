@@ -7,7 +7,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { courseData } from "@/app/api/data";
-import { getImagePrefix } from "@/utils/util";
 
 const Courses = () => {
 
@@ -68,7 +67,7 @@ const Courses = () => {
                         <div key={i}>
                             <div className='bg-white m-3 mb-12 px-3 pt-3 pb-12 shadow-course-shadow rounded-2xl h-full'>
                                 <div className="relative rounded-3xl">
-                                    <Image src={`${getImagePrefix()}${items.imgSrc}`} alt="course-image" width={389} height={262} className="m-auto clipPath" />
+                                    <Image src={items.imgSrc} alt="course-image" width={389} height={262} className="m-auto clipPath" />
                                     <div className="absolute right-5 -bottom-2 bg-secondary rounded-full p-6">
                                         <h3 className="text-white uppercase text-center text-sm font-medium">best <br /> seller</h3>
                                     </div>
