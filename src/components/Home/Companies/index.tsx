@@ -5,7 +5,6 @@ import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { TruestedCompanies } from "@/app/api/data";
-import { getImagePrefix } from "@/utils/util";
 
 // CAROUSEL SETTINGS
 const Companies = () => {
@@ -61,7 +60,7 @@ const Companies = () => {
                     <Slider {...settings}>
                         {TruestedCompanies.map((item, i) =>
                             <div key={i}>
-                                <Image src={`${getImagePrefix()}${item.imgSrc}`} alt={item.imgSrc} width={116} height={36} />
+                                <Image src={item.imgSrc} alt={item.imgSrc} width={116} height={36} />
                             </div>
                         )}
                     </Slider>

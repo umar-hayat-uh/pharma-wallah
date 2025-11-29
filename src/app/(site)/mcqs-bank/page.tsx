@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { SemesterData } from "@/app/api/data";
+import { SemesterData } from "@/app/api/semester-data";
 
 export const metadata: Metadata = {
   title: "MCQ's Bank | Pharm-D Subject Wise",
