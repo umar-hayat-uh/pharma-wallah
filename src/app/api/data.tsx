@@ -170,3 +170,43 @@ export const TestimonialData: { profession: string; comment: string; imgSrc: str
     rating: 5
   },
 ]
+
+
+export
+    const teamMembers = [
+        {
+            name: "Shayan Hussain",
+            role: "Founder & Project Team Lead",
+            imgSrc: "/images/mentor/user2.png",
+        },
+        {
+            name: "Umar Hayat",
+            role: "Co-Founder & Lead Software Engineer",
+            imgSrc: "/images/mentor/user3.png",
+        },
+        {
+            name: "Syed Tanzeel Ali",
+            role: "Material Content Strategist",
+            imgSrc: "/images/mentor/user1.png",
+        },
+        {
+            name: "Jazil bin kashif",
+            role: "Co-Material Content Strategist",
+            imgSrc: "/images/mentor/user3.png",
+        },
+        {
+            name: "Syed M. Ali",
+            role: "Course Content Collector",
+            imgSrc: "/images/mentor/user2.png",
+        },
+        {
+            name: "Rumaisa Farooqui",
+            role: "Course Content Collector",
+            imgSrc: "/images/mentor/user1.png",
+        },
+        {
+            name: "Tauqeer Hussain",
+            role: "MCQ's Content Curator",
+            imgSrc: "/images/mentor/user1.png",
+        },
+    ];
