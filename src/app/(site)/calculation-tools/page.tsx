@@ -1,23 +1,11 @@
 import { Metadata } from "next";
+import {pharmaChemTools} from "@/app/api/calculators"
 import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Calculation Tools | Page",
 };
 
-type Tool = {
-  name: string;
-  link: string;
-  description?: string;
-  image?: string;
-};
-
-const pharmaChemTools: Tool[] = [
-  {
-    name: "Molarity Calculator",
-    link: "/calculation-tools/molarity-calculator",
-  },
-];
 
 export default function CalculationTools() {
   return (
@@ -40,7 +28,7 @@ export default function CalculationTools() {
               <Link
                 key={tool.name}
                 href={tool.link}
-                className="flex flex-col items-center gap-2 p-6 bg-white/20 backdrop-blur-lg border border-gray-200 rounded-xl shadow-md hover:scale-105 transition-transform text-center"
+                className="flex flex-col items-center gap-2 p-4 bg-white/20 backdrop-blur-lg border border-gray-200 rounded-xl shadow-md hover:scale-105 transition-transform text-center"
               >
                 <h3 className="text-lg font-semibold text-gray-800">{tool.name}</h3>
               </Link>

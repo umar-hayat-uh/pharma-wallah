@@ -8,8 +8,8 @@ export const metadata: Metadata = {
 export default function Page() {
     return (
         <section id="molarity-calculator-section" className='min-h-screen'>
-            <div className="container mx-auto lg:max-w-screen-xl md:max-w-screen-md px-4 pt-20">
-                <div className="container mx-auto py-10">
+            <div className="container mx-auto lg:max-w-screen-xl md:max-w-screen-md px-4">
+                <div className="container mx-auto">
                     <MolarityCalculatorBox />
                 </div>
             </div>
