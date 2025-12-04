@@ -25,7 +25,7 @@ export default function AboutUs() {
               <span className="text-sm font-semibold text-slate-700">Your Pharmacy learning Hub</span>
             </div>
           </div>
-          <h1 className="text-6xl md:text-7xl font-bold text-slate-900 mb-6 tracking-tight">
+          <h1 className="text-5xl md:text-7xl font-bold text-slate-900 mb-6 tracking-tight">
             About <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">PharmaWallah</span>
           </h1>
           <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
