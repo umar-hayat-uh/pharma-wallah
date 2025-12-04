@@ -34,8 +34,31 @@ export const pharmaChemTools: Tool[] = [
         name: "Percentage Solution Calculator (w/v, v/v, w/w)",
         link: "/calculation-tools/dilution-calculator",
     },
-     {
+    {
         name: "Molecular weight finder",
         link: "/calculation-tools/molecular-weight-finder",
-    }
+    },
+    // new section
+    {
+        name: "powder-flowability-calculator",
+        link: "/calculation-tools/powder-flowability-calculator",
+    },
+      {
+        name: "compressibility-index-calculator",
+        link: "/calculation-tools/compressibility-index-calculator",
+    },
+        {
+        name: "Porosity Calculator",
+        link: "/calculation-tools/porosity-calculator",
+    },       {
+        name: "clearance-calculator/",
+        link: "/calculation-tools/clearance-calculator/",
+    },       {
+        name: "volume-distribution-calculator",
+        link: "/calculation-tools/volume-distribution-calculator",
+    },
+
+
+    
+    
 ];
