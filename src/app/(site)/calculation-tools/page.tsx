@@ -40,7 +40,7 @@ const getToolIcon = (toolName: string) => {
     'Analysis': <Microscope className="w-6 h-6" />,
   };
 
-  const iconKey = Object.keys(iconMap).find(key => 
+  const iconKey = Object.keys(iconMap).find(key =>
     toolName.toLowerCase().includes(key.toLowerCase())
   );
 
@@ -74,16 +74,16 @@ export default function CalculationTools() {
               <Shield className="w-4 h-4 text-white" />
               <span className="text-sm font-medium text-white">Trusted by Healthcare Professionals</span>
             </div>
-            
+
             {/* Main Heading */}
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
               Pharmaceutical
               <span className="block text-green-300 mt-2">Calculation Tools</span>
             </h1>
-            
+
             {/* Subtitle */}
             <p className="text-lg md:text-xl text-blue-100 mb-8 max-w-2xl mx-auto leading-relaxed">
-              Professional-grade calculators and formula tools designed for pharmacy professionals, 
+              Professional-grade calculators and formula tools designed for pharmacy professionals,
               researchers, and students
             </p>
           </div>
@@ -187,9 +187,6 @@ export default function CalculationTools() {
                                  transition-colors line-clamp-2">
                       {tool.name}
                     </h3>
-                    {tool.subtitle && (
-                      <p className="text-sm text-gray-500 mb-3 line-clamp-2">{tool.subtitle}</p>
-                    )}
                     <div className="mt-auto pt-3 border-t border-gray-100 w-full">
                       <span className="text-xs text-gray-500 font-medium flex items-center justify-center gap-1">
                         <Calculator className="w-3 h-3" />

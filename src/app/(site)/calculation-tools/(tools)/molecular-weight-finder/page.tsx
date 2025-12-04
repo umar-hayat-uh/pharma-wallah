@@ -231,7 +231,8 @@ export default function MolecularWeightCalculator() {
                 percentComposition: number;
             }> = [];
 
-            for (const [symbol, count] of parsed.elements) {
+            // FIXED: Use Array.from() instead of for...of for Map iteration
+            Array.from(parsed.elements.entries()).forEach(([symbol, count]) => {
                 const element = ELEMENT_MAP.get(symbol);
                 if (!element) {
                     setResult({
@@ -253,7 +254,7 @@ export default function MolecularWeightCalculator() {
                     weightContribution,
                     percentComposition: 0 // Will calculate after total
                 });
-            }
+            });
 
             // Calculate percentage composition
             composition.forEach(item => {
@@ -291,7 +292,7 @@ export default function MolecularWeightCalculator() {
         let i = 0;
         const n = formula.length;
 
-        const parseGroup = (multiplier: number = 1): number => {
+        const parseGroup = (multiplier: number = 1): Map<string, number> => {
             const groupElements = new Map<string, number>();
 
             while (i < n && formula[i] !== ')') {
@@ -301,9 +302,10 @@ export default function MolecularWeightCalculator() {
                     const subGroupElements = parseGroup(groupMultiplier);
 
                     // Merge subgroup elements
-                    for (const [symbol, count] of subGroupElements) {
+                    // FIXED: Use Array.from() instead of for...of for Map iteration
+                    Array.from(subGroupElements.entries()).forEach(([symbol, count]) => {
                         groupElements.set(symbol, (groupElements.get(symbol) || 0) + count);
-                    }
+                    });
                 } else {
                     // Parse element symbol
                     if (i < n && /[A-Z]/.test(formula[i])) {
@@ -332,9 +334,10 @@ export default function MolecularWeightCalculator() {
 
             // Apply multiplier to all elements in this group
             const result = new Map<string, number>();
-            for (const [symbol, count] of groupElements) {
+            // FIXED: Use Array.from() instead of for...of for Map iteration
+            Array.from(groupElements.entries()).forEach(([symbol, count]) => {
                 result.set(symbol, count * multiplier);
-            }
+            });
 
             return result;
         };
@@ -362,9 +365,10 @@ export default function MolecularWeightCalculator() {
                     const groupElements = parseGroup(groupMultiplier);
 
                     // Merge into main elements map
-                    for (const [symbol, count] of groupElements) {
+                    // FIXED: Use Array.from() instead of for...of for Map iteration
+                    Array.from(groupElements.entries()).forEach(([symbol, count]) => {
                         elements.set(symbol, (elements.get(symbol) || 0) + count);
-                    }
+                    });
                 } else {
                     // Parse element symbol
                     if (/[A-Z]/.test(formula[i])) {
