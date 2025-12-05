@@ -99,7 +99,7 @@ export default function PowderFlowabilityCalculator() {
     ];
 
     return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4 mt-20">
+        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 mt-20">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
@@ -144,8 +144,8 @@ export default function PowderFlowabilityCalculator() {
                             </div>
 
                             {/* Tapped Density Input */}
-                            <div className="bg-purple-50 rounded-lg p-6">
-                                <label className="block text-lg font-semibold text-purple-800 mb-3">
+                            <div className="bg-green-50 rounded-lg p-6">
+                                <label className="block text-lg font-semibold text-green-800 mb-3">
                                     <Droplets className="inline w-5 h-5 mr-2" />
                                     Tapped Density (g/mL)
                                 </label>
@@ -156,7 +156,7 @@ export default function PowderFlowabilityCalculator() {
                                     min="0.01"
                                     value={tappedDensity}
                                     onChange={(e) => setTappedDensity(e.target.value)}
-                                    className="w-full px-4 py-3 text-lg border-2 border-purple-300 rounded-lg focus:border-purple-500 focus:outline-none"
+                                    className="w-full px-4 py-3 text-lg border-2 border-green-300 rounded-lg focus:border-green-500 focus:outline-none"
                                     placeholder="e.g., 0.55"
                                 />
                                 <div className="flex items-center mt-2 text-sm text-gray-500">
@@ -194,7 +194,7 @@ export default function PowderFlowabilityCalculator() {
                             <div className="flex gap-4">
                                 <button
                                     onClick={calculateFlowability}
-                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg transition-colors text-lg"
+                                    className="flex-1 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold py-4 rounded-lg transition-all duration-300 text-lg shadow-md hover:shadow-lg"
                                 >
                                     Calculate Flowability
                                 </button>
@@ -212,7 +212,7 @@ export default function PowderFlowabilityCalculator() {
                     <div className="space-y-6">
                         {/* Results Card */}
                         {result && (
-                            <div className="bg-gradient-to-br from-green-50 to-blue-50 border-2 border-green-400 rounded-xl shadow-lg p-6">
+                            <div className="bg-gradient-to-br from-blue-50 to-green-50 border-2 border-blue-400 rounded-xl shadow-lg p-6">
                                 <h2 className="text-2xl font-bold text-gray-800 mb-6">Results</h2>
                                 
                                 <div className="space-y-4">
@@ -233,8 +233,8 @@ export default function PowderFlowabilityCalculator() {
 
                                     <div className="bg-white rounded-lg p-4 shadow-sm">
                                         <div className="flex justify-between items-center mb-2">
-                                            <span className="text-lg font-semibold text-purple-700">Hausner Ratio</span>
-                                            <span className="text-2xl font-bold text-purple-600">
+                                            <span className="text-lg font-semibold text-green-700">Hausner Ratio</span>
+                                            <span className="text-2xl font-bold text-blue-600">
                                                 {result.hausnerRatio.toFixed(3)}
                                             </span>
                                         </div>
@@ -330,8 +330,8 @@ export default function PowderFlowabilityCalculator() {
                             </div>
                         </div>
 
-                        <div className="bg-purple-50 rounded-lg p-6">
-                            <h3 className="text-lg font-semibold text-purple-800 mb-3">Hausner Ratio Formula</h3>
+                        <div className="bg-green-50 rounded-lg p-6">
+                            <h3 className="text-lg font-semibold text-green-800 mb-3">Hausner Ratio Formula</h3>
                             <div className="text-center text-2xl font-mono bg-white p-4 rounded-lg">
                                 HR = ρₜ / ρᵦ
                             </div>
@@ -346,7 +346,7 @@ export default function PowderFlowabilityCalculator() {
                 </div>
 
                 {/* Standards Reference */}
-                <div className="mt-8 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl shadow-lg p-6">
+                <div className="mt-8 bg-gradient-to-r from-blue-50 to-green-50 rounded-xl shadow-lg p-6">
                     <h2 className="text-2xl font-bold text-gray-800 mb-6">Industry Standards & References</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-white rounded-lg p-4 shadow-sm">

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from 'react';
-import { Calculator, Activity, Heart, Brain, AlertCircle } from 'lucide-react';
+import { Calculator, Activity, Heart, Brain, AlertCircle, Filter, Droplet } from 'lucide-react';
 
 export default function VolumeDistributionCalculator() {
     const [dose, setDose] = useState<string>('');
@@ -84,12 +84,12 @@ export default function VolumeDistributionCalculator() {
     ];
 
     return (
-        <section className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-4 mt-20">
+        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 mt-20">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
                     <div className="flex items-center justify-center mb-4">
-                        <Activity className="w-10 h-10 text-red-600 mr-3" />
+                        <Activity className="w-10 h-10 text-blue-600 mr-3" />
                         <div>
                             <h1 className="text-3xl font-bold text-gray-800">Volume of Distribution (Vd) Calculator</h1>
                             <p className="text-gray-600">Calculate apparent volume of distribution for pharmacokinetic analysis</p>
@@ -107,8 +107,8 @@ export default function VolumeDistributionCalculator() {
 
                         <div className="space-y-6">
                             {/* Dose Input */}
-                            <div className="bg-red-50 rounded-lg p-6">
-                                <label className="block text-lg font-semibold text-red-800 mb-3">
+                            <div className="bg-blue-50 rounded-lg p-6">
+                                <label className="block text-lg font-semibold text-blue-800 mb-3">
                                     Dose Administered (mg)
                                 </label>
                                 <input
@@ -117,15 +117,15 @@ export default function VolumeDistributionCalculator() {
                                     min="0.001"
                                     value={dose}
                                     onChange={(e) => setDose(e.target.value)}
-                                    className="w-full px-4 py-3 text-lg border-2 border-red-300 rounded-lg focus:border-red-500 focus:outline-none"
+                                    className="w-full px-4 py-3 text-lg border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none"
                                     placeholder="e.g., 500"
                                 />
                                 <p className="text-sm text-gray-600 mt-2">Total dose administered intravenously</p>
                             </div>
 
                             {/* Concentration Input */}
-                            <div className="bg-orange-50 rounded-lg p-6">
-                                <label className="block text-lg font-semibold text-orange-800 mb-3">
+                            <div className="bg-green-50 rounded-lg p-6">
+                                <label className="block text-lg font-semibold text-green-800 mb-3">
                                     Plasma Concentration (mg/L)
                                 </label>
                                 <input
@@ -134,15 +134,15 @@ export default function VolumeDistributionCalculator() {
                                     min="0.001"
                                     value={concentration}
                                     onChange={(e) => setConcentration(e.target.value)}
-                                    className="w-full px-4 py-3 text-lg border-2 border-orange-300 rounded-lg focus:border-orange-500 focus:outline-none"
+                                    className="w-full px-4 py-3 text-lg border-2 border-green-300 rounded-lg focus:border-green-500 focus:outline-none"
                                     placeholder="e.g., 10"
                                 />
                                 <p className="text-sm text-gray-600 mt-2">Measured at time zero (C₀) after IV bolus</p>
                             </div>
 
                             {/* Patient Weight Input */}
-                            <div className="bg-yellow-50 rounded-lg p-6">
-                                <label className="block text-lg font-semibold text-yellow-800 mb-3">
+                            <div className="bg-blue-50 rounded-lg p-6">
+                                <label className="block text-lg font-semibold text-blue-800 mb-3">
                                     Patient Body Weight (kg) - Optional
                                 </label>
                                 <input
@@ -151,7 +151,7 @@ export default function VolumeDistributionCalculator() {
                                     min="0.1"
                                     value={patientWeight}
                                     onChange={(e) => setPatientWeight(e.target.value)}
-                                    className="w-full px-4 py-3 text-lg border-2 border-yellow-300 rounded-lg focus:border-yellow-500 focus:outline-none"
+                                    className="w-full px-4 py-3 text-lg border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none"
                                     placeholder="e.g., 70"
                                 />
                                 <p className="text-sm text-gray-600 mt-2">For Vd per kg calculation (default: 70 kg)</p>
@@ -168,7 +168,7 @@ export default function VolumeDistributionCalculator() {
                                                 setDose(drug.dose);
                                                 setConcentration(drug.conc);
                                             }}
-                                            className="bg-white border border-gray-300 rounded-lg p-3 hover:bg-red-50 transition-colors text-center"
+                                            className="bg-white border border-gray-300 rounded-lg p-3 hover:bg-blue-50 transition-colors text-center"
                                         >
                                             <div className="font-semibold text-blue-600">{drug.name}</div>
                                             <div className="text-sm text-gray-600 mt-1">
@@ -183,7 +183,7 @@ export default function VolumeDistributionCalculator() {
                             <div className="flex gap-4">
                                 <button
                                     onClick={calculateVd}
-                                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-4 rounded-lg transition-colors text-lg"
+                                    className="flex-1 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold py-4 rounded-lg transition-all duration-300 text-lg shadow-md hover:shadow-lg"
                                 >
                                     Calculate Vd
                                 </button>
@@ -201,13 +201,13 @@ export default function VolumeDistributionCalculator() {
                     <div className="space-y-6">
                         {/* Results Card */}
                         {result && (
-                            <div className="bg-gradient-to-br from-green-50 to-teal-50 border-2 border-green-400 rounded-xl shadow-lg p-6">
+                            <div className="bg-gradient-to-br from-blue-50 to-green-50 border-2 border-blue-400 rounded-xl shadow-lg p-6">
                                 <h2 className="text-2xl font-bold text-gray-800 mb-6">Volume of Distribution Results</h2>
                                 
                                 <div className="space-y-4">
                                     <div className="bg-white rounded-lg p-6 shadow-sm text-center">
                                         <div className="text-sm font-semibold text-gray-600 mb-2">Volume of Distribution (Vd)</div>
-                                        <div className="text-3xl font-bold text-red-600">
+                                        <div className="text-3xl font-bold text-green-600">
                                             {result.vd.toFixed(2)} L
                                         </div>
                                         <div className="text-lg font-semibold text-gray-700 mt-2">
@@ -234,17 +234,17 @@ export default function VolumeDistributionCalculator() {
                                         <div className="flex items-center justify-center space-x-4">
                                             <div className="text-center">
                                                 <Heart className="w-8 h-8 text-red-500 mx-auto mb-1" />
-                                                <div className={`w-10 h-10 rounded-full ${result.vdPerKg < 0.3 ? 'bg-red-500' : 'bg-gray-200'}`}></div>
+                                                <div className={`w-10 h-10 rounded-full ${result.vdPerKg < 0.3 ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gray-200'}`}></div>
                                                 <div className="text-xs mt-1">Plasma</div>
                                             </div>
                                             <div className="text-center">
-                                                <AlertCircle className="w-8 h-8 text-orange-500 mx-auto mb-1" />
-                                                <div className={`w-12 h-12 rounded-full ${result.vdPerKg >= 0.3 && result.vdPerKg < 2 ? 'bg-orange-500' : 'bg-gray-200'}`}></div>
+                                                <Filter className="w-8 h-8 text-blue-500 mx-auto mb-1" />
+                                                <div className={`w-12 h-12 rounded-full ${result.vdPerKg >= 0.3 && result.vdPerKg < 2 ? 'bg-gradient-to-r from-blue-400 to-blue-600' : 'bg-gray-200'}`}></div>
                                                 <div className="text-xs mt-1">Tissues</div>
                                             </div>
                                             <div className="text-center">
                                                 <Brain className="w-8 h-8 text-purple-500 mx-auto mb-1" />
-                                                <div className={`w-14 h-14 rounded-full ${result.vdPerKg >= 2 ? 'bg-purple-500' : 'bg-gray-200'}`}></div>
+                                                <div className={`w-14 h-14 rounded-full ${result.vdPerKg >= 2 ? 'bg-gradient-to-r from-purple-400 to-purple-600' : 'bg-gray-200'}`}></div>
                                                 <div className="text-xs mt-1">Deep Tissues</div>
                                             </div>
                                         </div>
@@ -277,19 +277,19 @@ export default function VolumeDistributionCalculator() {
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span>0.1-0.3 L/kg</span>
-                                    <span className="font-semibold text-orange-600">Extracellular</span>
+                                    <span className="font-semibold text-blue-600">Extracellular</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span>0.3-0.7 L/kg</span>
-                                    <span className="font-semibold text-yellow-600">Body water</span>
+                                    <span className="font-semibold text-green-600">Body water</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span>0.7-2 L/kg</span>
-                                    <span className="font-semibold text-green-600">Tissue binding</span>
+                                    <span className="font-semibold text-purple-600">Tissue binding</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span>&gt;2 L/kg</span>
-                                    <span className="font-semibold text-purple-600">Extensive binding</span>
+                                    <span className="font-semibold text-indigo-600">Extensive binding</span>
                                 </div>
                             </div>
                         </div>
@@ -300,23 +300,23 @@ export default function VolumeDistributionCalculator() {
                 <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
                     <h2 className="text-2xl font-bold text-gray-800 mb-6">Clinical Applications</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-red-50 rounded-lg p-6">
-                            <h3 className="text-lg font-semibold text-red-800 mb-3 flex items-center">
+                        <div className="bg-blue-50 rounded-lg p-6">
+                            <h3 className="text-lg font-semibold text-blue-800 mb-3 flex items-center">
                                 <Heart className="w-5 h-5 mr-2" />
                                 Dosing Adjustment
                             </h3>
                             <p className="text-sm text-gray-600">Helps determine loading doses and maintenance doses based on distribution characteristics.</p>
                         </div>
-                        <div className="bg-blue-50 rounded-lg p-6">
-                            <h3 className="text-lg font-semibold text-blue-800 mb-3 flex items-center">
+                        <div className="bg-green-50 rounded-lg p-6">
+                            <h3 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
                                 <AlertCircle className="w-5 h-5 mr-2" />
                                 Toxicity Prediction
                             </h3>
                             <p className="text-sm text-gray-600">High Vd drugs may accumulate in tissues, leading to potential toxicity with repeated dosing.</p>
                         </div>
-                        <div className="bg-green-50 rounded-lg p-6">
-                            <h3 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
-                                <AlertCircle className="w-5 h-5 mr-2" />
+                        <div className="bg-blue-50 rounded-lg p-6">
+                            <h3 className="text-lg font-semibold text-blue-800 mb-3 flex items-center">
+                                <Droplet className="w-5 h-5 mr-2" />
                                 Elimination Half-life
                             </h3>
                             <p className="text-sm text-gray-600">Vd combined with clearance determines elimination half-life: t₁/₂ = 0.693 × Vd / CL</p>
@@ -330,7 +330,7 @@ export default function VolumeDistributionCalculator() {
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="bg-red-50">
+                                <tr className="bg-gradient-to-r from-blue-50 to-green-50">
                                     <th className="py-3 px-4 text-left font-semibold text-gray-700">Drug</th>
                                     <th className="py-3 px-4 text-left font-semibold text-gray-700">Vd (L/kg)</th>
                                     <th className="py-3 px-4 text-left font-semibold text-gray-700">Compartment</th>

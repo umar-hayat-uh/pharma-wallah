@@ -1,6 +1,6 @@
 "use client";
 import { useState } from 'react';
-import { Calculator, Box, Filter, AlertCircle, Info, PieChart } from 'lucide-react';
+import { Calculator, Box, Filter, AlertCircle, Info, PieChart, Droplet } from 'lucide-react';
 
 export default function PorosityCalculator() {
     const [trueDensity, setTrueDensity] = useState<string>('');
@@ -101,12 +101,12 @@ export default function PorosityCalculator() {
     ];
 
     return (
-        <section className="min-h-screen bg-gradient-to-br from-indigo-50 to-pink-50 p-4 mt-20">
+        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 mt-20">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
                     <div className="flex items-center justify-center mb-4">
-                        <Filter className="w-10 h-10 text-indigo-600 mr-3" />
+                        <Filter className="w-10 h-10 text-blue-600 mr-3" />
                         <div>
                             <h1 className="text-3xl font-bold text-gray-800">Porosity Calculator</h1>
                             <p className="text-gray-600">Calculate porosity, void fraction, and solid fraction of pharmaceutical materials</p>
@@ -128,13 +128,13 @@ export default function PorosityCalculator() {
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => setMethod('density')}
-                                    className={`p-4 rounded-lg transition-colors ${method === 'density' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                                    className={`p-4 rounded-lg transition-all duration-300 ${method === 'density' ? 'bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                                 >
                                     Density Method
                                 </button>
                                 <button
                                     onClick={() => setMethod('volume')}
-                                    className={`p-4 rounded-lg transition-colors ${method === 'volume' ? 'bg-pink-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                                    className={`p-4 rounded-lg transition-all duration-300 ${method === 'volume' ? 'bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                                 >
                                     Volume Method
                                 </button>
@@ -143,8 +143,8 @@ export default function PorosityCalculator() {
 
                         {method === 'density' ? (
                             <div className="space-y-6">
-                                <div className="bg-indigo-50 rounded-lg p-6">
-                                    <label className="block text-lg font-semibold text-indigo-800 mb-3">
+                                <div className="bg-blue-50 rounded-lg p-6">
+                                    <label className="block text-lg font-semibold text-blue-800 mb-3">
                                         True Density (g/mL)
                                     </label>
                                     <input
@@ -153,14 +153,14 @@ export default function PorosityCalculator() {
                                         min="0.001"
                                         value={trueDensity}
                                         onChange={(e) => setTrueDensity(e.target.value)}
-                                        className="w-full px-4 py-3 text-lg border-2 border-indigo-300 rounded-lg focus:border-indigo-500 focus:outline-none"
+                                        className="w-full px-4 py-3 text-lg border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none"
                                         placeholder="e.g., 1.52"
                                     />
                                     <p className="text-sm text-gray-600 mt-2">Density excluding pores (helium pycnometry)</p>
                                 </div>
 
-                                <div className="bg-pink-50 rounded-lg p-6">
-                                    <label className="block text-lg font-semibold text-pink-800 mb-3">
+                                <div className="bg-green-50 rounded-lg p-6">
+                                    <label className="block text-lg font-semibold text-green-800 mb-3">
                                         Bulk Density (g/mL)
                                     </label>
                                     <input
@@ -169,7 +169,7 @@ export default function PorosityCalculator() {
                                         min="0.001"
                                         value={bulkDensity}
                                         onChange={(e) => setBulkDensity(e.target.value)}
-                                        className="w-full px-4 py-3 text-lg border-2 border-pink-300 rounded-lg focus:border-pink-500 focus:outline-none"
+                                        className="w-full px-4 py-3 text-lg border-2 border-green-300 rounded-lg focus:border-green-500 focus:outline-none"
                                         placeholder="e.g., 0.65"
                                     />
                                     <p className="text-sm text-gray-600 mt-2">Density including pores (volumetric method)</p>
@@ -229,7 +229,7 @@ export default function PorosityCalculator() {
                                                 setVolumeSolid(((100 * (100 - material.porosity)) / 100).toFixed(1));
                                             }
                                         }}
-                                        className="bg-white border border-gray-300 rounded-lg p-3 hover:bg-indigo-50 transition-colors text-center"
+                                        className="bg-white border border-gray-300 rounded-lg p-3 hover:bg-blue-50 transition-colors text-center"
                                     >
                                         <div className="font-semibold text-blue-600">{material.name}</div>
                                         <div className="text-sm text-gray-600 mt-1">
@@ -244,7 +244,7 @@ export default function PorosityCalculator() {
                         <div className="flex gap-4 mt-6">
                             <button
                                 onClick={calculatePorosity}
-                                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 rounded-lg transition-colors text-lg"
+                                className="flex-1 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold py-4 rounded-lg transition-all duration-300 text-lg shadow-md hover:shadow-lg"
                             >
                                 Calculate Porosity
                             </button>
@@ -261,13 +261,13 @@ export default function PorosityCalculator() {
                     <div className="space-y-6">
                         {/* Results Card */}
                         {result && (
-                            <div className="bg-gradient-to-br from-green-50 to-teal-50 border-2 border-green-400 rounded-xl shadow-lg p-6">
+                            <div className="bg-gradient-to-br from-blue-50 to-green-50 border-2 border-blue-400 rounded-xl shadow-lg p-6">
                                 <h2 className="text-2xl font-bold text-gray-800 mb-6">Porosity Results</h2>
                                 
                                 <div className="space-y-4">
                                     <div className="bg-white rounded-lg p-6 shadow-sm text-center">
                                         <div className="text-sm font-semibold text-gray-600 mb-2">Porosity</div>
-                                        <div className="text-4xl font-bold text-indigo-600">
+                                        <div className="text-4xl font-bold text-green-600">
                                             {result.porosity.toFixed(2)}%
                                         </div>
                                         <div className="text-lg font-semibold text-gray-700 mt-2">
@@ -278,7 +278,7 @@ export default function PorosityCalculator() {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="bg-white rounded-lg p-4 shadow-sm text-center">
                                             <div className="text-sm font-semibold text-gray-600 mb-1">Void Fraction</div>
-                                            <div className="text-2xl font-bold text-pink-600">
+                                            <div className="text-2xl font-bold text-blue-600">
                                                 {result.voidFraction.toFixed(4)}
                                             </div>
                                         </div>
@@ -300,19 +300,19 @@ export default function PorosityCalculator() {
                                         <h4 className="font-semibold text-gray-800 mb-3">Composition Visualization</h4>
                                         <div className="h-6 bg-gray-200 rounded-full overflow-hidden">
                                             <div 
-                                                className="h-full bg-indigo-500"
+                                                className="h-full bg-gradient-to-r from-blue-500 to-green-500"
                                                 style={{ width: `${result.porosity}%` }}
                                                 title={`Porosity: ${result.porosity.toFixed(1)}%`}
                                             ></div>
                                             <div 
-                                                className="h-full bg-green-500 -mt-6"
+                                                className="h-full bg-gray-300 -mt-6"
                                                 style={{ width: `${100 - result.porosity}%`, marginLeft: `${result.porosity}%` }}
                                                 title={`Solid: ${(100 - result.porosity).toFixed(1)}%`}
                                             ></div>
                                         </div>
                                         <div className="flex justify-between text-xs text-gray-600 mt-2">
-                                            <span>Voids: {result.porosity.toFixed(1)}%</span>
-                                            <span>Solid: {(100 - result.porosity).toFixed(1)}%</span>
+                                            <span className="text-blue-600">Voids: {result.porosity.toFixed(1)}%</span>
+                                            <span className="text-green-600">Solid: {(100 - result.porosity).toFixed(1)}%</span>
                                         </div>
                                     </div>
                                 </div>
@@ -324,19 +324,19 @@ export default function PorosityCalculator() {
                             <h3 className="text-lg font-bold text-gray-800 mb-4">Formulae</h3>
                             <div className="space-y-4">
                                 <div>
-                                    <h4 className="font-semibold text-indigo-700">Density Method</h4>
+                                    <h4 className="font-semibold text-blue-700">Density Method</h4>
                                     <div className="text-sm font-mono bg-gray-50 p-2 rounded">
                                         ε = (1 - ρ_bulk/ρ_true) × 100%
                                     </div>
                                 </div>
                                 <div>
-                                    <h4 className="font-semibold text-pink-700">Volume Method</h4>
+                                    <h4 className="font-semibold text-green-700">Volume Method</h4>
                                     <div className="text-sm font-mono bg-gray-50 p-2 rounded">
                                         ε = (V_total - V_solid)/V_total × 100%
                                     </div>
                                 </div>
                                 <div>
-                                    <h4 className="font-semibold text-green-700">Void Fraction</h4>
+                                    <h4 className="font-semibold text-blue-600">Void Fraction</h4>
                                     <div className="text-sm font-mono bg-gray-50 p-2 rounded">
                                         φ = ε / 100
                                     </div>
@@ -367,18 +367,15 @@ export default function PorosityCalculator() {
                     <h2 className="text-2xl font-bold text-gray-800 mb-6">Porosity Classification Scale</h2>
                     <div className="space-y-4">
                         {[
-                            { range: '0-10%', label: 'Very Low Porosity', color: 'bg-green-100', desc: 'Compressed tablets, dense materials' },
-                            { range: '10-25%', label: 'Low Porosity', color: 'bg-blue-100', desc: 'Well-compacted powders, granules' },
-                            { range: '25-40%', label: 'Medium Porosity', color: 'bg-yellow-100', desc: 'Typical pharmaceutical powders' },
-                            { range: '40-60%', label: 'High Porosity', color: 'bg-orange-100', desc: 'Porous excipients, fast-dissolving' },
-                            { range: '60-100%', label: 'Very High Porosity', color: 'bg-red-100', desc: 'Aerogels, highly porous carriers' },
+                            { range: '0-10%', label: 'Very Low Porosity', color: 'from-blue-100 to-green-100', desc: 'Compressed tablets, dense materials' },
+                            { range: '10-25%', label: 'Low Porosity', color: 'from-blue-200 to-green-200', desc: 'Well-compacted powders, granules' },
+                            { range: '25-40%', label: 'Medium Porosity', color: 'from-blue-300 to-green-300', desc: 'Typical pharmaceutical powders' },
+                            { range: '40-60%', label: 'High Porosity', color: 'from-blue-400 to-green-400', desc: 'Porous excipients, fast-dissolving' },
+                            { range: '60-100%', label: 'Very High Porosity', color: 'from-blue-500 to-green-500', desc: 'Aerogels, highly porous carriers' },
                         ].map((item, index) => (
-                            <div key={index} className="flex items-center p-4 rounded-lg border">
-                                <div className={`w-4 h-4 rounded-full mr-4 ${item.color}`}></div>
-                                <div className="flex-1">
-                                    <div className="font-semibold text-gray-800">{item.range} - {item.label}</div>
-                                    <div className="text-sm text-gray-600">{item.desc}</div>
-                                </div>
+                            <div key={index} className={`p-4 rounded-lg bg-gradient-to-r ${item.color}`}>
+                                <div className="font-semibold text-gray-800">{item.range} - {item.label}</div>
+                                <div className="text-sm text-gray-600 mt-1">{item.desc}</div>
                             </div>
                         ))}
                     </div>

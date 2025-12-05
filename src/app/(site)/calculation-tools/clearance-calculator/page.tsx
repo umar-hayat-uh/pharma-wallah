@@ -1,6 +1,6 @@
 "use client";
 import { useState } from 'react';
-import { Calculator, Filter, Activity, Clock, AlertCircle } from 'lucide-react';
+import { Calculator, Filter, Activity, AlertCircle, Clock, Droplet } from 'lucide-react';
 
 export default function ClearanceCalculator() {
     const [dose, setDose] = useState<string>('');
@@ -63,7 +63,7 @@ export default function ClearanceCalculator() {
             organInvolved = 'Enhanced metabolism/excretion';
         } else {
             interpretation = 'Very high clearance - blood flow limited';
-            organInvolved = 'AlertCircle blood flow limited';
+            organInvolved = 'Liver blood flow limited';
         }
 
         setResult({
@@ -92,12 +92,12 @@ export default function ClearanceCalculator() {
     ];
 
     return (
-        <section className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 p-4 mt-20">
+        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 mt-20">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
                     <div className="flex items-center justify-center mb-4">
-                        <Filter className="w-10 h-10 text-green-600 mr-3" />
+                        <Filter className="w-10 h-10 text-blue-600 mr-3" />
                         <div>
                             <h1 className="text-3xl font-bold text-gray-800">Clearance (CL) Calculator</h1>
                             <p className="text-gray-600">Calculate drug clearance for pharmacokinetic analysis and dosing adjustment</p>
@@ -119,13 +119,13 @@ export default function ClearanceCalculator() {
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => setMethod('single')}
-                                    className={`p-4 rounded-lg transition-colors ${method === 'single' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                                    className={`p-4 rounded-lg transition-all duration-300 ${method === 'single' ? 'bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                                 >
                                     Single Dose Method
                                 </button>
                                 <button
                                     onClick={() => setMethod('steady')}
-                                    className={`p-4 rounded-lg transition-colors ${method === 'steady' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                                    className={`p-4 rounded-lg transition-all duration-300 ${method === 'steady' ? 'bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                                 >
                                     Steady-State Method
                                 </button>
@@ -134,8 +134,8 @@ export default function ClearanceCalculator() {
 
                         {method === 'single' ? (
                             <div className="space-y-6">
-                                <div className="bg-green-50 rounded-lg p-6">
-                                    <label className="block text-lg font-semibold text-green-800 mb-3">
+                                <div className="bg-blue-50 rounded-lg p-6">
+                                    <label className="block text-lg font-semibold text-blue-800 mb-3">
                                         Dose (mg)
                                     </label>
                                     <input
@@ -144,14 +144,14 @@ export default function ClearanceCalculator() {
                                         min="0.001"
                                         value={dose}
                                         onChange={(e) => setDose(e.target.value)}
-                                        className="w-full px-4 py-3 text-lg border-2 border-green-300 rounded-lg focus:border-green-500 focus:outline-none"
+                                        className="w-full px-4 py-3 text-lg border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none"
                                         placeholder="e.g., 500"
                                     />
                                     <p className="text-sm text-gray-600 mt-2">Administered intravenous dose</p>
                                 </div>
 
-                                <div className="bg-emerald-50 rounded-lg p-6">
-                                    <label className="block text-lg font-semibold text-emerald-800 mb-3">
+                                <div className="bg-green-50 rounded-lg p-6">
+                                    <label className="block text-lg font-semibold text-green-800 mb-3">
                                         Area Under Curve (AUC) (mg·h/L)
                                     </label>
                                     <input
@@ -160,7 +160,7 @@ export default function ClearanceCalculator() {
                                         min="0.001"
                                         value={auc}
                                         onChange={(e) => setAuc(e.target.value)}
-                                        className="w-full px-4 py-3 text-lg border-2 border-emerald-300 rounded-lg focus:border-emerald-500 focus:outline-none"
+                                        className="w-full px-4 py-3 text-lg border-2 border-green-300 rounded-lg focus:border-green-500 focus:outline-none"
                                         placeholder="e.g., 50"
                                     />
                                     <p className="text-sm text-gray-600 mt-2">Area under plasma concentration-time curve</p>
@@ -184,8 +184,8 @@ export default function ClearanceCalculator() {
                                     <p className="text-sm text-gray-600 mt-2">Plasma concentration at steady-state</p>
                                 </div>
 
-                                <div className="bg-purple-50 rounded-lg p-6">
-                                    <label className="block text-lg font-semibold text-purple-800 mb-3">
+                                <div className="bg-green-50 rounded-lg p-6">
+                                    <label className="block text-lg font-semibold text-green-800 mb-3">
                                         Infusion Rate (mg/h)
                                     </label>
                                     <input
@@ -194,7 +194,7 @@ export default function ClearanceCalculator() {
                                         min="0.001"
                                         value={infusionRate}
                                         onChange={(e) => setInfusionRate(e.target.value)}
-                                        className="w-full px-4 py-3 text-lg border-2 border-purple-300 rounded-lg focus:border-purple-500 focus:outline-none"
+                                        className="w-full px-4 py-3 text-lg border-2 border-green-300 rounded-lg focus:border-green-500 focus:outline-none"
                                         placeholder="e.g., 100"
                                     />
                                     <p className="text-sm text-gray-600 mt-2">Rate of intravenous infusion</p>
@@ -219,7 +219,7 @@ export default function ClearanceCalculator() {
                                                 setInfusionRate((10 * drug.clearance).toFixed(2));
                                             }
                                         }}
-                                        className="bg-white border border-gray-300 rounded-lg p-3 hover:bg-green-50 transition-colors text-center"
+                                        className="bg-white border border-gray-300 rounded-lg p-3 hover:bg-blue-50 transition-colors text-center"
                                     >
                                         <div className="font-semibold text-blue-600">{drug.name}</div>
                                         <div className="text-sm text-gray-600 mt-1">
@@ -234,7 +234,7 @@ export default function ClearanceCalculator() {
                         <div className="flex gap-4 mt-6">
                             <button
                                 onClick={calculateClearance}
-                                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-4 rounded-lg transition-colors text-lg"
+                                className="flex-1 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold py-4 rounded-lg transition-all duration-300 text-lg shadow-md hover:shadow-lg"
                             >
                                 Calculate Clearance
                             </button>
@@ -251,7 +251,7 @@ export default function ClearanceCalculator() {
                     <div className="space-y-6">
                         {/* Results Card */}
                         {result && (
-                            <div className="bg-gradient-to-br from-teal-50 to-blue-50 border-2 border-teal-400 rounded-xl shadow-lg p-6">
+                            <div className="bg-gradient-to-br from-blue-50 to-green-50 border-2 border-blue-400 rounded-xl shadow-lg p-6">
                                 <h2 className="text-2xl font-bold text-gray-800 mb-6">Clearance Results</h2>
                                 
                                 <div className="space-y-4">
@@ -267,10 +267,10 @@ export default function ClearanceCalculator() {
 
                                     <div className="bg-white rounded-lg p-4 shadow-sm">
                                         <div className="flex items-center mb-2">
-                                            <Clock className="w-5 h-5 text-orange-500 mr-2" />
+                                            <Clock className="w-5 h-5 text-blue-500 mr-2" />
                                             <h4 className="font-semibold text-gray-800">Estimated Half-life</h4>
                                         </div>
-                                        <div className="text-2xl font-bold text-orange-600">
+                                        <div className="text-2xl font-bold text-blue-600">
                                             {result.halfLife.toFixed(2)} hours
                                         </div>
                                     </div>
@@ -290,12 +290,12 @@ export default function ClearanceCalculator() {
                                         <h4 className="font-semibold text-gray-800 mb-3">Elimination Organs</h4>
                                         <div className="flex items-center justify-around">
                                             <div className="text-center">
-                                                <AlertCircle className={`w-8 h-8 mx-auto mb-1 ${result.clearance > 2 ? 'text-green-500' : 'text-gray-300'}`} />
+                                                <Filter className={`w-8 h-8 mx-auto mb-1 ${result.clearance > 2 ? 'text-green-500' : 'text-gray-300'}`} />
                                                 <div className="text-xs">Liver</div>
                                             </div>
                                             <div className="text-center">
-                                                <AlertCircle className={`w-8 h-8 mx-auto mb-1 ${result.clearance < 10 ? 'text-blue-500' : 'text-gray-300'}`} />
-                                                <div className="text-xs">AlertCircles</div>
+                                                <Droplet className={`w-8 h-8 mx-auto mb-1 ${result.clearance < 10 ? 'text-blue-500' : 'text-gray-300'}`} />
+                                                <div className="text-xs">Kidneys</div>
                                             </div>
                                             <div className="text-center">
                                                 <Activity className={`w-8 h-8 mx-auto mb-1 ${result.clearance > 30 ? 'text-red-500' : 'text-gray-300'}`} />
@@ -312,19 +312,19 @@ export default function ClearanceCalculator() {
                             <h3 className="text-lg font-bold text-gray-800 mb-4">Formulae</h3>
                             <div className="space-y-4">
                                 <div>
-                                    <h4 className="font-semibold text-green-700">Single Dose Method</h4>
+                                    <h4 className="font-semibold text-blue-700">Single Dose Method</h4>
                                     <div className="text-sm font-mono bg-gray-50 p-2 rounded">
                                         CL = Dose / AUC
                                     </div>
                                 </div>
                                 <div>
-                                    <h4 className="font-semibold text-emerald-700">Steady-State Method</h4>
+                                    <h4 className="font-semibold text-green-700">Steady-State Method</h4>
                                     <div className="text-sm font-mono bg-gray-50 p-2 rounded">
                                         CL = R₀ / Css
                                     </div>
                                 </div>
                                 <div>
-                                    <h4 className="font-semibold text-orange-700">Half-life Relation</h4>
+                                    <h4 className="font-semibold text-blue-600">Half-life Relation</h4>
                                     <div className="text-sm font-mono bg-gray-50 p-2 rounded">
                                         t₁/₂ = 0.693 × Vd / CL
                                     </div>
@@ -394,7 +394,7 @@ export default function ClearanceCalculator() {
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="bg-green-50">
+                                <tr className="bg-gradient-to-r from-blue-50 to-green-50">
                                     <th className="py-3 px-4 text-left font-semibold text-gray-700">Drug</th>
                                     <th className="py-3 px-4 text-left font-semibold text-gray-700">Clearance (L/h)</th>
                                     <th className="py-3 px-4 text-left font-semibold text-gray-700">Primary Route</th>

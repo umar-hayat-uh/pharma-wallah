@@ -40,25 +40,42 @@ export const pharmaChemTools: Tool[] = [
     },
     // new section
     {
-        name: "powder-flowability-calculator",
+        name: "Powder flowability calculator",
         link: "/calculation-tools/powder-flowability-calculator",
     },
-      {
-        name: "compressibility-index-calculator",
+    {
+        name: "Compressibility index calculator",
         link: "/calculation-tools/compressibility-index-calculator",
     },
-        {
+    {
         name: "Porosity Calculator",
         link: "/calculation-tools/porosity-calculator",
-    },       {
-        name: "clearance-calculator/",
+    }, {
+        name: "Clearance calculator",
         link: "/calculation-tools/clearance-calculator/",
-    },       {
-        name: "volume-distribution-calculator",
+    },
+    {
+        name: "Volume distribution calculator",
         link: "/calculation-tools/volume-distribution-calculator",
     },
-
-
-    
-    
+    {
+        name: "Density calculator",
+        link: "/calculation-tools/density-calculator",
+    },
+    {
+        name: "Tablet Disintegration & Dissolution Profile Plotter",
+        link: "/calculation-tools/tablet-disintegration-dissolution-profile-plotter",
+    },
+    {
+        name: "Bioavailability Calculator",
+        link: "/calculation-tools/bioavailability-calculator",
+    },
+        {
+        name: "Osmolarity Calculator Suite",
+        link: "/calculation-tools/osmolarity-calculators",
+    },
+    {
+        name: "Osmolality Calculator Suite",
+        link: "/calculation-tools/osmolality-calculators",
+    },
 ];
