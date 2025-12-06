@@ -70,7 +70,7 @@ export const pharmaChemTools: Tool[] = [
         name: "Bioavailability Calculator",
         link: "/calculation-tools/bioavailability-calculator",
     },
-        {
+    {
         name: "Osmolarity Calculator Suite",
         link: "/calculation-tools/osmolarity-calculators",
     },
@@ -78,4 +78,62 @@ export const pharmaChemTools: Tool[] = [
         name: "Osmolality Calculator Suite",
         link: "/calculation-tools/osmolality-calculators",
     },
+    {
+        name: "Sterile Dose Volume Calculator",
+        link: "/calculation-tools/sterile-dose-volume",
+    },
+    {
+        name: "Half life Calculator",
+        link: "/calculation-tools/half-life-calculator",
+    },
+    {
+        name: "Maintenance Dose Calculator",
+        link: "/calculation-tools/maintenance-dose-calculator",
+    },
+    {
+        name: "Bioequivalence Calculator",
+        link: "/calculation-tools/bioequivalence-calculator",
+    },
+    {
+        name: "Loading Dose Calculator",
+        link: "/calculation-tools/loading-dose-calculator",
+    },
+    {
+        name: " First - Order vs Zero - Order Kinetics Tool",
+        link: "/calculation-tools/order-kinetics-calculator",
+    },
+    {
+        name: "Ke(Elimination Rate Constant) Calculator",
+        link: "/calculation-tools/ke-calculator",
+    },
+    {
+        name: "AUC(Area Under Curve) Estimator",
+        link: "/calculation-tools/auc-estimator",
+    },
+    {
+        name: "Beer-Lambert Law Absorbance Calculator",
+        link: "/calculation-tools/law-absorbance-calculator",
+    },
+    {
+        name: "Chromatographic Resolution Calculator",
+        link: "/calculation-tools/chromatographic-resolution-calculator",
+    },
+    {
+        name: "Rf Value Calculator",
+        link: "/calculation-tools/rf-value-calculator",
+    },
+    {
+        name: "UV-Vis Peak Analyzer Tool",
+        link: "/calculation-tools/uv-analyzer-tool",
+    },
+    {
+        name: "Combined pKa Suite",
+        link: "/calculation-tools/combined-pka-suite",
+    },
+    {
+        name: "Micro Biology Calculators",
+        link: "/calculation-tools/micro-biology-calculators",
+    }
+
 ];
+
