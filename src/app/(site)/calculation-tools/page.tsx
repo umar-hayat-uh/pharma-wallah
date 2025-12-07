@@ -92,67 +92,6 @@ export default function CalculationTools() {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 sm:px-6 mt-10 lg:px-8 pb-16 md:pb-20">
-        {/* Featured Tools Section */}
-        <div className="mb-16">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8">
-            <div className="mb-4 sm:mb-0">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap className="w-5 h-5 text-green-500" />
-                <span className="text-sm font-semibold text-green-600 uppercase tracking-wide">Featured</span>
-              </div>
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Most Used Tools</h2>
-              <p className="text-gray-600 mt-2">Quick access to our most popular calculators</p>
-            </div>
-            <Link
-              href="/all-tools"
-              className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium group"
-            >
-              View all tools
-              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {pharmaChemTools.slice(0, 3).map((tool, index) => (
-              <Link
-                key={tool.name}
-                href={tool.link}
-                className="group bg-white rounded-xl shadow-md border border-gray-200 
-                         hover:border-green-400 hover:shadow-xl transition-all duration-300 
-                         overflow-hidden hover:-translate-y-1"
-              >
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-gradient-to-br from-blue-100 to-green-100 
-                                    rounded-lg group-hover:from-blue-50 group-hover:to-green-50 
-                                    transition-colors">
-                        {getToolIcon(tool.name)}
-                      </div>
-                      <span className="inline-flex items-center px-3 py-1 rounded-full 
-                                     text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                        Popular
-                      </span>
-                    </div>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-blue-600 
-                               transition-colors line-clamp-2">
-                    {tool.name}
-                  </h3>
-                  {tool.description && (
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">{tool.description}</p>
-                  )}
-                  <div className="flex items-center text-blue-600 font-medium 
-                                group-hover:text-green-600 transition-colors">
-                    Open Calculator
-                    <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
         {/* All Tools Section */}
         {toolCategories.map((category) => (
           <div key={category.id} className="mb-16">
@@ -174,9 +113,9 @@ export default function CalculationTools() {
                   key={tool.name}
                   href={tool.link}
                   className="group bg-white rounded-lg border border-gray-200 p-5 
-                           hover:border-green-400 hover:shadow-lg transition-all duration-300 
-                           hover:-translate-y-0.5 flex flex-col h-full"
-                >
+                            hover:border-green-400 hover:shadow-lg transition-all duration-300 
+                            hover:-translate-y-0.5 flex flex-col h-full"
+                  >
                   <div className="flex flex-col items-center text-center flex-grow">
                     <div className="p-3 rounded-lg bg-gradient-to-br from-blue-50 to-green-50 
                                   mb-4 group-hover:from-blue-100 group-hover:to-green-100 

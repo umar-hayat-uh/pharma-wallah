@@ -133,7 +133,14 @@ export const pharmaChemTools: Tool[] = [
     {
         name: "Micro Biology Calculators",
         link: "/calculation-tools/micro-biology-calculators",
+    },
+    {
+        name: "Pharmaceutical Engineering Calculators",
+        link: "/calculation-tools/chemical-engineering-calculators",
+    },
+    {
+        name: "Pharmacological Calculators",
+        link: "/calculation-tools/pharmacological-calculators",
     }
 
 ];
-
