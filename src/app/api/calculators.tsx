@@ -143,13 +143,6 @@ export const pharmaCo: Tool[] = [
             {
                 name: "Porosity Calculator",
                 link: "/calculation-tools/porosity-calculator",
-            }, {
-                name: "Clearance calculator",
-                link: "/calculation-tools/clearance-calculator/",
-            },
-            {
-                name: "Volume distribution calculator",
-                link: "/calculation-tools/volume-distribution-calculator",
             },
             {
                 name: "Density calculator",
@@ -158,10 +151,6 @@ export const pharmaCo: Tool[] = [
             {
                 name: "Tablet Disintegration & Dissolution Profile Plotter",
                 link: "/calculation-tools/tablet-disintegration-dissolution-profile-plotter",
-            },
-            {
-                name: "Bioavailability Calculator",
-                link: "/calculation-tools/bioavailability-calculator",
             },
             {
                 name: "Osmolarity Calculator Suite",
@@ -204,7 +193,19 @@ export const pharmaCo: Tool[] = [
             {
                 name: "Drug Half Life Calculator",
                 link: "/calculation-tools/drug-half-life-calculator",
-            }
+            },
+            {
+                name: "Clearance calculator",
+                link: "/calculation-tools/clearance-calculator/",
+            },
+            {
+                name: "Volume distribution calculator",
+                link: "/calculation-tools/volume-distribution-calculator",
+            },
+            {
+                name: "Bioavailability Calculator",
+                link: "/calculation-tools/bioavailability-calculator",
+            },
         ]
     },
     // "Pharmaceutical Engineering"
