@@ -1,5 +1,6 @@
 import { Metadata } from "next";
-import { pharmaChemTools } from "@/app/api/calculators";
+// import { pharmaChemTools } from "@/app/api/calculators";
+import { pharmaCo } from "@/app/api/calculators";
 import Link from "next/link";
 import {
   Calculator,
@@ -47,18 +48,6 @@ const getToolIcon = (toolName: string) => {
   return iconKey ? iconMap[iconKey] : <Calculator className="w-6 h-6" />;
 };
 
-// Category data structure
-const toolCategories = [
-  {
-    id: 'pharma-chem',
-    title: 'Pharmaceutical Chemistry',
-    description: 'Tools for drug formulation, molecular calculations, and chemical analysis',
-    icon: <FlaskRound className="w-5 h-5" />,
-    tools: pharmaChemTools,
-    gradient: 'from-blue-600 to-green-500',
-  },
-  // Add more categories as needed
-];
 
 
 export default function CalculationTools() {
@@ -93,7 +82,7 @@ export default function CalculationTools() {
       {/* Main Content */}
       <div className="container mx-auto px-4 sm:px-6 mt-10 lg:px-8 pb-16 md:pb-20">
         {/* All Tools Section */}
-        {toolCategories.map((category) => (
+        {pharmaCo.map((category) => (
           <div key={category.id} className="mb-16">
             {/* Category Header */}
             <div className="flex items-center gap-4 mb-8">
@@ -101,14 +90,14 @@ export default function CalculationTools() {
                 {category.icon}
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">{category.title}</h2>
-                <p className="text-gray-600">{category.description}</p>
+                <h2 className="text-2xl font-bold text-gray-900">{category.heading}</h2>
+                <p className="text-gray-600">{category.h_description}</p>
               </div>
             </div>
 
             {/* Tools Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {category.tools.map((tool) => (
+              {category.tools?.map((tool) => (
                 <Link
                   key={tool.name}
                   href={tool.link}
