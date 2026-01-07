@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "../../../../lib/mongodb";
 
@@ -50,19 +53,18 @@ export async function GET(request: NextRequest) {
       },
       { $sort: { relevance: -1, name: 1 } },
       { $limit: limit },
-      {
-        // ❗ Remove helper field before returning
-        $unset: "relevance",
-      },
+      { $unset: "relevance" },
     ];
 
     const results = await Promise.all(
-      collections.map((c) => c.aggregate(pipeline).toArray())
+      collections.map((collection) =>
+        collection.aggregate(pipeline).toArray()
+      )
     );
 
     // 🔁 Deduplicate across collections
     const merged = Object.values(
-      results.flat().reduce((acc: any, drug: any) => {
+      results.flat().reduce<Record<string, any>>((acc, drug) => {
         const key = drug.drugbank_ids?.[0]?.id || drug.name;
         acc[key] ||= drug;
         return acc;
