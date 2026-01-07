@@ -97,12 +97,11 @@ const footer = () => {
         </div>
 
         <div className='mt-10 lg:flex items-center justify-between'>
-          <h4 className='text-black/50 text-sm text-center lg:text-start font-normal'>@2025 Agency. All Rights Reserved by <Link href="https://getnextjstemplates.com/" target="_blank" className="hover:text-primary"> GetNextJsTemplates.com</Link></h4>
+          <h4 className='text-black/50 text-sm text-center lg:text-start font-normal'>@2026 All Rights Reserved by PharmaWallah</h4>
           <div className="flex gap-5 mt-5 lg:mt-0 justify-center lg:justify-start">
             <Link href="/" className='text-black/50 text-sm font-normal hover:text-primary'>Privacy policy</Link>
             <Link href="/" className='text-black/50 text-sm font-normal hover:text-primary'>Terms & conditions</Link>
           </div>
-          <h4 className='text-black/50 text-sm text-center lg:text-start font-normal'>Distributed by <Link href="https://themewagon.com/" target="_blank" className="hover:text-primary"> ThemeWagon</Link></h4>
         </div>
       </div>
     </footer>
