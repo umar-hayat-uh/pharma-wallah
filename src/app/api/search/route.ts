@@ -1,6 +1,3 @@
-export const dynamic = "force-dynamic";
-export const runtime = "nodejs";
-
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "../../../../lib/mongodb";
 
@@ -9,6 +6,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
     const q = searchParams.get("q")?.trim() || "";
     const limit = Number(searchParams.get("limit") || 10);
+    const page = Number(searchParams.get("page") || "1");
+    const skip = (page - 1) * limit;
 
     if (q.length < 2) {
       return NextResponse.json({ success: true, data: [] });
@@ -26,54 +25,153 @@ export async function GET(request: NextRequest) {
       db.collection("drugsdata_1"),
     ];
 
+    // Create search query - search only by name and synonyms
+    const searchQuery = {
+      $or: [
+        // Exact name match (highest priority)
+        { name: { $regex: `^${escaped}$`, $options: "i" } },
+        // Name starts with query (second priority)
+        { name: { $regex: `^${escaped}`, $options: "i" } },
+        // Name contains query (third priority)
+        { name: { $regex: escaped, $options: "i" } },
+        // Search in synonyms
+        { 'synonyms.name': { $regex: escaped, $options: "i" } }
+      ]
+    };
+
+    // Add relevance scoring for better sorting
     const pipeline = [
+      { $match: searchQuery },
       {
-        // 🔍 NAME ONLY SEARCH
-        $match: {
-          name: { $regex: escaped, $options: "i" },
-        },
-      },
-      {
-        // ⭐ RELEVANCE SCORING
         $addFields: {
           relevance: {
-            $cond: [
-              { $regexMatch: { input: "$name", regex: `^${escaped}$`, options: "i" } },
-              100,
-              {
-                $cond: [
-                  { $regexMatch: { input: "$name", regex: `^${escaped}`, options: "i" } },
-                  50,
-                  10,
-                ],
-              },
-            ],
-          },
-        },
+            $switch: {
+              branches: [
+                // Exact name match gets highest score
+                {
+                  case: { $regexMatch: { input: "$name", regex: `^${escaped}$`, options: "i" } },
+                  then: 100
+                },
+                // Name starts with query gets high score
+                {
+                  case: { $regexMatch: { input: "$name", regex: `^${escaped}`, options: "i" } },
+                  then: 80
+                },
+                // Name contains query gets medium score
+                {
+                  case: { $regexMatch: { input: "$name", regex: escaped, options: "i" } },
+                  then: 60
+                },
+                // Synonym match gets lower score
+                {
+                  case: {
+                    $gt: [
+                      {
+                        $size: {
+                          $filter: {
+                            input: "$synonyms",
+                            as: "syn",
+                            cond: {
+                              $regexMatch: {
+                                input: "$$syn.name",
+                                regex: `^${escaped}$`,
+                                options: "i"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      0
+                    ]
+                  },
+                  then: 50
+                },
+                {
+                  case: {
+                    $gt: [
+                      {
+                        $size: {
+                          $filter: {
+                            input: "$synonyms",
+                            as: "syn",
+                            cond: {
+                              $regexMatch: {
+                                input: "$$syn.name",
+                                regex: `^${escaped}`,
+                                options: "i"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      0
+                    ]
+                  },
+                  then: 40
+                },
+                {
+                  case: {
+                    $gt: [
+                      {
+                        $size: {
+                          $filter: {
+                            input: "$synonyms",
+                            as: "syn",
+                            cond: {
+                              $regexMatch: {
+                                input: "$$syn.name",
+                                regex: escaped,
+                                options: "i"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      0
+                    ]
+                  },
+                  then: 30
+                }
+              ],
+              default: 10
+            }
+          }
+        }
       },
       { $sort: { relevance: -1, name: 1 } },
-      { $limit: limit },
-      { $unset: "relevance" },
+      { $skip: skip },
+      { $limit: limit }
     ];
 
+    // Search across all collections with pipeline
     const results = await Promise.all(
       collections.map((collection) =>
         collection.aggregate(pipeline).toArray()
       )
     );
 
-    // 🔁 Deduplicate across collections
-    const merged = Object.values(
-      results.flat().reduce<Record<string, any>>((acc, drug) => {
-        const key = drug.drugbank_ids?.[0]?.id || drug.name;
-        acc[key] ||= drug;
-        return acc;
-      }, {})
+    // Flatten and deduplicate results
+    const flattenedResults = results.flat();
+    const uniqueResults = flattenedResults.filter(
+      (drug, index, self) =>
+        index === self.findIndex(d =>
+          d.drugbank_ids?.[0]?.id === drug.drugbank_ids?.[0]?.id
+        )
     );
+
+    // Get total count from first collection
+    const totalCount = await collections[0].countDocuments(searchQuery);
 
     return NextResponse.json({
       success: true,
-      data: merged.slice(0, limit),
+      data: uniqueResults.slice(0, limit),
+      pagination: {
+        total: totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit)
+      },
+      searchQuery: q
     });
   } catch (error) {
     console.error("Search error:", error);
