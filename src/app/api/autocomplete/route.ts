@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "../../../../lib/mongodb";
 
+export const dynamic = "force-dynamic"; // 👈 REQUIRED
+
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = request.nextUrl;
@@ -17,12 +19,11 @@ export async function GET(request: NextRequest) {
         const db = client.db("pharmacopedia");
         const collection = db.collection("drugsdata");
 
-        // Search only by name and synonyms
         const searchQuery = {
             $or: [
                 { name: { $regex: `^${escaped}`, $options: "i" } },
                 { name: { $regex: escaped, $options: "i" } },
-                { 'synonyms.name': { $regex: escaped, $options: "i" } }
+                { "synonyms.name": { $regex: escaped, $options: "i" } }
             ]
         };
 
@@ -86,10 +87,7 @@ export async function GET(request: NextRequest) {
 
         const results = await collection.aggregate(pipeline).toArray();
 
-        return NextResponse.json({
-            success: true,
-            data: results
-        });
+        return NextResponse.json({ success: true, data: results });
     } catch (error) {
         console.error("Autocomplete error:", error);
         return NextResponse.json(
