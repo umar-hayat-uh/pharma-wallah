@@ -347,7 +347,7 @@ export default function DrugCard({ drug }: DrugCardProps) {
                             </button>
                             {expandedSections.classification && (
                                 <div className="p-6 bg-white">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
                                         {Object.entries(drug.classification).map(([key, value]) => (
                                             <div key={key} className="text-center p-4 bg-gradient-to-b from-white to-gray-50 rounded-lg border shadow-sm">
                                                 <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
