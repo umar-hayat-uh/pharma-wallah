@@ -217,8 +217,8 @@ const Companies = () => {
 };
 
 // Helper function to get descriptions for each field
-const getFieldDescription = (field) => {
-    const descriptions = {
+const getFieldDescription = (field: string) => {
+    const descriptions: Record<string, string> = {
         "Pharmacology": "Drug action & mechanisms",
         "Pharmacognosy": "Natural drug sources",
         "Pharmaceutical Chemistry": "Drug design & synthesis",
