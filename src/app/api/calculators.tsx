@@ -231,8 +231,16 @@ export const pharmaCo: Tool[] = [
         gradient: 'from-blue-600 to-green-500',
         tools: [
             {
-                name: "Micro Biology Calculators",
-                link: "/calculation-tools/micro-biology-calculators",
+                name: "CFU Calculators",
+                link: "/calculation-tools/cfu-calculator",
+            },
+            {
+                name: "Sterilization Calculator",
+                link: "/calculation-tools/sterilization-calculator",
+            },
+            {
+                name: "Zone Of Inhibition Calculator",
+                link: "/calculation-tools/zone-of-inhibition-calculator",
             },
         ]
     },

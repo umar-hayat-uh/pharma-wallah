@@ -72,7 +72,7 @@ const Header: React.FC = () => {
         }`}
     >
       <div className="lg:py-0 py-2">
-        <div className="container mx-auto lg:max-w-screen-xl md:max-w-screen-md flex items-center justify-between px-4">
+        <div className="container mx-auto lg:max-w-screen-2xl md:max-w-screen-md flex items-center justify-between px-4">
           <Logo />
           <nav className="hidden lg:flex flex-grow items-center gap-8 justify-center">
             {headerData.map((item, index) => (
@@ -84,7 +84,7 @@ const Header: React.FC = () => {
               href="#"
               className="hidden lg:block bg-primary text-white hover:bg-primary/15 hover:text-primary px-16 py-5 rounded-full text-lg font-medium"
             >
-              Get the App
+              Expert AI Guide
             </Link>
             <button
               onClick={() => setNavbarOpen(!navbarOpen)}

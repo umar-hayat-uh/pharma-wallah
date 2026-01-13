@@ -1,5 +1,5 @@
 import DrugSearch from '@/components/DrugSearch';
-import { Search, Database, Activity, Shield, BarChart3, Pill } from 'lucide-react';
+import { Search, Database, Activity, Shield, BarChart3, TriangleAlert } from 'lucide-react';
 import { Metadata } from "next";
 export const metadata: Metadata = {
     title: "Encyclopedia",
@@ -68,6 +68,10 @@ export default function Home() {
                             Search by drug name, UNII, CAS number, mechanism of action, or browse through classifications.
                             Real-time results with detailed pharmacological profiles.
                         </p>
+                        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4" role="alert">
+                            <strong className="font-bold"><TriangleAlert className='inline-flex' /> Warning:</strong>
+                            <span className="block sm:inline">This information is for academic reference. Do not self-medicate. Always follow the prescription and advice of your healthcare provider.</span>
+                        </div>
                     </div>
 
                     <DrugSearch />

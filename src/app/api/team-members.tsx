@@ -16,9 +16,9 @@ export
             imgSrc: "/images/mentor/user1.png",
         },
         {
-            name: "Syed M. Ali",
-            role: "Course Content Collector",
-            imgSrc: "/images/mentor/user2.png",
+            name: "Jazil bin kashef",
+            role: "Co-Material Content Strategist",
+            imgSrc: "/images/mentor/user3.png",
         },
         {
             name: "Sumaiya Saeed",
@@ -26,8 +26,13 @@ export
             imgSrc: "/images/mentor/user2.png",
         },
         {
-            name: "Tauqeer Hussain",
-            role: "ChatGpt Specialist",
+            name: "Syed M. Ali",
+            role: "Course Content Collector",
             imgSrc: "/images/mentor/user2.png",
+        },
+        {
+            name: "Tauqeer Hussain",
+            role: "MCQ's Creator",
+            imgSrc: "/images/mentor/user3.png",
         },
     ];

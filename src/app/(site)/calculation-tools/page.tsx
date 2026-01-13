@@ -18,7 +18,8 @@ import {
   BarChart3,
   Users,
   Target,
-  FileText
+  FileText,
+  TriangleAlert
 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -75,6 +76,11 @@ export default function CalculationTools() {
               Professional-grade calculators and formula tools designed for pharmacy professionals,
               researchers, and students
             </p>
+
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4" role="alert">
+                <span className="font-bold gap-2 flex items-center justify-center"><TriangleAlert className='inline-flex' /><strong>Professional & Educational Use Only:</strong></span>
+                <span className="inline-flex sm:inline">These tools are designed exclusively for educational and informational purposes to support academic study and professional reference.</span>
+            </div>
           </div>
         </div>
       </div>

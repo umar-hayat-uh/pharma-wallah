@@ -15,7 +15,6 @@ export default function Home() {
     <main>
       <Hero />
       <Companies />
-      <Courses />
       <Mentor />
       <Testimonial />
       <Newsletter />
