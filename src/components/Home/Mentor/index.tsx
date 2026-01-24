@@ -70,10 +70,7 @@ const Mentor = () => {
 
                 {/* Simple Header */}
                 <div className="text-center mb-12">
-                    <div className="inline-block mb-4">
-                        <Award className="w-10 h-10 text-blue-600" />
-                    </div>
-                    <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                 <h2 className="text-3xl font-bold text-gray-900 mb-4">
                         Learn from Pharmacy Experts
                     </h2>
                     <p className="text-gray-600 text-lg max-w-2xl mx-auto">

@@ -179,11 +179,9 @@ const Testimonial = () => {
             <div className='container mx-auto lg:max-w-screen-xl md:max-w-screen-md px-4'>
                 <div className="text-center mb-12">
                     <div className="inline-flex items-center justify-center gap-3 mb-4">
-                        <Award className="w-8 h-8 text-blue-600" />
                         <h2 className="text-3xl md:text-4xl font-bold text-midnight_text">
                             What Our Students Say
                         </h2>
-                        <GraduationCap className="w-8 h-8 text-blue-600" />
                     </div>
                     <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                         Hear from pharmacy students across Pakistan who are transforming their education with Pharmawallah
@@ -248,26 +246,6 @@ const Testimonial = () => {
                         </div>
                     ))}
                 </Slider>
-
-                {/* Stats Section */}
-                <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-6">
-                    <div className="text-center p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-                        <div className="text-3xl font-bold text-blue-600 mb-2">5000+</div>
-                        <div className="text-gray-600">Active Students</div>
-                    </div>
-                    <div className="text-center p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-                        <div className="text-3xl font-bold text-green-600 mb-2">4.8/5</div>
-                        <div className="text-gray-600">Average Rating</div>
-                    </div>
-                    <div className="text-center p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-                        <div className="text-3xl font-bold text-purple-600 mb-2">15+</div>
-                        <div className="text-gray-600">Universities</div>
-                    </div>
-                    <div className="text-center p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-                        <div className="text-3xl font-bold text-cyan-600 mb-2">1000+</div>
-                        <div className="text-gray-600">Practice Hours</div>
-                    </div>
-                </div>
 
             </div>
         </section>

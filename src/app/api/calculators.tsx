@@ -46,7 +46,7 @@ export const pharmaCo: Tool[] = [
             },
             {
                 name: "Percentage Solution Calculator (w/v, v/v, w/w)",
-                link: "/calculation-tools/dilution-calculator",
+                link: "/calculation-tools/percentage-solution-calculator",
             },
             {
                 name: "Molecular weight finder",
@@ -242,6 +242,44 @@ export const pharmaCo: Tool[] = [
                 name: "Zone Of Inhibition Calculator",
                 link: "/calculation-tools/zone-of-inhibition-calculator",
             },
+        ]
+    },
+      // "Clinal And Pharmaceutical Pharmacy"
+    {
+        id: 'clnl-phm-pharm',
+        heading: "Clinal And Hospital Pharmacy",
+        h_description: "Tools for drug formulation, molecular calculations, and chemical analysis",
+        icon: '🏥',
+        gradient: 'from-blue-600 to-green-500',
+        tools: [
+            {
+                name: "BSA Calculator",
+                link: "/calculation-tools/bsa-calculator",
+            },
+              {
+                name: "BMI Calculator",
+                link: "/calculation-tools/bmi-calculator",
+            },
+               {
+                name: "Pedriatic Calculator",
+                link: "/calculation-tools/pedriatic-calculator",
+            },  
+             {
+                name: "Creatinine Calculator",
+                link: "/calculation-tools/creatinine-calculator",
+            },
+               {
+                name: "GFR Calculator",
+                link: "/calculation-tools/gfr-calculator",
+            },
+                {
+                name: "Child Pugh Calculator",
+                link: "/calculation-tools/child-pugh-calculator",
+            },
+                {
+                name: "QT interval Calculator",
+                link: "/calculation-tools/qt-interval-calculator",
+            }
         ]
     },
 ]
