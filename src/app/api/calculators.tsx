@@ -121,6 +121,14 @@ export const pharmaCo: Tool[] = [
                 name: "Combined pKa Suite",
                 link: "/calculation-tools/combined-pka-suite",
             },
+            {
+                name: "Percent Putiry Calculator",
+                link: "/calculation-tools/percent-purity-calculator",
+            },
+             {
+                name: "Ash Value Calculator",
+                link: "/calculation-tools/ash-value-calculator",
+            }
         ]
     },
 
