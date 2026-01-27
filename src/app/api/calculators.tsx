@@ -172,6 +172,30 @@ export const pharmaCo: Tool[] = [
                 name: "Sterile Dose Volume Calculator",
                 link: "/calculation-tools/sterile-dose-volume",
             },
+            {
+               name: "Isotonicity Calculator",
+               link: "/calculation-tools/isotonicity-calculator",
+           },
+            {
+               name: "Content Uniformity Calculator",
+               link: "/calculation-tools/content-uniformity-calculator",
+           },
+            {
+               name: "Drug Excipient Compatibility Predictor",
+               link: "/calculation-tools/drug-excipient-compatibility-predictor",
+           },
+            {
+                name: "Surface Area Particle Size Calculator",
+                link: "/calculation-tools/surface-area-particle-size-calculator",
+            },
+
+
+           
+
+
+           
+            
+            
         ]
     },
     // "Pharmacology"
