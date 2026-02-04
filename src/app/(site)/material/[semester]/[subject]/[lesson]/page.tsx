@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { notFound, useRouter } from "next/navigation";
-import { ArrowLeft, Download, ChevronRight, Home, Menu } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Download, ChevronRight, Home } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getLessonContent } from "@/actions/lesson";
@@ -29,14 +29,22 @@ export default function LessonPage({ params }: Props) {
   useEffect(() => {
     async function loadContent() {
       try {
+        console.log('Loading lesson:', { semester, subject, lesson });
         const data = await getLessonContent(semester, subject, lesson);
+        console.log('Received data:', data);
+        
+        if (!data) {
+          console.log('No data received, setting error');
+          setError("Lesson not found");
+          return;
+        }
+        
         setLessonContent(data.content);
         setLessonTitle(data.lessonTitle);
         setError(null);
       } catch (err) {
         console.error("Error loading lesson:", err);
-        setError("Lesson not found");
-        notFound(); // This will trigger the 404 page
+        setError("Failed to load lesson content");
       } finally {
         setLoading(false);
       }
@@ -46,7 +54,6 @@ export default function LessonPage({ params }: Props) {
   }, [semester, subject, lesson]);
 
   const handleDownloadPDF = () => {
-    // Enhanced PDF download functionality
     const content = document.querySelector('.prose')?.innerHTML || '';
     const printWindow = window.open('', '_blank');
     if (printWindow) {
@@ -131,7 +138,6 @@ export default function LessonPage({ params }: Props) {
               <p>Study Material | ${new Date().getFullYear()}</p>
             </div>
             <script>
-              // Auto-print and close after a delay
               setTimeout(() => {
                 window.print();
                 setTimeout(() => window.close(), 1000);
@@ -177,7 +183,6 @@ export default function LessonPage({ params }: Props) {
 
   return (
     <section className="min-h-screen bg-gradient-to-b from-blue-50/30 via-white to-green-50/20">
-
       {/* Desktop Breadcrumb Navigation */}
       <div className="hidden lg:block bg-white border-b mt-8">
         <div className="w-full px-4 sm:px-6 lg:px-8">

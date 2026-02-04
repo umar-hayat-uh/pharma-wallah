@@ -68,7 +68,7 @@ const Header: React.FC = () => {
 
   return (
     <header
-      className={`fixed top-0 z-40 w-full pb-2 transition-all duration-300 bg-white/60 backdrop-blur-md border border-white/30  ${sticky ? " shadow-lg py-3" : "shadow-none py-3"
+      className={`top-0 z-40 w-full pb-2 transition-all duration-300 bg-white/60 backdrop-blur-md border border-white/30  ${sticky ? "fixed shadow-lg py-3" : "shadow-none py-3"
         }`}
     >
       <div className="lg:py-0 py-2">
