@@ -8,6 +8,11 @@ export type Drug = {
   drug_type: string;
   created?: string;
   updated?: string;
+  synonyms?: {
+    name: string;
+    language?: string;
+    coder?: string;
+  }[];
   properties?: {
     state?: string;
     experimental_properties?: Array<{
@@ -58,11 +63,6 @@ export type Drug = {
     class?: string;
     subclass?: string;
   };
-  synonyms?: Array<{
-    name: string;
-    language?: string;
-    coder?: string;
-  }>;
   "general-references"?: {
     articles?: Array<{
       "ref-id"?: string;
