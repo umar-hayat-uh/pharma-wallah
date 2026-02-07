@@ -29,7 +29,7 @@ import {
 
 interface DrugCardProps {
   drug: {
-    drugbank_ids: { id: string; primary: boolean }[];
+    drugbank_ids: { id: string; primary?: boolean }[];
     name: string;
     description: string;
     cas_number?: string;
@@ -178,7 +178,7 @@ export default function DrugCard({ drug }: DrugCardProps) {
     drug.interactions?.food_interactions &&
     drug.interactions.food_interactions.length > 0;
   const hasProducts = drug.products && drug.products.length > 0;
-  const primaryDrugbankId = drug.drugbank_ids?.find(id => id.primary)?.id;
+  const primaryDrugbankId = drug.drugbank_ids?.find(id => id.primary)?.id || drug.drugbank_ids?.[0]?.id;
 
   return (
     <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-200 overflow-hidden">
