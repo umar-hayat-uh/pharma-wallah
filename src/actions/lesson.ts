@@ -9,36 +9,46 @@ export async function getLessonContent(
   try {
     console.log("Looking for lesson:", { semester, subject, lesson });
 
-    // For Vercel/Production: Fetch from public directory
-    // For local development: Use relative path
-    const baseUrl = process.env.NODE_ENV === 'production' 
-      ? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://pharma-wallah.vercel.app/')
-      : 'http://localhost:3000';
+    // For Vercel/Production: Use absolute URL
+    // For local development: Use relative URL
+    let fileUrl;
     
-    const fileUrl = `${baseUrl}/content/${semester}/${subject}/${lesson}.md`;
+    if (process.env.NODE_ENV === 'production') {
+      // Production on Vercel
+      fileUrl = `https://pharma-wallah.vercel.app/content/${semester}/${subject}/${lesson}.md`;
+    } else {
+      // Local development
+      fileUrl = `/content/${semester}/${subject}/${lesson}.md`;
+    }
+    
     console.log("Fetching from URL:", fileUrl);
 
     // Fetch the markdown file
     const response = await fetch(fileUrl, {
-      // Important: Add cache control to prevent stale data
-      cache: 'no-store'
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'text/markdown',
+      },
     });
+    
+    console.log("Response status:", response.status);
+    console.log("Response ok:", response.ok);
     
     if (!response.ok) {
       console.log("Failed to fetch markdown file:", response.status, response.statusText);
       
-      // Try alternative path for local dev
+      // Try with absolute URL in development
       if (process.env.NODE_ENV === 'development') {
-        const localUrl = `/content/${semester}/${subject}/${lesson}.md`;
-        console.log("Trying local URL:", localUrl);
-        const localResponse = await fetch(localUrl);
+        const absoluteUrl = `http://localhost:3000${fileUrl}`;
+        console.log("Trying absolute URL:", absoluteUrl);
+        const absoluteResponse = await fetch(absoluteUrl, { cache: 'no-store' });
         
-        if (!localResponse.ok) {
-          console.log("Failed to fetch from local URL");
+        if (!absoluteResponse.ok) {
+          console.log("Failed to fetch from absolute URL");
           return null;
         }
         
-        const mdContent = await localResponse.text();
+        const mdContent = await absoluteResponse.text();
         return await processMarkdownContent(mdContent, lesson);
       }
       
