@@ -63,7 +63,7 @@ export default function SubjectPage({ params }: Props) {
   const backLink = `/material/semester-${semester.split("-").pop()}`;
 
   return (
-    <section className="min-h-screen bg-gradient-to-b from-blue-50/30 via-white to-green-50/20">
+    <section className="min-h-screen bg-gradient-to-b from-blue-50/30 via-white to-green-50/20 pt-0">
       {/* Hero Section */}
       <div className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-green-500 overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,.1)_50%,transparent_75%)] bg-[length:400%_400%] animate-shimmer" />

@@ -182,10 +182,10 @@ export default function LessonPage({ params }: Props) {
   }
 
   return (
-    <section className="min-h-screen bg-gradient-to-b from-blue-50/30 via-white to-green-50/20">
+    <section className="min-h-screen bg-gradient-to-b from-blue-50/30 via-white to-green-50/20 pt-0">
       {/* Desktop Breadcrumb Navigation */}
-      <div className="hidden lg:block bg-white border-b mt-8">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
+      <div className="hidden lg:block bg-white border-b">
+        <div className="w-full sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center py-4">
             <nav className="flex items-center space-x-2 text-sm text-gray-600 flex-wrap">
               <Link href="/material" className="hover:text-blue-600 transition-colors flex items-center gap-1">
