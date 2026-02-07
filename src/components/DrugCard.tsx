@@ -13,24 +13,23 @@ import {
   Calendar,
   Tag,
   AlertCircle,
-  TestTube,
-  Droplets,
-  Brain,
   ShieldAlert,
   Scale,
   History,
-  Cpu,
   AlertTriangle,
   Beaker,
   Utensils,
   AlertOctagon,
   GitCompare,
   Apple,
+  Package,
+  Database,
+  ExternalLink,
 } from "lucide-react";
 
 interface DrugCardProps {
   drug: {
-    drugbank_ids: { id: string }[];
+    drugbank_ids: { id: string; primary: boolean }[];
     name: string;
     description: string;
     cas_number?: string;
@@ -39,7 +38,7 @@ interface DrugCardProps {
     created?: string;
     updated?: string;
     status?: string;
-    physical_chemical_properties?: {
+    properties?: {
       state?: string;
       experimental_properties?: Array<{
         kind?: string;
@@ -72,16 +71,6 @@ interface DrugCardProps {
       total_count?: number;
       food_interactions?: string[];
     };
-    dosages?: {
-      forms: string[];
-      routes: string[];
-      details: Array<{
-        form?: string;
-        route?: string;
-        strength?: string;
-      }>;
-      total_forms?: number;
-    };
     classification?: {
       direct_parent: string;
       kingdom: string;
@@ -89,23 +78,38 @@ interface DrugCardProps {
       class?: string;
       subclass?: string;
     };
-    groups?: string[];
-    salts?: Array<{
-      name?: string;
-      unii?: string;
-    }>;
-    synonyms?: { name: string }[];
+    synonyms?: { name: string; language: string; coder: string }[];
     "general-references"?: {
       articles?: Array<{
+        "ref-id"?: string;
+        "pubmed-id"?: string;
         citation?: string;
-        pmid?: string;
-        doi?: string;
       }>;
       links?: Array<{
+        "ref-id"?: string;
         title?: string;
         url?: string;
       }>;
+      textbooks?: any[];
+      attachments?: any[];
     };
+    products?: Array<{
+      name: string;
+      labeller: string;
+      ndc_id?: string | null;
+      ndc_product_code?: string | null;
+      dosage_form: string;
+      strength: string;
+      route: string;
+      fda_application_number?: string | null;
+      generic: boolean;
+      over_the_counter: boolean;
+      approved: boolean;
+      country: string;
+      source: string;
+      started_marketing_on: string;
+      ended_marketing_on: string;
+    }>;
   };
 }
 
@@ -120,7 +124,7 @@ export default function DrugCard({ drug }: DrugCardProps) {
     synonyms: false,
     drugInteractions: false,
     foodInteractions: false,
-    dosages: false,
+    products: false,
   });
 
   const toggleSection = (section: keyof typeof expandedSections) => {
@@ -173,6 +177,8 @@ export default function DrugCard({ drug }: DrugCardProps) {
   const hasFoodInteractions =
     drug.interactions?.food_interactions &&
     drug.interactions.food_interactions.length > 0;
+  const hasProducts = drug.products && drug.products.length > 0;
+  const primaryDrugbankId = drug.drugbank_ids?.find(id => id.primary)?.id;
 
   return (
     <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-200 overflow-hidden">
@@ -197,14 +203,6 @@ export default function DrugCard({ drug }: DrugCardProps) {
                   {drug.status.toUpperCase()}
                 </span>
               )}
-              {drug.groups?.map((group, idx) => (
-                <span
-                  key={idx}
-                  className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium"
-                >
-                  {group}
-                </span>
-              ))}
             </div>
           </div>
           <div className="text-right">
@@ -221,11 +219,18 @@ export default function DrugCard({ drug }: DrugCardProps) {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 p-4 bg-gray-50 rounded-xl">
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Tag className="w-4 h-4" />
+              <Database className="w-4 h-4" />
               <span className="font-semibold">DrugBank ID:</span>
             </div>
-            <div className="font-mono text-gray-800 bg-white px-3 py-1 rounded border">
-              {drug.drugbank_ids?.[0]?.id || "N/A"}
+            <div className="flex items-center gap-2">
+              <div className="font-mono text-gray-800 bg-white px-3 py-1 rounded border">
+                {primaryDrugbankId || drug.drugbank_ids?.[0]?.id || "N/A"}
+              </div>
+              {drug.drugbank_ids && drug.drugbank_ids.length > 1 && (
+                <span className="text-xs text-gray-500">
+                  +{drug.drugbank_ids.length - 1} more
+                </span>
+              )}
             </div>
           </div>
 
@@ -276,7 +281,7 @@ export default function DrugCard({ drug }: DrugCardProps) {
         {/* Expandable Sections */}
         <div className="space-y-4">
           {/* Physical & Chemical Properties */}
-          {drug.physical_chemical_properties && (
+          {drug.properties && (
             <div className="border rounded-xl overflow-hidden">
               <button
                 onClick={() => toggleSection("properties")}
@@ -285,7 +290,7 @@ export default function DrugCard({ drug }: DrugCardProps) {
                 <div className="flex items-center gap-3">
                   <FlaskConical className="w-5 h-5 text-purple-600" />
                   <h3 className="text-lg font-semibold text-gray-800">
-                    Physical & Chemical Properties
+                    Properties
                   </h3>
                 </div>
                 {expandedSections.properties ? (
@@ -297,24 +302,23 @@ export default function DrugCard({ drug }: DrugCardProps) {
               {expandedSections.properties && (
                 <div className="p-6 bg-white">
                   <div className="space-y-4">
-                    {drug.physical_chemical_properties.state && (
+                    {drug.properties.state && (
                       <div>
                         <h4 className="font-semibold text-gray-700 mb-2">
                           State
                         </h4>
                         <div className="px-3 py-2 bg-gray-100 rounded-lg">
-                          {drug.physical_chemical_properties.state}
+                          {drug.properties.state}
                         </div>
                       </div>
                     )}
-                    {drug.physical_chemical_properties
-                      .experimental_properties && (
+                    {drug.properties.experimental_properties && (
                       <div>
                         <h4 className="font-semibold text-gray-700 mb-2">
                           Experimental Properties
                         </h4>
                         <div className="space-y-3">
-                          {drug.physical_chemical_properties.experimental_properties.map(
+                          {drug.properties.experimental_properties.map(
                             (prop, idx) => (
                               <div
                                 key={idx}
@@ -375,9 +379,10 @@ export default function DrugCard({ drug }: DrugCardProps) {
                           <h4 className="font-semibold text-gray-700 capitalize">
                             {key.replace("_", " ")}
                           </h4>
-                          <div className="text-gray-600 p-3 bg-gray-50 rounded-lg border">
-                            {value || "Not available"}
-                          </div>
+                          <div 
+                            className="text-gray-600 p-3 bg-gray-50 rounded-lg border whitespace-pre-line"
+                            dangerouslySetInnerHTML={{ __html: value || "Not available" }}
+                          />
                         </div>
                       ),
                     )}
@@ -414,9 +419,10 @@ export default function DrugCard({ drug }: DrugCardProps) {
                         <h4 className="font-semibold text-gray-700 mb-2">
                           Indication
                         </h4>
-                        <div className="text-gray-600 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                          {drug.pharmacodynamics.indication}
-                        </div>
+                        <div 
+                          className="text-gray-600 p-3 bg-blue-50 rounded-lg border border-blue-100 whitespace-pre-line"
+                          dangerouslySetInnerHTML={{ __html: drug.pharmacodynamics.indication }}
+                        />
                       </div>
                     )}
                     {drug.pharmacodynamics.mechanism_of_action && (
@@ -424,9 +430,21 @@ export default function DrugCard({ drug }: DrugCardProps) {
                         <h4 className="font-semibold text-gray-700 mb-2">
                           Mechanism of Action
                         </h4>
-                        <div className="text-gray-600 p-3 bg-green-50 rounded-lg border border-green-100">
-                          {drug.pharmacodynamics.mechanism_of_action}
-                        </div>
+                        <div 
+                          className="text-gray-600 p-3 bg-green-50 rounded-lg border border-green-100 whitespace-pre-line"
+                          dangerouslySetInnerHTML={{ __html: drug.pharmacodynamics.mechanism_of_action }}
+                        />
+                      </div>
+                    )}
+                    {drug.pharmacodynamics.pharmacodynamics && (
+                      <div>
+                        <h4 className="font-semibold text-gray-700 mb-2">
+                          Pharmacodynamics
+                        </h4>
+                        <div 
+                          className="text-gray-600 p-3 bg-purple-50 rounded-lg border border-purple-100 whitespace-pre-line"
+                          dangerouslySetInnerHTML={{ __html: drug.pharmacodynamics.pharmacodynamics }}
+                        />
                       </div>
                     )}
                     {drug.pharmacodynamics.toxicity && (
@@ -434,9 +452,10 @@ export default function DrugCard({ drug }: DrugCardProps) {
                         <h4 className="font-semibold text-gray-700 mb-2">
                           Toxicity
                         </h4>
-                        <div className="text-gray-600 p-3 bg-red-50 rounded-lg border border-red-100">
-                          {drug.pharmacodynamics.toxicity}
-                        </div>
+                        <div 
+                          className="text-gray-600 p-3 bg-red-50 rounded-lg border border-red-100 whitespace-pre-line"
+                          dangerouslySetInnerHTML={{ __html: drug.pharmacodynamics.toxicity }}
+                        />
                       </div>
                     )}
                   </div>
@@ -456,7 +475,7 @@ export default function DrugCard({ drug }: DrugCardProps) {
                   <GitCompare className="w-5 h-5 text-red-600" />
                   <h3 className="text-lg font-semibold text-gray-800">
                     Drug-Drug Interactions (
-                    {drug.interactions!.drug_interactions!.length})
+                    {drug.interactions!.total_count || drug.interactions!.drug_interactions!.length})
                   </h3>
                 </div>
                 {expandedSections.drugInteractions ? (
@@ -500,7 +519,7 @@ export default function DrugCard({ drug }: DrugCardProps) {
                     {drug.interactions!.drug_interactions!.length > 10 && (
                       <div className="text-center text-gray-500">
                         Showing 10 of{" "}
-                        {drug.interactions!.drug_interactions!.length} drug
+                        {drug.interactions!.total_count || drug.interactions!.drug_interactions!.length} drug
                         interactions
                       </div>
                     )}
@@ -520,8 +539,7 @@ export default function DrugCard({ drug }: DrugCardProps) {
                 <div className="flex items-center gap-3">
                   <Utensils className="w-5 h-5 text-orange-600" />
                   <h3 className="text-lg font-semibold text-gray-800">
-                    Drug-Food Interactions (
-                    {drug.interactions!.food_interactions!.length})
+                    Drug-Food Interactions
                   </h3>
                 </div>
                 {expandedSections.foodInteractions ? (
@@ -558,7 +576,10 @@ export default function DrugCard({ drug }: DrugCardProps) {
                           >
                             <div className="flex items-start gap-3">
                               <AlertOctagon className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
-                              <div className="text-gray-700">{interaction}</div>
+                              <div 
+                                className="text-gray-700 whitespace-pre-line"
+                                dangerouslySetInnerHTML={{ __html: interaction }}
+                              />
                             </div>
                           </div>
                         ),
@@ -570,118 +591,79 @@ export default function DrugCard({ drug }: DrugCardProps) {
             </div>
           )}
 
-          {/* Dosages */}
-          {drug.dosages && (
+          {/* Products */}
+          {hasProducts && (
             <div className="border rounded-xl overflow-hidden">
               <button
-                onClick={() => toggleSection("dosages")}
+                onClick={() => toggleSection("products")}
                 className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-cyan-50 to-teal-50 hover:from-cyan-100 hover:to-teal-100 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <Scale className="w-5 h-5 text-cyan-600" />
+                  <Package className="w-5 h-5 text-cyan-600" />
                   <h3 className="text-lg font-semibold text-gray-800">
-                    Dosage Forms ({drug.dosages.forms.length})
+                    Products ({drug.products!.length})
                   </h3>
                 </div>
-                {expandedSections.dosages ? (
+                {expandedSections.products ? (
                   <ChevronUp className="w-5 h-5 text-cyan-600" />
                 ) : (
                   <ChevronDown className="w-5 h-5 text-cyan-600" />
                 )}
               </button>
-              {expandedSections.dosages && (
+              {expandedSections.products && (
                 <div className="p-6 bg-white">
-                  <div className="space-y-6">
-                    {/* Routes */}
-                    {drug.dosages.routes && drug.dosages.routes.length > 0 && (
-                      <div>
-                        <h4 className="font-semibold text-gray-700 mb-3">
-                          Administration Routes
-                        </h4>
-                        <div className="flex flex-wrap gap-2">
-                          {drug.dosages.routes.map((route, idx) => (
-                            <span
-                              key={idx}
-                              className="px-4 py-2 bg-cyan-100 text-cyan-800 rounded-full font-medium"
-                            >
-                              {route}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Forms */}
-                    {drug.dosages.forms && drug.dosages.forms.length > 0 && (
-                      <div>
-                        <h4 className="font-semibold text-gray-700 mb-3">
-                          Available Forms
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {drug.dosages.forms.map((form, idx) => (
-                            <div
-                              key={idx}
-                              className="p-3 bg-teal-50 border border-teal-200 rounded-lg"
-                            >
-                              <div className="font-medium text-teal-800">
-                                {form}
+                  <div className="space-y-4">
+                    {drug.products!.map((product, idx) => (
+                      <div
+                        key={idx}
+                        className="p-4 bg-teal-50 rounded-lg border border-teal-200"
+                      >
+                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="font-semibold text-teal-800">
+                                {product.name}
+                              </h4>
+                              <span className={`px-2 py-0.5 text-xs rounded-full ${product.approved ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+                                {product.approved ? "Approved" : "Not Approved"}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                              <div>
+                                <span className="text-gray-600">Labeller: </span>
+                                <span className="font-medium">{product.labeller}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">Country: </span>
+                                <span className="font-medium">{product.country}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">Form: </span>
+                                <span className="font-medium">{product.dosage_form}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">Route: </span>
+                                <span className="font-medium">{product.route}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">Strength: </span>
+                                <span className="font-medium">{product.strength}</span>
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Detailed Information */}
-                    {drug.dosages.details &&
-                      drug.dosages.details.length > 0 && (
-                        <div>
-                          <h4 className="font-semibold text-gray-700 mb-3">
-                            Detailed Specifications
-                          </h4>
-                          <div className="space-y-3">
-                            {drug.dosages.details.map((detail, idx) => (
-                              <div
-                                key={idx}
-                                className="p-4 bg-gray-50 rounded-lg border"
-                              >
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                  {detail.form && (
-                                    <div>
-                                      <div className="text-sm text-gray-500">
-                                        Form
-                                      </div>
-                                      <div className="font-medium">
-                                        {detail.form}
-                                      </div>
-                                    </div>
-                                  )}
-                                  {detail.route && (
-                                    <div>
-                                      <div className="text-sm text-gray-500">
-                                        Route
-                                      </div>
-                                      <div className="font-medium">
-                                        {detail.route}
-                                      </div>
-                                    </div>
-                                  )}
-                                  {detail.strength && (
-                                    <div>
-                                      <div className="text-sm text-gray-500">
-                                        Strength
-                                      </div>
-                                      <div className="font-medium">
-                                        {detail.strength}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            <div className="mb-1">
+                              <span className="font-medium">Marketed:</span> {formatDate(product.started_marketing_on)}
+                            </div>
+                            {product.ended_marketing_on && (
+                              <div>
+                                <span className="font-medium">Ended:</span> {formatDate(product.ended_marketing_on)}
                               </div>
-                            ))}
+                            )}
                           </div>
                         </div>
-                      )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -750,12 +732,17 @@ export default function DrugCard({ drug }: DrugCardProps) {
                 <div className="p-6 bg-white">
                   <div className="flex flex-wrap gap-2">
                     {drug.synonyms.map((synonym, idx) => (
-                      <span
+                      <div
                         key={idx}
                         className="px-3 py-2 bg-gradient-to-r from-violet-100 to-purple-100 text-violet-800 rounded-lg font-medium border border-violet-200 hover:from-violet-200 hover:to-purple-200 transition-colors"
                       >
-                        {synonym.name}
-                      </span>
+                        <div className="font-medium">{synonym.name}</div>
+                        {synonym.language && (
+                          <div className="text-xs text-violet-600 mt-1">
+                            {synonym.language} {synonym.coder && `(${synonym.coder})`}
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -804,14 +791,14 @@ export default function DrugCard({ drug }: DrugCardProps) {
                                       {article.citation}
                                     </div>
                                   )}
-                                  {article.pmid && (
+                                  {article["pubmed-id"] && (
                                     <div className="text-sm text-gray-600 mt-1">
-                                      PMID: {article.pmid}
+                                      PubMed ID: {article["pubmed-id"]}
                                     </div>
                                   )}
-                                  {article.doi && (
-                                    <div className="text-sm text-blue-600 mt-1">
-                                      DOI: {article.doi}
+                                  {article["ref-id"] && (
+                                    <div className="text-sm text-gray-600 mt-1">
+                                      Ref ID: {article["ref-id"]}
                                     </div>
                                   )}
                                 </div>
@@ -837,10 +824,15 @@ export default function DrugCard({ drug }: DrugCardProps) {
                                   rel="noopener noreferrer"
                                   className="flex items-center gap-2 p-3 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors group"
                                 >
-                                  <LinkIcon className="w-4 h-4 text-blue-600" />
+                                  <ExternalLink className="w-4 h-4 text-blue-600" />
                                   <span className="text-blue-600 group-hover:text-blue-800 truncate">
                                     {link.title || link.url}
                                   </span>
+                                  {link["ref-id"] && (
+                                    <span className="text-xs text-gray-500 ml-auto">
+                                      {link["ref-id"]}
+                                    </span>
+                                  )}
                                 </a>
                               ))}
                           </div>
@@ -868,16 +860,17 @@ export default function DrugCard({ drug }: DrugCardProps) {
                 <span>{formatDate(drug.updated)}</span>
               </div>
             )}
-            {(hasDrugInteractions || hasFoodInteractions) && (
+            {(hasDrugInteractions || hasFoodInteractions || hasProducts) && (
               <div className="flex items-center gap-2">
                 <ShieldAlert className="w-4 h-4" />
-                <span className="font-semibold">Interactions:</span>
+                <span className="font-semibold">Summary:</span>
                 <span>
                   {hasDrugInteractions &&
-                    `${drug.interactions!.drug_interactions!.length} drug`}
+                    `${drug.interactions!.total_count || drug.interactions!.drug_interactions!.length} drug interactions`}
                   {hasDrugInteractions && hasFoodInteractions && ", "}
                   {hasFoodInteractions &&
-                    `${drug.interactions!.food_interactions!.length} food`}
+                    `${drug.interactions!.food_interactions!.length} food interactions`}
+                  {hasProducts && `${drug.products!.length} products`}
                 </span>
               </div>
             )}
