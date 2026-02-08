@@ -5,7 +5,7 @@ const Hero = () => {
 
     return (
         <section id="home-section">
-            <div className="container mx-auto lg:max-w-screen-xl md:max-w-screen-md px-4 pt-20">
+            <div className="container mx-auto lg:max-w-screen-xl md:max-w-screen-md px-4">
                 <div className='grid grid-cols-1 lg:grid-cols-12 gap-6 items-center'>
                     {/* Left text & input */}
                     <div className='col-span-6 flex flex-col gap-8'>
@@ -43,7 +43,7 @@ const Hero = () => {
                             </div>
                             <div className='flex gap-2'>
                                 <Image src={'images/banner/check-circle.svg'} alt="check" width={30} height={30} className='smallImage' />
-                                <p className='text-sm sm:text-lg font-normal text-black'>Global Community</p>
+                                <p className='text-sm sm:text-lg font-normal text-black'>Fast Calculations</p>
                             </div>
                         </div>
                     </div>

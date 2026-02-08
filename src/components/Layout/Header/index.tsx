@@ -1,4 +1,5 @@
 "use client";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -7,136 +8,129 @@ import Logo from "./Logo";
 import HeaderLink from "../Header/Navigation/HeaderLink";
 import MobileHeaderLink from "../Header/Navigation/MobileHeaderLink";
 
-import { useTheme } from "next-themes";
-
 const Header: React.FC = () => {
   const pathUrl = usePathname();
-  const { theme, setTheme } = useTheme();
 
   const [navbarOpen, setNavbarOpen] = useState(false);
   const [sticky, setSticky] = useState(false);
-  const [isSignInOpen, setIsSignInOpen] = useState(false);
-  const [isSignUpOpen, setIsSignUpOpen] = useState(false);
 
-  const navbarRef = useRef<HTMLDivElement>(null);
-  const signInRef = useRef<HTMLDivElement>(null);
-  const signUpRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
-  const handleScroll = () => {
-    setSticky(window.scrollY >= 80);
-  };
-
-  const handleClickOutside = (event: MouseEvent) => {
-    if (
-      signInRef.current &&
-      !signInRef.current.contains(event.target as Node)
-    ) {
-      setIsSignInOpen(false);
-    }
-    if (
-      signUpRef.current &&
-      !signUpRef.current.contains(event.target as Node)
-    ) {
-      setIsSignUpOpen(false);
-    }
-    if (
-      mobileMenuRef.current &&
-      !mobileMenuRef.current.contains(event.target as Node) &&
-      navbarOpen
-    ) {
-      setNavbarOpen(false);
-    }
-  };
-
+  // sticky header
   useEffect(() => {
-    window.addEventListener("scroll", handleScroll);
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      document.removeEventListener("mousedown", handleClickOutside);
+    const onScroll = () => setSticky(window.scrollY >= 80);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // click outside mobile drawer
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        navbarOpen &&
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(e.target as Node)
+      ) {
+        setNavbarOpen(false);
+      }
     };
-  }, [navbarOpen, isSignInOpen, isSignUpOpen]);
 
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [navbarOpen]);
+
+  // lock scroll when drawer open
   useEffect(() => {
-    if (isSignInOpen || isSignUpOpen || navbarOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-  }, [isSignInOpen, isSignUpOpen, navbarOpen]);
+    document.body.style.overflow = navbarOpen ? "hidden" : "";
+  }, [navbarOpen]);
 
   return (
-    <header
-      className={`top-0 z-40 w-full pb-2 transition-all duration-300 bg-white/60 backdrop-blur-md border border-white/30  ${sticky ? "fixed shadow-lg py-3" : "shadow-none py-3"
-        }`}
-    >
-      <div className="lg:py-0 py-2">
-        <div className="container mx-auto lg:max-w-screen-2xl md:max-w-screen-md flex items-center justify-between px-4">
+    <>
+      {/* HEADER */}
+      <header
+        className={`top-0 w-full z-40 transition-all duration-300
+        bg-white/70 backdrop-blur border-b border-white/40
+        ${sticky ? "shadow-md fixed" : ""}`}
+      >
+        <div className="max-w-screen-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <Logo />
-          <nav className="hidden lg:flex flex-grow items-center gap-8 justify-center">
-            {headerData.map((item, index) => (
-              <HeaderLink key={index} item={item} />
+
+          {/* Desktop nav */}
+          <nav className="hidden lg:flex gap-8 items-center">
+            {headerData.map((item, i) => (
+              <HeaderLink key={i} item={item} />
             ))}
           </nav>
+
+          {/* Actions */}
           <div className="flex items-center gap-4">
             <Link
               href="#"
-              className="hidden lg:block bg-primary text-white hover:bg-primary/15 hover:text-primary px-16 py-5 rounded-full text-lg font-medium"
+              className="hidden lg:block bg-primary text-white px-6 py-3 rounded-full font-medium hover:opacity-90"
             >
               Expert AI Guide
             </Link>
+
+            {/* mobile toggle */}
             <button
-              onClick={() => setNavbarOpen(!navbarOpen)}
-              className="block lg:hidden p-2 rounded-lg"
-              aria-label="Toggle mobile menu"
+              onClick={() => setNavbarOpen(true)}
+              className="lg:hidden p-2"
+              aria-label="Open menu"
             >
-              <span className="block w-6 h-0.5 bg-black"></span>
-              <span className="block w-6 h-0.5 bg-black mt-1.5"></span>
-              <span className="block w-6 h-0.5 bg-black mt-1.5"></span>
+              <div className="space-y-1">
+                <span className="block w-6 h-0.5 bg-black" />
+                <span className="block w-6 h-0.5 bg-black" />
+                <span className="block w-6 h-0.5 bg-black" />
+              </div>
             </button>
           </div>
         </div>
-        {navbarOpen && (
-          <div className="fixed top-0 left-0 w-full h-full  z-40" />
-        )}
-        <div
-          ref={mobileMenuRef}
-          className={`lg:hidden fixed top-0 right-0 h-full w-full bg-white shadow-lg transform transition-transform duration-300 max-w-xs ${navbarOpen ? "translate-x-0" : "translate-x-full"
-            } z-50`}
-        >
-          <div className="flex items-center justify-between p-4">
-            <h2 className="text-lg font-bold text-midnight_text dark:text-midnight_text">
-              <Logo />
-            </h2>
+      </header>
 
-            {/*  */}
-            <button
-              onClick={() => setNavbarOpen(false)}
-              className="bg-[url('/images/closed.svg')] bg-no-repeat bg-contain w-5 h-5 absolute top-0 right-0 mr-8 mt-8 dark:invert"
-              aria-label="Close menu Modal"
-            ></button>
-          </div>
-          <nav className="flex flex-col items-start p-4 bg-white">
-            {headerData.map((item, index) => (
-              <MobileHeaderLink key={index} item={item} />
-            ))}
-            <div className="mt-4 flex flex-col space-y-4 w-full">
-              <Link
-                href="#"
-                className="bg-transparent border border-primary text-primary px-4 py-2 rounded-lg hover:bg-blue-600 hover:text-white"
-                onClick={() => {
-                  setIsSignInOpen(true);
-                  setNavbarOpen(false);
-                }}
-              >
-                Get the App
-              </Link>
-            </div>
-          </nav>
+      {/* OVERLAY */}
+      <div
+        className={`fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity z-40
+        ${navbarOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        onClick={() => setNavbarOpen(false)}
+      />
+
+      {/* MOBILE DRAWER */}
+      <aside
+        ref={mobileMenuRef}
+        className={`fixed top-0 right-0 h-full w-80 max-w-[85%] bg-white z-50
+        shadow-xl transition-transform duration-300
+        ${navbarOpen ? "translate-x-0" : "translate-x-full"}`}
+      >
+        <div className="flex justify-between items-center p-4 border-b">
+          <Logo />
+          <button
+            onClick={() => setNavbarOpen(false)}
+            className="text-xl"
+            aria-label="Close menu"
+          >
+            ✕
+          </button>
         </div>
-      </div>
-    </header>
+
+        <nav className="p-4 flex flex-col gap-4">
+          {headerData.map((item, i) => (
+            <div key={i} onClick={() => setNavbarOpen(false)}>
+              <MobileHeaderLink
+                item={item}
+              />
+            </div>
+          ))}
+
+          <Link
+            href="#"
+            className="mt-4 border border-primary text-primary px-4 py-2 rounded-lg text-center hover:bg-primary hover:text-white"
+            onClick={() => setNavbarOpen(false)}
+          >
+            Get the App
+          </Link>
+        </nav>
+      </aside>
+    </>
   );
 };
 

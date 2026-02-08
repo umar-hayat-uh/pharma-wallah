@@ -333,4 +333,38 @@ export const pharmaCo: Tool[] = [
       },
     ],
   },
+  {
+    id: "unit-conversion",
+    heading: "Unit Conversion",
+    h_description:
+      "Tools for drug formulation, molecular calculations, and chemical analysis",
+    icon: "🏥",
+    gradient: "from-blue-600 to-green-500",
+    tools: [
+      {
+        name: "MassConversionCalculator",
+        link: "/calculation-tools/MassConversionCalculator",
+      },
+      {
+        name: "VolumeConversionCalculator",
+        link: "/calculation-tools/VolumeConversionCalculator",
+      },
+      {
+        name: "ElectrolyteConversionCalculator",
+        link: "/calculation-tools/ElectrolyteConversionCalculator",
+      },
+      {
+        name: "TemperatureConversionCalculator",
+        link: "/calculation-tools/TemperatureConversionCalculator",
+      },
+       {
+        name: "StrengthConversionCalculator",
+        link: "/calculation-tools/StrengthConversionCalculator",
+      },
+       {
+        name: "DensityConversionCalculator",
+        link: "/calculation-tools/DensityConversionCalculator",
+      }
+    ],
+  },
 ];

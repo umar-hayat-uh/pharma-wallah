@@ -6,7 +6,7 @@ export const metadata: Metadata = {
 };
 export default function Home() {
     return (
-        <section className="min-h-screen bg-gradient-to-b from-slate-50 to-gray-100">
+        <section className="min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 p-0">
             {/* Hero Section */}
             <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-green-500">
                 <svg className="absolute inset-0 opacity-20" width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" fill="none" fillRule="evenodd">
