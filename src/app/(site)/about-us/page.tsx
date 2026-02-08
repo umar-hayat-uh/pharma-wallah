@@ -185,7 +185,7 @@ export default function AboutUs() {
                       </p>
                       <div className="flex items-center gap-2 text-white/80">
                         <Award className="w-4 h-4" />
-                        <span className="text-sm">Batch { member.batch }</span>
+                        <span className="text-sm">Batch hehe {':)'}</span>
                       </div>
                     </div>
                   </div>
