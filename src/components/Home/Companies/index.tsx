@@ -135,11 +135,11 @@ const Companies = () => {
         <section className='text-center bg-gradient-to-b from-blue-50 to-white py-12'>
             <div className="container mx-auto lg:max-w-screen-xl md:max-w-screen-md px-4">
                 <div className="mb-4 flex items-center justify-center gap-3">
-                    <Pill className="w-8 h-8 text-blue-600" />
+                    
                     <h2 className="text-midnight_text text-3xl font-bold">
                         Explore Core Areas of Pharmacy & Pharmaceutical Sciences
                     </h2>
-                    <Droplets className="w-8 h-8 text-blue-600" />
+                   
                 </div>
                 <p className="text-gray-600 mb-10 text-lg">
                     Comprehensive coverage of all pharmaceutical disciplines

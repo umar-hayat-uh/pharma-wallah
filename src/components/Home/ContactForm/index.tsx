@@ -470,13 +470,13 @@ const ContactForm = () => {
           </div>
           
           <div className="text-center mt-8">
-            {/* <a 
-              href="/faq" 
+            <a 
+              href="/faqs" 
               className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
             >
               View all FAQs
               <span className="text-lg">→</span>
-            </a> */}
+            </a>
           </div>
         </motion.div>
       </div>
