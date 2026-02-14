@@ -357,14 +357,59 @@ export const pharmaCo: Tool[] = [
         name: "TemperatureConversionCalculator",
         link: "/calculation-tools/TemperatureConversionCalculator",
       },
-       {
+      {
         name: "StrengthConversionCalculator",
         link: "/calculation-tools/StrengthConversionCalculator",
       },
-       {
+      {
         name: "DensityConversionCalculator",
         link: "/calculation-tools/DensityConversionCalculator",
-      }
+      },
+      {
+        name: "InsulinSensitivityCalculator",
+        link: "/calculation-tools/InsulinSensitivityCalculator",
+      },
+      {
+        name: "CorrectedCalciumCalculator",
+        link: "/calculation-tools/CorrectedCalciumCalculator",
+      },
+       {
+        name: "SodiumCorrectionCalculator",
+        link: "/calculation-tools/SodiumCorrectionCalculator",
+      },
+       {
+        name: "AnionGapCalculator",
+        link: "/calculation-tools/AnionGapCalculator",
+      },
+      {
+        name: "LogReductionCalculator",
+        link: "/calculation-tools/LogReductionCalculator",
+      },
+      {
+        name: "FValueCalculator",
+        link: "/calculation-tools/FValueCalculator",
+      },
+      {
+        name: "DValueCalculator",
+        link: "/calculation-tools/DValueCalculator",
+      },
+      {
+        name: "MeanResidenceTimeCalculator",
+        link: "/calculation-tools/MeanResidenceTimeCalculator",
+      },
+      {
+        name: "AccumulationIndexCalculator",
+        link: "/calculation-tools/AccumulationIndexCalculator",
+      },
+      {
+        name: "EmaxModelCalculator",
+        link: "/calculation-tools/EmaxModelCalculator",
+      },
+      {
+        name: "AntagonismSimulator",
+        link: "/calculation-tools/AntagonismSimulator",
+      },
     ],
+    
   },
 ];

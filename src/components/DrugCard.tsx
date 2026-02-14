@@ -1,4 +1,3 @@
-// components/DrugCard.tsx
 "use client";
 
 import { useState } from "react";
@@ -13,19 +12,18 @@ import {
   Calendar,
   Tag,
   AlertCircle,
-  TestTube,
-  Droplets,
-  Brain,
-  ShieldAlert,
-  Scale,
   History,
-  Cpu,
-  AlertTriangle,
-  Beaker,
-  Utensils,
-  AlertOctagon,
   GitCompare,
+  Utensils,
   Apple,
+  AlertOctagon,
+  Scale,
+  Package,
+  Building2,
+  Globe,
+  CheckCircle2,
+  XCircle,
+  ShieldAlert,
 } from "lucide-react";
 
 interface DrugCardProps {
@@ -106,6 +104,23 @@ interface DrugCardProps {
         url?: string;
       }>;
     };
+    products?: Array<{
+      name: string;
+      labeller: string;
+      ndc_id: string | null;
+      ndc_product_code: string | null;
+      dosage_form: string;
+      strength: string;
+      route: string;
+      fda_application_number: string | null;
+      generic: boolean;
+      over_the_counter: boolean;
+      approved: boolean;
+      country: string;
+      source: string;
+      started_marketing_on: string | null;
+      ended_marketing_on: string | null;
+    }>;
   };
 }
 
@@ -121,6 +136,7 @@ export default function DrugCard({ drug }: DrugCardProps) {
     drugInteractions: false,
     foodInteractions: false,
     dosages: false,
+    products: false,
   });
 
   const toggleSection = (section: keyof typeof expandedSections) => {
@@ -173,6 +189,7 @@ export default function DrugCard({ drug }: DrugCardProps) {
   const hasFoodInteractions =
     drug.interactions?.food_interactions &&
     drug.interactions.food_interactions.length > 0;
+  const hasProducts = drug.products && drug.products.length > 0;
 
   return (
     <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-200 overflow-hidden">
@@ -445,6 +462,137 @@ export default function DrugCard({ drug }: DrugCardProps) {
             </div>
           )}
 
+          {/* Products Section */}
+          {hasProducts && (
+            <div className="border rounded-xl overflow-hidden">
+              <button
+                onClick={() => toggleSection("products")}
+                className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-indigo-50 to-blue-50 hover:from-indigo-100 hover:to-blue-100 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Package className="w-5 h-5 text-indigo-600" />
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Products ({drug.products!.length})
+                  </h3>
+                </div>
+                {expandedSections.products ? (
+                  <ChevronUp className="w-5 h-5 text-indigo-600" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-indigo-600" />
+                )}
+              </button>
+              {expandedSections.products && (
+                <div className="p-6 bg-white">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {drug.products!.map((product, idx) => (
+                      <div
+                        key={idx}
+                        className="p-4 bg-gradient-to-br from-white to-indigo-50 border border-indigo-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        {/* Product header */}
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <div className="font-bold text-gray-800">
+                              {product.name}
+                            </div>
+                            <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">
+                              <Building2 className="w-3 h-3" />
+                              <span>{product.labeller}</span>
+                            </div>
+                          </div>
+                          {product.approved ? (
+                            <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                              Approved
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
+                              <XCircle className="w-3 h-3 mr-1" />
+                              Unapproved
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Dosage & route */}
+                        <div className="space-y-2 text-sm">
+                          <div className="flex flex-wrap gap-2">
+                            <span className="px-2 py-1 bg-indigo-100 text-indigo-800 rounded-md">
+                              {product.dosage_form}
+                            </span>
+                            <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md">
+                              {product.strength}
+                            </span>
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md">
+                              {product.route}
+                            </span>
+                          </div>
+
+                          {/* Country & source */}
+                          <div className="flex items-center gap-3 text-gray-600">
+                            <div className="flex items-center gap-1">
+                              <Globe className="w-3 h-3" />
+                              <span>{product.country}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs bg-gray-200 px-2 py-0.5 rounded-full">
+                                {product.source}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Marketing dates */}
+                          <div className="text-xs text-gray-500 border-t border-indigo-100 pt-2 mt-2">
+                            {product.started_marketing_on && (
+                              <div>
+                                <span className="font-medium">Started:</span>{" "}
+                                {formatDate(product.started_marketing_on)}
+                              </div>
+                            )}
+                            {product.ended_marketing_on && (
+                              <div>
+                                <span className="font-medium">Ended:</span>{" "}
+                                {formatDate(product.ended_marketing_on)}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Flags */}
+                          <div className="flex gap-2 text-xs">
+                            {product.generic && (
+                              <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">
+                                Generic
+                              </span>
+                            )}
+                            {product.over_the_counter && (
+                              <span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                                OTC
+                              </span>
+                            )}
+                          </div>
+
+                          {/* NDC / FDA numbers */}
+                          {(product.ndc_product_code ||
+                            product.fda_application_number) && (
+                            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded mt-2">
+                              {product.ndc_product_code && (
+                                <div>NDC: {product.ndc_product_code}</div>
+                              )}
+                              {product.fda_application_number && (
+                                <div>
+                                  FDA App#: {product.fda_application_number}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Drug-Drug Interactions */}
           {hasDrugInteractions && (
             <div className="border rounded-xl overflow-hidden">
@@ -592,7 +740,6 @@ export default function DrugCard({ drug }: DrugCardProps) {
               {expandedSections.dosages && (
                 <div className="p-6 bg-white">
                   <div className="space-y-6">
-                    {/* Routes */}
                     {drug.dosages.routes && drug.dosages.routes.length > 0 && (
                       <div>
                         <h4 className="font-semibold text-gray-700 mb-3">
@@ -611,7 +758,6 @@ export default function DrugCard({ drug }: DrugCardProps) {
                       </div>
                     )}
 
-                    {/* Forms */}
                     {drug.dosages.forms && drug.dosages.forms.length > 0 && (
                       <div>
                         <h4 className="font-semibold text-gray-700 mb-3">
@@ -632,7 +778,6 @@ export default function DrugCard({ drug }: DrugCardProps) {
                       </div>
                     )}
 
-                    {/* Detailed Information */}
                     {drug.dosages.details &&
                       drug.dosages.details.length > 0 && (
                         <div>

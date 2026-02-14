@@ -5,10 +5,13 @@ import { Calculator, Droplets, Scale, RefreshCw, Beaker, Zap } from 'lucide-reac
 type SubstanceType = 'solid' | 'liquid';
 type VolumeUnit = 'mL' | 'L' | 'μL';
 type MassUnit = 'g' | 'mg' | 'μg';
+type CalculationMode = 'concentration' | 'amount';
 
 export default function MolarityCalculator() {
+  const [calculationMode, setCalculationMode] = useState<CalculationMode>('concentration');
   const [substanceType, setSubstanceType] = useState<SubstanceType>('solid');
-  const [amount, setAmount] = useState<string>('1');
+  const [amount, setAmount] = useState<string>('1');               // used when mode = concentration
+  const [targetMolarity, setTargetMolarity] = useState<string>('1'); // used when mode = amount
   const [molecularWeight, setMolecularWeight] = useState<string>('58.44');
   const [volume, setVolume] = useState<string>('1');
   const [specificGravity, setSpecificGravity] = useState<string>('1.0');
@@ -16,6 +19,7 @@ export default function MolarityCalculator() {
   const [volumeUnit, setVolumeUnit] = useState<VolumeUnit>('L');
   const [massUnit, setMassUnit] = useState<MassUnit>('g');
   const [molarity, setMolarity] = useState<number | null>(null);
+  const [requiredAmount, setRequiredAmount] = useState<number | null>(null);
   const [showFormula, setShowFormula] = useState(false);
 
   const volumeUnits: { unit: VolumeUnit; conversion: number }[] = [
@@ -31,40 +35,63 @@ export default function MolarityCalculator() {
   ];
 
   const calculateMolarity = () => {
-    const amountVal = parseFloat(amount);
     const mw = parseFloat(molecularWeight);
     const vol = parseFloat(volume);
     const sg = parseFloat(specificGravity);
     const pur = parseFloat(purity);
-    
-    if (!isNaN(amountVal) && !isNaN(mw) && !isNaN(vol) && 
-        amountVal > 0 && mw > 0 && vol > 0 && sg > 0 && pur >= 0 && pur <= 100) {
-      
-      let result;
-      
+
+    if (isNaN(mw) || mw <= 0 || isNaN(vol) || vol <= 0 || sg <= 0 || pur < 0 || pur > 100) {
+      setMolarity(null);
+      setRequiredAmount(null);
+      return;
+    }
+
+    const volumeInLiters = vol * volumeUnits.find(u => u.unit === volumeUnit)!.conversion;
+
+    if (calculationMode === 'concentration') {
+      // Calculate molarity from given amount
+      const amountVal = parseFloat(amount);
+      if (isNaN(amountVal) || amountVal <= 0) {
+        setMolarity(null);
+        return;
+      }
+
+      let result: number;
       if (substanceType === 'solid') {
-        // Convert mass to grams
         const massInGrams = amountVal * massUnits.find(u => u.unit === massUnit)!.conversion;
-        // Convert volume to liters
-        const volumeInLiters = vol * volumeUnits.find(u => u.unit === volumeUnit)!.conversion;
-        
-        // Formula: M = (mass in g) / (MW × volume in L)
         result = massInGrams / (mw * volumeInLiters);
       } else {
-        // For liquids: M = (A × sg × purity%) / (MW × V)
-        const volumeInLiters = vol * volumeUnits.find(u => u.unit === volumeUnit)!.conversion;
         result = (amountVal * sg * (pur / 100)) / (mw * volumeInLiters);
       }
-      
       setMolarity(result);
+      setRequiredAmount(null);
     } else {
-      setMolarity(null);
+      // Calculate required amount to achieve target molarity
+      const targetM = parseFloat(targetMolarity);
+      if (isNaN(targetM) || targetM <= 0) {
+        setRequiredAmount(null);
+        return;
+      }
+
+      if (substanceType === 'solid') {
+        // Solve for mass in grams
+        const massInGrams = targetM * mw * volumeInLiters;
+        setRequiredAmount(massInGrams);
+        setMolarity(targetM); // for display
+      } else {
+        // Solve for volume of liquid (A) in mL
+        const volumeLiquid = (targetM * mw * volumeInLiters) / (sg * (pur / 100));
+        setRequiredAmount(volumeLiquid);
+        setMolarity(targetM);
+      }
     }
   };
 
   const resetCalculator = () => {
+    setCalculationMode('concentration');
     setSubstanceType('solid');
     setAmount('1');
+    setTargetMolarity('1');
     setMolecularWeight('58.44');
     setVolume('1');
     setSpecificGravity('1.0');
@@ -72,6 +99,7 @@ export default function MolarityCalculator() {
     setVolumeUnit('L');
     setMassUnit('g');
     setMolarity(null);
+    setRequiredAmount(null);
   };
 
   const getMolarityInterpretation = (value: number) => {
@@ -86,7 +114,10 @@ export default function MolarityCalculator() {
 
   useEffect(() => {
     calculateMolarity();
-  }, [substanceType, amount, molecularWeight, volume, specificGravity, purity, volumeUnit, massUnit]);
+  }, [
+    calculationMode, substanceType, amount, targetMolarity, molecularWeight,
+    volume, specificGravity, purity, volumeUnit, massUnit
+  ]);
 
   return (
     <section className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4 md:p-6 mt-16 md:mt-20">
@@ -100,7 +131,7 @@ export default function MolarityCalculator() {
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-white">Molarity Calculator</h1>
-                <p className="text-purple-100 mt-2">Calculate molar concentration for solids and liquids</p>
+                <p className="text-purple-100 mt-2">Calculate molarity or required amount for solution preparation</p>
               </div>
             </div>
             <div className="flex items-center space-x-2 bg-white/20 px-4 py-2 rounded-lg">
@@ -118,26 +149,55 @@ export default function MolarityCalculator() {
               Calculation Parameters
             </h2>
 
+            {/* Calculation Mode Toggle */}
+            <div className="bg-gray-50 rounded-xl p-4 mb-6">
+              <h3 className="font-semibold text-gray-800 mb-3">I want to calculate</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setCalculationMode('concentration')}
+                  className={`py-3 rounded-lg transition-all ${
+                    calculationMode === 'concentration'
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white'
+                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Molarity from amount
+                </button>
+                <button
+                  onClick={() => setCalculationMode('amount')}
+                  className={`py-3 rounded-lg transition-all ${
+                    calculationMode === 'amount'
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white'
+                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Amount from target molarity
+                </button>
+              </div>
+            </div>
+
             {/* Substance Type Selection */}
             <div className="bg-gray-50 rounded-xl p-4 mb-6">
               <h3 className="font-semibold text-gray-800 mb-3">Substance Type</h3>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setSubstanceType('solid')}
-                  className={`py-3 rounded-lg transition-all flex flex-col items-center ${substanceType === 'solid' ?
-                    'bg-gradient-to-r from-purple-600 to-pink-500 text-white' :
-                    'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
+                  className={`py-3 rounded-lg transition-all flex flex-col items-center ${
+                    substanceType === 'solid'
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white'
+                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
                 >
                   <Scale className="w-5 h-5 mb-1" />
                   <span>Solid</span>
                 </button>
                 <button
                   onClick={() => setSubstanceType('liquid')}
-                  className={`py-3 rounded-lg transition-all flex flex-col items-center ${substanceType === 'liquid' ?
-                    'bg-gradient-to-r from-purple-600 to-pink-500 text-white' :
-                    'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
+                  className={`py-3 rounded-lg transition-all flex flex-col items-center ${
+                    substanceType === 'liquid'
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white'
+                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
                 >
                   <Droplets className="w-5 h-5 mb-1" />
                   <span>Liquid</span>
@@ -164,8 +224,9 @@ export default function MolarityCalculator() {
                 </div>
               </div>
 
-              {substanceType === 'solid' ? (
-                <>
+              {calculationMode === 'concentration' ? (
+                // Input: amount of substance
+                substanceType === 'solid' ? (
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Amount of Solid
@@ -177,14 +238,14 @@ export default function MolarityCalculator() {
                           step="0.001"
                           value={amount}
                           onChange={(e) => setAmount(e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none"
+                          className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg"
                           placeholder="e.g., 1"
                         />
                       </div>
                       <select
                         value={massUnit}
                         onChange={(e) => setMassUnit(e.target.value as MassUnit)}
-                        className="px-4 py-3 border-2 border-purple-200 rounded-lg bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none"
+                        className="px-4 py-3 border-2 border-purple-200 rounded-lg bg-white"
                       >
                         {massUnits.map((unit) => (
                           <option key={unit.unit} value={unit.unit}>{unit.unit}</option>
@@ -192,9 +253,7 @@ export default function MolarityCalculator() {
                       </select>
                     </div>
                   </div>
-                </>
-              ) : (
-                <>
+                ) : (
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Amount of Liquid
@@ -205,52 +264,72 @@ export default function MolarityCalculator() {
                         step="0.001"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none"
+                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg"
                         placeholder="e.g., 1"
                       />
                       <div className="absolute right-3 top-3 text-gray-500">mL</div>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">Volume of pure liquid (before dilution)</p>
                   </div>
+                )
+              ) : (
+                // Input: target molarity
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Target Molarity (M)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.001"
+                      value={targetMolarity}
+                      onChange={(e) => setTargetMolarity(e.target.value)}
+                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg"
+                      placeholder="e.g., 1"
+                    />
+                    <div className="absolute right-3 top-3 text-gray-500">mol/L</div>
+                  </div>
+                </div>
+              )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Specific Gravity (sg)
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          step="0.001"
-                          value={specificGravity}
-                          onChange={(e) => setSpecificGravity(e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none"
-                          placeholder="e.g., 1.0"
-                        />
-                        <div className="absolute right-3 top-3 text-gray-500">g/mL</div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Purity (%)
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          max="100"
-                          value={purity}
-                          onChange={(e) => setPurity(e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none"
-                          placeholder="e.g., 100"
-                        />
-                        <div className="absolute right-3 top-3 text-gray-500">%</div>
-                      </div>
+              {substanceType === 'liquid' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Specific Gravity (sg)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.001"
+                        value={specificGravity}
+                        onChange={(e) => setSpecificGravity(e.target.value)}
+                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg"
+                        placeholder="e.g., 1.0"
+                      />
+                      <div className="absolute right-3 top-3 text-gray-500">g/mL</div>
                     </div>
                   </div>
-                </>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Purity (%)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        value={purity}
+                        onChange={(e) => setPurity(e.target.value)}
+                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg"
+                        placeholder="e.g., 100"
+                      />
+                      <div className="absolute right-3 top-3 text-gray-500">%</div>
+                    </div>
+                  </div>
+                </div>
               )}
 
               <div>
@@ -264,14 +343,14 @@ export default function MolarityCalculator() {
                       step="0.001"
                       value={volume}
                       onChange={(e) => setVolume(e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none"
+                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg"
                       placeholder="e.g., 1"
                     />
                   </div>
                   <select
                     value={volumeUnit}
                     onChange={(e) => setVolumeUnit(e.target.value as VolumeUnit)}
-                    className="px-4 py-3 border-2 border-purple-200 rounded-lg bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none"
+                    className="px-4 py-3 border-2 border-purple-200 rounded-lg bg-white"
                   >
                     {volumeUnits.map((unit) => (
                       <option key={unit.unit} value={unit.unit}>{unit.unit}</option>
@@ -314,6 +393,14 @@ export default function MolarityCalculator() {
                       )}
                       <p><span className="font-semibold">V:</span> Final volume (convert to liters)</p>
                     </div>
+                    {calculationMode === 'amount' && (
+                      <div className="mt-2 p-2 bg-purple-50 rounded text-sm">
+                        <span className="font-semibold">To find required amount:</span><br />
+                        {substanceType === 'solid'
+                          ? `Mass (g) = M_target × MW × V(L)`
+                          : `Volume (mL) = (M_target × MW × V(L)) / (sg × purity%)`}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -324,7 +411,7 @@ export default function MolarityCalculator() {
                   onClick={calculateMolarity}
                   className="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
-                  Calculate Molarity
+                  Calculate
                 </button>
                 <button
                   onClick={resetCalculator}
@@ -343,33 +430,57 @@ export default function MolarityCalculator() {
             <div className="bg-gradient-to-br from-purple-600 to-pink-500 rounded-2xl shadow-xl p-6 md:p-8 text-white">
               <h2 className="text-2xl font-bold mb-6 flex items-center">
                 <Beaker className="w-7 h-7 mr-3" />
-                Molarity Result
+                {calculationMode === 'concentration' ? 'Molarity Result' : 'Required Amount'}
               </h2>
 
               <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 mb-6">
                 <div className="text-center">
-                  <div className="text-sm font-semibold text-purple-100 mb-2">
-                    Molar Concentration
-                  </div>
-                  {molarity !== null ? (
+                  {calculationMode === 'concentration' ? (
                     <>
-                      <div className="text-5xl md:text-6xl font-bold mb-2">
-                        {molarity < 0.001 ? molarity.toExponential(3) : molarity.toFixed(4)}
+                      <div className="text-sm font-semibold text-purple-100 mb-2">
+                        Molar Concentration
                       </div>
-                      <div className="text-2xl font-semibold">
-                        mol/L (M)
-                      </div>
+                      {molarity !== null ? (
+                        <>
+                          <div className="text-5xl md:text-6xl font-bold mb-2">
+                            {molarity < 0.001 ? molarity.toExponential(3) : molarity.toFixed(4)}
+                          </div>
+                          <div className="text-2xl font-semibold">
+                            mol/L (M)
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-3xl font-bold text-purple-100">
+                          Enter Values
+                        </div>
+                      )}
                     </>
                   ) : (
-                    <div className="text-3xl font-bold text-purple-100">
-                      Enter Values
-                    </div>
+                    <>
+                      <div className="text-sm font-semibold text-purple-100 mb-2">
+                        {substanceType === 'solid' ? 'Required Mass' : 'Required Volume'}
+                      </div>
+                      {requiredAmount !== null ? (
+                        <>
+                          <div className="text-5xl md:text-6xl font-bold mb-2">
+                            {requiredAmount.toFixed(4)}
+                          </div>
+                          <div className="text-2xl font-semibold">
+                            {substanceType === 'solid' ? 'g' : 'mL'}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-3xl font-bold text-purple-100">
+                          Enter Values
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
 
-              {/* Alternative Units */}
-              {molarity !== null && (
+              {/* Alternative Units (only when showing molarity) */}
+              {calculationMode === 'concentration' && molarity !== null && (
                 <div className="grid grid-cols-3 gap-3 mb-4">
                   <div className="bg-white/10 rounded-lg p-3 text-center">
                     <div className="text-xs opacity-80">mM</div>
@@ -385,10 +496,19 @@ export default function MolarityCalculator() {
                   </div>
                 </div>
               )}
+
+              {/* Interpretation (only when showing molarity) */}
+              {calculationMode === 'concentration' && molarity !== null && (
+                <div className="bg-white/10 rounded-lg p-4">
+                  <p className="text-sm text-purple-100">
+                    <span className="font-semibold">Interpretation:</span> {getMolarityInterpretation(molarity)}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Calculation Details */}
-            {molarity !== null && (
+            {(molarity !== null || requiredAmount !== null) && (
               <div className="bg-white rounded-2xl shadow-lg p-6">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Calculation Details</h3>
                 <div className="space-y-4">
@@ -399,16 +519,26 @@ export default function MolarityCalculator() {
                     </div>
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <div className="text-xs text-gray-500">Final Volume</div>
-                      <div className="font-semibold">{volume} {volumeUnit} = {(parseFloat(volume) * volumeUnits.find(u => u.unit === volumeUnit)!.conversion).toFixed(4)} L</div>
+                      <div className="font-semibold">
+                        {volume} {volumeUnit} = {(parseFloat(volume) * volumeUnits.find(u => u.unit === volumeUnit)!.conversion).toFixed(4)} L
+                      </div>
                     </div>
                   </div>
                   
                   <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-                    <div className="text-center font-mono text-sm">
-                      {substanceType === 'solid' 
-                        ? `M = (${amount} ${massUnit} = ${(parseFloat(amount) * massUnits.find(u => u.unit === massUnit)!.conversion).toFixed(4)} g) / (${molecularWeight} × ${(parseFloat(volume) * volumeUnits.find(u => u.unit === volumeUnit)!.conversion).toFixed(4)})`
-                        : `M = (${amount} × ${specificGravity} × ${purity}%) / (${molecularWeight} × ${(parseFloat(volume) * volumeUnits.find(u => u.unit === volumeUnit)!.conversion).toFixed(4)})`}
-                    </div>
+                    {calculationMode === 'concentration' ? (
+                      <div className="text-center font-mono text-sm">
+                        {substanceType === 'solid' 
+                          ? `M = (${amount} ${massUnit} = ${(parseFloat(amount) * massUnits.find(u => u.unit === massUnit)!.conversion).toFixed(4)} g) / (${molecularWeight} × ${(parseFloat(volume) * volumeUnits.find(u => u.unit === volumeUnit)!.conversion).toFixed(4)})`
+                          : `M = (${amount} × ${specificGravity} × ${purity}%) / (${molecularWeight} × ${(parseFloat(volume) * volumeUnits.find(u => u.unit === volumeUnit)!.conversion).toFixed(4)})`}
+                      </div>
+                    ) : (
+                      <div className="text-center font-mono text-sm">
+                        {substanceType === 'solid'
+                          ? `Mass (g) = ${targetMolarity} × ${molecularWeight} × ${(parseFloat(volume) * volumeUnits.find(u => u.unit === volumeUnit)!.conversion).toFixed(4)}`
+                          : `Volume (mL) = (${targetMolarity} × ${molecularWeight} × ${(parseFloat(volume) * volumeUnits.find(u => u.unit === volumeUnit)!.conversion).toFixed(4)}) / (${specificGravity} × ${purity}%)`}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

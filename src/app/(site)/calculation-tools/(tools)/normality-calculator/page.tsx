@@ -5,6 +5,7 @@ import { Calculator, Scale, Droplets, RefreshCw, Beaker, Zap, AlertCircle } from
 type SubstanceType = 'solid' | 'liquid';
 type VolumeUnit = 'mL' | 'L' | 'μL';
 type MassUnit = 'g' | 'mg' | 'μg';
+type CalculationMode = 'concentration' | 'amount';
 
 interface Chemical {
   name: string;
@@ -15,8 +16,10 @@ interface Chemical {
 }
 
 export default function NormalityCalculator() {
+  const [calculationMode, setCalculationMode] = useState<CalculationMode>('concentration');
   const [substanceType, setSubstanceType] = useState<SubstanceType>('solid');
-  const [amount, setAmount] = useState<string>('1');
+  const [amount, setAmount] = useState<string>('1'); // used when mode = concentration
+  const [targetNormality, setTargetNormality] = useState<string>('1'); // used when mode = amount
   const [eqWeight, setEqWeight] = useState<string>('36.46');
   const [volume, setVolume] = useState<string>('1');
   const [specificGravity, setSpecificGravity] = useState<string>('1.0');
@@ -24,6 +27,7 @@ export default function NormalityCalculator() {
   const [volumeUnit, setVolumeUnit] = useState<VolumeUnit>('L');
   const [massUnit, setMassUnit] = useState<MassUnit>('g');
   const [normality, setNormality] = useState<number | null>(null);
+  const [requiredAmount, setRequiredAmount] = useState<number | null>(null);
   const [showFormula, setShowFormula] = useState(false);
   const [selectedChemical, setSelectedChemical] = useState<Chemical | null>(null);
   const [calculateBy, setCalculateBy] = useState<'eqWeight' | 'molecularWeight'>('eqWeight');
@@ -52,49 +56,73 @@ export default function NormalityCalculator() {
   ];
 
   const calculateNormality = () => {
-    const amountVal = parseFloat(amount);
-    const eqWeightVal = parseFloat(eqWeight);
     const vol = parseFloat(volume);
     const sg = parseFloat(specificGravity);
     const pur = parseFloat(purity);
     const mw = parseFloat(molecularWeight);
     const nf = parseFloat(nFactor);
     
-    let finalEqWeight = eqWeightVal;
+    let finalEqWeight = parseFloat(eqWeight);
     
     if (calculateBy === 'molecularWeight' && !isNaN(mw) && !isNaN(nf) && mw > 0 && nf > 0) {
       finalEqWeight = mw / nf;
       setEqWeight(finalEqWeight.toFixed(2));
     }
     
-    if (!isNaN(amountVal) && !isNaN(finalEqWeight) && !isNaN(vol) && 
-        amountVal > 0 && finalEqWeight > 0 && vol > 0 && sg > 0 && pur >= 0 && pur <= 100) {
-      
-      let result;
-      
+    if (isNaN(finalEqWeight) || finalEqWeight <= 0 || isNaN(vol) || vol <= 0 || sg <= 0 || pur < 0 || pur > 100) {
+      setNormality(null);
+      setRequiredAmount(null);
+      return;
+    }
+
+    if (calculationMode === 'concentration') {
+      // Calculate normality from given amount
+      const amountVal = parseFloat(amount);
+      if (isNaN(amountVal) || amountVal <= 0) {
+        setNormality(null);
+        return;
+      }
+
+      let result: number;
+      const volumeInLiters = vol * volumeUnits.find(u => u.unit === volumeUnit)!.conversion;
+
       if (substanceType === 'solid') {
-        // Convert mass to grams
         const massInGrams = amountVal * massUnits.find(u => u.unit === massUnit)!.conversion;
-        // Convert volume to liters
-        const volumeInLiters = vol * volumeUnits.find(u => u.unit === volumeUnit)!.conversion;
-        
-        // Formula: N = (mass in g) / (eq. weight × volume in L)
         result = massInGrams / (finalEqWeight * volumeInLiters);
       } else {
-        // For liquids: N = (A × sg × purity%) / (eq. weight × V)
-        const volumeInLiters = vol * volumeUnits.find(u => u.unit === volumeUnit)!.conversion;
         result = (amountVal * sg * (pur / 100)) / (finalEqWeight * volumeInLiters);
       }
-      
       setNormality(result);
+      setRequiredAmount(null);
     } else {
-      setNormality(null);
+      // Calculate required amount to achieve target normality
+      const targetN = parseFloat(targetNormality);
+      if (isNaN(targetN) || targetN <= 0) {
+        setRequiredAmount(null);
+        return;
+      }
+
+      const volumeInLiters = vol * volumeUnits.find(u => u.unit === volumeUnit)!.conversion;
+
+      if (substanceType === 'solid') {
+        // Solve for mass in grams
+        const massInGrams = targetN * finalEqWeight * volumeInLiters;
+        setRequiredAmount(massInGrams);
+        setNormality(targetN); // for display
+      } else {
+        // Solve for volume of liquid (A) in mL
+        const volumeLiquid = (targetN * finalEqWeight * volumeInLiters) / (sg * (pur / 100));
+        setRequiredAmount(volumeLiquid);
+        setNormality(targetN);
+      }
     }
   };
 
   const resetCalculator = () => {
+    setCalculationMode('concentration');
     setSubstanceType('solid');
     setAmount('1');
+    setTargetNormality('1');
     setEqWeight('36.46');
     setVolume('1');
     setSpecificGravity('1.0');
@@ -102,6 +130,7 @@ export default function NormalityCalculator() {
     setVolumeUnit('L');
     setMassUnit('g');
     setNormality(null);
+    setRequiredAmount(null);
     setSelectedChemical(null);
     setCalculateBy('eqWeight');
     setMolecularWeight('36.46');
@@ -126,7 +155,10 @@ export default function NormalityCalculator() {
 
   useEffect(() => {
     calculateNormality();
-  }, [substanceType, amount, eqWeight, volume, specificGravity, purity, volumeUnit, massUnit, calculateBy, molecularWeight, nFactor]);
+  }, [
+    calculationMode, substanceType, amount, targetNormality, eqWeight, volume,
+    specificGravity, purity, volumeUnit, massUnit, calculateBy, molecularWeight, nFactor
+  ]);
 
   return (
     <section className="min-h-screen bg-gradient-to-br from-indigo-50 to-violet-50 p-4 md:p-6 mt-16 md:mt-20">
@@ -140,7 +172,7 @@ export default function NormalityCalculator() {
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-white">Normality Calculator</h1>
-                <p className="text-indigo-100 mt-2">Calculate normality for acids, bases, and redox reagents</p>
+                <p className="text-indigo-100 mt-2">Calculate normality or required amount for acids, bases, and redox reagents</p>
               </div>
             </div>
             <div className="flex items-center space-x-2 bg-white/20 px-4 py-2 rounded-lg">
@@ -158,15 +190,40 @@ export default function NormalityCalculator() {
               Calculation Parameters
             </h2>
 
+            {/* Calculation Mode Toggle */}
+            <div className="bg-gray-50 rounded-xl p-4 mb-6">
+              <h3 className="font-semibold text-gray-800 mb-3">I want to calculate</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setCalculationMode('concentration')}
+                  className={`py-3 rounded-lg transition-all ${calculationMode === 'concentration'
+                      ? 'bg-gradient-to-r from-indigo-600 to-violet-500 text-white'
+                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                >
+                  Normality from amount
+                </button>
+                <button
+                  onClick={() => setCalculationMode('amount')}
+                  className={`py-3 rounded-lg transition-all ${calculationMode === 'amount'
+                      ? 'bg-gradient-to-r from-indigo-600 to-violet-500 text-white'
+                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                >
+                  Amount from target normality
+                </button>
+              </div>
+            </div>
+
             {/* Substance Type Selection */}
             <div className="bg-gray-50 rounded-xl p-4 mb-6">
               <h3 className="font-semibold text-gray-800 mb-3">Substance Type</h3>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setSubstanceType('solid')}
-                  className={`py-3 rounded-lg transition-all flex flex-col items-center ${substanceType === 'solid' ?
-                    'bg-gradient-to-r from-indigo-600 to-violet-500 text-white' :
-                    'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  className={`py-3 rounded-lg transition-all flex flex-col items-center ${substanceType === 'solid'
+                      ? 'bg-gradient-to-r from-indigo-600 to-violet-500 text-white'
+                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                 >
                   <Scale className="w-5 h-5 mb-1" />
@@ -174,9 +231,9 @@ export default function NormalityCalculator() {
                 </button>
                 <button
                   onClick={() => setSubstanceType('liquid')}
-                  className={`py-3 rounded-lg transition-all flex flex-col items-center ${substanceType === 'liquid' ?
-                    'bg-gradient-to-r from-indigo-600 to-violet-500 text-white' :
-                    'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  className={`py-3 rounded-lg transition-all flex flex-col items-center ${substanceType === 'liquid'
+                      ? 'bg-gradient-to-r from-indigo-600 to-violet-500 text-white'
+                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                 >
                   <Droplets className="w-5 h-5 mb-1" />
@@ -193,9 +250,9 @@ export default function NormalityCalculator() {
                   <button
                     key={chemical.formula}
                     onClick={() => loadChemical(chemical)}
-                    className={`py-2 px-3 rounded-lg text-sm transition-all ${selectedChemical?.formula === chemical.formula ?
-                      'bg-gradient-to-r from-indigo-600 to-violet-500 text-white' :
-                      'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    className={`py-2 px-3 rounded-lg text-sm transition-all ${selectedChemical?.formula === chemical.formula
+                        ? 'bg-gradient-to-r from-indigo-600 to-violet-500 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                   >
                     <div className="font-medium">{chemical.formula}</div>
@@ -207,25 +264,25 @@ export default function NormalityCalculator() {
 
             {/* Calculation Method */}
             <div className="bg-gray-50 rounded-xl p-4 mb-6">
-              <h3 className="font-semibold text-gray-800 mb-3">Calculation Method</h3>
+              <h3 className="font-semibold text-gray-800 mb-3">Equivalent Weight Method</h3>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setCalculateBy('eqWeight')}
-                  className={`py-2 rounded-lg transition-all ${calculateBy === 'eqWeight' ?
-                    'bg-gradient-to-r from-indigo-600 to-violet-500 text-white' :
-                    'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  className={`py-2 rounded-lg transition-all ${calculateBy === 'eqWeight'
+                      ? 'bg-gradient-to-r from-indigo-600 to-violet-500 text-white'
+                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                 >
-                  Using Equivalent Weight
+                  Use Equivalent Weight
                 </button>
                 <button
                   onClick={() => setCalculateBy('molecularWeight')}
-                  className={`py-2 rounded-lg transition-all ${calculateBy === 'molecularWeight' ?
-                    'bg-gradient-to-r from-indigo-600 to-violet-500 text-white' :
-                    'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  className={`py-2 rounded-lg transition-all ${calculateBy === 'molecularWeight'
+                      ? 'bg-gradient-to-r from-indigo-600 to-violet-500 text-white'
+                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                 >
-                  Using MW & n-factor
+                  Use MW & n-factor
                 </button>
               </div>
             </div>
@@ -288,90 +345,154 @@ export default function NormalityCalculator() {
                 </div>
               )}
 
-              {substanceType === 'solid' ? (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Amount of Solid
-                  </label>
-                  <div className="flex gap-3">
-                    <div className="flex-1">
-                      <input
-                        type="number"
-                        step="0.001"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg"
-                        placeholder="e.g., 1"
-                      />
-                    </div>
-                    <select
-                      value={massUnit}
-                      onChange={(e) => setMassUnit(e.target.value as MassUnit)}
-                      className="px-4 py-3 border-2 border-indigo-200 rounded-lg bg-white"
-                    >
-                      {massUnits.map((unit) => (
-                        <option key={unit.unit} value={unit.unit}>{unit.unit}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              ) : (
-                <>
+              {calculationMode === 'concentration' ? (
+                // Input: amount
+                substanceType === 'solid' ? (
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Amount of Liquid
+                      Amount of Solid
                     </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        step="0.001"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg"
-                        placeholder="e.g., 1"
-                      />
-                      <div className="absolute right-3 top-3 text-gray-500">mL</div>
+                    <div className="flex gap-3">
+                      <div className="flex-1">
+                        <input
+                          type="number"
+                          step="0.001"
+                          value={amount}
+                          onChange={(e) => setAmount(e.target.value)}
+                          className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg"
+                          placeholder="e.g., 1"
+                        />
+                      </div>
+                      <select
+                        value={massUnit}
+                        onChange={(e) => setMassUnit(e.target.value as MassUnit)}
+                        className="px-4 py-3 border-2 border-indigo-200 rounded-lg bg-white"
+                      >
+                        {massUnits.map((unit) => (
+                          <option key={unit.unit} value={unit.unit}>{unit.unit}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                ) : (
+                  <>
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Specific Gravity (sg)
+                        Amount of Liquid
                       </label>
                       <div className="relative">
                         <input
                           type="number"
                           step="0.001"
-                          value={specificGravity}
-                          onChange={(e) => setSpecificGravity(e.target.value)}
+                          value={amount}
+                          onChange={(e) => setAmount(e.target.value)}
                           className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg"
-                          placeholder="e.g., 1.0"
+                          placeholder="e.g., 1"
                         />
-                        <div className="absolute right-3 top-3 text-gray-500">g/mL</div>
+                        <div className="absolute right-3 top-3 text-gray-500">mL</div>
                       </div>
                     </div>
+                  </>
+                )
+              ) : (
+                // Input: target normality
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Target Normality (N)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.001"
+                      value={targetNormality}
+                      onChange={(e) => setTargetNormality(e.target.value)}
+                      className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg"
+                      placeholder="e.g., 1"
+                    />
+                    <div className="absolute right-3 top-3 text-gray-500">eq/L</div>
+                  </div>
+                </div>
+              )}
 
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Purity (%)
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          max="100"
-                          value={purity}
-                          onChange={(e) => setPurity(e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg"
-                          placeholder="e.g., 100"
-                        />
-                        <div className="absolute right-3 top-3 text-gray-500">%</div>
-                      </div>
+              {substanceType === 'liquid' && calculationMode === 'concentration' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Specific Gravity (sg)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.001"
+                        value={specificGravity}
+                        onChange={(e) => setSpecificGravity(e.target.value)}
+                        className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg"
+                        placeholder="e.g., 1.0"
+                      />
+                      <div className="absolute right-3 top-3 text-gray-500">g/mL</div>
                     </div>
                   </div>
-                </>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Purity (%)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        value={purity}
+                        onChange={(e) => setPurity(e.target.value)}
+                        className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg"
+                        placeholder="e.g., 100"
+                      />
+                      <div className="absolute right-3 top-3 text-gray-500">%</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* For liquid in amount mode, still need sg and purity */}
+              {substanceType === 'liquid' && calculationMode === 'amount' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Specific Gravity (sg)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.001"
+                        value={specificGravity}
+                        onChange={(e) => setSpecificGravity(e.target.value)}
+                        className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg"
+                        placeholder="e.g., 1.0"
+                      />
+                      <div className="absolute right-3 top-3 text-gray-500">g/mL</div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Purity (%)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        value={purity}
+                        onChange={(e) => setPurity(e.target.value)}
+                        className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg"
+                        placeholder="e.g., 100"
+                      />
+                      <div className="absolute right-3 top-3 text-gray-500">%</div>
+                    </div>
+                  </div>
+                </div>
               )}
 
               <div>
@@ -445,7 +566,7 @@ export default function NormalityCalculator() {
                   onClick={calculateNormality}
                   className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-500 hover:from-indigo-700 hover:to-violet-600 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
-                  Calculate Normality
+                  Calculate
                 </button>
                 <button
                   onClick={resetCalculator}
@@ -464,27 +585,51 @@ export default function NormalityCalculator() {
             <div className="bg-gradient-to-br from-indigo-600 to-violet-500 rounded-2xl shadow-xl p-6 md:p-8 text-white">
               <h2 className="text-2xl font-bold mb-6 flex items-center">
                 <Scale className="w-7 h-7 mr-3" />
-                Normality Result
+                {calculationMode === 'concentration' ? 'Normality Result' : 'Required Amount'}
               </h2>
 
               <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 mb-6">
                 <div className="text-center">
-                  <div className="text-sm font-semibold text-indigo-100 mb-2">
-                    Normality
-                  </div>
-                  {normality !== null ? (
+                  {calculationMode === 'concentration' ? (
                     <>
-                      <div className="text-5xl md:text-6xl font-bold mb-2">
-                        {normality < 0.001 ? normality.toExponential(3) : normality.toFixed(4)}
+                      <div className="text-sm font-semibold text-indigo-100 mb-2">
+                        Normality
                       </div>
-                      <div className="text-2xl font-semibold">
-                        N (eq/L)
-                      </div>
+                      {normality !== null ? (
+                        <>
+                          <div className="text-5xl md:text-6xl font-bold mb-2">
+                            {normality < 0.001 ? normality.toExponential(3) : normality.toFixed(4)}
+                          </div>
+                          <div className="text-2xl font-semibold">
+                            N (eq/L)
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-3xl font-bold text-indigo-100">
+                          Enter Values
+                        </div>
+                      )}
                     </>
                   ) : (
-                    <div className="text-3xl font-bold text-indigo-100">
-                      Enter Values
-                    </div>
+                    <>
+                      <div className="text-sm font-semibold text-indigo-100 mb-2">
+                        {substanceType === 'solid' ? 'Required Mass' : 'Required Volume'}
+                      </div>
+                      {requiredAmount !== null ? (
+                        <>
+                          <div className="text-5xl md:text-6xl font-bold mb-2">
+                            {requiredAmount.toFixed(4)}
+                          </div>
+                          <div className="text-2xl font-semibold">
+                            {substanceType === 'solid' ? 'g' : 'mL'}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-3xl font-bold text-indigo-100">
+                          Enter Values
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -507,7 +652,7 @@ export default function NormalityCalculator() {
               )}
 
               {/* Interpretation */}
-              {normality !== null && (
+              {normality !== null && calculationMode === 'concentration' && (
                 <div className="bg-white/10 rounded-lg p-4">
                   <div className="flex items-start">
                     <AlertCircle className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
@@ -523,7 +668,7 @@ export default function NormalityCalculator() {
             </div>
 
             {/* Calculation Details */}
-            {normality !== null && (
+            {(normality !== null || requiredAmount !== null) && (
               <div className="bg-white rounded-2xl shadow-lg p-6">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Calculation Details</h3>
                 <div className="space-y-4">
@@ -552,11 +697,19 @@ export default function NormalityCalculator() {
                   )}
                   
                   <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
-                    <div className="text-center font-mono text-sm">
-                      {substanceType === 'solid' 
-                        ? `N = (${amount} ${massUnit} = ${(parseFloat(amount) * massUnits.find(u => u.unit === massUnit)!.conversion).toFixed(4)} g) / (${eqWeight} × ${(parseFloat(volume) * volumeUnits.find(u => u.unit === volumeUnit)!.conversion).toFixed(4)})`
-                        : `N = (${amount} × ${specificGravity} × ${purity}%) / (${eqWeight} × ${(parseFloat(volume) * volumeUnits.find(u => u.unit === volumeUnit)!.conversion).toFixed(4)})`}
-                    </div>
+                    {calculationMode === 'concentration' ? (
+                      <div className="text-center font-mono text-sm">
+                        {substanceType === 'solid' 
+                          ? `N = (${amount} ${massUnit} = ${(parseFloat(amount) * massUnits.find(u => u.unit === massUnit)!.conversion).toFixed(4)} g) / (${eqWeight} × ${(parseFloat(volume) * volumeUnits.find(u => u.unit === volumeUnit)!.conversion).toFixed(4)})`
+                          : `N = (${amount} × ${specificGravity} × ${purity}%) / (${eqWeight} × ${(parseFloat(volume) * volumeUnits.find(u => u.unit === volumeUnit)!.conversion).toFixed(4)})`}
+                      </div>
+                    ) : (
+                      <div className="text-center font-mono text-sm">
+                        {substanceType === 'solid'
+                          ? `Mass (g) = ${targetNormality} × ${eqWeight} × ${(parseFloat(volume) * volumeUnits.find(u => u.unit === volumeUnit)!.conversion).toFixed(4)}`
+                          : `Volume (mL) = (${targetNormality} × ${eqWeight} × ${(parseFloat(volume) * volumeUnits.find(u => u.unit === volumeUnit)!.conversion).toFixed(4)}) / (${specificGravity} × ${purity}%)`}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
