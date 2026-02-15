@@ -6,10 +6,6 @@ html {
   scroll-behavior: smooth;
 }
 
-section {
-  @apply py-20;
-}
-
 .slick-dots {
   color: #1A21BC;
 }

@@ -161,10 +161,10 @@ export default function NormalityCalculator() {
   ]);
 
   return (
-    <section className="min-h-screen bg-gradient-to-br from-indigo-50 to-violet-50 p-4 md:p-6 mt-16 md:mt-20">
+    <section className="min-h-screen bg-white p-4 md:p-6 mt-16 md:mt-20">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 to-violet-500 rounded-2xl shadow-xl p-6 md:p-8 mb-6 md:mb-8">
+        <div className="bg-gradient-to-r from-green-600 to-blue-600 rounded-2xl shadow-xl p-6 md:p-8 mb-6 md:mb-8">
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="flex items-center mb-4 md:mb-0">
               <div className="bg-white/20 p-3 rounded-xl mr-4">
@@ -172,7 +172,7 @@ export default function NormalityCalculator() {
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-white">Normality Calculator</h1>
-                <p className="text-indigo-100 mt-2">Calculate normality or required amount for acids, bases, and redox reagents</p>
+                <p className="text-green-100 mt-2">Calculate normality or required amount for acids, bases, and redox reagents</p>
               </div>
             </div>
             <div className="flex items-center space-x-2 bg-white/20 px-4 py-2 rounded-lg">
@@ -186,18 +186,18 @@ export default function NormalityCalculator() {
           {/* Input Section */}
           <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
             <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center">
-              <Calculator className="w-6 h-6 md:w-7 md:h-7 mr-2" />
+              <Calculator className="w-6 h-6 md:w-7 md:h-7 mr-2 text-green-600" />
               Calculation Parameters
             </h2>
 
             {/* Calculation Mode Toggle */}
             <div className="bg-gray-50 rounded-xl p-4 mb-6">
               <h3 className="font-semibold text-gray-800 mb-3">I want to calculate</h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   onClick={() => setCalculationMode('concentration')}
                   className={`py-3 rounded-lg transition-all ${calculationMode === 'concentration'
-                      ? 'bg-gradient-to-r from-indigo-600 to-violet-500 text-white'
+                      ? 'bg-gradient-to-r from-green-600 to-blue-600 text-white'
                       : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                 >
@@ -206,7 +206,7 @@ export default function NormalityCalculator() {
                 <button
                   onClick={() => setCalculationMode('amount')}
                   className={`py-3 rounded-lg transition-all ${calculationMode === 'amount'
-                      ? 'bg-gradient-to-r from-indigo-600 to-violet-500 text-white'
+                      ? 'bg-gradient-to-r from-green-600 to-blue-600 text-white'
                       : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                 >
@@ -218,11 +218,11 @@ export default function NormalityCalculator() {
             {/* Substance Type Selection */}
             <div className="bg-gray-50 rounded-xl p-4 mb-6">
               <h3 className="font-semibold text-gray-800 mb-3">Substance Type</h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   onClick={() => setSubstanceType('solid')}
                   className={`py-3 rounded-lg transition-all flex flex-col items-center ${substanceType === 'solid'
-                      ? 'bg-gradient-to-r from-indigo-600 to-violet-500 text-white'
+                      ? 'bg-gradient-to-r from-green-600 to-blue-600 text-white'
                       : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                 >
@@ -232,7 +232,7 @@ export default function NormalityCalculator() {
                 <button
                   onClick={() => setSubstanceType('liquid')}
                   className={`py-3 rounded-lg transition-all flex flex-col items-center ${substanceType === 'liquid'
-                      ? 'bg-gradient-to-r from-indigo-600 to-violet-500 text-white'
+                      ? 'bg-gradient-to-r from-green-600 to-blue-600 text-white'
                       : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                 >
@@ -251,7 +251,7 @@ export default function NormalityCalculator() {
                     key={chemical.formula}
                     onClick={() => loadChemical(chemical)}
                     className={`py-2 px-3 rounded-lg text-sm transition-all ${selectedChemical?.formula === chemical.formula
-                        ? 'bg-gradient-to-r from-indigo-600 to-violet-500 text-white'
+                        ? 'bg-gradient-to-r from-green-600 to-blue-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                   >
@@ -265,11 +265,11 @@ export default function NormalityCalculator() {
             {/* Calculation Method */}
             <div className="bg-gray-50 rounded-xl p-4 mb-6">
               <h3 className="font-semibold text-gray-800 mb-3">Equivalent Weight Method</h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   onClick={() => setCalculateBy('eqWeight')}
                   className={`py-2 rounded-lg transition-all ${calculateBy === 'eqWeight'
-                      ? 'bg-gradient-to-r from-indigo-600 to-violet-500 text-white'
+                      ? 'bg-gradient-to-r from-green-600 to-blue-600 text-white'
                       : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                 >
@@ -278,7 +278,7 @@ export default function NormalityCalculator() {
                 <button
                   onClick={() => setCalculateBy('molecularWeight')}
                   className={`py-2 rounded-lg transition-all ${calculateBy === 'molecularWeight'
-                      ? 'bg-gradient-to-r from-indigo-600 to-violet-500 text-white'
+                      ? 'bg-gradient-to-r from-green-600 to-blue-600 text-white'
                       : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                 >
@@ -300,7 +300,7 @@ export default function NormalityCalculator() {
                       step="0.001"
                       value={eqWeight}
                       onChange={(e) => setEqWeight(e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
+                      className="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
                       placeholder="e.g., 36.46"
                     />
                     <div className="absolute right-3 top-3 text-gray-500">g/eq</div>
@@ -308,7 +308,7 @@ export default function NormalityCalculator() {
                   <p className="text-xs text-gray-500 mt-1">MW divided by n-factor</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Molecular Weight
@@ -319,7 +319,7 @@ export default function NormalityCalculator() {
                         step="0.001"
                         value={molecularWeight}
                         onChange={(e) => setMolecularWeight(e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg"
+                        className="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
                         placeholder="e.g., 36.46"
                       />
                       <div className="absolute right-3 top-3 text-gray-500">g/mol</div>
@@ -335,7 +335,7 @@ export default function NormalityCalculator() {
                         step="1"
                         value={nFactor}
                         onChange={(e) => setNFactor(e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg"
+                        className="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
                         placeholder="e.g., 1 for HCl"
                       />
                       <div className="absolute right-3 top-3 text-gray-500">eq/mol</div>
@@ -352,21 +352,21 @@ export default function NormalityCalculator() {
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Amount of Solid
                     </label>
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
                       <div className="flex-1">
                         <input
                           type="number"
                           step="0.001"
                           value={amount}
                           onChange={(e) => setAmount(e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg"
+                          className="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
                           placeholder="e.g., 1"
                         />
                       </div>
                       <select
                         value={massUnit}
                         onChange={(e) => setMassUnit(e.target.value as MassUnit)}
-                        className="px-4 py-3 border-2 border-indigo-200 rounded-lg bg-white"
+                        className="w-full sm:w-24 px-4 py-3 border-2 border-green-200 rounded-lg bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
                       >
                         {massUnits.map((unit) => (
                           <option key={unit.unit} value={unit.unit}>{unit.unit}</option>
@@ -386,7 +386,7 @@ export default function NormalityCalculator() {
                           step="0.001"
                           value={amount}
                           onChange={(e) => setAmount(e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg"
+                          className="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
                           placeholder="e.g., 1"
                         />
                         <div className="absolute right-3 top-3 text-gray-500">mL</div>
@@ -406,7 +406,7 @@ export default function NormalityCalculator() {
                       step="0.001"
                       value={targetNormality}
                       onChange={(e) => setTargetNormality(e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg"
+                      className="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
                       placeholder="e.g., 1"
                     />
                     <div className="absolute right-3 top-3 text-gray-500">eq/L</div>
@@ -415,7 +415,7 @@ export default function NormalityCalculator() {
               )}
 
               {substanceType === 'liquid' && calculationMode === 'concentration' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Specific Gravity (sg)
@@ -426,7 +426,7 @@ export default function NormalityCalculator() {
                         step="0.001"
                         value={specificGravity}
                         onChange={(e) => setSpecificGravity(e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg"
+                        className="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
                         placeholder="e.g., 1.0"
                       />
                       <div className="absolute right-3 top-3 text-gray-500">g/mL</div>
@@ -445,7 +445,7 @@ export default function NormalityCalculator() {
                         max="100"
                         value={purity}
                         onChange={(e) => setPurity(e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg"
+                        className="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
                         placeholder="e.g., 100"
                       />
                       <div className="absolute right-3 top-3 text-gray-500">%</div>
@@ -456,7 +456,7 @@ export default function NormalityCalculator() {
 
               {/* For liquid in amount mode, still need sg and purity */}
               {substanceType === 'liquid' && calculationMode === 'amount' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Specific Gravity (sg)
@@ -467,7 +467,7 @@ export default function NormalityCalculator() {
                         step="0.001"
                         value={specificGravity}
                         onChange={(e) => setSpecificGravity(e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg"
+                        className="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
                         placeholder="e.g., 1.0"
                       />
                       <div className="absolute right-3 top-3 text-gray-500">g/mL</div>
@@ -486,7 +486,7 @@ export default function NormalityCalculator() {
                         max="100"
                         value={purity}
                         onChange={(e) => setPurity(e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg"
+                        className="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
                         placeholder="e.g., 100"
                       />
                       <div className="absolute right-3 top-3 text-gray-500">%</div>
@@ -499,21 +499,21 @@ export default function NormalityCalculator() {
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Final Volume of Solution
                 </label>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <div className="flex-1">
                     <input
                       type="number"
                       step="0.001"
                       value={volume}
                       onChange={(e) => setVolume(e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg"
+                      className="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
                       placeholder="e.g., 1"
                     />
                   </div>
                   <select
                     value={volumeUnit}
                     onChange={(e) => setVolumeUnit(e.target.value as VolumeUnit)}
-                    className="px-4 py-3 border-2 border-indigo-200 rounded-lg bg-white"
+                    className="w-full sm:w-24 px-4 py-3 border-2 border-green-200 rounded-lg bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
                   >
                     {volumeUnits.map((unit) => (
                       <option key={unit.unit} value={unit.unit}>{unit.unit}</option>
@@ -523,13 +523,13 @@ export default function NormalityCalculator() {
               </div>
 
               {/* Formula Toggle */}
-              <div className="bg-gradient-to-r from-indigo-50 to-violet-50 rounded-xl p-4 border border-indigo-200">
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-4 border border-green-200">
                 <button
                   onClick={() => setShowFormula(!showFormula)}
                   className="flex items-center justify-between w-full text-left"
                 >
-                  <span className="font-semibold text-indigo-700">Show Formula</span>
-                  <Zap className={`w-5 h-5 text-indigo-600 transform ${showFormula ? 'rotate-180' : ''}`} />
+                  <span className="font-semibold text-green-700">Show Formula</span>
+                  <Zap className={`w-5 h-5 text-green-600 transform transition-transform ${showFormula ? 'rotate-180' : ''}`} />
                 </button>
                 
                 {showFormula && (
@@ -564,7 +564,7 @@ export default function NormalityCalculator() {
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <button
                   onClick={calculateNormality}
-                  className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-500 hover:from-indigo-700 hover:to-violet-600 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+                  className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
                   Calculate
                 </button>
@@ -582,7 +582,7 @@ export default function NormalityCalculator() {
           {/* Results Section */}
           <div className="space-y-6">
             {/* Result Card */}
-            <div className="bg-gradient-to-br from-indigo-600 to-violet-500 rounded-2xl shadow-xl p-6 md:p-8 text-white">
+            <div className="bg-gradient-to-br from-green-600 to-blue-600 rounded-2xl shadow-xl p-6 md:p-8 text-white">
               <h2 className="text-2xl font-bold mb-6 flex items-center">
                 <Scale className="w-7 h-7 mr-3" />
                 {calculationMode === 'concentration' ? 'Normality Result' : 'Required Amount'}
@@ -592,12 +592,12 @@ export default function NormalityCalculator() {
                 <div className="text-center">
                   {calculationMode === 'concentration' ? (
                     <>
-                      <div className="text-sm font-semibold text-indigo-100 mb-2">
+                      <div className="text-sm font-semibold text-green-100 mb-2">
                         Normality
                       </div>
                       {normality !== null ? (
                         <>
-                          <div className="text-5xl md:text-6xl font-bold mb-2">
+                          <div className="text-5xl md:text-6xl font-bold mb-2 break-words">
                             {normality < 0.001 ? normality.toExponential(3) : normality.toFixed(4)}
                           </div>
                           <div className="text-2xl font-semibold">
@@ -605,19 +605,19 @@ export default function NormalityCalculator() {
                           </div>
                         </>
                       ) : (
-                        <div className="text-3xl font-bold text-indigo-100">
+                        <div className="text-3xl font-bold text-green-100">
                           Enter Values
                         </div>
                       )}
                     </>
                   ) : (
                     <>
-                      <div className="text-sm font-semibold text-indigo-100 mb-2">
+                      <div className="text-sm font-semibold text-green-100 mb-2">
                         {substanceType === 'solid' ? 'Required Mass' : 'Required Volume'}
                       </div>
                       {requiredAmount !== null ? (
                         <>
-                          <div className="text-5xl md:text-6xl font-bold mb-2">
+                          <div className="text-5xl md:text-6xl font-bold mb-2 break-words">
                             {requiredAmount.toFixed(4)}
                           </div>
                           <div className="text-2xl font-semibold">
@@ -625,7 +625,7 @@ export default function NormalityCalculator() {
                           </div>
                         </>
                       ) : (
-                        <div className="text-3xl font-bold text-indigo-100">
+                        <div className="text-3xl font-bold text-green-100">
                           Enter Values
                         </div>
                       )}
@@ -637,15 +637,15 @@ export default function NormalityCalculator() {
               {/* Selected Chemical Info */}
               {selectedChemical && (
                 <div className="bg-white/10 rounded-lg p-4 mb-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                     <div>
                       <div className="font-semibold">{selectedChemical.formula}</div>
-                      <div className="text-sm text-indigo-200">{selectedChemical.name}</div>
+                      <div className="text-sm text-green-100">{selectedChemical.name}</div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-sm">MW: {selectedChemical.molecularWeight}</div>
-                      <div className="text-sm">n: {selectedChemical.nFactor}</div>
-                      <div className="text-sm font-bold">Eq.W: {selectedChemical.eqWeight.toFixed(2)}</div>
+                    <div className="text-right text-sm">
+                      <div>MW: {selectedChemical.molecularWeight}</div>
+                      <div>n: {selectedChemical.nFactor}</div>
+                      <div className="font-bold">Eq.W: {selectedChemical.eqWeight.toFixed(2)}</div>
                     </div>
                   </div>
                 </div>
@@ -658,7 +658,7 @@ export default function NormalityCalculator() {
                     <AlertCircle className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
                     <div>
                       <div className="font-semibold mb-1">Interpretation:</div>
-                      <div className="text-sm text-indigo-100">
+                      <div className="text-sm text-green-100">
                         {getNormalityInterpretation(normality)}
                       </div>
                     </div>
@@ -675,36 +675,36 @@ export default function NormalityCalculator() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <div className="text-xs text-gray-500">Equivalent Weight</div>
-                      <div className="font-semibold">{eqWeight} g/eq</div>
+                      <div className="font-semibold break-words">{eqWeight} g/eq</div>
                     </div>
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <div className="text-xs text-gray-500">Final Volume</div>
-                      <div className="font-semibold">{volume} {volumeUnit} = {(parseFloat(volume) * volumeUnits.find(u => u.unit === volumeUnit)!.conversion).toFixed(4)} L</div>
+                      <div className="font-semibold break-words">{volume} {volumeUnit} = {(parseFloat(volume) * volumeUnits.find(u => u.unit === volumeUnit)!.conversion).toFixed(4)} L</div>
                     </div>
                   </div>
                   
                   {calculateBy === 'molecularWeight' && (
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-indigo-50 p-3 rounded-lg border border-indigo-200">
+                      <div className="bg-green-50 p-3 rounded-lg border border-green-200">
                         <div className="text-xs text-gray-500">Molecular Weight</div>
-                        <div className="font-semibold">{molecularWeight} g/mol</div>
+                        <div className="font-semibold break-words">{molecularWeight} g/mol</div>
                       </div>
-                      <div className="bg-indigo-50 p-3 rounded-lg border border-indigo-200">
+                      <div className="bg-green-50 p-3 rounded-lg border border-green-200">
                         <div className="text-xs text-gray-500">n-factor</div>
-                        <div className="font-semibold">{nFactor} eq/mol</div>
+                        <div className="font-semibold break-words">{nFactor} eq/mol</div>
                       </div>
                     </div>
                   )}
                   
-                  <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                  <div className="p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200 overflow-x-auto">
                     {calculationMode === 'concentration' ? (
-                      <div className="text-center font-mono text-sm">
+                      <div className="text-center font-mono text-sm whitespace-normal break-words">
                         {substanceType === 'solid' 
                           ? `N = (${amount} ${massUnit} = ${(parseFloat(amount) * massUnits.find(u => u.unit === massUnit)!.conversion).toFixed(4)} g) / (${eqWeight} × ${(parseFloat(volume) * volumeUnits.find(u => u.unit === volumeUnit)!.conversion).toFixed(4)})`
                           : `N = (${amount} × ${specificGravity} × ${purity}%) / (${eqWeight} × ${(parseFloat(volume) * volumeUnits.find(u => u.unit === volumeUnit)!.conversion).toFixed(4)})`}
                       </div>
                     ) : (
-                      <div className="text-center font-mono text-sm">
+                      <div className="text-center font-mono text-sm whitespace-normal break-words">
                         {substanceType === 'solid'
                           ? `Mass (g) = ${targetNormality} × ${eqWeight} × ${(parseFloat(volume) * volumeUnits.find(u => u.unit === volumeUnit)!.conversion).toFixed(4)}`
                           : `Volume (mL) = (${targetNormality} × ${eqWeight} × ${(parseFloat(volume) * volumeUnits.find(u => u.unit === volumeUnit)!.conversion).toFixed(4)}) / (${specificGravity} × ${purity}%)`}
@@ -716,7 +716,7 @@ export default function NormalityCalculator() {
             )}
 
             {/* n-factor Reference */}
-            <div className="bg-gradient-to-r from-indigo-50 to-violet-50 rounded-2xl shadow-lg p-6 border border-indigo-200">
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl shadow-lg p-6 border border-green-200">
               <h3 className="text-lg font-bold text-gray-800 mb-4">n-factor Guidelines</h3>
               <div className="space-y-3">
                 {[
@@ -725,10 +725,10 @@ export default function NormalityCalculator() {
                   { type: 'Salts', examples: 'Na₂CO₃:2, KMnO₄:5', rule: 'Total charge' },
                   { type: 'Redox Agents', examples: 'KMnO₄:5, K₂Cr₂O₇:6', rule: 'Electrons transferred' },
                 ].map((item, index) => (
-                  <div key={index} className="bg-white p-3 rounded-lg border">
+                  <div key={index} className="bg-white p-3 rounded-lg border border-green-200">
                     <div className="font-semibold text-gray-800">{item.type}</div>
-                    <div className="text-sm text-gray-600 mt-1">{item.examples}</div>
-                    <div className="text-xs text-indigo-600 mt-1">{item.rule}</div>
+                    <div className="text-sm text-gray-600 mt-1 break-words">{item.examples}</div>
+                    <div className="text-xs text-blue-600 mt-1">{item.rule}</div>
                   </div>
                 ))}
               </div>

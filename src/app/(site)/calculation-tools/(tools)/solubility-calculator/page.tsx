@@ -65,10 +65,10 @@ export default function SolubilityCalculator() {
   }, [normality, gramWeight, selectedUnit]);
 
   return (
-    <section className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 p-4 md:p-6 mt-16 md:mt-20">
+    <section className="min-h-screen bg-white p-4 mt-12 pt-0">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-cyan-500 rounded-2xl shadow-xl p-6 md:p-8 mb-6 md:mb-8">
+        <div className="bg-gradient-to-r from-green-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6 md:mb-8">
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="flex items-center mb-4 md:mb-0">
               <div className="bg-white/20 p-3 rounded-xl mr-4">
@@ -76,7 +76,7 @@ export default function SolubilityCalculator() {
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-white">Solubility Calculator</h1>
-                <p className="text-blue-100 mt-2">Calculate solubility using normality formula: S = N × G.W / 10</p>
+                <p className="text-green-100 mt-2">Calculate solubility using normality formula: S = N × G.W / 10</p>
               </div>
             </div>
             <div className="flex items-center space-x-2 bg-white/20 px-4 py-2 rounded-lg">
@@ -90,7 +90,7 @@ export default function SolubilityCalculator() {
           {/* Input Section */}
           <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
             <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center">
-              <Calculator className="w-6 h-6 md:w-7 md:h-7 mr-2" />
+              <Calculator className="w-6 h-6 md:w-7 md:h-7 mr-2 text-green-600" />
               Calculation Parameters
             </h2>
 
@@ -103,7 +103,7 @@ export default function SolubilityCalculator() {
                     key={unit.name}
                     onClick={() => setSelectedUnit(unit.name as 'g/L' | 'mg/mL' | 'mol/L')}
                     className={`py-2 rounded-lg transition-all ${selectedUnit === unit.name ?
-                      'bg-gradient-to-r from-blue-600 to-cyan-500 text-white' :
+                      'bg-gradient-to-r from-green-600 to-green-400 text-white' :
                       'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                       }`}
                   >
@@ -125,7 +125,7 @@ export default function SolubilityCalculator() {
                     step="0.001"
                     value={normality}
                     onChange={(e) => setNormality(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
+                    className="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none"
                     placeholder="e.g., 1"
                   />
                   <div className="absolute right-3 top-3 text-gray-500">eq/L</div>
@@ -143,7 +143,7 @@ export default function SolubilityCalculator() {
                     step="0.001"
                     value={gramWeight}
                     onChange={(e) => setGramWeight(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
+                    className="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none"
                     placeholder="e.g., 58.5 (for NaCl)"
                   />
                   <div className="absolute right-3 top-3 text-gray-500">g/eq</div>
@@ -152,13 +152,13 @@ export default function SolubilityCalculator() {
               </div>
 
               {/* Formula Toggle */}
-              <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200">
+              <div className="bg-gradient-to-r from-green-50 to-green-50 rounded-xl p-4 border border-green-200">
                 <button
                   onClick={() => setShowFormula(!showFormula)}
                   className="flex items-center justify-between w-full text-left"
                 >
-                  <span className="font-semibold text-blue-700">Show Formula</span>
-                  <Zap className={`w-5 h-5 text-blue-600 transform ${showFormula ? 'rotate-180' : ''}`} />
+                  <span className="font-semibold text-green-700">Show Formula</span>
+                  <Zap className={`w-5 h-5 text-green-600 transform ${showFormula ? 'rotate-180' : ''}`} />
                 </button>
                 
                 {showFormula && (
@@ -181,7 +181,7 @@ export default function SolubilityCalculator() {
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <button
                   onClick={calculateSolubility}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+                  className="flex-1 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
                   Calculate Solubility
                 </button>
@@ -199,7 +199,7 @@ export default function SolubilityCalculator() {
           {/* Results Section */}
           <div className="space-y-6">
             {/* Result Card */}
-            <div className="bg-gradient-to-br from-blue-600 to-cyan-500 rounded-2xl shadow-xl p-6 md:p-8 text-white">
+            <div className="bg-gradient-to-br from-green-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 text-white">
               <h2 className="text-2xl font-bold mb-6 flex items-center">
                 <Beaker className="w-7 h-7 mr-3" />
                 Solubility Result
@@ -207,12 +207,12 @@ export default function SolubilityCalculator() {
 
               <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 mb-6">
                 <div className="text-center">
-                  <div className="text-sm font-semibold text-blue-100 mb-2">
+                  <div className="text-sm font-semibold text-green-100 mb-2">
                     Solubility
                   </div>
                   {solubility !== null ? (
                     <>
-                      <div className="text-5xl md:text-6xl font-bold mb-2">
+                      <div className="text-5xl md:text-6xl font-bold mb-2 break-words">
                         {solubility.toFixed(4)}
                       </div>
                       <div className="text-2xl font-semibold">
@@ -220,7 +220,7 @@ export default function SolubilityCalculator() {
                       </div>
                     </>
                   ) : (
-                    <div className="text-3xl font-bold text-blue-100">
+                    <div className="text-3xl font-bold text-green-100">
                       Enter Values
                     </div>
                   )}
@@ -234,7 +234,7 @@ export default function SolubilityCalculator() {
                     <AlertCircle className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
                     <div>
                       <div className="font-semibold mb-1">Interpretation:</div>
-                      <div className="text-sm text-blue-100">
+                      <div className="text-sm text-green-100">
                         {getSolubilityInterpretation(solubility)}
                       </div>
                     </div>
@@ -246,33 +246,37 @@ export default function SolubilityCalculator() {
             {/* Quick Reference */}
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <h3 className="text-lg font-bold text-gray-800 mb-4">Common Substances Reference</h3>
-              <div className="space-y-3">
-                <div className="grid grid-cols-3 gap-2 text-sm font-semibold text-gray-700 border-b pb-2">
-                  <div>Substance</div>
-                  <div className="text-center">Formula</div>
-                  <div className="text-right">Solubility (g/L)</div>
-                </div>
-                <div className="space-y-2">
-                  {[
-                    { name: 'Sodium Chloride', formula: 'NaCl', solubility: '360' },
-                    { name: 'Sucrose', formula: 'C₁₂H₂₂O₁₁', solubility: '2000' },
-                    { name: 'Calcium Carbonate', formula: 'CaCO₃', solubility: '0.013' },
-                    { name: 'Silver Chloride', formula: 'AgCl', solubility: '0.0019' },
-                    { name: 'Glucose', formula: 'C₆H₁₂O₆', solubility: '910' },
-                  ].map((sub, index) => (
-                    <div key={index} className="grid grid-cols-3 gap-2 py-2 border-b border-gray-100 hover:bg-gray-50 rounded px-2">
-                      <div className="font-medium text-gray-800">{sub.name}</div>
-                      <div className="text-center text-gray-600">{sub.formula}</div>
-                      <div className="text-right font-semibold text-blue-600">{sub.solubility}</div>
-                    </div>
-                  ))}
-                </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-gray-700 font-semibold">
+                      <th className="py-2 text-left">Substance</th>
+                      <th className="py-2 text-center">Formula</th>
+                      <th className="py-2 text-right">Solubility (g/L)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { name: 'Sodium Chloride', formula: 'NaCl', solubility: '360' },
+                      { name: 'Sucrose', formula: 'C₁₂H₂₂O₁₁', solubility: '2000' },
+                      { name: 'Calcium Carbonate', formula: 'CaCO₃', solubility: '0.013' },
+                      { name: 'Silver Chloride', formula: 'AgCl', solubility: '0.0019' },
+                      { name: 'Glucose', formula: 'C₆H₁₂O₆', solubility: '910' },
+                    ].map((sub, index) => (
+                      <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-2 font-medium text-gray-800">{sub.name}</td>
+                        <td className="py-2 text-center text-gray-600">{sub.formula}</td>
+                        <td className="py-2 text-right font-semibold text-green-600">{sub.solubility}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
 
             {/* Calculation Details */}
             {solubility !== null && (
-              <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl shadow-lg p-6 border border-blue-200">
+              <div className="bg-gradient-to-r from-green-50 to-green-50 rounded-2xl shadow-lg p-6 border border-green-200">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Calculation Details</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center py-2 border-b">
@@ -287,7 +291,7 @@ export default function SolubilityCalculator() {
                     <span className="text-gray-600">Formula:</span>
                     <span className="font-mono font-semibold">S = N × G.W / 10</span>
                   </div>
-                  <div className="mt-4 p-3 bg-white rounded-lg border">
+                  <div className="mt-4 p-3 bg-white rounded-lg border break-words">
                     <div className="text-center font-mono text-sm">
                       S = ({normality}) × ({gramWeight}) / 10 = {solubility.toFixed(4)} {selectedUnit}
                     </div>

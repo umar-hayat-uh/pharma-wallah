@@ -350,31 +350,31 @@ export default function PercentageSolutionCalculator() {
     const commonPercentages = getCommonPercentages();
 
     return (
-        <section id="percentage-solution-calculator-section" className='min-h-screen bg-gradient-to-br from-blue-50 to-green-50'>
+        <section id="percentage-solution-calculator-section pt-0" className='min-h-screen bg-white'>
             <div className="mt-6 px-4 pb-12">
                 <div className="max-w-4xl mx-auto">
                     {/* Header Section */}
-                    <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
+                    <div className="bg-white rounded-lg shadow-lg p-4 sm:p-8 mb-6">
                         <div className="flex items-center justify-center mb-4">
-                            <Scale className="w-10 h-10 text-blue-600 mr-3" />
-                            <h1 className="text-3xl font-bold text-gray-800">
+                            <Scale className="w-8 h-8 sm:w-10 sm:h-10 text-green-600 mr-3" />
+                            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
                                 Percentage Solution Calculator
                             </h1>
                         </div>
-                        <p className="text-gray-600 text-center">
+                        <p className="text-sm sm:text-base text-gray-600 text-center">
                             Calculate weight/volume (w/v), volume/volume (v/v), and weight/weight (w/w) percentage solutions
                         </p>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Calculator Card */}
-                        <div className="lg:col-span-2 bg-white rounded-lg shadow-lg p-8">
+                        <div className="lg:col-span-2 bg-white rounded-lg shadow-lg p-4 sm:p-8">
                             {/* Percentage Type Selector */}
                             <div className="mb-6">
                                 <label className="block text-sm font-medium text-gray-700 mb-3">
                                     Percentage Solution Type
                                 </label>
-                                <div className="grid grid-cols-3 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                     {[
                                         { id: 'wv', label: 'Weight/Volume (w/v)', icon: <Weight className="w-4 h-4 mr-2" /> },
                                         { id: 'vv', label: 'Volume/Volume (v/v)', icon: <Droplet className="w-4 h-4 mr-2" /> },
@@ -384,12 +384,13 @@ export default function PercentageSolutionCalculator() {
                                             key={type.id}
                                             onClick={() => handlePercentageTypeChange(type.id)}
                                             className={`py-3 px-4 rounded-lg font-semibold transition-all flex items-center justify-center ${percentageType === type.id
-                                                    ? 'bg-blue-600 text-white shadow-md'
+                                                    ? 'bg-green-600 text-white shadow-md'
                                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                                 }`}
                                         >
                                             {type.icon}
-                                            {type.label}
+                                            <span className="hidden xs:inline">{type.label}</span>
+                                            <span className="xs:hidden">{type.id.toUpperCase()}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -399,12 +400,12 @@ export default function PercentageSolutionCalculator() {
                             </div>
 
                             {/* Formula Display */}
-                            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-6">
+                            <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4 mb-6">
                                 <div className="flex items-center justify-center mb-2">
-                                    <Calculator className="w-5 h-5 text-blue-600 mr-2" />
-                                    <h3 className="text-sm font-semibold text-blue-600">Formula</h3>
+                                    <Calculator className="w-5 h-5 text-green-600 mr-2" />
+                                    <h3 className="text-sm font-semibold text-green-600">Formula</h3>
                                 </div>
-                                <p className="text-center text-blue-800 font-mono text-lg font-bold">
+                                <p className="text-center text-green-800 font-mono text-sm sm:text-lg font-bold">
                                     {getFormula(percentageType)}
                                 </p>
                             </div>
@@ -414,13 +415,13 @@ export default function PercentageSolutionCalculator() {
                                 <label className="block text-sm font-medium text-gray-700 mb-3">
                                     What do you want to calculate?
                                 </label>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 xs:grid-cols-2 gap-3">
                                     {['solute', 'solvent', 'solution', 'percentage'].map((variable) => (
                                         <button
                                             key={variable}
                                             onClick={() => setSolveFor(variable)}
                                             className={`py-3 px-4 rounded-lg font-semibold transition-all ${solveFor === variable
-                                                    ? 'bg-blue-600 text-white shadow-md'
+                                                    ? 'bg-green-600 text-white shadow-md'
                                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                                 }`}
                                         >
@@ -436,9 +437,9 @@ export default function PercentageSolutionCalculator() {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Percentage (%)
-                                        {solveFor === 'percentage' && <span className="text-blue-600 ml-2">← Calculating this</span>}
+                                        {solveFor === 'percentage' && <span className="text-green-600 ml-2">← Calculating this</span>}
                                     </label>
-                                    <div className="flex gap-3">
+                                    <div className="flex flex-col sm:flex-row gap-3">
                                         <input
                                             type="number"
                                             value={percentage}
@@ -448,10 +449,10 @@ export default function PercentageSolutionCalculator() {
                                             min="0"
                                             max={percentageType === 'vv' ? '100' : undefined}
                                             step="0.01"
-                                            className={`flex-1 px-4 py-3 border-2 rounded-lg focus:border-blue-600 focus:outline-none transition-colors ${solveFor === 'percentage' ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'
+                                            className={`flex-1 px-4 py-3 border-2 rounded-lg focus:border-green-600 focus:outline-none transition-colors ${solveFor === 'percentage' ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'
                                                 }`}
                                         />
-                                        <div className="flex gap-2">
+                                        <div className="flex flex-wrap gap-2">
                                             {/* Quick percentage buttons */}
                                             {commonPercentages.map((pct) => (
                                                 <button
@@ -475,9 +476,9 @@ export default function PercentageSolutionCalculator() {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Solute Amount
-                                        {solveFor === 'solute' && <span className="text-blue-600 ml-2">← Calculating this</span>}
+                                        {solveFor === 'solute' && <span className="text-green-600 ml-2">← Calculating this</span>}
                                     </label>
-                                    <div className="flex gap-3">
+                                    <div className="flex flex-col sm:flex-row gap-3">
                                         <input
                                             type="number"
                                             value={soluteValue}
@@ -486,14 +487,14 @@ export default function PercentageSolutionCalculator() {
                                             disabled={solveFor === 'solute'}
                                             step="0.001"
                                             min="0"
-                                            className={`flex-1 px-4 py-3 border-2 rounded-lg focus:border-blue-600 focus:outline-none transition-colors ${solveFor === 'solute' ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'
+                                            className={`flex-1 px-4 py-3 border-2 rounded-lg focus:border-green-600 focus:outline-none transition-colors ${solveFor === 'solute' ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'
                                                 }`}
                                         />
                                         <select
                                             value={soluteUnit}
                                             onChange={(e) => setSoluteUnit(e.target.value)}
                                             disabled={solveFor === 'solute'}
-                                            className="w-24 px-3 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                                            className="w-full sm:w-24 px-3 py-3 border-2 border-gray-300 rounded-lg focus:border-green-600 focus:outline-none"
                                         >
                                             {units.solute.map(unit => (
                                                 <option key={unit} value={unit}>{unit}</option>
@@ -512,9 +513,9 @@ export default function PercentageSolutionCalculator() {
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
                                             Solvent Amount
-                                            {solveFor === 'solvent' && <span className="text-blue-600 ml-2">← Calculating this</span>}
+                                            {solveFor === 'solvent' && <span className="text-green-600 ml-2">← Calculating this</span>}
                                         </label>
-                                        <div className="flex gap-3">
+                                        <div className="flex flex-col sm:flex-row gap-3">
                                             <input
                                                 type="number"
                                                 value={solventValue}
@@ -523,14 +524,14 @@ export default function PercentageSolutionCalculator() {
                                                 disabled={solveFor === 'solvent'}
                                                 step="0.001"
                                                 min="0"
-                                                className={`flex-1 px-4 py-3 border-2 rounded-lg focus:border-blue-600 focus:outline-none transition-colors ${solveFor === 'solvent' ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'
+                                                className={`flex-1 px-4 py-3 border-2 rounded-lg focus:border-green-600 focus:outline-none transition-colors ${solveFor === 'solvent' ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'
                                                     }`}
                                             />
                                             <select
                                                 value={solventUnit}
                                                 onChange={(e) => setSolventUnit(e.target.value)}
                                                 disabled={solveFor === 'solvent'}
-                                                className="w-24 px-3 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                                                className="w-full sm:w-24 px-3 py-3 border-2 border-gray-300 rounded-lg focus:border-green-600 focus:outline-none"
                                             >
                                                 {units.solvent.map(unit => (
                                                     <option key={unit} value={unit}>{unit}</option>
@@ -549,9 +550,9 @@ export default function PercentageSolutionCalculator() {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Total Solution Amount
-                                        {solveFor === 'solution' && <span className="text-blue-600 ml-2">← Calculating this</span>}
+                                        {solveFor === 'solution' && <span className="text-green-600 ml-2">← Calculating this</span>}
                                     </label>
-                                    <div className="flex gap-3">
+                                    <div className="flex flex-col sm:flex-row gap-3">
                                         <input
                                             type="number"
                                             value={solutionValue}
@@ -560,14 +561,14 @@ export default function PercentageSolutionCalculator() {
                                             disabled={solveFor === 'solution'}
                                             step="0.001"
                                             min="0"
-                                            className={`flex-1 px-4 py-3 border-2 rounded-lg focus:border-blue-600 focus:outline-none transition-colors ${solveFor === 'solution' ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'
+                                            className={`flex-1 px-4 py-3 border-2 rounded-lg focus:border-green-600 focus:outline-none transition-colors ${solveFor === 'solution' ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'
                                                 }`}
                                         />
                                         <select
                                             value={solutionUnit}
                                             onChange={(e) => setSolutionUnit(e.target.value)}
                                             disabled={solveFor === 'solution'}
-                                            className="w-24 px-3 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                                            className="w-full sm:w-24 px-3 py-3 border-2 border-gray-300 rounded-lg focus:border-green-600 focus:outline-none"
                                         >
                                             {units.solution.map(unit => (
                                                 <option key={unit} value={unit}>{unit}</option>
@@ -583,10 +584,10 @@ export default function PercentageSolutionCalculator() {
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="flex gap-4 mt-6">
+                            <div className="flex flex-col sm:flex-row gap-4 mt-6">
                                 <button
                                     onClick={calculatePercentageSolution}
-                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center"
+                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center"
                                 >
                                     <Calculator className="w-5 h-5 mr-2" />
                                     Calculate
@@ -612,7 +613,7 @@ export default function PercentageSolutionCalculator() {
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="bg-gradient-to-r from-blue-50 to-green-50 border-2 border-blue-400 rounded-lg p-6">
+                                        <div className="bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-400 rounded-lg p-6">
                                             <h3 className="text-lg font-bold text-gray-800 mb-4 text-center">
                                                 Calculation Results
                                             </h3>
@@ -622,8 +623,8 @@ export default function PercentageSolutionCalculator() {
                                                 <p className="text-sm text-gray-600 mb-1">
                                                     {getSolveForLabel(solveFor)}
                                                 </p>
-                                                <p className="text-3xl font-bold text-blue-600">
-                                                    {result.value} <span className="text-xl">{result.unit}</span>
+                                                <p className="text-2xl sm:text-3xl font-bold text-green-600 break-words">
+                                                    {result.value} <span className="text-lg sm:text-xl">{result.unit}</span>
                                                 </p>
                                                 <p className="text-xs text-gray-500 mt-1">
                                                     {result.details}
@@ -631,9 +632,9 @@ export default function PercentageSolutionCalculator() {
                                             </div>
 
                                             {/* Preparation Instructions */}
-                                            <div className="bg-blue-50 rounded-lg p-4">
-                                                <p className="text-xs font-semibold text-blue-800 mb-2">📝 Preparation Instructions:</p>
-                                                <p className="text-xs text-blue-700">
+                                            <div className="bg-green-50 rounded-lg p-4">
+                                                <p className="text-xs font-semibold text-green-800 mb-2">📝 Preparation Instructions:</p>
+                                                <p className="text-xs text-green-700">
                                                     {solveFor === 'solute' && (
                                                         <>
                                                             Weigh/measure <strong>{result.value} {result.unit}</strong> of solute and add to a container.
@@ -725,7 +726,7 @@ export default function PercentageSolutionCalculator() {
                                     ].map((solution) => (
                                         <div
                                             key={solution.name}
-                                            className="p-3 hover:bg-blue-50 rounded-lg cursor-pointer transition-colors"
+                                            className="p-3 hover:bg-green-50 rounded-lg cursor-pointer transition-colors"
                                             onClick={() => {
                                                 setPercentageType(solution.type === 'w/v' ? 'wv' : solution.type === 'v/v' ? 'vv' : 'ww');
                                                 setPercentage(solution.percentage);
@@ -734,7 +735,7 @@ export default function PercentageSolutionCalculator() {
                                         >
                                             <div className="flex justify-between items-center">
                                                 <span className="font-medium text-gray-800">{solution.name}</span>
-                                                <span className="font-bold text-blue-600">{solution.percentage}%</span>
+                                                <span className="font-bold text-green-600">{solution.percentage}%</span>
                                             </div>
                                             <p className="text-xs text-gray-500 mt-1">
                                                 {solution.solute} in {solution.solvent} ({solution.type})
@@ -745,7 +746,7 @@ export default function PercentageSolutionCalculator() {
                             </div>
 
                             {/* Quick Reference */}
-                            <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg shadow-lg p-6 border-2 border-blue-200">
+                            <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-lg shadow-lg p-6 border-2 border-green-200">
                                 <h3 className="text-lg font-bold text-gray-800 mb-4">Quick Reference</h3>
                                 <div className="space-y-2">
                                     <div className="flex justify-between">
@@ -805,7 +806,7 @@ export default function PercentageSolutionCalculator() {
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>
-                                    <tr className="bg-blue-50">
+                                    <tr className="bg-green-50">
                                         <th className="py-2 px-3 text-left font-semibold text-gray-700">Percentage</th>
                                         <th className="py-2 px-3 text-left font-semibold text-gray-700">w/v (g/100mL)</th>
                                         <th className="py-2 px-3 text-left font-semibold text-gray-700">v/v (mL/100mL)</th>
@@ -824,7 +825,7 @@ export default function PercentageSolutionCalculator() {
                                         { percentage: '50%', wv: '50g', vv: '50mL', ww: '50g', use: 'Glycerol stocks' },
                                     ].map((row, index) => (
                                         <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                                            <td className="py-2 px-3 font-medium text-blue-600">{row.percentage}</td>
+                                            <td className="py-2 px-3 font-medium text-green-600">{row.percentage}</td>
                                             <td className="py-2 px-3">{row.wv}</td>
                                             <td className="py-2 px-3">{row.vv}</td>
                                             <td className="py-2 px-3">{row.ww}</td>

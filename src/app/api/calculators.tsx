@@ -61,6 +61,10 @@ export const pharmaCo: Tool[] = [
         link: "/calculation-tools/heat-formation-calculator",
       },
       {
+        name: "Heat Of Neutralization Calculator",
+        link: "/calculation-tools/HeatOfNeutralizationCalculator",
+      },
+      {
         name: "ppm ppb Calculator",
         link: "/calculation-tools/ppm-ppb-calculator",
       },
