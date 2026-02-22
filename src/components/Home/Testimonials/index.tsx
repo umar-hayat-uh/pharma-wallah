@@ -3,11 +3,10 @@ import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import React from "react";
-import Image from "next/image";
-import { Icon } from "@iconify/react/dist/iconify.js";
-import { GraduationCap, BookOpen, FlaskConical, Star, Award, Calendar } from "lucide-react";
+import Link from "next/link";
+import { Icon } from "@iconify/react";
+import { GraduationCap, Star, Calendar, MessageSquare, ArrowRight } from "lucide-react";
 
-// Student reviews data tailored for Pharmawallah
 const StudentReviewData = [
     {
         id: 1,
@@ -15,10 +14,9 @@ const StudentReviewData = [
         university: "University of Punjab, Lahore",
         year: "5th Year Pharm.D",
         rating: 4.8,
-        comment: "Pharmawallah's virtual labs transformed my understanding of Pharmaceutical Chemistry. The interactive simulations made complex concepts like drug design crystal clear!",
+        comment: "Pharmawallah's virtual labs transformed my understanding of Pharmaceutical Chemistry.",
         specialty: "Pharmaceutical Chemistry",
         semester: "Semester 8",
-        imgSrc: "/images/students/ahmed.jpg"
     },
     {
         id: 2,
@@ -26,10 +24,9 @@ const StudentReviewData = [
         university: "Dow University of Health Sciences",
         year: "4th Year Pharm.D",
         rating: 5.0,
-        comment: "As someone who struggled with Pharmacognosy, the visual drug encyclopedia and MCQ bank have been lifesavers. My grades improved by 30% in just one semester!",
+        comment: "As someone who struggled with Pharmacognosy, the visual drug encyclopedia and MCQ bank have been lifesavers.",
         specialty: "Pharmacognosy",
         semester: "Semester 6",
-        imgSrc: "/images/students/sara.jpg"
     },
     {
         id: 3,
@@ -37,10 +34,9 @@ const StudentReviewData = [
         university: "University of Karachi",
         year: "3rd Year Pharm.D",
         rating: 4.7,
-        comment: "The HEC-aligned curriculum coverage is exceptional. I no longer need multiple reference books - everything is on Pharmawallah. Saved me hours of study time!",
+        comment: "The HEC-aligned curriculum coverage is exceptional. I no longer need multiple reference books.",
         specialty: "Pharmacy Practice",
         semester: "Semester 5",
-        imgSrc: "/images/students/bilal.jpg"
     },
     {
         id: 4,
@@ -48,10 +44,9 @@ const StudentReviewData = [
         university: "University of Health Sciences",
         year: "6th Year Pharm.D",
         rating: 4.9,
-        comment: "Clinical Pharmacy simulations helped me prepare for hospital rotations. The patient case management scenarios are incredibly realistic and prepare you for real-world challenges.",
+        comment: "Clinical Pharmacy simulations helped me prepare for hospital rotations.",
         specialty: "Clinical Pharmacy",
         semester: "Semester 10",
-        imgSrc: "/images/students/fatima.jpg"
     },
     {
         id: 5,
@@ -59,10 +54,9 @@ const StudentReviewData = [
         university: "Bahauddin Zakariya University",
         year: "2nd Year Pharm.D",
         rating: 4.6,
-        comment: "The pharmaceutical calculators are a game-changer! From dosage calculations to kinetics, everything is automated and error-free. Perfect for exam preparation.",
+        comment: "The pharmaceutical calculators are a game-changer!",
         specialty: "Pharmaceutics",
         semester: "Semester 3",
-        imgSrc: "/images/students/omar.jpg"
     },
     {
         id: 6,
@@ -70,17 +64,15 @@ const StudentReviewData = [
         university: "University of Sargodha",
         year: "4th Year Pharm.D",
         rating: 4.8,
-        comment: "Pharmaceutical Microbiology virtual labs are brilliant! Antibiotic sensitivity testing simulations helped me understand procedures I couldn't perform in our crowded university lab.",
+        comment: "Pharmaceutical Microbiology virtual labs are brilliant!",
         specialty: "Pharmaceutical Microbiology",
         semester: "Semester 7",
-        imgSrc: "/images/students/zainab.jpg"
-    }
+    },
 ];
 
 const Testimonial = () => {
     const settings = {
         dots: true,
-        dotsClass: "slick-dots !bottom-[-40px]",
         infinite: true,
         slidesToShow: 3,
         slidesToScroll: 1,
@@ -88,156 +80,106 @@ const Testimonial = () => {
         autoplay: true,
         speed: 1000,
         autoplaySpeed: 4000,
-        cssEase: "linear",
-        pauseOnHover: true,
         responsive: [
-            {
-                breakpoint: 1200,
-                settings: {
-                    slidesToShow: 3,
-                    slidesToScroll: 1,
-                    infinite: true,
-                    dots: true
-                }
-            },
-            {
-                breakpoint: 1024,
-                settings: {
-                    slidesToShow: 2,
-                    slidesToScroll: 1,
-                    infinite: true,
-                    dots: true
-                }
-            },
-            {
-                breakpoint: 768,
-                settings: {
-                    slidesToShow: 1,
-                    slidesToScroll: 1,
-                    infinite: true,
-                    dots: true
-                }
-            },
-            {
-                breakpoint: 480,
-                settings: {
-                    slidesToShow: 1,
-                    slidesToScroll: 1,
-                    infinite: true,
-                    dots: true
-                }
-            }
-        ]
+            { breakpoint: 1024, settings: { slidesToShow: 2 } },
+            { breakpoint: 768, settings: { slidesToShow: 1 } },
+        ],
     };
 
-    const renderStars = (rating: number) => {
-        return (
-            <div className="flex items-center gap-1">
-                {[...Array(5)].map((_, index) => {
-                    const starValue = index + 1;
-                    if (rating >= starValue) {
-                        return <Star key={index} className="w-4 h-4 fill-yellow-400 text-yellow-400" />;
-                    } else if (rating >= starValue - 0.5) {
-                        return <Star key={index} className="w-4 h-4 fill-yellow-400 text-yellow-400" />;
-                    } else {
-                        return <Star key={index} className="w-4 h-4 fill-gray-200 text-gray-200" />;
-                    }
-                })}
-                <span className="ml-2 text-sm font-semibold text-gray-600">{rating.toFixed(1)}</span>
-            </div>
-        );
-    };
+    const averageRating = (StudentReviewData.reduce((acc, r) => acc + r.rating, 0) / StudentReviewData.length).toFixed(1);
+
+    const renderStars = (rating: number) => (
+        <div className="flex items-center gap-1">
+            {[...Array(5)].map((_, i) => (
+                <Star key={i} className={`w-4 h-4 ${i < rating ? "fill-yellow-400 text-yellow-400" : "fill-gray-200 text-gray-200"}`} />
+            ))}
+            <span className="ml-2 text-sm font-semibold text-gray-600">{rating.toFixed(1)}</span>
+        </div>
+    );
 
     const getSpecialtyColor = (specialty: string) => {
-        const colorMap: Record<string, string> = {
-            "Pharmacology": "bg-red-50 border-red-200",
-            "Pharmacognosy": "bg-green-50 border-green-200",
+        const map: Record<string, string> = {
+            Pharmacology: "bg-red-50 border-red-200",
+            Pharmacognosy: "bg-green-50 border-green-200",
             "Pharmaceutical Chemistry": "bg-blue-50 border-blue-200",
             "Pharmacy Practice": "bg-purple-50 border-purple-200",
-            "Pharmaceutics": "bg-cyan-50 border-cyan-200",
+            Pharmaceutics: "bg-cyan-50 border-cyan-200",
             "Pharmaceutical Microbiology": "bg-indigo-50 border-indigo-200",
-            "Clinical Pharmacy": "bg-pink-50 border-pink-200"
+            "Clinical Pharmacy": "bg-pink-50 border-pink-200",
         };
-        return colorMap[specialty] || "bg-gray-50 border-gray-200";
+        return map[specialty] || "bg-gray-50 border-gray-200";
     };
 
     const getSpecialtyIcon = (specialty: string) => {
-        const iconMap: Record<string, React.ReactNode> = {
-            "Pharmacology": <Icon icon="tabler:heart-rate-monitor" className="text-red-500" />,
-            "Pharmacognosy": <Icon icon="tabler:leaf" className="text-green-500" />,
-            "Pharmaceutical Chemistry": <Icon icon="tabler:flask" className="text-blue-500" />,
-            "Pharmacy Practice": <Icon icon="tabler:stethoscope" className="text-purple-500" />,
-            "Pharmaceutics": <Icon icon="tabler:beaker" className="text-cyan-500" />,
-            "Pharmaceutical Microbiology": <Icon icon="tabler:microscope" className="text-indigo-500" />,
-            "Clinical Pharmacy": <Icon icon="tabler:users" className="text-pink-500" />
+        const map: Record<string, string> = {
+            Pharmacology: "tabler:heart-rate-monitor",
+            Pharmacognosy: "tabler:leaf",
+            "Pharmaceutical Chemistry": "tabler:flask",
+            "Pharmacy Practice": "tabler:stethoscope",
+            Pharmaceutics: "tabler:beaker",
+            "Pharmaceutical Microbiology": "tabler:microscope",
+            "Clinical Pharmacy": "tabler:users",
         };
-        return iconMap[specialty] || <BookOpen className="w-4 h-4 text-gray-500" />;
+        return map[specialty] || "tabler:book";
     };
 
     return (
-        <section id="testimonial" className="py-16 bg-gradient-to-b from-white to-blue-50">
-            <div className='container mx-auto lg:max-w-screen-xl md:max-w-screen-md px-4'>
-                <div className="text-center mb-12">
-                    <div className="inline-flex items-center justify-center gap-3 mb-4">
-                        <h2 className="text-3xl md:text-4xl font-bold text-midnight_text">
+        <section className="w-full py-16 md:py-20 lg:py-24 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+                    <div>
+                        <span className="inline-block text-sm font-semibold text-blue-600 uppercase tracking-wider mb-3">
+                            Student Testimonials
+                        </span>
+                        <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
                             What Our Students Say
                         </h2>
+                        <p className="mt-3 text-gray-600 max-w-xl">
+                            Join thousands of pharmacy students who are transforming their education with Pharmawallah.
+                        </p>
                     </div>
-                    <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                        Hear from pharmacy students across Pakistan who are transforming their education with Pharmawallah
-                    </p>
+                    <div className="flex items-center gap-4 bg-blue-50 p-4 rounded-xl">
+                        <div className="text-center">
+                            <div className="text-3xl font-bold text-blue-700">{averageRating}</div>
+                            <div className="flex">{renderStars(parseFloat(averageRating))}</div>
+                            <div className="text-xs text-gray-500 mt-1">{StudentReviewData.length}+ reviews</div>
+                        </div>
+                        <Link
+                            href="/reviews"
+                            className="inline-flex items-center gap-1 text-blue-600 text-sm font-medium hover:text-blue-800"
+                        >
+                            Write a review <MessageSquare className="w-4 h-4" />
+                        </Link>
+                    </div>
                 </div>
 
                 <Slider {...settings}>
                     {StudentReviewData.map((student) => (
                         <div key={student.id} className="px-3">
-                            <div className="bg-white rounded-2xl p-6 my-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-200 min-h-[380px] flex flex-col">
-                                {/* Top section with rating and specialty */}
+                            <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow min-h-[320px] flex flex-col">
                                 <div className="flex justify-between items-start mb-4">
-                                    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${getSpecialtyColor(student.specialty)} text-sm font-medium border`}>
-                                        {getSpecialtyIcon(student.specialty)}
+                                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full ${getSpecialtyColor(student.specialty)} text-sm`}>
+                                        <Icon icon={getSpecialtyIcon(student.specialty)} className="w-4 h-4" />
                                         <span className="text-gray-700">{student.specialty}</span>
                                     </div>
                                     {renderStars(student.rating)}
                                 </div>
-
-                                {/* Student comment */}
-                                <div className="mb-6 flex-grow">
-                                    <div className="relative">
-                                        <Icon
-                                            icon="tabler:quote"
-                                            className="absolute -top-2 -left-2 text-blue-100 text-4xl -z-10"
-                                        />
-                                        <p className="text-gray-700 text-base leading-relaxed italic pl-4">
-                                            "{student.comment}"
-                                        </p>
-                                    </div>
+                                <div className="mb-4 flex-grow">
+                                    <p className="text-gray-700 text-sm italic">"{student.comment}"</p>
                                 </div>
-
-                                {/* Student info */}
-                                <div className="flex items-center gap-4 pt-4 border-t border-gray-100">
-                                    <div className="relative">
-                                        <div className="w-14 h-14 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-lg">
-                                            {student.name.split(' ').map(n => n[0]).join('')}
-                                        </div>
-                                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                                            <GraduationCap className="w-3 h-3 text-white" />
-                                        </div>
+                                <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-green-500 flex items-center justify-center text-white font-bold text-sm">
+                                        {student.name.split(' ').map(n => n[0]).join('')}
                                     </div>
-
                                     <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <h3 className="text-lg font-semibold text-gray-900">{student.name}</h3>
-                                            <span className="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
-                                                {student.year}
-                                            </span>
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="text-sm font-semibold text-gray-900">{student.name}</h3>
+                                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">{student.year}</span>
                                         </div>
-                                        <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                                            <Icon icon="tabler:school" className="w-4 h-4" />
+                                        <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                                            <Icon icon="tabler:school" className="w-3 h-3" />
                                             <span>{student.university}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                                            <Calendar className="w-4 h-4" />
+                                            <Calendar className="w-3 h-3 ml-2" />
                                             <span>{student.semester}</span>
                                         </div>
                                     </div>
@@ -247,6 +189,14 @@ const Testimonial = () => {
                     ))}
                 </Slider>
 
+                <div className="mt-10 text-center">
+                    <Link
+                        href="/testimonials"
+                        className="inline-flex items-center gap-2 text-blue-600 font-medium hover:text-blue-800"
+                    >
+                        Read more stories <ArrowRight className="w-4 h-4" />
+                    </Link>
+                </div>
             </div>
         </section>
     );

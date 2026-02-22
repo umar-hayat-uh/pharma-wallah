@@ -65,7 +65,7 @@ const Header: React.FC = () => {
           {/* Actions */}
           <div className="flex items-center gap-4">
             <Link
-              href="#"
+              href="/ai-guide"
               className="hidden lg:block bg-primary text-white px-6 py-3 rounded-full font-medium hover:opacity-90"
             >
               Expert AI Guide
@@ -122,11 +122,11 @@ const Header: React.FC = () => {
           ))}
 
           <Link
-            href="#"
+            href="/ai-guide"
             className="mt-4 border border-primary text-primary px-4 py-2 rounded-lg text-center hover:bg-primary hover:text-white"
             onClick={() => setNavbarOpen(false)}
           >
-            Get the App
+            Expert AI Guide
           </Link>
         </nav>
       </aside>

@@ -1,11 +1,11 @@
 import React from "react";
 import Hero from "@/components/Home/Hero";
 import Companies from "@/components/Home/Companies";
-import Features from "@/components/Home/Features"; // New
+import Features from "@/components/Home/Features";
 import Mentor from "@/components/Home/Mentor";
 import Testimonial from "@/components/Home/Testimonials";
-import Newsletter from "@/components/Home/Newsletter";
-import ContactForm from "@/components/Home/ContactForm"; // New
+import Blog from "@/components/Home/Blog"; // replace Newsletter with Blog
+import ContactForm from "@/components/Home/ContactForm";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -15,13 +15,13 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <main className="overflow-hidden">
+    <main className=" bg-white">
       <Hero />
       <Companies />
       <Features />
       <Mentor />
       <Testimonial />
-      <Newsletter />
+      <Blog />
       <ContactForm />
     </main>
   );
