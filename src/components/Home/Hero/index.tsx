@@ -43,7 +43,7 @@ const Hero = () => {
                         <div className='flex gap-2 items-center'>
                             <Icon icon="solar:verified-check-bold" className="text-green-600 text-xl" />
                             <p className='text-green-700 text-sm font-semibold'>
-                                Pakistan's #1 Pharmacy eLearning Platform
+                                Pakistan's #2 Pharmacy eLearning Platform
                             </p>
                         </div>
 
