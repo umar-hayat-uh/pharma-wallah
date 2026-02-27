@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import MCQCard from '@/components/Mcq/MCQCard';
 import { MCQSection } from '@/types/mcq';
-import mcqData from '@/content/mcqs/file.json';
+import mcqData from '@/content/mcqs/toxic-organisms.json';
 // Import background icons
 import {
   Pill,
