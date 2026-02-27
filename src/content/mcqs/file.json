@@ -1,142 +1,409 @@
-[
-  {
-    "id": 1,
-    "question": "Which of the following is a beta-blocker?",
-    "options": [
-      { "id": "A", "text": "Atenolol" },
-      { "id": "B", "text": "Amlodipine" },
-      { "id": "C", "text": "Lisinopril" },
-      { "id": "D", "text": "Metformin" }
-    ],
-    "correctAnswer": "A",
-    "explanation": "Atenolol is a cardioselective beta-1 adrenergic antagonist used in hypertension and angina. Beta-blockers reduce heart rate and myocardial contractility by blocking catecholamine effects. Amlodipine is a dihydropyridine calcium channel blocker, Lisinopril is an ACE inhibitor, and Metformin is a biguanide antidiabetic.",
-    "reference": "Goodman & Gilman's The Pharmacological Basis of Therapeutics, 14th Ed., Chapter 12",
-    "difficulty": "medium"
-  },
-  {
-    "id": 2,
-    "question": "Which drug is a proton pump inhibitor?",
-    "options": [
-      { "id": "A", "text": "Ranitidine" },
-      { "id": "B", "text": "Omeprazole" },
-      { "id": "C", "text": "Famotidine" },
-      { "id": "D", "text": "Sucralfate" }
-    ],
-    "correctAnswer": "B",
-    "explanation": "Omeprazole is a proton pump inhibitor that irreversibly blocks H+/K+ ATPase in gastric parietal cells, reducing acid secretion. Ranitidine and Famotidine are H2-receptor antagonists, while Sucralfate forms a protective barrier.",
-    "reference": "Katzung BG. Basic & Clinical Pharmacology, 15th Ed., Chapter 62",
-    "difficulty": "easy"
-  },
-  {
-    "id": 3,
-    "question": "Which antibiotic inhibits bacterial protein synthesis by binding to the 50S ribosomal subunit?",
-    "options": [
-      { "id": "A", "text": "Tetracycline" },
-      { "id": "B", "text": "Erythromycin" },
-      { "id": "C", "text": "Gentamicin" },
-      { "id": "D", "text": "Ciprofloxacin" }
-    ],
-    "correctAnswer": "B",
-    "explanation": "Erythromycin (a macrolide) binds to the 50S subunit, blocking translocation. Tetracycline binds the 30S subunit, Gentamicin (aminoglycoside) also binds 30S, and Ciprofloxacin inhibits DNA gyrase.",
-    "reference": "Mandell, Douglas, and Bennett's Principles and Practice of Infectious Diseases, 9th Ed., Chapter 20",
-    "difficulty": "medium"
-  },
-  {
-    "id": 4,
-    "question": "What is the primary purpose of adding a disintegrant to a tablet formulation?",
-    "options": [
-      { "id": "A", "text": "Enhance powder flow" },
-      { "id": "B", "text": "Promote tablet breakup in the GI tract" },
-      { "id": "C", "text": "Lubricate the tablet during compression" },
-      { "id": "D", "text": "Improve tablet appearance" }
-    ],
-    "correctAnswer": "B",
-    "explanation": "Disintegrants (e.g., croscarmellose sodium) swell upon contact with water, causing the tablet to break apart into smaller particles for drug dissolution. Flow aids are glidants, lubricants reduce friction, and coating improves appearance.",
-    "reference": "Aulton's Pharmaceutics: The Design and Manufacture of Medicines, 6th Ed., Chapter 27",
-    "difficulty": "easy"
-  },
-  {
-    "id": 5,
-    "question": "Which alkaloid is obtained from the plant *Catharanthus roseus* (Madagascar periwinkle) and used in cancer chemotherapy?",
-    "options": [
-      { "id": "A", "text": "Morphine" },
-      { "id": "B", "text": "Vinblastine" },
-      { "id": "C", "text": "Atropine" },
-      { "id": "D", "text": "Quinine" }
-    ],
-    "correctAnswer": "B",
-    "explanation": "Vinblastine and vincristine are vinca alkaloids from *Catharanthus roseus* that inhibit microtubule formation, used in lymphomas and leukemias. Morphine comes from opium poppy, Atropine from *Atropa belladonna*, Quinine from cinchona bark.",
-    "reference": "Trease and Evans' Pharmacognosy, 16th Ed., Chapter 21",
-    "difficulty": "hard"
-  },
-  {
-    "id": 6,
-    "question": "The cardiac glycoside digoxin is derived from which plant?",
-    "options": [
-      { "id": "A", "text": "Digitalis lanata" },
-      { "id": "B", "text": "Rauwolfia serpentina" },
-      { "id": "C", "text": "Papaver somniferum" },
-      { "id": "D", "text": "Ephedra sinica" }
-    ],
-    "correctAnswer": "A",
-    "explanation": "Digoxin is obtained from *Digitalis lanata* (and *Digitalis purpurea*). It inhibits Na+/K+ ATPase, increasing cardiac contractility. Rauwolfia yields reserpine, Papaver somniferum yields morphine, and Ephedra yields ephedrine.",
-    "reference": "Kokate CK, Purohit AP, Gokhale SB. Pharmacognosy, 55th Ed., Chapter 14",
-    "difficulty": "medium"
-  },
-  {
-    "id": 7,
-    "question": "Which laboratory value is most important to monitor in a patient taking warfarin?",
-    "options": [
-      { "id": "A", "text": "Serum creatinine" },
-      { "id": "B", "text": "PT/INR" },
-      { "id": "C", "text": "aPTT" },
-      { "id": "D", "text": "Platelet count" }
-    ],
-    "correctAnswer": "B",
-    "explanation": "Warfarin inhibits vitamin K–dependent clotting factors; its effect is monitored by prothrombin time (PT) and international normalized ratio (INR). aPTT monitors heparin, platelet count monitors thrombocytopenia, creatinine monitors renal function.",
-    "reference": "Dipiro JT, et al. Pharmacotherapy: A Pathophysiologic Approach, 11th Ed., Chapter 18",
-    "difficulty": "easy"
-  },
-  {
-    "id": 8,
-    "question": "A patient with type 2 diabetes and an eGFR of 25 mL/min should avoid which antidiabetic drug?",
-    "options": [
-      { "id": "A", "text": "Metformin" },
-      { "id": "B", "text": "Sitagliptin" },
-      { "id": "C", "text": "Insulin glargine" },
-      { "id": "D", "text": "Empagliflozin" }
-    ],
-    "correctAnswer": "A",
-    "explanation": "Metformin is contraindicated when eGFR < 30 mL/min due to risk of lactic acidosis. Sitagliptin requires dose adjustment, empagliflozin is not recommended below 45, but metformin is absolutely contraindicated at this level. Insulin can be used with caution.",
-    "reference": "American Diabetes Association. Standards of Medical Care in Diabetes—2024, Diabetes Care 2024;47(Suppl 1)",
-    "difficulty": "hard"
-  },
-  {
-    "id": 9,
-    "question": "Which pharmacokinetic parameter describes the volume of plasma cleared of drug per unit time?",
-    "options": [
-      { "id": "A", "text": "Half-life" },
-      { "id": "B", "text": "Clearance" },
-      { "id": "C", "text": "Volume of distribution" },
-      { "id": "D", "text": "Bioavailability" }
-    ],
-    "correctAnswer": "B",
-    "explanation": "Clearance (CL) is the volume of plasma from which drug is completely removed per unit time (e.g., L/h). Half-life is time for concentration to halve, Vd relates dose to concentration, F is fraction absorbed.",
-    "reference": "Shargel L, Yu A. Applied Biopharmaceutics & Pharmacokinetics, 8th Ed., Chapter 5",
-    "difficulty": "medium"
-  },
-  {
-    "id": 10,
-    "question": "A drug follows first-order kinetics. If the initial concentration is 100 mg/L and the elimination rate constant is 0.1 hr⁻¹, what is the concentration after 3 hours?",
-    "options": [
-      { "id": "A", "text": "50 mg/L" },
-      { "id": "B", "text": "74 mg/L" },
-      { "id": "C", "text": "90 mg/L" },
-      { "id": "D", "text": "97 mg/L" }
-    ],
-    "correctAnswer": "B",
-    "explanation": "First-order: C = C0 × e^(-kt) = 100 × e^(-0.1×3) = 100 × e^(-0.3) ≈ 100 × 0.741 = 74.1 mg/L.",
-    "reference": "Rowland M, Tozer TN. Clinical Pharmacokinetics and Pharmacodynamics, 5th Ed., Chapter 2",
-    "difficulty": "hard"
-  }
-]
+{
+  "sections": [
+    {
+      "title": "Easy (1–10)",
+      "questions": [
+        {
+          "id": 1,
+          "question": "What is the primary purpose of pharmacognosy in the study of toxic organisms?",
+          "options": [
+            { "id": "a", "text": "To synthesize new toxins" },
+            { "id": "b", "text": "To identify, classify, and study medicinal/toxic substances from natural sources" },
+            { "id": "c", "text": "To treat poisoning cases" },
+            { "id": "d", "text": "To regulate pharmaceutical drugs" }
+          ],
+          "correctAnswer": "b",
+          "explanation": "Pharmacognosy involves the study of natural drugs and toxins.",
+          "difficulty": "Easy"
+        },
+        {
+          "id": 2,
+          "question": "Which plant has bright red seeds with a black eye?",
+          "options": [
+            { "id": "a", "text": "Datura stramonium" },
+            { "id": "b", "text": "Abrus precatorius" },
+            { "id": "c", "text": "Digitalis purpurea" },
+            { "id": "d", "text": "Nicotiana tabacum" }
+          ],
+          "correctAnswer": "b",
+          "explanation": "Known for its distinctive red seeds with a black spot.",
+          "difficulty": "Easy"
+        },
+        {
+          "id": 3,
+          "question": "What is the main toxic component of Abrus precatorius seeds?",
+          "options": [
+            { "id": "a", "text": "Abrin" },
+            { "id": "b", "text": "Nicotine" },
+            { "id": "c", "text": "Atropine" },
+            { "id": "d", "text": "Digitoxin" }
+          ],
+          "correctAnswer": "a",
+          "explanation": "A type 2 ribosome-inactivating protein (RIP) in rosary pea seeds.",
+          "difficulty": "Easy"
+        },
+        {
+          "id": 4,
+          "question": "Which toxin in honey bee venom is a potent cytolytic peptide?",
+          "options": [
+            { "id": "a", "text": "Apamin" },
+            { "id": "b", "text": "Phospholipase A2" },
+            { "id": "c", "text": "Melittin" },
+            { "id": "d", "text": "Hyaluronidase" }
+          ],
+          "correctAnswer": "c",
+          "explanation": "The major cytolytic peptide in bee venom.",
+          "difficulty": "Easy"
+        },
+        {
+          "id": 5,
+          "question": "What is the primary clinical syndrome caused by black widow spider venom?",
+          "options": [
+            { "id": "a", "text": "Anticholinergic toxidrome" },
+            { "id": "b", "text": "Latrodectism" },
+            { "id": "c", "text": "Flaccid paralysis" },
+            { "id": "d", "text": "Hepatotoxicity" }
+          ],
+          "correctAnswer": "b",
+          "explanation": "Syndrome caused by black widow spider venom, featuring muscle cramps and autonomic instability.",
+          "difficulty": "Easy"
+        },
+        {
+          "id": 6,
+          "question": "Which organism produces β-bungarotoxin?",
+          "options": [
+            { "id": "a", "text": "Bungarus sindanus (Sind krait)" },
+            { "id": "b", "text": "Apis mellifera (honey bee)" },
+            { "id": "c", "text": "Latrodectus mactans (black widow spider)" },
+            { "id": "d", "text": "Datura stramonium (jimsonweed)" }
+          ],
+          "correctAnswer": "a",
+          "explanation": "Produces β-bungarotoxin, which blocks acetylcholine release.",
+          "difficulty": "Easy"
+        },
+        {
+          "id": 7,
+          "question": "What is the specific antidote for Digitalis purpurea poisoning?",
+          "options": [
+            { "id": "a", "text": "Naloxone" },
+            { "id": "b", "text": "Physostigmine" },
+            { "id": "c", "text": "Digoxin-specific antibody fragments (Fab)" },
+            { "id": "d", "text": "Antivenom" }
+          ],
+          "correctAnswer": "c",
+          "explanation": "Specific antidote for cardiac glycoside poisoning.",
+          "difficulty": "Easy"
+        },
+        {
+          "id": 8,
+          "question": "Which plant contains tropane alkaloids like atropine and scopolamine?",
+          "options": [
+            { "id": "a", "text": "Digitalis purpurea" },
+            { "id": "b", "text": "Datura stramonium" },
+            { "id": "c", "text": "Nicotiana tabacum" },
+            { "id": "d", "text": "Papaver somniferum" }
+          ],
+          "correctAnswer": "b",
+          "explanation": "Contains tropane alkaloids causing anticholinergic effects.",
+          "difficulty": "Easy"
+        },
+        {
+          "id": 9,
+          "question": "What is the primary toxic mechanism of abrin?",
+          "options": [
+            { "id": "a", "text": "Inhibition of protein synthesis" },
+            { "id": "b", "text": "Blockade of acetylcholine receptors" },
+            { "id": "c", "text": "Activation of opioid receptors" },
+            { "id": "d", "text": "Inhibition of Na+/K+ ATPase" }
+          ],
+          "correctAnswer": "a",
+          "explanation": "Abrin inactivates ribosomes, halting protein production.",
+          "difficulty": "Easy"
+        },
+        {
+          "id": 10,
+          "question": "Which of the following is a key public health strategy for preventing opioid-related poisonings?",
+          "options": [
+            { "id": "a", "text": "Venom immunotherapy" },
+            { "id": "b", "text": "Substance abuse prevention programs" },
+            { "id": "c", "text": "Wearing protective footwear" },
+            { "id": "d", "text": "Clearing spider webs" }
+          ],
+          "correctAnswer": "b",
+          "explanation": "A key public health approach to reducing opioid dependence and overdose.",
+          "difficulty": "Easy"
+        }
+      ]
+    },
+    {
+      "title": "Medium (11–20)",
+      "questions": [
+        {
+          "id": 11,
+          "question": "What is the rationale for using physostigmine in severe Datura poisoning?",
+          "options": [
+            { "id": "a", "text": "It reverses opioid-induced respiratory depression" },
+            { "id": "b", "text": "It inhibits acetylcholinesterase, increasing acetylcholine to counteract anticholinergic effects" },
+            { "id": "c", "text": "It blocks nicotinic receptors" },
+            { "id": "d", "text": "It acts as an anti-inflammatory" }
+          ],
+          "correctAnswer": "b",
+          "explanation": "Physostigmine is a cholinesterase inhibitor.",
+          "difficulty": "Medium"
+        },
+        {
+          "id": 12,
+          "question": "Why is venom immunotherapy used for honey bee stings?",
+          "options": [
+            { "id": "a", "text": "To neutralize venom toxins directly" },
+            { "id": "b", "text": "To desensitize allergic individuals and prevent anaphylaxis" },
+            { "id": "c", "text": "To boost general immunity" },
+            { "id": "d", "text": "To reduce local pain and swelling" }
+          ],
+          "correctAnswer": "b",
+          "explanation": "Immunotherapy reduces sensitivity to venom allergens.",
+          "difficulty": "Medium"
+        },
+        {
+          "id": 13,
+          "question": "What is a major risk associated with antivenom administration?",
+          "options": [
+            { "id": "a", "text": "Bradycardia" },
+            { "id": "b", "text": "Acute anaphylaxis or serum sickness" },
+            { "id": "c", "text": "Hepatotoxicity" },
+            { "id": "d", "text": "Renal failure" }
+          ],
+          "correctAnswer": "b",
+          "explanation": "Common adverse effects of antivenom derived from animal sera.",
+          "difficulty": "Medium"
+        },
+        {
+          "id": 14,
+          "question": "Which toxic organism requires both pre-synaptic and post-synaptic blockade for its neurotoxic effect?",
+          "options": [
+            { "id": "a", "text": "Bungarus sindanus" },
+            { "id": "b", "text": "Latrodectus mactans" },
+            { "id": "c", "text": "Apis mellifera" },
+            { "id": "d", "text": "Digitalis purpurea" }
+          ],
+          "correctAnswer": "a",
+          "explanation": "Its venom contains toxins that block both pre-synaptic (β-bungarotoxin) and post-synaptic (α-neurotoxins) sites.",
+          "difficulty": "Medium"
+        },
+        {
+          "id": 15,
+          "question": "What is the primary goal of environmental management in toxin prevention?",
+          "options": [
+            { "id": "a", "text": "To treat poisoned individuals" },
+            { "id": "b", "text": "To reduce exposure by modifying the environment" },
+            { "id": "c", "text": "To develop new antidotes" },
+            { "id": "d", "text": "To regulate pharmaceutical sales" }
+          ],
+          "correctAnswer": "b",
+          "explanation": "Examples include clearing spider webs and wearing protective footwear.",
+          "difficulty": "Medium"
+        },
+        {
+          "id": 16,
+          "question": "Which toxin acts as an agonist at nicotinic acetylcholine receptors?",
+          "options": [
+            { "id": "a", "text": "Nicotine" },
+            { "id": "b", "text": "Atropine" },
+            { "id": "c", "text": "Morphine" },
+            { "id": "d", "text": "Abrin" }
+          ],
+          "correctAnswer": "a",
+          "explanation": "Agonist at nicotinic acetylcholine receptors.",
+          "difficulty": "Medium"
+        },
+        {
+          "id": 17,
+          "question": "What is the key pharmacognostic feature of Digitalis purpurea?",
+          "options": [
+            { "id": "a", "text": "Bright red seeds with a black eye" },
+            { "id": "b", "text": "Purple bell-shaped flowers" },
+            { "id": "c", "text": "White latex from seed pods" },
+            { "id": "d", "text": "Leaves used for smoking" }
+          ],
+          "correctAnswer": "b",
+          "explanation": "Characteristic of Digitalis purpurea.",
+          "difficulty": "Medium"
+        },
+        {
+          "id": 18,
+          "question": "Which treatment is specific for opioid overdose?",
+          "options": [
+            { "id": "a", "text": "Naloxone" },
+            { "id": "b", "text": "Physostigmine" },
+            { "id": "c", "text": "Digoxin-specific Fab fragments" },
+            { "id": "d", "text": "Benzodiazepines" }
+          ],
+          "correctAnswer": "a",
+          "explanation": "Opioid receptor antagonist used to reverse opioid overdose.",
+          "difficulty": "Medium"
+        },
+        {
+          "id": 19,
+          "question": "What is the main mechanism of latrodectism?",
+          "options": [
+            { "id": "a", "text": "Inhibition of protein synthesis" },
+            { "id": "b", "text": "Massive release of neurotransmitters from presynaptic terminals" },
+            { "id": "c", "text": "Blockade of neuromuscular junctions" },
+            { "id": "d", "text": "Cardiac glycoside activity" }
+          ],
+          "correctAnswer": "b",
+          "explanation": "α-latrotoxin causes uncontrolled exocytosis.",
+          "difficulty": "Medium"
+        },
+        {
+          "id": 20,
+          "question": "Why is accurate morphological identification important in toxicology?",
+          "options": [
+            { "id": "a", "text": "It helps in synthesizing new drugs" },
+            { "id": "b", "text": "It enables correct diagnosis and appropriate management" },
+            { "id": "c", "text": "It is required for regulatory approval" },
+            { "id": "d", "text": "It reduces the cost of treatment" }
+          ],
+          "correctAnswer": "b",
+          "explanation": "Accurate ID guides treatment and prevention.",
+          "difficulty": "Medium"
+        }
+      ]
+    },
+    {
+      "title": "Hard (21–30)",
+      "questions": [
+        {
+          "id": 21,
+          "question": "How does the mechanism of β-bungarotoxin differ from that of α-latrotoxin?",
+          "options": [
+            { "id": "a", "text": "β-bungarotoxin inhibits acetylcholine release; α-latrotoxin causes massive release" },
+            { "id": "b", "text": "Both cause massive neurotransmitter release" },
+            { "id": "c", "text": "Both inhibit protein synthesis" },
+            { "id": "d", "text": "Both block postsynaptic receptors" }
+          ],
+          "correctAnswer": "a",
+          "explanation": "Different presynaptic mechanisms.",
+          "difficulty": "Hard"
+        },
+        {
+          "id": 22,
+          "question": "What integrated strategy would be most effective in reducing Datura poisoning in a community?",
+          "options": [
+            { "id": "a", "text": "Distributing naloxone kits" },
+            { "id": "b", "text": "Public education on plant identification and dangers" },
+            { "id": "c", "text": "Stockpiling antivenom" },
+            { "id": "d", "text": "Implementing tobacco regulation" }
+          ],
+          "correctAnswer": "b",
+          "explanation": "Most effective primary prevention for plant poisoning.",
+          "difficulty": "Hard"
+        },
+        {
+          "id": 23,
+          "question": "Why is there no specific antidote for abrin poisoning?",
+          "options": [
+            { "id": "a", "text": "Abrin is too unstable to target" },
+            { "id": "b", "text": "The mechanism involves irreversible ribosomal inactivation, making late intervention ineffective" },
+            { "id": "c", "text": "Antidotes cause severe side effects" },
+            { "id": "d", "text": "Abrin poisoning is always fatal regardless of treatment" }
+          ],
+          "correctAnswer": "b",
+          "explanation": "Once protein synthesis is halted, cell death proceeds; treatment is supportive.",
+          "difficulty": "Hard"
+        },
+        {
+          "id": 24,
+          "question": "Which organism's toxicity is primarily due to an enzymatic inhibition affecting myocardial ion gradients?",
+          "options": [
+            { "id": "a", "text": "Digitalis purpurea" },
+            { "id": "b", "text": "Nicotiana tabacum" },
+            { "id": "c", "text": "Abrus precatorius" },
+            { "id": "d", "text": "Latrodectus mactans" }
+          ],
+          "correctAnswer": "a",
+          "explanation": "Cardiac glycosides inhibit Na+/K+ ATPase, affecting myocardial contractility and rhythm.",
+          "difficulty": "Hard"
+        },
+        {
+          "id": 25,
+          "question": "What is a contraindication for using physostigmine in anticholinergic poisoning?",
+          "options": [
+            { "id": "a", "text": "Concurrent opioid use" },
+            { "id": "b", "text": "Cardiovascular instability or seizure risk" },
+            { "id": "c", "text": "Allergy to bee venom" },
+            { "id": "d", "text": "Renal impairment" }
+          ],
+          "correctAnswer": "b",
+          "explanation": "Physostigmine can exacerbate bradycardia or induce seizures.",
+          "difficulty": "Hard"
+        },
+        {
+          "id": 26,
+          "question": "How does nicotine's biphasic effect manifest clinically?",
+          "options": [
+            { "id": "a", "text": "Initial stimulation followed by paralysis" },
+            { "id": "b", "text": "Persistent stimulation" },
+            { "id": "c", "text": "Immediate paralysis" },
+            { "id": "d", "text": "Delayed hepatotoxicity" }
+          ],
+          "correctAnswer": "a",
+          "explanation": "Nicotine first stimulates then blocks nicotinic receptors.",
+          "difficulty": "Hard"
+        },
+        {
+          "id": 27,
+          "question": "What is the role of phospholipase A2 in honey bee venom toxicity?",
+          "options": [
+            { "id": "a", "text": "It blocks potassium channels" },
+            { "id": "b", "text": "It synergizes with melittin to increase membrane damage and acts as a major allergen" },
+            { "id": "c", "text": "It inhibits neurotransmitter release" },
+            { "id": "d", "text": "It stimulates insulin secretion" }
+          ],
+          "correctAnswer": "b",
+          "explanation": "Phospholipase A2 enhances toxicity and is immunogenic.",
+          "difficulty": "Hard"
+        },
+        {
+          "id": 28,
+          "question": "Which prevention strategy directly addresses individual susceptibility to honey bee stings?",
+          "options": [
+            { "id": "a", "text": "Public education" },
+            { "id": "b", "text": "Environmental management" },
+            { "id": "c", "text": "Venom immunotherapy" },
+            { "id": "d", "text": "Regulatory controls" }
+          ],
+          "correctAnswer": "c",
+          "explanation": "Tailored medical prevention for individuals with severe insect sting allergies.",
+          "difficulty": "Hard"
+        },
+        {
+          "id": 29,
+          "question": "Why is supportive care emphasized in the management of most plant and animal poisonings?",
+          "options": [
+            { "id": "a", "text": "Specific antidotes are always available" },
+            { "id": "b", "text": "Many toxins lack specific antidotes, and care focuses on maintaining vital functions" },
+            { "id": "c", "text": "Supportive care is cheaper than antidotes" },
+            { "id": "d", "text": "It is required by law" }
+          ],
+          "correctAnswer": "b",
+          "explanation": "Supportive care is the cornerstone of clinical toxicology.",
+          "difficulty": "Hard"
+        },
+        {
+          "id": 30,
+          "question": "Which toxic organism exemplifies the 'Janus compound' concept, having both toxic and therapeutic applications?",
+          "options": [
+            { "id": "a", "text": "Digitalis purpurea (cardiac glycosides used in heart failure but toxic in overdose)" },
+            { "id": "b", "text": "Abrus precatorius" },
+            { "id": "c", "text": "Latrodectus mactans" },
+            { "id": "d", "text": "Nicotiana tabacum" }
+          ],
+          "correctAnswer": "a",
+          "explanation": "Illustrates the dual nature of many natural toxins.",
+          "difficulty": "Hard"
+        }
+      ]
+    }
+  ]
+}

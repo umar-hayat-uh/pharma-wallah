@@ -1,16 +1,18 @@
-// src/types/mcq.ts
-
-export interface Option {
-  id: string;
+export interface MCQOption {
+  id: string; // a, b, c, d
   text: string;
 }
 
 export interface MCQ {
   id: number;
   question: string;
-  options: Option[];
+  options: MCQOption[];
   correctAnswer: string;
   explanation: string;
-  reference?: string;
-  difficulty: 'easy' | 'medium' | 'hard'; // or `difficulty: string` if you prefer
+  difficulty: "Easy" | "Medium" | "Hard";
+}
+
+export interface MCQSection {
+  title: string;
+  questions: MCQ[];
 }
