@@ -48,11 +48,11 @@ const Header: React.FC = () => {
     <>
       {/* HEADER */}
       <header
-        className={`top-0 w-full z-40 transition-all duration-300
-        bg-white/70 backdrop-blur border-b border-white/40
-        ${sticky ? "shadow-md fixed" : ""}`}
+        className={`top-0 w-full z-50 relative transition-all duration-300   // added relative
+    bg-white/70 backdrop-blur-md border-b border-white/40
+    ${sticky ? "shadow-md fixed" : ""}`}
       >
-        <div className="max-w-screen-2xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <Logo />
 
           {/* Desktop nav */}
@@ -66,7 +66,7 @@ const Header: React.FC = () => {
           <div className="flex items-center gap-4">
             <Link
               href="/ai-guide"
-              className="hidden lg:block bg-primary text-white px-6 py-3 rounded-full font-medium hover:opacity-90"
+              className="hidden lg:block bg-gradient-to-r from-blue-600 to-green-500 text-white px-6 py-3 rounded-full font-medium hover:opacity-90 transition-opacity shadow-md"
             >
               Expert AI Guide
             </Link>
@@ -74,13 +74,13 @@ const Header: React.FC = () => {
             {/* mobile toggle */}
             <button
               onClick={() => setNavbarOpen(true)}
-              className="lg:hidden p-2"
+              className="lg:hidden p-2 rounded-lg bg-white/20 backdrop-blur-sm border border-white/30"
               aria-label="Open menu"
             >
               <div className="space-y-1">
-                <span className="block w-6 h-0.5 bg-black" />
-                <span className="block w-6 h-0.5 bg-black" />
-                <span className="block w-6 h-0.5 bg-black" />
+                <span className="block w-6 h-0.5 bg-gray-800" />
+                <span className="block w-6 h-0.5 bg-gray-800" />
+                <span className="block w-6 h-0.5 bg-gray-800" />
               </div>
             </button>
           </div>
@@ -94,36 +94,37 @@ const Header: React.FC = () => {
         onClick={() => setNavbarOpen(false)}
       />
 
-      {/* MOBILE DRAWER */}
+      {/* MOBILE DRAWER - glass effect */}
       <aside
         ref={mobileMenuRef}
-        className={`fixed top-0 right-0 h-full w-80 max-w-[85%] bg-white z-50
+        className={`fixed top-0 right-0 h-full w-80 max-w-[85%] bg-white/80 backdrop-blur-md border-l border-white/50 z-50
         shadow-xl transition-transform duration-300
         ${navbarOpen ? "translate-x-0" : "translate-x-full"}`}
       >
-        <div className="flex justify-between items-center p-4 border-b">
+        <div className="flex justify-between items-center p-4 border-b border-white/30">
           <Logo />
           <button
             onClick={() => setNavbarOpen(false)}
-            className="text-xl"
+            className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
             aria-label="Close menu"
           >
-            ✕
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
           </button>
         </div>
 
         <nav className="p-4 flex flex-col gap-4">
           {headerData.map((item, i) => (
             <div key={i} onClick={() => setNavbarOpen(false)}>
-              <MobileHeaderLink
-                item={item}
-              />
+              <MobileHeaderLink item={item} />
             </div>
           ))}
 
           <Link
             href="/ai-guide"
-            className="mt-4 border border-primary text-primary px-4 py-2 rounded-lg text-center hover:bg-primary hover:text-white"
+            className="mt-4 bg-gradient-to-r from-blue-600 to-green-500 text-white px-4 py-3 rounded-lg text-center font-medium hover:opacity-90 transition-opacity"
             onClick={() => setNavbarOpen(false)}
           >
             Expert AI Guide

@@ -12,7 +12,7 @@ export
         },
         {
             name: "Syed Tanzeel Ali",
-            role: "Material Content Strategist",
+            role: "Fourth Year Representative",
             imgSrc: "/images/mentor/user1.png"
         },
         {
@@ -22,22 +22,27 @@ export
         },
         {
             name: "Sumaiya Saeed",
-            role: "Course Content Collector",
+            role: "Research & Content Collector",
             imgSrc: "/images/mentor/user2.png"
         },
         {
             name: "Syed M. Ali",
-            role: "Course Content Collector",
+            role: "Research & Content Collector",
             imgSrc: "/images/mentor/user2.png"
         },
         {
-            name: "Tauqeer Hussain",
-            role: "Info-Graphics Generator",
+            name: "Rumaisa Farooqui",
+            role: "Research & Content Collecter",
             imgSrc: "/images/mentor/user3.png"
         },
          {
+            name: "Romana Abbbas",
+            role: "third year representative",
+            imgSrc: "/images/mentor/user3.png"
+        }, 
+        {
             name: "Muhammad Salman",
-            role: "Info-Graphics Generator",
+            role: "Info-Graphics Creator",
             imgSrc: "/images/mentor/user3.png"
         },
          {
