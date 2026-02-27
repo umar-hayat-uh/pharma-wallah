@@ -1,205 +1,110 @@
-import { Metadata } from "next";
-import { SemesterData } from "@/app/api/semester-data";
-import Link from "next/link";
-import {
-  Pill,
-  FlaskConical,
-  Beaker,
-  Microscope,
-  Atom,
-  Dna,
-  HeartPulse,
-  Leaf,
-  Syringe,
-  TestTube,
-  Tablet,
-  ClipboardList,
-  Stethoscope,
-  Bandage,
-  Droplet,
-  Eye,
-  Bone,
-  Brain,
-  Heart,
-  Activity,
-  AlertCircle,
-  Scissors,
-  Thermometer,
-  Wind,
-  Zap,
-  Droplets,
-  FlaskRound,
-  // Capsule excluded
-} from "lucide-react";
+'use client';
 
-export const metadata: Metadata = {
-  title: "MCQ's Bank | Pharm-D Subject Wise",
-};
+import { useState } from 'react';
+import MCQCard from '@/components/Mcq/MCQCard';
+import toxicData from '@/content/mcqs/toxic-organisms.json';
+import { MCQ } from '@/types/mcq';
 
-export default function McqsBankPage() {
-  const semesters = SemesterData.map((item) => item.semester);
+// Define the structure of our JSON (optional but good for type safety)
+interface Section {
+  title: string;
+  questions: MCQ[];
+}
 
-  const iconList = [
-    { Icon: Pill, color: "text-blue-800/10" },
-    { Icon: FlaskConical, color: "text-green-800/10" },
-    { Icon: Beaker, color: "text-purple-800/10" },
-    { Icon: Microscope, color: "text-amber-800/10" },
-    { Icon: Atom, color: "text-blue-800/10" },
-    { Icon: Dna, color: "text-green-800/10" },
-    { Icon: HeartPulse, color: "text-purple-800/10" },
-    { Icon: Leaf, color: "text-amber-800/10" },
-    { Icon: Syringe, color: "text-blue-800/10" },
-    { Icon: TestTube, color: "text-green-800/10" },
-    { Icon: Tablet, color: "text-purple-800/10" },
-    { Icon: ClipboardList, color: "text-amber-800/10" },
-    { Icon: Stethoscope, color: "text-blue-800/10" },
-    { Icon: Bandage, color: "text-green-800/10" },
-    { Icon: Droplet, color: "text-purple-800/10" },
-    { Icon: Eye, color: "text-amber-800/10" },
-    { Icon: Bone, color: "text-blue-800/10" },
-    { Icon: Brain, color: "text-green-800/10" },
-    { Icon: Heart, color: "text-purple-800/10" },
-    { Icon: Activity, color: "text-amber-800/10" },
-    { Icon: AlertCircle, color: "text-blue-800/10" },
-    { Icon: Scissors, color: "text-green-800/10" },
-    { Icon: Thermometer, color: "text-purple-800/10" },
-    { Icon: Wind, color: "text-amber-800/10" },
-    { Icon: Zap, color: "text-blue-800/10" },
-    { Icon: Droplets, color: "text-green-800/10" },
-    { Icon: FlaskRound, color: "text-purple-800/10" },
-  ];
+interface ToxicData {
+  sections: Section[];
+}
 
-  const bgIcons = [];
-  for (let i = 0; i < 40; i++) {
-    const item = iconList[i % iconList.length];
-    bgIcons.push({
-      ...item,
-      color: i % 4 === 0 ? "text-blue-800/10" :
-             i % 4 === 1 ? "text-green-800/10" :
-             i % 4 === 2 ? "text-purple-800/10" : "text-amber-800/10",
+export default function ToxicOrganismsPage() {
+  const data = toxicData as ToxicData;
+
+  // Store selected answers for all questions (key = question id, value = answer id)
+  const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
+
+  // Store which sections have been submitted (results visible)
+  const [submittedSections, setSubmittedSections] = useState<Set<string>>(new Set());
+
+  const handleAnswerSelect = (questionId: number, answerId: string) => {
+    setUserAnswers(prev => ({ ...prev, [questionId]: answerId }));
+  };
+
+  const handleCheckSection = (sectionTitle: string) => {
+    setSubmittedSections(prev => new Set(prev).add(sectionTitle));
+  };
+
+  const handleResetSection = (sectionTitle: string) => {
+    // Remove section from submitted set to hide results
+    setSubmittedSections(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(sectionTitle);
+      return newSet;
     });
-  }
+    // Optionally: clear answers for this section? Uncomment the following if desired.
+    // const sectionQuestions = data.sections.find(s => s.title === sectionTitle)?.questions || [];
+    // const updatedAnswers = { ...userAnswers };
+    // sectionQuestions.forEach(q => delete updatedAnswers[q.id]);
+    // setUserAnswers(updatedAnswers);
+  };
 
   return (
-    <section className="min-h-screen bg-gradient-to-b from-blue-50/30 via-white to-green-50/20 p-0 relative overflow-x-hidden">
-      {/* Background blobs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
-      </div>
+    <main className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-green-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl md:text-4xl font-bold text-center mb-4 bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+          Toxic Organisms & Natural Toxins
+        </h1>
+        <p className="text-center text-gray-600 mb-12">
+          Test your knowledge on poisonous plants, venomous animals, and their toxins.
+          Questions are grouped by difficulty. Select your answers and click <strong>Check Answers</strong> to see results.
+        </p>
 
-      {/* Hero Section (unchanged) */}
-      <div className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-green-500 overflow-hidden">
-        <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,.1)_50%,transparent_75%)] bg-[length:400%_400%] animate-shimmer" />
-        <div className="absolute inset-0 backdrop-blur-[2px]" />
-        <div className="container relative mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
-          <div className="max-w-4xl mx-auto text-center">
-           
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight drop-shadow-lg">
-              Pharm-D Subject Wise MCQs
-              <span className="block text-green-300 mt-2">(Semester Wise)</span>
-            </h1>
-            <p className="text-lg md:text-xl text-blue-100 mb-8 max-w-2xl mx-auto leading-relaxed drop-shadow">
-              Access Pharm-D subject-wise MCQ sets arranged semester-wise. Each
-              subject links to topic-wise MCQs with around 50 questions and
-              answers, helpful for sessional exams, university exams, viva and
-              competitive preparation.
-            </p>
-            <div className="flex flex-wrap justify-center gap-2 mt-8">
-              {semesters.map((sem) => (
-                <a
-                  key={sem}
-                  href={`#${sem.replace(/\s+/g, "-").toLowerCase()}`}
-                  className="px-4 py-2 text-sm font-medium text-white bg-white/10 backdrop-blur-sm rounded-full border border-white/20 hover:bg-white/20 transition-colors"
-                >
-                  {sem}
-                </a>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+        {data.sections.map((section) => {
+          const showResults = submittedSections.has(section.title);
 
-      {/* Main Content - with floating icons in background */}
-      <div className="container relative mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20 z-10">
-        <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-          <div className="relative w-full h-full">
-            {bgIcons.map(({ Icon, color }, index) => {
-              const left = `${(index * 13) % 90 + 5}%`;
-              const top = `${(index * 19) % 90 + 5}%`;
-              const size = 30 + (index * 7) % 90;
-              const rotate = (index * 23) % 360;
-              return (
-                <Icon
-                  key={index}
-                  size={size}
-                  className={`absolute ${color}`}
-                  style={{ left, top, transform: `rotate(${rotate}deg)` }}
-                />
-              );
-            })}
-          </div>
-        </div>
-
-        {SemesterData.map(({ semester, subjects }) => (
-          <div
-            key={semester}
-            id={semester.replace(/\s+/g, "-").toLowerCase()}
-            className="mb-16 scroll-mt-20"
-          >
-            <div className="text-center mb-10">
-              <div className="inline-block px-6 py-3 bg-white/70 backdrop-blur-md rounded-2xl shadow-lg border border-white/50">
-                <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-                  {semester}
+          return (
+            <div key={section.title} className="mb-12 last:mb-0">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-semibold bg-white/60 backdrop-blur-sm px-6 py-2 rounded-full inline-block border border-white/60 shadow-sm">
+                  {section.title}
                 </h2>
-              </div>
-              <hr className="mt-4 border-t-2 border-blue-200/50 max-w-xs mx-auto" />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {subjects.map((subj) => {
-                const subjectLink = `/mcqs/semester-6/${subj.name
-                  .toLowerCase()
-                  .replace(/\s+/g, "-")}`;
-
-                return (
-                  <Link key={subj.name} href={subjectLink} className="group">
-                    <div
-                      className={`relative p-6 rounded-2xl backdrop-blur-md transition-all duration-300 flex flex-col h-full
-                        ${
-                          subjectLink !== "#"
-                            ? "bg-white/40 border border-white/50 shadow-lg hover:shadow-2xl hover:scale-105 hover:bg-white/60"
-                            : "bg-gray-100/50 border border-gray-200/50 opacity-50 cursor-not-allowed"
-                        }`}
+                <div className="space-x-3">
+                  {!showResults ? (
+                    <button
+                      onClick={() => handleCheckSection(section.title)}
+                      className="px-5 py-2 bg-gradient-to-r from-blue-500 to-green-500 text-white rounded-full font-medium hover:shadow-lg transition-all"
                     >
-                      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+                      Check Answers
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleResetSection(section.title)}
+                      className="px-5 py-2 bg-gray-200 text-gray-700 rounded-full font-medium hover:bg-gray-300 transition-all"
+                    >
+                      Reset Section
+                    </button>
+                  )}
+                </div>
+              </div>
 
-                      <div className="relative mb-4 flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-blue-100/50 to-green-100/50 backdrop-blur-sm border border-white/50 shadow-sm">
-                        <div className="text-3xl">{subj.icon}</div>
-                      </div>
+              <div className="space-y-6">
+                {section.questions.map((q) => {
+                  const userAnswer = userAnswers[q.id];
+                  const isCorrect = userAnswer === q.correctAnswer;
 
-                      <h3 className="relative text-xl font-semibold text-gray-800 mb-2 line-clamp-2">
-                        {subj.name}
-                      </h3>
-                      <p className="relative text-sm text-gray-600 leading-relaxed line-clamp-3">
-                        {subj.description}
-                      </p>
-
-                      {subjectLink !== "#" && (
-                        <div className="relative mt-4 flex justify-end">
-                          <span className="text-blue-600 group-hover:translate-x-1 transition-transform">
-                            →
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </Link>
-                );
-              })}
+                  return (
+                    <MCQCard
+                      key={q.id}
+                      mcq={q}
+                      userAnswer={userAnswer}
+                      onAnswerSelect={handleAnswerSelect}
+                      showExplanation={showResults}
+                    />
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
-    </section>
+    </main>
   );
 }
