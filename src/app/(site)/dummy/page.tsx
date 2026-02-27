@@ -83,10 +83,10 @@ for (let i = 0; i < 40; i++) {
       i % 4 === 0
         ? "text-blue-800/10"
         : i % 4 === 1
-        ? "text-green-800/10"
-        : i % 4 === 2
-        ? "text-purple-800/10"
-        : "text-amber-800/10",
+          ? "text-green-800/10"
+          : i % 4 === 2
+            ? "text-purple-800/10"
+            : "text-amber-800/10",
   });
 }
 
@@ -224,11 +224,10 @@ export default function MCQPage() {
             <button
               onClick={handleSubmit}
               disabled={getAnsweredCount() < getTotalQuestions()}
-              className={`px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 ${
-                getAnsweredCount() < getTotalQuestions()
+              className={`px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 ${getAnsweredCount() < getTotalQuestions()
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   : 'bg-gradient-to-r from-blue-600 to-green-500 text-white hover:shadow-xl hover:scale-105'
-              }`}
+                }`}
             >
               Check My Answers
             </button>
@@ -322,18 +321,13 @@ export default function MCQPage() {
                               <div className="text-sm">
                                 <span className="font-medium text-gray-700">Correct answer: </span>
                                 <span className="text-green-700 font-semibold">
-                                  {mcq.correctAnswer}) {mcq.options.find(o => o.id === mcq.correctAnswer)?.text}
+                                  {mcq.correctAnswer} {mcq.options.find(o => o.id === mcq.correctAnswer)?.text}
                                 </span>
                               </div>
 
                               <div className="mt-3 p-3 bg-white/80 backdrop-blur-sm border border-white/50 rounded-lg">
                                 <span className="font-medium text-blue-700">Explanation: </span>
                                 <span className="text-gray-700">{mcq.explanation}</span>
-                                {mcq.reference && (
-                                  <div className="mt-2 text-xs text-gray-500 italic">
-                                    Reference: {mcq.reference}
-                                  </div>
-                                )}
                               </div>
                             </div>
                           </div>
