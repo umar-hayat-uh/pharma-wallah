@@ -1,197 +1,142 @@
-{
-  "sections": [
-    {
-      "questions": [
-        {
-          "id": 1,
-          "question": "Which of the following is a beta-blocker?",
-          "options": [
-            { "id": "A", "text": "Atenolol" },
-            { "id": "B", "text": "Amlodipine" },
-            { "id": "C", "text": "Lisinopril" },
-            { "id": "D", "text": "Metformin" }
-          ],
-          "correctAnswer": "A",
-          "explanation": "Atenolol is a cardioselective beta-1 adrenergic antagonist used in hypertension and angina. Beta-blockers reduce heart rate and myocardial contractility by blocking catecholamine effects. Amlodipine is a dihydropyridine calcium channel blocker, Lisinopril is an ACE inhibitor, and Metformin is a biguanide antidiabetic.",
-          "reference": "Goodman & Gilman's The Pharmacological Basis of Therapeutics, 14th Ed., Chapter 12"
-        },
-        {
-          "id": 2,
-          "question": "Which drug is a proton pump inhibitor?",
-          "options": [
-            { "id": "A", "text": "Ranitidine" },
-            { "id": "B", "text": "Omeprazole" },
-            { "id": "C", "text": "Famotidine" },
-            { "id": "D", "text": "Sucralfate" }
-          ],
-          "correctAnswer": "B",
-          "explanation": "Omeprazole is a proton pump inhibitor that irreversibly blocks H+/K+ ATPase in gastric parietal cells, reducing acid secretion. Ranitidine and Famotidine are H2-receptor antagonists, while Sucralfate forms a protective barrier.",
-          "reference": "Katzung BG. Basic & Clinical Pharmacology, 15th Ed., Chapter 62"
-        },
-        {
-          "id": 3,
-          "question": "Which antibiotic inhibits bacterial protein synthesis by binding to the 50S ribosomal subunit?",
-          "options": [
-            { "id": "A", "text": "Tetracycline" },
-            { "id": "B", "text": "Erythromycin" },
-            { "id": "C", "text": "Gentamicin" },
-            { "id": "D", "text": "Ciprofloxacin" }
-          ],
-          "correctAnswer": "B",
-          "explanation": "Erythromycin (a macrolide) binds to the 50S subunit, blocking translocation. Tetracycline binds the 30S subunit, Gentamicin (aminoglycoside) also binds 30S, and Ciprofloxacin inhibits DNA gyrase.",
-          "reference": "Mandell, Douglas, and Bennett's Principles and Practice of Infectious Diseases, 9th Ed., Chapter 20"
-        }
-      ]
-    },
-    {
-      "questions": [
-        {
-          "id": 4,
-          "question": "What is the primary purpose of adding a disintegrant to a tablet formulation?",
-          "options": [
-            { "id": "A", "text": "Enhance powder flow" },
-            { "id": "B", "text": "Promote tablet breakup in the GI tract" },
-            { "id": "C", "text": "Lubricate the tablet during compression" },
-            { "id": "D", "text": "Improve tablet appearance" }
-          ],
-          "correctAnswer": "B",
-          "explanation": "Disintegrants (e.g., croscarmellose sodium) swell upon contact with water, causing the tablet to break apart into smaller particles for drug dissolution. Flow aids are glidants, lubricants reduce friction, and coating improves appearance.",
-          "reference": "Aulton's Pharmaceutics: The Design and Manufacture of Medicines, 6th Ed., Chapter 27"
-        },
-        {
-          "id": 5,
-          "question": "Which of the following is an example of a suspending agent?",
-          "options": [
-            { "id": "A", "text": "Sodium lauryl sulfate" },
-            { "id": "B", "text": "Methylcellulose" },
-            { "id": "C", "text": "Polysorbate 80" },
-            { "id": "D", "text": "Propylene glycol" }
-          ],
-          "correctAnswer": "B",
-          "explanation": "Methylcellulose is a hydrophilic polymer used as a suspending agent to increase viscosity and prevent sedimentation. Sodium lauryl sulfate and Polysorbate 80 are surfactants, Propylene glycol is a cosolvent.",
-          "reference": "Remington: The Science and Practice of Pharmacy, 23rd Ed., Chapter 22"
-        }
-      ]
-    },
-    {
-      "questions": [
-        {
-          "id": 6,
-          "question": "Which alkaloid is obtained from the plant *Catharanthus roseus* (Madagascar periwinkle) and used in cancer chemotherapy?",
-          "options": [
-            { "id": "A", "text": "Morphine" },
-            { "id": "B", "text": "Vinblastine" },
-            { "id": "C", "text": "Atropine" },
-            { "id": "D", "text": "Quinine" }
-          ],
-          "correctAnswer": "B",
-          "explanation": "Vinblastine and vincristine are vinca alkaloids from *Catharanthus roseus* that inhibit microtubule formation, used in lymphomas and leukemias. Morphine comes from opium poppy, Atropine from *Atropa belladonna*, Quinine from cinchona bark.",
-          "reference": "Trease and Evans' Pharmacognosy, 16th Ed., Chapter 21"
-        },
-        {
-          "id": 7,
-          "question": "The cardiac glycoside digoxin is derived from which plant?",
-          "options": [
-            { "id": "A", "text": "Digitalis lanata" },
-            { "id": "B", "text": "Rauwolfia serpentina" },
-            { "id": "C", "text": "Papaver somniferum" },
-            { "id": "D", "text": "Ephedra sinica" }
-          ],
-          "correctAnswer": "A",
-          "explanation": "Digoxin is obtained from *Digitalis lanata* (and *Digitalis purpurea*). It inhibits Na+/K+ ATPase, increasing cardiac contractility. Rauwolfia yields reserpine, Papaver somniferum yields morphine, and Ephedra yields ephedrine.",
-          "reference": "Kokate CK, Purohit AP, Gokhale SB. Pharmacognosy, 55th Ed., Chapter 14"
-        }
-      ]
-    },
-    {
-      "questions": [
-        {
-          "id": 8,
-          "question": "Which functional group is characteristic of a carboxylic acid?",
-          "options": [
-            { "id": "A", "text": "-OH" },
-            { "id": "B", "text": "-COOH" },
-            { "id": "C", "text": "-NH2" },
-            { "id": "D", "text": "-CHO" }
-          ],
-          "correctAnswer": "B",
-          "explanation": "Carboxylic acids contain the carboxyl group (-COOH). -OH is hydroxyl (alcohols/phenols), -NH2 is amino (amines), -CHO is aldehyde.",
-          "reference": "Morrison & Boyd. Organic Chemistry, 7th Ed., Chapter 19"
-        },
-        {
-          "id": 9,
-          "question": "What is the molecular weight of aspirin (C9H8O4)?",
-          "options": [
-            { "id": "A", "text": "138 g/mol" },
-            { "id": "B", "text": "152 g/mol" },
-            { "id": "C", "text": "180 g/mol" },
-            { "id": "D", "text": "192 g/mol" }
-          ],
-          "correctAnswer": "C",
-          "explanation": "Aspirin (acetylsalicylic acid) has formula C9H8O4: (9×12.01) + (8×1.008) + (4×16.00) ≈ 180.16 g/mol.",
-          "reference": "Wilson and Gisvold's Textbook of Organic Medicinal and Pharmaceutical Chemistry, 12th Ed., Chapter 5"
-        }
-      ]
-    },
-    {
-      "questions": [
-        {
-          "id": 10,
-          "question": "Which laboratory value is most important to monitor in a patient taking warfarin?",
-          "options": [
-            { "id": "A", "text": "Serum creatinine" },
-            { "id": "B", "text": "PT/INR" },
-            { "id": "C", "text": "aPTT" },
-            { "id": "D", "text": "Platelet count" }
-          ],
-          "correctAnswer": "B",
-          "explanation": "Warfarin inhibits vitamin K–dependent clotting factors; its effect is monitored by prothrombin time (PT) and international normalized ratio (INR). aPTT monitors heparin, platelet count monitors thrombocytopenia, creatinine monitors renal function.",
-          "reference": "Dipiro JT, et al. Pharmacotherapy: A Pathophysiologic Approach, 11th Ed., Chapter 18"
-        },
-        {
-          "id": 11,
-          "question": "A patient with type 2 diabetes and an eGFR of 25 mL/min should avoid which antidiabetic drug?",
-          "options": [
-            { "id": "A", "text": "Metformin" },
-            { "id": "B", "text": "Sitagliptin" },
-            { "id": "C", "text": "Insulin glargine" },
-            { "id": "D", "text": "Empagliflozin" }
-          ],
-          "correctAnswer": "A",
-          "explanation": "Metformin is contraindicated when eGFR < 30 mL/min due to risk of lactic acidosis. Sitagliptin requires dose adjustment, empagliflozin is not recommended below 45, but metformin is absolutely contraindicated at this level. Insulin can be used with caution.",
-          "reference": "American Diabetes Association. Standards of Medical Care in Diabetes—2024, Diabetes Care 2024;47(Suppl 1)"
-        }
-      ]
-    },
-    {
-      "questions": [
-        {
-          "id": 12,
-          "question": "Which pharmacokinetic parameter describes the volume of plasma cleared of drug per unit time?",
-          "options": [
-            { "id": "A", "text": "Half-life" },
-            { "id": "B", "text": "Clearance" },
-            { "id": "C", "text": "Volume of distribution" },
-            { "id": "D", "text": "Bioavailability" }
-          ],
-          "correctAnswer": "B",
-          "explanation": "Clearance (CL) is the volume of plasma from which drug is completely removed per unit time (e.g., L/h). Half-life is time for concentration to halve, Vd relates dose to concentration, F is fraction absorbed.",
-          "reference": "Shargel L, Yu A. Applied Biopharmaceutics & Pharmacokinetics, 8th Ed., Chapter 5"
-        },
-        {
-          "id": 13,
-          "question": "A drug follows first-order kinetics. If the initial concentration is 100 mg/L and the elimination rate constant is 0.1 hr⁻¹, what is the concentration after 3 hours?",
-          "options": [
-            { "id": "A", "text": "50 mg/L" },
-            { "id": "B", "text": "74 mg/L" },
-            { "id": "C", "text": "90 mg/L" },
-            { "id": "D", "text": "97 mg/L" }
-          ],
-          "correctAnswer": "B",
-          "explanation": "First-order: C = C0 × e^(-kt) = 100 × e^(-0.1×3) = 100 × e^(-0.3) ≈ 100 × 0.741 = 74.1 mg/L.",
-          "reference": "Rowland M, Tozer TN. Clinical Pharmacokinetics and Pharmacodynamics, 5th Ed., Chapter 2"
-        }
-      ]
-    }
-  ]
-}
+[
+  {
+    "id": 1,
+    "question": "Which of the following is a beta-blocker?",
+    "options": [
+      { "id": "A", "text": "Atenolol" },
+      { "id": "B", "text": "Amlodipine" },
+      { "id": "C", "text": "Lisinopril" },
+      { "id": "D", "text": "Metformin" }
+    ],
+    "correctAnswer": "A",
+    "explanation": "Atenolol is a cardioselective beta-1 adrenergic antagonist used in hypertension and angina. Beta-blockers reduce heart rate and myocardial contractility by blocking catecholamine effects. Amlodipine is a dihydropyridine calcium channel blocker, Lisinopril is an ACE inhibitor, and Metformin is a biguanide antidiabetic.",
+    "reference": "Goodman & Gilman's The Pharmacological Basis of Therapeutics, 14th Ed., Chapter 12",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2,
+    "question": "Which drug is a proton pump inhibitor?",
+    "options": [
+      { "id": "A", "text": "Ranitidine" },
+      { "id": "B", "text": "Omeprazole" },
+      { "id": "C", "text": "Famotidine" },
+      { "id": "D", "text": "Sucralfate" }
+    ],
+    "correctAnswer": "B",
+    "explanation": "Omeprazole is a proton pump inhibitor that irreversibly blocks H+/K+ ATPase in gastric parietal cells, reducing acid secretion. Ranitidine and Famotidine are H2-receptor antagonists, while Sucralfate forms a protective barrier.",
+    "reference": "Katzung BG. Basic & Clinical Pharmacology, 15th Ed., Chapter 62",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3,
+    "question": "Which antibiotic inhibits bacterial protein synthesis by binding to the 50S ribosomal subunit?",
+    "options": [
+      { "id": "A", "text": "Tetracycline" },
+      { "id": "B", "text": "Erythromycin" },
+      { "id": "C", "text": "Gentamicin" },
+      { "id": "D", "text": "Ciprofloxacin" }
+    ],
+    "correctAnswer": "B",
+    "explanation": "Erythromycin (a macrolide) binds to the 50S subunit, blocking translocation. Tetracycline binds the 30S subunit, Gentamicin (aminoglycoside) also binds 30S, and Ciprofloxacin inhibits DNA gyrase.",
+    "reference": "Mandell, Douglas, and Bennett's Principles and Practice of Infectious Diseases, 9th Ed., Chapter 20",
+    "difficulty": "medium"
+  },
+  {
+    "id": 4,
+    "question": "What is the primary purpose of adding a disintegrant to a tablet formulation?",
+    "options": [
+      { "id": "A", "text": "Enhance powder flow" },
+      { "id": "B", "text": "Promote tablet breakup in the GI tract" },
+      { "id": "C", "text": "Lubricate the tablet during compression" },
+      { "id": "D", "text": "Improve tablet appearance" }
+    ],
+    "correctAnswer": "B",
+    "explanation": "Disintegrants (e.g., croscarmellose sodium) swell upon contact with water, causing the tablet to break apart into smaller particles for drug dissolution. Flow aids are glidants, lubricants reduce friction, and coating improves appearance.",
+    "reference": "Aulton's Pharmaceutics: The Design and Manufacture of Medicines, 6th Ed., Chapter 27",
+    "difficulty": "easy"
+  },
+  {
+    "id": 5,
+    "question": "Which alkaloid is obtained from the plant *Catharanthus roseus* (Madagascar periwinkle) and used in cancer chemotherapy?",
+    "options": [
+      { "id": "A", "text": "Morphine" },
+      { "id": "B", "text": "Vinblastine" },
+      { "id": "C", "text": "Atropine" },
+      { "id": "D", "text": "Quinine" }
+    ],
+    "correctAnswer": "B",
+    "explanation": "Vinblastine and vincristine are vinca alkaloids from *Catharanthus roseus* that inhibit microtubule formation, used in lymphomas and leukemias. Morphine comes from opium poppy, Atropine from *Atropa belladonna*, Quinine from cinchona bark.",
+    "reference": "Trease and Evans' Pharmacognosy, 16th Ed., Chapter 21",
+    "difficulty": "hard"
+  },
+  {
+    "id": 6,
+    "question": "The cardiac glycoside digoxin is derived from which plant?",
+    "options": [
+      { "id": "A", "text": "Digitalis lanata" },
+      { "id": "B", "text": "Rauwolfia serpentina" },
+      { "id": "C", "text": "Papaver somniferum" },
+      { "id": "D", "text": "Ephedra sinica" }
+    ],
+    "correctAnswer": "A",
+    "explanation": "Digoxin is obtained from *Digitalis lanata* (and *Digitalis purpurea*). It inhibits Na+/K+ ATPase, increasing cardiac contractility. Rauwolfia yields reserpine, Papaver somniferum yields morphine, and Ephedra yields ephedrine.",
+    "reference": "Kokate CK, Purohit AP, Gokhale SB. Pharmacognosy, 55th Ed., Chapter 14",
+    "difficulty": "medium"
+  },
+  {
+    "id": 7,
+    "question": "Which laboratory value is most important to monitor in a patient taking warfarin?",
+    "options": [
+      { "id": "A", "text": "Serum creatinine" },
+      { "id": "B", "text": "PT/INR" },
+      { "id": "C", "text": "aPTT" },
+      { "id": "D", "text": "Platelet count" }
+    ],
+    "correctAnswer": "B",
+    "explanation": "Warfarin inhibits vitamin K–dependent clotting factors; its effect is monitored by prothrombin time (PT) and international normalized ratio (INR). aPTT monitors heparin, platelet count monitors thrombocytopenia, creatinine monitors renal function.",
+    "reference": "Dipiro JT, et al. Pharmacotherapy: A Pathophysiologic Approach, 11th Ed., Chapter 18",
+    "difficulty": "easy"
+  },
+  {
+    "id": 8,
+    "question": "A patient with type 2 diabetes and an eGFR of 25 mL/min should avoid which antidiabetic drug?",
+    "options": [
+      { "id": "A", "text": "Metformin" },
+      { "id": "B", "text": "Sitagliptin" },
+      { "id": "C", "text": "Insulin glargine" },
+      { "id": "D", "text": "Empagliflozin" }
+    ],
+    "correctAnswer": "A",
+    "explanation": "Metformin is contraindicated when eGFR < 30 mL/min due to risk of lactic acidosis. Sitagliptin requires dose adjustment, empagliflozin is not recommended below 45, but metformin is absolutely contraindicated at this level. Insulin can be used with caution.",
+    "reference": "American Diabetes Association. Standards of Medical Care in Diabetes—2024, Diabetes Care 2024;47(Suppl 1)",
+    "difficulty": "hard"
+  },
+  {
+    "id": 9,
+    "question": "Which pharmacokinetic parameter describes the volume of plasma cleared of drug per unit time?",
+    "options": [
+      { "id": "A", "text": "Half-life" },
+      { "id": "B", "text": "Clearance" },
+      { "id": "C", "text": "Volume of distribution" },
+      { "id": "D", "text": "Bioavailability" }
+    ],
+    "correctAnswer": "B",
+    "explanation": "Clearance (CL) is the volume of plasma from which drug is completely removed per unit time (e.g., L/h). Half-life is time for concentration to halve, Vd relates dose to concentration, F is fraction absorbed.",
+    "reference": "Shargel L, Yu A. Applied Biopharmaceutics & Pharmacokinetics, 8th Ed., Chapter 5",
+    "difficulty": "medium"
+  },
+  {
+    "id": 10,
+    "question": "A drug follows first-order kinetics. If the initial concentration is 100 mg/L and the elimination rate constant is 0.1 hr⁻¹, what is the concentration after 3 hours?",
+    "options": [
+      { "id": "A", "text": "50 mg/L" },
+      { "id": "B", "text": "74 mg/L" },
+      { "id": "C", "text": "90 mg/L" },
+      { "id": "D", "text": "97 mg/L" }
+    ],
+    "correctAnswer": "B",
+    "explanation": "First-order: C = C0 × e^(-kt) = 100 × e^(-0.1×3) = 100 × e^(-0.3) ≈ 100 × 0.741 = 74.1 mg/L.",
+    "reference": "Rowland M, Tozer TN. Clinical Pharmacokinetics and Pharmacodynamics, 5th Ed., Chapter 2",
+    "difficulty": "hard"
+  }
+]
