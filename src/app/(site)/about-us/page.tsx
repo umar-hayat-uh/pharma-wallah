@@ -1,5 +1,5 @@
 import { teamMembers } from "@/app/api/team-members";
-import { User, Linkedin, Instagram, Mail, Sparkles, Award, BookOpen } from "lucide-react";
+import { User, Linkedin, Instagram, Mail, Sparkles, Award, BookOpen, Wrench, Megaphone } from "lucide-react";
 import { Metadata } from "next";
 import Link from "next/link";
 // Import icons for background (same set as other pages, excluding Capsule, Vial, Zap)
@@ -95,6 +95,14 @@ for (let i = 0; i < 40; i++) {
 }
 
 export default function AboutUs() {
+  // Reorganized team members based on updated list
+  const productionMembers = teamMembers.filter(member =>
+    ["Shayan Hussain", "Umar Hayat", "Jazil bin kashef", "Sumaiya Saeed", "Syed M. Ali", "Rumaisa Farooqui", "Muhammad Salman"].includes(member.name)
+  );
+  const marketingMembers = teamMembers.filter(member =>
+    ["Syed Tanzeel Ali", "Romana Abbbas", "Muhammad Dayyan"].includes(member.name)
+  );
+
   return (
     <section className="min-h-screen bg-gradient-to-b from-blue-50/30 via-white to-green-50/20 p-0 relative overflow-x-hidden">
       {/* Background blobs */}
@@ -133,8 +141,8 @@ export default function AboutUs() {
         <div className="absolute inset-0 backdrop-blur-[2px]" />
         <div className="container relative mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
           <div className="max-w-4xl mx-auto text-center">
-      
-            <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 tracking-tight drop-shadow-lg">
+            {/* Reduced font size from text-5xl md:text-7xl to text-4xl md:text-6xl */}
+            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight drop-shadow-lg">
               About{" "}
               <span className="bg-gradient-to-r from-green-300 to-blue-200 bg-clip-text text-transparent">
                 PharmaWallah
@@ -214,105 +222,44 @@ export default function AboutUs() {
           </div>
         </div>
 
-        {/* Team Section */}
-        <div className="mb-24">
-          <div className="text-center mb-16">
-            <h2 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-              Meet Our Team
-            </h2>
+        {/* Production Team Section */}
+        <div className="mb-20">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/70 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 mb-6">
+              <Wrench className="w-6 h-6 text-blue-600" />
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+                Production Team
+              </h2>
+            </div>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Dedicated pharmacy students working together to transform pharmaceutical education at
-              UOK
+              The creative minds behind our content, resources, and educational tools.
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {teamMembers.map((member, index) => (
-              <div key={index} className="group relative">
-                {/* Card with gradient border on hover */}
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-green-500 rounded-3xl blur opacity-0 group-hover:opacity-70 transition duration-500 group-hover:duration-200"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            {productionMembers.map((member, index) => (
+              <TeamCard key={index} member={member} />
+            ))}
+          </div>
+        </div>
 
-                {/* Main card - glass style */}
-                <div className="relative bg-white/40 backdrop-blur-md rounded-3xl border border-white/50 overflow-hidden transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-2xl">
-                  {/* Animated background pattern */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-500">
-                    <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-400/20 to-green-400/20"></div>
-                  </div>
+        {/* Marketing Team Section */}
+        <div className="mb-24">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/70 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 mb-6">
+              <Megaphone className="w-6 h-6 text-green-600" />
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+                Marketing Team
+              </h2>
+            </div>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+              Spreading the word and building our community.
+            </p>
+          </div>
 
-                  {/* Profile image with gradient border */}
-                  <div className="relative pt-10 pb-6 flex justify-center">
-                    <div className="w-32 h-32 rounded-full overflow-hidden ring-4 ring-white/50 shadow-xl">
-                      {member.imgSrc ? (
-                        <img
-                          src={member.imgSrc}
-                          alt={member.name}
-                          className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center">
-                          <User className="w-16 h-16 text-white" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Content */}
-                  <div className="px-8 pb-8 text-center">
-                    {/* Name with gradient on hover */}
-                    <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-green-600 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">
-                      {member.name}
-                    </h3>
-
-                    {/* Role with pill design */}
-                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-green-50 px-4 py-2 rounded-full border border-blue-100/50 mb-4 group-hover:border-blue-200/50 transition-colors duration-300">
-                      <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-green-500 rounded-full"></div>
-                      <span className="text-sm font-semibold text-slate-700">{member.role}</span>
-                    </div>
-
-                    {/* Decorative separator */}
-                    <div className="relative my-6">
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-slate-200"></div>
-                      </div>
-                      <div className="relative flex justify-center">
-                        <span className="bg-white/80 backdrop-blur-sm px-4 text-sm text-slate-500">
-                          University of Karachi
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Social links */}
-                    <div className="flex justify-center items-center gap-4 mt-6">
-                      <button className="p-2 bg-blue-100 rounded-full text-blue-700 hover:scale-110 transition-transform">
-                        <Linkedin className="w-4 h-4" />
-                      </button>
-                      <button className="p-2 bg-pink-100 rounded-full text-pink-700 hover:scale-110 transition-transform">
-                        <Instagram className="w-4 h-4" />
-                      </button>
-                      <button className="p-2 bg-green-100 rounded-full text-green-700 hover:scale-110 transition-transform">
-                        <Mail className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {/* Hover overlay content (optional, can keep or remove) */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/95 to-green-500/95 backdrop-blur-sm rounded-3xl p-8 flex flex-col justify-center items-center opacity-0 group-hover:opacity-100 translate-y-full group-hover:translate-y-0 transition-all duration-500">
-                      <Sparkles className="w-8 h-8 text-white mb-4" />
-                      <h4 className="text-xl font-bold text-white mb-2">Pharmacy Student</h4>
-                      <p className="text-white/90 text-center text-sm mb-4">
-                        Passionate about pharmaceutical sciences and dedicated to making education
-                        accessible
-                      </p>
-                      <div className="flex items-center gap-2 text-white/80">
-                        <Award className="w-4 h-4" />
-                        <span className="text-sm">Batch 28 {':)'}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bottom gradient accent */}
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400/0 via-blue-500 to-green-400/0 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
-                </div>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {marketingMembers.map((member, index) => (
+              <TeamCard key={index} member={member} />
             ))}
           </div>
         </div>
@@ -335,5 +282,80 @@ export default function AboutUs() {
         </div>
       </div>
     </section>
+  );
+}
+
+// Simplified Team Card Component – no floating icon, no hover overlay
+function TeamCard({ member }: { member: typeof teamMembers[0] }) {
+  return (
+    <div className="group relative">
+      {/* Permanent gradient border */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-green-400 rounded-3xl opacity-30 group-hover:opacity-70 transition-opacity duration-500 blur-[1px]" />
+      
+      {/* Main card with dot pattern background */}
+      <div className="relative bg-white/70 backdrop-blur-md rounded-3xl overflow-hidden transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-2xl border border-white/20">
+        {/* Dot pattern overlay */}
+        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 10px 10px, rgba(59,130,246,0.1) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+        
+        {/* Profile image with gradient border */}
+        <div className="relative pt-8 pb-4 flex justify-center">
+          <div className="w-28 h-28 rounded-full overflow-hidden ring-4 ring-white/50 shadow-xl">
+            {member.imgSrc ? (
+              <img
+                src={member.imgSrc}
+                alt={member.name}
+                className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center">
+                <User className="w-12 h-12 text-white" />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="px-6 pb-6 text-center relative z-10">
+          {/* Name with gradient on hover */}
+          <h3 className="text-lg font-bold text-slate-900 mb-1 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-green-600 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">
+            {member.name}
+          </h3>
+
+          {/* Role with pill design */}
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-green-50 px-3 py-1 rounded-full border border-blue-100/50 mb-3 group-hover:border-blue-200/50 transition-colors duration-300">
+            <div className="w-1.5 h-1.5 bg-gradient-to-r from-blue-500 to-green-500 rounded-full"></div>
+            <span className="text-xs font-medium text-slate-700">{member.role}</span>
+          </div>
+
+          {/* Decorative separator */}
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200"></div>
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-white/80 backdrop-blur-sm px-3 text-xs text-slate-500">
+                University of Karachi
+              </span>
+            </div>
+          </div>
+
+          {/* Social links */}
+          <div className="flex justify-center items-center gap-3 mt-4">
+            <button className="p-1.5 bg-blue-100 rounded-full text-blue-700 hover:scale-110 transition-transform">
+              <Linkedin className="w-3.5 h-3.5" />
+            </button>
+            <button className="p-1.5 bg-pink-100 rounded-full text-pink-700 hover:scale-110 transition-transform">
+              <Instagram className="w-3.5 h-3.5" />
+            </button>
+            <button className="p-1.5 bg-green-100 rounded-full text-green-700 hover:scale-110 transition-transform">
+              <Mail className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Bottom gradient accent */}
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-400/0 via-blue-500 to-green-400/0 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+      </div>
+    </div>
   );
 }
