@@ -3,6 +3,38 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Linkedin, GraduationCap, BadgeCheck, Quote, ArrowRight, Users } from "lucide-react";
+// Import background icons
+import {
+    Pill as PillIcon,
+    FlaskConical as FlaskIcon,
+    Beaker as BeakerIcon,
+    Microscope as MicroscopeIcon,
+    Atom,
+    Dna as DnaIcon,
+    HeartPulse as HeartIcon,
+    Leaf,
+    Syringe as SyringeIcon,
+    TestTube,
+    Tablet,
+    ClipboardList,
+    Stethoscope as StethIcon,
+    Bandage,
+    Droplet,
+    Eye,
+    Bone,
+    Brain,
+    Heart,
+    Activity,
+    AlertCircle,
+    Scissors,
+    Thermometer,
+    Wind,
+    Droplets,
+    FlaskRound,
+    Scale,
+    Calculator,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 const mentors = [
     {
@@ -66,11 +98,11 @@ const ExpertCard = ({ mentor, index }: { mentor: typeof mentors[0]; index: numbe
             onMouseLeave={() => setHovered(false)}
             className="relative group"
         >
+            {/* Glass card with border accent on hover */}
             <div
-                className="rounded-xl border p-6 h-full flex flex-col transition-all duration-300 bg-white"
+                className="rounded-xl border p-6 h-full flex flex-col transition-all duration-300 bg-white/70 backdrop-blur-md border-white/50 shadow-md hover:shadow-xl"
                 style={{
-                    borderColor: hovered ? mentor.accent + "40" : "#E5E7EB",
-                    boxShadow: hovered ? `0 4px 12px ${mentor.accent}18` : "0 1px 3px #0000000A",
+                    borderColor: hovered ? mentor.accent + "40" : "rgba(255,255,255,0.5)",
                 }}
             >
                 <Quote className="w-6 h-6 mb-4" style={{ color: hovered ? mentor.accent : "#D1D5DB" }} />
@@ -120,9 +152,42 @@ const ExpertCard = ({ mentor, index }: { mentor: typeof mentors[0]; index: numbe
 };
 
 const Mentor = () => {
+    // Background icons
+    const bgIconList: LucideIcon[] = [
+        PillIcon, FlaskIcon, BeakerIcon, MicroscopeIcon, Atom, DnaIcon, HeartIcon, Leaf,
+        SyringeIcon, TestTube, Tablet, ClipboardList, StethIcon, Bandage, Droplet, Eye,
+        Bone, Brain, Heart, Activity, AlertCircle, Scissors, Thermometer, Wind, Droplets,
+        FlaskRound, Scale, Calculator,
+    ];
+    const bgIcons = Array.from({ length: 30 }, (_, i) => ({
+        Icon: bgIconList[i % bgIconList.length],
+        left: `${(i * 17) % 90 + 5}%`,
+        top: `${(i * 23) % 90 + 5}%`,
+        size: 20 + (i * 3) % 40,
+        rotate: (i * 27) % 360,
+    }));
+
     return (
-        <section className="w-full py-16 md:py-20 lg:py-24 bg-white">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <section className="w-full py-16 md:py-20 lg:py-24 relative overflow-hidden bg-white">
+            {/* Background blobs */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
+                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000" />
+            </div>
+
+            {/* Floating background icons */}
+            <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+                {bgIcons.map(({ Icon, left, top, size, rotate }, idx) => (
+                    <Icon
+                        key={idx}
+                        size={size}
+                        className="absolute text-gray-800/5"
+                        style={{ left, top, transform: `rotate(${rotate}deg)` }}
+                    />
+                ))}
+            </div>
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
                     <div>
                         <span className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 uppercase tracking-wider mb-3">
@@ -141,14 +206,14 @@ const Mentor = () => {
                     </div>
                     <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-shrink-0">
-                            <div className="inline-flex flex-col items-center gap-1 px-6 py-4 rounded-xl border border-blue-200 bg-blue-50">
+                            <div className="inline-flex flex-col items-center gap-1 px-6 py-4 rounded-xl border border-blue-200 bg-white/70 backdrop-blur-md">
                                 <span className="text-3xl font-extrabold text-blue-700">{mentors.length}+</span>
                                 <span className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Expert Endorsers</span>
                             </div>
                         </div>
                         <Link
                             href="/mentors"
-                            className="inline-flex items-center gap-2 px-6 py-4 border border-gray-300 rounded-xl text-gray-700 font-medium hover:border-gray-400 transition self-center"
+                            className="inline-flex items-center gap-2 px-6 py-4 border border-white/50 bg-white/70 backdrop-blur-md rounded-xl text-gray-700 font-medium hover:bg-white/90 transition self-center"
                         >
                             View All Mentors <ArrowRight className="w-4 h-4" />
                         </Link>
@@ -166,7 +231,7 @@ const Mentor = () => {
                     ))}
                 </div>
 
-                <div className="mt-12 pt-6 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="mt-12 pt-6 border-t border-white/20 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <p className="text-sm text-gray-400 text-center sm:text-left">
                         All endorsers are verified academic professionals affiliated with accredited Pakistani institutions.
                     </p>
@@ -176,7 +241,7 @@ const Mentor = () => {
                     </div>
                 </div>
 
-                <div className="mt-8 p-6 rounded-xl bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="mt-8 p-6 rounded-xl bg-gradient-to-r from-blue-50/50 to-green-50/50 backdrop-blur-md border border-white/50 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <Users className="w-8 h-8 text-blue-600" />
                         <div>
@@ -186,7 +251,7 @@ const Mentor = () => {
                     </div>
                     <Link
                         href="/become-mentor"
-                        className="inline-flex items-center gap-2 px-6 py-2 bg-white border border-blue-300 text-blue-700 font-medium rounded-full hover:bg-blue-50 transition"
+                        className="inline-flex items-center gap-2 px-6 py-2 bg-white/70 backdrop-blur-md border border-white/50 text-blue-700 font-medium rounded-full hover:bg-white/90 transition"
                     >
                         Become a Mentor <ArrowRight className="w-4 h-4" />
                     </Link>

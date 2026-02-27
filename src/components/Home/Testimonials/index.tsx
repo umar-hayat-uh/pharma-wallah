@@ -2,12 +2,45 @@
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { Icon } from "@iconify/react";
-import { GraduationCap, Star, Calendar, MessageSquare, ArrowRight } from "lucide-react";
+import { GraduationCap, Star, Calendar, MessageSquare, ArrowRight, X } from "lucide-react";
+// Import background icons
+import {
+    Pill as PillIcon,
+    FlaskConical as FlaskIcon,
+    Beaker as BeakerIcon,
+    Microscope as MicroscopeIcon,
+    Atom,
+    Dna as DnaIcon,
+    HeartPulse as HeartIcon,
+    Leaf,
+    Syringe as SyringeIcon,
+    TestTube,
+    Tablet,
+    ClipboardList,
+    Stethoscope as StethIcon,
+    Bandage,
+    Droplet,
+    Eye,
+    Bone,
+    Brain,
+    Heart,
+    Activity,
+    AlertCircle,
+    Scissors,
+    Thermometer,
+    Wind,
+    Droplets,
+    FlaskRound,
+    Scale,
+    Calculator,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-const StudentReviewData = [
+// Initial review data
+const initialReviews = [
     {
         id: 1,
         name: "Ahmed Raza",
@@ -70,7 +103,165 @@ const StudentReviewData = [
     },
 ];
 
+// Review Form Modal Component
+const ReviewModal = ({ isOpen, onClose, onSubmit }: { isOpen: boolean; onClose: () => void; onSubmit: (review: any) => void }) => {
+    const [formData, setFormData] = useState({
+        name: "",
+        university: "",
+        year: "",
+        semester: "",
+        specialty: "",
+        rating: 5,
+        comment: "",
+    });
+
+    const specialties = [
+        "Pharmacology",
+        "Pharmacognosy",
+        "Pharmaceutical Chemistry",
+        "Pharmacy Practice",
+        "Pharmaceutics",
+        "Pharmaceutical Microbiology",
+        "Clinical Pharmacy",
+    ];
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        onSubmit({
+            id: Date.now(),
+            ...formData,
+            rating: parseFloat(formData.rating.toString()),
+        });
+        onClose();
+        setFormData({ name: "", university: "", year: "", semester: "", specialty: "", rating: 5, comment: "" });
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white/90 backdrop-blur-xl rounded-3xl border border-white/50 shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+                <div className="p-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-xl font-bold text-gray-900">Write a Review</h3>
+                        <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100">
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                            <input
+                                type="text"
+                                required
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">University</label>
+                            <input
+                                type="text"
+                                required
+                                value={formData.university}
+                                onChange={(e) => setFormData({ ...formData, university: e.target.value })}
+                                className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="e.g., 5th Year"
+                                    value={formData.year}
+                                    onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Semester</label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="e.g., Semester 8"
+                                    value={formData.semester}
+                                    onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Specialty</label>
+                            <select
+                                required
+                                value={formData.specialty}
+                                onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+                                className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                            >
+                                <option value="">Select a specialty</option>
+                                {specialties.map((s) => (
+                                    <option key={s} value={s}>{s}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Rating (1-5)</label>
+                            <input
+                                type="number"
+                                min="1"
+                                max="5"
+                                step="0.1"
+                                required
+                                value={formData.rating}
+                                onChange={(e) => setFormData({ ...formData, rating: parseFloat(e.target.value) })}
+                                className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Comment</label>
+                            <textarea
+                                required
+                                rows={3}
+                                value={formData.comment}
+                                onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
+                                className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-500 text-white font-semibold rounded-xl hover:shadow-lg transition"
+                        >
+                            Submit Review
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const Testimonial = () => {
+    const [reviews, setReviews] = useState(initialReviews);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // Background icons
+    const bgIconList: LucideIcon[] = [
+        PillIcon, FlaskIcon, BeakerIcon, MicroscopeIcon, Atom, DnaIcon, HeartIcon, Leaf,
+        SyringeIcon, TestTube, Tablet, ClipboardList, StethIcon, Bandage, Droplet, Eye,
+        Bone, Brain, Heart, Activity, AlertCircle, Scissors, Thermometer, Wind, Droplets,
+        FlaskRound, Scale, Calculator,
+    ];
+    const bgIcons = Array.from({ length: 30 }, (_, i) => ({
+        Icon: bgIconList[i % bgIconList.length],
+        left: `${(i * 17) % 90 + 5}%`,
+        top: `${(i * 23) % 90 + 5}%`,
+        size: 20 + (i * 3) % 40,
+        rotate: (i * 27) % 360,
+    }));
+
     const settings = {
         dots: true,
         infinite: true,
@@ -86,12 +277,12 @@ const Testimonial = () => {
         ],
     };
 
-    const averageRating = (StudentReviewData.reduce((acc, r) => acc + r.rating, 0) / StudentReviewData.length).toFixed(1);
+    const averageRating = (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1);
 
     const renderStars = (rating: number) => (
         <div className="flex items-center gap-1">
             {[...Array(5)].map((_, i) => (
-                <Star key={i} className={`w-4 h-4 ${i < rating ? "fill-yellow-400 text-yellow-400" : "fill-gray-200 text-gray-200"}`} />
+                <Star key={i} className={`w-4 h-4 ${i < Math.round(rating) ? "fill-yellow-400 text-yellow-400" : "fill-gray-200 text-gray-200"}`} />
             ))}
             <span className="ml-2 text-sm font-semibold text-gray-600">{rating.toFixed(1)}</span>
         </div>
@@ -123,9 +314,31 @@ const Testimonial = () => {
         return map[specialty] || "tabler:book";
     };
 
+    const handleAddReview = (newReview: any) => {
+        setReviews([newReview, ...reviews]); // add to beginning
+    };
+
     return (
-        <section className="w-full py-16 md:py-20 lg:py-24 bg-white">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <section className="w-full py-16 md:py-20 lg:py-24 relative overflow-hidden bg-white">
+            {/* Background blobs */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
+                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000" />
+            </div>
+
+            {/* Floating background icons */}
+            <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+                {bgIcons.map(({ Icon, left, top, size, rotate }, idx) => (
+                    <Icon
+                        key={idx}
+                        size={size}
+                        className="absolute text-gray-800/5"
+                        style={{ left, top, transform: `rotate(${rotate}deg)` }}
+                    />
+                ))}
+            </div>
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                     <div>
                         <span className="inline-block text-sm font-semibold text-blue-600 uppercase tracking-wider mb-3">
@@ -138,37 +351,41 @@ const Testimonial = () => {
                             Join thousands of pharmacy students who are transforming their education with Pharmawallah.
                         </p>
                     </div>
-                    <div className="flex items-center gap-4 bg-blue-50 p-4 rounded-xl">
+                    <div className="flex items-center gap-4 bg-white/70 backdrop-blur-md rounded-xl p-4 border border-white/50 shadow-md">
                         <div className="text-center">
                             <div className="text-3xl font-bold text-blue-700">{averageRating}</div>
                             <div className="flex">{renderStars(parseFloat(averageRating))}</div>
-                            <div className="text-xs text-gray-500 mt-1">{StudentReviewData.length}+ reviews</div>
+                            <div className="text-xs text-gray-500 mt-1">{reviews.length}+ reviews</div>
                         </div>
-                        <Link
-                            href="/reviews"
+                        <button
+                            onClick={() => setIsModalOpen(true)}
                             className="inline-flex items-center gap-1 text-blue-600 text-sm font-medium hover:text-blue-800"
                         >
                             Write a review <MessageSquare className="w-4 h-4" />
-                        </Link>
+                        </button>
                     </div>
                 </div>
 
                 <Slider {...settings}>
-                    {StudentReviewData.map((student) => (
+                    {reviews.map((student) => (
                         <div key={student.id} className="px-3">
-                            <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow min-h-[320px] flex flex-col">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full ${getSpecialtyColor(student.specialty)} text-sm`}>
-                                        <Icon icon={getSpecialtyIcon(student.specialty)} className="w-4 h-4" />
+                            <div className="group relative bg-white/70 backdrop-blur-md rounded-xl p-6 hover:shadow-xl transition-all duration-300 min-h-[320px] flex flex-col border border-transparent hover:border-blue-200/50 hover:-translate-y-1">
+                                {/* Permanent gradient border effect */}
+                                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-400/20 to-green-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                <div className="absolute inset-0 rounded-xl border border-white/50 pointer-events-none" />
+
+                                <div className="flex justify-between items-start mb-4 relative z-10">
+                                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-blue-50 to-green-50 border border-blue-100/50 text-sm`}>
+                                        <Icon icon={getSpecialtyIcon(student.specialty)} className="w-4 h-4 text-blue-600" />
                                         <span className="text-gray-700">{student.specialty}</span>
                                     </div>
                                     {renderStars(student.rating)}
                                 </div>
-                                <div className="mb-4 flex-grow">
+                                <div className="mb-4 flex-grow relative z-10">
                                     <p className="text-gray-700 text-sm italic">"{student.comment}"</p>
                                 </div>
-                                <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
-                                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-green-500 flex items-center justify-center text-white font-bold text-sm">
+                                <div className="flex items-center gap-3 pt-4 border-t border-white/20 relative z-10">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-green-500 flex items-center justify-center text-white font-bold text-sm shadow-md">
                                         {student.name.split(' ').map(n => n[0]).join('')}
                                     </div>
                                     <div className="flex-1">
@@ -198,6 +415,8 @@ const Testimonial = () => {
                     </Link>
                 </div>
             </div>
+
+            <ReviewModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleAddReview} />
         </section>
     );
 };
