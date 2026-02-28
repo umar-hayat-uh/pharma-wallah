@@ -1,351 +1,416 @@
 "use client";
-import React, { useState } from "react";
+
+import { useState } from "react";
 import { motion } from "framer-motion";
-import {
-    BookOpen, FileText, Database, Calculator, Bot,
-    ArrowRight, CheckCircle, MessageSquare, Lightbulb, Target,
-    Sparkles, GraduationCap, Brain, Library, Scan, Layers
-} from "lucide-react";
 import Link from "next/link";
-// Import background icons and blobs (same as other sections)
 import {
-    Pill as PillIcon,
-    FlaskConical as FlaskIcon,
-    Beaker as BeakerIcon,
-    Microscope as MicroscopeIcon,
-    Atom,
-    Dna as DnaIcon,
-    HeartPulse as HeartIcon,
-    Leaf,
-    Syringe as SyringeIcon,
-    TestTube,
-    Tablet,
-    ClipboardList,
-    Stethoscope as StethIcon,
-    Bandage,
-    Droplet,
-    Eye,
-    Bone,
-    Brain as BrainIcon,
-    Heart,
-    Activity,
-    AlertCircle,
-    Scissors,
-    Thermometer,
-    Wind,
-    Droplets,
-    FlaskRound,
-    Scale,
-    Calculator as CalcIcon,
+  BookOpen, FileText, Database, Calculator, Bot,
+  ArrowRight, CheckCircle, MessageSquare, Lightbulb, Target,
+  Sparkles, GraduationCap, Brain, Library, Scan, Layers,
+  // Background icons
+  Pill,
+  FlaskConical,
+  Beaker,
+  Microscope,
+  Atom,
+  Dna,
+  HeartPulse,
+  Leaf,
+  Syringe,
+  TestTube,
+  Tablet,
+  ClipboardList,
+  Stethoscope,
+  Bandage,
+  Droplet,
+  Eye,
+  Bone,
+  Heart,
+  Activity,
+  AlertCircle,
+  Scissors,
+  Thermometer,
+  Wind,
+  Droplets,
+  FlaskRound,
+  Scale,
+  Calculator as CalcIcon,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+interface BgIconItem {
+  Icon: LucideIcon;
+  color: string;
+}
+
+// Increased opacity for better visibility
+const iconList: BgIconItem[] = [
+  { Icon: Pill, color: "text-blue-600/30" },
+  { Icon: FlaskConical, color: "text-green-600/30" },
+  { Icon: Beaker, color: "text-purple-600/30" },
+  { Icon: Microscope, color: "text-amber-600/30" },
+  { Icon: Atom, color: "text-blue-600/30" },
+  { Icon: Dna, color: "text-green-600/30" },
+  { Icon: HeartPulse, color: "text-purple-600/30" },
+  { Icon: Leaf, color: "text-amber-600/30" },
+  { Icon: Syringe, color: "text-blue-600/30" },
+  { Icon: TestTube, color: "text-green-600/30" },
+  { Icon: Tablet, color: "text-purple-600/30" },
+  { Icon: ClipboardList, color: "text-amber-600/30" },
+  { Icon: Stethoscope, color: "text-blue-600/30" },
+  { Icon: Bandage, color: "text-green-600/30" },
+  { Icon: Droplet, color: "text-purple-600/30" },
+  { Icon: Eye, color: "text-amber-600/30" },
+  { Icon: Bone, color: "text-blue-600/30" },
+  { Icon: Heart, color: "text-purple-600/30" },
+  { Icon: Activity, color: "text-amber-600/30" },
+  { Icon: AlertCircle, color: "text-blue-600/30" },
+  { Icon: Scissors, color: "text-green-600/30" },
+  { Icon: Thermometer, color: "text-purple-600/30" },
+  { Icon: Wind, color: "text-amber-600/30" },
+  { Icon: Droplets, color: "text-green-600/30" },
+  { Icon: FlaskRound, color: "text-purple-600/30" },
+  { Icon: Scale, color: "text-blue-600/30" },
+  { Icon: CalcIcon, color: "text-green-600/30" },
+];
+
+const bgIcons: Array<{
+  Icon: LucideIcon;
+  color: string;
+  left: string;
+  top: string;
+  size: number;
+  rotate: number;
+  delay: number;
+}> = [];
+for (let i = 0; i < 40; i++) {
+  const item = iconList[i % iconList.length];
+  bgIcons.push({
+    Icon: item.Icon,
+    color:
+      i % 4 === 0
+        ? "text-blue-600/30"
+        : i % 4 === 1
+        ? "text-green-600/30"
+        : i % 4 === 2
+        ? "text-purple-600/30"
+        : "text-amber-600/30",
+    left: `${(i * 13) % 90 + 5}%`,
+    top: `${(i * 19) % 90 + 5}%`,
+    size: 30 + (i * 7) % 90,
+    rotate: (i * 23) % 360,
+    delay: i * 0.1,
+  });
+}
+
 const featureGroups = {
-    learning: {
-        title: "Learning Resources",
-        icon: GraduationCap,
-        color: "from-blue-500 to-cyan-400",
-        items: [
-            {
-                key: "Material",
-                icon: BookOpen,
-                description: "Curated study materials, notes, and textbooks designed by pharmacy experts.",
-                highlights: ["Detailed Notes", "Chapter PDFs", "Video Lectures", "Past Papers"],
-                accent: "#2563EB",
-                stat: "500+ Resources",
-                link: "/material",
-            },
-            {
-                key: "Pharmacopedia",
-                icon: Database,
-                description: "A digital pharmaceutical encyclopedia covering drugs, terms, and dosages.",
-                highlights: ["Drug Database", "Medical Terms", "Dosage Info", "Side Effects"],
-                accent: "#059669",
-                stat: "2,000+ Entries",
-                link: "/pharmacopedia",
-            },
-            {
-                key: "Books Library",
-                icon: Library,
-                description: "Access a growing collection of essential pharmacy textbooks and reference books online.",
-                highlights: ["Standard Textbooks", "Reference Manuals", "Search Inside", "Bookmarks"],
-                accent: "#8B5CF6",
-                stat: "150+ Titles",
-                link: "/books",
-            },
-        ],
-    },
-    practice: {
-        title: "Practice & Assessment",
-        icon: Brain,
-        color: "from-purple-500 to-pink-400",
-        items: [
-            {
-                key: "MCQ's Bank",
-                icon: FileText,
-                description: "Thousands of exam-ready MCQs with explanations and performance tracking.",
-                highlights: ["Subject MCQs", "Mock Tests", "Analytics", "Year Questions"],
-                accent: "#7C3AED",
-                stat: "10,000+ Questions",
-                link: "/mcqs",
-            },
-            {
-                key: "Calculation Tools",
-                icon: Calculator,
-                description: "Interactive calculators for dosage, formulation, and pharmacokinetics.",
-                highlights: ["Dosage Calc", "IV Flow Rate", "Alligation", "Concentration"],
-                accent: "#D97706",
-                stat: "15+ Calculators",
-                link: "/calculation-tools",
-            },
-            {
-                key: "Slide Spotting",
-                icon: Scan,
-                description: "Identify microscopic slides, drug samples, and pharmacy specimens with our spotting tool.",
-                highlights: ["Micro Slides", "Drug Identification", "Specimen Library", "Self-Tests"],
-                accent: "#EC4899",
-                stat: "300+ Images",
-                link: "/slide-spotting",
-            },
-        ],
-    },
-    revision: {
-        title: "Quick Revision",
-        icon: Sparkles,
-        color: "from-teal-500 to-emerald-400",
-        items: [
-            {
-                key: "Flashcards (MOA & Classification)",
-                icon: Layers,
-                description: "Master drug mechanisms and classifications with interactive flashcards for rapid recall.",
-                highlights: ["MOA Cards", "Drug Classification", "Spaced Repetition", "Favourites"],
-                accent: "#14B8A6",
-                stat: "1,200+ Cards",
-                link: "/flashcards",
-            },
-        ],
-    },
-    ai: {
-        title: "AI Assistant",
-        icon: Sparkles,
-        color: "from-sky-500 to-blue-400",
-        items: [
-            {
-                key: "Expert AI Guide",
-                icon: Bot,
-                description: "An intelligent AI study companion trained on pharmacy curricula.",
-                highlights: ["Instant Answers", "Concept Explainer", "Study Planner", "Exam Tips"],
-                accent: "#0EA5E9",
-                stat: "24/7 Available",
-                link: "/ai-guide",
-                isAI: true,
-            },
-        ],
-    },
+  learning: {
+    title: "Learning Resources",
+    icon: GraduationCap,
+    color: "from-blue-500 to-cyan-400",
+    items: [
+      {
+        key: "Material",
+        icon: BookOpen,
+        description: "Curated study materials, notes, and textbooks designed by pharmacy experts.",
+        highlights: ["Detailed Notes", "Chapter PDFs", "Video Lectures", "Past Papers"],
+        accent: "#2563EB",
+        stat: "500+ Resources",
+        link: "/material",
+      },
+      {
+        key: "Pharmacopedia",
+        icon: Database,
+        description: "A digital pharmaceutical encyclopedia covering drugs, terms, and dosages.",
+        highlights: ["Drug Database", "Medical Terms", "Dosage Info", "Side Effects"],
+        accent: "#059669",
+        stat: "2,000+ Entries",
+        link: "/pharmacopedia",
+      },
+      {
+        key: "Books Library",
+        icon: Library,
+        description: "Access a growing collection of essential pharmacy textbooks and reference books online.",
+        highlights: ["Standard Textbooks", "Reference Manuals", "Search Inside", "Bookmarks"],
+        accent: "#8B5CF6",
+        stat: "150+ Titles",
+        link: "/books",
+      },
+      {
+        key: "Flashcards",
+        icon: Layers,
+        description: "Master drug mechanisms and classifications with interactive flashcards for rapid recall.",
+        highlights: ["MOA Cards", "Drug Classification", "Spaced Repetition", "Favourites"],
+        accent: "#14B8A6",
+        stat: "1,200+ Cards",
+        link: "/flashcards",
+      },
+    ],
+  },
+  practice: {
+    title: "Practice & Assessment",
+    icon: Brain,
+    color: "from-purple-500 to-pink-400",
+    items: [
+      {
+        key: "MCQ's Bank",
+        icon: FileText,
+        description: "Thousands of exam-ready MCQs with explanations and performance tracking.",
+        highlights: ["Subject MCQs", "Mock Tests", "Analytics", "Year Questions"],
+        accent: "#7C3AED",
+        stat: "10,000+ Questions",
+        link: "/mcqs",
+      },
+      {
+        key: "Calculation Tools",
+        icon: Calculator,
+        description: "Interactive calculators for dosage, formulation, and pharmacokinetics.",
+        highlights: ["Dosage Calc", "IV Flow Rate", "Alligation", "Concentration"],
+        accent: "#D97706",
+        stat: "15+ Calculators",
+        link: "/calculation-tools",
+      },
+      {
+        key: "Slide Spotting",
+        icon: Scan,
+        description: "Identify microscopic slides, drug samples, and pharmacy specimens with our spotting tool.",
+        highlights: ["Micro Slides", "Drug Identification", "Specimen Library", "Self-Tests"],
+        accent: "#EC4899",
+        stat: "300+ Images",
+        link: "/slide-spotting",
+      },
+    ],
+  },
+  ai: {
+    title: "AI Assistant",
+    icon: Sparkles,
+    color: "from-sky-500 to-blue-400",
+    items: [
+      {
+        key: "Expert AI Guide",
+        icon: Bot,
+        description: "An intelligent AI study companion trained on pharmacy curricula.",
+        highlights: ["Instant Answers", "Concept Explainer", "Study Planner", "Exam Tips"],
+        accent: "#0EA5E9",
+        stat: "24/7 Available",
+        link: "/ai-guide",
+        isAI: true,
+      },
+    ],
+  },
 };
 
 const Features = () => {
-    const [hovered, setHovered] = useState<string | null>(null);
+  const [hovered, setHovered] = useState<string | null>(null);
 
-    // Background icons
-    const bgIconList: LucideIcon[] = [
-        PillIcon, FlaskIcon, BeakerIcon, MicroscopeIcon, Atom, DnaIcon, HeartIcon, Leaf,
-        SyringeIcon, TestTube, Tablet, ClipboardList, StethIcon, Bandage, Droplet, Eye,
-        Bone, BrainIcon, Heart, Activity, AlertCircle, Scissors, Thermometer, Wind, Droplets,
-        FlaskRound, Scale, CalcIcon,
-    ];
-    const bgIcons = Array.from({ length: 30 }, (_, i) => ({
-        Icon: bgIconList[i % bgIconList.length],
-        left: `${(i * 17) % 90 + 5}%`,
-        top: `${(i * 23) % 90 + 5}%`,
-        size: 20 + (i * 3) % 40,
-        rotate: (i * 27) % 360,
-    }));
+  return (
+    <section className="w-full py-16 md:py-20 lg:py-24 relative overflow-hidden bg-gradient-to-b from-white to-gray-50">
+      {/* Background blobs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200/30 rounded-full mix-blend-multiply filter blur-3xl animate-blob" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-green-200/30 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000" />
+      </div>
 
-    // Animation variants for cards
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.1,
-            },
-        },
-    };
+      {/* Floating background icons with animation */}
+      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+        {bgIcons.map(({ Icon, color, left, top, size, rotate, delay }, index) => (
+          <motion.div
+            key={index}
+            className="absolute"
+            style={{ left, top }}
+            initial={{ y: 0, rotate }}
+            animate={{ y: [0, -10, 0], rotate: [rotate, rotate + 5, rotate] }}
+            transition={{
+              duration: 8,
+              delay,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          >
+            <Icon size={size} className={color} />
+          </motion.div>
+        ))}
+      </div>
 
-    const cardVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-    };
+      {/* Subtle dot pattern */}
+      <div className="absolute inset-0 opacity-[0.02] pointer-events-none"
+           style={{ backgroundImage: 'radial-gradient(circle at 10px 10px, #3b82f6 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
 
-    return (
-        <section className="w-full py-16 md:py-20 lg:py-24 relative overflow-hidden bg-white">
-            {/* Background blobs */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
-                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-12"
+        >
+          <span className="inline-block text-sm font-semibold text-blue-600 uppercase tracking-wider mb-3">
+            Platform Features
+          </span>
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            Everything you need to excel in pharmacy
+          </h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Tools and resources built specifically for pharmacy students — from materials to AI-guided learning.
+          </p>
+        </motion.div>
+
+        {/* Feature Groups */}
+        {Object.entries(featureGroups).map(([groupKey, group], groupIdx) => (
+          <motion.div
+            key={groupKey}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: groupIdx * 0.1 }}
+            className="mb-12 last:mb-0"
+          >
+            {/* Group Header */}
+            <div className="flex items-center gap-3 mb-8">
+              <div className={`p-3 rounded-xl bg-gradient-to-r ${group.color} shadow-lg`}>
+                <group.icon className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+                {group.title}
+              </h3>
             </div>
 
-            {/* Floating background icons */}
-            <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-                {bgIcons.map(({ Icon, left, top, size, rotate }, idx) => (
-                    <Icon
-                        key={idx}
-                        size={size}
-                        className="absolute text-gray-800/5"
-                        style={{ left, top, transform: `rotate(${rotate}deg)` }}
-                    />
-                ))}
-            </div>
+            {/* Cards Grid */}
+            <div
+              className={`grid gap-6 ${
+                groupKey === "learning"
+                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+                  : groupKey === "practice"
+                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                  : "grid-cols-1 max-w-xl mx-auto"
+              }`}
+            >
+              {group.items.map((detail) => {
+                const Icon = detail.icon;
+                const isAI = "isAI" in detail && detail.isAI;
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                <motion.div
-                    initial={{ opacity: 0, y: 16 }}
+                return (
+                  <motion.div
+                    key={detail.key}
+                    initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="text-center mb-12"
-                >
-                    <span className="inline-block text-sm font-semibold text-blue-600 uppercase tracking-wider mb-3">
-                        Platform Features
-                    </span>
-                    <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                        Everything you need to excel in pharmacy
-                    </h2>
-                    <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                        Tools and resources built specifically for pharmacy students — from materials to AI-guided learning.
-                    </p>
-                </motion.div>
+                    transition={{ duration: 0.4, delay: groupIdx * 0.1 }}
+                    onMouseEnter={() => setHovered(detail.key)}
+                    onMouseLeave={() => setHovered(null)}
+                    className="group relative h-full"
+                  >
+                    {/* Gradient border on hover */}
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-green-500 rounded-2xl blur opacity-0 group-hover:opacity-30 transition duration-300" />
 
-                {Object.entries(featureGroups).map(([groupKey, group], groupIdx) => (
-                    <motion.div
-                        key={groupKey}
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: groupIdx * 0.1 }}
-                        className="mb-12 last:mb-0"
-                    >
-                        {/* Group Header with glass effect */}
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className={`p-3 rounded-xl bg-gradient-to-r ${group.color} shadow-lg`}>
-                                <group.icon className="w-6 h-6 text-white" />
-                            </div>
-                            <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-                                {group.title}
-                            </h3>
+                    {/* Card */}
+                    <div className="relative bg-white/90 backdrop-blur-md rounded-2xl border border-white/50 p-6 h-full flex flex-col hover:shadow-xl transition-all duration-300">
+                      {isAI && (
+                        <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-sky-500 to-blue-500 text-white shadow-lg">
+                          <Lightbulb className="w-3 h-3" />
+                          NEW
                         </div>
+                      )}
 
-                        {/* Cards Grid */}
-                        <motion.div
-                            variants={containerVariants}
-                            initial="hidden"
-                            whileInView="visible"
-                            viewport={{ once: true }}
-                            className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${group.items.length} gap-5`}
+                      {/* Icon */}
+                      <div
+                        className="w-14 h-14 rounded-xl flex items-center justify-center mb-4 shadow-md"
+                        style={{
+                          background: `linear-gradient(135deg, ${detail.accent}30, ${detail.accent}10)`,
+                          color: detail.accent,
+                        }}
+                      >
+                        <Icon className="w-7 h-7" />
+                      </div>
+
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="text-lg font-bold text-gray-900">{detail.key}</h4>
+                        <span
+                          className="text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ml-2"
+                          style={{ background: detail.accent + "20", color: detail.accent }}
                         >
-                            {group.items.map((detail) => {
-                                const Icon = detail.icon;
-                                const isHovered = hovered === detail.key;
-                                const isAI = "isAI" in detail && detail.isAI;
+                          {detail.stat}
+                        </span>
+                      </div>
 
-                                return (
-                                    <motion.div
-                                        key={detail.key}
-                                        variants={cardVariants}
-                                        onMouseEnter={() => setHovered(detail.key)}
-                                        onMouseLeave={() => setHovered(null)}
-                                        className="group relative rounded-2xl backdrop-blur-md transition-all duration-300 cursor-pointer"
-                                    >
-                                        {/* Gradient border on hover */}
-                                        <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-400 to-green-400 opacity-0 group-hover:opacity-30 transition-opacity duration-300 blur-[1px]`} />
+                      <p className="text-sm text-gray-600 mb-4 flex-1">{detail.description}</p>
 
-                                        {/* Main card - glass style */}
-                                        <div className="relative bg-white/70 backdrop-blur-md rounded-2xl border border-white/50 overflow-hidden p-6 h-full flex flex-col hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
-                                            {isAI && (
-                                                <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-sky-500 to-blue-500 text-white shadow-lg">
-                                                    <Lightbulb className="w-3 h-3" />
-                                                    NEW
-                                                </div>
-                                            )}
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {detail.highlights.map((h) => (
+                          <span key={h} className="inline-flex items-center gap-1 text-xs bg-gray-100 px-2 py-1 rounded-full">
+                            <CheckCircle className="w-3 h-3" style={{ color: detail.accent }} />
+                            {h}
+                          </span>
+                        ))}
+                      </div>
 
-                                            {/* Icon with gradient background */}
-                                            <div
-                                                className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br shadow-md"
-                                                style={{
-                                                    background: `linear-gradient(135deg, ${detail.accent}20, ${detail.accent}05)`,
-                                                    color: detail.accent,
-                                                }}
-                                            >
-                                                <Icon className="w-6 h-6" />
-                                            </div>
+                      <div className="flex items-center gap-1 text-sm font-semibold mt-auto" style={{ color: detail.accent }}>
+                        {isAI ? (
+                          <>
+                            <MessageSquare className="w-4 h-4" />
+                            <span>Chat with AI Guide</span>
+                          </>
+                        ) : (
+                          <>
+                            <Target className="w-4 h-4" />
+                            <span>Explore {detail.key}</span>
+                          </>
+                        )}
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                      </div>
 
-                                            <div className="flex items-center justify-between mb-2">
-                                                <h4 className="text-lg font-bold text-gray-900">{detail.key}</h4>
-                                                <span
-                                                    className="text-xs font-semibold px-2 py-1 rounded-full"
-                                                    style={{ background: detail.accent + "20", color: detail.accent }}
-                                                >
-                                                    {detail.stat}
-                                                </span>
-                                            </div>
-
-                                            <p className="text-sm text-gray-500 mb-4">{detail.description}</p>
-
-                                            <div className="flex flex-wrap gap-2 mb-4">
-                                                {detail.highlights.map((h) => (
-                                                    <span key={h} className="inline-flex items-center gap-1 text-xs bg-gray-100 px-2 py-1 rounded-full">
-                                                        <CheckCircle className="w-3 h-3" style={{ color: detail.accent }} />
-                                                        {h}
-                                                    </span>
-                                                ))}
-                                            </div>
-
-                                            <div className="flex items-center gap-1 text-sm font-semibold mt-auto" style={{ color: detail.accent }}>
-                                                {isAI ? (
-                                                    <>
-                                                        <MessageSquare className="w-4 h-4" />
-                                                        <span>Chat with AI Guide</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Target className="w-4 h-4" />
-                                                        <span>Explore {detail.key}</span>
-                                                    </>
-                                                )}
-                                                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                                            </div>
-
-                                            <Link
-                                                href={detail.link}
-                                                className="absolute inset-0 z-10"
-                                                aria-label={`Explore ${detail.key}`}
-                                            />
-                                        </div>
-                                    </motion.div>
-                                );
-                            })}
-                        </motion.div>
-                    </motion.div>
-                ))}
-
-                <div className="mt-12 flex flex-wrap gap-4 justify-center">
-                    <Link
-                        href="/all-features"
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-green-500 hover:shadow-lg transition"
-                    >
-                        View All Features <ArrowRight className="w-4 h-4" />
-                    </Link>
-                    <Link
-                        href="/ai-guide"
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold bg-white/70 backdrop-blur-sm border border-white/50 text-gray-700 hover:bg-white/90 transition"
-                    >
-                        <Bot className="w-4 h-4 text-sky-500" />
-                        Try AI Guide
-                    </Link>
-                </div>
+                      <Link
+                        href={detail.link}
+                        className="absolute inset-0 z-10"
+                        aria-label={`Explore ${detail.key}`}
+                      />
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
-        </section>
-    );
+          </motion.div>
+        ))}
+
+        {/* Footer Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mt-12 flex flex-wrap gap-4 justify-center"
+        >
+          <Link
+            href="/all-features"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-green-500 hover:shadow-lg transition"
+          >
+            View All Features <ArrowRight className="w-4 h-4" />
+          </Link>
+          <Link
+            href="/ai-guide"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold bg-white/80 backdrop-blur-sm border border-white/50 text-gray-700 hover:bg-white/90 transition"
+          >
+            <Bot className="w-4 h-4 text-sky-500" />
+            Try AI Guide
+          </Link>
+        </motion.div>
+      </div>
+
+      <style jsx>{`
+        @keyframes blob {
+          0% { transform: translate(0px, 0px) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
+          100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+      `}</style>
+    </section>
+  );
 };
 
 export default Features;

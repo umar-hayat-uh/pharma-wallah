@@ -1,6 +1,9 @@
-import { Metadata } from "next";
+"use client";
+
+import { useState, useMemo } from "react";
 import { SemesterData } from "@/app/api/semester-data";
 import Link from "next/link";
+import { Search, X } from "lucide-react";
 import {
   Pill,
   FlaskConical,
@@ -29,59 +32,70 @@ import {
   Zap,
   Droplets,
   FlaskRound,
-  // Capsule is excluded
 } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "Material | Pharm-D Semester Wise",
-};
+// Background icon setup (same as material page)
+const iconList = [
+  { Icon: Pill, color: "text-blue-800/10" },
+  { Icon: FlaskConical, color: "text-green-800/10" },
+  { Icon: Beaker, color: "text-purple-800/10" },
+  { Icon: Microscope, color: "text-amber-800/10" },
+  { Icon: Atom, color: "text-blue-800/10" },
+  { Icon: Dna, color: "text-green-800/10" },
+  { Icon: HeartPulse, color: "text-purple-800/10" },
+  { Icon: Leaf, color: "text-amber-800/10" },
+  { Icon: Syringe, color: "text-blue-800/10" },
+  { Icon: TestTube, color: "text-green-800/10" },
+  { Icon: Tablet, color: "text-purple-800/10" },
+  { Icon: ClipboardList, color: "text-amber-800/10" },
+  { Icon: Stethoscope, color: "text-blue-800/10" },
+  { Icon: Bandage, color: "text-green-800/10" },
+  { Icon: Droplet, color: "text-purple-800/10" },
+  { Icon: Eye, color: "text-amber-800/10" },
+  { Icon: Bone, color: "text-blue-800/10" },
+  { Icon: Brain, color: "text-green-800/10" },
+  { Icon: Heart, color: "text-purple-800/10" },
+  { Icon: Activity, color: "text-amber-800/10" },
+  { Icon: AlertCircle, color: "text-blue-800/10" },
+  { Icon: Scissors, color: "text-green-800/10" },
+  { Icon: Thermometer, color: "text-purple-800/10" },
+  { Icon: Wind, color: "text-amber-800/10" },
+  { Icon: Zap, color: "text-blue-800/10" },
+  { Icon: Droplets, color: "text-green-800/10" },
+  { Icon: FlaskRound, color: "text-purple-800/10" },
+];
+
+const bgIcons: Array<{ Icon: React.ComponentType<any>; color: string }> = [];
+for (let i = 0; i < 40; i++) {
+  const item = iconList[i % iconList.length];
+  bgIcons.push({
+    ...item,
+    color:
+      i % 4 === 0
+        ? "text-blue-800/10"
+        : i % 4 === 1
+        ? "text-green-800/10"
+        : i % 4 === 2
+        ? "text-purple-800/10"
+        : "text-amber-800/10",
+  });
+}
 
 export default function MaterialPage() {
-  const semesters = SemesterData.map((item) => item.semester);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Create a large array of icons with subtle color variations
-  const iconList = [
-    { Icon: Pill, color: "text-blue-800/10" },
-    { Icon: FlaskConical, color: "text-green-800/10" },
-    { Icon: Beaker, color: "text-purple-800/10" },
-    { Icon: Microscope, color: "text-amber-800/10" },
-    { Icon: Atom, color: "text-blue-800/10" },
-    { Icon: Dna, color: "text-green-800/10" },
-    { Icon: HeartPulse, color: "text-purple-800/10" },
-    { Icon: Leaf, color: "text-amber-800/10" },
-    { Icon: Syringe, color: "text-blue-800/10" },
-    { Icon: TestTube, color: "text-green-800/10" },
-    { Icon: Tablet, color: "text-purple-800/10" },
-    { Icon: ClipboardList, color: "text-amber-800/10" },
-    { Icon: Stethoscope, color: "text-blue-800/10" },
-    { Icon: Bandage, color: "text-green-800/10" },
-    { Icon: Droplet, color: "text-purple-800/10" },
-    { Icon: Eye, color: "text-amber-800/10" },
-    { Icon: Bone, color: "text-blue-800/10" },
-    { Icon: Brain, color: "text-green-800/10" },
-    { Icon: Heart, color: "text-purple-800/10" },
-    { Icon: Activity, color: "text-amber-800/10" },
-    { Icon: AlertCircle, color: "text-blue-800/10" },
-    { Icon: Scissors, color: "text-green-800/10" },
-    { Icon: Thermometer, color: "text-purple-800/10" },
-    { Icon: Wind, color: "text-amber-800/10" },
-    { Icon: Zap, color: "text-blue-800/10" },
-    { Icon: Droplets, color: "text-green-800/10" },
-    { Icon: FlaskRound, color: "text-purple-800/10" },
-  ];
+  // Flatten all subjects for filtering
+  const filteredSemesters = useMemo(() => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return SemesterData;
 
-  // Repeat to have more icons (e.g., 40 total)
-  const bgIcons = [];
-  for (let i = 0; i < 40; i++) {
-    const item = iconList[i % iconList.length];
-    bgIcons.push({
-      ...item,
-      // Add variation by slightly modifying color for repeats
-      color: i % 4 === 0 ? "text-blue-800/10" :
-             i % 4 === 1 ? "text-green-800/10" :
-             i % 4 === 2 ? "text-purple-800/10" : "text-amber-800/10",
-    });
-  }
+    return SemesterData.map((sem) => ({
+      ...sem,
+      subjects: sem.subjects.filter((subj) =>
+        subj.name.toLowerCase().includes(query)
+      ),
+    })).filter((sem) => sem.subjects.length > 0);
+  }, [searchQuery]);
 
   return (
     <section className="min-h-screen bg-gradient-to-b from-blue-50/30 via-white to-green-50/20 p-0 relative overflow-x-hidden">
@@ -91,13 +105,32 @@ export default function MaterialPage() {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
       </div>
 
-      {/* Hero Section (unchanged) */}
+      {/* Floating background icons */}
+      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="relative w-full h-full">
+          {bgIcons.map(({ Icon, color }, index) => {
+            const left = `${(index * 13) % 90 + 5}%`;
+            const top = `${(index * 19) % 90 + 5}%`;
+            const size = 30 + (index * 7) % 90;
+            const rotate = (index * 23) % 360;
+            return (
+              <Icon
+                key={index}
+                size={size}
+                className={`absolute ${color}`}
+                style={{ left, top, transform: `rotate(${rotate}deg)` }}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Hero Section */}
       <div className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-green-500 overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,.1)_50%,transparent_75%)] bg-[length:400%_400%] animate-shimmer" />
         <div className="absolute inset-0 backdrop-blur-[2px]" />
         <div className="container relative mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
           <div className="max-w-4xl mx-auto text-center">
-            
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight drop-shadow-lg">
               Pharm-D Material
               <span className="block text-green-300 mt-2">(Semester Wise)</span>
@@ -109,50 +142,63 @@ export default function MaterialPage() {
               exams, university finals, viva voce, and competitive examination
               preparation.
             </p>
-            <div className="flex flex-wrap justify-center gap-2 mt-8">
-              {semesters.map((sem) => (
-                <a
-                  key={sem}
-                  href={`#${sem.replace(/\s+/g, "-").toLowerCase()}`}
-                  className="px-4 py-2 text-sm font-medium text-white bg-white/10 backdrop-blur-sm rounded-full border border-white/20 hover:bg-white/20 transition-colors"
+
+            {/* Search Bar */}
+            <div className="relative max-w-xl mx-auto">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/70" />
+              <input
+                type="text"
+                placeholder="Search subjects..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-10 py-4 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white"
                 >
-                  {sem}
-                </a>
-              ))}
+                  <X className="w-5 h-5" />
+                </button>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content - with floating icons in background */}
+      {/* Main Content */}
       <div className="container relative mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20 z-10">
-        {/* Background Icons Container */}
+        {/* Background Icons (same container) */}
         <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
           <div className="relative w-full h-full">
             {bgIcons.map(({ Icon, color }, index) => {
-              // Generate varied positions, sizes, rotations
-              const left = `${(index * 13) % 90 + 5}%`; // 5-95%
+              const left = `${(index * 13) % 90 + 5}%`;
               const top = `${(index * 19) % 90 + 5}%`;
-              const size = 30 + (index * 7) % 90; // 30px to 120px
+              const size = 30 + (index * 7) % 90;
               const rotate = (index * 23) % 360;
               return (
                 <Icon
                   key={index}
                   size={size}
                   className={`absolute ${color}`}
-                  style={{
-                    left,
-                    top,
-                    transform: `rotate(${rotate}deg)`,
-                  }}
+                  style={{ left, top, transform: `rotate(${rotate}deg)` }}
                 />
               );
             })}
           </div>
         </div>
 
-        {/* Semester list (unchanged) */}
-        {SemesterData.map(({ semester, subjects }) => (
+        {/* No results message */}
+        {filteredSemesters.length === 0 && (
+          <div className="text-center py-20">
+            <p className="text-gray-500 text-lg">
+              No subjects found for "{searchQuery}"
+            </p>
+          </div>
+        )}
+
+        {/* Semester list */}
+        {filteredSemesters.map(({ semester, subjects }) => (
           <div
             key={semester}
             id={semester.replace(/\s+/g, "-").toLowerCase()}
@@ -169,7 +215,8 @@ export default function MaterialPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {subjects.map((subj) => {
-                const subjectLink = `/material/semester-6/${subj.name
+                // Build link – adjust as needed (original used semester-6, but we can keep generic)
+                const subjectLink = `/material/${subj.name
                   .toLowerCase()
                   .replace(/\s+/g, "-")}`;
 

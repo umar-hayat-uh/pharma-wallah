@@ -1,23 +1,109 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import {
-  Scale,
-  BookOpen,
+  FileText,
   Database,
-  Bot,
-  AlertTriangle,
   Lock,
-  ShieldCheck,
+  Clock,
+  AlertTriangle,
+  CheckCircle,
   Globe,
   Mail,
   ChevronRight,
   ArrowUp,
 } from "lucide-react";
+// Background icons (same as other pages)
+import {
+  Pill as PillIcon,
+  FlaskConical as FlaskIcon,
+  Beaker,
+  Microscope,
+  Atom,
+  Dna,
+  HeartPulse,
+  Leaf,
+  Syringe,
+  TestTube,
+  Tablet,
+  ClipboardList,
+  Stethoscope,
+  Bandage,
+  Droplet,
+  Eye,
+  Bone,
+  Brain,
+  Heart,
+  Activity,
+  AlertCircle,
+  Scissors,
+  Thermometer,
+  Wind,
+  Droplets,
+  FlaskRound,
+  Scale,
+  Calculator,
+  ShieldAlert as ShieldCheck,
+  BookOpen,
+  Bot,    
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-// ─── Section Data ─────────────────────────────────────────────────────────────
+interface BgIconItem {
+  Icon: LucideIcon;
+  color: string;
+}
+
+const iconList: BgIconItem[] = [
+  { Icon: PillIcon, color: "text-blue-800/10" },
+  { Icon: FlaskIcon, color: "text-green-800/10" },
+  { Icon: Beaker, color: "text-purple-800/10" },
+  { Icon: Microscope, color: "text-amber-800/10" },
+  { Icon: Atom, color: "text-blue-800/10" },
+  { Icon: Dna, color: "text-green-800/10" },
+  { Icon: HeartPulse, color: "text-purple-800/10" },
+  { Icon: Leaf, color: "text-amber-800/10" },
+  { Icon: Syringe, color: "text-blue-800/10" },
+  { Icon: TestTube, color: "text-green-800/10" },
+  { Icon: Tablet, color: "text-purple-800/10" },
+  { Icon: ClipboardList, color: "text-amber-800/10" },
+  { Icon: Stethoscope, color: "text-blue-800/10" },
+  { Icon: Bandage, color: "text-green-800/10" },
+  { Icon: Droplet, color: "text-purple-800/10" },
+  { Icon: Eye, color: "text-amber-800/10" },
+  { Icon: Bone, color: "text-blue-800/10" },
+  { Icon: Brain, color: "text-green-800/10" },
+  { Icon: Heart, color: "text-purple-800/10" },
+  { Icon: Activity, color: "text-amber-800/10" },
+  { Icon: AlertCircle, color: "text-blue-800/10" },
+  { Icon: Scissors, color: "text-green-800/10" },
+  { Icon: Thermometer, color: "text-purple-800/10" },
+  { Icon: Wind, color: "text-amber-800/10" },
+  { Icon: Droplets, color: "text-green-800/10" },
+  { Icon: FlaskRound, color: "text-purple-800/10" },
+  { Icon: Scale, color: "text-blue-800/10" },
+  { Icon: Calculator, color: "text-green-800/10" },
+];
+
+const bgIcons: BgIconItem[] = [];
+for (let i = 0; i < 40; i++) {
+  const item = iconList[i % iconList.length];
+  bgIcons.push({
+    Icon: item.Icon,
+    color:
+      i % 4 === 0
+        ? "text-blue-800/10"
+        : i % 4 === 1
+        ? "text-green-800/10"
+        : i % 4 === 2
+        ? "text-purple-800/10"
+        : "text-amber-800/10",
+  });
+}
+
+// app/terms/page.tsx (excerpt – only the sections array and content differ)
 
 const sections = [
   { id: "acceptance", label: "Acceptance of Agreement", icon: Scale, accent: "#2563EB" },
@@ -31,21 +117,9 @@ const sections = [
   { id: "contact", label: "Contact", icon: Mail, accent: "#2563EB" },
 ];
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// Then in the main content, use the Terms paragraphs (as provided in your original Terms file).
 
-function SectionHeading({
-  id,
-  number,
-  title,
-  icon: Icon,
-  accent,
-}: {
-  id: string;
-  number: number;
-  title: string;
-  icon: React.ElementType;
-  accent: string;
-}) {
+function SectionHeading({ id, number, title, icon: Icon, accent }: any) {
   return (
     <div id={id} className="flex items-start gap-4 mb-6 scroll-mt-28">
       <div
@@ -58,12 +132,7 @@ function SectionHeading({
         <span className="text-xs font-bold tracking-widest uppercase" style={{ color: accent }}>
           Section {number}
         </span>
-        <h2
-          className="text-2xl font-extrabold text-gray-900 mt-0.5"
-          style={{ letterSpacing: "-0.02em" }}
-        >
-          {title}
-        </h2>
+        <h2 className="text-2xl font-extrabold text-gray-900 mt-0.5">{title}</h2>
       </div>
     </div>
   );
@@ -71,7 +140,7 @@ function SectionHeading({
 
 function WarningBox({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4 my-5">
+    <div className="flex gap-3 bg-amber-50/80 backdrop-blur-sm border border-amber-200 rounded-xl p-4 my-5">
       <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
       <div className="text-sm text-amber-800 leading-relaxed">{children}</div>
     </div>
@@ -94,9 +163,7 @@ function InfoBox({ children, accent = "#2563EB" }: { children: React.ReactNode; 
 }
 
 function SubHeading({ children }: { children: React.ReactNode }) {
-  return (
-    <h3 className="text-base font-bold text-gray-800 mt-6 mb-2">{children}</h3>
-  );
+  return <h3 className="text-base font-bold text-gray-800 mt-6 mb-2">{children}</h3>;
 }
 
 function Para({ children }: { children: React.ReactNode }) {
@@ -117,26 +184,18 @@ function BulletList({ items }: { items: string[] }) {
 }
 
 function Divider() {
-  return <div className="border-t border-gray-100 my-10" />;
+  return <div className="border-t border-white/20 my-10" />;
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
-
-const TermsPage = () => {
-  const [activeSection, setActiveSection] = useState("acceptance");
+export default function PrivacyPage() {
+  const [activeSection, setActiveSection] = useState("introduction");
   const [showScrollTop, setShowScrollTop] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // Track active section on scroll
   useEffect(() => {
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 400);
-
-      const sectionEls = sections.map((s) => ({
-        id: s.id,
-        el: document.getElementById(s.id),
-      }));
-
+      const sectionEls = sections.map((s) => ({ id: s.id, el: document.getElementById(s.id) }));
       for (let i = sectionEls.length - 1; i >= 0; i--) {
         const { id, el } = sectionEls[i];
         if (el && el.getBoundingClientRect().top <= 140) {
@@ -145,67 +204,55 @@ const TermsPage = () => {
         }
       }
     };
-
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
-
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      {/* ── Hero ─────────────────────────────────────────── */}
-      <section className="relative bg-white border-b border-gray-100 overflow-hidden">
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.035]"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, #1e293b 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-          }}
-        />
-        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+    <section className="min-h-screen bg-gradient-to-b from-blue-50/30 via-white to-green-50/20 relative overflow-x-hidden">
+      {/* Background blobs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
+      </div>
 
-        <div className="relative z-10 container mx-auto px-6 max-w-5xl py-16">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <span
-              className="inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase px-4 py-2 rounded-full mb-5 border"
-              style={{ color: "#2563EB", borderColor: "#BFDBFE", background: "#EFF6FF" }}
-            >
-              <Scale className="w-3.5 h-3.5" />
-              Legal
-            </span>
+      {/* Floating background icons */}
+      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+        {bgIcons.map(({ Icon, color }, index) => {
+          const left = `${(index * 13) % 90 + 5}%`;
+          const top = `${(index * 19) % 90 + 5}%`;
+          const size = 30 + (index * 7) % 90;
+          const rotate = (index * 23) % 360;
+          return (
+            <Icon
+              key={index}
+              size={size}
+              className={`absolute ${color}`}
+              style={{ left, top, transform: `rotate(${rotate}deg)` }}
+            />
+          );
+        })}
+      </div>
 
-            <h1
-              className="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight mb-4"
-              style={{ letterSpacing: "-0.03em", fontFamily: "'Sora', 'Nunito', sans-serif" }}
-            >
-              Terms &{" "}
-              <span
-                style={{
-                  background: "linear-gradient(90deg, #2563EB, #0EA5E9)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                Conditions
-              </span>
+      {/* Hero Section */}
+      <div className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-green-500 overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,.1)_50%,transparent_75%)] bg-[length:400%_400%] animate-shimmer" />
+        <div className="absolute inset-0 backdrop-blur-[2px]" />
+        <div className="container relative mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-24">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 tracking-tight drop-shadow-lg">
+              Privacy Policy
             </h1>
-
-            <p className="text-gray-500 text-base max-w-2xl mb-6">
-              By using Pharmawallah, you agree to the terms outlined below. Please read carefully — this document governs your use of all platform features including the AI Guide, Pharmacopedia, MCQ Bank, and Calculation Tools.
+            <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto leading-relaxed drop-shadow">
+              Pharmawallah is committed to protecting your privacy. This policy explains how we handle the limited data processed through our educational platform.
             </p>
-
-            <div className="flex flex-wrap gap-4 text-xs text-gray-400">
+            <div className="flex flex-wrap justify-center gap-4 text-xs text-blue-200">
               <span className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
                 Document Version: 2.0
@@ -214,23 +261,18 @@ const TermsPage = () => {
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400 inline-block" />
                 Governing Law: Pakistan
               </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
-                Contact: support@pharmawallah.com
-              </span>
             </div>
-          </motion.div>
+          </div>
         </div>
-      </section>
+      </div>
 
-      {/* ── Body ─────────────────────────────────────────── */}
-      <div className="container mx-auto px-6 max-w-5xl py-12">
+      {/* Main Content */}
+      <div className="container relative mx-auto px-4 sm:px-6 lg:px-8 py-16 z-10">
         <div className="flex gap-10 relative">
-
-          {/* ── Sticky Sidebar TOC ── */}
+          {/* Sidebar */}
           <aside className="hidden lg:block w-60 flex-shrink-0">
             <div className="sticky top-24">
-              <p className="text-xs font-bold tracking-widest uppercase text-gray-400 mb-4 pl-1">
+              <p className="text-xs font-bold tracking-widest uppercase text-gray-500 mb-4 pl-1">
                 Contents
               </p>
               <nav className="space-y-1">
@@ -255,12 +297,7 @@ const TermsPage = () => {
                   );
                 })}
               </nav>
-
-              {/* Quick contact */}
-              <div
-                className="mt-8 p-4 rounded-xl border"
-                style={{ borderColor: "#E5E7EB", background: "#FAFAFA" }}
-              >
+              <div className="mt-8 p-4 rounded-xl border border-white/30 bg-white/20 backdrop-blur-sm">
                 <p className="text-xs font-semibold text-gray-700 mb-1">Questions?</p>
                 <a
                   href="mailto:support@pharmawallah.com"
@@ -272,222 +309,85 @@ const TermsPage = () => {
             </div>
           </aside>
 
-          {/* ── Main Content ── */}
+          {/* Main Content */}
           <div ref={contentRef} className="flex-1 min-w-0">
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-10 space-y-0"
-            >
-
-              {/* 1. Acceptance */}
-              <SectionHeading id="acceptance" number={1} title="Acceptance of Agreement" icon={Scale} accent="#2563EB" />
+            <div className="bg-white/40 backdrop-blur-xl rounded-3xl border border-white/50 shadow-2xl p-6 md:p-10">
+              <SectionHeading id="introduction" number={1} title="Introduction" icon={FileText} accent="#2563EB" />
               <Para>
-                By accessing and utilizing Pharmawallah, you agree to be bound by this integrated agreement. This document governs your use of our structured study notes, MCQ banks, pharmaceutical calculators, Pharmacopedia drug encyclopedia, and AI-powered expert guide tool.
-              </Para>
-              <Para>
-                Your continued use of the platform constitutes your formal consent to these practices. If you do not agree with any part of these terms, you must discontinue use immediately.
+                Pharmawallah is an open‑access educational platform designed for pharmacy students. We provide structured study materials, specialized pharmaceutical calculators, a comprehensive Pharmacopedia drug encyclopedia, and an AI‑powered expert guide tool. This Privacy Policy outlines our commitment to user privacy and describes how we handle the limited data processed through our website.
               </Para>
 
               <Divider />
 
-              {/* 2. Nature of Service */}
-              <SectionHeading id="nature" number={2} title="Nature of Service & Educational Disclaimer" icon={BookOpen} accent="#7C3AED" />
-              <InfoBox accent="#7C3AED">
-                Pharmawallah is a <strong>free, open-access educational resource</strong> intended for pharmacy and pharmaceutical science students. All materials are for academic practice and theoretical understanding only.
-              </InfoBox>
-
-              <SubHeading>Academic Simulation</SubHeading>
+              <SectionHeading id="info-collection" number={2} title="Information Collection and Usage" icon={Database} accent="#7C3AED" />
               <Para>
-                All materials — including Pharmacokinetics, Microbiology, Engineering tools, Pharmacopedia entries, and AI-generated responses — are intended for student practice and theoretical understanding only.
+                Pharmawallah operates as a free resource and does not require user registration, sign‑ups, or the creation of personal profiles. Data collection is limited to the following categories:
+              </Para>
+              <SubHeading>Voluntary Correspondence</SubHeading>
+              <Para>
+                When you use the "Contact Us" feature, we collect your name and email address. This information is used solely to address your specific inquiries, feedback, or technical support requests.
+              </Para>
+              <SubHeading>AI Guide Tool Interactions</SubHeading>
+              <BulletList items={[
+                "Questions submitted are processed to generate educational responses",
+                "Interactions may be logged anonymously to improve the tool's accuracy and educational value",
+                "We do not associate AI queries with personal identifiers unless voluntarily provided in the query itself (which we recommend against)",
+              ]} />
+              <SubHeading>Automated Usage Data</SubHeading>
+              <Para>
+                We utilize Google Analytics to monitor website traffic and performance. This includes technical information such as IP addresses, browser types, device identifiers, and patterns of interaction with our educational modules, calculators, Pharmacopedia, and AI tools.
               </Para>
 
-              <SubHeading>No Clinical Reliance</SubHeading>
+              <Divider />
+
+              <SectionHeading id="cookies" number={3} title="Cookies and Third‑Party Services" icon={Lock} accent="#059669" />
               <BulletList items={[
-                "Calculators: Outputs (e.g., Loading Dose, Creatinine Clearance, Sterilization Time) must never be used for clinical decision-making, diagnostic purposes, or real-world patient care.",
-                "Pharmacopedia: Drug information is compiled for educational reference only and should not replace professional medical judgment, product inserts, or official pharmacopoeias.",
-                "AI Guide Tool: Responses are based on trained educational data and do not constitute professional medical advice, clinical recommendations, or substitute for qualified healthcare consultation.",
+                "Functional Storage: Local storage is utilized to temporarily retain session data within our calculators, maintain Pharmacopedia browsing preferences, and support AI tool conversation continuity during a single session.",
+                "Third‑Party Advertising: We display advertisements through partners such as Google AdSense. These vendors use cookies to serve relevant advertisements based on your visits to this and other websites.",
+                "AI Service Providers: Our AI guide tool may utilize third‑party machine learning infrastructure. These providers process query data according to strict confidentiality and data protection standards.",
               ]} />
 
+              <Divider />
+
+              <SectionHeading id="data-retention" number={4} title="Data Retention Policy" icon={Clock} accent="#0EA5E9" />
+              <BulletList items={[
+                "Personal Information: Any personal information obtained through contact forms or direct email correspondence is permanently deleted from our active records every six (6) months.",
+                "AI Interaction Logs: Anonymized question and response data may be retained for quality improvement, model training, and educational research purposes. These logs do not contain personally identifiable information.",
+                "Usage Data: Data processed by third‑party analytics or advertising providers is managed according to their respective global retention policies.",
+              ]} />
+
+              <Divider />
+
+              <SectionHeading id="disclaimer" number={5} title="Professional and Educational Disclaimer" icon={AlertTriangle} accent="#D97706" />
+              <Para>
+                All content, calculation tools, Pharmacopedia entries, and AI‑generated responses provided on Pharmawallah are intended strictly for educational and informational purposes.
+              </Para>
               <WarningBox>
-                While we strive for academic integrity, digital algorithms and AI models may contain errors or omissions. Users are strictly required to verify all results against primary sources such as the USP, BP, FDA-approved labeling, and current clinical guidelines.
+                The AI guide tool may occasionally generate incorrect or outdated information. Users are encouraged to critically evaluate all responses and consult authoritative sources.
               </WarningBox>
 
               <Divider />
 
-              {/* 3. Pharmacopedia */}
-              <SectionHeading id="pharmacopedia" number={3} title="Pharmacopedia – Drug Encyclopedia" icon={Database} accent="#059669" />
+              <SectionHeading id="user-consent" number={6} title="User Consent" icon={CheckCircle} accent="#DC2626" />
               <Para>
-                Pharmawallah's Pharmacopedia is a comprehensive drug information resource designed exclusively for educational purposes.
-              </Para>
-
-              <SubHeading>Content Coverage</SubHeading>
-              <BulletList items={[
-                "Drug Properties: Chemical structure, molecular formula, physicochemical properties",
-                "Pharmacodynamics: Mechanism of action, receptor interactions, dose-response relationships",
-                "Pharmacokinetics: Absorption, distribution, metabolism, excretion (ADME) parameters",
-                "Drug Interactions: Potential drug-drug, drug-food, and drug-disease interactions",
-                "Clinical Correlations: Therapeutic uses, contraindications, adverse effects (for educational context)",
-              ]} />
-
-              <SubHeading>Educational Purpose Only</SubHeading>
-              <Para>
-                Pharmacopedia content is synthesized from academic sources and standard textbooks for student learning. It does not replace official prescribing information, manufacturer package inserts, current clinical practice guidelines, or professional medical judgment.
-              </Para>
-
-              <InfoBox accent="#059669">
-                <strong>Verification Required:</strong> Users must independently verify all drug information using authoritative sources before any application in academic, research, or professional settings.
-              </InfoBox>
-
-              <Divider />
-
-              {/* 4. AI Guide Tool */}
-              <SectionHeading id="ai-guide" number={4} title="AI Guide Tool – Educational Assistant" icon={Bot} accent="#0EA5E9" />
-              <Para>
-                Pharmawallah offers an AI-powered expert guide tool to support student learning through interactive questioning and conceptual clarification.
-              </Para>
-
-              <SubHeading>Functionality</SubHeading>
-              <BulletList items={[
-                "Answers academic questions related to pharmacy and pharmaceutical sciences",
-                "Provides guided explanations of complex concepts",
-                "Suggests study approaches and clarifies doubts",
-                "Generates practice questions for self-assessment",
-              ]} />
-
-              <SubHeading>Important Limitations</SubHeading>
-              <BulletList items={[
-                "No Medical Advice: The AI tool does not provide medical recommendations, diagnoses, treatment plans, or patient-specific guidance.",
-                "Educational Context Only: Responses are generated based on training data and may not reflect the most current research, guidelines, or drug approvals.",
-                "Potential Inaccuracies: AI models may occasionally produce incorrect, incomplete, or outdated information. Users must critically evaluate all responses.",
-                "No Emergency Support: The AI tool is not equipped to handle emergencies. For immediate medical assistance, contact qualified healthcare professionals or emergency services.",
-              ]} />
-
-              <WarningBox>
-                <strong>User Responsibility:</strong> You acknowledge that you use the AI tool at your own risk, will verify all information through primary academic sources, and will not rely on AI responses for clinical decisions, patient care, or professional practice.
-              </WarningBox>
-
-              <Divider />
-
-              {/* 5. Tool Warnings */}
-              <SectionHeading id="tool-warnings" number={5} title="Specialized Tool Warnings" icon={AlertTriangle} accent="#D97706" />
-              <div className="space-y-3">
-                {[
-                  {
-                    tool: "Dosing / PK Calculators",
-                    warning:
-                      "Calculations do not account for individual patient variables such as organ function, metabolic differences, or concomitant medications.",
-                  },
-                  {
-                    tool: "Pharmacology Tools",
-                    warning:
-                      "LD50 or ED50 values are theoretical models and are not intended for safety assessments or human dosing.",
-                  },
-                  {
-                    tool: "Microbiology Tools",
-                    warning:
-                      "F0 values are for laboratory practice only — not for clinical or industrial sterilization validation.",
-                  },
-                  {
-                    tool: "Pharmacopedia Entries",
-                    warning:
-                      "Drug interaction information is educational and may not include all possible interactions or clinical nuances.",
-                  },
-                  {
-                    tool: "AI Responses",
-                    warning:
-                      "The AI tool does not have access to real-time medical databases and cannot provide patient-specific recommendations.",
-                  },
-                ].map(({ tool, warning }) => (
-                  <div
-                    key={tool}
-                    className="flex gap-3 p-4 rounded-xl border"
-                    style={{ borderColor: "#FDE68A", background: "#FFFBEB" }}
-                  >
-                    <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-bold text-amber-800">{tool}</p>
-                      <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">{warning}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <Divider />
-
-              {/* 6. Privacy */}
-              <SectionHeading id="privacy" number={6} title="Privacy & Data Handling" icon={Lock} accent="#DC2626" />
-              <InfoBox accent="#DC2626">
-                We prioritize your privacy by operating on a <strong>non-registration basis</strong>. Most resources are freely accessible without providing any personal information.
-              </InfoBox>
-
-              <SubHeading>Information We Collect</SubHeading>
-              <BulletList items={[
-                "Voluntary Correspondence: When you use the Contact Us feature, we collect your name and email address solely to address your inquiries.",
-                "AI Interactions: Questions submitted to the AI guide tool may be processed to generate responses. These interactions are anonymized and used to improve accuracy and educational value.",
-                "Automated Data: We utilize Google Analytics to monitor website traffic and performance (IP addresses, browser types, device identifiers, interaction patterns).",
-                "Cookies: We use Google AdSense and functional cookies to provide relevant advertisements and ensure calculator and AI tool functionality.",
-              ]} />
-
-              <SubHeading>Data Retention</SubHeading>
-              <BulletList items={[
-                "Personal correspondence is permanently deleted every six (6) months.",
-                "AI interaction logs are anonymized and retained for quality improvement purposes only.",
-                "Usage data is managed according to third-party provider retention policies.",
-              ]} />
-
-              <Para>
-                Pharmacopedia browsing and calculator usage do not require or collect personal identification.
+                By accessing and utilizing Pharmawallah, including its study materials, calculators, Pharmacopedia, and AI guide tool, you hereby acknowledge that you have read this Privacy Policy and consent to its terms. Your continued use of the website constitutes your formal agreement to the collection and use of information as described herein.
               </Para>
 
               <Divider />
 
-              {/* 7. IP & Conduct */}
-              <SectionHeading id="ip-conduct" number={7} title="Intellectual Property & Conduct" icon={ShieldCheck} accent="#7C3AED" />
-
-              <SubHeading>Ownership</SubHeading>
+              <SectionHeading id="jurisdiction" number={7} title="Jurisdiction and Updates" icon={Globe} accent="#7C3AED" />
               <Para>
-                All curated content — including study notes, MCQ banks, calculator logic, Pharmacopedia entries, and AI training materials — remains the intellectual property of Pharmawallah.
-              </Para>
-
-              <SubHeading>Prohibited Use</SubHeading>
-              <BulletList items={[
-                "Scraping data, mining MCQ banks, or attempting to bypass site security",
-                "Automated extraction of Pharmacopedia content",
-                "Reverse engineering calculator algorithms or AI response mechanisms",
-                "Commercial redistribution of any platform content without prior written consent",
-              ]} />
-
-              <SubHeading>Permitted Use</SubHeading>
-              <InfoBox accent="#7C3AED">
-                Personal, non-commercial educational use only. Students and educators may reference platform content for learning purposes with appropriate attribution.
-              </InfoBox>
-
-              <Divider />
-
-              {/* 8. Governing Law */}
-              <SectionHeading id="governing-law" number={8} title="Governing Law & Jurisdiction" icon={Globe} accent="#059669" />
-              <Para>
-                These Terms and Conditions are governed by and construed in accordance with the laws of <strong>Pakistan</strong>. Any disputes relating to these terms will be subject to the exclusive jurisdiction of the courts in Pakistan.
+                This policy is governed by the laws of Pakistan. Pharmawallah reserves the right to modify this policy at any time. We encourage users to review this page periodically to stay informed of our current data handling practices.
               </Para>
 
               <Divider />
 
-              {/* 9. Contact */}
-              <SectionHeading id="contact" number={9} title="Contact Information" icon={Mail} accent="#2563EB" />
+              <SectionHeading id="contact" number={8} title="Contact Information" icon={Mail} accent="#2563EB" />
               <Para>
-                For questions or formal inquiries regarding these Terms and Conditions, Privacy practices, Pharmacopedia content, or the AI Guide Tool, please contact us at:
+                For questions regarding this Privacy Policy, data handling practices, Pharmacopedia content, or the AI Guide Tool, please contact:
               </Para>
-
-              <div
-                className="flex items-center gap-4 p-5 rounded-xl border mt-4"
-                style={{ borderColor: "#BFDBFE", background: "#EFF6FF" }}
-              >
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: "#2563EB15" }}
-                >
+              <div className="flex items-center gap-4 p-5 rounded-xl border border-blue-200/50 bg-blue-50/50 mt-4">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#2563EB15" }}>
                   <Mail className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
@@ -503,29 +403,18 @@ const TermsPage = () => {
                 </div>
               </div>
 
-              {/* Cookie Banner Notice */}
-              <div className="mt-8 p-5 rounded-xl border border-gray-200 bg-gray-50">
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
-                  Cookie Consent Policy
-                </p>
-                <p className="text-sm text-gray-600 leading-relaxed italic">
-                  "We use cookies to improve your experience, analyze site traffic, personalize content, and serve relevant ads. Cookies also enable our AI Guide Tool and Pharmacopedia functionality. By using Pharmawallah, you consent to our use of cookies as detailed in our Privacy Policy and Terms."
-                </p>
-              </div>
-
-              {/* Footer note */}
-              <div className="mt-10 pt-6 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="mt-10 pt-6 border-t border-white/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <p className="text-xs text-gray-400">
-                  Document Version: 2.0 · Governed by the laws of Pakistan
+                  Document Version: 2.0 · Last Updated: February 2025 · Governed by the laws of Pakistan
                 </p>
                 <Link
-                  href="https://pharma-wallah.vercel.app/"
+                  href="/"
                   className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
                 >
                   pharma-wallah.vercel.app →
                 </Link>
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </div>
@@ -543,8 +432,6 @@ const TermsPage = () => {
           <ArrowUp className="w-5 h-5 text-white" />
         </motion.button>
       )}
-    </main>
+    </section>
   );
-};
-
-export default TermsPage;
+}

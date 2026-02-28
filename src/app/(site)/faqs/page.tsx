@@ -1,31 +1,97 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { Search, ChevronDown, HelpCircle, MessageSquare, ArrowRight } from "lucide-react";
+// Background icons (same as other pages)
 import {
-  Search,
-  ChevronDown,
-  Info,
-  BookOpen,
-  Wrench,
-  Headphones,
-  ArrowRight,
-  MessageSquare,
-  HelpCircle,
+  Pill as PillIcon,
+  FlaskConical as FlaskIcon,
+  Beaker,
+  Microscope,
+  Atom,
+  Dna,
+  HeartPulse,
+  Leaf,
+  Syringe,
+  TestTube,
+  Tablet,
+  ClipboardList,
+  Stethoscope,
+  Bandage,
+  Droplet,
+  Eye,
+  Bone,
+  Brain,
+  Heart,
+  Activity,
+  AlertCircle,
+  Scissors,
+  Thermometer,
+  Wind,
+  Droplets,
+  FlaskRound,
+  Scale,
+  Calculator,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-// ─── Data ────────────────────────────────────────────────────────────────────
+interface BgIconItem {
+  Icon: LucideIcon;
+  color: string;
+}
 
-const categories = [
-  { id: "general", label: "General", icon: Info, accent: "#2563EB" },
-  { id: "content", label: "Content & Features", icon: BookOpen, accent: "#7C3AED" },
-  { id: "usage", label: "Usage & Access", icon: Wrench, accent: "#059669" },
-  { id: "support", label: "Support & Feedback", icon: Headphones, accent: "#D97706" },
+const iconList: BgIconItem[] = [
+  { Icon: PillIcon, color: "text-blue-800/10" },
+  { Icon: FlaskIcon, color: "text-green-800/10" },
+  { Icon: Beaker, color: "text-purple-800/10" },
+  { Icon: Microscope, color: "text-amber-800/10" },
+  { Icon: Atom, color: "text-blue-800/10" },
+  { Icon: Dna, color: "text-green-800/10" },
+  { Icon: HeartPulse, color: "text-purple-800/10" },
+  { Icon: Leaf, color: "text-amber-800/10" },
+  { Icon: Syringe, color: "text-blue-800/10" },
+  { Icon: TestTube, color: "text-green-800/10" },
+  { Icon: Tablet, color: "text-purple-800/10" },
+  { Icon: ClipboardList, color: "text-amber-800/10" },
+  { Icon: Stethoscope, color: "text-blue-800/10" },
+  { Icon: Bandage, color: "text-green-800/10" },
+  { Icon: Droplet, color: "text-purple-800/10" },
+  { Icon: Eye, color: "text-amber-800/10" },
+  { Icon: Bone, color: "text-blue-800/10" },
+  { Icon: Brain, color: "text-green-800/10" },
+  { Icon: Heart, color: "text-purple-800/10" },
+  { Icon: Activity, color: "text-amber-800/10" },
+  { Icon: AlertCircle, color: "text-blue-800/10" },
+  { Icon: Scissors, color: "text-green-800/10" },
+  { Icon: Thermometer, color: "text-purple-800/10" },
+  { Icon: Wind, color: "text-amber-800/10" },
+  { Icon: Droplets, color: "text-green-800/10" },
+  { Icon: FlaskRound, color: "text-purple-800/10" },
+  { Icon: Scale, color: "text-blue-800/10" },
+  { Icon: Calculator, color: "text-green-800/10" },
 ];
 
+const bgIcons: BgIconItem[] = [];
+for (let i = 0; i < 40; i++) {
+  const item = iconList[i % iconList.length];
+  bgIcons.push({
+    Icon: item.Icon,
+    color:
+      i % 4 === 0
+        ? "text-blue-800/10"
+        : i % 4 === 1
+        ? "text-green-800/10"
+        : i % 4 === 2
+        ? "text-purple-800/10"
+        : "text-amber-800/10",
+  });
+}
+
+// Real FAQ data
 const faqs = [
-  // ── General
+  // General
   {
     id: 1,
     category: "general",
@@ -51,7 +117,7 @@ const faqs = [
     a: "Currently, an account is not required to access most resources. Future updates may include optional accounts for features like personalized progress tracking and saved notes.",
   },
 
-  // ── Content & Features
+  // Content & Features
   {
     id: 5,
     category: "content",
@@ -89,7 +155,7 @@ const faqs = [
     a: "Our interactive tools assist with common pharmacy calculations including dosage calculations, dilution and concentration problems, isotonic solutions, and pharmacokinetic parameters — with step-by-step guidance.",
   },
 
-  // ── Usage & Access
+  // Usage & Access
   {
     id: 11,
     category: "usage",
@@ -109,7 +175,7 @@ const faqs = [
     a: "Information about a mobile application, if available, will be displayed on the website. Check the homepage or footer for download links. The website itself is fully responsive and works great on mobile browsers.",
   },
 
-  // ── Support & Feedback
+  // Support & Feedback
   {
     id: 14,
     category: "support",
@@ -136,26 +202,18 @@ const faqs = [
   },
 ];
 
-// ─── Accordion Item ───────────────────────────────────────────────────────────
+const categories = [
+  { id: "general", label: "General", accent: "#2563EB" },
+  { id: "content", label: "Content & Features", accent: "#7C3AED" },
+  { id: "usage", label: "Usage & Access", accent: "#059669" },
+  { id: "support", label: "Support & Feedback", accent: "#D97706" },
+];
 
-function AccordionItem({
-  item,
-  accent,
-  isOpen,
-  onToggle,
-}: {
-  item: (typeof faqs)[0];
-  accent: string;
-  isOpen: boolean;
-  onToggle: () => void;
-}) {
+function AccordionItem({ item, accent, isOpen, onToggle }: any) {
   return (
     <div
-      className="rounded-xl border overflow-hidden transition-all duration-200"
-      style={{
-        borderColor: isOpen ? accent + "40" : "#E5E7EB",
-        background: isOpen ? accent + "06" : "#fff",
-      }}
+      className="rounded-xl border border-white/50 bg-white/40 backdrop-blur-md overflow-hidden transition-all duration-200 hover:shadow-lg"
+      style={{ borderColor: isOpen ? accent + "40" : "rgba(255,255,255,0.5)" }}
     >
       <button
         onClick={onToggle}
@@ -170,14 +228,12 @@ function AccordionItem({
         >
           {item.id}
         </span>
-
         <span
           className="flex-1 text-base font-semibold transition-colors duration-200"
           style={{ color: isOpen ? accent : "#111827" }}
         >
           {item.q}
         </span>
-
         <ChevronDown
           className="flex-shrink-0 w-5 h-5 transition-all duration-300 mt-0.5"
           style={{
@@ -186,18 +242,16 @@ function AccordionItem({
           }}
         />
       </button>
-
       <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
-            key="answer"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.28, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <div className="px-6 pb-5 pl-16 text-sm text-gray-500 leading-relaxed">
+            <div className="px-6 pb-5 pl-16 text-sm text-gray-600 leading-relaxed">
               {item.a}
             </div>
           </motion.div>
@@ -207,31 +261,23 @@ function AccordionItem({
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
-
-const FAQPage = () => {
+export default function FAQPage() {
   const [activeCategory, setActiveCategory] = useState("general");
   const [openId, setOpenId] = useState<number | null>(1);
   const [search, setSearch] = useState("");
 
-  const currentAccent =
-    categories.find((c) => c.id === activeCategory)?.accent ?? "#2563EB";
+  const currentAccent = categories.find((c) => c.id === activeCategory)?.accent ?? "#2563EB";
 
-  // When searching, show all categories that match
   const filteredFaqs = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return faqs.filter((f) => f.category === activeCategory);
-    return faqs.filter(
-      (f) =>
-        f.q.toLowerCase().includes(q) || f.a.toLowerCase().includes(q)
-    );
+    return faqs.filter((f) => f.q.toLowerCase().includes(q) || f.a.toLowerCase().includes(q));
   }, [search, activeCategory]);
 
   const isSearching = search.trim().length > 0;
 
   const toggle = (id: number) => setOpenId((prev) => (prev === id ? null : id));
 
-  // Category counts
   const counts = useMemo(() => {
     const map: Record<string, number> = {};
     categories.forEach((c) => {
@@ -241,264 +287,222 @@ const FAQPage = () => {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="relative bg-white border-b border-gray-100 overflow-hidden">
-        {/* Subtle dot grid */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.04]"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, #2563EB 1px, transparent 1px)",
-            backgroundSize: "28px 28px",
-          }}
-        />
-        {/* Gradient fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+    <section className="min-h-screen bg-gradient-to-b from-blue-50/30 via-white to-green-50/20 relative overflow-x-hidden">
+      {/* Background blobs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
+      </div>
 
-        <div className="relative z-10 container mx-auto px-6 max-w-5xl py-20 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <span
-              className="inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase px-4 py-2 rounded-full mb-6 border"
-              style={{
-                color: "#2563EB",
-                borderColor: "#BFDBFE",
-                background: "#EFF6FF",
-              }}
-            >
-              <HelpCircle className="w-3.5 h-3.5" />
-              Help Center
-            </span>
+      {/* Floating background icons */}
+      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+        {bgIcons.map(({ Icon, color }, index) => {
+          const left = `${(index * 13) % 90 + 5}%`;
+          const top = `${(index * 19) % 90 + 5}%`;
+          const size = 30 + (index * 7) % 90;
+          const rotate = (index * 23) % 360;
+          return (
+            <Icon
+              key={index}
+              size={size}
+              className={`absolute ${color}`}
+              style={{ left, top, transform: `rotate(${rotate}deg)` }}
+            />
+          );
+        })}
+      </div>
 
-            <h1
-              className="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight mb-4"
-              style={{ letterSpacing: "-0.03em", fontFamily: "'Sora', 'Nunito', sans-serif" }}
-            >
-              Frequently Asked{" "}
-              <span
-                style={{
-                  background: "linear-gradient(90deg, #2563EB, #0EA5E9)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                Questions
-              </span>
+      {/* Hero Section */}
+      <div className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-green-500 overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,.1)_50%,transparent_75%)] bg-[length:400%_400%] animate-shimmer" />
+        <div className="absolute inset-0 backdrop-blur-[2px]" />
+        <div className="container relative mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-24">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 tracking-tight drop-shadow-lg">
+              Frequently Asked Questions
             </h1>
-
-            <p className="text-gray-500 text-lg max-w-xl mx-auto mb-10">
+            <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto leading-relaxed drop-shadow">
               Everything you need to know about Pharma Wallah — from getting started to advanced features.
             </p>
-
             {/* Search */}
-            <div className="relative max-w-lg mx-auto">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <div className="relative max-w-xl mx-auto">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/70" />
               <input
                 type="text"
-                placeholder="Search questions…"
+                placeholder="Search questions..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-11 pr-5 py-3.5 rounded-full border border-gray-200 bg-white text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 shadow-sm transition-all"
-                style={{ focusRingColor: "#2563EB" } as React.CSSProperties}
+                className="w-full pl-12 pr-10 py-4 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
               />
               {search && (
                 <button
                   onClick={() => setSearch("")}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-medium"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white text-sm font-medium"
                 >
                   Clear
                 </button>
               )}
             </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── Body ─────────────────────────────────────────────── */}
-      <section className="container mx-auto px-6 max-w-5xl py-14">
-        {isSearching ? (
-          /* Search Results */
-          <div>
-            <p className="text-sm text-gray-500 mb-6">
-              {filteredFaqs.length === 0
-                ? "No results found."
-                : `${filteredFaqs.length} result${filteredFaqs.length > 1 ? "s" : ""} for "${search}"`}
-            </p>
-            <div className="space-y-3">
-              {filteredFaqs.map((item) => {
-                const cat = categories.find((c) => c.id === item.category);
-                return (
-                  <AccordionItem
-                    key={item.id}
-                    item={item}
-                    accent={cat?.accent ?? "#2563EB"}
-                    isOpen={openId === item.id}
-                    onToggle={() => toggle(item.id)}
-                  />
-                );
-              })}
-            </div>
           </div>
-        ) : (
-          /* Categorized View */
-          <div className="flex flex-col lg:flex-row gap-10">
-            {/* Sidebar */}
-            <aside className="lg:w-60 flex-shrink-0">
-              <p className="text-xs font-bold tracking-widest uppercase text-gray-400 mb-4 pl-1">
-                Categories
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="container relative mx-auto px-4 sm:px-6 lg:px-8 py-16 z-10">
+        <div className="bg-white/40 backdrop-blur-xl rounded-3xl border border-white/50 shadow-2xl p-6 md:p-10">
+          {isSearching ? (
+            /* Search Results */
+            <div>
+              <p className="text-sm text-gray-500 mb-6">
+                {filteredFaqs.length === 0
+                  ? "No results found."
+                  : `${filteredFaqs.length} result${filteredFaqs.length > 1 ? "s" : ""} for "${search}"`}
               </p>
-              <nav className="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
-                {categories.map((cat) => {
-                  const Icon = cat.icon;
-                  const isActive = activeCategory === cat.id;
+              <div className="space-y-3">
+                {filteredFaqs.map((item) => {
+                  const cat = categories.find((c) => c.id === item.category);
                   return (
-                    <button
-                      key={cat.id}
-                      onClick={() => {
-                        setActiveCategory(cat.id);
-                        setOpenId(null);
-                      }}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap"
-                      style={{
-                        background: isActive ? cat.accent + "12" : "transparent",
-                        color: isActive ? cat.accent : "#6B7280",
-                        border: `1px solid ${isActive ? cat.accent + "30" : "transparent"}`,
-                      }}
-                    >
-                      <Icon className="w-4 h-4 flex-shrink-0" />
-                      <span className="flex-1 text-left">{cat.label}</span>
-                      <span
-                        className="text-xs font-bold px-1.5 py-0.5 rounded-full"
-                        style={{
-                          background: isActive ? cat.accent + "20" : "#F3F4F6",
-                          color: isActive ? cat.accent : "#9CA3AF",
-                        }}
-                      >
-                        {counts[cat.id]}
-                      </span>
-                    </button>
+                    <AccordionItem
+                      key={item.id}
+                      item={item}
+                      accent={cat?.accent ?? "#2563EB"}
+                      isOpen={openId === item.id}
+                      onToggle={() => toggle(item.id)}
+                    />
                   );
                 })}
-              </nav>
-
-              {/* Contact CTA */}
-              <div
-                className="mt-8 p-4 rounded-2xl border hidden lg:block"
-                style={{ borderColor: "#E5E7EB", background: "#FAFAFA" }}
-              >
-                <MessageSquare className="w-5 h-5 text-blue-500 mb-2" />
-                <p className="text-sm font-semibold text-gray-800 mb-1">
-                  Still have questions?
-                </p>
-                <p className="text-xs text-gray-500 mb-3">
-                  Our team is ready to help you.
-                </p>
-                <Link
-                  href="#"
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
-                >
-                  Contact us <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
               </div>
-            </aside>
-
-            {/* FAQ List */}
-            <div className="flex-1 min-w-0">
-              {/* Category heading */}
-              <motion.div
-                key={activeCategory}
-                initial={{ opacity: 0, x: 8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                {(() => {
-                  const cat = categories.find((c) => c.id === activeCategory)!;
-                  const Icon = cat.icon;
-                  return (
-                    <div className="flex items-center gap-3 mb-6">
-                      <div
-                        className="w-9 h-9 rounded-lg flex items-center justify-center"
-                        style={{ background: cat.accent + "15" }}
-                      >
-                        <Icon className="w-4 h-4" style={{ color: cat.accent }} />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-bold text-gray-900">
-                          {cat.label}
-                        </h2>
-                        <p className="text-xs text-gray-400">
-                          {counts[cat.id]} questions
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                <div className="space-y-3">
-                  <AnimatePresence mode="wait">
-                    {filteredFaqs.map((item, i) => (
-                      <motion.div
-                        key={item.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.25, delay: i * 0.04 }}
-                      >
-                        <AccordionItem
-                          item={item}
-                          accent={currentAccent}
-                          isOpen={openId === item.id}
-                          onToggle={() => toggle(item.id)}
-                        />
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
-              </motion.div>
             </div>
-          </div>
-        )}
-      </section>
+          ) : (
+            /* Categorized View */
+            <div className="flex flex-col lg:flex-row gap-10">
+              {/* Sidebar */}
+              <aside className="lg:w-60 flex-shrink-0">
+                <p className="text-xs font-bold tracking-widest uppercase text-gray-500 mb-4 pl-1">
+                  Categories
+                </p>
+                <div className="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
+                  {categories.map((cat) => {
+                    const isActive = activeCategory === cat.id;
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => {
+                          setActiveCategory(cat.id);
+                          setOpenId(null);
+                        }}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200"
+                        style={{
+                          background: isActive ? cat.accent + "20" : "transparent",
+                          color: isActive ? cat.accent : "#6B7280",
+                          border: `1px solid ${isActive ? cat.accent + "40" : "transparent"}`,
+                        }}
+                      >
+                        <span className="flex-1 text-left">{cat.label}</span>
+                        <span
+                          className="text-xs font-bold px-1.5 py-0.5 rounded-full"
+                          style={{
+                            background: isActive ? cat.accent + "30" : "#F3F4F6",
+                            color: isActive ? cat.accent : "#9CA3AF",
+                          }}
+                        >
+                          {counts[cat.id]}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
 
-      {/* ── Bottom CTA ───────────────────────────────────────── */}
-      <section className="border-t border-gray-100 bg-white">
-        <div className="container mx-auto px-6 max-w-5xl py-14 text-center">
-          <p className="text-sm text-gray-400 uppercase tracking-widest font-bold mb-3">
+                {/* Contact CTA */}
+                <div className="mt-8 p-4 rounded-2xl border border-white/30 bg-white/20 backdrop-blur-sm hidden lg:block">
+                  <MessageSquare className="w-5 h-5 text-blue-600 mb-2" />
+                  <p className="text-sm font-semibold text-gray-800 mb-1">Still have questions?</p>
+                  <p className="text-xs text-gray-500 mb-3">Our team is ready to help you.</p>
+                  <Link
+                    href="/contact"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
+                  >
+                    Contact us <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </aside>
+
+              {/* FAQ List */}
+              <div className="flex-1 min-w-0">
+                <motion.div
+                  key={activeCategory}
+                  initial={{ opacity: 0, x: 8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="flex items-center gap-3 mb-6">
+                    <div
+                      className="w-9 h-9 rounded-lg flex items-center justify-center"
+                      style={{ background: currentAccent + "15" }}
+                    >
+                      <HelpCircle className="w-4 h-4" style={{ color: currentAccent }} />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-800">
+                        {categories.find((c) => c.id === activeCategory)?.label}
+                      </h2>
+                      <p className="text-xs text-gray-400">{counts[activeCategory]} questions</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <AnimatePresence mode="wait">
+                      {filteredFaqs.map((item, i) => (
+                        <motion.div
+                          key={item.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.25, delay: i * 0.04 }}
+                        >
+                          <AccordionItem
+                            item={item}
+                            accent={currentAccent}
+                            isOpen={openId === item.id}
+                            onToggle={() => toggle(item.id)}
+                          />
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Bottom CTA */}
+      <div className="container relative mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <div className="bg-white/30 backdrop-blur-2xl rounded-3xl border border-white/40 p-12 text-center shadow-2xl">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
             Still need help?
-          </p>
-          <h3
-            className="text-3xl font-extrabold text-gray-900 mb-3"
-            style={{ letterSpacing: "-0.02em" }}
-          >
-            We're here for you
-          </h3>
-          <p className="text-gray-500 text-base max-w-md mx-auto mb-8">
+          </h2>
+          <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
             Can't find what you're looking for? Reach out to our team and we'll get back to you quickly.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link
               href="/contact"
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-sm font-bold text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-              style={{ background: "linear-gradient(90deg, #2563EB, #0EA5E9)" }}
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-blue-600 to-green-500 text-white font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105"
             >
-              <MessageSquare className="w-4 h-4" />
+              <MessageSquare className="w-5 h-5" />
               Contact Support
             </Link>
             <Link
-              href="https://pharma-wallah.vercel.app/"
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-sm font-bold border border-gray-200 text-gray-700 hover:border-gray-400 hover:shadow-md transition-all duration-300"
+              href="/"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-full border border-white/50 bg-white/30 backdrop-blur-sm text-gray-700 font-semibold hover:bg-white/50 transition-all"
             >
               Visit Platform
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-5 h-5" />
             </Link>
           </div>
         </div>
-      </section>
-    </main>
+      </div>
+    </section>
   );
-};
-
-export default FAQPage;
+}

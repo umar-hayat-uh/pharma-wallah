@@ -291,15 +291,10 @@ function TeamCard({ member }: { member: typeof teamMembers[0] }) {
     <div className="group relative">
       {/* Permanent gradient border */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-green-400 rounded-3xl opacity-30 group-hover:opacity-70 transition-opacity duration-500 blur-[1px]" />
-      
-      {/* Main card with dot pattern background */}
-      <div className="relative bg-white/70 backdrop-blur-md rounded-3xl overflow-hidden transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-2xl border border-white/20">
-        {/* Dot pattern overlay */}
-        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 10px 10px, rgba(59,130,246,0.1) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
         
         {/* Profile image with gradient border */}
         <div className="relative pt-8 pb-4 flex justify-center">
-          <div className="w-28 h-28 rounded-full overflow-hidden ring-4 ring-white/50 shadow-xl">
+          <div className="w-28 h-28 rounded-full overflow-hidden ">
             {member.imgSrc ? (
               <img
                 src={member.imgSrc}
@@ -356,6 +351,5 @@ function TeamCard({ member }: { member: typeof teamMembers[0] }) {
         {/* Bottom gradient accent */}
         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-400/0 via-blue-500 to-green-400/0 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
       </div>
-    </div>
   );
 }
