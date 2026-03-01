@@ -1,6 +1,6 @@
 "use client";
 import { useState } from 'react';
-import { Calculator, Grid3x3, Target, BarChart, TrendingUp, Percent, Circle, Box, Ruler, Layers } from 'lucide-react';
+import { Calculator, Grid3x3, Target, BarChart, TrendingUp, Percent, Circle, Box, Ruler, Layers, Scale } from 'lucide-react';
 
 interface SieveData {
   mesh: number;
@@ -73,7 +73,6 @@ export default function SurfaceAreaParticleSizeCalculator() {
   };
 
   const calculateFromSieve = () => {
-    // Filter valid data
     const validData = sieveData.filter(d => 
       parseFloat(d.retained) >= 0 && parseFloat(d.retained) <= 100
     );
@@ -83,7 +82,6 @@ export default function SurfaceAreaParticleSizeCalculator() {
       return;
     }
 
-    // Calculate cumulative percentages
     const totalRetained = validData.reduce((sum, d) => sum + parseFloat(d.retained), 0);
     if (Math.abs(totalRetained - 100) > 5) {
       alert(`Total retained should be ~100% (current: ${totalRetained.toFixed(1)}%)`);
@@ -99,22 +97,15 @@ export default function SurfaceAreaParticleSizeCalculator() {
       };
     });
 
-    // Find D10, D50, D90 by interpolation
     const d10 = interpolateSize(cumulativeData, 10);
     const d50 = interpolateSize(cumulativeData, 50);
     const d90 = interpolateSize(cumulativeData, 90);
 
-    // Calculate mean diameter (geometric mean)
     const meanDiameter = Math.sqrt(d10 * d90);
-    
-    // Calculate span
     const span = (d90 - d10) / d50;
-    
-    // Calculate specific surface area (assuming spherical particles)
     const densityValue = parseFloat(density) || 1;
     const specificSurfaceArea = (6 / (densityValue * (d50 / 1000))) * 1000; // m²/kg
 
-    // Determine distribution
     let distribution: 'narrow' | 'moderate' | 'broad' = 'moderate';
     if (span < 1) distribution = 'narrow';
     else if (span > 2) distribution = 'broad';
@@ -147,7 +138,6 @@ export default function SurfaceAreaParticleSizeCalculator() {
       return;
     }
 
-    // Sort by size (largest to smallest for cumulative)
     const sortedData = [...validData]
       .map(d => ({ size: parseFloat(d.size), percentage: parseFloat(d.percentage) }))
       .sort((a, b) => b.size - a.size);
@@ -161,24 +151,18 @@ export default function SurfaceAreaParticleSizeCalculator() {
       };
     });
 
-    // Find D10, D50, D90
     const d10 = interpolateSize(cumulativeData, 10);
     const d50 = interpolateSize(cumulativeData, 50);
     const d90 = interpolateSize(cumulativeData, 90);
 
-    // Calculate mean diameter (volume-weighted)
     const meanDiameter = sortedData.reduce((sum, d) => 
       sum + (d.size * d.percentage), 0
     ) / 100;
 
-    // Calculate span
     const span = (d90 - d10) / d50;
-    
-    // Calculate specific surface area
     const densityValue = parseFloat(density) || 1;
     const specificSurfaceArea = (6 / (densityValue * (d50 / 1000))) * 1000;
 
-    // Determine distribution
     let distribution: 'narrow' | 'moderate' | 'broad' = 'moderate';
     if (span < 1) distribution = 'narrow';
     else if (span > 2) distribution = 'broad';
@@ -196,13 +180,11 @@ export default function SurfaceAreaParticleSizeCalculator() {
   };
 
   const interpolateSize = (data: Array<{size: number, cumulative: number}>, target: number): number => {
-    // Find the two points around the target cumulative percentage
     for (let i = 0; i < data.length - 1; i++) {
       const point1 = data[i];
       const point2 = data[i + 1];
       
       if (target >= point2.cumulative && target <= point1.cumulative) {
-        // Linear interpolation
         const fraction = (target - point2.cumulative) / (point1.cumulative - point2.cumulative);
         return point2.size + fraction * (point1.size - point2.size);
       }
@@ -278,28 +260,30 @@ export default function SurfaceAreaParticleSizeCalculator() {
   };
 
   return (
-    <section className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 p-4 pt-20">
+    <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 pt-20">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
-          <div className="flex flex-col md:flex-row items-center justify-between mb-6">
+        <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6 md:mb-8">
+          <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="flex items-center mb-4 md:mb-0">
-              <Grid3x3 className="w-12 h-12 text-emerald-600 mr-4" />
+              <div className="bg-white/20 p-3 rounded-xl mr-4">
+                <Grid3x3 className="w-8 h-8 md:w-10 md:h-10 text-white" />
+              </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-800">Surface Area & Particle Size Analyzer</h1>
-                <p className="text-gray-600">Calculate mean diameter, D10/D50/D90, and specific surface area from particle size data</p>
+                <h1 className="text-2xl md:text-3xl font-bold text-white">Surface Area & Particle Size Analyzer</h1>
+                <p className="text-blue-100 mt-2">Calculate D10, D50, D90, mean diameter, and specific surface area</p>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <button
                 onClick={() => loadExample('fine')}
-                className="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-colors"
+                className="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-colors text-sm"
               >
                 Fine Powder
               </button>
               <button
                 onClick={() => loadExample('coarse')}
-                className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm"
               >
                 Coarse Granules
               </button>
@@ -308,11 +292,11 @@ export default function SurfaceAreaParticleSizeCalculator() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Calculator Area */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                <Ruler className="w-6 h-6 mr-2 text-emerald-600" />
+          {/* Main Input Area */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <Ruler className="w-6 h-6 mr-2 text-blue-600" />
                 Particle Size Data Input
               </h2>
 
@@ -321,18 +305,20 @@ export default function SurfaceAreaParticleSizeCalculator() {
                 <div className="flex space-x-4 mb-6">
                   <button
                     onClick={() => setMethod('sieve')}
-                    className={`px-6 py-3 rounded-lg font-semibold transition-all ${method === 'sieve'
-                      ? 'bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+                      method === 'sieve'
+                        ? 'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
                     Sieve Analysis
                   </button>
                   <button
                     onClick={() => setMethod('laser')}
-                    className={`px-6 py-3 rounded-lg font-semibold transition-all ${method === 'laser'
-                      ? 'bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+                      method === 'laser'
+                        ? 'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
                     Laser Diffraction
@@ -340,8 +326,9 @@ export default function SurfaceAreaParticleSizeCalculator() {
                 </div>
 
                 {/* Density Input */}
-                <div className="bg-gray-50 rounded-xl p-6 mb-6">
+                <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6 mb-6">
                   <label className="block text-lg font-semibold text-gray-800 mb-3">
+                    <Scale className="inline w-5 h-5 mr-2" />
                     Particle Density (g/cm³)
                   </label>
                   <input
@@ -350,10 +337,10 @@ export default function SurfaceAreaParticleSizeCalculator() {
                     min="0.1"
                     value={density}
                     onChange={(e) => setDensity(e.target.value)}
-                    className="w-full max-w-xs px-4 py-3 text-lg border-2 border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none"
+                    className="w-full max-w-xs px-4 py-3 text-lg border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none"
                     placeholder="1.5"
                   />
-                  <p className="text-sm text-gray-600 mt-2">Required for surface area calculation</p>
+                  <p className="text-sm text-gray-600 mt-2">Required for surface area calculation.</p>
                 </div>
 
                 {/* Data Input Table */}
@@ -361,7 +348,7 @@ export default function SurfaceAreaParticleSizeCalculator() {
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">
                     {method === 'sieve' ? 'Sieve Analysis Data' : 'Particle Size Distribution'}
                   </h3>
-                  
+
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
@@ -393,7 +380,7 @@ export default function SurfaceAreaParticleSizeCalculator() {
                                       type="number"
                                       value={sieveItem.mesh}
                                       onChange={(e) => updateSieveData(index, 'mesh', e.target.value)}
-                                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none"
+                                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
                                     />
                                   </td>
                                   <td className="py-3 px-4">
@@ -402,7 +389,7 @@ export default function SurfaceAreaParticleSizeCalculator() {
                                       step="1"
                                       value={sieveItem.opening}
                                       onChange={(e) => updateSieveData(index, 'opening', e.target.value)}
-                                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none"
+                                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
                                     />
                                   </td>
                                   <td className="py-3 px-4">
@@ -411,7 +398,7 @@ export default function SurfaceAreaParticleSizeCalculator() {
                                       step="0.1"
                                       value={sieveItem.retained}
                                       onChange={(e) => updateSieveData(index, 'retained', e.target.value)}
-                                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none"
+                                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
                                     />
                                   </td>
                                 </>
@@ -423,7 +410,7 @@ export default function SurfaceAreaParticleSizeCalculator() {
                                       step="1"
                                       value={particleItem.size}
                                       onChange={(e) => updateParticleData(index, 'size', e.target.value)}
-                                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none"
+                                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
                                     />
                                   </td>
                                   <td className="py-3 px-4">
@@ -432,7 +419,7 @@ export default function SurfaceAreaParticleSizeCalculator() {
                                       step="0.1"
                                       value={particleItem.percentage}
                                       onChange={(e) => updateParticleData(index, 'percentage', e.target.value)}
-                                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none"
+                                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
                                     />
                                   </td>
                                 </>
@@ -443,7 +430,7 @@ export default function SurfaceAreaParticleSizeCalculator() {
                       </tbody>
                     </table>
                   </div>
-                  
+
                   <button
                     onClick={method === 'sieve' ? addSieveRow : addParticleRow}
                     className="mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
@@ -457,13 +444,13 @@ export default function SurfaceAreaParticleSizeCalculator() {
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
                   onClick={calculateParticleSize}
-                  className="flex-1 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-semibold py-4 rounded-lg transition-all duration-300 text-lg shadow-lg hover:shadow-xl"
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
                   Calculate Particle Size
                 </button>
                 <button
                   onClick={resetCalculator}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 rounded-lg transition-colors text-lg"
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center"
                 >
                   Reset Data
                 </button>
@@ -472,44 +459,40 @@ export default function SurfaceAreaParticleSizeCalculator() {
 
             {/* Results Display */}
             {results && (
-              <div className="bg-white rounded-2xl shadow-xl p-8">
+              <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
                 <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                  <BarChart className="w-6 h-6 mr-2 text-emerald-600" />
+                  <BarChart className="w-6 h-6 mr-2 text-green-600" />
                   Particle Size Analysis Results
                 </h2>
 
                 {/* Key Parameters */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                  <div className="bg-gradient-to-br from-emerald-50 to-green-100 rounded-xl p-6">
-                    <div className="text-sm font-semibold text-emerald-700 mb-2">D50 (Median)</div>
-                    <div className="text-3xl font-bold text-emerald-600">
+                  <div className="bg-gradient-to-br from-blue-50 to-cyan-100 rounded-xl p-6">
+                    <div className="text-sm font-semibold text-blue-700 mb-2">D50 (Median)</div>
+                    <div className="text-3xl font-bold text-blue-600">
                       {results.d50.toFixed(1)} μm
                     </div>
-                    <div className="text-sm text-emerald-600 mt-2">50% of particles smaller</div>
+                    <div className="text-sm text-blue-600 mt-2">50% smaller</div>
                   </div>
-
-                  <div className="bg-gradient-to-br from-blue-50 to-cyan-100 rounded-xl p-6">
-                    <div className="text-sm font-semibold text-blue-700 mb-2">D10</div>
-                    <div className="text-3xl font-bold text-blue-600">
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl p-6">
+                    <div className="text-sm font-semibold text-green-700 mb-2">D10</div>
+                    <div className="text-3xl font-bold text-green-600">
                       {results.d10.toFixed(1)} μm
                     </div>
-                    <div className="text-sm text-blue-600 mt-2">10% of particles smaller</div>
+                    <div className="text-sm text-green-600 mt-2">10% smaller</div>
                   </div>
-
                   <div className="bg-gradient-to-br from-purple-50 to-violet-100 rounded-xl p-6">
                     <div className="text-sm font-semibold text-purple-700 mb-2">D90</div>
                     <div className="text-3xl font-bold text-purple-600">
                       {results.d90.toFixed(1)} μm
                     </div>
-                    <div className="text-sm text-purple-600 mt-2">90% of particles smaller</div>
+                    <div className="text-sm text-purple-600 mt-2">90% smaller</div>
                   </div>
-
                   <div className="bg-gradient-to-br from-orange-50 to-amber-100 rounded-xl p-6">
-                    <div className="text-sm font-semibold text-orange-700 mb-2">Mean Diameter</div>
+                    <div className="text-sm font-semibold text-orange-700 mb-2">Mean</div>
                     <div className="text-3xl font-bold text-orange-600">
                       {results.meanDiameter.toFixed(1)} μm
                     </div>
-                    <div className="text-sm text-orange-600 mt-2">Geometric mean</div>
                   </div>
                 </div>
 
@@ -520,39 +503,25 @@ export default function SurfaceAreaParticleSizeCalculator() {
                     <div className="text-2xl font-bold text-gray-600">
                       {results.specificSurfaceArea.toFixed(1)} m²/kg
                     </div>
-                    <div className="text-sm text-gray-600 mt-2">Based on D50 and density</div>
                   </div>
-
                   <div className="bg-gradient-to-br from-yellow-50 to-amber-100 rounded-xl p-6">
                     <div className="text-sm font-semibold text-yellow-700 mb-2">Span</div>
                     <div className="text-2xl font-bold text-yellow-600">
                       {results.span.toFixed(2)}
                     </div>
-                    <div className="text-sm text-yellow-600 mt-2">Distribution width</div>
                   </div>
-
-                  <div className={`rounded-xl p-6 ${results.distribution === 'narrow'
-                    ? 'bg-gradient-to-br from-green-50 to-emerald-100'
-                    : results.distribution === 'moderate'
-                    ? 'bg-gradient-to-br from-yellow-50 to-amber-100'
-                    : 'bg-gradient-to-br from-red-50 to-rose-100'
+                  <div className={`rounded-xl p-6 ${
+                    results.distribution === 'narrow'
+                      ? 'bg-gradient-to-br from-green-50 to-emerald-100'
+                      : results.distribution === 'moderate'
+                      ? 'bg-gradient-to-br from-yellow-50 to-amber-100'
+                      : 'bg-gradient-to-br from-red-50 to-rose-100'
                   }`}>
                     <div className="text-sm font-semibold text-gray-700 mb-2">Distribution</div>
-                    <div className={`text-2xl font-bold ${results.distribution === 'narrow'
-                      ? 'text-green-600'
-                      : results.distribution === 'moderate'
-                      ? 'text-yellow-600'
-                      : 'text-red-600'
+                    <div className={`text-2xl font-bold ${
+                      results.distribution === 'narrow' ? 'text-green-600' : results.distribution === 'moderate' ? 'text-yellow-600' : 'text-red-600'
                     }`}>
                       {results.distribution.toUpperCase()}
-                    </div>
-                    <div className="text-sm text-gray-600 mt-2">
-                      {results.distribution === 'narrow'
-                        ? 'Uniform particle size'
-                        : results.distribution === 'moderate'
-                        ? 'Moderate variation'
-                        : 'Wide size range'
-                      }
                     </div>
                   </div>
                 </div>
@@ -562,101 +531,53 @@ export default function SurfaceAreaParticleSizeCalculator() {
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">Cumulative Distribution</h3>
                   <div className="bg-gray-50 rounded-xl p-6">
                     <div className="h-64 relative">
-                      {/* X-axis */}
-                      <div className="absolute bottom-0 left-0 right-0 h-px bg-gray-300" />
-                      
-                      {/* Y-axis */}
-                      <div className="absolute left-0 top-0 bottom-0 w-px bg-gray-300" />
-                      
-                      {/* Grid lines */}
-                      <div className="absolute inset-0">
-                        {[0, 25, 50, 75, 100].map(y => (
-                          <div
-                            key={y}
-                            className="absolute w-full h-px bg-gray-200"
-                            style={{ top: `${100 - y}%` }}
-                          />
-                        ))}
-                      </div>
-                      
-                      {/* Plot area */}
                       <div className="absolute inset-0">
                         {results.cumulativeData.map((point, index) => {
-                          const x = Math.log10(Math.max(point.size, 1)) / 3 * 100; // Log scale
+                          const x = Math.log10(Math.max(point.size, 1)) / 3 * 100;
                           const y = 100 - point.cumulative;
-                          
                           return (
                             <div
                               key={index}
-                              className="absolute w-3 h-3 bg-emerald-500 rounded-full -ml-1.5 -mt-1.5"
+                              className="absolute w-3 h-3 bg-blue-500 rounded-full -ml-1.5 -mt-1.5"
                               style={{ left: `${x}%`, top: `${y}%` }}
                             />
                           );
                         })}
-                        
-                        {/* Connect points */}
                         <svg className="absolute inset-0">
                           <polyline
                             points={results.cumulativeData.map(p => 
                               `${Math.log10(Math.max(p.size, 1)) / 3 * 100},${100 - p.cumulative}`
                             ).join(' ')}
                             fill="none"
-                            stroke="#10b981"
+                            stroke="#3b82f6"
                             strokeWidth="2"
                           />
                         </svg>
                       </div>
-                      
-                      {/* Y-axis labels */}
                       <div className="absolute -left-10 top-0 bottom-0 flex flex-col justify-between text-xs text-gray-500">
-                        <span>100%</span>
-                        <span>75%</span>
-                        <span>50%</span>
-                        <span>25%</span>
-                        <span>0%</span>
+                        <span>100%</span><span>75%</span><span>50%</span><span>25%</span><span>0%</span>
                       </div>
-                      
-                      {/* X-axis labels */}
                       <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-gray-500 mt-2">
-                        <span>1 μm</span>
-                        <span>10 μm</span>
-                        <span>100 μm</span>
-                        <span>1000 μm</span>
+                        <span>1 μm</span><span>10 μm</span><span>100 μm</span><span>1000 μm</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Implications */}
-                <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-6">
+                <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">Quality Implications</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div className="bg-white p-4 rounded-lg">
-                      <h4 className="font-semibold text-emerald-700 mb-2">Dissolution Rate</h4>
+                      <h4 className="font-semibold text-blue-700 mb-2">Dissolution Rate</h4>
                       <p className="text-gray-600">
-                        Smaller D50 ({results.d50.toFixed(0)} μm) increases dissolution rate
-                        {results.d50 < 50 ? ' - Fast dissolution expected' : ' - Moderate dissolution'}
+                        D50 {results.d50.toFixed(0)} μm – {results.d50 < 50 ? 'Fast' : 'Moderate'} dissolution.
                       </p>
                     </div>
                     <div className="bg-white p-4 rounded-lg">
-                      <h4 className="font-semibold text-emerald-700 mb-2">Flowability</h4>
+                      <h4 className="font-semibold text-green-700 mb-2">Flowability</h4>
                       <p className="text-gray-600">
-                        Narrow span ({results.span.toFixed(2)}) improves flow
-                        {results.span < 1.5 ? ' - Good flow expected' : ' - May need glidant'}
-                      </p>
-                    </div>
-                    <div className="bg-white p-4 rounded-lg">
-                      <h4 className="font-semibold text-emerald-700 mb-2">Content Uniformity</h4>
-                      <p className="text-gray-600">
-                        Narrow distribution improves mixing
-                        {results.distribution === 'narrow' ? ' - Excellent uniformity' : ' - Monitor blend uniformity'}
-                      </p>
-                    </div>
-                    <div className="bg-white p-4 rounded-lg">
-                      <h4 className="font-semibold text-emerald-700 mb-2">Surface Area</h4>
-                      <p className="text-gray-600">
-                        High surface area ({results.specificSurfaceArea.toFixed(0)} m²/kg) affects stability
-                        {results.specificSurfaceArea > 1000 ? ' - May degrade faster' : ' - Good stability'}
+                        Span {results.span.toFixed(2)} – {results.span < 1.5 ? 'Good flow' : 'May need glidant'}.
                       </p>
                     </div>
                   </div>
@@ -665,94 +586,65 @@ export default function SurfaceAreaParticleSizeCalculator() {
             )}
           </div>
 
-          {/* Sidebar Guidelines */}
-          <div className="space-y-8">
+          {/* Sidebar */}
+          <div className="space-y-6">
             {/* Definitions */}
-            <div className="bg-white rounded-2xl shadow-xl p-6">
+            <div className="bg-white rounded-2xl shadow-lg p-6">
               <h3 className="text-lg font-bold text-gray-800 mb-4">Key Definitions</h3>
               <div className="space-y-3 text-sm">
-                <div className="p-3 bg-emerald-50 rounded-lg">
-                  <h4 className="font-semibold text-emerald-700 mb-1">D10, D50, D90</h4>
-                  <p className="text-gray-600">Particle size below which 10%, 50%, 90% of particles fall</p>
-                </div>
                 <div className="p-3 bg-blue-50 rounded-lg">
-                  <h4 className="font-semibold text-blue-700 mb-1">Span</h4>
-                  <p className="text-gray-600">(D90 - D10) / D50 - Measures distribution width</p>
+                  <h4 className="font-semibold text-blue-700 mb-1">D10, D50, D90</h4>
+                  <p className="text-gray-600">Particle size below which 10%, 50%, 90% of particles fall.</p>
+                </div>
+                <div className="p-3 bg-green-50 rounded-lg">
+                  <h4 className="font-semibold text-green-700 mb-1">Span</h4>
+                  <p className="text-gray-600">(D90 - D10) / D50 – measures distribution width.</p>
                 </div>
                 <div className="p-3 bg-purple-50 rounded-lg">
                   <h4 className="font-semibold text-purple-700 mb-1">Specific Surface Area</h4>
-                  <p className="text-gray-600">Surface area per unit mass (m²/g or m²/kg)</p>
+                  <p className="text-gray-600">Surface area per unit mass (m²/kg).</p>
                 </div>
               </div>
             </div>
 
             {/* Target Ranges */}
-            <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl shadow-xl p-6">
+            <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-2xl shadow-lg p-6">
               <h3 className="text-lg font-bold text-gray-800 mb-4">Target Ranges</h3>
               <div className="space-y-3 text-sm">
                 <div className="p-3 bg-white rounded-lg">
-                  <h4 className="font-semibold text-emerald-700 mb-1">Tablet Formulation</h4>
-                  <p className="text-gray-600">D50: 50-200 μm, Span: &lt; 2.0</p>
+                  <h4 className="font-semibold text-blue-700 mb-1">Tablet Formulation</h4>
+                  <p>D50: 50–200 μm, Span &lt; 2.0</p>
                 </div>
                 <div className="p-3 bg-white rounded-lg">
-                  <h4 className="font-semibold text-emerald-700 mb-1">Capsule Filling</h4>
-                  <p className="text-gray-600">D50: 100-400 μm, Good flow required</p>
-                </div>
-                <div className="p-3 bg-white rounded-lg">
-                  <h4 className="font-semibold text-emerald-700 mb-1">Inhalation</h4>
-                  <p className="text-gray-600">D50: 1-5 μm, Narrow distribution</p>
-                </div>
-                <div className="p-3 bg-white rounded-lg">
-                  <h4 className="font-semibold text-emerald-700 mb-1">Suspensions</h4>
-                  <p className="text-gray-600">D50: 1-10 μm, Prevent settling</p>
+                  <h4 className="font-semibold text-green-700 mb-1">Inhalation</h4>
+                  <p>D50: 1–5 μm, narrow distribution</p>
                 </div>
               </div>
             </div>
 
             {/* Methods */}
-            <div className="bg-white rounded-2xl shadow-xl p-6">
+            <div className="bg-white rounded-2xl shadow-lg p-6">
               <h3 className="text-lg font-bold text-gray-800 mb-4">Analysis Methods</h3>
-              <div className="space-y-3 text-sm text-gray-600">
+              <div className="space-y-2 text-sm">
                 <div className="flex items-start">
-                  <Layers className="w-4 h-4 text-emerald-600 mr-2 mt-0.5" />
-                  <span><strong>Sieve Analysis:</strong> Mechanical separation, {'>'} 45 μm</span>
+                  <Layers className="w-4 h-4 text-blue-600 mr-2 mt-0.5" />
+                  <span><strong>Sieve:</strong> Mechanical, &gt;45 μm</span>
                 </div>
                 <div className="flex items-start">
-                  <Target className="w-4 h-4 text-blue-600 mr-2 mt-0.5" />
-                  <span><strong>Laser Diffraction:</strong> Light scattering, 0.1-3000 μm</span>
-                </div>
-                <div className="flex items-start">
-                  <Circle className="w-4 h-4 text-purple-600 mr-2 mt-0.5" />
-                  <span><strong>Dynamic Light Scattering:</strong> Sub-micron particles</span>
-                </div>
-                <div className="flex items-start">
-                  <Box className="w-4 h-4 text-orange-600 mr-2 mt-0.5" />
-                  <span><strong>Sedimentation:</strong> Based on settling rate</span>
+                  <Target className="w-4 h-4 text-green-600 mr-2 mt-0.5" />
+                  <span><strong>Laser diffraction:</strong> 0.1–3000 μm</span>
                 </div>
               </div>
             </div>
 
-            {/* Importance */}
-            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl shadow-xl p-6">
+            {/* Quality Impact */}
+            <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-2xl shadow-lg p-6">
               <h3 className="text-lg font-bold text-gray-800 mb-4">Quality Impact</h3>
-              <div className="space-y-3 text-sm text-gray-600">
-                <div className="flex items-start">
-                  <TrendingUp className="w-4 h-4 text-blue-600 mr-2 mt-0.5" />
-                  <span><strong>Dissolution:</strong> Smaller particles dissolve faster</span>
-                </div>
-                <div className="flex items-start">
-                  <Percent className="w-4 h-4 text-blue-600 mr-2 mt-0.5" />
-                  <span><strong>Bioavailability:</strong> Affects absorption rate</span>
-                </div>
-                <div className="flex items-start">
-                  <Grid3x3 className="w-4 h-4 text-blue-600 mr-2 mt-0.5" />
-                  <span><strong>Flowability:</strong> Critical for manufacturing</span>
-                </div>
-                <div className="flex items-start">
-                  <BarChart className="w-4 h-4 text-blue-600 mr-2 mt-0.5" />
-                  <span><strong>Stability:</strong> Surface area affects degradation</span>
-                </div>
-              </div>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>• Dissolution: smaller particles dissolve faster.</li>
+                <li>• Bioavailability: affects absorption.</li>
+                <li>• Flowability: critical for manufacturing.</li>
+              </ul>
             </div>
           </div>
         </div>

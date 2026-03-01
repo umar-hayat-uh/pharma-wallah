@@ -1,6 +1,34 @@
 "use client";
 import React, { useState } from "react";
-import { Send, Mail, Phone, MapPin, Clock, CheckCircle, AlertCircle, MessageSquare, User } from "lucide-react";
+import { motion } from "framer-motion";
+import { Send, Mail, Phone, MapPin, Clock, CheckCircle, AlertCircle, MessageSquare, User, HelpCircle } from "lucide-react";
+import Link from "next/link";
+
+// Import only the most relevant background icons
+import {
+  Pill,
+  FlaskConical,
+  Beaker,
+  Microscope,
+  Dna,
+  Stethoscope,
+  Syringe,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+// Generate only 6 icons, placed on left/right edges
+const iconList: LucideIcon[] = [Pill, FlaskConical, Beaker, Microscope, Dna, Stethoscope, Syringe];
+
+const bgIcons = [
+  // Left side
+  { Icon: iconList[0], left: "5%", top: "15%", size: 40, rotate: -10, delay: 0, color: "text-blue-700/20" },
+  { Icon: iconList[1], left: "3%", top: "40%", size: 35, rotate: 15, delay: 0.5, color: "text-green-700/20" },
+  { Icon: iconList[2], left: "7%", top: "70%", size: 30, rotate: 5, delay: 1.0, color: "text-purple-700/20" },
+  // Right side
+  { Icon: iconList[3], left: "92%", top: "20%", size: 45, rotate: -20, delay: 0.2, color: "text-amber-700/20" },
+  { Icon: iconList[4], left: "95%", top: "50%", size: 38, rotate: 25, delay: 0.7, color: "text-blue-700/20" },
+  { Icon: iconList[5], left: "90%", top: "80%", size: 42, rotate: -5, delay: 1.2, color: "text-green-700/20" },
+];
 
 const ContactForm = () => {
     const [formData, setFormData] = useState({ name: "", email: "", subject: "", message: "" });
@@ -52,8 +80,35 @@ const ContactForm = () => {
     ];
 
     return (
-        <section className="w-full py-16 md:py-20 lg:py-24 bg-white">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <section className="w-full py-16 md:py-20 lg:py-24 bg-white relative overflow-hidden">
+            {/* Background blobs behind icons */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none z-[-1]">
+                <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
+                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000" />
+            </div>
+
+            {/* Floating background icons - only 6, on edges */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                {bgIcons.map(({ Icon, color, left, top, size, rotate, delay }, index) => (
+                    <motion.div
+                        key={index}
+                        className="absolute"
+                        style={{ left, top }}
+                        initial={{ y: 0, rotate }}
+                        animate={{ y: [0, -10, 0], rotate: [rotate, rotate + 5, rotate] }}
+                        transition={{
+                            duration: 8,
+                            delay,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                        }}
+                    >
+                        <Icon size={size} className={color} />
+                    </motion.div>
+                ))}
+            </div>
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Contact Information Sidebar */}
                     <div className="bg-gradient-to-br from-blue-600 to-green-500 p-8 rounded-2xl text-white">
@@ -81,6 +136,17 @@ const ContactForm = () => {
                                 </div>
                             </div>
                             <p className="text-sm text-blue-100 mt-2">We pride ourselves on timely responses.</p>
+                        </div>
+
+                        {/* FAQs Link */}
+                        <div className="mt-6 p-4 rounded-lg bg-white/10 border border-white/20">
+                            <Link href="/faq" className="flex items-center gap-3 group">
+                                <HelpCircle className="w-6 h-6 text-white group-hover:scale-110 transition" />
+                                <div>
+                                    <div className="font-semibold">Frequently Asked Questions</div>
+                                    <p className="text-sm text-blue-200">Find quick answers to common queries</p>
+                                </div>
+                            </Link>
                         </div>
                     </div>
 
@@ -186,6 +252,28 @@ const ContactForm = () => {
                     </div>
                 </div>
             </div>
+
+            <style jsx>{`
+                @keyframes blob {
+                    0% { transform: translate(0px, 0px) scale(1); }
+                    33% { transform: translate(30px, -50px) scale(1.1); }
+                    66% { transform: translate(-20px, 20px) scale(0.9); }
+                    100% { transform: translate(0px, 0px) scale(1); }
+                }
+                .animate-blob {
+                    animation: blob 7s infinite;
+                }
+                .animation-delay-2000 {
+                    animation-delay: 2s;
+                }
+                .pattern-medical {
+                    background-image: 
+                        radial-gradient(circle at 10px 10px, #3b82f6 1px, transparent 1px),
+                        radial-gradient(circle at 30px 30px, #10b981 1px, transparent 1px),
+                        repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(59,130,246,0.05) 10px, rgba(59,130,246,0.05) 20px);
+                    background-size: 40px 40px, 40px 40px, 40px 40px;
+                }
+            `}</style>
         </section>
     );
 };

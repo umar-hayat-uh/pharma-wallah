@@ -9,15 +9,15 @@ export default function OsmolalityCalculators() {
     const [results, setResults] = useState<any>(null);
 
     return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 mt-20">
+        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-0 mt-5">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
-                <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
+                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-xl shadow-lg p-8 mb-6">
                     <div className="flex items-center justify-center mb-4">
                         <Thermometer className="w-10 h-10 text-blue-600 mr-3" />
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-800">Osmolality Calculator Suite</h1>
-                            <p className="text-gray-600">Calculate osmolality for clinical and laboratory applications</p>
+                            <h1 className="text-3xl font-bold text-white">Osmolality Calculator Suite</h1>
+                            <p className="text-white">Calculate osmolality for clinical and laboratory applications</p>
                         </div>
                     </div>
                 </div>

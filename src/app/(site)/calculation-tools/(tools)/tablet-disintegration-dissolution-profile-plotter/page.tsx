@@ -1,7 +1,7 @@
 "use client";
 import { useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Calculator, Tablet, Clock, Activity, TrendingUp, AlertCircle, RefreshCw } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { Calculator, Tablet, Clock, Activity, TrendingUp, AlertCircle, RefreshCw, Target, Scale, FileText } from 'lucide-react';
 
 type TimePoint = {
     time: number;
@@ -24,13 +24,14 @@ export default function TabletProfilePlotter() {
     const [t50Disintegration, setT50Disintegration] = useState<number | null>(null);
     const [t50Dissolution, setT50Dissolution] = useState<number | null>(null);
     const [t90, setT90] = useState<number | null>(null);
+    const [td, setTd] = useState<number | null>(null); // Disintegration time (time for 100% disintegration)
 
     const calculateParameters = () => {
-        // Calculate T50 (time for 50% completion)
+        // Calculate T50 for disintegration and dissolution
         const t50Disint = calculateT50(timePoints, 'disintegration');
         const t50Dissol = calculateT50(timePoints, 'dissolution');
 
-        // Calculate T90 (time for 90% dissolution)
+        // Calculate T90 for dissolution
         let t90Value = null;
         for (let i = 0; i < timePoints.length; i++) {
             if (timePoints[i].dissolution >= 90) {
@@ -47,9 +48,26 @@ export default function TabletProfilePlotter() {
             }
         }
 
+        // Calculate disintegration time (time for 100% disintegration)
+        let tdValue = null;
+        for (let i = 0; i < timePoints.length; i++) {
+            if (timePoints[i].disintegration >= 100) {
+                if (i === 0) {
+                    tdValue = timePoints[i].time;
+                } else {
+                    const prev = timePoints[i - 1];
+                    const curr = timePoints[i];
+                    const ratio = (100 - prev.disintegration) / (curr.disintegration - prev.disintegration);
+                    tdValue = prev.time + ratio * (curr.time - prev.time);
+                }
+                break;
+            }
+        }
+
         setT50Disintegration(t50Disint);
         setT50Dissolution(t50Dissol);
         setT90(t90Value);
+        setTd(tdValue);
     };
 
     const calculateT50 = (data: TimePoint[], type: 'disintegration' | 'dissolution') => {
@@ -73,6 +91,11 @@ export default function TabletProfilePlotter() {
 
         if (isNaN(time) || isNaN(disint) || isNaN(dissol)) {
             alert('Please enter valid numbers');
+            return;
+        }
+
+        if (disint < 0 || disint > 100 || dissol < 0 || dissol > 100) {
+            alert('Percentages must be between 0 and 100');
             return;
         }
 
@@ -105,12 +128,13 @@ export default function TabletProfilePlotter() {
         setT50Disintegration(null);
         setT50Dissolution(null);
         setT90(null);
+        setTd(null);
     };
 
     const sampleProfiles = [
         {
-            name: 'Fast Release', data: [
-                { time: 0, dis: 0, diss: 0 }, { time: 2, dis: 80, diss: 30 }, { time: 5, dis: 100, diss: 80 }, { time: 10, dis: 100, diss: 98 }
+            name: 'Immediate Release', data: [
+                { time: 0, dis: 0, diss: 0 }, { time: 2, dis: 95, diss: 40 }, { time: 5, dis: 100, diss: 85 }, { time: 10, dis: 100, diss: 98 }
             ]
         },
         {
@@ -119,8 +143,8 @@ export default function TabletProfilePlotter() {
             ]
         },
         {
-            name: 'Immediate Release', data: [
-                { time: 0, dis: 0, diss: 0 }, { time: 1, dis: 95, diss: 40 }, { time: 3, dis: 100, diss: 85 }, { time: 5, dis: 100, diss: 98 }
+            name: 'Fast Disintegrating', data: [
+                { time: 0, dis: 0, diss: 0 }, { time: 1, dis: 80, diss: 10 }, { time: 3, dis: 100, diss: 35 }, { time: 10, dis: 100, diss: 75 }, { time: 20, dis: 100, diss: 95 }
             ]
         },
     ];
@@ -135,57 +159,79 @@ export default function TabletProfilePlotter() {
         setTimePoints(formatted);
     };
 
+    // Check if Q value criteria is met (e.g., Q=80% at 30 min)
+    const checkQValue = (time: number = 30, q: number = 80) => {
+        const point = timePoints.find(p => p.time === time);
+        if (!point) return null;
+        return {
+            meets: point.dissolution >= q,
+            value: point.dissolution,
+            required: q
+        };
+    };
+
+    const qResult = checkQValue(30, 80);
+
     return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 mt-20">
-            <div className="max-w-6xl mx-auto">
+        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 pt-20">
+            <div className="max-w-7xl mx-auto">
                 {/* Header */}
-                <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
-                    <div className="flex items-center justify-center mb-4">
-                        <Tablet className="w-10 h-10 text-blue-600 mr-3" />
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-800">Tablet Disintegration & Dissolution Profile Plotter</h1>
-                            <p className="text-gray-600">Plot and analyze tablet disintegration and dissolution profiles over time</p>
+                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6 md:mb-8">
+                    <div className="flex flex-col md:flex-row items-center justify-between">
+                        <div className="flex items-center mb-4 md:mb-0">
+                            <div className="bg-white/20 p-3 rounded-xl mr-4">
+                                <Tablet className="w-8 h-8 md:w-10 md:h-10 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl md:text-3xl font-bold text-white">Tablet Disintegration & Dissolution Profile Plotter</h1>
+                                <p className="text-blue-100 mt-2">USP &lt;711&gt; compliant profile analysis with T₅₀, T₉₀, and disintegration time</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => loadSample(0)}
+                                className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm"
+                            >
+                                IR
+                            </button>
+                            <button
+                                onClick={() => loadSample(1)}
+                                className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm"
+                            >
+                                ER
+                            </button>
+                            <button
+                                onClick={() => loadSample(2)}
+                                className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm"
+                            >
+                                ODT
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Input Section */}
-                    <div className="lg:col-span-2 bg-white rounded-xl shadow-lg p-8">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                            <Calculator className="w-6 h-6 mr-2" />
-                            Enter Profile Data
-                        </h2>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Main Input Area */}
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
+                            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                                <Calculator className="w-6 h-6 mr-2 text-blue-600" />
+                                Profile Data Entry
+                            </h2>
 
-                        {/* Sample Profiles */}
-                        <div className="mb-6">
-                            <label className="block text-lg font-semibold text-gray-800 mb-3">Sample Profiles</label>
-                            <div className="grid grid-cols-3 gap-3">
-                                {sampleProfiles.map((profile, idx) => (
-                                    <button
-                                        key={idx}
-                                        onClick={() => loadSample(idx)}
-                                        className="p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border border-blue-200 hover:border-blue-400 transition-colors"
-                                    >
-                                        <div className="font-semibold text-blue-600">{profile.name}</div>
-                                        <div className="text-sm text-gray-600 mt-1">Click to load</div>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Data Entry */}
-                        <div className="space-y-6">
-                            <div className="bg-blue-50 rounded-lg p-6">
-                                <h3 className="text-lg font-semibold text-blue-800 mb-4">Add New Time Point</h3>
-                                <div className="grid grid-cols-3 gap-4">
+                            {/* Add New Point */}
+                            <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6 mb-6">
+                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Add New Time Point</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-700 mb-2">Time (min)</label>
                                         <input
                                             type="number"
+                                            step="0.1"
+                                            min="0"
                                             value={newTime}
                                             onChange={(e) => setNewTime(e.target.value)}
-                                            className="w-full px-4 py-2 border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                                            className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none"
                                             placeholder="e.g., 15"
                                         />
                                     </div>
@@ -193,11 +239,12 @@ export default function TabletProfilePlotter() {
                                         <label className="block text-sm font-semibold text-gray-700 mb-2">Disintegration (%)</label>
                                         <input
                                             type="number"
+                                            step="0.1"
                                             min="0"
                                             max="100"
                                             value={newDisintegration}
                                             onChange={(e) => setNewDisintegration(e.target.value)}
-                                            className="w-full px-4 py-2 border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                                            className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none"
                                             placeholder="0-100"
                                         />
                                     </div>
@@ -205,232 +252,286 @@ export default function TabletProfilePlotter() {
                                         <label className="block text-sm font-semibold text-gray-700 mb-2">Dissolution (%)</label>
                                         <input
                                             type="number"
+                                            step="0.1"
                                             min="0"
                                             max="100"
                                             value={newDissolution}
                                             onChange={(e) => setNewDissolution(e.target.value)}
-                                            className="w-full px-4 py-2 border-2 border-green-300 rounded-lg focus:border-green-500 focus:outline-none"
+                                            className="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:outline-none"
                                             placeholder="0-100"
                                         />
                                     </div>
+                                    <div className="flex items-end">
+                                        <button
+                                            onClick={addTimePoint}
+                                            className="w-full bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300"
+                                        >
+                                            Add Point
+                                        </button>
+                                    </div>
                                 </div>
-                                <button
-                                    onClick={addTimePoint}
-                                    className="mt-4 w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold py-3 rounded-lg transition-all duration-300"
-                                >
-                                    Add Time Point
-                                </button>
                             </div>
 
                             {/* Data Table */}
-                            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                                <div className="bg-gradient-to-r from-blue-50 to-green-50 px-6 py-3 border-b">
-                                    <h3 className="font-semibold text-gray-800">Current Data Points</h3>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead>
-                                            <tr className="bg-gray-50">
-                                                <th className="py-3 px-4 text-left font-semibold text-gray-700">Time (min)</th>
-                                                <th className="py-3 px-4 text-left font-semibold text-gray-700">Disintegration (%)</th>
-                                                <th className="py-3 px-4 text-left font-semibold text-gray-700">Dissolution (%)</th>
-                                                <th className="py-3 px-4 text-left font-semibold text-gray-700">Actions</th>
+                            <div className="overflow-x-auto mb-6">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="bg-gray-100">
+                                            <th className="py-3 px-4 text-left font-semibold text-gray-700">Time (min)</th>
+                                            <th className="py-3 px-4 text-left font-semibold text-gray-700">Disintegration (%)</th>
+                                            <th className="py-3 px-4 text-left font-semibold text-gray-700">Dissolution (%)</th>
+                                            <th className="py-3 px-4 text-left font-semibold text-gray-700">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {timePoints.map((point, index) => (
+                                            <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
+                                                <td className="py-3 px-4 font-medium">{point.time}</td>
+                                                <td className="py-3 px-4">
+                                                    <span className={point.disintegration >= 100 ? 'text-green-600 font-semibold' : ''}>
+                                                        {point.disintegration}%
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <span className={point.dissolution >= 80 ? 'text-green-600 font-semibold' : ''}>
+                                                        {point.dissolution}%
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <button
+                                                        onClick={() => removeTimePoint(index)}
+                                                        className="text-red-600 hover:text-red-800 text-sm font-semibold"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </td>
                                             </tr>
-                                        </thead>
-                                        <tbody>
-                                            {timePoints.map((point, index) => (
-                                                <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
-                                                    <td className="py-3 px-4">{point.time}</td>
-                                                    <td className="py-3 px-4">{point.disintegration}</td>
-                                                    <td className="py-3 px-4">{point.dissolution}</td>
-                                                    <td className="py-3 px-4">
-                                                        <button
-                                                            onClick={() => removeTimePoint(index)}
-                                                            className="text-red-600 hover:text-red-800 text-sm font-semibold"
-                                                        >
-                                                            Remove
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="flex gap-4">
+                            <div className="flex flex-col sm:flex-row gap-4">
                                 <button
                                     onClick={calculateParameters}
-                                    className="flex-1 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold py-4 rounded-lg transition-all duration-300 text-lg shadow-md hover:shadow-lg"
+                                    className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
                                 >
                                     Calculate Parameters
                                 </button>
                                 <button
                                     onClick={resetData}
-                                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 rounded-lg transition-colors text-lg"
+                                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center"
                                 >
-                                    Reset Data
+                                    <RefreshCw className="w-5 h-5 mr-2" />
+                                    Reset
                                 </button>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Results Section */}
-                    <div className="space-y-6">
                         {/* Chart */}
-                        <div className="bg-white rounded-xl shadow-lg p-6">
-                            <h2 className="text-2xl font-bold text-gray-800 mb-6">Profile Plot</h2>
-                            <div className="h-80">
+                        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
+                            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                                <Activity className="w-6 h-6 mr-2 text-green-600" />
+                                Profile Plot
+                            </h2>
+                            <div className="h-96">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={timePoints}>
+                                    <LineChart data={timePoints} margin={{ top: 20, right: 30, left: 20, bottom: 30 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                                         <XAxis
                                             dataKey="time"
-                                            label={{ value: 'Time (minutes)', position: 'insideBottom', offset: -5 }}
+                                            label={{ value: 'Time (minutes)', position: 'insideBottom', offset: -10 }}
+                                            domain={[0, 'dataMax']}
                                         />
                                         <YAxis
                                             label={{ value: 'Percentage (%)', angle: -90, position: 'insideLeft' }}
                                             domain={[0, 100]}
                                         />
-                                        <Tooltip />
+                                        <Tooltip formatter={(value) => `${value}%`} />
                                         <Legend />
+                                        <ReferenceLine y={80} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'Q = 80%', position: 'right' }} />
+                                        <ReferenceLine y={50} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: '50%', position: 'right' }} />
                                         <Line
                                             type="monotone"
                                             dataKey="disintegration"
                                             stroke="#3b82f6"
-                                            strokeWidth={2}
+                                            strokeWidth={3}
                                             name="Disintegration"
-                                            dot={{ r: 4 }}
-                                            activeDot={{ r: 6 }}
+                                            dot={{ r: 6 }}
+                                            activeDot={{ r: 8 }}
                                         />
                                         <Line
                                             type="monotone"
                                             dataKey="dissolution"
                                             stroke="#10b981"
-                                            strokeWidth={2}
+                                            strokeWidth={3}
                                             name="Dissolution"
-                                            dot={{ r: 4 }}
-                                            activeDot={{ r: 6 }}
+                                            dot={{ r: 6 }}
+                                            activeDot={{ r: 8 }}
                                         />
                                     </LineChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Results Card */}
-                        {(t50Disintegration !== null || t50Dissolution !== null || t90 !== null) && (
-                            <div className="bg-gradient-to-br from-blue-50 to-green-50 border-2 border-blue-400 rounded-xl shadow-lg p-6">
-                                <h2 className="text-2xl font-bold text-gray-800 mb-6">Key Parameters</h2>
+                    {/* Results & Info Sidebar */}
+                    <div className="space-y-6">
+                        {/* Key Parameters */}
+                        {(t50Disintegration !== null || t50Dissolution !== null || t90 !== null || td !== null) && (
+                            <div className="bg-white rounded-2xl shadow-lg p-6">
+                                <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                                    <Target className="w-5 h-5 mr-2 text-blue-600" />
+                                    Key Parameters
+                                </h2>
                                 <div className="space-y-4">
-                                    {t50Disintegration !== null && (
-                                        <div className="bg-white rounded-lg p-4 shadow-sm">
+                                    {td !== null && (
+                                        <div className="bg-gradient-to-r from-blue-50 to-cyan-100 rounded-xl p-4">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <div className="text-sm font-semibold text-gray-600">T₅₀ Disintegration</div>
-                                                    <div className="text-2xl font-bold text-blue-600">{t50Disintegration.toFixed(1)} min</div>
+                                                    <div className="text-sm font-semibold text-blue-700">Disintegration Time</div>
+                                                    <div className="text-2xl font-bold text-blue-600">{td.toFixed(1)} min</div>
                                                 </div>
                                                 <Clock className="w-8 h-8 text-blue-500" />
                                             </div>
-                                            <div className="text-xs text-gray-600 mt-2">Time for 50% disintegration</div>
+                                            <p className="text-xs text-gray-600 mt-1">Time for 100% disintegration</p>
+                                        </div>
+                                    )}
+                                    {t50Disintegration !== null && (
+                                        <div className="bg-gradient-to-r from-blue-50 to-indigo-100 rounded-xl p-4">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <div className="text-sm font-semibold text-indigo-700">T₅₀ Disintegration</div>
+                                                    <div className="text-2xl font-bold text-indigo-600">{t50Disintegration.toFixed(1)} min</div>
+                                                </div>
+                                                <Clock className="w-8 h-8 text-indigo-500" />
+                                            </div>
                                         </div>
                                     )}
                                     {t50Dissolution !== null && (
-                                        <div className="bg-white rounded-lg p-4 shadow-sm">
+                                        <div className="bg-gradient-to-r from-green-50 to-emerald-100 rounded-xl p-4">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <div className="text-sm font-semibold text-gray-600">T₅₀ Dissolution</div>
+                                                    <div className="text-sm font-semibold text-green-700">T₅₀ Dissolution</div>
                                                     <div className="text-2xl font-bold text-green-600">{t50Dissolution.toFixed(1)} min</div>
                                                 </div>
                                                 <Activity className="w-8 h-8 text-green-500" />
                                             </div>
-                                            <div className="text-xs text-gray-600 mt-2">Time for 50% dissolution</div>
                                         </div>
                                     )}
                                     {t90 !== null && (
-                                        <div className="bg-white rounded-lg p-4 shadow-sm">
+                                        <div className="bg-gradient-to-r from-purple-50 to-violet-100 rounded-xl p-4">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <div className="text-sm font-semibold text-gray-600">T₉₀ Dissolution</div>
+                                                    <div className="text-sm font-semibold text-purple-700">T₉₀ Dissolution</div>
                                                     <div className="text-2xl font-bold text-purple-600">{t90.toFixed(1)} min</div>
                                                 </div>
                                                 <TrendingUp className="w-8 h-8 text-purple-500" />
                                             </div>
-                                            <div className="text-xs text-gray-600 mt-2">Time for 90% dissolution</div>
                                         </div>
                                     )}
                                 </div>
                             </div>
                         )}
 
-                        {/* Information Card */}
-                        <div className="bg-white rounded-xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">Profile Interpretation</h3>
-                            <div className="space-y-3 text-sm text-gray-600">
-                                <div className="flex items-start">
-                                    <div className="w-3 h-3 bg-blue-500 rounded-full mt-1 mr-2"></div>
-                                    <p><span className="font-semibold text-blue-700">Disintegration:</span> Breakdown of tablet into smaller particles</p>
+                        {/* Q Value Assessment */}
+                        {qResult && (
+                            <div className={`rounded-2xl shadow-lg p-6 ${qResult.meets ? 'bg-gradient-to-r from-green-50 to-emerald-100 border-2 border-green-200' : 'bg-gradient-to-r from-yellow-50 to-amber-100 border-2 border-yellow-200'}`}>
+                                <h3 className="text-lg font-bold text-gray-800 mb-3">USP Q Value Assessment</h3>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm text-gray-600">At 30 minutes:</p>
+                                        <p className="text-2xl font-bold">{qResult.value.toFixed(1)}% dissolved</p>
+                                    </div>
+                                    <div className={`text-lg font-semibold ${qResult.meets ? 'text-green-600' : 'text-yellow-600'}`}>
+                                        {qResult.meets ? '✓ Meets Q=80%' : '⚠ Below Q=80%'}
+                                    </div>
                                 </div>
-                                <div className="flex items-start">
-                                    <div className="w-3 h-3 bg-green-500 rounded-full mt-1 mr-2"></div>
-                                    <p><span className="font-semibold text-green-700">Dissolution:</span> Drug dissolving into solution</p>
+                                <p className="text-xs text-gray-500 mt-2">USP &lt;711&gt; acceptance: Q + 5% at S1 [citation:1]</p>
+                            </div>
+                        )}
+
+                        {/* USP Acceptance Criteria */}
+                        <div className="bg-white rounded-2xl shadow-lg p-6">
+                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                                <FileText className="w-5 h-5 mr-2 text-blue-500" />
+                                USP &lt;711&gt; Acceptance [citation:1][citation:3]
+                            </h3>
+                            <div className="space-y-3 text-sm">
+                                <div className="p-3 bg-green-50 rounded-lg">
+                                    <p className="font-semibold text-green-700">S1 (n=6)</p>
+                                    <p>Each unit ≥ Q + 5%</p>
                                 </div>
-                                <div className="pt-3 border-t border-gray-200">
-                                    <p className="font-semibold text-gray-800">Acceptance Criteria:</p>
-                                    <p>• Immediate Release: Q ≥ 80% in 30 min</p>
-                                    <p>• Extended Release: Meet specified dissolution profile</p>
+                                <div className="p-3 bg-yellow-50 rounded-lg">
+                                    <p className="font-semibold text-yellow-700">S2 (n=12)</p>
+                                    <p>Average ≥ Q, no unit &lt; Q - 15%</p>
+                                </div>
+                                <div className="p-3 bg-orange-50 rounded-lg">
+                                    <p className="font-semibold text-orange-700">S3 (n=24)</p>
+                                    <p>Average ≥ Q, ≤2 units &lt; Q-15%, none &lt; Q-25%</p>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* IVIVC Correlation */}
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-lg p-6">
+                            <h3 className="text-lg font-bold text-gray-800 mb-3">IVIVC Correlation Levels [citation:10]</h3>
+                            <div className="space-y-2 text-sm">
+                                <p><span className="font-semibold text-blue-700">Level A:</span> Point-to-point relationship</p>
+                                <p><span className="font-semibold text-green-700">Level B:</span> Statistical moments (MDT vs MRT)</p>
+                                <p><span className="font-semibold text-purple-700">Level C:</span> Single point (T₅₀, T₉₀ vs Cmax, AUC)</p>
+                            </div>
+                        </div>
+
+                        {/* Profile Comparison */}
+                        <div className="bg-white rounded-2xl shadow-lg p-6">
+                            <h3 className="text-lg font-bold text-gray-800 mb-3">Profile Similarity [citation:7]</h3>
+                            <p className="text-sm text-gray-600 mb-2">f₂ similarity factor:</p>
+                            <div className="bg-gray-50 p-3 rounded-lg font-mono text-sm">
+                                {'f₂ = 50·log{[1 + (1/n)Σ(Rᵢ - Tᵢ)²]⁻⁰·⁵ × 100}'}
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">f₂ ≥ 50 indicates similarity</p>
+                            <p className="text-xs text-gray-500 mt-1">≥85% dissolved in 15 min → profiles considered similar without f₂ [citation:7]</p>
+                        </div>
+
+                        {/* ODT Guidance */}
+                        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-lg p-6">
+                            <h3 className="text-lg font-bold text-gray-800 mb-3">ODT Requirements [citation:9]</h3>
+                            <ul className="space-y-2 text-sm">
+                                <li>• Disintegration ≤ 30 seconds</li>
+                                <li>• Tablet weight ≤ 500 mg</li>
+                                <li>• No need for water</li>
+                                <li>• Rapid oral disintegration</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
 
-                {/* Summary Table */}
-                <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6">Dissolution Requirements (USP)</h2>
+                {/* Reference Table */}
+                <div className="mt-8 bg-white rounded-2xl shadow-lg p-6 md:p-8">
+                    <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6">Dissolution Requirements by Dosage Form</h2>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="bg-gradient-to-r from-blue-50 to-green-50">
-                                    <th className="py-3 px-4 text-left font-semibold text-gray-700">Drug Class</th>
+                                    <th className="py-3 px-4 text-left font-semibold text-gray-700">Dosage Form</th>
+                                    <th className="py-3 px-4 text-left font-semibold text-gray-700">Apparatus</th>
+                                    <th className="py-3 px-4 text-left font-semibold text-gray-700">Speed (rpm)</th>
+                                    <th className="py-3 px-4 text-left font-semibold text-gray-700">Medium</th>
                                     <th className="py-3 px-4 text-left font-semibold text-gray-700">Q Value</th>
                                     <th className="py-3 px-4 text-left font-semibold text-gray-700">Time Point</th>
-                                    <th className="py-3 px-4 text-left font-semibold text-gray-700">Acceptance Criteria</th>
-                                    <th className="py-3 px-4 text-left font-semibold text-gray-700">Typical T₉₀</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr className="border-b border-gray-200">
-                                    <td className="py-3 px-4">Immediate Release</td>
-                                    <td className="py-3 px-4">75-80%</td>
-                                    <td className="py-3 px-4">30-45 min</td>
-                                    <td className="py-3 px-4">Q + 5% at each stage</td>
-                                    <td className="py-3 px-4">30-45 min</td>
-                                </tr>
-                                <tr className="border-b border-gray-200 bg-gray-50">
-                                    <td className="py-3 px-4">Extended Release</td>
-                                    <td className="py-3 px-4">Varies</td>
-                                    <td className="py-3 px-4">Multiple points</td>
-                                    <td className="py-3 px-4">Meet dissolution profile</td>
-                                    <td className="py-3 px-4">4-12 hours</td>
-                                </tr>
-                                <tr className="border-b border-gray-200">
-                                    <td className="py-3 px-4">Enteric Coated</td>
-                                    <td className="py-3 px-4">75%</td>
-                                    <td className="py-3 px-4">pH 6.8 buffer</td>
-                                    <td className="py-3 px-4">No release at pH 1.2</td>
-                                    <td className="py-3 px-4">45-90 min</td>
-                                </tr>
-                                <tr className="bg-gray-50">
-                                    <td className="py-3 px-4">Highly Soluble</td>
-                                    <td className="py-3 px-4">85%</td>
-                                    <td className="py-3 px-4">15 min</td>
-                                    <td className="py-3 px-4">Very rapid release</td>
-                                    <td className="py-3 px-4">10-20 min</td>
-                                </tr>
+                                <tr className="border-b"><td className="py-2 px-4">Immediate Release</td><td>I or II</td><td>50-100</td><td>0.1N HCl, buffer</td><td>75-80%</td><td>30-45 min</td></tr>
+                                <tr className="border-b bg-gray-50"><td>Extended Release</td><td>I or II</td><td>50-100</td><td>Multiple pH</td><td>Varies</td><td>Multiple</td></tr>
+                                <tr className="border-b"><td>Enteric Coated</td><td>I or II</td><td>50-100</td><td>Acid then buffer</td><td>75% (buffer)</td><td>45-120 min</td></tr>
+                                <tr><td>Orally Disintegrating</td><td>USP &lt;701&gt;</td><td>N/A</td><td>Water</td><td>N/A</td><td>≤30 sec</td></tr>
                             </tbody>
                         </table>
                     </div>
+                    <p className="text-xs text-gray-500 mt-4">Source:USP &lt;701&gt; FDA Guidance [citation:1][citation:9]</p>
                 </div>
             </div>
         </section>

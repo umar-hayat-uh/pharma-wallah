@@ -7,34 +7,14 @@ import {
   BookOpen, FileText, Database, Calculator, Bot,
   ArrowRight, CheckCircle, MessageSquare, Lightbulb, Target,
   Sparkles, GraduationCap, Brain, Library, Scan, Layers,
-  // Background icons
+  // Background icons - only the most relevant
   Pill,
   FlaskConical,
   Beaker,
   Microscope,
-  Atom,
   Dna,
-  HeartPulse,
-  Leaf,
-  Syringe,
-  TestTube,
-  Tablet,
-  ClipboardList,
   Stethoscope,
-  Bandage,
-  Droplet,
-  Eye,
-  Bone,
-  Heart,
-  Activity,
-  AlertCircle,
-  Scissors,
-  Thermometer,
-  Wind,
-  Droplets,
-  FlaskRound,
-  Scale,
-  Calculator as CalcIcon,
+  Syringe,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -43,37 +23,18 @@ interface BgIconItem {
   color: string;
 }
 
-// Increased opacity for better visibility
+// Selected pharmacy/medical icons with low opacity (0.2)
 const iconList: BgIconItem[] = [
-  { Icon: Pill, color: "text-blue-600/30" },
-  { Icon: FlaskConical, color: "text-green-600/30" },
-  { Icon: Beaker, color: "text-purple-600/30" },
-  { Icon: Microscope, color: "text-amber-600/30" },
-  { Icon: Atom, color: "text-blue-600/30" },
-  { Icon: Dna, color: "text-green-600/30" },
-  { Icon: HeartPulse, color: "text-purple-600/30" },
-  { Icon: Leaf, color: "text-amber-600/30" },
-  { Icon: Syringe, color: "text-blue-600/30" },
-  { Icon: TestTube, color: "text-green-600/30" },
-  { Icon: Tablet, color: "text-purple-600/30" },
-  { Icon: ClipboardList, color: "text-amber-600/30" },
-  { Icon: Stethoscope, color: "text-blue-600/30" },
-  { Icon: Bandage, color: "text-green-600/30" },
-  { Icon: Droplet, color: "text-purple-600/30" },
-  { Icon: Eye, color: "text-amber-600/30" },
-  { Icon: Bone, color: "text-blue-600/30" },
-  { Icon: Heart, color: "text-purple-600/30" },
-  { Icon: Activity, color: "text-amber-600/30" },
-  { Icon: AlertCircle, color: "text-blue-600/30" },
-  { Icon: Scissors, color: "text-green-600/30" },
-  { Icon: Thermometer, color: "text-purple-600/30" },
-  { Icon: Wind, color: "text-amber-600/30" },
-  { Icon: Droplets, color: "text-green-600/30" },
-  { Icon: FlaskRound, color: "text-purple-600/30" },
-  { Icon: Scale, color: "text-blue-600/30" },
-  { Icon: CalcIcon, color: "text-green-600/30" },
+  { Icon: Pill, color: "text-blue-700/20" },
+  { Icon: FlaskConical, color: "text-green-700/20" },
+  { Icon: Beaker, color: "text-purple-700/20" },
+  { Icon: Microscope, color: "text-amber-700/20" },
+  { Icon: Dna, color: "text-blue-700/20" },
+  { Icon: Stethoscope, color: "text-green-700/20" },
+  { Icon: Syringe, color: "text-purple-700/20" },
 ];
 
+// Generate only 6 icons, placed on left/right edges
 const bgIcons: Array<{
   Icon: LucideIcon;
   color: string;
@@ -82,26 +43,16 @@ const bgIcons: Array<{
   size: number;
   rotate: number;
   delay: number;
-}> = [];
-for (let i = 0; i < 40; i++) {
-  const item = iconList[i % iconList.length];
-  bgIcons.push({
-    Icon: item.Icon,
-    color:
-      i % 4 === 0
-        ? "text-blue-600/30"
-        : i % 4 === 1
-        ? "text-green-600/30"
-        : i % 4 === 2
-        ? "text-purple-600/30"
-        : "text-amber-600/30",
-    left: `${(i * 13) % 90 + 5}%`,
-    top: `${(i * 19) % 90 + 5}%`,
-    size: 30 + (i * 7) % 90,
-    rotate: (i * 23) % 360,
-    delay: i * 0.1,
-  });
-}
+}> = [
+  // Left side
+  { Icon: iconList[0].Icon, color: "text-blue-700/20", left: "5%", top: "10%", size: 40, rotate: -10, delay: 0 },
+  { Icon: iconList[1].Icon, color: "text-green-700/20", left: "3%", top: "35%", size: 35, rotate: 15, delay: 0.5 },
+  { Icon: iconList[2].Icon, color: "text-purple-700/20", left: "7%", top: "65%", size: 30, rotate: 5, delay: 1.0 },
+  // Right side
+  { Icon: iconList[3].Icon, color: "text-amber-700/20", left: "92%", top: "20%", size: 45, rotate: -20, delay: 0.2 },
+  { Icon: iconList[4].Icon, color: "text-blue-700/20", left: "95%", top: "50%", size: 38, rotate: 25, delay: 0.7 },
+  { Icon: iconList[5].Icon, color: "text-green-700/20", left: "90%", top: "80%", size: 42, rotate: -5, delay: 1.2 },
+];
 
 const featureGroups = {
   learning: {
@@ -205,14 +156,14 @@ const Features = () => {
 
   return (
     <section className="w-full py-16 md:py-20 lg:py-24 relative overflow-hidden bg-gradient-to-b from-white to-gray-50">
-      {/* Background blobs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* Background blobs behind icons */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-[-1]">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200/30 rounded-full mix-blend-multiply filter blur-3xl animate-blob" />
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-green-200/30 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000" />
       </div>
 
-      {/* Floating background icons with animation */}
-      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+      {/* Floating background icons - only 6, on edges */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         {bgIcons.map(({ Icon, color, left, top, size, rotate, delay }, index) => (
           <motion.div
             key={index}
@@ -232,7 +183,7 @@ const Features = () => {
         ))}
       </div>
 
-      {/* Subtle dot pattern */}
+      {/* Subtle dot pattern (optional) */}
       <div className="absolute inset-0 opacity-[0.02] pointer-events-none"
            style={{ backgroundImage: 'radial-gradient(circle at 10px 10px, #3b82f6 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
 
@@ -407,6 +358,13 @@ const Features = () => {
         }
         .animation-delay-2000 {
           animation-delay: 2s;
+        }
+        .pattern-medical {
+          background-image: 
+              radial-gradient(circle at 10px 10px, #3b82f6 1px, transparent 1px),
+              radial-gradient(circle at 30px 30px, #10b981 1px, transparent 1px),
+              repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(59,130,246,0.05) 10px, rgba(59,130,246,0.05) 20px);
+          background-size: 40px 40px, 40px 40px, 40px 40px;
         }
       `}</style>
     </section>

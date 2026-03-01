@@ -37,13 +37,9 @@ export default function DensityCalculator() {
             case 'true':
                 density = m / v;
                 formula = 'ρ = m / V';
-                if (density < 1) {
-                    interpretation = 'Material will float on water';
-                } else if (density >= 1 && density < 2) {
-                    interpretation = 'Typical for many pharmaceutical powders';
-                } else {
-                    interpretation = 'High density material';
-                }
+                if (density < 1) interpretation = 'Material will float on water';
+                else if (density < 2) interpretation = 'Typical for many pharmaceutical powders';
+                else interpretation = 'High density material';
                 break;
 
             case 'bulk':
@@ -94,286 +90,257 @@ export default function DensityCalculator() {
     ];
 
     return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 mt-20">
-            <div className="max-w-6xl mx-auto">
+        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 pt-20">
+            <div className="max-w-7xl mx-auto">
                 {/* Header */}
-                <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
-                    <div className="flex items-center justify-center mb-4">
-                        <Scale className="w-10 h-10 text-blue-600 mr-3" />
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-800">Density Calculator</h1>
-                            <p className="text-gray-600">Calculate True, Bulk, and Tapped Density for pharmaceutical materials</p>
+                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6 md:mb-8">
+                    <div className="flex flex-col md:flex-row items-center justify-between">
+                        <div className="flex items-center mb-4 md:mb-0">
+                            <div className="bg-white/20 p-3 rounded-xl mr-4">
+                                <Scale className="w-8 h-8 md:w-10 md:h-10 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl md:text-3xl font-bold text-white">Density Calculator</h1>
+                                <p className="text-blue-100 mt-2">True, Bulk, and Tapped Density for pharmaceutical materials</p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Input Section */}
-                    <div className="lg:col-span-2 bg-white rounded-xl shadow-lg p-8">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                            <Calculator className="w-6 h-6 mr-2" />
-                            Density Calculation
-                        </h2>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Main Input Area */}
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
+                            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                                <Calculator className="w-6 h-6 mr-2 text-blue-600" />
+                                Density Calculation
+                            </h2>
 
-                        {/* Density Type Selection */}
-                        <div className="mb-6">
-                            <label className="block text-lg font-semibold text-gray-800 mb-3">Select Density Type</label>
-                            <div className="grid grid-cols-3 gap-3">
-                                <button
-                                    onClick={() => setDensityType('true')}
-                                    className={`p-4 rounded-lg transition-all duration-300 ${densityType === 'true' ? 'bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                                >
-                                    <Weight className="inline w-5 h-5 mr-2" />
-                                    True Density
-                                </button>
-                                <button
-                                    onClick={() => setDensityType('bulk')}
-                                    className={`p-4 rounded-lg transition-all duration-300 ${densityType === 'bulk' ? 'bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                                >
-                                    <Beaker className="inline w-5 h-5 mr-2" />
-                                    Bulk Density
-                                </button>
-                                <button
-                                    onClick={() => setDensityType('tapped')}
-                                    className={`p-4 rounded-lg transition-all duration-300 ${densityType === 'tapped' ? 'bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                                >
-                                    <Droplets className="inline w-5 h-5 mr-2" />
-                                    Tapped Density
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="space-y-6">
-                            {/* Mass Input */}
-                            <div className="bg-blue-50 rounded-lg p-6">
-                                <label className="block text-lg font-semibold text-blue-800 mb-3">
-                                    <Weight className="inline w-5 h-5 mr-2" />
-                                    Mass (g)
-                                </label>
-                                <input
-                                    type="number"
-                                    step="0.001"
-                                    min="0.001"
-                                    value={mass}
-                                    onChange={(e) => setMass(e.target.value)}
-                                    className="w-full px-4 py-3 text-lg border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                                    placeholder="Enter mass in grams"
-                                />
+                            {/* Density Type Selection */}
+                            <div className="mb-8">
+                                <label className="block text-lg font-semibold text-gray-800 mb-3">Select Density Type</label>
+                                <div className="grid grid-cols-3 gap-3">
+                                    <button
+                                        onClick={() => setDensityType('true')}
+                                        className={`p-4 rounded-lg transition-all duration-300 ${
+                                            densityType === 'true'
+                                                ? 'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-md'
+                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        <Weight className="inline w-5 h-5 mr-2" />
+                                        True
+                                    </button>
+                                    <button
+                                        onClick={() => setDensityType('bulk')}
+                                        className={`p-4 rounded-lg transition-all duration-300 ${
+                                            densityType === 'bulk'
+                                                ? 'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-md'
+                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        <Beaker className="inline w-5 h-5 mr-2" />
+                                        Bulk
+                                    </button>
+                                    <button
+                                        onClick={() => setDensityType('tapped')}
+                                        className={`p-4 rounded-lg transition-all duration-300 ${
+                                            densityType === 'tapped'
+                                                ? 'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-md'
+                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        <Droplets className="inline w-5 h-5 mr-2" />
+                                        Tapped
+                                    </button>
+                                </div>
                             </div>
 
-                            {/* Volume Input */}
-                            <div className="bg-green-50 rounded-lg p-6">
-                                <label className="block text-lg font-semibold text-green-800 mb-3">
-                                    <Beaker className="inline w-5 h-5 mr-2" />
-                                    Volume (mL)
-                                </label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0.01"
-                                    value={volume}
-                                    onChange={(e) => setVolume(e.target.value)}
-                                    className="w-full px-4 py-3 text-lg border-2 border-green-300 rounded-lg focus:border-green-500 focus:outline-none"
-                                    placeholder="Enter volume in mL"
-                                />
-                            </div>
-
-                            {/* Container Mass Input (for bulk density) */}
-                            {densityType === 'bulk' && (
-                                <div className="bg-blue-50 rounded-lg p-6">
-                                    <label className="block text-lg font-semibold text-blue-800 mb-3">
-                                        Container Mass (g) - Optional
+                            <div className="space-y-6">
+                                {/* Mass Input */}
+                                <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6">
+                                    <label className="block text-lg font-semibold text-gray-800 mb-3">
+                                        <Weight className="inline w-5 h-5 mr-2" />
+                                        Mass (g)
                                     </label>
                                     <input
                                         type="number"
                                         step="0.001"
-                                        min="0"
-                                        value={containerMass}
-                                        onChange={(e) => setContainerMass(e.target.value)}
-                                        className="w-full px-4 py-3 text-lg border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                                        placeholder="Mass of empty container"
+                                        min="0.001"
+                                        value={mass}
+                                        onChange={(e) => setMass(e.target.value)}
+                                        className="w-full px-4 py-3 text-lg border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                                        placeholder="Enter mass"
                                     />
-                                    <p className="text-sm text-gray-600 mt-2">Leave blank if mass already excludes container</p>
                                 </div>
-                            )}
 
-                            {/* Container Volume Input (for tapped density) */}
-                            {densityType === 'tapped' && (
-                                <div className="bg-green-50 rounded-lg p-6">
-                                    <label className="block text-lg font-semibold text-green-800 mb-3">
-                                        Container Volume (mL) - Optional
+                                {/* Volume Input */}
+                                <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6">
+                                    <label className="block text-lg font-semibold text-gray-800 mb-3">
+                                        <Beaker className="inline w-5 h-5 mr-2" />
+                                        Volume (mL)
                                     </label>
                                     <input
                                         type="number"
                                         step="0.01"
-                                        min="0"
-                                        value={containerVolume}
-                                        onChange={(e) => setContainerVolume(e.target.value)}
-                                        className="w-full px-4 py-3 text-lg border-2 border-green-300 rounded-lg focus:border-green-500 focus:outline-none"
-                                        placeholder="Volume of empty container"
+                                        min="0.01"
+                                        value={volume}
+                                        onChange={(e) => setVolume(e.target.value)}
+                                        className="w-full px-4 py-3 text-lg border-2 border-green-200 rounded-lg focus:border-green-500 focus:outline-none"
+                                        placeholder="Enter volume"
                                     />
-                                    <p className="text-sm text-gray-600 mt-2">Leave blank if volume already excludes container</p>
                                 </div>
-                            )}
 
-                            {/* Quick Samples */}
-                            <div className="bg-gray-50 rounded-lg p-6">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-3">Common Materials Reference</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                                    {sampleMaterials.map((material, index) => (
-                                        <button
-                                            key={index}
-                                            onClick={() => {
-                                                setDensityType(material.type as DensityType);
-                                                setMass('100');
-                                                setVolume((100 / material.density).toFixed(2));
-                                            }}
-                                            className="bg-white border border-gray-300 rounded-lg p-3 hover:bg-blue-50 transition-colors text-center"
-                                        >
-                                            <div className="font-semibold text-blue-600">{material.name}</div>
-                                            <div className="text-sm text-gray-600 mt-1">
-                                                {material.density} g/mL
-                                            </div>
-                                        </button>
-                                    ))}
+                                {/* Optional container fields */}
+                                {densityType === 'bulk' && (
+                                    <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6">
+                                        <label className="block text-lg font-semibold text-gray-800 mb-3">
+                                            Container Mass (g) – Optional
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.001"
+                                            min="0"
+                                            value={containerMass}
+                                            onChange={(e) => setContainerMass(e.target.value)}
+                                            className="w-full px-4 py-3 text-lg border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                                            placeholder="Mass of empty container"
+                                        />
+                                    </div>
+                                )}
+
+                                {densityType === 'tapped' && (
+                                    <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6">
+                                        <label className="block text-lg font-semibold text-gray-800 mb-3">
+                                            Container Volume (mL) – Optional
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            value={containerVolume}
+                                            onChange={(e) => setContainerVolume(e.target.value)}
+                                            className="w-full px-4 py-3 text-lg border-2 border-green-200 rounded-lg focus:border-green-500 focus:outline-none"
+                                            placeholder="Volume of empty container"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Quick Samples */}
+                                <div className="bg-gray-50 rounded-xl p-6">
+                                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Common Materials</h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                        {sampleMaterials.map((material, index) => (
+                                            <button
+                                                key={index}
+                                                onClick={() => {
+                                                    setDensityType(material.type as DensityType);
+                                                    setMass('100');
+                                                    setVolume((100 / material.density).toFixed(2));
+                                                }}
+                                                className="bg-white border border-gray-300 rounded-lg p-3 hover:bg-blue-50 transition-colors text-center"
+                                            >
+                                                <div className="font-semibold text-blue-600">{material.name}</div>
+                                                <div className="text-sm text-gray-600 mt-1">{material.density} g/mL</div>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Action Buttons */}
-                            <div className="flex gap-4">
-                                <button
-                                    onClick={calculateDensity}
-                                    className="flex-1 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold py-4 rounded-lg transition-all duration-300 text-lg shadow-md hover:shadow-lg"
-                                >
-                                    Calculate Density
-                                </button>
-                                <button
-                                    onClick={resetCalculator}
-                                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 rounded-lg transition-colors text-lg"
-                                >
-                                    Reset
-                                </button>
+                                {/* Action Buttons */}
+                                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                                    <button
+                                        onClick={calculateDensity}
+                                        className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+                                    >
+                                        Calculate Density
+                                    </button>
+                                    <button
+                                        onClick={resetCalculator}
+                                        className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center"
+                                    >
+                                        Reset
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Results Section */}
-                    <div className="space-y-6">
-                        {/* Results Card */}
+                        {/* Results Display */}
                         {result && (
-                            <div className="bg-gradient-to-br from-blue-50 to-green-50 border-2 border-blue-400 rounded-xl shadow-lg p-6">
-                                <h2 className="text-2xl font-bold text-gray-800 mb-6">Results</h2>
-                                
-                                <div className="space-y-4">
-                                    <div className="bg-white rounded-lg p-6 shadow-sm text-center">
-                                        <div className="text-sm font-semibold text-gray-600 mb-2">
-                                            {densityType.charAt(0).toUpperCase() + densityType.slice(1)} Density
-                                        </div>
-                                        <div className="text-4xl font-bold text-green-600">
-                                            {result.density.toFixed(4)}
-                                        </div>
-                                        <div className="text-lg font-semibold text-gray-700 mt-2">
-                                            {result.unit}
-                                        </div>
-                                    </div>
+                            <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
+                                <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                                    <Scale className="w-6 h-6 mr-2 text-green-600" />
+                                    Density Result
+                                </h2>
 
-                                    <div className="bg-white rounded-lg p-4 shadow-sm">
-                                        <h4 className="font-semibold text-gray-800 mb-2">Formula Used</h4>
-                                        <div className="text-center text-xl font-mono bg-gray-50 p-3 rounded">
-                                            {result.formula}
-                                        </div>
+                                <div className="bg-gradient-to-br from-blue-50 to-cyan-100 rounded-xl p-8 text-center">
+                                    <div className="text-sm font-semibold text-blue-700 mb-2">
+                                        {densityType.charAt(0).toUpperCase() + densityType.slice(1)} Density
                                     </div>
+                                    <div className="text-5xl md:text-6xl font-bold text-blue-600 mb-2">
+                                        {result.density.toFixed(4)}
+                                    </div>
+                                    <div className="text-2xl font-semibold text-blue-700">
+                                        {result.unit}
+                                    </div>
+                                </div>
 
-                                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                                        <h4 className="font-semibold text-blue-800 mb-2">Interpretation</h4>
-                                        <p className="text-sm text-gray-700">{result.interpretation}</p>
+                                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="bg-gray-50 rounded-xl p-6">
+                                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Formula Used</h3>
+                                        <p className="font-mono text-sm">{result.formula}</p>
+                                    </div>
+                                    <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6">
+                                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Interpretation</h3>
+                                        <p className="text-gray-700">{result.interpretation}</p>
                                     </div>
                                 </div>
                             </div>
                         )}
+                    </div>
 
-                        {/* Information Card */}
-                        <div className="bg-white rounded-xl shadow-lg p-6">
+                    {/* Sidebar */}
+                    <div className="space-y-6">
+                        {/* Density Types Info */}
+                        <div className="bg-white rounded-2xl shadow-lg p-6">
                             <h3 className="text-lg font-bold text-gray-800 mb-4">Density Types</h3>
                             <div className="space-y-4">
                                 <div>
                                     <h4 className="font-semibold text-blue-700">True Density</h4>
-                                    <p className="text-sm text-gray-600">Mass per unit volume excluding pores and voids</p>
+                                    <p className="text-sm text-gray-600">Mass excluding pores and voids.</p>
                                 </div>
                                 <div>
                                     <h4 className="font-semibold text-green-700">Bulk Density</h4>
-                                    <p className="text-sm text-gray-600">Mass per unit volume including pores and voids</p>
+                                    <p className="text-sm text-gray-600">Mass including pores and voids.</p>
                                 </div>
                                 <div>
                                     <h4 className="font-semibold text-blue-600">Tapped Density</h4>
-                                    <p className="text-sm text-gray-600">Bulk density after standardized tapping</p>
+                                    <p className="text-sm text-gray-600">Bulk density after tapping.</p>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Applications Card */}
-                        <div className="bg-yellow-50 rounded-xl shadow-lg p-6 border border-yellow-200">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                                <AlertCircle className="w-5 h-5 mr-2 text-yellow-600" />
-                                Pharmaceutical Applications
-                            </h3>
+                        {/* Applications */}
+                        <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-2xl shadow-lg p-6">
+                            <h3 className="text-lg font-bold text-gray-800 mb-4">Applications</h3>
                             <ul className="space-y-2 text-sm text-gray-600">
-                                <li>• Tablet formulation design</li>
-                                <li>• Capsule filling optimization</li>
-                                <li>• Powder flow characterization</li>
-                                <li>• Blending uniformity assessment</li>
-                                <li>• Packaging volume calculation</li>
-                                <li>• Quality control testing</li>
+                                <li>• Tablet formulation</li>
+                                <li>• Capsule filling</li>
+                                <li>• Powder flow</li>
+                                <li>• Quality control</li>
                             </ul>
                         </div>
-                    </div>
-                </div>
 
-                {/* Conversion Table */}
-                <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6">Density Conversion</h2>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="bg-gradient-to-r from-blue-50 to-green-50">
-                                    <th className="py-3 px-4 text-left font-semibold text-gray-700">Material</th>
-                                    <th className="py-3 px-4 text-left font-semibold text-gray-700">True Density (g/mL)</th>
-                                    <th className="py-3 px-4 text-left font-semibold text-gray-700">Bulk Density (g/mL)</th>
-                                    <th className="py-3 px-4 text-left font-semibold text-gray-700">Tapped Density (g/mL)</th>
-                                    <th className="py-3 px-4 text-left font-semibold text-gray-700">Typical Use</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr className="border-b border-gray-200">
-                                    <td className="py-3 px-4">Lactose Monohydrate</td>
-                                    <td className="py-3 px-4">1.52</td>
-                                    <td className="py-3 px-4">0.6-0.8</td>
-                                    <td className="py-3 px-4">0.7-0.9</td>
-                                    <td className="py-3 px-4">Filler/Diluent</td>
-                                </tr>
-                                <tr className="border-b border-gray-200 bg-gray-50">
-                                    <td className="py-3 px-4">Microcrystalline Cellulose</td>
-                                    <td className="py-3 px-4">1.5</td>
-                                    <td className="py-3 px-4">0.3-0.5</td>
-                                    <td className="py-3 px-4">0.4-0.6</td>
-                                    <td className="py-3 px-4">Binder/Filler</td>
-                                </tr>
-                                <tr className="border-b border-gray-200">
-                                    <td className="py-3 px-4">Calcium Phosphate</td>
-                                    <td className="py-3 px-4">2.9</td>
-                                    <td className="py-3 px-4">0.8-1.2</td>
-                                    <td className="py-3 px-4">1.0-1.4</td>
-                                    <td className="py-3 px-4">Filler</td>
-                                </tr>
-                                <tr className="bg-gray-50">
-                                    <td className="py-3 px-4">Magnesium Stearate</td>
-                                    <td className="py-3 px-4">1.1</td>
-                                    <td className="py-3 px-4">0.2-0.4</td>
-                                    <td className="py-3 px-4">0.3-0.5</td>
-                                    <td className="py-3 px-4">Lubricant</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        {/* Reference Table */}
+                        <div className="bg-white rounded-2xl shadow-lg p-6">
+                            <h3 className="text-lg font-bold text-gray-800 mb-4">Common Densities</h3>
+                            <div className="space-y-2 text-sm">
+                                <div className="flex justify-between"><span>Water</span><span className="font-semibold">1.0 g/mL</span></div>
+                                <div className="flex justify-between"><span>Lactose</span><span className="font-semibold">1.52 g/mL</span></div>
+                                <div className="flex justify-between"><span>MCC</span><span className="font-semibold">1.5 g/mL</span></div>
+                                <div className="flex justify-between"><span>Mg Stearate</span><span className="font-semibold">1.1 g/mL</span></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
