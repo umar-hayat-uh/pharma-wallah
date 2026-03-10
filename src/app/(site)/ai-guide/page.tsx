@@ -345,7 +345,8 @@ export default function AIGuidePage() {
               onKeyDown={handleKeyDown}
               onFocus={handleTextareaFocus}
               placeholder="Ask a pharmacy question… (Shift+Enter for new line)"
-              className="flex-1 min-w-0 resize-none bg-transparent outline-none text-sm text-gray-800 placeholder-gray-400 leading-relaxed py-0.5 max-h-36 overflow-y-auto"
+              className="flex-1 min-w-0 resize-none bg-transparent outline-none text-gray-800 placeholder-gray-400 leading-relaxed py-0.5 max-h-36 overflow-y-auto"
+              style={{ fontSize: "16px" }} // prevents iOS Safari auto-zoom (triggers when font-size < 16px)
             />
             <button
               onClick={handleSend}
