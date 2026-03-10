@@ -23,7 +23,7 @@ const TITLE = "Peptic Ulcer";
 const CAT = "GI Pathology";
 const SLIDE_ID = "peptic-ulcer";
 
-const IMAGES = ["/images/spotting/pathology/peptic-ulcer-sample.jpg", "/images/spotting/pathology/peptic-ulcer-mid.jpg", "/images/spotting/pathology/peptic-ulcer-high.jpg"] as const;
+const IMAGES = ["/images/spotting/pathology/peptic-ulcer-sample.jpeg", "/images/spotting/pathology/peptic-ulcer-mid.jpg", "/images/spotting/pathology/peptic-ulcer-high.jpg"] as const;
 const PO_URL = "https://www.pathologyoutlines.com/topic/stomachpepticulcer.html";
 const VIDEO_TITLE = "Peptic Ulcer Disease — Histopathology Lecture";
 const VIDEO_URL = "https://youtu.be/AnyoYvc_-ws?si=8-KD25TmtY53JJFa";

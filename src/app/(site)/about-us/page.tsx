@@ -20,10 +20,10 @@ const bgIcons = [
 
 export default function AboutPage() {
   const productionMembers = teamMembers.filter(m =>
-    ["Shayan Hussain","Umar Hayat","Jazil bin kashef","Sumaiya Saeed","Syed M. Ali","Rumaisa Farooqui","Muhammad Salman"].includes(m.name)
+    ["Shayan Hussain","Umar Hayat","Jazil bin kashef","Sumaiya Saeed","Syed M. Ali","Rumaisa Farooqui","Misbah Yameen","Muhammad Salman"].includes(m.name)
   );
   const marketingMembers = teamMembers.filter(m =>
-    ["Syed Tanzeel Ali","Romana Abbbas","Muhammad Dayyan"].includes(m.name)
+    ["Syed Tanzeel Ali","Romana Abbbas","Abdul Rafay","Muhammad Dayyan"].includes(m.name)
   );
 
   return (

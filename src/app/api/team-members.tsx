@@ -41,8 +41,18 @@ export
             imgSrc: "/images/mentor/user3.png"
         }, 
         {
+            name: "Misbah Yameen",
+            role: "Research & Content Collector",
+            imgSrc: "/images/mentor/user3.png"
+        },
+         {
             name: "Muhammad Salman",
             role: "Info-Graphics Creator",
+            imgSrc: "/images/mentor/user3.png"
+        },
+         {
+            name: "Abdul Rafay",
+            role: "second year representative",
             imgSrc: "/images/mentor/user3.png"
         },
          {

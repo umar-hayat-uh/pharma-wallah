@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, BookOpen, Award, Shuffle,
   CheckCircle, XCircle, RotateCcw, Trophy, ExternalLink,
-  ZoomIn, X, Images, Microscope as MicIcon,
+  ZoomIn, X, Images, Microscope as MicIcon, Clock, AlertTriangle,
 } from "lucide-react";
 import {
   Pill, FlaskConical, Beaker, Microscope, Stethoscope, Leaf, Dna, Activity,
@@ -47,7 +47,13 @@ const SLIDE_DATA = [
     ],
     options: ["Acute Appendicitis", "Chronic Appendicitis", "Crohn's Disease", "Mucinous Cystadenoma"],
     correctOptionIndex: 0,
-    definition: `Hyperplastic lymphoid follicles are present. Obstruction of lumen is present. Neutrophil exudate is present. Neutrophil exudate spread in submucosa. Inflamed serosal layer observed. Fibrin present in peritoneal surface due to inflammation.`,
+    definition: [
+      "Hyperplastic lymphoid follicles are present.",
+      "Obstruction of lumen is present.",
+      "Neutrophil exudate is present / Neutrophil exudate spread in Sub-mucosa.",
+      "Inflamed serosal layered observed.",
+      "Fibrin present in peritoneal surface due to inflammation.",
+    ],
     lessonDetailed: "Acute appendicitis is the commonest abdominal surgical emergency. Obstruction of the lumen (faecolith, lymphoid hyperplasia) leads to bacterial overgrowth and transmural inflammation. Neutrophilic infiltration of the muscularis propria is the histological hallmark. Mucosal ulceration, hyperplastic follicles, and peritoneal fibrinous exudate are characteristic. Gangrene and perforation follow if untreated.",
     keyFeatures: ["Hyperplastic lymphoid follicles", "Luminal obstruction", "Neutrophil exudate in submucosa", "Inflamed serosa", "Peritoneal fibrin"],
   },
@@ -63,7 +69,14 @@ const SLIDE_DATA = [
     ],
     options: ["Chronic Cholecystitis", "Acute Cholecystitis", "Gallbladder Carcinoma", "Cholesterolosis"],
     correctOptionIndex: 0,
-    definition: `Penetration of epithelium lined spaces penetrate into the gall bladder wall that form RAS (Rokitansky Aschoff Sinus). Mononuclear inflammatory cells are present. Sub-epithelial and sub-serosal fibrosis is present that leads to the shrinking of gall bladder. Hypertrophy of smooth muscles. Lamina propria is infiltrated by lymphocytes and plasma cells. Hypertrophy of muscularis.`,
+    definition: [
+      "Penetration of epithelium lined spaces penetrate into the gall bladder wall that form RAS (Rokitansky Aschoff Sinus).",
+      "Mononuclear inflammatory cells are present.",
+      "Sub-epithelial and sub-serosal fibrosis is present that leads to the shrinking of gall bladder.",
+      "Hypertrophy of smooth muscles.",
+      "Lamina propria is infiltrated by lymphocytes and plasma cells.",
+      "Hypertrophy of muscularis.",
+    ],
     lessonDetailed: "Chronic cholecystitis is almost always associated with gallstones. Repeated low-grade inflammation causes progressive fibrosis, wall thickening, and muscle hypertrophy. The pathognomonic feature is the Rokitansky–Aschoff sinus — epithelium-lined crypts herniating through the muscularis. The lamina propria shows lymphocytes and plasma cells.",
     keyFeatures: ["Rokitansky–Aschoff Sinuses (RAS)", "Mononuclear / lymphocyte infiltrate", "Sub-epithelial and sub-serosal fibrosis", "Smooth muscle hypertrophy", "Lamina propria: lymphocytes + plasma cells"],
   },
@@ -79,7 +92,12 @@ const SLIDE_DATA = [
     ],
     options: ["Gastritis", "Peptic Ulcer", "Gastric Carcinoma", "Ménétrier Disease"],
     correctOptionIndex: 0,
-    definition: `Lymphocytes infiltration is present. Neutrophil infiltration is present in the epithelium layer. Spiral shaped H.pylori is also observed. The epithelium layer forms gastric pits.`,
+    definition: [
+      "Lymphocytes infiltration is present.",
+      "Neutrophil infiltration is present in the epithelium layer.",
+      "Spiral shaped H.pylori is also observed.",
+      "The epithelium layer forms gastric pits.",
+    ],
     lessonDetailed: "H. pylori is the most common cause of chronic active gastritis. The mucosa shows lymphoplasmacytic infiltration (chronic) and neutrophilic infiltration of surface epithelium and gastric pits (active). H. pylori are visible in the mucus layer. Chronic gastritis predisposes to peptic ulcer and gastric adenocarcinoma.",
     keyFeatures: ["Lymphocyte infiltration in lamina propria", "Neutrophil infiltration of epithelium", "Spiral-shaped H. pylori", "Gastric pit formation"],
   },
@@ -95,7 +113,15 @@ const SLIDE_DATA = [
     ],
     options: ["Peptic Ulcer", "Gastric Carcinoma", "Gastritis", "Crohn's Disease"],
     correctOptionIndex: 0,
-    definition: `Degeneration of mucosal epithelium. Blood vessels present at the ulcer base. Inflammatory cells mostly lymphocytes, plasma cells and eosinophils are present. A mesh work of fibrino inflammatory exudate is present that is followed by a zone of necrosis. Fibrosis / Scarring zone is present. Sharply demarcated edges are present. Perforation of ulcer leads to acute peritonitis.`,
+    definition: [
+      "Degeneration of mucosal epithelium.",
+      "Blood vessels present at the ulcer base.",
+      "Inflammatory cells mostly lymphocytes, plasma cells and eosinophils are present.",
+      "A mesh work of fibrino inflammatory exudate is present that is followed by a zone of necrosis.",
+      "Fibrosis / Scarring zone is present.",
+      "Sharply demarcated edges are present.",
+      "Perforation of ulcer leads to acute peritonitis.",
+    ],
     lessonDetailed: "Peptic ulcers are mucosal defects penetrating through the muscularis mucosae. Classic four-zone histology: (1) fibrinopurulent exudate, (2) coagulation necrosis, (3) granulation tissue with vessels, (4) fibrous/scar tissue. H. pylori and NSAIDs are the major aetiological factors.",
     keyFeatures: ["Sharply demarcated edges", "Mucosal epithelium degeneration", "Fibrinoinflammatory exudate + necrosis", "Blood vessels at ulcer base", "Fibrosis / scarring zone"],
   },
@@ -111,7 +137,13 @@ const SLIDE_DATA = [
     ],
     options: ["TB Granuloma", "Sarcoidosis", "Fungal Granuloma", "Foreign Body Granuloma"],
     correctOptionIndex: 0,
-    definition: `Caseous necrosis is present at the center. Giant cells surrounded the caseation. Infiltration of lymphocytes. Few collagen strands surrounding the lymphocytes. Macrophages type of cells are also present.`,
+    definition: [
+      "Caseous necrosis is present at the center.",
+      "Giant cells surrounded the caseation.",
+      "Infiltration of lymphocytes.",
+      "Few collagen strands surrounding the lymphocytes.",
+      "Macrophages type of cells are also present.",
+    ],
     lessonDetailed: "Tuberculosis produces the classic caseating granuloma: central caseous necrosis surrounded by epithelioid macrophages, Langhans giant cells (peripheral horseshoe nuclei), and a rim of lymphocytes with outer collagen fibrosis. ZN stain or PCR confirms Mycobacterium tuberculosis.",
     keyFeatures: ["Central caseous necrosis", "Langhans giant cells surrounding caseation", "Peripheral lymphocytic infiltration", "Collagen strands around lymphocytes", "Epithelioid macrophages"],
   },
@@ -127,7 +159,13 @@ const SLIDE_DATA = [
     ],
     options: ["Leiomyoma", "Leiomyosarcoma", "Rhabdomyoma", "Fibroma"],
     correctOptionIndex: 0,
-    definition: `Intersecting fascicles of spindle shaped smooth muscle cells with elongated cigar shaped nuclei. The cells have abundant eosinophilic cytoplasm. Variable amount of collagen is present between the muscles bundle. They usually have no significant nuclear pleomorphism and hyperchromasia. Usually have low mitotic activity.`,
+    definition: [
+      "Intersecting fascicles of spindle shaped smooth muscle cells with elongated cigar shaped nuclei.",
+      "The cells have abundant eosinophilic cytoplasm.",
+      "Variable amount of collagen is present between the muscles bundle.",
+      "They usually have no significant nuclear pleomorphism and hyperchromasia.",
+      "Usually have low mitotic activity.",
+    ],
     lessonDetailed: "Leiomyomas (fibroids) are the commonest uterine neoplasms. Gross: firm, whorled, white-grey nodules. Microscopy: interlacing smooth muscle fascicles with cigar-shaped nuclei, eosinophilic cytoplasm, and <5 mitoses/10 HPF. IHC: SMA+, Desmin+.",
     keyFeatures: ["Intersecting fascicles of spindle smooth muscle cells", "Cigar-shaped (blunt-ended) nuclei", "Abundant eosinophilic cytoplasm", "Low / no mitotic activity", "No nuclear pleomorphism or hyperchromasia"],
   },
@@ -143,7 +181,13 @@ const SLIDE_DATA = [
     ],
     options: ["Lipoma", "Liposarcoma", "Fibroma", "Myxoma"],
     correctOptionIndex: 0,
-    definition: `It is composed of lobules of mature fat cells (adipocytes) with clear cytoplasm and peripherally located nuclei. lobules are separated by delicate fibrous septa. There is no nuclear polymorphism and hyperchromasia. Some lipomas have thick fibrous capsules while others may blend into surrounding fat tissues. There is no increased mitotic activity that distinguish it with lipocarcinoma.`,
+    definition: [
+      "It is composed of lobules of mature fat cells (adipocytes) with clear cytoplasm and peripherally located nuclei.",
+      "lobules are separated by delicate fibrous septa.",
+      "There is no nuclear polymorphism and hyperchromasia.",
+      "Some lipomas have thick fibrous capsules while others may blend into surrounding fat tissues.",
+      "There is no increased mitotic activity that distinguish it with lipocarcinoma.",
+    ],
     lessonDetailed: "Lipomas are the commonest soft-tissue tumour in adults. Microscopically: uniform mature adipocytes with eccentric nuclei and clear cytoplasm, arranged in lobules separated by thin fibrovascular septa. Absence of nuclear atypia, lipoblasts, and mitoses distinguishes lipoma from well-differentiated liposarcoma.",
     keyFeatures: ["Lobules of mature adipocytes", "Clear cytoplasm, peripheral nuclei", "Delicate fibrous septa between lobules", "No nuclear polymorphism / hyperchromasia", "No mitotic activity"],
   },
@@ -159,7 +203,13 @@ const SLIDE_DATA = [
     ],
     options: ["Squamous Cell Carcinoma", "Adenocarcinoma", "Basal Cell Carcinoma", "Large Cell Carcinoma"],
     correctOptionIndex: 0,
-    definition: `Large polygonal cells with abundant eosinophilic cytoplasm. Concentric whorl arrangement of keratinized cell. Desmosomal connections between the adjacent squamous cells. Lymphocytic infiltration also present sometimes plasma cells are also present with it. Tumor cells infiltrate the underline stroma often breaking the basement membrane.`,
+    definition: [
+      "Large polygonal cells with abundant eosinophilic cytoplasm.",
+      "Concentric whorl arrangement of keratinized cell.",
+      "Desmosomal connections between the adjacent squamous cells.",
+      "Lymphocytic infiltration also present sometimes plasma cells are also present with it.",
+      "Tumor cells infiltrate the underline stroma often breaking the basement membrane.",
+    ],
     lessonDetailed: "SCC shows keratin pearls (concentric whorls of keratinised squamous cells), individual cell keratinisation, intercellular bridges (desmosomes), stromal invasion with desmoplasia, and lymphocytic host response. Common sites: skin, lung, oesophagus, cervix.",
     keyFeatures: ["Large polygonal cells with eosinophilic cytoplasm", "Keratin pearls (concentric whorled keratinisation)", "Desmosomal intercellular bridges", "Lymphocytic ± plasma cell infiltrate", "Stromal invasion / BM disruption"],
   },
@@ -175,7 +225,12 @@ const SLIDE_DATA = [
     ],
     options: ["Hodgkin's Disease", "Non-Hodgkin Lymphoma", "Reactive Lymphadenitis", "Metastatic Carcinoma"],
     correctOptionIndex: 0,
-    definition: `There is a presence of large binucleated or multinucleated RSC ( Rerd Sternberg Cell). It has a prominent eosinophilic nucleoli in each nucleus. It has abundant eosinophilic cytoplasm. It is derived from the germinal disc of B-cells.`,
+    definition: [
+      "There is a presence of large binucleated or multinucleated RSC ( Rerd Sternberg Cell).",
+      "It has a prominent eosinophilic nucleoli in each nucleus.",
+      "It has abundant eosinophilic cytoplasm.",
+      "It is derived from the germinal disc of B-cells.",
+    ],
     lessonDetailed: "Hodgkin's lymphoma is characterised by Reed–Sternberg cells — large cells with bilobed or multinucleated nuclei, each with a huge eosinophilic 'owl-eye' nucleolus, set against an inflammatory background. IHC: CD15+, CD30+. Classic subtypes: nodular sclerosis (commonest), mixed cellularity.",
     keyFeatures: ["Large binucleated / multinucleated Reed–Sternberg cells", "Prominent eosinophilic 'owl-eye' nucleoli", "Abundant eosinophilic cytoplasm", "Derived from germinal-centre B-cells", "Mixed inflammatory background"],
   },
@@ -191,7 +246,12 @@ const SLIDE_DATA = [
     ],
     options: ["Adenocarcinoma", "Squamous Cell Carcinoma", "Adenoma", "Mucinous Cystadenocarcinoma"],
     correctOptionIndex: 0,
-    definition: `Metastasis is found. There is a huge amount of mucous inside the gland. Cancer cells infiltered through the muscularis mucosa. Infiltration of lymphocytes and plasma cells.`,
+    definition: [
+      "Metastasis is found.",
+      "There is a huge amount of mucous inside the gland.",
+      "Cancer cells infiltered through the muscularis mucosa.",
+      "Infiltration of lymphocytes and plasma cells.",
+    ],
     lessonDetailed: "Adenocarcinoma: irregular glandular structures lined by pleomorphic columnar cells, abundant intraluminal mucin, invasion through muscularis mucosae, desmoplastic stromal reaction, and lymphovascular invasion. Common primaries: colorectum, stomach, lung, pancreas, breast.",
     keyFeatures: ["Irregular malignant glandular structures", "Abundant intraluminal mucin", "Infiltration through muscularis mucosa", "Lymphocyte + plasma cell infiltrate", "Evidence of metastasis"],
   },
@@ -207,7 +267,11 @@ const SLIDE_DATA = [
     ],
     options: ["Fatty Liver", "Cirrhosis", "Hepatitis", "Chronic Venous Congestion"],
     correctOptionIndex: 0,
-    definition: `central vein is dilated. Balloon shaped hepatocytes are present. Fatty cells are present.`,
+    definition: [
+      "central vein is dilated.",
+      "Balloon shaped hepatocytes are present.",
+      "Fatty cells are present.",
+    ],
     lessonDetailed: "Hepatic steatosis is accumulation of lipid within hepatocytes, primarily as macro-vesicular fat. Causes: alcohol, obesity, diabetes (NAFLD/NASH), drugs. Ballooned hepatocytes — swollen cells with pale rarefied cytoplasm — indicate cellular injury. Progression: steatosis → steatohepatitis → cirrhosis.",
     keyFeatures: ["Dilated central vein", "Balloon-shaped hepatocytes", "Macro-vesicular fat (clear cytoplasmic vacuoles)"],
   },
@@ -223,7 +287,13 @@ const SLIDE_DATA = [
     ],
     options: ["Chronic Venous Congestion", "Fatty Liver", "Hepatic Cirrhosis", "Budd–Chiari Syndrome"],
     correctOptionIndex: 0,
-    definition: `Central veins (sinusoidal) are dilated and congested. Central hemorrhagic necrosis are present. Fatty changes are observed. Portal triad is present. Eosinophilic cytoplasm is present.`,
+    definition: [
+      "Central veins (sinusoidal) are dilated and congested.",
+      "Central hemorrhagic necrosis are present.",
+      "Fatty changes are observed.",
+      "Portal triad is present.",
+      "Eosinophilic cytoplasm is present.",
+    ],
     lessonDetailed: "Chronic passive congestion (cardiac liver) from right heart failure. Macroscopic 'nutmeg' pattern. Microscopy: dilated sinusoids and central veins, centrilobular haemorrhagic necrosis, periportal fatty change, portal triads relatively preserved, eventual centrilobular fibrosis (cardiac cirrhosis).",
     keyFeatures: ["Dilated central veins and sinusoids", "Centrilobular haemorrhagic necrosis", "Periportal fatty changes", "Portal triad preserved", "Eosinophilic hepatocyte cytoplasm"],
   },
@@ -239,7 +309,13 @@ const SLIDE_DATA = [
     ],
     options: ["Benign Prostatic Hyperplasia", "Prostatic Carcinoma", "Prostatitis", "Prostatic Intraepithelial Neoplasia"],
     correctOptionIndex: 0,
-    definition: `Cystic spaces are present. Diverticulum is present. Glandular papillary projections are present. Dilated bladder with hypertrophic muscles band are present. Glands lined by double layer epithelium cell, inner columnar and outer cuboidal cells.`,
+    definition: [
+      "Cystic spaces are present.",
+      "Diverticulum is present.",
+      "Glandular papillary projections are present.",
+      "Dilated bladder with hypertrophic muscles band are present.",
+      "Glands lined by double layer epithelium cell, inner columnar and outer cuboidal cells.",
+    ],
     lessonDetailed: "BPH is hyperplasia of the periurethral transitional zone driven by DHT. Key histology: enlarged glands with papillary projections lined by double-layer epithelium — inner tall columnar secretory cells over basal cuboidal cells. Corpora amylacea may be present. Secondary bladder changes: trabeculation, diverticula, detrusor hypertrophy.",
     keyFeatures: ["Cystic dilated glandular spaces", "Glandular papillary projections", "Double-layer epithelium (columnar + cuboidal)", "Bladder diverticulum / detrusor hypertrophy"],
   },
@@ -255,7 +331,11 @@ const SLIDE_DATA = [
     ],
     options: ["Fibroadenoma", "Phyllodes Tumour", "Breast Carcinoma", "Fibrocystic Change"],
     correctOptionIndex: 0,
-    definition: `Small acinar and ductus structures are present which resembles the normal breast tissue. Fibrous tissues are arranged around the acinar. Epithelium formed clefts due to the pressure from the projecting fibrous tissue.`,
+    definition: [
+      "Small acinar and ductus structures are present which resembles the normal breast tissue.",
+      "Fibrous tissues are arranged around the acinar.",
+      "Epithelium formed clefts due to the pressure from the projecting fibrous tissue.",
+    ],
     lessonDetailed: "Fibroadenoma is the commonest benign breast tumour in women under 30. Biphasic: epithelial + stromal. Two patterns: pericanalicular (fibrous grows around rounded acini) and intracanalicular (fibrous compresses ducts into clefts). Epithelium is benign without atypia. Well-circumscribed, encapsulated.",
     keyFeatures: ["Acinar and ductal structures resembling normal breast", "Fibrous stroma arranged around acini", "Epithelial clefts from fibrous compression", "Biphasic (epithelial + stromal)", "Well-circumscribed, no atypia"],
   },
@@ -271,7 +351,12 @@ const SLIDE_DATA = [
     ],
     options: ["Carcinoma In Situ", "Severe Dysplasia (CIN 3)", "Invasive Carcinoma", "High-grade VAIN"],
     correctOptionIndex: 0,
-    definition: `Presence of SMILE (Stratified Mucin Intraepithelial Lesions). Polyhedral two columnar cells with eosinophilic to mucinous cytoplasm are present. There is no clear stratification and cells are undifferentiated. Due to increase in mitotic activity abnormal alter cells are filling the crypts.`,
+    definition: [
+      "Presence of SMILE (Stratified Mucin Intraepithelial Lesions).",
+      "Polyhedral two columnar cells with eosinophilic to mucinous cytoplasm are present.",
+      "There is no clear stratification and cells are undifferentiated.",
+      "Due to increase in mitotic activity abnormal alter cells are filling the crypts.",
+    ],
     lessonDetailed: "CIS is full-thickness neoplastic transformation without stromal invasion. SMILE (Stratified Mucin-secreting Intraepithelial Lesion) involves endocervical crypts. Features: complete loss of maturation, polyhedral undifferentiated cells, mitoses at all levels, no stratification, crypt involvement without invasion. HPV high-risk types (16, 18) are aetiological.",
     keyFeatures: ["SMILE (Stratified Mucin Intraepithelial Lesions)", "Polyhedral columnar cells with mucinous cytoplasm", "No stratification / undifferentiated", "Increased mitosis throughout", "Abnormal cells filling crypts"],
   },
@@ -301,26 +386,31 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-function calculateMatch(userText: string, definition: string): number {
-  const STOP = new Set([
-    "the", "and", "for", "with", "that", "this", "are", "was", "from", "into",
-    "have", "also", "they", "its", "not", "but", "all", "has", "our", "more",
-    "some", "been", "their", "there", "when", "which", "present", "cells", "cell"
+function calculateMatch(userText: string, definition: string[]): number {
+  const defText = definition.join(" ");
+
+  const STOP = new Set<string>([
+    "the", "and", "for", "with", "that", "this", "are", "was", "from", "into", "have", "also",
+    "they", "its", "not", "but", "all", "has", "our", "more", "some", "been", "their", "there",
+    "when", "which", "present", "cells", "cell",
   ]);
 
-  const tok = (s: string) =>
+  const tok = (s: string): string[] =>
     s.toLowerCase()
       .replace(/[^\w\s]/g, " ")
       .split(/\s+/)
-      .filter(w => w.length > 3 && !STOP.has(w));
+      .filter((w: string) => w.length > 3 && !STOP.has(w));
 
-  const userSet = new Set(tok(userText));
-  const defToks = tok(definition);
-  const defSet = new Set(defToks);
+  const userSet = new Set<string>(tok(userText));
+  const defSet = new Set<string>(tok(defText));
 
   if (!defSet.size) return 0;
 
-  const matches = Array.from(userSet).filter(w => defSet.has(w)).length;
+  let matches = 0;
+
+  userSet.forEach((w) => {
+    if (defSet.has(w)) matches++;
+  });
 
   return Math.min(100, Math.round((matches / defSet.size) * 100));
 }
@@ -474,8 +564,8 @@ function ImageGallery({ images, poUrl }: { images: Slide["images"]; poUrl: strin
               onClick={() => setActiveIdx(i)}
               title={`View ${powerLabel(i)} power`}
               className={`relative flex-1 rounded-xl overflow-hidden border-2 transition-all duration-200 group/t ${i === activeIdx
-                  ? "border-indigo-500 shadow-md shadow-indigo-200/40 scale-[1.03]"
-                  : "border-gray-200 hover:border-indigo-300 hover:scale-[1.02]"
+                ? "border-indigo-500 shadow-md shadow-indigo-200/40 scale-[1.03]"
+                : "border-gray-200 hover:border-indigo-300 hover:scale-[1.02]"
                 }`}
               style={{ height: 58 }}
             >
@@ -571,12 +661,37 @@ export default function SpottingTestPage() {
   );
   const [testCompleted, setTestCompleted] = useState(false);
 
+  // ── 20-minute countdown timer ──────────────────────────────────────────────
+  const TOTAL_SECONDS = 20 * 60; // 1200 s
+  const [timeLeft, setTimeLeft] = useState(TOTAL_SECONDS);
+  const [timerActive, setTimerActive] = useState(false);
+  const [timerExpired, setTimerExpired] = useState(false);
+
+  // Start timer once component mounts
   useEffect(() => {
     const shuffled = shuffle([...SLIDE_DATA]);
     setSlides(shuffled);
     setAnswers(shuffled.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
     setMounted(true);
+    setTimerActive(true);
   }, []);
+
+  // Tick every second
+  useEffect(() => {
+    if (!timerActive || testCompleted) return;
+    if (timeLeft <= 0) {
+      setTimerExpired(true);
+      setTimerActive(false);
+      setTestCompleted(true);
+      return;
+    }
+    const id = setInterval(() => setTimeLeft(t => t - 1), 1000);
+    return () => clearInterval(id);
+  }, [timerActive, timeLeft, testCompleted]);
+
+  const timerMins = String(Math.floor(timeLeft / 60)).padStart(2, "0");
+  const timerSecs = String(timeLeft % 60).padStart(2, "0");
+  const timerUrgent = timeLeft <= 120; // last 2 min → red pulse
 
   const current = slides[currentIndex];
   const currentAnswer = answers[currentIndex];
@@ -645,7 +760,12 @@ export default function SpottingTestPage() {
             <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 text-white text-xs font-bold uppercase tracking-widest mb-4`}>
               <Trophy className="w-3.5 h-3.5" /> Test Complete
             </span>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-6">Your Results</h1>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4">Your Results</h1>
+            {timerExpired && (
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/80 text-white text-xs font-bold mb-4 border border-red-400/60">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Time's up! 20 minutes elapsed.
+              </div>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
                 { n: `${totalCorrect}/${slides.length}`, l: "Correct Slides" },
@@ -785,10 +905,10 @@ export default function SpottingTestPage() {
                   onClick={() => setCurrentIndex(i)}
                   title={`Slide ${i + 1}`}
                   className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-[9px] sm:text-xs font-extrabold transition-all duration-200 ${i === currentIndex
-                      ? "bg-white text-indigo-700 shadow-md scale-110"
-                      : answers[i].submitted
-                        ? "bg-white/30 text-white"
-                        : "bg-white/15 text-white/60 hover:bg-white/25"
+                    ? "bg-white text-indigo-700 shadow-md scale-110"
+                    : answers[i].submitted
+                      ? "bg-white/30 text-white"
+                      : "bg-white/15 text-white/60 hover:bg-white/25"
                     }`}
                 >
                   {answers[i].submitted
@@ -807,8 +927,16 @@ export default function SpottingTestPage() {
               transition={{ duration: 0.4, ease: "easeOut" }}
             />
           </div>
-          <div className="flex justify-between text-xs text-white/60 mt-1.5">
+          <div className="flex justify-between items-center text-xs text-white/60 mt-1.5">
             <span>Slide {currentIndex + 1} of {slides.length}</span>
+            {/* ── Timer pill ── */}
+            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-extrabold text-sm transition-all ${timerUrgent
+              ? "bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/40"
+              : "bg-white/20 text-white"
+              }`}>
+              <Clock className="w-3.5 h-3.5" />
+              {timerMins}:{timerSecs}
+            </div>
             <span>{submittedCount}/{slides.length} answered</span>
           </div>
         </div>
@@ -889,10 +1017,10 @@ export default function SpottingTestPage() {
                           key={origIdx}
                           onClick={() => setOption(origIdx)}
                           className={`flex items-center gap-3 p-3 sm:p-3.5 rounded-xl border-2 transition-all duration-200 ${state === "correct" ? "border-green-400 bg-green-50 cursor-default" :
-                              state === "wrong" ? "border-red-400 bg-red-50 cursor-default" :
-                                state === "selected" ? "border-indigo-500 bg-indigo-50 cursor-pointer" :
-                                  currentAnswer.submitted ? "border-gray-100 bg-gray-50/50 cursor-default opacity-40" :
-                                    "border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/30 cursor-pointer"
+                            state === "wrong" ? "border-red-400 bg-red-50 cursor-default" :
+                              state === "selected" ? "border-indigo-500 bg-indigo-50 cursor-pointer" :
+                                currentAnswer.submitted ? "border-gray-100 bg-gray-50/50 cursor-default opacity-40" :
+                                  "border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/30 cursor-pointer"
                             }`}
                         >
                           <input
@@ -902,7 +1030,7 @@ export default function SpottingTestPage() {
                             className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 shrink-0"
                           />
                           <span className={`text-sm font-semibold flex-1 ${state === "correct" ? "text-green-800" :
-                              state === "wrong" ? "text-red-700" : "text-gray-800"
+                            state === "wrong" ? "text-red-700" : "text-gray-800"
                             }`}>{text}</span>
                           {currentAnswer.submitted && state === "correct" && <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />}
                           {currentAnswer.submitted && state === "wrong" && <XCircle className="w-4 h-4 text-red-500 shrink-0" />}
@@ -995,9 +1123,16 @@ export default function SpottingTestPage() {
                           <p className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400 mb-2">
                             Expected Points of Recognition
                           </p>
-                          <div className="text-xs sm:text-sm text-gray-700 bg-gray-50 border border-gray-200 p-3 rounded-xl leading-relaxed whitespace-pre-line">
-                            {current.definition}
-                          </div>
+                          <ol className="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-1.5">
+                            {current.definition.map((point, pi) => (
+                              <li key={pi} className="flex gap-2 text-xs sm:text-sm text-gray-700 leading-relaxed">
+                                <span className="w-5 h-5 rounded-md bg-indigo-100 border border-indigo-200 flex items-center justify-center text-[9px] font-extrabold text-indigo-700 shrink-0 mt-0.5">
+                                  {pi + 1}
+                                </span>
+                                <span>{point}</span>
+                              </li>
+                            ))}
+                          </ol>
                         </div>
                         <div>
                           <p className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400 mb-2">
