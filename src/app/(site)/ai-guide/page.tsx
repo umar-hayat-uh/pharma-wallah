@@ -63,18 +63,59 @@ export default function AIGuidePage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isNearBottomRef = useRef(true);
 
-  // Set exact height = viewport minus this element's top offset
-  // This is what makes it fit perfectly under any navbar
+  // ─── Layout: fit exactly in the visible viewport ───────────────────────────
+  // Problem on iOS: when the software keyboard opens, window.innerHeight does NOT
+  // shrink — only visualViewport.height does. So we must use visualViewport to
+  // get the real available height, and also account for the navbar offset.
   useEffect(() => {
     const el = wrapperRef.current;
     if (!el) return;
+
     const update = () => {
+      // visualViewport gives the actual visible area after the keyboard opens.
+      // Falls back to window.innerHeight on browsers that don't support it.
+      const viewportHeight = window.visualViewport
+        ? window.visualViewport.height
+        : window.innerHeight;
+
+      // offsetTop relative to the visualViewport origin (accounts for navbar).
+      // We use getBoundingClientRect which is always relative to the viewport.
       const top = el.getBoundingClientRect().top;
-      el.style.height = `${window.innerHeight - top}px`;
+
+      el.style.height = `${viewportHeight - top}px`;
     };
+
     update();
+
+    // visualViewport fires 'resize' when the keyboard opens/closes on iOS/Android.
+    // window resize handles desktop and orientation changes.
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", update);
+      window.visualViewport.addEventListener("scroll", update);
+    }
     window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
+    window.addEventListener("orientationchange", update);
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", update);
+        window.visualViewport.removeEventListener("scroll", update);
+      }
+      window.removeEventListener("resize", update);
+      window.removeEventListener("orientationchange", update);
+    };
+  }, []);
+
+  // Scroll to bottom when keyboard opens so the latest message stays visible
+  useEffect(() => {
+    const handleViewportResize = () => {
+      // Small delay lets the layout repaint first
+      setTimeout(() => scrollToBottom(true), 50);
+    };
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", handleViewportResize);
+      return () => window.visualViewport!.removeEventListener("resize", handleViewportResize);
+    }
   }, []);
 
   // Auto-resize textarea
@@ -143,9 +184,13 @@ export default function AIGuidePage() {
     requestAnimationFrame(() => textareaRef.current?.focus({ preventScroll: true }));
   };
 
+  // When textarea is focused on mobile, scroll messages to bottom so the
+  // last message is visible above the keyboard
+  const handleTextareaFocus = () => {
+    setTimeout(() => scrollToBottom(true), 300);
+  };
+
   return (
-    // wrapperRef gets its height set dynamically to (100vh - its own top offset)
-    // so it always fits exactly in the space below the navbar — no overflow, no gap
     <div
       ref={wrapperRef}
       className="relative flex flex-col overflow-hidden bg-gradient-to-b from-slate-50 via-white to-green-50/20"
@@ -165,7 +210,7 @@ export default function AIGuidePage() {
       </div>
 
       {/* HEADER */}
-      <header className="flex-shrink-0 bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm z-10 mt-9">
+      <header className="flex-shrink-0 bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm z-10 mt-9 sm:mt-8">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <div className="relative flex-shrink-0">
             <div className="p-2 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl shadow">
@@ -265,7 +310,7 @@ export default function AIGuidePage() {
           <AnimatePresence>
             {error && (
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex justify-center">
-                <div className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl border border-red-200 text-xs shadow-sm max-w-[90%]">
+                <div className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl border border-gray-200 text-xs shadow-sm max-w-[90%]">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
                   <span>{error}</span>
                 </div>
@@ -298,6 +343,7 @@ export default function AIGuidePage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
+              onFocus={handleTextareaFocus}
               placeholder="Ask a pharmacy question… (Shift+Enter for new line)"
               className="flex-1 min-w-0 resize-none bg-transparent outline-none text-sm text-gray-800 placeholder-gray-400 leading-relaxed py-0.5 max-h-36 overflow-y-auto"
             />
