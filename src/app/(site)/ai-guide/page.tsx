@@ -1,40 +1,15 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Bot, User, Sparkles, AlertCircle } from "lucide-react";
+import { Send, Bot, User, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-// Import icons for background (same set as other pages)
 import {
-  Pill,
-  FlaskConical,
-  Beaker,
-  Microscope,
-  Atom,
-  Dna,
-  HeartPulse,
-  Leaf,
-  Syringe,
-  TestTube,
-  Tablet,
-  ClipboardList,
-  Stethoscope,
-  Bandage,
-  Droplet,
-  Eye,
-  Bone,
-  Brain,
-  Heart,
-  Activity,
-  AlertCircle as AlertIcon,
-  Scissors,
-  Thermometer,
-  Wind,
-  Droplets,
-  FlaskRound,
-  Scale,
-  Calculator,
+  Pill, FlaskConical, Beaker, Microscope, Atom, Dna, HeartPulse, Leaf,
+  Syringe, TestTube, Tablet, ClipboardList, Stethoscope, Bandage, Droplet,
+  Eye, Bone, Brain, Heart, Activity, AlertCircle as AlertIcon, Scissors,
+  Thermometer, Wind, Droplets, FlaskRound, Scale, Calculator,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -43,61 +18,27 @@ interface Message {
   content: string;
 }
 
-// Background icon setup
-interface BgIconItem {
-  Icon: LucideIcon;
-  color: string;
-}
-
-const iconList: BgIconItem[] = [
-  { Icon: Pill, color: "text-blue-800/10" },
-  { Icon: FlaskConical, color: "text-green-800/10" },
-  { Icon: Beaker, color: "text-purple-800/10" },
-  { Icon: Microscope, color: "text-amber-800/10" },
-  { Icon: Atom, color: "text-blue-800/10" },
-  { Icon: Dna, color: "text-green-800/10" },
-  { Icon: HeartPulse, color: "text-purple-800/10" },
-  { Icon: Leaf, color: "text-amber-800/10" },
-  { Icon: Syringe, color: "text-blue-800/10" },
-  { Icon: TestTube, color: "text-green-800/10" },
-  { Icon: Tablet, color: "text-purple-800/10" },
-  { Icon: ClipboardList, color: "text-amber-800/10" },
-  { Icon: Stethoscope, color: "text-blue-800/10" },
-  { Icon: Bandage, color: "text-green-800/10" },
-  { Icon: Droplet, color: "text-purple-800/10" },
-  { Icon: Eye, color: "text-amber-800/10" },
-  { Icon: Bone, color: "text-blue-800/10" },
-  { Icon: Brain, color: "text-green-800/10" },
-  { Icon: Heart, color: "text-purple-800/10" },
-  { Icon: Activity, color: "text-amber-800/10" },
-  { Icon: AlertIcon, color: "text-blue-800/10" },
-  { Icon: Scissors, color: "text-green-800/10" },
-  { Icon: Thermometer, color: "text-purple-800/10" },
-  { Icon: Wind, color: "text-amber-800/10" },
-  { Icon: Droplets, color: "text-green-800/10" },
-  { Icon: FlaskRound, color: "text-purple-800/10" },
-  { Icon: Scale, color: "text-blue-800/10" },
-  { Icon: Calculator, color: "text-green-800/10" },
+const iconList: LucideIcon[] = [
+  Pill, FlaskConical, Beaker, Microscope, Atom, Dna, HeartPulse, Leaf,
+  Syringe, TestTube, Tablet, ClipboardList, Stethoscope, Bandage, Droplet,
+  Eye, Bone, Brain, Heart, Activity, AlertIcon, Scissors,
+  Thermometer, Wind, Droplets, FlaskRound, Scale, Calculator,
 ];
 
-// Generate 40 background icons with varied colors
-const bgIcons: BgIconItem[] = [];
-for (let i = 0; i < 40; i++) {
-  const item = iconList[i % iconList.length];
-  bgIcons.push({
-    Icon: item.Icon,
-    color:
-      i % 4 === 0
-        ? "text-blue-800/10"
-        : i % 4 === 1
-        ? "text-green-800/10"
-        : i % 4 === 2
-        ? "text-purple-800/10"
-        : "text-amber-800/10",
-  });
-}
+const colorCycle = [
+  "text-blue-900/[0.06]", "text-green-900/[0.06]",
+  "text-purple-900/[0.06]", "text-amber-900/[0.06]",
+];
 
-// Suggested questions for quick start
+const bgIcons = Array.from({ length: 36 }, (_, i) => ({
+  Icon: iconList[i % iconList.length],
+  color: colorCycle[i % 4],
+  size: 28 + (i * 7) % 60,
+  left: `${(i * 13) % 90 + 5}%`,
+  top: `${(i * 19) % 90 + 5}%`,
+  rotate: (i * 23) % 360,
+}));
+
 const suggestedQuestions = [
   "What are the main classes of beta-lactam antibiotics?",
   "Explain the mechanism of action of ACE inhibitors.",
@@ -110,77 +51,72 @@ export default function AIGuidePage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content:
-        "Hi! I'm **Pharmawallah AI Assistant**, your pharmacy tutor. Ask me anything about drug mechanisms, classifications, calculations, or study tips!",
+      content: "Hi! I'm **Pharmawallah AI Assistant**, your pharmacy tutor. Ask me anything about drug mechanisms, classifications, calculations, or study tips!",
     },
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const isNearBottomRef = useRef(true);
+
+  // Set exact height = viewport minus this element's top offset
+  // This is what makes it fit perfectly under any navbar
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    const update = () => {
+      const top = el.getBoundingClientRect().top;
+      el.style.height = `${window.innerHeight - top}px`;
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
 
   // Auto-resize textarea
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = `${Math.min(ta.scrollHeight, 140)}px`;
   }, [input]);
 
-  // Check if user is near bottom
-  const isUserNearBottom = useCallback(() => {
-    if (!messagesContainerRef.current) return true;
-    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
-    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-    return distanceFromBottom < 100; // within 100px of bottom
+  const updateNearBottom = useCallback(() => {
+    const el = messagesRef.current;
+    if (!el) return;
+    isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
   }, []);
 
-  // Scroll to bottom if user was near bottom
-  const scrollToBottomIfNeeded = useCallback(() => {
-    if (shouldAutoScroll && isUserNearBottom()) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [shouldAutoScroll, isUserNearBottom]);
-
-  // Listen for user scroll to disable auto-scroll if they scroll up
-  const handleScroll = useCallback(() => {
-    if (!isUserNearBottom()) {
-      setShouldAutoScroll(false);
-    } else {
-      setShouldAutoScroll(true);
-    }
-  }, [isUserNearBottom]);
-
   useEffect(() => {
-    const container = messagesContainerRef.current;
-    if (container) {
-      container.addEventListener("scroll", handleScroll);
-      return () => container.removeEventListener("scroll", handleScroll);
-    }
-  }, [handleScroll]);
+    const el = messagesRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", updateNearBottom, { passive: true });
+    return () => el.removeEventListener("scroll", updateNearBottom);
+  }, [updateNearBottom]);
 
-  // Scroll on new messages only if user was near bottom
-  useEffect(() => {
-    scrollToBottomIfNeeded();
-  }, [messages, scrollToBottomIfNeeded]);
+  const scrollToBottom = useCallback((force = false) => {
+    if (!force && !isNearBottomRef.current) return;
+    const el = messagesRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  }, []);
+
+  useEffect(() => { scrollToBottom(); }, [messages, isLoading, scrollToBottom]);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
-
-    const userMessage: Message = { role: "user", content: input };
+    const trimmed = input.trim();
+    if (!trimmed || isLoading) return;
+    const userMessage: Message = { role: "user", content: trimmed };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
-    setIsLoading(true);
     setError(null);
-    // Enable auto-scroll after sending (user likely wants to see response)
-    setShouldAutoScroll(true);
-
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
+    setIsLoading(true);
+    isNearBottomRef.current = true;
+    requestAnimationFrame(() => textareaRef.current?.focus({ preventScroll: true }));
 
     try {
       const res = await fetch("/api/chat", {
@@ -188,231 +124,202 @@ export default function AIGuidePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: [...messages, userMessage] }),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Request failed");
-
-      const assistantMessage: Message = {
-        role: "assistant",
-        content: data.message,
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Failed to get response. Please try again.");
+      setMessages((prev) => [...prev, { role: "assistant", content: data.message }]);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to get response. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
-  const handleSuggestionClick = (question: string) => {
-    setInput(question);
-    textareaRef.current?.focus();
+  const handleSuggestionClick = (q: string) => {
+    setInput(q);
+    requestAnimationFrame(() => textareaRef.current?.focus({ preventScroll: true }));
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50/30 via-white to-green-50/20 relative overflow-hidden">
+    // wrapperRef gets its height set dynamically to (100vh - its own top offset)
+    // so it always fits exactly in the space below the navbar — no overflow, no gap
+    <div
+      ref={wrapperRef}
+      className="relative flex flex-col overflow-hidden bg-gradient-to-b from-slate-50 via-white to-green-50/20"
+    >
       {/* Background blobs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-20 overflow-hidden">
+        <div className="absolute -top-16 -right-16 w-56 h-56 bg-blue-200 rounded-full mix-blend-multiply blur-3xl opacity-20" />
+        <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-green-200 rounded-full mix-blend-multiply blur-3xl opacity-20" />
       </div>
 
-      {/* Floating background icons */}
-      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="relative w-full h-full">
-          {bgIcons.map(({ Icon, color }, index) => {
-            const left = `${(index * 13) % 90 + 5}%`;
-            const top = `${(index * 19) % 90 + 5}%`;
-            const size = 30 + (index * 7) % 90;
-            const rotate = (index * 23) % 360;
-            return (
-              <Icon
-                key={index}
-                size={size}
-                className={`absolute ${color}`}
-                style={{
-                  left,
-                  top,
-                  transform: `rotate(${rotate}deg)`,
-                }}
-              />
-            );
-          })}
-        </div>
+      {/* Background icons */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        {bgIcons.map(({ Icon, color, size, left, top, rotate }, i) => (
+          <Icon key={i} size={size} className={`absolute ${color}`}
+            style={{ left, top, transform: `rotate(${rotate}deg)` }} />
+        ))}
       </div>
 
-      {/* Minimal Header - subtle glass */}
-      <header className="sticky top-0 z-20 backdrop-blur-xl bg-white/10 border-b border-white/20">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="p-2 bg-gradient-to-br from-blue-500 to-green-400 rounded-xl shadow-lg">
-                <Bot className="w-5 h-5 text-white" />
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white animate-pulse" />
+      {/* HEADER */}
+      <header className="flex-shrink-0 bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm z-10 mt-9">
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+          <div className="relative flex-shrink-0">
+            <div className="p-2 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl shadow">
+              <Bot className="w-5 h-5 text-white" />
             </div>
-            <div>
-              <h1 className="text-lg font-semibold text-gray-800">Pharmawallah AI</h1>
-            </div>
+            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-white animate-pulse" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-gray-900 leading-none">Pharmawallah AI</p>
+            <p className="text-[11px] text-emerald-600 font-medium mt-0.5">Online · Pharmacy Tutor</p>
           </div>
         </div>
       </header>
 
-      {/* Main chat area */}
-      <div className="max-w-4xl mx-auto px-4 py-6 flex flex-col h-[calc(100vh-70px)] relative z-10">
-        {/* Messages container with ref for scroll detection */}
-        <div
-          ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto space-y-4 pb-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent pr-2"
-        >
+      {/* MESSAGES — only scrollable zone */}
+      <main ref={messagesRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+        <div className="max-w-3xl mx-auto px-3 sm:px-4 py-4 space-y-3 pb-4">
           <AnimatePresence initial={false}>
-            {messages.map((msg, index) => (
+            {messages.map((msg, i) => (
               <motion.div
-                key={index}
+                key={i}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                transition={{ duration: 0.15 }}
+                className={`flex items-end gap-2 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
               >
-                <div
-                  className={`flex gap-3 max-w-[85%] md:max-w-[75%] ${
-                    msg.role === "user" ? "flex-row-reverse" : ""
-                  }`}
-                >
-                  {/* Avatar with glow effect */}
-                  <div
-                    className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${
-                      msg.role === "user"
-                        ? "bg-gradient-to-br from-blue-500 to-green-400 ring-2 ring-white/50"
-                        : "bg-white/80 backdrop-blur-sm border border-white/50 ring-2 ring-blue-100"
-                    }`}
-                  >
-                    {msg.role === "user" ? (
-                      <User className="w-5 h-5 text-white" />
-                    ) : (
-                      <Bot className="w-5 h-5 text-blue-600" />
-                    )}
-                  </div>
+                <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center shadow-sm ${
+                  msg.role === "user"
+                    ? "bg-gradient-to-br from-blue-500 to-green-500"
+                    : "bg-white border border-gray-200"
+                }`}>
+                  {msg.role === "user"
+                    ? <User className="w-3.5 h-3.5 text-white" />
+                    : <Bot className="w-3.5 h-3.5 text-blue-500" />}
+                </div>
 
-                  {/* Message Bubble */}
-                  <div
-                    className={`px-4 py-3 rounded-2xl prose prose-sm max-w-none shadow-md ${
-                      msg.role === "user"
-                        ? "bg-gradient-to-br from-blue-500 to-green-400 text-white prose-invert"
-                        : "bg-white/70 backdrop-blur-md border border-white/50 text-gray-800"
-                    }`}
-                  >
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      components={{
-                        a: ({ node, ...props }) => (
-                          <a {...props} className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer" />
-                        ),
-                        p: ({ node, ...props }) => <p {...props} className="m-0" />,
-                      }}
-                    >
-                      {msg.content}
-                    </ReactMarkdown>
+                <div className="min-w-0 max-w-[78%] sm:max-w-[72%]">
+                  <div className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm break-words ${
+                    msg.role === "user"
+                      ? "bg-gradient-to-br from-blue-500 to-green-500 text-white rounded-br-sm"
+                      : "bg-white border border-gray-100 text-gray-800 rounded-bl-sm"
+                  }`}>
+                    <div className={`
+                      prose prose-sm max-w-none
+                      ${msg.role === "user" ? "prose-invert" : "prose-gray"}
+                      prose-p:m-0 prose-p:leading-relaxed
+                      prose-headings:mt-2 prose-headings:mb-1 prose-headings:text-sm prose-headings:font-semibold
+                      prose-ul:my-1 prose-ol:my-1 prose-li:my-0
+                      prose-pre:overflow-x-auto prose-pre:text-xs prose-pre:rounded-lg prose-pre:my-2
+                      prose-code:text-xs prose-code:before:content-none prose-code:after:content-none
+                      prose-table:block prose-table:overflow-x-auto prose-table:text-xs
+                      prose-strong:font-semibold
+                    `}>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          p: ({ ...props }) => <p {...props} className="m-0 leading-relaxed" />,
+                          a: ({ ...props }) => (
+                            <a {...props}
+                              className={msg.role === "user" ? "text-white underline opacity-80 hover:opacity-100" : "text-blue-500 hover:underline"}
+                              target="_blank" rel="noopener noreferrer" />
+                          ),
+                          pre: ({ ...props }) => <pre {...props} className="overflow-x-auto text-xs rounded-lg my-2 p-3" />,
+                          code: ({ className, children, ...props }) =>
+                            className
+                              ? <code className={`${className} text-xs`} {...props}>{children}</code>
+                              : <code className="text-xs px-1 py-0.5 rounded bg-black/10" {...props}>{children}</code>,
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
                   </div>
                 </div>
               </motion.div>
             ))}
           </AnimatePresence>
 
-          {/* Typing Indicator */}
+          {/* Typing indicator */}
           {isLoading && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex justify-start"
-            >
-              <div className="flex gap-3 max-w-[85%] md:max-w-[75%]">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm border border-white/50 flex items-center justify-center shadow-md ring-2 ring-blue-100">
-                  <Bot className="w-5 h-5 text-blue-600" />
-                </div>
-                <div className="px-4 py-3 rounded-2xl bg-white/70 backdrop-blur-md border border-white/50 text-gray-800 shadow-md">
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  </div>
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-end gap-2">
+              <div className="flex-shrink-0 w-7 h-7 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm">
+                <Bot className="w-3.5 h-3.5 text-blue-500" />
+              </div>
+              <div className="px-4 py-3 rounded-2xl rounded-bl-sm bg-white border border-gray-100 shadow-sm">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.32s]" />
+                  <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.16s]" />
+                  <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" />
                 </div>
               </div>
             </motion.div>
           )}
 
-          {/* Error Message */}
-          {error && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex justify-center"
-            >
-              <div className="flex items-center gap-2 px-4 py-2 bg-red-50/90 backdrop-blur-sm text-red-700 rounded-full border border-red-200 text-sm shadow-md">
-                <AlertCircle className="w-4 h-4" />
-                {error}
-              </div>
-            </motion.div>
-          )}
-          <div ref={messagesEndRef} />
+          {/* Error */}
+          <AnimatePresence>
+            {error && (
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex justify-center">
+                <div className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl border border-red-200 text-xs shadow-sm max-w-[90%]">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{error}</span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="h-1" />
         </div>
+      </main>
 
-        {/* Suggested questions (only when chat is empty-ish) */}
-        {messages.length === 1 && !isLoading && (
-          <div className="mb-4">
-            <p className="text-xs text-gray-500 mb-2">Try asking:</p>
-            <div className="flex flex-wrap gap-2">
+      {/* FOOTER */}
+      <footer className="flex-shrink-0 bg-white/80 backdrop-blur-xl border-t border-gray-100 shadow-[0_-2px_12px_rgba(0,0,0,0.04)] z-10">
+        <div className="max-w-3xl mx-auto px-3 sm:px-4 pt-2 pb-3 space-y-2">
+          {messages.length === 1 && !isLoading && (
+            <div className="flex flex-wrap gap-1.5">
               {suggestedQuestions.map((q, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSuggestionClick(q)}
-                  className="text-xs bg-white/70 backdrop-blur-sm hover:bg-white/90 text-gray-700 px-3 py-1.5 rounded-full border border-white/50 shadow-sm transition"
-                >
+                <button key={idx} onClick={() => handleSuggestionClick(q)}
+                  className="text-[11px] sm:text-xs bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-600 hover:text-gray-900 px-3 py-1.5 rounded-full border border-gray-200 transition-colors leading-tight">
                   {q}
                 </button>
               ))}
             </div>
+          )}
+
+          <div className="flex items-end gap-2 bg-white rounded-2xl border border-gray-200 focus-within:border-blue-300 focus-within:ring-2 focus-within:ring-blue-100 transition-all duration-200 px-3 py-2 shadow-sm">
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask a pharmacy question… (Shift+Enter for new line)"
+              className="flex-1 min-w-0 resize-none bg-transparent outline-none text-sm text-gray-800 placeholder-gray-400 leading-relaxed py-0.5 max-h-36 overflow-y-auto"
+            />
+            <button
+              onClick={handleSend}
+              disabled={isLoading || !input.trim()}
+              aria-label="Send message"
+              className={`flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-150 ${
+                isLoading || !input.trim()
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "bg-gradient-to-br from-blue-500 to-green-500 text-white shadow-sm hover:shadow-md hover:scale-105 active:scale-95"
+              }`}
+            >
+              <Send className="w-3.5 h-3.5" />
+            </button>
           </div>
-        )}
 
-        {/* Input area with modern floating effect */}
-        <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-2xl shadow-lg p-2 flex items-end gap-2 sticky bottom-0">
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask a pharmacy question..."
-            className="flex-1 px-4 py-3 max-h-32 outline-none resize-none text-sm bg-transparent placeholder-gray-400"
-          />
-          <button
-            onClick={handleSend}
-            disabled={isLoading || !input.trim()}
-            className={`p-3 rounded-xl text-white flex items-center justify-center transition-all ${
-              isLoading || !input.trim()
-                ? "bg-gray-300 cursor-not-allowed"
-                : "bg-gradient-to-r from-blue-500 to-green-400 hover:shadow-lg hover:scale-105 active:scale-95"
-            }`}
-          >
-            <Send className="w-5 h-5" />
-          </button>
+          <p className="text-center text-[10px] sm:text-[11px] text-gray-400">
+            AI-generated · always verify with official sources
+          </p>
         </div>
-
-        {/* Disclaimer */}
-        <p className="text-xs text-gray-400 mt-2 text-center">
-          Responses are AI‑generated. Always verify critical information with official sources.
-        </p>
-      </div>
+      </footer>
     </div>
   );
 }

@@ -1,11 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-
-// Pharmacy‑specific system prompt
-const SYSTEM_PROMPT = `You are Pharmawallah AI Assistant, a knowledgeable and friendly pharmacy tutor. 
+const SYSTEM_PROMPT = `You are Pharmawallah AI Assistant, a knowledgeable and friendly pharmacy tutor.
 You help pharmacy students, healthcare professionals, and anyone interested in pharmaceutical sciences.
+
 Provide accurate, clear, and educational answers about:
 - Drug mechanisms of action (MOA)
 - Drug classifications and therapeutic uses
@@ -15,41 +13,52 @@ Provide accurate, clear, and educational answers about:
 - Study tips and exam preparation (GPAT, NIPER, etc.)
 - Pharmacy career guidance
 
-If a question is outside pharmacy/healthcare, politely steer the conversation back.
-Always prioritise safety: if a question involves medical advice for a specific patient, recommend consulting a qualified healthcare provider.
-Keep answers concise but informative. Use bullet points or short paragraphs for readability.`;
+Guidelines:
+- If a question is outside pharmacy/healthcare, politely steer the conversation back.
+- Always prioritise safety: if a question involves medical advice for a specific patient, recommend consulting a qualified healthcare provider.
+- Keep answers concise but informative.
+- Use bullet points or short paragraphs for readability.
+- Use markdown formatting where it improves clarity (bold key terms, use lists for classifications, etc.).`;
 
 export async function POST(req: Request) {
   try {
-    const { messages } = await req.json();
-
     if (!process.env.GEMINI_API_KEY) {
       console.error("GEMINI_API_KEY is not set");
       return NextResponse.json(
-        { error: "Server configuration error" },
-        { status: 500 }
+        { error: "Server configuration error. API key missing." },
+        { status: 500 },
       );
     }
 
-    // Build history for Gemini (must start with user and alternate)
-    const history = [];
-    let lastRole: string | null = null;
+    const { messages } = await req.json();
+
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return NextResponse.json(
+        { error: "Invalid request: messages array is required." },
+        { status: 400 },
+      );
+    }
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+    // Build Gemini-compatible history from all messages except the last one.
+    // Rules: must start with "user", must alternate user/model, skip leading assistant messages.
+    const history: { role: "user" | "model"; parts: { text: string }[] }[] = [];
 
     for (let i = 0; i < messages.length - 1; i++) {
       const msg = messages[i];
       const role = msg.role === "user" ? "user" : "model";
 
-      if (role === lastRole) continue;
+      // Skip leading assistant/model messages — Gemini history must start with user
       if (history.length === 0 && role !== "user") continue;
 
-      history.push({
-        role,
-        parts: [{ text: msg.content }],
-      });
-      lastRole = role;
+      // Skip consecutive same-role messages (Gemini requires strict alternation)
+      if (history.length > 0 && history[history.length - 1].role === role)
+        continue;
+
+      history.push({ role, parts: [{ text: msg.content }] });
     }
 
-    // ✅ Use the stable, free‑tier‑friendly gemini-2.5-flash model
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
       systemInstruction: SYSTEM_PROMPT,
@@ -58,22 +67,22 @@ export async function POST(req: Request) {
     const chat = model.startChat({
       history,
       generationConfig: {
-        maxOutputTokens: 1000,
+        maxOutputTokens: 1024,
         temperature: 0.7,
       },
     });
 
     const latestMessage = messages[messages.length - 1].content;
     const result = await chat.sendMessage(latestMessage);
-    const response = await result.response;
-    const text = response.text();
+    const text = result.response.text();
 
     return NextResponse.json({ message: text });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Gemini API error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to get response from AI. Please try again." },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to get response from AI. Please try again.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
