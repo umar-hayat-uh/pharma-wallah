@@ -29,31 +29,28 @@ export const SemesterData: Semester[] = [
     semester: "Semester 1",
     subjects: [
       {
-        name: "Fundamentals of Pharmacy",
+        name: "Physical Pharmacy",
         icon: <Pill className="text-blue-600" strokeWidth={2} />,
         description: "Introduction to pharmacy, dosage forms, compounding, and core principles of pharmaceutical sciences.",
+              href: "/courses/sem-1/physical-pharmacy", 
       },
       {
         name: "Pharmaceutical (Organic Chemistry)",
         icon: <Atom className="text-green-600" strokeWidth={2} />,
         description: "Structure, reactions, mechanisms, stereochemistry, and organic compounds essential for drug design.",
+        href: "/courses/sem-1/pharmaceutical-organic-chemistry", 
       },
       {
         name: "Physiology & Histology-I",
         icon: <HeartPulse className="text-orange-500" strokeWidth={2} />,
         description: "Study of human organ systems, tissues, and physiological functions relevant to pharmacology.",
-        href: "/courses/sem-1/physiology-histology-1", // ✅ custom route
+        href: "/courses/sem-1/physiology-histology-1", 
       },
       {
         name: "Pharmaceutical Biochemistry",
         icon: "🧬",
         description: "Carbohydrates, lipids, bioenergetics, vitamins and hormones — molecular basis of pharmacy.",
-        href: "/courses/sem-1/pharmaceutical-biochemistry", // ✅ custom route
-      },
-      {
-        name: "Pharmaceutical Mathematics-I",
-        icon: <Sigma className="text-red-500" strokeWidth={2} />,
-        description: "Pharmaceutical calculations: concentrations, dilutions, alligation, kinetics, and drug dosing.",
+        href: "/courses/sem-1/pharmaceutical-biochemistry", 
       },
     ],
   },
