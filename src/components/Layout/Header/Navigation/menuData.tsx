@@ -6,7 +6,7 @@ export const headerData: HeaderItem[] = [
     label: "Resources",
     href: "#",
     submenu: [
-      { label: "Material", href: "/material" },
+      { label: "Material", href: "/courses" },
       { label: "MCQ's Bank", href: "/mcqs-bank" },
       { label: "Slide Spotting", href: "/spotting" },
       { label: "Flashcards", href: "/flash-cards" },
