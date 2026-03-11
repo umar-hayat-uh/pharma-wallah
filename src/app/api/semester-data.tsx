@@ -42,6 +42,7 @@ export const SemesterData: Semester[] = [
         name: "Physiology & Histology-I",
         icon: <HeartPulse className="text-orange-500" strokeWidth={2} />,
         description: "Study of human organ systems, tissues, and physiological functions relevant to pharmacology.",
+        href: "/courses/sem-1/physiology-histology-1", // ✅ custom route
       },
       {
         name: "Pharmaceutical Biochemistry",

@@ -23,6 +23,8 @@
     "date-fns": "^3.4.0",
     "framer-motion": "^11.11.9",
     "gray-matter": "^4.0.3",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.0",
     "lodash": "^4.17.21",
     "lucide-react": "^0.575.0",
     "mongodb": "^6.21.0",

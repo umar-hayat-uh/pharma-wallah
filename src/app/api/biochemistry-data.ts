@@ -11,6 +11,7 @@ export interface BiochemUnit {
   readTime: number;     // estimated minutes
   difficulty: "Easy" | "Medium" | "Hard";
   gradient: string;     // Tailwind gradient classes for card accent stripe
+  previewImage?: string; // optional: path inside /public e.g. "/previews/biochem/unit1.jpg"
   color: {
     badge: string;      // pill background + text
     icon: string;       // icon box background
@@ -41,6 +42,7 @@ export const BiochemUnits: BiochemUnit[] = [
     readTime: 10,
     difficulty: "Easy",
     gradient: "from-blue-600 to-cyan-400",
+    previewImage: "/previews/biochem/unit1-intro.jpg",
     color: {
       badge: "bg-blue-50 text-blue-700 border-blue-200",
       icon: "bg-blue-50 border-blue-100",
@@ -58,6 +60,7 @@ export const BiochemUnits: BiochemUnit[] = [
     readTime: 15,
     difficulty: "Medium",
     gradient: "from-amber-500 to-orange-400",
+    previewImage: "/previews/biochem/unit2-carbs.jpg",
     color: {
       badge: "bg-amber-50 text-amber-700 border-amber-200",
       icon: "bg-amber-50 border-amber-100",
@@ -75,6 +78,7 @@ export const BiochemUnits: BiochemUnit[] = [
     readTime: 14,
     difficulty: "Hard",
     gradient: "from-yellow-500 to-lime-400",
+    previewImage: "/previews/biochem/unit3-bioenergetics.png",
     color: {
       badge: "bg-yellow-50 text-yellow-700 border-yellow-200",
       icon: "bg-yellow-50 border-yellow-100",
@@ -92,6 +96,8 @@ export const BiochemUnits: BiochemUnit[] = [
     readTime: 16,
     difficulty: "Hard",
     gradient: "from-rose-500 to-pink-400",
+    previewImage: "/previews/biochem/unit4-lipids.png",
+
     color: {
       badge: "bg-rose-50 text-rose-700 border-rose-200",
       icon: "bg-rose-50 border-rose-100",
@@ -109,6 +115,7 @@ export const BiochemUnits: BiochemUnit[] = [
     readTime: 13,
     difficulty: "Medium",
     gradient: "from-green-500 to-teal-400",
+    previewImage: "/previews/biochem/unit5-vitamins.png",
     color: {
       badge: "bg-green-50 text-green-700 border-green-200",
       icon: "bg-green-50 border-green-100",
@@ -126,6 +133,7 @@ export const BiochemUnits: BiochemUnit[] = [
     readTime: 14,
     difficulty: "Hard",
     gradient: "from-violet-600 to-purple-400",
+    previewImage: "/previews/biochem/unit6-hormones.png",
     color: {
       badge: "bg-violet-50 text-violet-700 border-violet-200",
       icon: "bg-violet-50 border-violet-100",

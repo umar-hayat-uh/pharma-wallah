@@ -2,145 +2,118 @@
 
 // app/courses/sem-1/pharmaceutical-biochemistry/[unit]/page.tsx
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   ChevronLeft, ChevronRight, BookOpen, ArrowUp,
-  Printer, Menu, X, Zap, Clock, GraduationCap,
+  Printer, Menu, X, Zap, Clock, GraduationCap, ImageIcon, Loader2,
 } from "lucide-react";
-import {
-  Pill, FlaskConical, Beaker, Microscope, Stethoscope, Leaf,
-} from "lucide-react";
+import { Pill, FlaskConical, Beaker, Microscope, Stethoscope, Leaf } from "lucide-react";
 import { BiochemUnits, SUBJECT_META } from "@/app/api/biochemistry-data";
 
 interface PageProps { params: { unit: string } }
 
 const bgIconDefs = [
-  { Icon: Pill,         top: "8%",  left: "1.5%",  size: 28 },
-  { Icon: Beaker,       top: "38%", left: "1%",    size: 26 },
-  { Icon: Stethoscope,  top: "70%", left: "1.5%",  size: 28 },
-  { Icon: Microscope,   top: "8%",  left: "96.5%", size: 28 },
-  { Icon: FlaskConical, top: "38%", left: "97%",   size: 26 },
-  { Icon: Leaf,         top: "70%", left: "96.5%", size: 26 },
+  { Icon: Pill,         top: "8%",  left: "1.5%",  size: 26 },
+  { Icon: Beaker,       top: "38%", left: "1%",    size: 24 },
+  { Icon: Stethoscope,  top: "70%", left: "1.5%",  size: 26 },
+  { Icon: Microscope,   top: "8%",  left: "96.5%", size: 26 },
+  { Icon: FlaskConical, top: "38%", left: "97%",   size: 24 },
+  { Icon: Leaf,         top: "70%", left: "96.5%", size: 24 },
 ];
 
 const BASE_PATH = `/courses/${SUBJECT_META.semesterSlug}/${SUBJECT_META.slug}`;
 
-// ─── Markdown Components ──────────────────────────────────────────────────────
-const mdComponents: any = {
-  h1: ({ children }: any) => (
-    <h1 style={{ fontSize: "clamp(1.1rem, 4vw, 1.75rem)", fontWeight: 800, background: "linear-gradient(to right, #2563eb, #22c55e)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginTop: "2rem", marginBottom: "0.75rem", paddingBottom: "0.5rem", borderBottom: "2px solid #dbeafe", wordBreak: "break-word", overflowWrap: "anywhere" }}>
-      {children}
-    </h1>
-  ),
-  h2: ({ children }: any) => (
-    <h2 style={{ fontSize: "clamp(1rem, 3.5vw, 1.5rem)", fontWeight: 700, color: "#111827", marginTop: "1.75rem", marginBottom: "0.75rem", paddingBottom: "0.5rem", borderBottom: "1px solid #e5e7eb", wordBreak: "break-word", overflowWrap: "anywhere" }}>
-      {children}
-    </h2>
-  ),
-  h3: ({ children }: any) => (
-    <h3 style={{ fontSize: "clamp(0.9rem, 3vw, 1.125rem)", fontWeight: 700, background: "linear-gradient(to right, #2563eb, #22c55e)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginTop: "1.5rem", marginBottom: "0.5rem", wordBreak: "break-word", overflowWrap: "anywhere" }}>
-      {children}
-    </h3>
-  ),
-  h4: ({ children }: any) => (
-    <h4 style={{ fontSize: "0.875rem", fontWeight: 600, color: "#15803d", marginTop: "1rem", marginBottom: "0.5rem", wordBreak: "break-word" }}>
-      {children}
-    </h4>
-  ),
-  p: ({ children }: any) => (
-    <p style={{ color: "#374151", lineHeight: 1.7, fontSize: "0.875rem", marginBottom: "1rem", wordBreak: "break-word", overflowWrap: "anywhere" }}>
-      {children}
-    </p>
-  ),
-  ul: ({ children }: any) => (
-    <ul style={{ marginBottom: "1rem", paddingLeft: 0, listStyle: "none" }}>{children}</ul>
-  ),
-  ol: ({ children }: any) => (
-    <ol style={{ marginBottom: "1rem", paddingLeft: "1.25rem", color: "#374151", fontSize: "0.875rem" }}>
-      {children}
-    </ol>
-  ),
-  li: ({ children }: any) => (
-    <li style={{ display: "flex", gap: "0.5rem", color: "#374151", fontSize: "0.875rem", lineHeight: 1.7, marginBottom: "0.4rem" }}>
-      <span style={{ marginTop: "0.45rem", width: "6px", height: "6px", borderRadius: "50%", background: "#3b82f6", flexShrink: 0 }} />
-      <span style={{ wordBreak: "break-word", overflowWrap: "anywhere", minWidth: 0, flex: 1 }}>{children}</span>
-    </li>
-  ),
-  strong: ({ children }: any) => (
-    <strong style={{ fontWeight: 700, color: "#111827" }}>{children}</strong>
-  ),
-  em: ({ children }: any) => (
-    <em style={{ fontStyle: "italic", color: "#374151" }}>{children}</em>
-  ),
-  blockquote: ({ children }: any) => (
-    <blockquote style={{ borderLeft: "4px solid #60a5fa", background: "rgba(219,234,254,0.4)", padding: "0.75rem 1rem", borderRadius: "0 0.75rem 0.75rem 0", margin: "1rem 0", color: "#374151", fontSize: "0.875rem", fontStyle: "italic", wordBreak: "break-word" }}>
-      {children}
-    </blockquote>
-  ),
-
-  // ── TABLE — full bleed horizontal scroll on mobile ────────────────────────
-  table: ({ children }: any) => (
-    <div style={{ margin: "1.25rem -1rem", position: "relative" }}>
-      <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", paddingLeft: "1rem", paddingRight: "1rem", paddingBottom: "0.25rem" }}>
-        <table style={{ minWidth: "500px", width: "100%", borderCollapse: "collapse", fontSize: "0.72rem" }}>
-          {children}
-        </table>
+// ─── Scrollable table ─────────────────────────────────────────────────────────
+function ScrollTable({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [canL, setL] = useState(false);
+  const [canR, setR] = useState(false);
+  const check = () => {
+    const el = ref.current; if (!el) return;
+    setL(el.scrollLeft > 4);
+    setR(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
+  useEffect(() => {
+    check();
+    const el = ref.current; if (!el) return;
+    el.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check, { passive: true });
+    return () => { el.removeEventListener("scroll", check); window.removeEventListener("resize", check); };
+  }, []);
+  return (
+    <div className="relative my-5 rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      {canL && <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />}
+      {canR && <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />}
+      {canR && <div className="absolute top-2 right-2 z-20 bg-blue-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full pointer-events-none sm:hidden">scroll →</div>}
+      <div ref={ref} className="overflow-x-auto overscroll-x-contain" style={{ WebkitOverflowScrolling: "touch" }}>
+        <table className="min-w-full border-collapse text-sm">{children}</table>
       </div>
     </div>
-  ),
-  thead: ({ children }: any) => (
-    <thead style={{ background: "linear-gradient(to right, #eff6ff, #f0fdf4)" }}>{children}</thead>
-  ),
-  th: ({ children }: any) => (
-    <th style={{ padding: "9px 12px", textAlign: "left", fontWeight: 700, color: "#1f2937", border: "1px solid #e5e7eb", fontSize: "0.7rem", whiteSpace: "nowrap", background: "inherit" }}>
-      {children}
-    </th>
-  ),
-  td: ({ children }: any) => (
-    <td style={{ padding: "7px 12px", border: "1px solid #e5e7eb", fontSize: "0.7rem", color: "#374151" }}>
-      {children}
-    </td>
-  ),
-  tr: ({ children }: any) => (
-    <tr style={{ borderBottom: "1px solid #f3f4f6" }}>{children}</tr>
-  ),
+  );
+}
 
-  // ── CODE ──────────────────────────────────────────────────────────────────
-  code: ({ inline, children }: any) =>
-    inline ? (
-      <code style={{ background: "#f3f4f6", color: "#1d4ed8", padding: "1px 5px", borderRadius: "4px", fontSize: "0.75rem", fontFamily: "monospace", wordBreak: "break-all" }}>
-        {children}
-      </code>
-    ) : (
-      <div style={{ margin: "1rem -1rem" }}>
-        <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", paddingLeft: "1rem", paddingRight: "1rem" }}>
-          <pre style={{ background: "#111827", color: "#6ee7b7", borderRadius: "12px", padding: "1rem", fontSize: "0.7rem", fontFamily: "monospace", lineHeight: 1.6, minWidth: "max-content" }}>
-            <code>{children}</code>
-          </pre>
-        </div>
-      </div>
-    ),
-
-  hr: () => <hr style={{ margin: "2rem 0", borderColor: "#e5e7eb" }} />,
+// ─── Markdown components ──────────────────────────────────────────────────────
+const mdComponents = {
+  h1: ({ children }: any) => (
+    <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-blue-600 to-green-500 bg-clip-text text-transparent mt-8 mb-4 pb-3 border-b-2 border-blue-100 break-words">{children}</h1>
+  ),
+  h2: ({ children }: any) => (
+    <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mt-8 mb-4 pb-2 border-b border-gray-200 break-words">{children}</h2>
+  ),
+  h3: ({ children }: any) => (
+    <h3 className="text-base sm:text-lg font-bold bg-gradient-to-r from-blue-600 to-green-500 bg-clip-text text-transparent mt-6 mb-3 break-words">{children}</h3>
+  ),
+  h4: ({ children }: any) => (
+    <h4 className="text-sm sm:text-base font-semibold text-green-700 mt-5 mb-2 break-words">{children}</h4>
+  ),
+  p:  ({ children }: any) => <p className="text-gray-700 leading-relaxed text-sm sm:text-base mb-4 break-words">{children}</p>,
+  ul: ({ children }: any) => <ul className="space-y-2 mb-4 pl-1">{children}</ul>,
+  ol: ({ children }: any) => <ol className="space-y-2 mb-4 pl-4 list-decimal text-gray-700 text-sm sm:text-base">{children}</ol>,
+  li: ({ children }: any) => (
+    <li className="flex gap-2.5 text-gray-700 text-sm sm:text-base leading-relaxed">
+      <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+      <span className="break-words min-w-0 flex-1">{children}</span>
+    </li>
+  ),
+  strong:     ({ children }: any) => <strong className="font-bold text-gray-900">{children}</strong>,
+  em:         ({ children }: any) => <em className="italic text-gray-700">{children}</em>,
+  blockquote: ({ children }: any) => (
+    <blockquote className="border-l-4 border-blue-400 bg-blue-50/60 px-4 py-3 rounded-r-xl my-4 text-gray-700 text-sm sm:text-base italic break-words">{children}</blockquote>
+  ),
+  table:  ({ children }: any) => <ScrollTable>{children}</ScrollTable>,
+  thead:  ({ children }: any) => <thead className="bg-gradient-to-r from-blue-50 to-green-50">{children}</thead>,
+  th:     ({ children }: any) => <th className="px-3 py-3 text-left font-semibold text-gray-800 border border-gray-200 text-xs whitespace-nowrap">{children}</th>,
+  td:     ({ children }: any) => <td className="px-3 py-2.5 border border-gray-200 text-xs text-gray-700 whitespace-normal min-w-[100px]">{children}</td>,
+  tr:     ({ children }: any) => <tr className="hover:bg-blue-50/30 transition-colors">{children}</tr>,
+  code:   ({ inline, children }: any) =>
+    inline
+      ? <code className="bg-gray-100 text-blue-700 px-1.5 py-0.5 rounded text-xs font-mono break-all">{children}</code>
+      : <pre className="bg-gray-900 text-green-300 rounded-2xl p-4 overflow-x-auto text-xs font-mono my-4 leading-relaxed"><code>{children}</code></pre>,
+  hr: () => <hr className="my-8 border-gray-200" />,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function BiochemUnitPage({ params }: PageProps) {
   const { unit: unitSlug } = params;
 
-  const unitIdx  = BiochemUnits.findIndex((u: any) => u.id === unitSlug);
+  const unitIdx  = BiochemUnits.findIndex(u => u.id === unitSlug);
   const unit     = BiochemUnits[unitIdx];
   const prevUnit = unitIdx > 0 ? BiochemUnits[unitIdx - 1] : null;
   const nextUnit = unitIdx < BiochemUnits.length - 1 ? BiochemUnits[unitIdx + 1] : null;
 
-  const [content,       setContent]       = useState<string>("");
+  const [content,       setContent]       = useState("");
   const [loading,       setLoading]       = useState(true);
   const [error,         setError]         = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [imgError,      setImgError]      = useState(false);
+  const [pdfLoading,    setPdfLoading]    = useState(false);
+
+  // ref wraps only the content we want in the PDF
+  const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!unit) return;
@@ -149,7 +122,7 @@ export default function BiochemUnitPage({ params }: PageProps) {
       .then(r => { if (!r.ok) throw new Error(); return r.text(); })
       .then(text => { setContent(text.replace(/^---[\s\S]*?---\n?/, "")); setLoading(false); })
       .catch(() => { setError(true); setLoading(false); });
-  }, [unitSlug]);
+  }, [unitSlug, unit]);
 
   useEffect(() => {
     const onKey    = (e: KeyboardEvent) => { if (e.key === "Escape") setMobileNavOpen(false); };
@@ -159,281 +132,373 @@ export default function BiochemUnitPage({ params }: PageProps) {
     return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("scroll", onScroll); };
   }, []);
 
-  if (!unit) return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4">
-      <div className="text-center">
-        <p className="text-xl font-extrabold text-gray-900 mb-2">Unit not found</p>
-        <Link href={BASE_PATH} className="text-blue-600 text-sm font-semibold hover:underline">← Back to Biochemistry</Link>
+  // ── PDF generation ───────────────────────────────────────────────────────────
+  const handleDownloadPdf = useCallback(async () => {
+    if (!printRef.current || pdfLoading) return;
+    setPdfLoading(true);
+    try {
+      const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+        import("jspdf"),
+        import("html2canvas"),
+      ]);
+
+      const el = printRef.current;
+      const prevHeight = el.style.height;
+      el.style.height = "auto";
+
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+        windowWidth: 900,
+      });
+
+      el.style.height = prevHeight;
+
+      const pdf    = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageW  = pdf.internal.pageSize.getWidth();
+      const pageH  = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+      const contentW  = pageW - margin * 2;
+      const headerSpace = 12;
+      const usableH = (pageH - margin * 2) - headerSpace;
+
+      const scaledW = contentW;
+      const scaledH = (canvas.height / canvas.width) * scaledW;
+      const totalPages = Math.ceil(scaledH / usableH);
+
+      const addHeader = (doc: typeof pdf, pageNum: number, total: number) => {
+        doc.setFillColor(37, 99, 235);   // blue-600
+        doc.rect(0, 0, pageW, 10, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "bold");
+        doc.text(`PHARMAWALLAH  ·  ${SUBJECT_META.title.toUpperCase()}`, margin, 6.5);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Page ${pageNum} of ${total}`, pageW - margin, 6.5, { align: "right" });
+      };
+
+      const addFooter = (doc: typeof pdf) => {
+        doc.setDrawColor(229, 231, 235);
+        doc.line(margin, pageH - 8, pageW - margin, pageH - 8);
+        doc.setTextColor(156, 163, 175);
+        doc.setFontSize(6.5);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${unit.title}  ·  pharmawallah.com`, pageW / 2, pageH - 4, { align: "center" });
+      };
+
+      for (let page = 0; page < totalPages; page++) {
+        if (page > 0) pdf.addPage();
+        addHeader(pdf, page + 1, totalPages);
+        addFooter(pdf);
+
+        const srcY     = (page * usableH * canvas.height) / scaledH;
+        const slicePxH = Math.min((usableH * canvas.height) / scaledH, canvas.height - srcY);
+
+        const sliceCanvas        = document.createElement("canvas");
+        sliceCanvas.width        = canvas.width;
+        sliceCanvas.height       = slicePxH;
+        const ctx                = sliceCanvas.getContext("2d")!;
+        ctx.drawImage(canvas, 0, srcY, canvas.width, slicePxH, 0, 0, canvas.width, slicePxH);
+
+        const drawH = (slicePxH / canvas.height) * scaledH;
+        pdf.addImage(sliceCanvas.toDataURL("image/jpeg", 0.95), "JPEG", margin, margin + headerSpace, scaledW, drawH);
+      }
+
+      pdf.save(`${unitSlug}.pdf`);
+    } catch (err) {
+      console.error("PDF error:", err);
+      alert("PDF generation failed. Please try again.");
+    } finally {
+      setPdfLoading(false);
+    }
+  }, [unit, unitSlug, pdfLoading]);
+
+  if (!unit) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center px-4">
+        <div className="text-center">
+          <p className="text-xl font-extrabold text-gray-900 mb-2">Unit not found</p>
+          <Link href={BASE_PATH} className="text-blue-600 text-sm font-semibold hover:underline">← Back to Biochemistry</Link>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   const GRAD = unit.gradient;
 
   return (
-    <section style={{ minHeight: "100vh", background: "#fff", position: "relative", overflowX: "hidden", maxWidth: "100vw" }}>
+    <section className="min-h-screen bg-white relative" style={{ overflowX: "hidden" }}>
 
-      {/* BG icons — only sm+ */}
+      {/* BG icons */}
       {bgIconDefs.map(({ Icon, top, left, size }, i) => (
-        <div key={i} className="hidden sm:block fixed pointer-events-none text-blue-200 z-0" style={{ top, left }}>
+        <div key={i} className="fixed pointer-events-none text-blue-200 z-0 hidden sm:block" style={{ top, left }}>
           <Icon size={size} strokeWidth={1.4} />
         </div>
       ))}
 
-      {/* ══ MOBILE TOP BAR ══════════════════════════════════════════════════ */}
-      <div className="lg:hidden sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm print:hidden"
-        style={{ maxWidth: "100vw" }}>
-
-        {/* Row 1 */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.625rem 0.75rem" }}>
-          <Link href={BASE_PATH}
-            style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.75rem", color: "#6b7280", fontWeight: 600, flexShrink: 0, textDecoration: "none" }}>
-            <ChevronLeft size={14} strokeWidth={2.5} />
-            Back
-          </Link>
-          <div style={{ flex: 1, minWidth: 0, textAlign: "center", padding: "0 0.5rem" }}>
-            <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "#1f2937", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {unit.emoji} {unit.shortTitle}
-            </p>
+      {/* ══ MOBILE TOP BAR ══ */}
+      <div className="lg:hidden sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
+        <div className="flex items-center justify-between px-3 py-2.5 max-w-full">
+          <div className="flex items-center gap-1 text-xs text-gray-500 min-w-0 flex-1 mr-2">
+            <Link href={BASE_PATH} className="hover:text-blue-600 shrink-0 font-medium">Biochem</Link>
+            <ChevronRight size={11} className="shrink-0 mx-0.5 text-gray-300" />
+            <span className="text-blue-700 font-semibold truncate">{unit.shortTitle}</span>
           </div>
-          <button onClick={() => setMobileNavOpen(v => !v)}
-            style={{ flexShrink: 0, padding: "0.375rem", borderRadius: "0.75rem", border: mobileNavOpen ? "1px solid #111827" : "1px solid #e5e7eb", background: mobileNavOpen ? "#111827" : "#f3f4f6", color: mobileNavOpen ? "#fff" : "#374151", cursor: "pointer" }}>
-            {mobileNavOpen ? <X size={15} /> : <Menu size={15} />}
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button onClick={handleDownloadPdf} disabled={pdfLoading}
+              className="p-1.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50">
+              {pdfLoading ? <Loader2 size={15} className="animate-spin" /> : <Printer size={15} />}
+            </button>
+            <button onClick={() => setMobileNavOpen(v => !v)}
+              className={`p-1.5 rounded-xl border transition-colors ${mobileNavOpen ? "bg-gray-900 text-white border-gray-900" : "bg-gray-100 text-gray-700 border-gray-200"}`}>
+              {mobileNavOpen ? <X size={15} /> : <Menu size={15} />}
+            </button>
+          </div>
         </div>
 
-        {/* Row 2: prev / next */}
-        <div style={{ display: "flex", borderTop: "1px solid #f3f4f6" }}>
-          {prevUnit ? (
-            <Link href={`${BASE_PATH}/${prevUnit.id}`}
-              style={{ flex: 1, display: "flex", alignItems: "center", gap: "0.25rem", padding: "0.5rem 0.75rem", fontSize: "0.6875rem", color: "#6b7280", textDecoration: "none", overflow: "hidden" }}>
-              <ChevronLeft size={12} style={{ flexShrink: 0 }} />
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{prevUnit.shortTitle}</span>
-            </Link>
-          ) : <div style={{ flex: 1 }} />}
-          {nextUnit ? (
-            <Link href={`${BASE_PATH}/${nextUnit.id}`}
-              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.25rem", padding: "0.5rem 0.75rem", fontSize: "0.6875rem", color: "#6b7280", textDecoration: "none", overflow: "hidden", borderLeft: "1px solid #f3f4f6" }}>
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nextUnit.shortTitle}</span>
-              <ChevronRight size={12} style={{ flexShrink: 0 }} />
-            </Link>
-          ) : <div style={{ flex: 1 }} />}
-        </div>
-
-        {/* Dropdown */}
         {mobileNavOpen && (
-          <div style={{ background: "#fff", borderTop: "1px solid #f3f4f6", maxHeight: "55vh", overflowY: "auto" }}>
-            <p style={{ fontSize: "0.625rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#9ca3af", padding: "0.75rem 1rem 0.25rem" }}>All Units</p>
-            {BiochemUnits.map((u: any) => (
-              <Link key={u.id} href={`${BASE_PATH}/${u.id}`}
-                onClick={() => setMobileNavOpen(false)}
-                style={{
-                  display: "flex", alignItems: "center", gap: "0.75rem",
-                  padding: "0.75rem 1rem",
-                  borderBottom: "1px solid #f9fafb",
-                  textDecoration: "none",
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  ...(u.id === unitSlug
-                    ? { background: "linear-gradient(to right, var(--tw-gradient-stops))", color: "#fff" }
-                    : { color: "#374151", background: "transparent" })
-                }}
-                className={u.id === unitSlug ? `bg-gradient-to-r ${GRAD} text-white` : "hover:bg-blue-50"}
-              >
-                <span style={{ fontSize: "1.125rem", flexShrink: 0 }}>{u.emoji}</span>
-                <span style={{ flex: 1, lineHeight: 1.4, fontSize: "0.75rem" }}>{u.title}</span>
-                {u.id === unitSlug && (
-                  <span style={{ fontSize: "0.5625rem", background: "rgba(255,255,255,0.25)", padding: "2px 6px", borderRadius: "999px", flexShrink: 0, fontWeight: 700 }}>NOW</span>
-                )}
-              </Link>
-            ))}
+          <div className="bg-white border-t border-gray-100 px-3 pb-3 shadow-xl max-h-60 overflow-y-auto">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 pt-2 mb-1.5">All Units</p>
+            <ul className="space-y-0.5">
+              {BiochemUnits.map(u => (
+                <li key={u.id}>
+                  <Link href={`${BASE_PATH}/${u.id}`} onClick={() => setMobileNavOpen(false)}
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs transition-all ${
+                      u.id === unitSlug ? `bg-gradient-to-r ${GRAD} text-white font-semibold` : "text-gray-700 hover:bg-blue-50"
+                    }`}>
+                    <span className="shrink-0">{u.emoji}</span>
+                    <span className="flex-1 leading-snug truncate">{u.title}</span>
+                    {u.id === unitSlug && <span className="text-[9px] bg-white/25 px-1.5 py-0.5 rounded-full shrink-0">Now</span>}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
+
+        <div className="flex border-t border-gray-100">
+          {prevUnit ? (
+            <Link href={`${BASE_PATH}/${prevUnit.id}`}
+              className="flex-1 flex items-center gap-1.5 px-3 py-2 text-xs text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors min-w-0">
+              <ChevronLeft size={13} className="shrink-0" />
+              <span className="truncate">{prevUnit.emoji} {prevUnit.shortTitle}</span>
+            </Link>
+          ) : <div className="flex-1" />}
+          {nextUnit && (
+            <Link href={`${BASE_PATH}/${nextUnit.id}`}
+              className="flex-1 flex items-center justify-end gap-1.5 px-3 py-2 text-xs text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors border-l border-gray-100 min-w-0">
+              <span className="truncate">{nextUnit.emoji} {nextUnit.shortTitle}</span>
+              <ChevronRight size={13} className="shrink-0" />
+            </Link>
+          )}
+        </div>
       </div>
 
-      {/* ══ PAGE BODY ════════════════════════════════════════════════════════ */}
-      <div className="relative z-10 max-w-screen-xl mx-auto sm:px-4 lg:px-8 sm:py-6 lg:py-10">
+      {/* ══ PAGE LAYOUT ══ */}
+      <div className="relative z-10 mx-auto max-w-screen-xl px-3 sm:px-5 lg:px-8 py-4 sm:py-6 lg:py-10 w-full">
 
         {/* Desktop breadcrumb */}
-        <nav className="hidden lg:flex items-center gap-1.5 text-sm text-gray-500 mb-5 print:hidden flex-wrap">
+        <nav className="hidden lg:flex items-center gap-1.5 text-sm text-gray-500 mb-5 flex-wrap">
           {[
-            { href: "/", label: "Home" },
+            { href: "/",        label: "Home" },
             { href: "/courses", label: "Courses" },
             { href: `/courses/${SUBJECT_META.semesterSlug}`, label: SUBJECT_META.semester },
-            { href: BASE_PATH, label: "Pharmaceutical Biochemistry" },
+            { href: BASE_PATH,  label: "Pharmaceutical Biochemistry" },
           ].map(({ href, label }) => (
             <span key={href} className="flex items-center gap-1.5">
               <Link href={href} className="hover:text-blue-600 transition-colors">{label}</Link>
-              <ChevronRight size={13} />
+              <ChevronRight size={13} className="text-gray-300" />
             </span>
           ))}
           <span className="text-blue-700 font-semibold">{unit.shortTitle}</span>
         </nav>
 
-        <div className="flex flex-col lg:flex-row gap-6 xl:gap-8 items-start">
+        <div className="flex flex-col lg:flex-row gap-5 xl:gap-8 items-start w-full">
 
-          {/* ─── SIDEBAR (desktop only) ─────────────────────────────────── */}
-          <aside className="hidden lg:block w-56 xl:w-64 flex-shrink-0 print:hidden">
+          {/* ══ LEFT SIDEBAR ══ */}
+          <aside className="hidden lg:block w-52 xl:w-60 flex-shrink-0">
             <div className="sticky top-6 space-y-4">
+
               <div className={`bg-gradient-to-br ${GRAD} rounded-2xl p-4 text-white shadow-lg`}>
                 <div className="flex items-center gap-1.5 mb-1">
                   <Zap size={11} className="opacity-80" />
                   <span className="text-[9px] font-bold uppercase tracking-widest opacity-80">Pharmaceutical Biochemistry</span>
                 </div>
-                <p className="font-bold text-sm leading-snug">{SUBJECT_META.semester} · {SUBJECT_META.subjectCode}</p>
+                <p className="font-bold text-xs leading-snug mt-1">{SUBJECT_META.semester} · {SUBJECT_META.subjectCode}</p>
               </div>
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-3.5">
-                <p className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-2.5">
-                  <BookOpen size={12} /> All Units
+
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-3">
+                <p className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-2">
+                  <BookOpen size={11} /> All Units
                 </p>
                 <ul className="space-y-0.5">
-                  {BiochemUnits.map((u: any) => (
+                  {BiochemUnits.map(u => (
                     <li key={u.id}>
                       <Link href={`${BASE_PATH}/${u.id}`}
                         className={`group flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs transition-all ${
-                          u.id === unitSlug
-                            ? `bg-gradient-to-r ${GRAD} text-white font-semibold shadow-sm`
-                            : "text-gray-600 hover:bg-blue-50 hover:text-blue-700"
+                          u.id === unitSlug ? `bg-gradient-to-r ${GRAD} text-white font-semibold shadow-sm` : "text-gray-600 hover:bg-blue-50 hover:text-blue-700"
                         }`}>
                         <span>{u.emoji}</span>
-                        <span className="flex-1 leading-snug">{u.shortTitle}</span>
-                        <ChevronRight size={12} className={`shrink-0 ${u.id === unitSlug ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`} />
+                        <span className="flex-1 leading-snug truncate">{u.shortTitle}</span>
+                        <ChevronRight size={11} className={`shrink-0 transition-opacity ${u.id === unitSlug ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`} />
                       </Link>
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-3.5 space-y-2">
-                <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">Unit Info</p>
+
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-3 space-y-2">
+                <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-2">Unit Info</p>
                 <div className="flex items-center gap-2 text-xs text-gray-600">
-                  <Clock size={13} className="text-blue-500 shrink-0" />
+                  <Clock size={12} className="text-blue-500 shrink-0" />
                   <span>{unit.readTime} min read</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-600">
-                  <GraduationCap size={13} className="text-blue-500 shrink-0" />
+                  <GraduationCap size={12} className="text-blue-500 shrink-0" />
                   <span>Difficulty: <strong>{unit.difficulty}</strong></span>
                 </div>
               </div>
-              <button onClick={() => window.print()}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-2xl text-xs font-semibold text-gray-700 hover:bg-gray-50 hover:shadow-md transition-all">
-                <Printer size={14} /> Save as PDF
+
+              <button onClick={handleDownloadPdf} disabled={pdfLoading}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-2xl text-xs font-semibold text-gray-700 hover:bg-gray-50 hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+                {pdfLoading ? <Loader2 size={13} className="animate-spin" /> : <Printer size={13} />}
+                {pdfLoading ? "Generating…" : "Save as PDF"}
               </button>
             </div>
           </aside>
 
-          {/* ─── MAIN CONTENT ───────────────────────────────────────────── */}
-          <div style={{ flex: 1, minWidth: 0, maxWidth: "100%", width: "100%" }}>
+          {/* ══ MAIN CONTENT ══ */}
+          <div className="flex-1 min-w-0 w-full">
 
-            {/* Hero */}
-            <div className={`relative overflow-hidden bg-gradient-to-r ${GRAD} shadow-xl sm:rounded-3xl print:hidden`}>
-              <div className="absolute -top-10 -right-10 w-32 sm:w-48 h-32 sm:h-48 rounded-full bg-white/10 pointer-events-none" />
-              <div className="absolute -bottom-8 -left-8 w-24 sm:w-36 h-24 sm:h-36 rounded-full bg-white/10 pointer-events-none" />
-              <div className="absolute bottom-3 right-4 opacity-10 pointer-events-none select-none">
-                <span style={{ fontSize: "clamp(3rem, 10vw, 5rem)" }}>{unit.emoji}</span>
+            {/* Hero banner */}
+            <div className={`relative rounded-2xl overflow-hidden mb-4 sm:mb-5 bg-gradient-to-r ${GRAD} shadow-lg`}>
+              <div className="absolute -top-8 -right-8 w-32 sm:w-44 h-32 sm:h-44 rounded-full bg-white/10 pointer-events-none" />
+              <div className="absolute -bottom-6 -left-6 w-24 sm:w-32 h-24 sm:h-32 rounded-full bg-white/10 pointer-events-none" />
+              <div className="absolute bottom-3 right-3 opacity-10 pointer-events-none select-none">
+                <span className="text-6xl sm:text-8xl">{unit.emoji}</span>
               </div>
-              <div className="relative z-10 px-4 sm:px-8 py-5 sm:py-7">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest mb-2.5">
+              <div className="relative z-10 px-4 py-5 sm:px-7 sm:py-7">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 text-white text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-2.5">
                   <Zap size={9} /> Pharmaceutical Biochemistry · {SUBJECT_META.semester}
                 </div>
-                <h1 style={{ fontSize: "clamp(1.2rem, 5vw, 2.5rem)", fontWeight: 800, color: "#fff", lineHeight: 1.25, marginBottom: "0.5rem", wordBreak: "break-word" }}>
+                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-white leading-tight mb-1.5 break-words">
                   {unit.title}
                 </h1>
-                <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "clamp(0.75rem, 2.5vw, 0.9rem)", lineHeight: 1.6, maxWidth: "36rem", wordBreak: "break-word" }}>
-                  {unit.description}
-                </p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.75rem" }}>
-                  {[`Unit ${unitIdx + 1} of ${BiochemUnits.length}`, `${unit.readTime} min read`, unit.difficulty].map(t => (
-                    <span key={t} style={{ padding: "0.2rem 0.6rem", borderRadius: "999px", background: "rgba(255,255,255,0.2)", color: "#fff", fontSize: "0.625rem", fontWeight: 600 }}>{t}</span>
+                <p className="text-white/80 text-xs sm:text-sm max-w-lg break-words">{unit.description}</p>
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {[`Unit ${unitIdx + 1} of ${BiochemUnits.length}`, `${unit.readTime} min`, unit.difficulty].map(t => (
+                    <span key={t} className="px-2 py-0.5 rounded-full bg-white/20 text-white text-[9px] sm:text-[10px] font-semibold">{t}</span>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Content card */}
-            <div className="bg-white sm:rounded-3xl sm:border sm:border-gray-200 sm:shadow-sm sm:mt-5"
-              style={{ overflowX: "hidden", maxWidth: "100%", padding: "1.25rem 1rem" }}>
+            {/* ── PRINTABLE AREA ── */}
+            <div ref={printRef} style={{ background: "#fff" }}>
 
-              {loading && (
-                <div style={{ padding: "5rem 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
-                  <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${GRAD} flex items-center justify-center animate-pulse`}>
-                    <BookOpen className="w-6 h-6 text-white" />
+              {/* Preview image */}
+              {unit.previewImage && !imgError && (
+                <div className="mb-4 sm:mb-5 rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-gray-50">
+                  <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-100 bg-white">
+                    <ImageIcon size={13} className="text-blue-500 shrink-0" />
+                    <span className="text-xs font-semibold text-gray-500">Unit Overview</span>
                   </div>
-                  <p className="text-gray-400 text-sm font-semibold">Loading unit content…</p>
+                  <img
+                    src={unit.previewImage}
+                    alt={`${unit.shortTitle} overview`}
+                    crossOrigin="anonymous"
+                    className="w-full max-h-72 sm:max-h-96 object-contain bg-gray-50 p-2 sm:p-4"
+                    onError={() => setImgError(true)}
+                  />
                 </div>
               )}
 
-              {error && !loading && (
-                <div style={{ padding: "4rem 1rem", textAlign: "center" }}>
-                  <div className="w-14 h-14 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center mx-auto mb-4">
-                    <BookOpen className="w-6 h-6 text-red-400" />
+              {/* Content card */}
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-3 sm:p-5 md:p-8 overflow-hidden"
+                style={{ wordBreak: "break-word", overflowWrap: "break-word" }}>
+
+                {loading && (
+                  <div className="py-16 flex flex-col items-center gap-4">
+                    <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${GRAD} flex items-center justify-center animate-pulse`}>
+                      <BookOpen className="w-5 h-5 text-white" />
+                    </div>
+                    <p className="text-gray-400 text-sm font-semibold">Loading unit content…</p>
                   </div>
-                  <p className="text-gray-700 font-bold mb-1">Content file not found</p>
-                  <p style={{ color: "#9ca3af", fontSize: "0.75rem", marginBottom: "1rem", wordBreak: "break-all" }}>
-                    Make sure <code style={{ background: "#f3f4f6", padding: "1px 4px", borderRadius: "4px", color: "#2563eb", fontFamily: "monospace" }}>
-                      public/content/pharmaceutical-biochemistry/{unitSlug}.md
-                    </code> exists.
-                  </p>
-                  <Link href={BASE_PATH}
-                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r ${GRAD} text-white text-xs font-extrabold`}>
-                    ← Back to all units
-                  </Link>
-                </div>
-              )}
+                )}
 
-              {!loading && !error && content && (
-                <div style={{ minWidth: 0, maxWidth: "100%", overflowX: "hidden", wordBreak: "break-word" }}>
-                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
-                    {content}
-                  </ReactMarkdown>
-                </div>
-              )}
+                {error && !loading && (
+                  <div className="py-16 text-center px-4">
+                    <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center mx-auto mb-4">
+                      <BookOpen className="w-5 h-5 text-red-400" />
+                    </div>
+                    <p className="text-gray-700 font-bold mb-1">Content file not found</p>
+                    <p className="text-gray-400 text-xs mb-4 break-all">
+                      Place <code className="bg-gray-100 px-1.5 py-0.5 rounded text-blue-600 font-mono">public/content/pharmaceutical-biochemistry/{unitSlug}.md</code>
+                    </p>
+                    <Link href={BASE_PATH}
+                      className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r ${GRAD} text-white text-xs font-extrabold`}>
+                      ← Back to all units
+                    </Link>
+                  </div>
+                )}
 
-              {!loading && !error && (
-                <div className="flex justify-center mt-8 print:hidden">
-                  <button onClick={() => window.print()}
-                    className={`flex items-center gap-2 px-5 sm:px-8 py-3 bg-gradient-to-r ${GRAD} text-white rounded-2xl font-extrabold text-sm shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all`}>
-                    <Printer size={16} /> Download as PDF
-                  </button>
-                </div>
-              )}
+                {!loading && !error && content && (
+                  <div className="max-w-full">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents as any}>
+                      {content}
+                    </ReactMarkdown>
+                  </div>
+                )}
+              </div>
+
             </div>
+            {/* ── END PRINTABLE AREA ── */}
+
+            {/* Download button — outside printRef */}
+            {!loading && !error && (
+              <div className="flex justify-center mt-6">
+                <button onClick={handleDownloadPdf} disabled={pdfLoading}
+                  className={`flex items-center gap-2.5 px-6 sm:px-8 py-3.5 bg-gradient-to-r ${GRAD} text-white rounded-2xl font-extrabold text-sm shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0`}>
+                  {pdfLoading
+                    ? <><Loader2 size={17} className="animate-spin" /> Generating PDF…</>
+                    : <><Printer size={17} /> Download as PDF</>}
+                </button>
+              </div>
+            )}
 
             {/* Prev / Next */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginTop: "1rem", padding: "0 1rem" }}
-              className="sm:px-0 print:hidden">
+            <div className="mt-4 grid grid-cols-2 gap-3">
               {prevUnit ? (
                 <Link href={`${BASE_PATH}/${prevUnit.id}`}
-                  className={`group relative flex items-center gap-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-3 hover:-translate-y-0.5 hover:shadow-md transition-all overflow-hidden`}>
+                  className="group relative flex items-center gap-2 sm:gap-3 bg-white rounded-2xl border border-gray-200 shadow-sm p-3 sm:p-4 hover:-translate-y-0.5 hover:shadow-md transition-all overflow-hidden min-w-0">
                   <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${prevUnit.gradient}`} />
-                  <div className="w-7 h-7 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
-                    <ChevronLeft size={14} className="text-blue-600" />
+                  <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0">
+                    <ChevronLeft size={15} className="text-blue-600" />
                   </div>
-                  <div style={{ minWidth: 0 }}>
-                    <p style={{ fontSize: "0.5625rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#9ca3af", marginBottom: "2px" }}>Prev</p>
-                    <p style={{ fontSize: "0.6875rem", fontWeight: 600, color: "#1f2937", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {prevUnit.emoji} {prevUnit.shortTitle}
-                    </p>
+                  <div className="min-w-0">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">Prev</p>
+                    <p className="text-[10px] sm:text-xs font-semibold text-gray-800 leading-tight truncate">{prevUnit.emoji} {prevUnit.shortTitle}</p>
                   </div>
                 </Link>
               ) : <div />}
+
               {nextUnit ? (
                 <Link href={`${BASE_PATH}/${nextUnit.id}`}
-                  className={`group relative flex items-center justify-end gap-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-3 hover:-translate-y-0.5 hover:shadow-md transition-all overflow-hidden`}>
+                  className="group relative flex items-center justify-end gap-2 sm:gap-3 bg-white rounded-2xl border border-gray-200 shadow-sm p-3 sm:p-4 hover:-translate-y-0.5 hover:shadow-md transition-all overflow-hidden min-w-0">
                   <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${nextUnit.gradient}`} />
-                  <div style={{ minWidth: 0, textAlign: "right" }}>
-                    <p style={{ fontSize: "0.5625rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#9ca3af", marginBottom: "2px" }}>Next</p>
-                    <p style={{ fontSize: "0.6875rem", fontWeight: 600, color: "#1f2937", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {nextUnit.emoji} {nextUnit.shortTitle}
-                    </p>
+                  <div className="min-w-0 text-right">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">Next</p>
+                    <p className="text-[10px] sm:text-xs font-semibold text-gray-800 leading-tight truncate">{nextUnit.emoji} {nextUnit.shortTitle}</p>
                   </div>
-                  <div className="w-7 h-7 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
-                    <ChevronRight size={14} className="text-blue-600" />
+                  <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0">
+                    <ChevronRight size={15} className="text-blue-600" />
                   </div>
                 </Link>
               ) : <div />}
             </div>
 
-            <div style={{ height: "2rem" }} className="lg:hidden" />
           </div>
         </div>
       </div>
@@ -441,20 +506,10 @@ export default function BiochemUnitPage({ params }: PageProps) {
       {/* Scroll to top */}
       {showScrollTop && (
         <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className={`fixed bottom-5 right-4 z-30 w-10 h-10 rounded-2xl bg-gradient-to-br ${GRAD} text-white shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center print:hidden`}>
-          <ArrowUp size={16} />
+          className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-30 w-10 h-10 rounded-2xl bg-gradient-to-br ${GRAD} text-white shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center`}>
+          <ArrowUp size={17} />
         </button>
       )}
-
-      <style jsx global>{`
-        @media print {
-          @page { margin: 2cm; size: A4; }
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        }
-        *, *::before, *::after { box-sizing: border-box; }
-        body { overflow-x: hidden; }
-        img, video, iframe { max-width: 100%; }
-      `}</style>
     </section>
   );
 }
