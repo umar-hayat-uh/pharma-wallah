@@ -181,6 +181,7 @@ export const SemesterData: Semester[] = [
         name: "Industrial Pharmacy-I",
         icon: <Factory className="text-blue-600" strokeWidth={2} />,
         description: "Pharmaceutical manufacturing principles, equipment, scale-up, and unit operations.",
+        href: "/courses/sem-6/industrial-pharmacy", 
       },
       {
         name: "Pharmaceutical Analysis-I",
