@@ -27,9 +27,10 @@ const BG_ICONS = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SLIDE DATA — 10 histology slides · 2 images each
+// SLIDE DATA — 21 histology slides · 2 images each
 // ═══════════════════════════════════════════════════════════════════════════════
 const SLIDE_DATA = [
+  // Original slides (16)
   {
     id: "lungs",
     title: "Lungs",
@@ -191,6 +192,67 @@ const SLIDE_DATA = [
       "Skeletal muscle is striated voluntary muscle. Each fibre is a syncytium — multiple nuclei pushed to the periphery beneath the sarcolemma. The regular arrangement of sarcomeres (actin I-bands + myosin A-bands with H-zone and Z-lines) creates characteristic cross-striations. Fibres are grouped into fascicles by perimysium.",
   },
   {
+    id: "cardiac-muscle",
+    title: "Cardiac Muscle",
+    category: "Muscle Tissue",
+    images: [
+      { url: "/images/spotting/histology/cardiac.jpg" },
+      { url: "/images/spotting/histology/cardiac-high.jpg" },
+    ],
+    options: ["Cardiac Muscle", "Skeletal Muscle", "Smooth Muscle", "Myocardium"],
+    correctOptionIndex: 0,
+    definition: [
+      "Presence of striations",
+      "Centrally placed single or double nuclei",
+      "Branched, anastomosing muscle fibres",
+      "Intercalated discs — step-like dark transverse bands between cells",
+    ],
+    keyFeatures: ["Striations", "Central nuclei", "Branched fibres", "Intercalated discs"],
+    lessonDetailed:
+      "Cardiac muscle is striated involuntary muscle found only in the heart. Cells are branched and connected by intercalated discs — specialised junctions containing desmosomes and gap junctions. Nuclei are centrally located (1–2 per cell). Rich capillary network supports continuous aerobic metabolism.",
+  },
+  {
+    id: "gall-bladder",
+    title: "Gall Bladder",
+    category: "Organ Histology",
+    images: [
+      { url: "/images/spotting/histology/gall.jpg" },
+      { url: "/images/spotting/histology/gall-bladder.avif" },
+    ],
+    options: ["Gall Bladder", "Small Intestine", "Stomach", "Urinary Bladder"],
+    correctOptionIndex: 0,
+    definition: [
+      "Mucosal folds (rugae-like) — tall, branching folds that flatten with distension",
+      "Simple tall columnar epithelium with basally located nuclei and apical microvilli — NO goblet cells",
+      "Thin, poorly defined muscularis propria",
+      "No submucosa — perimuscular connective tissue directly under muscularis",
+    ],
+    keyFeatures: ["Mucosal folds", "Simple columnar epithelium (no goblet cells)", "Thin muscularis", "No submucosa"],
+    lessonDetailed:
+      "The gall bladder stores and concentrates bile. Its mucosa is highly folded (rugae) and lined by simple tall columnar epithelium with microvilli — NO goblet cells. It lacks a submucosa; the muscularis propria is thin and poorly organised. In chronic cholecystitis, Rokitansky–Aschoff sinuses (epithelial outpouchings) may be seen.",
+  },
+  {
+    id: "wbcs",
+    title: "White Blood Cells (WBCs)",
+    category: "Blood / Haematology",
+    images: [
+      { url: "/images/spotting/histology/wbcs.jpg" },
+      { url: "/images/spotting/histology/wbcs-low.jpg" },
+    ],
+    options: ["White Blood Cells (WBCs)", "Red Blood Cells", "Platelets", "Bone Marrow"],
+    correctOptionIndex: 0,
+    definition: [
+      "Neutrophils: multilobed nucleus, fine pink granules – most common",
+      "Eosinophils: bilobed nucleus, coarse red-orange granules",
+      "Basophils: large purple-black granules often obscuring nucleus",
+      "Lymphocytes: round dense nucleus, scant blue cytoplasm",
+      "Monocytes: kidney-shaped nucleus, abundant grey-blue cytoplasm",
+    ],
+    keyFeatures: ["Multilobed neutrophils", "Bilobed eosinophils with red granules", "Basophils with dark granules", "Lymphocytes (round dense nuclei)", "Monocytes (indented nucleus)"],
+    lessonDetailed:
+      "Leukocytes are classified into granulocytes (neutrophils, eosinophils, basophils) and agranulocytes (lymphocytes, monocytes). On a Wright-stained smear, neutrophils have multilobed nuclei and fine granules; eosinophils have bilobed nuclei and coarse red-orange granules; basophils have large purple-black granules often obscuring the nucleus; lymphocytes have round dense nuclei with scant cytoplasm; monocytes are largest with indented nuclei and abundant grey-blue cytoplasm.",
+  },
+  {
     id: "rbcs",
     title: "Red Blood Cells (RBCs)",
     category: "Blood / Haematology",
@@ -211,29 +273,174 @@ const SLIDE_DATA = [
       "Mature RBCs (erythrocytes) are anucleate biconcave discs optimised for oxygen transport. The biconcave shape maximises surface-area-to-volume ratio for gas diffusion and creates central pallor on H&E. They are filled with haemoglobin (eosinophilic staining) and are highly deformable. Diameter ~7–8 µm — used as a histological size reference.",
   },
   {
-    id: "stratified-squamous-epithelium",
-    title: "Stratified Squamous Epithelium",
-    category: "Epithelial Tissue",
+    id: "connective-tissue",
+    title: "Connective Tissue & ECM",
+    category: "Connective Tissue",
     images: [
-      { url: "/images/spotting/histology/stratified-squamous-epithelium.jpg" },
-      { url: "/images/spotting/histology/stratified-squamous-epithelium-high.jpg" },
+      { url: "/images/spotting/histology/connect.jpg" },
+      { url: "/images/spotting/histology/fubers.jpg" },
     ],
-    options: ["Stratified Squamous Epithelium", "Simple Columnar Epithelium", "Transitional Epithelium", "Pseudostratified Epithelium"],
+    options: ["Connective Tissue", "Epithelial Tissue", "Muscle Tissue", "Nervous Tissue"],
     correctOptionIndex: 0,
     definition: [
-      "Recognition of multiple layers of cells",
-      "Identification of flattened cells at the surface",
-      "Detection of cuboidal / columnar basal cells at the base",
-      "Presence of nuclei at various levels throughout the layers",
+      "Fibroblasts: most numerous CT cell — spindle-shaped, pale nucleus, responsible for ECM synthesis",
+      "Mast cells: large cells with metachromatic granules (purple with toluidine blue); near vessels",
+      "Collagen fibres: eosinophilic wavy bundles (Type I most common); Type III = reticular fibres",
+      "Elastic fibres: thin, branching, refractile fibres stained by orcein or Weigert's; found in skin, arteries, lungs",
     ],
-    keyFeatures: ["Multiple cell layers", "Flattened surface cells", "Basal cuboidal/columnar cells", "Nuclei at various levels"],
+    keyFeatures: ["Fibroblasts", "Mast cells", "Collagen fibres", "Elastic fibres"],
     lessonDetailed:
-      "Stratified squamous epithelium provides mechanical protection in areas subject to abrasion — skin (keratinised) and oral cavity, oesophagus, vagina (non-keratinised). Multiple layers: columnar/cuboidal basal cells on the basement membrane, intermediate polygonal cells, and progressively flattened surface cells. Nuclei are present at all levels in non-keratinised forms.",
+      "Connective tissue is characterised by cells scattered in an abundant extracellular matrix. Resident cells include fibroblasts (synthesise ECM), mast cells (allergy mediators), macrophages (phagocytosis), and adipocytes. The ECM contains collagen fibres (types I–IV), elastic fibres, and ground substance (GAGs, proteoglycans, glycoproteins). Special stains (Masson's trichrome, silver, orcein) help identify fibre types.",
+  },
+
+  // New simple epithelium subtypes (4 slides)
+  {
+    id: "simple-squamous",
+    title: "Simple Squamous Epithelium",
+    category: "Epithelial Tissue",
+    images: [
+      { url: "/images/spotting/histology/simple-squamous.jpg" },
+      { url: "/images/spotting/histology/simple-squamous-high.jpg" },
+    ],
+    options: ["Simple Squamous Epithelium", "Simple Cuboidal Epithelium", "Simple Columnar Epithelium", "Pseudostratified Epithelium"],
+    correctOptionIndex: 0,
+    definition: [
+      "Single layer of flat, thin cells",
+      "Central disc-shaped or ovoid nucleus that bulges into the lumen",
+      "Cells fit together like floor tiles",
+      "Found in alveoli, endothelium, mesothelium",
+    ],
+    keyFeatures: ["Flat cells", "Single layer", "Central bulging nuclei", "Lining of blood vessels and body cavities"],
+    lessonDetailed:
+      "Simple squamous epithelium consists of a single layer of flat cells. It is found in areas where rapid diffusion or filtration is required, such as lung alveoli (type I pneumocytes), the lining of blood vessels (endothelium), and serous membranes (mesothelium). The thinness of the cells facilitates efficient exchange.",
+  },
+  {
+    id: "simple-cuboidal",
+    title: "Simple Cuboidal Epithelium",
+    category: "Epithelial Tissue",
+    images: [
+      { url: "/images/spotting/histology/simple-cuboidal.jpg" },
+      { url: "/images/spotting/histology/cuboidal.jpg" },
+    ],
+    options: ["Simple Squamous Epithelium", "Simple Cuboidal Epithelium", "Simple Columnar Epithelium", "Pseudostratified Epithelium"],
+    correctOptionIndex: 1,
+    definition: [
+      "Single layer of cube-shaped cells",
+      "Centrally placed spherical nucleus",
+      "Height approximately equal to width",
+      "Found in thyroid follicles, kidney tubules, and gland ducts",
+    ],
+    keyFeatures: ["Cube-shaped cells", "Central round nuclei", "Single layer", "Secretory or absorptive function"],
+    lessonDetailed:
+      "Simple cuboidal epithelium consists of a single layer of cube-shaped cells with central spherical nuclei. It is involved in secretion and absorption, found in thyroid follicles, kidney tubules (proximal and distal convoluted tubules), and ducts of many glands.",
+  },
+  {
+    id: "simple-columnar",
+    title: "Simple Columnar Epithelium",
+    category: "Epithelial Tissue",
+    images: [
+      { url: "/images/spotting/histology/simple-columnar.jpg" },
+      { url: "/images/spotting/histology/columinar.jpg" },
+    ],
+    options: ["Simple Squamous Epithelium", "Simple Cuboidal Epithelium", "Simple Columnar Epithelium", "Pseudostratified Epithelium"],
+    correctOptionIndex: 2,
+    definition: [
+      "Single layer of tall, column-shaped cells",
+      "Oval nuclei aligned near the base",
+      "May have microvilli (brush border) or goblet cells",
+      "Lines stomach, intestines, gallbladder",
+    ],
+    keyFeatures: ["Tall columnar cells", "Basal nuclei", "Brush border or goblet cells", "Absorption/secretion"],
+    lessonDetailed:
+      "Simple columnar epithelium consists of a single layer of tall cells with basal oval nuclei. It is specialised for absorption (e.g., intestinal enterocytes with microvilli) and secretion (e.g., stomach mucous cells). Goblet cells are interspersed in intestinal epithelium.",
+  },
+  {
+    id: "pseudostratified-columnar",
+    title: "Pseudostratified Columnar Epithelium",
+    category: "Epithelial Tissue",
+    images: [
+      { url: "/images/spotting/histology/pseudostratified.jpg" },
+      { url: "/images/spotting/histology/pseudo.png" },
+    ],
+    options: ["Simple Squamous Epithelium", "Simple Cuboidal Epithelium", "Simple Columnar Epithelium", "Pseudostratified Columnar Epithelium"],
+    correctOptionIndex: 3,
+    definition: [
+      "Appears multilayered but all cells contact the basement membrane",
+      "Nuclei at different levels",
+      "Ciliated with goblet cells in respiratory tract",
+      "Also found in epididymis (with stereocilia)",
+    ],
+    keyFeatures: ["Appears stratified", "All cells touch basement membrane", "Cilia and goblet cells in respiratory type", "Nuclei at multiple levels"],
+    lessonDetailed:
+      "Pseudostratified columnar epithelium appears stratified because nuclei are at different levels, but all cells rest on the basement membrane. In the respiratory tract, it is ciliated with goblet cells, forming the mucociliary escalator. In the epididymis, it has non-motile stereocilia.",
+  },
+
+  // New stratified epithelium subtypes (4 slides)
+  {
+    id: "stratified-squamous-keratinised",
+    title: "Stratified Squamous Keratinised Epithelium",
+    category: "Epithelial Tissue",
+    images: [
+      { url: "/images/spotting/histology/stratified-squamous-keratinised.jpg" },
+      { url: "/images/spotting/histology/stratified-squamous-high.jpg" },
+    ],
+    options: ["Stratified Squamous Keratinised", "Stratified Squamous Non-keratinised", "Stratified Cuboidal", "Transitional Epithelium"],
+    correctOptionIndex: 0,
+    definition: [
+      "Multiple cell layers",
+      "Surface cells are anucleate, filled with keratin (stratum corneum)",
+      "Found only in skin (epidermis)",
+      "Five layers: basale, spinosum, granulosum, lucidum (thick skin), corneum",
+    ],
+    keyFeatures: ["Multiple layers", "Anucleate keratinised surface", "Stratum corneum", "Skin only"],
+    lessonDetailed:
+      "Keratinised stratified squamous epithelium forms the epidermis of skin. Surface cells are dead and filled with keratin, providing a waterproof barrier. It consists of five layers: stratum basale (mitotic), spinosum, granulosum, lucidum (in thick skin), and corneum (anucleate squames).",
+  },
+  {
+    id: "stratified-cuboidal",
+    title: "Stratified Cuboidal Epithelium",
+    category: "Epithelial Tissue",
+    images: [
+      { url: "/images/spotting/histology/stratified-cuboidal.jpg" },
+      { url: "/images/spotting/histology/cuboidal.jpg" },
+    ],
+    options: ["Stratified Squamous Keratinised", "Stratified Squamous Non-keratinised", "Stratified Cuboidal", "Transitional Epithelium"],
+    correctOptionIndex: 2,
+    definition: [
+      "Two or more layers of cuboidal cells",
+      "Rare; found in large ducts of exocrine glands",
+      "Provides mechanical protection",
+      "Lines sweat gland ducts, salivary gland ducts",
+    ],
+    keyFeatures: ["Multiple cuboidal layers", "Large gland ducts", "Sweat glands", "Salivary ducts"],
+    lessonDetailed:
+      "Stratified cuboidal epithelium consists of two or more layers of cube-shaped cells. It is relatively rare and found in the large ducts of exocrine glands (e.g., sweat glands, salivary glands). It provides a sturdy lining while allowing secretion transport.",
+  },
+  {
+    id: "transitional-epithelium",
+    title: "Transitional Epithelium (Urothelium)",
+    category: "Epithelial Tissue",
+    images: [
+      { url: "/images/spotting/histology/transitional-epithelium.jpg" },
+      { url: "/images/spotting/histology/transitional.jpg" },
+    ],
+    options: ["Stratified Squamous Keratinised", "Stratified Squamous Non-keratinised", "Stratified Cuboidal", "Transitional Epithelium"],
+    correctOptionIndex: 3,
+    definition: [
+      "Multiple cell layers; specialised for stretch",
+      "Dome-shaped superficial cells (umbrella cells)",
+      "Relaxed: thick, 6–8 layers",
+      "Distended: thin, 2–3 layers",
+      "Lines urinary tract (renal pelvis, ureter, bladder)",
+    ],
+    keyFeatures: ["Umbrella cells", "Stretchable", "Urinary tract", "Dome-shaped surface cells"],
+    lessonDetailed:
+      "Transitional epithelium (urothelium) lines the urinary tract. It accommodates stretch and recoil. In the relaxed state, it appears thick (6–8 layers) with dome-shaped umbrella cells; when distended, it flattens to 2–3 layers. The apical plasma membrane of umbrella cells is thickened (asymmetric unit membrane) to resist hypertonic urine.",
   },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// REFERENCES
+// REFERENCES (unchanged)
 // ═══════════════════════════════════════════════════════════════════════════════
 const REFERENCES = [
   { authors: "Ross MH, Pawlina W.", title: "Histology: A Text and Atlas (8th ed.).", publisher: "Wolters Kluwer.", year: "2020" },
@@ -244,7 +451,7 @@ const REFERENCES = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// UTILITIES
+// UTILITIES (unchanged)
 // ═══════════════════════════════════════════════════════════════════════════════
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -295,7 +502,7 @@ interface SlideAnswer {
 type Slide = typeof SLIDE_DATA[number];
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LIGHTBOX
+// LIGHTBOX, IMAGE GALLERY, REFERENCES BLOCK (unchanged from previous code)
 // ═══════════════════════════════════════════════════════════════════════════════
 function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
   useEffect(() => {
@@ -331,9 +538,6 @@ function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// IMAGE GALLERY  — 2 images (Low power / High power)
-// ═══════════════════════════════════════════════════════════════════════════════
 function ImageGallery({ images }: { images: Slide["images"] }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const [lightbox,  setLightbox]  = useState(false);
@@ -434,9 +638,6 @@ function ImageGallery({ images }: { images: Slide["images"] }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// REFERENCES BLOCK
-// ═══════════════════════════════════════════════════════════════════════════════
 function ReferencesBlock() {
   return (
     <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden">
@@ -474,16 +675,164 @@ function ReferencesBlock() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// REPORT CARD COMPONENT (unchanged)
+// ═══════════════════════════════════════════════════════════════════════════════
+function ReportCard({ 
+  slides, 
+  answers, 
+  roundTitle, 
+  timerExpired, 
+  onNextRound, 
+  showNextButton = false,
+  nextButtonText = "Continue to Next Round"
+}: { 
+  slides: Slide[]; 
+  answers: SlideAnswer[]; 
+  roundTitle: string; 
+  timerExpired?: boolean; 
+  onNextRound?: () => void; 
+  showNextButton?: boolean;
+  nextButtonText?: string;
+}) {
+  const totalCorrect = answers.filter((a, i) =>
+    a.selectedOption !== null && slides[i].options[a.selectedOption] === slides[i].title
+  ).length;
+  const avgMatch = (answers.reduce((s, a) => s + a.matchScore, 0) / answers.length).toFixed(1);
+  const pct = Math.round((totalCorrect / slides.length) * 100);
+
+  return (
+    <section className="min-h-screen bg-white relative overflow-x-hidden">
+      {BG_ICONS.map(({ Icon, top, left, size }, i) => (
+        <div key={i} className="fixed pointer-events-none text-blue-100 z-0" style={{ top, left }}>
+          <Icon size={size} strokeWidth={1.4} />
+        </div>
+      ))}
+
+      {/* Hero */}
+      <div className={`relative bg-gradient-to-r ${GRAD} overflow-hidden`}>
+        <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/10 pointer-events-none" />
+        <div className="absolute -bottom-10 left-20 w-32 h-32 rounded-full bg-white/10 pointer-events-none" />
+        <div className="absolute right-6 sm:right-20 bottom-4 opacity-15 pointer-events-none">
+          <Trophy size={64} className="text-white" />
+        </div>
+        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-8 py-10 sm:py-14 text-center">
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 text-white text-xs font-bold uppercase tracking-widest mb-4">
+            <Trophy className="w-3.5 h-3.5" /> {roundTitle}
+          </span>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4">Your Results</h1>
+          {timerExpired && (
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/80 text-white text-xs font-bold mb-4 border border-red-400/60">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Time&apos;s up! 20 minutes elapsed.
+            </div>
+          )}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { n: `${totalCorrect}/${slides.length}`, l: "Correct Slides" },
+              { n: `${pct}%`,                          l: "MCQ Score"       },
+              { n: `${avgMatch}%`,                     l: "Avg Match Score" },
+              { n: pct >= 80 ? "🏆" : pct >= 50 ? "🎯" : "📚", l: "Grade"  },
+            ].map(({ n, l }) => (
+              <div key={l} className="bg-white/15 rounded-2xl p-3 sm:p-4">
+                <div className="text-2xl sm:text-3xl font-extrabold text-white leading-none">{n}</div>
+                <div className="text-xs text-green-100 mt-1">{l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Per-slide summary */}
+      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-8 py-8 space-y-3">
+        <h2 className="text-lg sm:text-2xl font-extrabold text-gray-900 mb-5 flex items-center gap-3">
+          <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${GRAD} flex items-center justify-center shrink-0`}>
+            <Award className="w-5 h-5 text-white" />
+          </div>
+          Slide-by-Slide Summary
+        </h2>
+
+        {slides.map((slide, idx) => {
+          const ans       = answers[idx];
+          const isCorrect = ans.selectedOption !== null && slide.options[ans.selectedOption] === slide.title;
+          return (
+            <div key={slide.id} className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden hover:shadow-md transition-all">
+              <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
+              <div className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                {/* thumbnail */}
+                <div className="relative w-14 h-11 rounded-xl overflow-hidden border border-gray-200 shrink-0">
+                  <Image src={slide.images[0].url} alt={slide.title} fill className="object-cover" sizes="56px" />
+                </div>
+                {/* info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-extrabold text-gray-900 text-sm">{slide.title}</span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">{slide.category}</span>
+                    {isCorrect
+                      ? <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-green-700"><CheckCircle className="w-2.5 h-2.5" /> Correct</span>
+                      : <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-red-50 border border-red-200 text-red-700"><XCircle className="w-2.5 h-2.5" /> Incorrect</span>}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Your answer: <span className="font-semibold text-gray-600">{ans.selectedOption !== null ? slide.options[ans.selectedOption] : "—"}</span>
+                    {!isCorrect && <span className="ml-2 text-blue-600">✓ <strong>{slide.title}</strong></span>}
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {slide.keyFeatures.slice(0, 3).map(f => (
+                      <span key={f} className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 border border-blue-100 text-blue-700">{f}</span>
+                    ))}
+                  </div>
+                </div>
+                {/* score + lesson link */}
+                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-xl border ${scoreBadge(ans.matchScore)}`}>
+                    {ans.matchScore}% match
+                  </span>
+                  <Link href={`/spotting/histology/lessons/${slide.id}`}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-green-600 transition-colors">
+                    Lesson <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
+          {showNextButton && onNextRound && (
+            <button onClick={onNextRound}
+              className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r ${GRAD} text-white font-extrabold text-sm shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all`}>
+              {nextButtonText} <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
+          <button onClick={() => window.location.reload()}
+            className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-extrabold text-sm hover:border-blue-400 hover:text-blue-600 transition-all`}>
+            <Shuffle className="w-4 h-4" /> Retake Full Test
+          </button>
+          <Link href="/spotting"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-extrabold text-sm hover:border-blue-400 hover:text-blue-600 transition-all">
+            <ChevronLeft className="w-4 h-4" /> Back to Spotting
+          </Link>
+        </div>
+
+        <ReferencesBlock />
+      </div>
+    </section>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function HistologyTestPage() {
-  const [slides,   setSlides]   = useState<typeof SLIDE_DATA>(SLIDE_DATA);
-  const [mounted,  setMounted]  = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [round, setRound] = useState(1); // 1 = round1 active, 2 = round2 active, 3 = round1 completed (showing report), 4 = round2 completed (final report)
+  const [shuffledSlides, setShuffledSlides] = useState<Slide[]>([]);
+  const [round1Slides, setRound1Slides] = useState<Slide[]>([]);
+  const [round2Slides, setRound2Slides] = useState<Slide[]>([]);
+  const [round1Answers, setRound1Answers] = useState<SlideAnswer[]>([]);
+  const [round2Answers, setRound2Answers] = useState<SlideAnswer[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<SlideAnswer[]>(
-    SLIDE_DATA.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 }))
-  );
-  const [testCompleted, setTestCompleted] = useState(false);
+  const [answers, setAnswers] = useState<SlideAnswer[]>([]); // active round answers
+  const [slides, setSlides] = useState<Slide[]>([]); // active round slides
 
   // ── 20-min timer ────────────────────────────────────────────────────────────
   const TOTAL_SECONDS = 20 * 60;
@@ -491,40 +840,54 @@ export default function HistologyTestPage() {
   const [timerActive,  setTimerActive]  = useState(false);
   const [timerExpired, setTimerExpired] = useState(false);
 
+  // Initialise on mount
   useEffect(() => {
     const shuffled = shuffle([...SLIDE_DATA]);
-    setSlides(shuffled);
-    setAnswers(shuffled.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
+    setShuffledSlides(shuffled);
+    // Split into two rounds: first 10, rest 11 (adjust as needed)
+    const round1 = shuffled.slice(0, 10);
+    const round2 = shuffled.slice(10);
+    setRound1Slides(round1);
+    setRound2Slides(round2);
+    setRound1Answers(round1.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
+    setRound2Answers(round2.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
+    // Start with round 1
+    setSlides(round1);
+    setAnswers(round1.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
     setMounted(true);
     setTimerActive(true);
   }, []);
 
   useEffect(() => {
-    if (!timerActive || testCompleted) return;
+    if (!timerActive || round >= 3) return; // stop timer after test ends
     if (timeLeft <= 0) {
       setTimerExpired(true);
       setTimerActive(false);
-      setTestCompleted(true);
+      // Force end of current round
+      if (round === 1) {
+        setRound(3); // show round1 report
+      } else if (round === 2) {
+        setRound(4); // show final report
+      }
       return;
     }
     const id = setInterval(() => setTimeLeft(t => t - 1), 1000);
     return () => clearInterval(id);
-  }, [timerActive, timeLeft, testCompleted]);
+  }, [timerActive, timeLeft, round]);
 
   const timerMins   = String(Math.floor(timeLeft / 60)).padStart(2, "0");
   const timerSecs   = String(timeLeft % 60).padStart(2, "0");
   const timerUrgent = timeLeft <= 120;
 
-  const current       = slides[currentIndex];
+  const current = slides[currentIndex];
   const currentAnswer = answers[currentIndex];
-  const allSubmitted  = answers.every(a => a.submitted);
+  const allSubmitted = answers.every(a => a.submitted);
   const submittedCount = answers.filter(a => a.submitted).length;
 
   const shuffledOptions = useMemo(() => {
-    if (!mounted) return current.options.map((text, origIdx) => ({ text, origIdx }));
+    if (!mounted || !current) return [];
     return shuffle(current.options.map((text, origIdx) => ({ text, origIdx })));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current.id, mounted]);
+  }, [current?.id, mounted]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -533,152 +896,91 @@ export default function HistologyTestPage() {
       return;
     }
     const score = calculateMatch(currentAnswer.points, current.definition);
-    setAnswers(prev => prev.map((a, i) =>
+    const newAnswers = answers.map((a, i) =>
       i === currentIndex ? { ...a, submitted: true, matchScore: score } : a
-    ));
+    );
+    setAnswers(newAnswers);
+    // Update the round-specific answers
+    if (round === 1) setRound1Answers(newAnswers);
+    else if (round === 2) setRound2Answers(newAnswers);
   };
 
   const handleReset = () => {
-    setAnswers(prev => prev.map((a, i) =>
+    const newAnswers = answers.map((a, i) =>
       i === currentIndex ? { selectedOption: null, points: "", submitted: false, matchScore: 0 } : a
-    ));
+    );
+    setAnswers(newAnswers);
+    if (round === 1) setRound1Answers(newAnswers);
+    else if (round === 2) setRound2Answers(newAnswers);
   };
 
   const setOption = (origIdx: number) => {
     if (currentAnswer.submitted) return;
-    setAnswers(prev => prev.map((a, i) => i === currentIndex ? { ...a, selectedOption: origIdx } : a));
+    const newAnswers = answers.map((a, i) => i === currentIndex ? { ...a, selectedOption: origIdx } : a);
+    setAnswers(newAnswers);
+    if (round === 1) setRound1Answers(newAnswers);
+    else if (round === 2) setRound2Answers(newAnswers);
   };
+
   const setPoints = (val: string) => {
     if (currentAnswer.submitted) return;
-    setAnswers(prev => prev.map((a, i) => i === currentIndex ? { ...a, points: val } : a));
+    const newAnswers = answers.map((a, i) => i === currentIndex ? { ...a, points: val } : a);
+    setAnswers(newAnswers);
+    if (round === 1) setRound1Answers(newAnswers);
+    else if (round === 2) setRound2Answers(newAnswers);
   };
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // RESULTS SCREEN
-  // ═══════════════════════════════════════════════════════════════════════════
-  if (testCompleted) {
-    const totalCorrect = answers.filter((a, i) =>
-      a.selectedOption !== null && slides[i].options[a.selectedOption] === slides[i].title
-    ).length;
-    const avgMatch = (answers.reduce((s, a) => s + a.matchScore, 0) / answers.length).toFixed(1);
-    const pct      = Math.round((totalCorrect / slides.length) * 100);
+  const handleNextRound = () => {
+    setRound(2);
+    setSlides(round2Slides);
+    setAnswers(round2Answers);
+    setCurrentIndex(0);
+    setTimerActive(true); // restart timer for round 2
+  };
 
+  const handleFinishRound = () => {
+    if (round === 1) {
+      setRound(3); // show round1 report
+    } else if (round === 2) {
+      setRound(4); // show final report
+    }
+    setTimerActive(false);
+  };
+
+  // Render round report (round 1 completed)
+  if (round === 3) {
     return (
-      <section className="min-h-screen bg-white relative overflow-x-hidden">
-        {BG_ICONS.map(({ Icon, top, left, size }, i) => (
-          <div key={i} className="fixed pointer-events-none text-blue-100 z-0" style={{ top, left }}>
-            <Icon size={size} strokeWidth={1.4} />
-          </div>
-        ))}
-
-        {/* Hero */}
-        <div className={`relative bg-gradient-to-r ${GRAD} overflow-hidden`}>
-          <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/10 pointer-events-none" />
-          <div className="absolute -bottom-10 left-20 w-32 h-32 rounded-full bg-white/10 pointer-events-none" />
-          <div className="absolute right-6 sm:right-20 bottom-4 opacity-15 pointer-events-none">
-            <Trophy size={64} className="text-white" />
-          </div>
-          <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-8 py-10 sm:py-14 text-center">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 text-white text-xs font-bold uppercase tracking-widest mb-4">
-              <Trophy className="w-3.5 h-3.5" /> Test Complete
-            </span>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4">Your Results</h1>
-            {timerExpired && (
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/80 text-white text-xs font-bold mb-4 border border-red-400/60">
-                <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Time&apos;s up! 20 minutes elapsed.
-              </div>
-            )}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                { n: `${totalCorrect}/${slides.length}`, l: "Correct Slides" },
-                { n: `${pct}%`,                          l: "MCQ Score"       },
-                { n: `${avgMatch}%`,                     l: "Avg Match Score" },
-                { n: pct >= 80 ? "🏆" : pct >= 50 ? "🎯" : "📚", l: "Grade"  },
-              ].map(({ n, l }) => (
-                <div key={l} className="bg-white/15 rounded-2xl p-3 sm:p-4">
-                  <div className="text-2xl sm:text-3xl font-extrabold text-white leading-none">{n}</div>
-                  <div className="text-xs text-green-100 mt-1">{l}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Per-slide summary */}
-        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-8 py-8 space-y-3">
-          <h2 className="text-lg sm:text-2xl font-extrabold text-gray-900 mb-5 flex items-center gap-3">
-            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${GRAD} flex items-center justify-center shrink-0`}>
-              <Award className="w-5 h-5 text-white" />
-            </div>
-            Slide-by-Slide Summary
-          </h2>
-
-          {slides.map((slide, idx) => {
-            const ans       = answers[idx];
-            const isCorrect = ans.selectedOption !== null && slide.options[ans.selectedOption] === slide.title;
-            return (
-              <div key={slide.id} className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden hover:shadow-md transition-all">
-                <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
-                <div className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-                  {/* thumbnail */}
-                  <div className="relative w-14 h-11 rounded-xl overflow-hidden border border-gray-200 shrink-0">
-                    <Image src={slide.images[0].url} alt={slide.title} fill className="object-cover" sizes="56px" />
-                  </div>
-                  {/* info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-extrabold text-gray-900 text-sm">{slide.title}</span>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">{slide.category}</span>
-                      {isCorrect
-                        ? <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-green-700"><CheckCircle className="w-2.5 h-2.5" /> Correct</span>
-                        : <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-red-50 border border-red-200 text-red-700"><XCircle className="w-2.5 h-2.5" /> Incorrect</span>}
-                    </div>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      Your answer: <span className="font-semibold text-gray-600">{ans.selectedOption !== null ? slide.options[ans.selectedOption] : "—"}</span>
-                      {!isCorrect && <span className="ml-2 text-blue-600">✓ <strong>{slide.title}</strong></span>}
-                    </p>
-                    <div className="mt-1.5 flex flex-wrap gap-1">
-                      {slide.keyFeatures.slice(0, 3).map(f => (
-                        <span key={f} className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 border border-blue-100 text-blue-700">{f}</span>
-                      ))}
-                    </div>
-                  </div>
-                  {/* score + lesson link */}
-                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-xl border ${scoreBadge(ans.matchScore)}`}>
-                      {ans.matchScore}% match
-                    </span>
-                    <Link href={`/spotting/histology/lessons/${slide.id}`}
-                      className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-green-600 transition-colors">
-                      Lesson <ChevronRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
-            <button onClick={() => window.location.reload()}
-              className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r ${GRAD} text-white font-extrabold text-sm shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all`}>
-              <Shuffle className="w-4 h-4" /> Retake (Reshuffled)
-            </button>
-            <Link href="/spotting"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-extrabold text-sm hover:border-blue-400 hover:text-blue-600 transition-all">
-              <ChevronLeft className="w-4 h-4" /> Back to Spotting Centre
-            </Link>
-          </div>
-
-          <ReferencesBlock />
-        </div>
-      </section>
+      <ReportCard
+        slides={round1Slides}
+        answers={round1Answers}
+        roundTitle="Round 1 Complete"
+        timerExpired={timerExpired}
+        onNextRound={handleNextRound}
+        showNextButton={round2Slides.length > 0}
+        nextButtonText={`Continue to Round 2 (${round2Slides.length} slides)`}
+      />
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // MAIN TEST UI
-  // ═══════════════════════════════════════════════════════════════════════════
+  // Render final report (round 2 completed)
+  if (round === 4) {
+    // Combine answers from both rounds for final report
+    const combinedSlides = [...round1Slides, ...round2Slides];
+    const combinedAnswers = [...round1Answers, ...round2Answers];
+    return (
+      <ReportCard
+        slides={combinedSlides}
+        answers={combinedAnswers}
+        roundTitle="Final Results"
+        timerExpired={timerExpired}
+        showNextButton={false}
+      />
+    );
+  }
+
+  // Main test UI (round 1 or round 2)
+  if (!mounted || !current) return null;
+
   return (
     <section className="min-h-screen bg-white relative overflow-x-hidden">
       {BG_ICONS.map(({ Icon, top, left, size }, i) => (
@@ -707,7 +1009,7 @@ export default function HistologyTestPage() {
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
             <div>
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest mb-3">
-                <MicIcon className="w-3 h-3" /> Histology Spotting Test · {current.category}
+                <MicIcon className="w-3 h-3" /> Histology Spotting Test · Round {round} · {current.category}
               </span>
               <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
                 Histology Spotting Test
@@ -749,7 +1051,7 @@ export default function HistologyTestPage() {
             />
           </div>
           <div className="flex justify-between items-center text-xs text-white/60 mt-1.5">
-            <span>Slide {currentIndex + 1} of {slides.length}</span>
+            <span>Slide {currentIndex + 1} of {slides.length} (Round {round})</span>
             {/* Timer */}
             <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-extrabold text-sm transition-all ${
               timerUrgent
@@ -1015,11 +1317,11 @@ export default function HistologyTestPage() {
 
           {currentIndex === slides.length - 1 ? (
             <button
-              onClick={() => setTestCompleted(true)}
+              onClick={handleFinishRound}
               disabled={!allSubmitted}
               className={`inline-flex items-center gap-1.5 px-4 sm:px-6 py-2.5 rounded-xl bg-gradient-to-r ${GRAD} text-white text-xs sm:text-sm font-extrabold shadow-md hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-40 disabled:pointer-events-none transition-all`}
             >
-              <Trophy className="w-4 h-4" /> See Results
+              <Trophy className="w-4 h-4" /> {round === 1 ? "Complete Round 1" : "See Final Results"}
             </button>
           ) : (
             <button

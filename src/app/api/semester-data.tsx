@@ -206,6 +206,7 @@ export const SemesterData: Semester[] = [
         name: "Industrial Pharmacy-II",
         icon: <Factory className="text-blue-700" strokeWidth={2} />,
         description: "Advanced manufacturing, process validation, packaging, and regulatory processes.",
+        href: "/courses/sem-7/industrial-pharmacy-2",
       },
       {
         "name": "Pharmacy Practice-I",
