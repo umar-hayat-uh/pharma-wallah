@@ -1,7 +1,8 @@
 "use client";
-// app/spotting/histology/lessons/page.tsx — Upgraded Hub
+// app/spotting/histology/lessons/page.tsx — Upgraded Hub with preview images
 
 import Link from "next/link";
+import Image from "next/image";
 import {
   Microscope, ChevronRight, BookOpen, Play,
   Layers, ArrowRight, Zap, Clock, CheckCircle,
@@ -20,6 +21,7 @@ const BG_ICONS = [
   { Icon: Leaf,         top: "70%", left: "96.5%", size: 28 },
 ];
 
+// Comprehensive list of all upgraded lessons (excluding redundant stratified-squamous-epithelium)
 const LESSONS = [
   {
     id: "lungs",
@@ -29,10 +31,11 @@ const LESSONS = [
     gradient: "from-blue-600 to-green-400",
     points: ["Recognizable alveolar structure", "Visible bronchial passage", "Distinct lung lobes", "Pulmonary blood vessels"],
     readTime: 15,
-    hasVideo: false,
+    hasVideo: true,
     accentBg: "bg-blue-50",
     accentText: "text-blue-700",
     accentBorder: "border-blue-200",
+    thumbnail: "/images/spotting/histology/lungs.jpg",
   },
   {
     id: "stomach",
@@ -42,10 +45,11 @@ const LESSONS = [
     gradient: "from-orange-500 to-amber-400",
     points: ["Gastric pits", "Gastric glands", "Mucosal lining", "Rugae (folds)"],
     readTime: 14,
-    hasVideo: false,
+    hasVideo: true,
     accentBg: "bg-orange-50",
     accentText: "text-orange-700",
     accentBorder: "border-orange-200",
+    thumbnail: "/images/spotting/histology/stomach.jpg",
   },
   {
     id: "kidney",
@@ -55,10 +59,11 @@ const LESSONS = [
     gradient: "from-violet-600 to-indigo-400",
     points: ["Renal tubules", "Glomeruli", "Renal corpuscles", "Renal blood vessels"],
     readTime: 16,
-    hasVideo: false,
+    hasVideo: true,
     accentBg: "bg-violet-50",
     accentText: "text-violet-700",
     accentBorder: "border-violet-200",
+    thumbnail: "/images/spotting/histology/kidney.jpg",
   },
   {
     id: "small-intestine",
@@ -68,10 +73,11 @@ const LESSONS = [
     gradient: "from-teal-600 to-cyan-400",
     points: ["Villi on mucosal surface", "Crypts of Lieberkühn", "Intestinal glands", "Peyer's patches"],
     readTime: 14,
-    hasVideo: false,
+    hasVideo: true,
     accentBg: "bg-teal-50",
     accentText: "text-teal-700",
     accentBorder: "border-teal-200",
+    thumbnail: "/images/spotting/histology/small-intestine.jpg",
   },
   {
     id: "large-intestine",
@@ -81,10 +87,11 @@ const LESSONS = [
     gradient: "from-emerald-600 to-green-400",
     points: ["Numerous goblet cells", "Taeniae coli", "Lymphoid tissue in mucosa", "Haustra"],
     readTime: 12,
-    hasVideo: false,
+    hasVideo: true,
     accentBg: "bg-emerald-50",
     accentText: "text-emerald-700",
     accentBorder: "border-emerald-200",
+    thumbnail: "/images/spotting/histology/large-intestine.jpg",
   },
   {
     id: "appendix",
@@ -94,10 +101,11 @@ const LESSONS = [
     gradient: "from-lime-600 to-emerald-400",
     points: ["Abundant lymphoid tissue", "Mucosal folds", "Epithelial lining", "Submucosal lymphoid follicles"],
     readTime: 11,
-    hasVideo: false,
+    hasVideo: true,
     accentBg: "bg-lime-50",
     accentText: "text-lime-700",
     accentBorder: "border-lime-200",
+    thumbnail: "/images/spotting/histology/appendix.jpg",
   },
   {
     id: "smooth-muscle",
@@ -107,10 +115,11 @@ const LESSONS = [
     gradient: "from-sky-600 to-blue-400",
     points: ["Spindle-shaped cells", "Central nuclei", "Dense bodies / plaques", "Surrounding capillaries"],
     readTime: 12,
-    hasVideo: false,
+    hasVideo: true,
     accentBg: "bg-sky-50",
     accentText: "text-sky-700",
     accentBorder: "border-sky-200",
+    thumbnail: "/images/spotting/histology/smooth-muscle.jpg",
   },
   {
     id: "skeletal-muscle",
@@ -120,10 +129,39 @@ const LESSONS = [
     gradient: "from-amber-600 to-orange-400",
     points: ["Cross striations", "Multinucleated fibres", "Peripheral nuclei", "Alternating I and A bands"],
     readTime: 13,
-    hasVideo: false,
+    hasVideo: true,
     accentBg: "bg-amber-50",
     accentText: "text-amber-700",
     accentBorder: "border-amber-200",
+    thumbnail: "/images/spotting/histology/skeletal-muscle.jpg",
+  },
+  {
+    id: "cardiac-muscle",
+    title: "Cardiac Muscle",
+    category: "Muscle Tissue",
+    emoji: "❤️",
+    gradient: "from-rose-600 to-red-400",
+    points: ["Striations", "Central nuclei", "Branched fibres", "Intercalated discs"],
+    readTime: 13,
+    hasVideo: true,
+    accentBg: "bg-rose-50",
+    accentText: "text-rose-700",
+    accentBorder: "border-rose-200",
+    thumbnail: "/images/spotting/histology/cardiac.jpg",
+  },
+  {
+    id: "gall-bladder-skin",
+    title: "Gall Bladder",
+    category: "Organ Histology",
+    emoji: "🧴",
+    gradient: "from-amber-500 to-yellow-400",
+    points: ["Mucosal folds", "Simple columnar epithelium (no goblet cells)", "Thin muscularis", "Rokitansky–Aschoff sinuses"],
+    readTime: 12,
+    hasVideo: true,
+    accentBg: "bg-amber-50",
+    accentText: "text-amber-700",
+    accentBorder: "border-amber-200",
+    thumbnail: "/images/spotting/histology/gall.jpg",
   },
   {
     id: "rbcs",
@@ -133,27 +171,95 @@ const LESSONS = [
     gradient: "from-red-600 to-rose-400",
     points: ["Biconcave disc shape", "Red colour (haemoglobin)", "Flexible / deformable", "~7–8 µm diameter"],
     readTime: 13,
-    hasVideo: false,
+    hasVideo: true,
     accentBg: "bg-red-50",
     accentText: "text-red-700",
     accentBorder: "border-red-200",
+    thumbnail: "/images/spotting/histology/rbcs.jpg",
   },
   {
-    id: "stratified-squamous-epithelium",
-    title: "Stratified Squamous Epithelium",
+    id: "wbcs",
+    title: "White Blood Cells (WBCs)",
+    category: "Blood / Haematology",
+    emoji: "⚪",
+    gradient: "from-purple-600 to-pink-400",
+    points: [
+      "Neutrophils: multilobed nucleus, fine pink granules – most common",
+      "Eosinophils: bilobed nucleus, coarse red-orange granules",
+      "Basophils: large purple-black granules often obscuring nucleus",
+      "Lymphocytes: round dense nucleus, scant blue cytoplasm",
+      "Monocytes: kidney-shaped nucleus, abundant grey-blue cytoplasm"
+    ],
+    readTime: 14,
+    hasVideo: true,
+    accentBg: "bg-purple-50",
+    accentText: "text-purple-700",
+    accentBorder: "border-purple-200",
+    thumbnail: "/images/spotting/histology/wbcs.jpg",
+  },
+  {
+    id: "epithelium-simple",
+    title: "Simple Epithelium",
+    category: "Epithelial Tissue",
+    emoji: "🧱",
+    gradient: "from-sky-500 to-cyan-400",
+    points: ["Single layer on basement membrane", "Squamous / cuboidal / columnar types", "Pseudostratified variant", "Cilia or microvilli in some"],
+    readTime: 14,
+    hasVideo: true,
+    accentBg: "bg-sky-50",
+    accentText: "text-sky-700",
+    accentBorder: "border-sky-200",
+    thumbnail: "/images/spotting/histology/pseudo.png",
+  },
+  {
+    id: "epithelium-stratified",
+    title: "Stratified Epithelium",
     category: "Epithelial Tissue",
     emoji: "🧱",
     gradient: "from-fuchsia-600 to-violet-400",
-    points: ["Multiple cell layers", "Flattened surface cells", "Basal cuboidal cells", "Nuclei at various levels"],
+    points: ["Multiple cell layers", "Squamous / cuboidal / columnar types", "Transitional (urothelium)", "Keratinised vs non‑keratinised"],
     readTime: 14,
-    hasVideo: false,
+    hasVideo: true,
     accentBg: "bg-fuchsia-50",
     accentText: "text-fuchsia-700",
     accentBorder: "border-fuchsia-200",
+    thumbnail: "/images/spotting/histology/stratified-squamous-epithelium.jpg",
+  },
+  {
+    id: "connective-tissue",
+    title: "Connective Tissue & ECM",
+    category: "Connective Tissue",
+    emoji: "🧶",
+    gradient: "from-orange-600 to-amber-400",
+    points: ["Fibroblasts, mast cells, macrophages", "Collagen (types I–IV)", "Elastic fibres", "Ground substance (GAGs, proteoglycans)"],
+    readTime: 15,
+    hasVideo: true,
+    accentBg: "bg-orange-50",
+    accentText: "text-orange-700",
+    accentBorder: "border-orange-200",
+    thumbnail: "/images/spotting/histology/connect.jpg",
+  },
+  {
+    id: "slide-preparation",
+    title: "Slide Preparation & Staining",
+    category: "Practical Techniques",
+    emoji: "🔬",
+    gradient: "from-slate-600 to-gray-400",
+    points: ["Tissue processing steps", "H&E staining", "Special stains (PAS, trichrome, etc.)", "Immunohistochemistry"],
+    readTime: 16,
+    hasVideo: true,
+    accentBg: "bg-slate-50",
+    accentText: "text-slate-700",
+    accentBorder: "border-slate-200",
+    thumbnail: "/images/spotting/histology/histo.jpg",
   },
 ];
 
 const BASE = "/spotting/histology/lessons";
+
+// Count total ID points across all lessons
+const totalIDPoints = LESSONS.reduce((acc, lesson) => acc + lesson.points.length, 0);
+const totalVideos = LESSONS.filter(l => l.hasVideo).length;
 
 export default function HistologyLessonsHub() {
   return (
@@ -186,7 +292,7 @@ export default function HistologyLessonsHub() {
           </div>
 
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-xs font-bold uppercase tracking-widest mb-5">
-            <Zap className="w-3.5 h-3.5" /> Histology · 10 Lessons · Video Lessons Included
+            <Zap className="w-3.5 h-3.5" /> Histology · {LESSONS.length} Lessons · {totalVideos} Video Lessons
           </span>
 
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-white mb-2 tracking-tight leading-tight">
@@ -194,11 +300,11 @@ export default function HistologyLessonsHub() {
             <span className="block text-green-200 mt-1">Lesson Library</span>
           </h1>
           <p className="text-white/80 text-sm sm:text-base max-w-2xl mb-8">
-            Detailed theory, points of identification, video lessons, and exam-ready notes for all 10 histology spotting slides — from organs of the GI tract and urinary system to muscle types, blood, and epithelium.
+            Detailed theory, points of identification, video lessons, and exam‑ready notes for all {LESSONS.length} histology spotting slides — from organs, muscles, blood, epithelium, to connective tissue and staining techniques.
           </p>
 
           <div className="flex flex-wrap gap-3 mb-8">
-            <Link href={`${BASE}/lungs`}
+            <Link href={`${BASE}/${LESSONS[0].id}`}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-blue-700 font-extrabold text-sm shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
               <BookOpen className="w-4 h-4" /> Start Lesson 1
             </Link>
@@ -210,17 +316,22 @@ export default function HistologyLessonsHub() {
 
           {/* Stats */}
           <div className="flex flex-wrap gap-6 sm:gap-10">
-            {[
-              { n: "10", l: "Lessons" },
-              { n: "40", l: "ID Points" },
-              { n: "Video", l: "Lessons" },
-              { n: "Free", l: "Access" },
-            ].map(({ n, l }) => (
-              <div key={l} className="text-center">
-                <div className="text-2xl sm:text-3xl font-extrabold text-white leading-none">{n}</div>
-                <div className="text-xs text-white/70 mt-0.5">{l}</div>
-              </div>
-            ))}
+            <div className="text-center">
+              <div className="text-2xl sm:text-3xl font-extrabold text-white leading-none">{LESSONS.length}</div>
+              <div className="text-xs text-white/70 mt-0.5">Lessons</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl sm:text-3xl font-extrabold text-white leading-none">{totalIDPoints}</div>
+              <div className="text-xs text-white/70 mt-0.5">ID Points</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl sm:text-3xl font-extrabold text-white leading-none">{totalVideos}</div>
+              <div className="text-xs text-white/70 mt-0.5">Videos</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl sm:text-3xl font-extrabold text-white leading-none">Free</div>
+              <div className="text-xs text-white/70 mt-0.5">Access</div>
+            </div>
           </div>
         </div>
       </div>
@@ -242,7 +353,7 @@ export default function HistologyLessonsHub() {
           ))}
         </div>
 
-        {/* Lesson grid */}
+        {/* Lesson grid with preview images */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {LESSONS.map((lesson, idx) => (
             <Link
@@ -251,11 +362,29 @@ export default function HistologyLessonsHub() {
               className="group relative flex flex-col rounded-2xl border border-gray-200 bg-white overflow-hidden hover:border-blue-300 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 h-full"
             >
               <div className={`h-[3px] bg-gradient-to-r ${lesson.gradient}`} />
+
+              {/* Preview Image */}
+              <div className="relative w-full h-32 sm:h-36 bg-gray-100 border-b border-gray-200 overflow-hidden">
+                <img
+                  src={lesson.thumbnail}
+                  alt={lesson.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  onError={(e) => {
+                    // Fallback if image fails to load
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+                {/* Fallback emoji if image missing */}
+                <div className="absolute inset-0 flex items-center justify-center text-4xl opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 text-white">
+                  {lesson.emoji}
+                </div>
+              </div>
+
               <div className="flex flex-col flex-1 p-4 sm:p-5">
 
                 {/* Header */}
                 <div className="flex items-start justify-between mb-3">
-                  <div className={`w-11 h-11 rounded-xl ${lesson.accentBg} border ${lesson.accentBorder} flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform duration-300`}>
+                  <div className={`w-10 h-10 rounded-xl ${lesson.accentBg} border ${lesson.accentBorder} flex items-center justify-center text-lg shrink-0 group-hover:scale-110 transition-transform duration-300`}>
                     {lesson.emoji}
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -329,7 +458,7 @@ export default function HistologyLessonsHub() {
                 <span className="text-white font-extrabold text-sm sm:text-base">Ready to test yourself?</span>
               </div>
               <p className="text-white/80 text-xs sm:text-sm">
-                Put your identification skills to the test in the <span className="font-bold text-white">Histology Spotting Test</span> — 10 slides, 20 minutes, MCQ + recognition points.
+                Put your identification skills to the test in the <span className="font-bold text-white">Histology Spotting Test</span> — {LESSONS.length} slides, 20 minutes, MCQ + recognition points.
               </p>
             </div>
             <Link href="/spotting/histology/test"
