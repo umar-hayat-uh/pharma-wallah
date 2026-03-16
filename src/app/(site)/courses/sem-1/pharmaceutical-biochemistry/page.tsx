@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Microscope, FlaskConical, Leaf, Beaker, Stethoscope, Pill,
-  BookOpen, ChevronRight, ChevronLeft, Search, X,
+  BookOpen, ChevronRight, ChevronLeft, Search, X, ClipboardList,
   Clock, Tag, Zap, Layers, GraduationCap, ArrowRight,
 } from "lucide-react";
 import { BiochemUnits, SUBJECT_META, DIFF_BADGE } from "@/app/api/biochemistry-data";
@@ -138,8 +138,8 @@ export default function BiochemUnitsPage() {
             {diffs.map(d => (
               <button key={d} onClick={() => setActiveDiff(d)}
                 className={`shrink-0 px-4 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wide transition-all duration-200 ${activeDiff === d
-                    ? `bg-gradient-to-r ${HERO_GRAD} text-white shadow-md`
-                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                  ? `bg-gradient-to-r ${HERO_GRAD} text-white shadow-md`
+                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                   }`}>
                 {d}
               </button>
@@ -259,12 +259,12 @@ export default function BiochemUnitsPage() {
                 <span className="text-white font-extrabold text-sm sm:text-base">Ready to dive in?</span>
               </div>
               <p className="text-white/80 text-xs sm:text-sm">
-                Start with <span className="font-bold text-white">Unit 1</span> and work through all 6 units at your own pace.
+                Start with <span className="font-bold text-white">Unit 1 MCQ's</span> and work through all 6 units at your own pace.
               </p>
             </div>
-            <Link href={`${BASE_PATH}/${BiochemUnits[0].id}`}
-              className="inline-flex items-center gap-2 px-5 sm:px-6 py-3 rounded-xl bg-white text-blue-600 font-extrabold text-sm shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300 shrink-0">
-              <BookOpen className="w-4 h-4" /> Begin Unit 1 <ArrowRight className="w-4 h-4" />
+            <Link href="/courses/sem-1/pharmaceutical-biochemistry/mcq"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/20 border border-white/40 text-white font-extrabold text-sm hover:bg-white/30 transition-all duration-300">
+              <ClipboardList className="w-4 h-4" /> Practice MCQs
             </Link>
           </div>
         </div>
