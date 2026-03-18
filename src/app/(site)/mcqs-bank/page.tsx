@@ -40,6 +40,7 @@ const SEM_GRADS = [
 
 const AVAILABLE_SLUGS = new Set([
   "pharmaceutical-biochemistry",
+  "physiology-histology-i",
   // add more slugs here as you create question banks
 ]);
 

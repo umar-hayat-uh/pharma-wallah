@@ -19,10 +19,12 @@ import type { MCQBank } from "@/lib/mcq-utils";
 // In Next.js we can't do fully dynamic imports at runtime in client components,
 // so we maintain a registry. Add entries as you create new question banks.
 import biochemBank from "@/app/api/mcq-data/pharmaceutical-biochemistry";
+import physioBank from "@/app/api/mcq-data/physiology-histology-i"; // ✅ added physiology bank
 
 const BANK_REGISTRY: Record<string, MCQBank> = {
   "pharmaceutical-biochemistry": biochemBank,
-  // "organic-chemistry": orgChemBank,   ← add new banks here
+  "physiology-histology-i": physioBank,   // ✅ fixed subject slug to match bank's subjectSlug
+  // "organic-chemistry": orgChemBank,   // ← add new banks here
 };
 
 // ── Types ─────────────────────────────────────────────────────────────────────

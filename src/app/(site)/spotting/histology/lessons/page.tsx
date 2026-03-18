@@ -209,7 +209,7 @@ const LESSONS = [
     accentBg: "bg-sky-50",
     accentText: "text-sky-700",
     accentBorder: "border-sky-200",
-    thumbnail: "/images/spotting/histology/pseudo.png",
+    thumbnail: "/images/spotting/histology/simple-squamous.jpg",
   },
   {
     id: "epithelium-stratified",

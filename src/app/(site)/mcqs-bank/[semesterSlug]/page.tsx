@@ -21,8 +21,12 @@ const BG_ICONS = [
   { Icon: Leaf,         top: "70%", left: "96.5%", size: 28 },
 ];
 
+// ✅ Updated slugs to match bank files:
+// - pharmaceutical-biochemistry (already correct)
+// - physiology-histology-i (was physiology-histology-1, now fixed)
 const AVAILABLE_SLUGS = new Set([
   "pharmaceutical-biochemistry",
+  "physiology-histology-i",
 ]);
 
 const SEM_GRADS = [

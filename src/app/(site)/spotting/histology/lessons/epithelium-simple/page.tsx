@@ -28,7 +28,7 @@ const THEORY = (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-6">
       <figure className="bg-gray-50 rounded-xl p-2 border border-gray-200">
         <img
-          src="/images/spotting/histology/stratified-squamous-epithelium-high.jpg"
+          src="/images/spotting/histology/simple-squamous.jpg"
           alt="Simple squamous epithelium"
           className="w-full h-auto rounded-lg shadow-sm"
         />
