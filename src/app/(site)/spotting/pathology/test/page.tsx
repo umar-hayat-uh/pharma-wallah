@@ -30,9 +30,7 @@ const BG_ICONS = [
 const PO_BASE = "https://www.pathologyoutlines.com";
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SLIDE DATA — 15 slides
-// images: only `url` is needed (label / hint removed per spec)
-// pathologyOutlinesUrl: deep-link to the specific topic page for citation
+// SLIDE DATA — 15 slides (unchanged, images array still has three entries)
 // ═══════════════════════════════════════════════════════════════════════════════
 const SLIDE_DATA = [
   {
@@ -497,15 +495,17 @@ function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// IMAGE GALLERY
+// IMAGE GALLERY – Now shows only 2 images (low and high) – mid is filtered out
 // ═══════════════════════════════════════════════════════════════════════════════
 function ImageGallery({ images, poUrl }: { images: Slide["images"]; poUrl: string }) {
+  // Use only the first and last image (low and high)
+  const filteredImages = [images[0], images[images.length - 1]];
   const [activeIdx, setActiveIdx] = useState(0);
   const [lightbox, setLightbox] = useState(false);
   useEffect(() => { setActiveIdx(0); }, [images]);
 
-  const active = images[activeIdx];
-  const powerLabel = (i: number) => (["Low ×", "Mid ×", "High ×"])[i] ?? `${i + 1}×`;
+  const active = filteredImages[activeIdx];
+  const powerLabel = (i: number) => (i === 0 ? "Low ×" : "High ×");
 
   return (
     <>
@@ -543,7 +543,7 @@ function ImageGallery({ images, poUrl }: { images: Slide["images"]; poUrl: strin
               </div>
               {/* Counter */}
               <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-1 rounded-lg bg-black/50 backdrop-blur-sm text-white text-[10px] font-bold pointer-events-none">
-                <Images className="w-3 h-3" /> {activeIdx + 1}/{images.length}
+                <Images className="w-3 h-3" /> {activeIdx + 1}/{filteredImages.length}
               </div>
               {/* Power badge */}
               <div className={`absolute bottom-2 right-2 px-2 py-1 rounded-lg bg-gradient-to-r ${GRAD} text-white text-[10px] font-extrabold pointer-events-none`}>
@@ -558,11 +558,11 @@ function ImageGallery({ images, poUrl }: { images: Slide["images"]; poUrl: strin
 
         {/* ── Thumbnails ── */}
         <div className="flex gap-2">
-          {images.map((img, i) => (
+          {filteredImages.map((img, i) => (
             <button
               key={i}
               onClick={() => setActiveIdx(i)}
-              title={`View ${powerLabel(i)} power`}
+              title={`View ${powerLabel(i)}`}
               className={`relative flex-1 rounded-xl overflow-hidden border-2 transition-all duration-200 group/t ${i === activeIdx
                 ? "border-indigo-500 shadow-md shadow-indigo-200/40 scale-[1.03]"
                 : "border-gray-200 hover:border-indigo-300 hover:scale-[1.02]"
@@ -576,7 +576,7 @@ function ImageGallery({ images, poUrl }: { images: Slide["images"]; poUrl: strin
                 <div className={`absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
               )}
               <div className="absolute top-1 left-1 bg-black/60 rounded px-1 py-0.5 text-white text-[8px] font-extrabold uppercase">
-                {(["Low", "Mid", "High"])[i] ?? i + 1}
+                {i === 0 ? "Low" : "High"}
               </div>
             </button>
           ))}
@@ -592,8 +592,8 @@ function ImageGallery({ images, poUrl }: { images: Slide["images"]; poUrl: strin
             <ChevronLeft className="w-3.5 h-3.5" /> Prev
           </button>
           <button
-            disabled={activeIdx === images.length - 1}
-            onClick={() => setActiveIdx(i => Math.min(images.length - 1, i + 1))}
+            disabled={activeIdx === filteredImages.length - 1}
+            onClick={() => setActiveIdx(i => Math.min(filteredImages.length - 1, i + 1))}
             className="flex-1 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-500 disabled:opacity-30 flex items-center justify-center gap-1"
           >
             Next <ChevronRight className="w-3.5 h-3.5" />
@@ -650,48 +650,215 @@ function ReferencesBlock() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// REPORT CARD COMPONENT (used for round results and final)
+// ═══════════════════════════════════════════════════════════════════════════════
+function ReportCard({
+  slides,
+  answers,
+  roundTitle,
+  timerExpired,
+  onNextRound,
+  showNextButton = false,
+  nextButtonText = "Continue to Next Round"
+}: {
+  slides: Slide[];
+  answers: SlideAnswer[];
+  roundTitle: string;
+  timerExpired?: boolean;
+  onNextRound?: () => void;
+  showNextButton?: boolean;
+  nextButtonText?: string;
+}) {
+  const totalCorrect = answers.filter((a, i) =>
+    a.selectedOption !== null && slides[i].options[a.selectedOption] === slides[i].title
+  ).length;
+  const avgMatch = (answers.reduce((s, a) => s + a.matchScore, 0) / answers.length).toFixed(1);
+  const pct = Math.round((totalCorrect / slides.length) * 100);
+
+  return (
+    <section className="min-h-screen bg-white relative overflow-x-hidden">
+      {BG_ICONS.map(({ Icon, top, left, size }, i) => (
+        <div key={i} className="fixed pointer-events-none text-indigo-200/60 z-0" style={{ top, left }}>
+          <Icon size={size} strokeWidth={1.4} />
+        </div>
+      ))}
+
+      {/* Hero */}
+      <div className={`relative bg-gradient-to-r ${GRAD} overflow-hidden`}>
+        <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/10" />
+        <div className="absolute -bottom-10 left-20 w-32 h-32 rounded-full bg-white/10" />
+        <div className="absolute right-6 sm:right-20 bottom-4 opacity-15 pointer-events-none">
+          <Trophy size={64} className="text-white" />
+        </div>
+        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-8 py-10 sm:py-14 text-center">
+          <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 text-white text-xs font-bold uppercase tracking-widest mb-4`}>
+            <Trophy className="w-3.5 h-3.5" /> {roundTitle}
+          </span>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4">Your Results</h1>
+          {timerExpired && (
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/80 text-white text-xs font-bold mb-4 border border-red-400/60">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Time&apos;s up! 10 minutes elapsed.
+            </div>
+          )}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { n: `${totalCorrect}/${slides.length}`, l: "Correct Slides" },
+              { n: `${pct}%`, l: "MCQ Score" },
+              { n: `${avgMatch}%`, l: "Avg Match Score" },
+              { n: pct >= 80 ? "🏆" : pct >= 50 ? "🎯" : "📚", l: "Grade" },
+            ].map(({ n, l }) => (
+              <div key={l} className="bg-white/15 rounded-2xl p-3 sm:p-4">
+                <div className="text-2xl sm:text-3xl font-extrabold text-white leading-none">{n}</div>
+                <div className="text-xs text-pink-200 mt-1">{l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Per-slide summary */}
+      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-8 py-8 space-y-3">
+        <h2 className="text-lg sm:text-2xl font-extrabold text-gray-900 mb-5 flex items-center gap-3">
+          <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${GRAD} flex items-center justify-center shrink-0`}>
+            <Award className="w-5 h-5 text-white" />
+          </div>
+          Slide-by-Slide Summary
+        </h2>
+
+        {slides.map((slide, idx) => {
+          const ans = answers[idx];
+          const isCorrect = ans.selectedOption !== null && slide.options[ans.selectedOption] === slide.title;
+          return (
+            <div key={slide.id} className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden hover:shadow-md transition-all">
+              <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
+              <div className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                {/* thumbnail */}
+                <div className="relative w-14 h-11 rounded-xl overflow-hidden border border-gray-200 shrink-0">
+                  <Image src={slide.images[0].url} alt={slide.title} fill className="object-cover" sizes="56px" />
+                </div>
+                {/* info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-extrabold text-gray-900 text-sm">{slide.title}</span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">{slide.category}</span>
+                    {isCorrect
+                      ? <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-green-700"><CheckCircle className="w-2.5 h-2.5" /> Correct</span>
+                      : <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-red-50 border border-red-200 text-red-700"><XCircle className="w-2.5 h-2.5" /> Incorrect</span>}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Your answer: <span className="font-semibold text-gray-600">{ans.selectedOption !== null ? slide.options[ans.selectedOption] : "—"}</span>
+                    {!isCorrect && <span className="ml-2 text-indigo-600">✓ <strong>{slide.title}</strong></span>}
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {slide.keyFeatures.slice(0, 3).map(f => (
+                      <span key={f} className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700">{f}</span>
+                    ))}
+                  </div>
+                </div>
+                {/* score + link */}
+                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-xl border ${scoreBadge(ans.matchScore)}`}>
+                    {ans.matchScore}% match
+                  </span>
+                  <Link href={`/spotting/pathology/${slide.id}`}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-pink-600 transition-colors">
+                    Lesson <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
+          {showNextButton && onNextRound && (
+            <button onClick={onNextRound}
+              className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r ${GRAD} text-white font-extrabold text-sm shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all`}>
+              {nextButtonText} <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
+          <button onClick={() => window.location.reload()}
+            className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-extrabold text-sm hover:border-indigo-400 hover:text-indigo-600 transition-all`}>
+            <Shuffle className="w-4 h-4" /> Retake Full Test
+          </button>
+          <Link href="/spotting"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-extrabold text-sm hover:border-indigo-400 hover:text-indigo-600 transition-all">
+            <ChevronLeft className="w-4 h-4" /> Back to Spotting Centre
+          </Link>
+        </div>
+
+        <ReferencesBlock />
+      </div>
+    </section>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function SpottingTestPage() {
-  const [slides, setSlides] = useState<typeof SLIDE_DATA>(SLIDE_DATA);
   const [mounted, setMounted] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<SlideAnswer[]>(
-    SLIDE_DATA.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 }))
-  );
-  const [testCompleted, setTestCompleted] = useState(false);
+  const [round, setRound] = useState(1); // 1 = round1 active, 2 = round2 active, 3 = round1 completed (report), 4 = round2 completed (final report)
 
-  // ── 20-minute countdown timer ──────────────────────────────────────────────
-  const TOTAL_SECONDS = 20 * 60; // 1200 s
-  const [timeLeft, setTimeLeft] = useState(TOTAL_SECONDS);
+  // Shuffled slides and split into two rounds
+  const [shuffledSlides, setShuffledSlides] = useState<Slide[]>([]);
+  const [round1Slides, setRound1Slides] = useState<Slide[]>([]);
+  const [round2Slides, setRound2Slides] = useState<Slide[]>([]);
+  const [round1Answers, setRound1Answers] = useState<SlideAnswer[]>([]);
+  const [round2Answers, setRound2Answers] = useState<SlideAnswer[]>([]);
+
+  // Active round state
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [answers, setAnswers] = useState<SlideAnswer[]>([]); // active round answers
+  const [slides, setSlides] = useState<Slide[]>([]); // active round slides
+
+  // ── 10-minute timer per round ─────────────────────────────────────────────
+  const ROUND_SECONDS = 10 * 60; // 600 seconds
+  const [timeLeft, setTimeLeft] = useState(ROUND_SECONDS);
   const [timerActive, setTimerActive] = useState(false);
   const [timerExpired, setTimerExpired] = useState(false);
 
-  // Start timer once component mounts
+  // Initialise on mount
   useEffect(() => {
     const shuffled = shuffle([...SLIDE_DATA]);
-    setSlides(shuffled);
-    setAnswers(shuffled.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
+    setShuffledSlides(shuffled);
+    // Split into two rounds: first 8, last 7 (or as evenly as possible)
+    const mid = Math.ceil(shuffled.length / 2);
+    const round1 = shuffled.slice(0, mid);
+    const round2 = shuffled.slice(mid);
+    setRound1Slides(round1);
+    setRound2Slides(round2);
+    setRound1Answers(round1.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
+    setRound2Answers(round2.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
+    // Start with round 1
+    setSlides(round1);
+    setAnswers(round1.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
     setMounted(true);
     setTimerActive(true);
   }, []);
 
-  // Tick every second
+  // Timer effect
   useEffect(() => {
-    if (!timerActive || testCompleted) return;
+    if (!timerActive || round >= 3) return; // stop timer after test ends
     if (timeLeft <= 0) {
       setTimerExpired(true);
       setTimerActive(false);
-      setTestCompleted(true);
+      // Force end of current round
+      if (round === 1) {
+        setRound(3); // show round1 report
+      } else if (round === 2) {
+        setRound(4); // show final report
+      }
       return;
     }
     const id = setInterval(() => setTimeLeft(t => t - 1), 1000);
     return () => clearInterval(id);
-  }, [timerActive, timeLeft, testCompleted]);
+  }, [timerActive, timeLeft, round]);
 
   const timerMins = String(Math.floor(timeLeft / 60)).padStart(2, "0");
   const timerSecs = String(timeLeft % 60).padStart(2, "0");
-  const timerUrgent = timeLeft <= 120; // last 2 min → red pulse
+  const timerUrgent = timeLeft <= 60; // last 1 min → red pulse
 
   const current = slides[currentIndex];
   const currentAnswer = answers[currentIndex];
@@ -699,10 +866,9 @@ export default function SpottingTestPage() {
   const submittedCount = answers.filter(a => a.submitted).length;
 
   const shuffledOptions = useMemo(() => {
-    if (!mounted) return current.options.map((text, origIdx) => ({ text, origIdx }));
+    if (!mounted || !current) return [];
     return shuffle(current.options.map((text, origIdx) => ({ text, origIdx })));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current.id, mounted]);
+  }, [current?.id, mounted]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -711,152 +877,92 @@ export default function SpottingTestPage() {
       return;
     }
     const score = calculateMatch(currentAnswer.points, current.definition);
-    setAnswers(prev => prev.map((a, i) =>
+    const newAnswers = answers.map((a, i) =>
       i === currentIndex ? { ...a, submitted: true, matchScore: score } : a
-    ));
+    );
+    setAnswers(newAnswers);
+    // Update the round-specific answers
+    if (round === 1) setRound1Answers(newAnswers);
+    else if (round === 2) setRound2Answers(newAnswers);
   };
 
   const handleReset = () => {
-    setAnswers(prev => prev.map((a, i) =>
+    const newAnswers = answers.map((a, i) =>
       i === currentIndex ? { selectedOption: null, points: "", submitted: false, matchScore: 0 } : a
-    ));
+    );
+    setAnswers(newAnswers);
+    if (round === 1) setRound1Answers(newAnswers);
+    else if (round === 2) setRound2Answers(newAnswers);
   };
 
   const setOption = (origIdx: number) => {
     if (currentAnswer.submitted) return;
-    setAnswers(prev => prev.map((a, i) => i === currentIndex ? { ...a, selectedOption: origIdx } : a));
+    const newAnswers = answers.map((a, i) => i === currentIndex ? { ...a, selectedOption: origIdx } : a);
+    setAnswers(newAnswers);
+    if (round === 1) setRound1Answers(newAnswers);
+    else if (round === 2) setRound2Answers(newAnswers);
   };
+
   const setPoints = (val: string) => {
     if (currentAnswer.submitted) return;
-    setAnswers(prev => prev.map((a, i) => i === currentIndex ? { ...a, points: val } : a));
+    const newAnswers = answers.map((a, i) => i === currentIndex ? { ...a, points: val } : a);
+    setAnswers(newAnswers);
+    if (round === 1) setRound1Answers(newAnswers);
+    else if (round === 2) setRound2Answers(newAnswers);
   };
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // RESULTS SCREEN
-  // ─────────────────────────────────────────────────────────────────────────────
-  if (testCompleted) {
-    const totalCorrect = answers.filter((a, i) =>
-      a.selectedOption !== null && slides[i].options[a.selectedOption] === slides[i].title
-    ).length;
-    const avgMatch = (answers.reduce((s, a) => s + a.matchScore, 0) / answers.length).toFixed(1);
-    const pct = Math.round((totalCorrect / slides.length) * 100);
+  const handleNextRound = () => {
+    setRound(2);
+    setSlides(round2Slides);
+    setAnswers(round2Answers);
+    setCurrentIndex(0);
+    setTimeLeft(ROUND_SECONDS);
+    setTimerActive(true);
+    setTimerExpired(false);
+  };
 
+  const handleFinishRound = () => {
+    if (round === 1) {
+      setRound(3); // show round1 report
+    } else if (round === 2) {
+      setRound(4); // show final report
+    }
+    setTimerActive(false);
+  };
+
+  // Render round report (round 1 completed)
+  if (round === 3) {
     return (
-      <section className="min-h-screen bg-white relative overflow-x-hidden">
-        {BG_ICONS.map(({ Icon, top, left, size }, i) => (
-          <div key={i} className="fixed pointer-events-none text-indigo-200/60 z-0" style={{ top, left }}>
-            <Icon size={size} strokeWidth={1.4} />
-          </div>
-        ))}
-
-        {/* Hero */}
-        <div className={`relative bg-gradient-to-r ${GRAD} overflow-hidden`}>
-          <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/10" />
-          <div className="absolute -bottom-10 left-20 w-32 h-32 rounded-full bg-white/10" />
-          <div className="absolute right-6 sm:right-20 bottom-4 opacity-15 pointer-events-none">
-            <Trophy size={64} className="text-white" />
-          </div>
-          <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-8 py-10 sm:py-14 text-center">
-            <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 text-white text-xs font-bold uppercase tracking-widest mb-4`}>
-              <Trophy className="w-3.5 h-3.5" /> Test Complete
-            </span>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4">Your Results</h1>
-            {timerExpired && (
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/80 text-white text-xs font-bold mb-4 border border-red-400/60">
-                <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Time's up! 20 minutes elapsed.
-              </div>
-            )}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                { n: `${totalCorrect}/${slides.length}`, l: "Correct Slides" },
-                { n: `${pct}%`, l: "MCQ Score" },
-                { n: `${avgMatch}%`, l: "Avg Match Score" },
-                { n: pct >= 80 ? "🏆" : pct >= 50 ? "🎯" : "📚", l: "Grade" },
-              ].map(({ n, l }) => (
-                <div key={l} className="bg-white/15 rounded-2xl p-3 sm:p-4">
-                  <div className="text-2xl sm:text-3xl font-extrabold text-white leading-none">{n}</div>
-                  <div className="text-xs text-pink-200 mt-1">{l}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Per-slide summary */}
-        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-8 py-8 space-y-3">
-          <h2 className="text-lg sm:text-2xl font-extrabold text-gray-900 mb-5 flex items-center gap-3">
-            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${GRAD} flex items-center justify-center shrink-0`}>
-              <Award className="w-5 h-5 text-white" />
-            </div>
-            Slide-by-Slide Summary
-          </h2>
-
-          {slides.map((slide, idx) => {
-            const ans = answers[idx];
-            const isCorrect = ans.selectedOption !== null && slide.options[ans.selectedOption] === slide.title;
-            return (
-              <div key={slide.id} className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden hover:shadow-md transition-all">
-                <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
-                <div className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-                  {/* thumbnail */}
-                  <div className="relative w-14 h-11 rounded-xl overflow-hidden border border-gray-200 shrink-0">
-                    <Image src={slide.images[0].url} alt={slide.title} fill className="object-cover" sizes="56px" />
-                  </div>
-                  {/* info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-extrabold text-gray-900 text-sm">{slide.title}</span>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">{slide.category}</span>
-                      {isCorrect
-                        ? <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-green-700"><CheckCircle className="w-2.5 h-2.5" /> Correct</span>
-                        : <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-red-50 border border-red-200 text-red-700"><XCircle className="w-2.5 h-2.5" /> Incorrect</span>}
-                    </div>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      Your answer: <span className="font-semibold text-gray-600">{ans.selectedOption !== null ? slide.options[ans.selectedOption] : "—"}</span>
-                      {!isCorrect && <span className="ml-2 text-indigo-600">✓ <strong>{slide.title}</strong></span>}
-                    </p>
-                    <div className="mt-1.5 flex flex-wrap gap-1">
-                      {slide.keyFeatures.slice(0, 3).map(f => (
-                        <span key={f} className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700">{f}</span>
-                      ))}
-                    </div>
-                  </div>
-                  {/* score + link */}
-                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-xl border ${scoreBadge(ans.matchScore)}`}>
-                      {ans.matchScore}% match
-                    </span>
-                    <Link href={`/spotting/pathology/${slide.id}`}
-                      className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-pink-600 transition-colors">
-                      Lesson <ChevronRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
-            <button onClick={() => window.location.reload()}
-              className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r ${GRAD} text-white font-extrabold text-sm shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all`}>
-              <Shuffle className="w-4 h-4" /> Retake (Reshuffled)
-            </button>
-            <Link href="/spotting"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-extrabold text-sm hover:border-indigo-400 hover:text-indigo-600 transition-all">
-              <ChevronLeft className="w-4 h-4" /> Back to Spotting Centre
-            </Link>
-          </div>
-
-          <ReferencesBlock />
-        </div>
-      </section>
+      <ReportCard
+        slides={round1Slides}
+        answers={round1Answers}
+        roundTitle="Round 1 Complete"
+        timerExpired={timerExpired}
+        onNextRound={handleNextRound}
+        showNextButton={round2Slides.length > 0}
+        nextButtonText={`Continue to Round 2 (${round2Slides.length} slides)`}
+      />
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // MAIN TEST UI
-  // ─────────────────────────────────────────────────────────────────────────────
+  // Render final report (round 2 completed)
+  if (round === 4) {
+    const combinedSlides = [...round1Slides, ...round2Slides];
+    const combinedAnswers = [...round1Answers, ...round2Answers];
+    return (
+      <ReportCard
+        slides={combinedSlides}
+        answers={combinedAnswers}
+        roundTitle="Final Results"
+        timerExpired={timerExpired}
+        showNextButton={false}
+      />
+    );
+  }
+
+  // Main test UI (round 1 or round 2)
+  if (!mounted || !current) return null;
+
   return (
     <section className="min-h-screen bg-white relative overflow-x-hidden">
       {BG_ICONS.map(({ Icon, top, left, size }, i) => (
@@ -884,16 +990,16 @@ export default function SpottingTestPage() {
           </Link>
 
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-            {/* title block — NO slide name shown */}
+            {/* title block */}
             <div>
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest mb-3">
-                <MicIcon className="w-3 h-3" /> Pathology Spotting Test · {current.category}
+                <MicIcon className="w-3 h-3" /> Pathology Spotting Test · Round {round} · {current.category}
               </span>
               <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
                 Pathology Spotting Test
               </h1>
               <p className="text-white/70 text-xs sm:text-sm mt-2 max-w-md">
-                <strong className="text-white">{current.images.length} views</strong> per slide — study all, then select the diagnosis and write your points of recognition.
+                <strong className="text-white">2 views</strong> per slide — study both, then select the diagnosis and write your points of recognition.
               </p>
             </div>
 
@@ -928,7 +1034,7 @@ export default function SpottingTestPage() {
             />
           </div>
           <div className="flex justify-between items-center text-xs text-white/60 mt-1.5">
-            <span>Slide {currentIndex + 1} of {slides.length}</span>
+            <span>Slide {currentIndex + 1} of {slides.length} (Round {round})</span>
             {/* ── Timer pill ── */}
             <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-extrabold text-sm transition-all ${timerUrgent
               ? "bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/40"
@@ -964,12 +1070,12 @@ export default function SpottingTestPage() {
                     Slide {currentIndex + 1} of {slides.length} · {current.category}
                   </p>
                   <p className="text-xs font-semibold text-gray-500">
-                    Study all {current.images.length} views before answering
+                    Study both views before answering
                   </p>
                 </div>
               </div>
 
-              {/* Gallery (PathologyOutlines citation is inside) */}
+              {/* Gallery (now shows only low and high) */}
               <ImageGallery images={current.images} poUrl={current.pathologyOutlinesUrl} />
 
               {/* Key features chip list — revealed only after submit */}
@@ -1056,7 +1162,7 @@ export default function SpottingTestPage() {
                     Points of Recognition
                   </h3>
                   <p className="text-xs text-gray-400 mb-3">
-                    Write the key microscopic features that helped you identify this slide. Study all {current.images.length} views first!
+                    Write the key microscopic features that helped you identify this slide. Study both views first!
                   </p>
                   <textarea
                     value={currentAnswer.points}
@@ -1201,11 +1307,11 @@ export default function SpottingTestPage() {
 
           {currentIndex === slides.length - 1 ? (
             <button
-              onClick={() => setTestCompleted(true)}
+              onClick={handleFinishRound}
               disabled={!allSubmitted}
               className={`inline-flex items-center gap-1.5 px-4 sm:px-6 py-2.5 rounded-xl bg-gradient-to-r ${GRAD} text-white text-xs sm:text-sm font-extrabold shadow-md hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-40 disabled:pointer-events-none transition-all`}
             >
-              <Trophy className="w-4 h-4" /> See Results
+              <Trophy className="w-4 h-4" /> {round === 1 ? "Complete Round 1" : "See Final Results"}
             </button>
           ) : (
             <button
