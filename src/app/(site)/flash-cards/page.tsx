@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Sparkles, X, Zap, Activity, FlaskConical, AlertTriangle,
   TrendingUp, Pill, Beaker, Microscope, Stethoscope, Leaf, Dna,
-  ChevronLeft, ChevronRight, BookOpen, ExternalLink, Database, ArrowRight, Target,
+  ChevronLeft, ChevronRight, BookOpen, ExternalLink, Database, ArrowRight,
+  Target, ChevronDown, LayoutGrid,
 } from "lucide-react";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
@@ -24,22 +25,21 @@ type TabKey = "moa" | "classification" | "sideEffects" | "pharmacokinetics" | "p
 interface TabDef {
   key: TabKey; label: string; shortLabel: string;
   Icon: LucideIcon; backLabel: string; color: string;
+  desc: string; accentFrom: string; accentTo: string;
 }
 
 const TABS: TabDef[] = [
-  { key: "moa",              label: "Mechanism of Action", shortLabel: "MOA",   Icon: FlaskConical,  backLabel: "Mechanism of Action", color: "from-blue-600 to-green-400"  },
-  { key: "classification",   label: "Classification",      shortLabel: "Class", Icon: Pill,          backLabel: "Drug Class",          color: "from-indigo-600 to-blue-500" },
-  { key: "sideEffects",      label: "Side Effects",        shortLabel: "ADRs",  Icon: AlertTriangle, backLabel: "Side Effects",        color: "from-rose-500 to-orange-400" },
-  { key: "pharmacokinetics", label: "Pharmacokinetics",    shortLabel: "PK",    Icon: TrendingUp,    backLabel: "Pharmacokinetics",    color: "from-purple-600 to-pink-500" },
-  { key: "pharmacodynamics", label: "Pharmacodynamics",    shortLabel: "PD",    Icon: Activity,      backLabel: "Pharmacodynamics",    color: "from-teal-600 to-green-500"  },
-  { key: "indications",       label: "Indications",           shortLabel: "Ind",   Icon: Target,        backLabel: "Indications",          color: "from-emerald-600 to-cyan-500" },
+  { key: "moa",              label: "Mechanism of Action", shortLabel: "MOA",   Icon: FlaskConical,  backLabel: "Mechanism of Action", color: "from-blue-600 to-green-400",    desc: "How drugs work at molecular level",    accentFrom: "#2563eb", accentTo: "#4ade80"  },
+  { key: "classification",   label: "Classification",      shortLabel: "Class", Icon: Pill,          backLabel: "Drug Class",          color: "from-indigo-600 to-blue-500",   desc: "Drug classes and pharmacological groups", accentFrom: "#4f46e5", accentTo: "#3b82f6"  },
+  { key: "sideEffects",      label: "Side Effects",        shortLabel: "ADRs",  Icon: AlertTriangle, backLabel: "Side Effects",        color: "from-rose-500 to-orange-400",   desc: "Adverse reactions and toxicity",       accentFrom: "#f43f5e", accentTo: "#fb923c"  },
+  { key: "pharmacokinetics", label: "Pharmacokinetics",    shortLabel: "PK",    Icon: TrendingUp,    backLabel: "Pharmacokinetics",    color: "from-purple-600 to-pink-500",   desc: "Absorption, distribution, metabolism", accentFrom: "#9333ea", accentTo: "#ec4899"  },
+  { key: "pharmacodynamics", label: "Pharmacodynamics",    shortLabel: "PD",    Icon: Activity,      backLabel: "Pharmacodynamics",    color: "from-teal-600 to-green-500",    desc: "Drug effects and clinical outcomes",   accentFrom: "#0d9488", accentTo: "#22c55e"  },
+  { key: "indications",      label: "Indications",         shortLabel: "Ind",   Icon: Target,        backLabel: "Indications",         color: "from-emerald-600 to-cyan-500",  desc: "Clinical uses and therapeutic roles",  accentFrom: "#059669", accentTo: "#06b6d4"  },
 ];
 
 const CARDS_PER_PAGE = 12;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DATA  (100+ per category)
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── DATA ─────────────────────────────────────────────────────────────────────
 
 const moaData = [
   { drug:"Methotrexate",       back:"Inhibits DHFR → depletes tetrahydrofolate → blocks DNA/RNA synthesis. Anti-inflammatory at low doses via adenosine accumulation." },
@@ -518,7 +518,6 @@ const pharmacodynamicsData = [
   { drug:"Methyldopa",         back:"Safe antihypertensive in pregnancy (no teratogenicity). Central α₂ agonism reduces sympathetic outflow. Onset ~4–6h." },
 ];
 
-
 const indicationsData = [
   { drug:"Metformin",          back:"First-line T2DM. Also used in PCOS, prediabetes prevention, and gestational diabetes. Not for T1DM." },
   { drug:"Aspirin",            back:"Low-dose (75–150 mg): antiplatelet in ACS, AF, stroke prevention, post-MI, TIA. Standard dose: analgesia, antipyresis, acute MI (300–600 mg)." },
@@ -548,7 +547,6 @@ const indicationsData = [
   { drug:"Enoxaparin",         back:"VTE prophylaxis (surgical, medical patients), DVT/PE treatment, ACS (NSTEMI), bridging anticoagulation." },
   { drug:"Apixaban",           back:"AF (stroke prevention), DVT/PE treatment and extended prophylaxis, post-joint-replacement VTE prophylaxis." },
   { drug:"Dabigatran",         back:"AF (stroke prevention), DVT/PE treatment and secondary prevention, post-elective hip/knee replacement VTE prophylaxis." },
-  { drug:"Warfarin",           back:"AF (stroke prevention), DVT/PE treatment and prophylaxis, mechanical heart valves, antiphospholipid syndrome." },
   { drug:"Digoxin",            back:"AF rate control (particularly with HF or when β-blockers contraindicated), HFrEF adjunct (symptom control only — no mortality benefit)." },
   { drug:"Glyceryl trinitrate",back:"Acute angina attack (SL/spray), angina prophylaxis (transdermal patch), acute HF/acute coronary syndrome (IV), oesophageal spasm." },
   { drug:"Vancomycin",         back:"MRSA infections (bacteraemia, endocarditis, bone), C. difficile colitis (oral — not absorbed systemically), meningitis (gram-positive)." },
@@ -638,9 +636,7 @@ const REFERENCES = [
   { authors:"Wishart DS, et al.", title:"DrugBank Online v5.1.", publisher:"DrugBank.", year:"2024", url:"https://go.drugbank.com" },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Flashcard component
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Flashcard ────────────────────────────────────────────────────────────────
 function Flashcard({ drug, back, gradient, backLabel }: {
   drug: string; back: string; gradient: string; backLabel: string;
 }) {
@@ -651,12 +647,10 @@ function Flashcard({ drug, back, gradient, backLabel }: {
       <motion.div animate={{ rotateY: flipped ? 180 : 0 }}
         transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
         style={{ transformStyle: "preserve-3d", position: "relative", height: "220px" }}>
-
         {/* Front */}
         <div style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
           className="absolute inset-0 rounded-2xl border border-gray-200 bg-white overflow-hidden flex flex-col items-center justify-center p-6 text-center hover:border-blue-300 hover:shadow-md transition-all duration-300">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 to-green-400" />
-          <div className="absolute inset-0 bg-blue-50/0 hover:bg-blue-50/30 transition-colors pointer-events-none" />
           <div className="relative z-10 w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-4">
             <Pill className="w-6 h-6 text-blue-600" />
           </div>
@@ -665,7 +659,6 @@ function Flashcard({ drug, back, gradient, backLabel }: {
             Tap to reveal <span className="text-blue-500">{backLabel}</span>
           </p>
         </div>
-
         {/* Back */}
         <div style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
           className={`absolute inset-0 rounded-2xl overflow-hidden flex flex-col items-center justify-center p-5 text-center bg-gradient-to-br ${gradient} shadow-md`}>
@@ -681,9 +674,210 @@ function Flashcard({ drug, back, gradient, backLabel }: {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Page component
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Mobile Category Sheet ─────────────────────────────────────────────────────
+function MobileCategorySheet({
+  activeTab, onSelect,
+}: { activeTab: TabKey; onSelect: (key: TabKey) => void }) {
+  const [open, setOpen] = useState(false);
+  const activeTabDef = TABS.find(t => t.key === activeTab)!;
+  const { Icon } = activeTabDef;
+
+  return (
+    <>
+      {/* Trigger bar — sticky at top on mobile */}
+      <button
+        onClick={() => setOpen(true)}
+        className="w-full flex items-center justify-between px-4 py-3.5 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-all"
+      >
+        <div className="flex items-center gap-3">
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center bg-gradient-to-br ${activeTabDef.color}`}>
+            <Icon size={15} className="text-white" />
+          </div>
+          <div className="text-left">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 leading-none mb-0.5">Category</p>
+            <p className="text-sm font-extrabold text-gray-900">{activeTabDef.label}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 border border-blue-100 text-blue-700">
+            {DATA_MAP[activeTab].length} cards
+          </span>
+          <ChevronDown size={16} className="text-gray-400" />
+        </div>
+      </button>
+
+      {/* Bottom sheet overlay */}
+      <AnimatePresence>
+        {open && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+              onClick={() => setOpen(false)}
+            />
+            <motion.div
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 380, damping: 38 }}
+              className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl overflow-hidden"
+              style={{ maxHeight: "80vh" }}
+            >
+              {/* Handle */}
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="w-10 h-1 rounded-full bg-gray-200" />
+              </div>
+
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  <LayoutGrid size={16} className="text-blue-600" />
+                  <h3 className="text-sm font-extrabold text-gray-900">Choose Category</h3>
+                </div>
+                <button onClick={() => setOpen(false)}
+                  className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors">
+                  <X size={14} />
+                </button>
+              </div>
+
+              {/* Category list */}
+              <div className="px-4 py-4 space-y-2 overflow-y-auto" style={{ maxHeight: "calc(80vh - 80px)" }}>
+                {TABS.map(tab => {
+                  const isActive = tab.key === activeTab;
+                  const { Icon: TabIcon } = tab;
+                  return (
+                    <button key={tab.key}
+                      onClick={() => { onSelect(tab.key); setOpen(false); }}
+                      className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all text-left ${isActive ? "ring-2 ring-blue-200" : "hover:bg-gray-50"}`}
+                    >
+                      {/* Icon blob */}
+                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br ${tab.color} ${isActive ? "shadow-md" : "opacity-80"}`}>
+                        <TabIcon size={18} className="text-white" />
+                      </div>
+
+                      {/* Text */}
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-extrabold leading-tight ${isActive ? "text-blue-700" : "text-gray-900"}`}>{tab.label}</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5 leading-snug truncate">{tab.desc}</p>
+                      </div>
+
+                      {/* Count + check */}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isActive ? "bg-blue-100 text-blue-700 border border-blue-200" : "bg-gray-100 text-gray-500"}`}>
+                          {DATA_MAP[tab.key].length}
+                        </span>
+                        {isActive && (
+                          <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
+                            <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                              <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+// ─── Desktop Sidebar ───────────────────────────────────────────────────────────
+function DesktopSidebar({
+  activeTab, onSelect, searchQuery, onSearch,
+}: {
+  activeTab: TabKey;
+  onSelect: (key: TabKey) => void;
+  searchQuery: string;
+  onSearch: (v: string) => void;
+}) {
+  const totalAll = Object.values(DATA_MAP).reduce((s, d) => s + d.length, 0);
+  const activeTabDef = TABS.find(t => t.key === activeTab)!;
+
+  return (
+    <aside className="hidden lg:flex flex-col w-64 xl:w-72 flex-shrink-0">
+      <div className="sticky top-6 space-y-3">
+
+        {/* Sidebar header */}
+        <div className={`rounded-2xl p-4 bg-gradient-to-br ${activeTabDef.color} text-white shadow-md`}>
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles size={13} className="opacity-80" />
+            <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">Drug Flashcards</span>
+          </div>
+          <p className="text-lg font-extrabold leading-tight">{activeTabDef.label}</p>
+          <p className="text-xs text-white/70 mt-0.5">{activeTabDef.desc}</p>
+          <div className="flex items-center gap-3 mt-3 pt-3 border-t border-white/20">
+            <div className="text-center">
+              <p className="text-lg font-extrabold">{DATA_MAP[activeTab].length}</p>
+              <p className="text-[10px] opacity-70">This set</p>
+            </div>
+            <div className="w-px h-8 bg-white/20" />
+            <div className="text-center">
+              <p className="text-lg font-extrabold">{totalAll}+</p>
+              <p className="text-[10px] opacity-70">Total cards</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Search — desktop */}
+        <div className="relative">
+          <Search size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input type="text" placeholder="Search drugs…"
+            value={searchQuery} onChange={e => onSearch(e.target.value)}
+            className="w-full pl-9 pr-9 py-2.5 text-xs text-gray-800 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all placeholder:text-gray-400"
+          />
+          {searchQuery && (
+            <button onClick={() => onSearch("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors">
+              <X size={10} />
+            </button>
+          )}
+        </div>
+
+        {/* Category list */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+            <LayoutGrid size={13} className="text-blue-600" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Categories</span>
+          </div>
+          <ul className="p-2 space-y-0.5">
+            {TABS.map(tab => {
+              const isActive = tab.key === activeTab;
+              const { Icon: TabIcon } = tab;
+              return (
+                <li key={tab.key}>
+                  <button onClick={() => onSelect(tab.key)}
+                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all text-left group ${isActive ? "bg-gradient-to-r " + tab.color + " shadow-sm" : "hover:bg-gray-50"}`}>
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${isActive ? "bg-white/20" : "bg-gray-100 group-hover:bg-gray-200"} transition-colors`}>
+                      <TabIcon size={13} className={isActive ? "text-white" : "text-gray-500"} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-xs font-bold truncate ${isActive ? "text-white" : "text-gray-700"}`}>{tab.label}</p>
+                      <p className={`text-[10px] truncate ${isActive ? "text-white/70" : "text-gray-400"}`}>{tab.desc}</p>
+                    </div>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ${isActive ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"}`}>
+                      {DATA_MAP[tab.key].length}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        {/* Quick tip */}
+        <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600 mb-1">Study Tip</p>
+          <p className="text-xs text-blue-700 leading-relaxed">Tap any card to flip it and reveal the answer. Go through each category systematically for exam prep.</p>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 export default function FlashcardsPage() {
   const [activeTab,   setActiveTab]   = useState<TabKey>("moa");
   const [searchQuery, setSearchQuery] = useState("");
@@ -730,7 +924,7 @@ export default function FlashcardsPage() {
         <div className="absolute right-20 bottom-4   opacity-15 pointer-events-none"><Dna      size={60} className="text-white" /></div>
         <div className="absolute right-44 top-6      opacity-15 pointer-events-none"><Activity size={50} className="text-white" /></div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-16 md:py-20 text-center">
+        <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-14 md:py-20 text-center">
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 text-white text-xs font-bold uppercase tracking-widest mb-5">
             <Zap className="w-3.5 h-3.5" /> Drug Flashcards
           </span>
@@ -738,30 +932,10 @@ export default function FlashcardsPage() {
             Drug Flashcards
             <span className="block text-green-200 mt-1">Flip &amp; Learn</span>
           </h1>
-          <p className="text-blue-100 text-lg max-w-2xl mx-auto mb-8 leading-relaxed">
+          <p className="text-blue-100 text-lg max-w-2xl mx-auto mb-6 leading-relaxed">
             Master mechanisms, classifications, side effects, pharmacokinetics, and pharmacodynamics — tap any card to reveal the answer.
           </p>
-
-          <div className="relative max-w-lg mx-auto">
-            <div className="absolute -inset-0.5 rounded-2xl bg-white/20 blur-sm pointer-events-none" />
-            <div className="relative flex items-center bg-white rounded-2xl border border-white/30 shadow-sm overflow-hidden">
-              <Search className="absolute left-4 w-4 h-4 text-gray-400 pointer-events-none" />
-              <input type="text" placeholder="Search drug name…"
-                value={searchQuery} onChange={e => handleSearch(e.target.value)}
-                className="w-full pl-11 pr-12 py-4 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none bg-transparent" />
-              <AnimatePresence>
-                {searchQuery && (
-                  <motion.button initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
-                    onClick={() => handleSearch("")}
-                    className="absolute right-3 w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition">
-                    <X className="w-3.5 h-3.5" />
-                  </motion.button>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-center gap-6 mt-7 flex-wrap">
+          <div className="flex items-center justify-center gap-6 flex-wrap">
             {[
               { n: `${totalAll}+`, l: "Total Cards"  },
               { n: `${TABS.length}`, l: "Categories" },
@@ -776,108 +950,128 @@ export default function FlashcardsPage() {
         </div>
       </div>
 
-      {/* ── Content ── */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-10">
+      {/* ── Main layout ── */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
+        <div className="flex flex-col lg:flex-row gap-6 xl:gap-8 items-start">
 
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-green-400 flex items-center justify-center shrink-0">
-            <Sparkles className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h2 className="text-xl font-extrabold text-gray-900 tracking-tight">Flashcard Categories</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Select a category and tap any card to flip it</p>
-          </div>
-          <div className="flex-1 h-px bg-gradient-to-r from-gray-200 to-transparent hidden sm:block" />
-          <span className="text-xs font-semibold text-gray-400 bg-gray-100 border border-gray-200 rounded-full px-3 py-1 shrink-0">
-            {filtered.length} / {allData.length} cards
-          </span>
-        </div>
+          {/* ── Desktop sidebar ── */}
+          <DesktopSidebar
+            activeTab={activeTab}
+            onSelect={handleTabChange}
+            searchQuery={searchQuery}
+            onSearch={handleSearch}
+          />
 
-        {/* Tab pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-8">
-          {TABS.map(tab => {
-            const isActive = activeTab === tab.key;
-            const { Icon } = tab;
-            return (
-              <button key={tab.key} onClick={() => handleTabChange(tab.key)}
-                className={`relative shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-extrabold uppercase tracking-wider transition-all duration-200 ${isActive ? "text-white shadow-sm" : "bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200"}`}>
-                {isActive && (
-                  <motion.div layoutId="tab-bg-fc"
-                    className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 shadow-md shadow-blue-200/50"
-                    transition={{ type: "spring", stiffness: 320, damping: 30 }} />
-                )}
-                <Icon className="w-3.5 h-3.5 relative z-10 shrink-0" />
-                <span className="relative z-10 hidden sm:inline">{tab.label}</span>
-                <span className="relative z-10 sm:hidden">{tab.shortLabel}</span>
-                <span className={`relative z-10 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${isActive ? "bg-white/20 text-white" : "bg-gray-200 text-gray-500"}`}>
-                  {DATA_MAP[tab.key].length}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+          {/* ── Main content area ── */}
+          <div className="flex-1 min-w-0 w-full">
 
-        {/* Cards */}
-        <AnimatePresence mode="wait">
-          {paged.length > 0 ? (
-            <motion.div key={`${activeTab}-${searchQuery}-${page}`}
-              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              transition={{ duration: 0.22 }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {paged.map((item, i) => (
-                <motion.div key={`${activeTab}-${item.drug}-${i}`}
-                  initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.03, duration: 0.24 }}>
-                  <Flashcard drug={item.drug} back={item.back}
-                    gradient={activeTabDef.color} backLabel={activeTabDef.backLabel} />
-                </motion.div>
-              ))}
-            </motion.div>
-          ) : (
-            <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="text-center py-20">
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto mb-4">
-                <Pill className="w-6 h-6 text-blue-300" />
-              </div>
-              <p className="text-gray-500 font-medium">No cards found for <span className="font-bold text-gray-700">"{searchQuery}"</span></p>
-              <button onClick={() => handleSearch("")}
-                className="mt-4 px-4 py-2 rounded-xl bg-blue-50 text-blue-600 text-sm font-semibold hover:bg-blue-100 transition">
-                Clear search
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            {/* Mobile: category selector + search */}
+            <div className="lg:hidden space-y-3 mb-5">
+              <MobileCategorySheet activeTab={activeTab} onSelect={handleTabChange} />
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-10">
-            <p className="text-sm text-gray-400">
-              Showing <span className="font-bold text-gray-600">{(page-1)*CARDS_PER_PAGE+1}–{Math.min(page*CARDS_PER_PAGE, filtered.length)}</span> of{" "}
-              <span className="font-bold text-gray-600">{filtered.length}</span> cards
-            </p>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setPage(p => Math.max(1,p-1))} disabled={page===1}
-                className="w-9 h-9 rounded-xl border-2 border-gray-200 flex items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-600 disabled:opacity-40 disabled:pointer-events-none transition">
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              {pageNums.map((n,i) => n==="…"
-                ? <span key={`e-${i}`} className="text-gray-400 text-sm w-4 text-center">…</span>
-                : <button key={n} onClick={() => setPage(n as number)}
-                    className={`w-9 h-9 rounded-xl text-sm font-bold transition ${page===n ? "bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-md shadow-blue-200/50 border-0" : "border-2 border-gray-200 text-gray-500 hover:border-blue-400 hover:text-blue-600"}`}>
-                    {n}
+              {/* Mobile search */}
+              <div className="relative">
+                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <input type="text" placeholder="Search drug name…"
+                  value={searchQuery} onChange={e => handleSearch(e.target.value)}
+                  className="w-full pl-10 pr-10 py-3 text-sm text-gray-800 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all placeholder:text-gray-400"
+                />
+                {searchQuery && (
+                  <button onClick={() => handleSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors">
+                    <X size={12} />
                   </button>
-              )}
-              <button onClick={() => setPage(p => Math.min(totalPages,p+1))} disabled={page===totalPages}
-                className="w-9 h-9 rounded-xl border-2 border-gray-200 flex items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-600 disabled:opacity-40 disabled:pointer-events-none transition">
-                <ChevronRight className="w-4 h-4" />
-              </button>
+                )}
+              </div>
             </div>
+
+            {/* Desktop: section header + count */}
+            <div className="hidden lg:flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${activeTabDef.color} flex items-center justify-center shadow-sm`}>
+                  <activeTabDef.Icon size={16} className="text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-extrabold text-gray-900 leading-tight">{activeTabDef.label}</h2>
+                  <p className="text-xs text-gray-400">{activeTabDef.desc}</p>
+                </div>
+              </div>
+              <span className="text-xs font-semibold text-gray-400 bg-gray-100 border border-gray-200 rounded-full px-3 py-1.5">
+                {filtered.length} / {allData.length} cards
+              </span>
+            </div>
+
+            {/* Mobile: count badge */}
+            <div className="lg:hidden flex items-center justify-between mb-4">
+              <h2 className="text-sm font-extrabold text-gray-900">{activeTabDef.label}</h2>
+              <span className="text-[11px] font-semibold text-gray-400 bg-gray-100 border border-gray-200 rounded-full px-2.5 py-1">
+                {filtered.length} cards
+              </span>
+            </div>
+
+            {/* Cards grid */}
+            <AnimatePresence mode="wait">
+              {paged.length > 0 ? (
+                <motion.div key={`${activeTab}-${searchQuery}-${page}`}
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  transition={{ duration: 0.22 }}
+                  className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+                  {paged.map((item, i) => (
+                    <motion.div key={`${activeTab}-${item.drug}-${i}`}
+                      initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.03, duration: 0.24 }}>
+                      <Flashcard drug={item.drug} back={item.back}
+                        gradient={activeTabDef.color} backLabel={activeTabDef.backLabel} />
+                    </motion.div>
+                  ))}
+                </motion.div>
+              ) : (
+                <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  className="text-center py-20">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto mb-4">
+                    <Pill className="w-6 h-6 text-blue-300" />
+                  </div>
+                  <p className="text-gray-500 font-medium">No cards found for <span className="font-bold text-gray-700">"{searchQuery}"</span></p>
+                  <button onClick={() => handleSearch("")}
+                    className="mt-4 px-4 py-2 rounded-xl bg-blue-50 text-blue-600 text-sm font-semibold hover:bg-blue-100 transition">
+                    Clear search
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
+                <p className="text-sm text-gray-400">
+                  Showing <span className="font-bold text-gray-600">{(page-1)*CARDS_PER_PAGE+1}–{Math.min(page*CARDS_PER_PAGE, filtered.length)}</span> of{" "}
+                  <span className="font-bold text-gray-600">{filtered.length}</span> cards
+                </p>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setPage(p => Math.max(1,p-1))} disabled={page===1}
+                    className="w-9 h-9 rounded-xl border-2 border-gray-200 flex items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-600 disabled:opacity-40 disabled:pointer-events-none transition">
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  {pageNums.map((n,i) => n==="…"
+                    ? <span key={`e-${i}`} className="text-gray-400 text-sm w-4 text-center">…</span>
+                    : <button key={n} onClick={() => setPage(n as number)}
+                        className={`w-9 h-9 rounded-xl text-sm font-bold transition ${page===n ? "bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-md shadow-blue-200/50 border-0" : "border-2 border-gray-200 text-gray-500 hover:border-blue-400 hover:text-blue-600"}`}>
+                        {n}
+                      </button>
+                  )}
+                  <button onClick={() => setPage(p => Math.min(totalPages,p+1))} disabled={page===totalPages}
+                    className="w-9 h-9 rounded-xl border-2 border-gray-200 flex items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-600 disabled:opacity-40 disabled:pointer-events-none transition">
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
-      {/* ── Pharmacopedia CTA tagline ── */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 pb-8">
+      {/* ── Pharmacopedia CTA ── */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <div className="relative rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 overflow-hidden p-8 text-center">
           <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10 pointer-events-none" />
           <div className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full bg-white/10 pointer-events-none" />
@@ -891,18 +1085,16 @@ export default function FlashcardsPage() {
             </p>
             <Link href="/encyclopedia"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white text-blue-700 font-extrabold text-sm shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
-              <Database className="w-4 h-4" /> Explore Pharmacopedia
-              <ArrowRight className="w-4 h-4" />
+              <Database className="w-4 h-4" /> Explore Pharmacopedia <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
       </div>
 
       {/* ── References ── */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 pb-20">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 to-green-400" />
-          <div className="absolute inset-0 bg-blue-50/20 pointer-events-none" />
           <div className="relative z-10 p-6 sm:p-8">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-green-400 flex items-center justify-center shrink-0">
@@ -920,9 +1112,7 @@ export default function FlashcardsPage() {
             <ol className="space-y-3">
               {REFERENCES.map((ref, i) => (
                 <li key={i} className="flex gap-3">
-                  <span className="w-6 h-6 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-[10px] font-extrabold text-blue-700 shrink-0 mt-0.5">
-                    {i + 1}
-                  </span>
+                  <span className="w-6 h-6 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-[10px] font-extrabold text-blue-700 shrink-0 mt-0.5">{i+1}</span>
                   <p className="text-sm text-gray-700 leading-relaxed min-w-0">
                     <span className="text-gray-500">{ref.authors} </span>
                     <span className="font-semibold text-gray-900 italic">{ref.title}</span>
