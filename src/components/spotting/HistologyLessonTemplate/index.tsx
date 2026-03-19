@@ -1,7 +1,7 @@
 "use client";
 // components/spotting/HistologyLessonTemplate.tsx
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ChevronLeft, ChevronRight, BookOpen, ExternalLink,
@@ -183,15 +183,15 @@ function ReferencesBlock({ refs }: { refs: Ref[] }) {
               <span className="w-5 h-5 rounded-md bg-blue-50 border border-blue-100 flex items-center justify-center text-[9px] font-extrabold text-blue-700 shrink-0 mt-0.5">
                 {i + 1}
               </span>
-              <p className="text-xs text-gray-700 leading-relaxed">
+              <p className="text-xs text-gray-700 leading-relaxed break-words w-full">
                 <span className="text-gray-500">{ref.authors} </span>
                 <em className="font-semibold text-gray-900 not-italic">{ref.title}</em>
                 {ref.edition && <span className="text-gray-400"> ({ref.edition})</span>}
                 <span className="text-gray-400">. {ref.publisher}; {ref.year}.</span>
                 {ref.url && (
                   <a href={ref.url} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 ml-1.5 text-blue-600 hover:text-green-600 transition-colors">
-                    <ExternalLink className="w-2.5 h-2.5" />{ref.url.replace("https://", "").replace("http://", "")}
+                    className="inline-flex items-center gap-1 ml-1.5 text-blue-600 hover:text-green-600 transition-colors break-all">
+                    <ExternalLink className="w-2.5 h-2.5 shrink-0" />{ref.url.replace("https://", "").replace("http://", "")}
                   </a>
                 )}
               </p>
@@ -218,6 +218,11 @@ export default function HistologyLessonTemplate({
   const [showScrollTop, setShowScrollTop] = useState(false);
   const lessonIdx = HISTOLOGY_LESSONS.findIndex(l => l.id === id);
 
+  // Scroll to top on page load
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
   useEffect(() => {
     const onScroll = () => setShowScrollTop(window.scrollY > 400);
     const onKey    = (e: KeyboardEvent) => { if (e.key === "Escape") setMobileNavOpen(false); };
@@ -240,7 +245,8 @@ export default function HistologyLessonTemplate({
 
       {/* ── Mobile top bar ── */}
       <div className="lg:hidden sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
-        <div className="flex items-center justify-between px-3 py-2.5">
+        {/* Added pt-[2.625rem] to match pathology fix */}
+        <div className="flex items-center justify-between px-3 py-2.5 pt-[2.625rem]">
           <div className="flex items-center gap-1 text-xs text-gray-500 min-w-0 flex-1 mr-2">
             <Link href="/spotting/histology/lessons" className="hover:text-blue-600 shrink-0 font-medium">Histology</Link>
             <ChevronRight size={11} className="mx-0.5 text-gray-300 shrink-0" />
@@ -252,7 +258,7 @@ export default function HistologyLessonTemplate({
           </button>
         </div>
         {mobileNavOpen && (
-          <div className="bg-white border-t border-gray-100 px-3 pb-3 shadow-xl max-h-64 overflow-y-auto">
+          <div className="bg-white border-t border-gray-100 px-3 pb-3 shadow-xl max-h-[60vh] overflow-y-auto">
             <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 pt-2 mb-1.5">All Lessons</p>
             <ul className="space-y-0.5">
               {HISTOLOGY_LESSONS.map(l => (
@@ -281,8 +287,8 @@ export default function HistologyLessonTemplate({
         </div>
       </div>
 
-      {/* ── Page Layout ── */}
-      <div className="relative z-10 mx-auto max-w-screen-xl px-3 sm:px-5 lg:px-8 py-4 sm:py-6 lg:py-10 w-full">
+      {/* ── Page Layout – with minimal top padding on mobile (pt-4) ── */}
+      <div className="relative z-10 mx-auto max-w-screen-xl px-3 sm:px-5 lg:px-8 py-4 sm:py-6 lg:py-10 pt-4 sm:pt-0 w-full">
 
         {/* Desktop breadcrumb */}
         <nav className="hidden lg:flex items-center gap-1.5 text-sm text-gray-500 mb-5 flex-wrap">
@@ -302,7 +308,7 @@ export default function HistologyLessonTemplate({
 
           {/* ── SIDEBAR ── */}
           <aside className="hidden lg:block w-52 xl:w-60 flex-shrink-0">
-            <div className="sticky top-6 space-y-4">
+            <div className="sticky top-[80px] space-y-4">
               {/* Subject card */}
               <div className={`bg-gradient-to-br ${gradient} rounded-2xl p-4 text-white shadow-lg`}>
                 <div className="flex items-center gap-1.5 mb-1">
@@ -403,7 +409,7 @@ export default function HistologyLessonTemplate({
               </div>
             </div>
 
-            {/* ── Detailed Theory ── */}
+            {/* ── Detailed Theory – with table styles ── */}
             <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
               <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${gradient}`} />
               <div className="p-4 sm:p-6 md:p-8">
@@ -413,8 +419,8 @@ export default function HistologyLessonTemplate({
                   </div>
                   <h2 className="text-sm sm:text-base font-extrabold text-gray-900">Detailed Theory</h2>
                 </div>
-                {/* Theory content — styled via prose-like CSS classes applied inside each page */}
-                <div className="theory-content space-y-4 text-gray-700 text-sm sm:text-base leading-relaxed [&_h3]:text-base [&_h3]:sm:text-lg [&_h3]:font-extrabold [&_h3]:text-gray-900 [&_h3]:mt-6 [&_h3]:mb-3 [&_h3]:pt-4 [&_h3]:border-t [&_h3]:border-gray-100 [&_h4]:text-sm [&_h4]:sm:text-base [&_h4]:font-bold [&_h4]:text-blue-700 [&_h4]:mt-5 [&_h4]:mb-2 [&_p]:leading-relaxed [&_ul]:space-y-2 [&_ul]:pl-1 [&_li]:flex [&_li]:gap-2.5 [&_li]:leading-relaxed [&_strong]:font-bold [&_strong]:text-gray-900">
+                {/* Theory content with table styles */}
+                <div className="theory-content space-y-4 text-gray-700 text-sm sm:text-base leading-relaxed overflow-x-auto [&_table]:min-w-full [&_table]:border-collapse [&_table]:border [&_table]:border-gray-200 [&_thead]:bg-gray-50 [&_th]:p-3 [&_th]:text-left [&_th]:font-bold [&_th]:text-gray-900 [&_th]:border [&_th]:border-gray-200 [&_td]:p-3 [&_td]:border [&_td]:border-gray-200 [&_td]:align-top [&_tr:last-child_td]:border-b [&_tr]:border-b [&_tr]:border-gray-200 [&_h3]:text-base [&_h3]:sm:text-lg [&_h3]:font-extrabold [&_h3]:text-gray-900 [&_h3]:mt-6 [&_h3]:mb-3 [&_h3]:pt-4 [&_h3]:border-t [&_h3]:border-gray-100 [&_h4]:text-sm [&_h4]:sm:text-base [&_h4]:font-bold [&_h4]:text-blue-700 [&_h4]:mt-5 [&_h4]:mb-2 [&_p]:leading-relaxed [&_ul]:space-y-2 [&_ul]:pl-1 [&_li]:flex [&_li]:gap-2.5 [&_li]:leading-relaxed [&_strong]:font-bold [&_strong]:text-gray-900">
                   {theory}
                 </div>
               </div>
@@ -441,10 +447,10 @@ export default function HistologyLessonTemplate({
             <ReferencesBlock refs={references} />
 
             {/* ── Prev / Next ── */}
-            <div className="grid grid-cols-2 gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row gap-3 pt-2 w-full">
               {prevLesson ? (
                 <Link href={`${BASE}/${prevLesson.id}`}
-                  className="group relative flex items-center gap-2 sm:gap-3 bg-white rounded-2xl border border-gray-200 shadow-sm p-3 sm:p-4 hover:-translate-y-0.5 hover:shadow-md transition-all overflow-hidden min-w-0">
+                  className="flex-1 group relative flex items-center gap-2 sm:gap-3 bg-white rounded-2xl border border-gray-200 shadow-sm p-3 sm:p-4 hover:-translate-y-0.5 hover:shadow-md transition-all overflow-hidden min-w-0">
                   <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${gradient}`} />
                   <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0">
                     <ChevronLeft size={15} className="text-blue-600" />
@@ -454,10 +460,10 @@ export default function HistologyLessonTemplate({
                     <p className="text-[10px] sm:text-xs font-semibold text-gray-800 leading-tight truncate">{prevLesson.title}</p>
                   </div>
                 </Link>
-              ) : <div />}
+              ) : <div className="hidden sm:block flex-1" />}
               {nextLesson ? (
                 <Link href={`${BASE}/${nextLesson.id}`}
-                  className="group relative flex items-center justify-end gap-2 sm:gap-3 bg-white rounded-2xl border border-gray-200 shadow-sm p-3 sm:p-4 hover:-translate-y-0.5 hover:shadow-md transition-all overflow-hidden min-w-0">
+                  className="flex-1 group relative flex items-center justify-end gap-2 sm:gap-3 bg-white rounded-2xl border border-gray-200 shadow-sm p-3 sm:p-4 hover:-translate-y-0.5 hover:shadow-md transition-all overflow-hidden min-w-0">
                   <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${gradient}`} />
                   <div className="min-w-0 text-right">
                     <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">Next</p>
@@ -467,7 +473,7 @@ export default function HistologyLessonTemplate({
                     <ChevronRight size={15} className="text-blue-600" />
                   </div>
                 </Link>
-              ) : <div />}
+              ) : <div className="hidden sm:block flex-1" />}
             </div>
 
             {/* Take test CTA */}

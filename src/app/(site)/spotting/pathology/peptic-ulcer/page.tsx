@@ -204,6 +204,11 @@ export default function PathologyPepticUlcerPage() {
   const [lightbox, setLightbox] = useState<string | null>(null);
   const lessonIdx = ALL_LESSONS.findIndex(l => l.id === "peptic-ulcer");
 
+  // Scroll to top on page load
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
   useEffect(() => {
     const onScroll = () => setShowScrollTop(window.scrollY > 400);
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -230,9 +235,9 @@ export default function PathologyPepticUlcerPage() {
       {/* Navigation drawer */}
       <LessonNav open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} currentId="peptic-ulcer" />
 
-      {/* Mobile top bar */}
+      {/* Mobile top bar – with added top padding */}
       <div className="lg:hidden sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
-        <div className="flex items-center justify-between px-3 py-2.5">
+        <div className="flex items-center justify-between px-3 py-2.5 pt-[2.625rem]">
           <div className="flex items-center gap-1 text-xs text-gray-500 min-w-0 flex-1 mr-2">
             <Link href="/spotting/pathology/lessons" className="hover:text-orange-600 shrink-0 font-medium">Pathology</Link>
             <ChevronRight size={11} className="mx-0.5 text-gray-300 shrink-0" />
@@ -257,8 +262,8 @@ export default function PathologyPepticUlcerPage() {
         </div>
       </div>
 
-      {/* Desktop layout */}
-      <div className="relative z-10 mx-auto max-w-screen-xl px-3 sm:px-5 lg:px-8 py-4 sm:py-6 lg:py-10 w-full">
+      {/* Desktop layout – reduced top padding to pt-4 (1rem) on mobile */}
+      <div className="relative z-10 mx-auto max-w-screen-xl px-3 sm:px-5 lg:px-8 py-4 sm:py-6 lg:py-10 pt-4 sm:pt-0 w-full">
 
         {/* Desktop breadcrumb */}
         <nav className="hidden lg:flex items-center gap-1.5 text-sm text-gray-500 mb-5 flex-wrap">
@@ -322,12 +327,12 @@ export default function PathologyPepticUlcerPage() {
           {/* Main content */}
           <div className="flex-1 min-w-0 w-full space-y-5">
 
-            {/* Hero banner */}
+            {/* Hero banner – reduced padding to py-4 on mobile */}
             <div className={`relative rounded-2xl overflow-hidden bg-gradient-to-r ${GRAD} shadow-lg`}>
               <div className="absolute -top-8 -right-8 w-36 sm:w-48 h-36 sm:h-48 rounded-full bg-white/10 pointer-events-none" />
               <div className="absolute -bottom-6 -left-6 w-24 sm:w-32 h-24 sm:h-32 rounded-full bg-white/10 pointer-events-none" />
               <div className="absolute bottom-3 right-4 opacity-10 pointer-events-none select-none text-6xl sm:text-8xl">{EMOJI}</div>
-              <div className="relative z-10 px-4 py-5 sm:px-7 sm:py-7">
+              <div className="relative z-10 px-4 py-4 sm:px-7 sm:py-7">
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 text-white text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-2.5">
                   <Microscope size={9} /> Pathology Lesson · {CAT}
                 </div>

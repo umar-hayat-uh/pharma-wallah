@@ -856,6 +856,13 @@ export default function SpottingTestPage() {
     return () => clearInterval(id);
   }, [timerActive, timeLeft, round]);
 
+  // Scroll to top when test page loads (after mounted)
+  useEffect(() => {
+    if (mounted) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [mounted]);
+
   const timerMins = String(Math.floor(timeLeft / 60)).padStart(2, "0");
   const timerSecs = String(timeLeft % 60).padStart(2, "0");
   const timerUrgent = timeLeft <= 60; // last 1 min → red pulse
@@ -982,7 +989,7 @@ export default function SpottingTestPage() {
           <Activity size={36} className="text-white" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 sm:py-10">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 sm:py-10 pt-14 sm:pt-0">
           {/* back link */}
           <Link href="/spotting"
             className="inline-flex items-center gap-1.5 text-white/70 hover:text-white text-xs font-semibold mb-4 transition-colors">
