@@ -21,20 +21,19 @@ const mentors = [
   { name: "Dr. Bilal Raza",   role: "Hospital Pharmacy Director",   university: "Services Hospital, Lahore",              exp: "14 yrs", specialty: "Hospital Pharma",  quote: "The case-based clinical modules are exactly what students need.",       img: "/images/mentors/bilal.jpg",  initials: "BR", courses: 3, students: 2700, linkedin: "#" },
 ];
 
+// Static background icons
 const bgIcons = [
-  { Icon: Pill,        top: "15%", left: "1.5%",  size: 30, delay: 0   },
-  { Icon: Leaf,        top: "50%", left: "1%",    size: 28, delay: 1.0 },
-  { Icon: Stethoscope, top: "82%", left: "1.5%",  size: 30, delay: 1.4 },
-  { Icon: Microscope,  top: "15%", left: "96.5%", size: 32, delay: 0.8 },
-  { Icon: Beaker,      top: "50%", left: "96.5%", size: 26, delay: 0.4 },
-  { Icon: Dna,         top: "82%", left: "96%",   size: 28, delay: 0.6 },
+  { Icon: Pill,        top: "15%", left: "1.5%",  size: 30 },
+  { Icon: Leaf,        top: "50%", left: "1%",    size: 28 },
+  { Icon: Stethoscope, top: "82%", left: "1.5%",  size: 30 },
+  { Icon: Microscope,  top: "15%", left: "96.5%", size: 32 },
+  { Icon: Beaker,      top: "50%", left: "96.5%", size: 26 },
+  { Icon: Dna,         top: "82%", left: "96%",   size: 28 },
 ];
 
 const MentorCard = ({ m }: { m: typeof mentors[0] }) => (
   <div className="px-3 pb-10">
-    <motion.div whileHover={{ y: -7, boxShadow: "0 18px 40px rgba(37,99,235,0.11)" }}
-      transition={{ type: "spring", stiffness: 260 }}
-      className="group relative rounded-2xl border border-gray-200 bg-white overflow-hidden flex flex-col hover:border-blue-300 transition-all duration-300">
+    <div className="group relative rounded-2xl border border-gray-200 bg-white overflow-hidden flex flex-col hover:border-blue-300 hover:shadow-lg transition-all duration-300">
       {/* Top stripe */}
       <div className="absolute top-0 left-0 right-0 h-[3px] z-10 bg-gradient-to-r from-blue-600 to-green-400" />
 
@@ -55,7 +54,7 @@ const MentorCard = ({ m }: { m: typeof mentors[0] }) => (
           <p className="text-xs text-blue-200 mt-0.5">{m.role}</p>
         </div>
         {/* Specialty tag */}
-        <div className="absolute top-3.5 right-3.5 z-20 px-2.5 py-1 rounded-lg bg-white/90 backdrop-blur-sm text-[10px] font-extrabold text-blue-700 border border-blue-100 uppercase tracking-wide">
+        <div className="absolute top-3.5 right-3.5 z-20 px-2.5 py-1 rounded-lg bg-white/90 text-[10px] font-extrabold text-blue-700 border border-blue-100 uppercase tracking-wide">
           {m.specialty}
         </div>
       </div>
@@ -85,7 +84,7 @@ const MentorCard = ({ m }: { m: typeof mentors[0] }) => (
           </a>
         </div>
       </div>
-    </motion.div>
+    </div>
   </div>
 );
 
@@ -94,18 +93,15 @@ export default function Mentor() {
 
   return (
     <section className="w-full py-24 bg-gray-50/50 relative overflow-hidden">
-      {bgIcons.map(({ Icon, top, left, size, delay }, i) => (
-        <motion.div key={i} className="absolute pointer-events-none text-blue-200"
-          style={{ top, left }}
-          animate={{ y: [0, -12, 0], opacity: [0.3, 0.5, 0.3] }}
-          transition={{ duration: 8, delay, repeat: Infinity, ease: "easeInOut" }}>
+      {bgIcons.map(({ Icon, top, left, size }, i) => (
+        <div key={i} className="absolute pointer-events-none text-blue-200/40" style={{ top, left }}>
           <Icon size={size} strokeWidth={1.4} />
-        </motion.div>
+        </div>
       ))}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-green-400" />
 
       <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
-        {/* Centered header (replaces gradient banner) */}
+        {/* Centered header */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -158,10 +154,9 @@ export default function Mentor() {
             </div>
           </div>
           <Link href="/contact">
-            <motion.span whileHover={{ scale: 1.03 }}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-green-400 text-white text-sm font-bold shadow-md hover:shadow-lg transition cursor-pointer shrink-0">
+            <span className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-green-400 text-white text-sm font-bold shadow-md transition-transform duration-200 hover:scale-105 active:scale-95 cursor-pointer shrink-0">
               Become a Mentor <ArrowRight className="w-4 h-4" />
-            </motion.span>
+            </span>
           </Link>
         </motion.div>
 

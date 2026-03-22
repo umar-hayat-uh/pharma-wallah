@@ -12,16 +12,16 @@ import {
   Pill, FlaskConical, Stethoscope, Microscope, Beaker, Leaf,
 } from "lucide-react";
 
+// Static background icons
 const bgIcons = [
-  { Icon: Pill,        top: "12%", left: "1.5%",  size: 30, delay: 0,   color: "text-blue-400"  },
-  { Icon: Beaker,      top: "50%", left: "1%",    size: 28, delay: 1.0, color: "text-green-400" },
-  { Icon: Stethoscope, top: "84%", left: "1.5%",  size: 30, delay: 1.4, color: "text-purple-400" },
-  { Icon: Microscope,  top: "12%", left: "96.5%", size: 30, delay: 0.4, color: "text-amber-400"  },
-  { Icon: FlaskConical,top: "50%", left: "97%",   size: 28, delay: 0.8, color: "text-teal-400"   },
-  { Icon: Leaf,        top: "84%", left: "96.5%", size: 28, delay: 0.6, color: "text-red-400"    },
+  { Icon: Pill,        top: "12%", left: "1.5%",  size: 30, color: "text-blue-400/40"  },
+  { Icon: Beaker,      top: "50%", left: "1%",    size: 28, color: "text-green-400/40" },
+  { Icon: Stethoscope, top: "84%", left: "1.5%",  size: 30, color: "text-purple-400/40" },
+  { Icon: Microscope,  top: "12%", left: "96.5%", size: 30, color: "text-amber-400/40"  },
+  { Icon: FlaskConical,top: "50%", left: "97%",   size: 28, color: "text-teal-400/40"   },
+  { Icon: Leaf,        top: "84%", left: "96.5%", size: 28, color: "text-red-400/40"    },
 ];
 
-// Sample notes data – replace with your actual notes
 const notes = [
   {
     id: 1,
@@ -86,9 +86,7 @@ const Stars = ({ r }: { r: number }) => (
 
 const Card = ({ n }: { n: typeof notes[0] }) => (
   <div className="px-3 pb-10">
-    <motion.div whileHover={{ y: -7, boxShadow: "0 18px 40px rgba(37,99,235,0.11)" }}
-      transition={{ type: "spring", stiffness: 260 }}
-      className="group relative rounded-2xl border border-gray-200 bg-white overflow-hidden flex flex-col hover:border-blue-300 transition-all duration-300">
+    <div className="group relative rounded-2xl border border-gray-200 bg-white overflow-hidden flex flex-col hover:border-blue-300 hover:shadow-lg transition-all duration-300">
       {/* Top stripe */}
       <div className="absolute top-0 left-0 right-0 h-[3px] z-10 bg-gradient-to-r from-blue-600 to-green-400" />
 
@@ -127,13 +125,12 @@ const Card = ({ n }: { n: typeof notes[0] }) => (
 
         {/* CTA */}
         <Link href={n.slug} className="mt-4">
-          <motion.span whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-            className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r from-blue-600 to-green-400 shadow-sm hover:shadow-md transition cursor-pointer">
+          <span className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r from-blue-600 to-green-400 shadow-sm hover:shadow-md transition-transform duration-200 hover:scale-105 active:scale-95 cursor-pointer">
             Read Notes <ArrowRight className="w-3.5 h-3.5" />
-          </motion.span>
+          </span>
         </Link>
       </div>
-    </motion.div>
+    </div>
   </div>
 );
 
@@ -142,13 +139,10 @@ export default function Courses() {
 
   return (
     <section className="w-full py-24 bg-white relative overflow-hidden">
-      {bgIcons.map(({ Icon, top, left, size, delay, color }, i) => (
-        <motion.div key={i} className={`absolute pointer-events-none ${color}`}
-          style={{ top, left }}
-          animate={{ y: [0, -12, 0], opacity: [0.4, 0.6, 0.4] }}
-          transition={{ duration: 7, delay, repeat: Infinity, ease: "easeInOut" }}>
+      {bgIcons.map(({ Icon, top, left, size, color }, i) => (
+        <div key={i} className={`absolute pointer-events-none ${color}`} style={{ top, left }}>
           <Icon size={size} strokeWidth={1.4} />
-        </motion.div>
+        </div>
       ))}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-green-400" />
 
@@ -182,10 +176,9 @@ export default function Courses() {
             <ChevronRight className="w-5 h-5" />
           </button>
           <Link href="/material">
-            <motion.span whileHover={{ scale: 1.03 }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white text-sm font-bold shadow-md hover:shadow-lg transition cursor-pointer">
+            <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white text-sm font-bold shadow-md transition-transform duration-200 hover:scale-105 active:scale-95 cursor-pointer">
               View All Notes <ArrowRight className="w-4 h-4" />
-            </motion.span>
+            </span>
           </Link>
         </div>
 

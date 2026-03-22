@@ -7,13 +7,14 @@ import {
   Pill, FlaskConical, Stethoscope, Microscope, Beaker, Leaf,
 } from "lucide-react";
 
+// Static background icons
 const bgIcons = [
-  { Icon: Pill,        top: "12%", left: "1.5%",  size: 30, delay: 0,   color: "text-blue-400"  },
-  { Icon: Beaker,      top: "50%", left: "1%",    size: 28, delay: 1.0, color: "text-green-400" },
-  { Icon: Stethoscope, top: "84%", left: "1.5%",  size: 30, delay: 1.4, color: "text-purple-400" },
-  { Icon: Microscope,  top: "12%", left: "96.5%", size: 30, delay: 0.4, color: "text-amber-400"  },
-  { Icon: FlaskConical,top: "50%", left: "97%",   size: 28, delay: 0.8, color: "text-teal-400"   },
-  { Icon: Leaf,        top: "84%", left: "96.5%", size: 28, delay: 0.6, color: "text-red-400"    },
+  { Icon: Pill,        top: "12%", left: "1.5%",  size: 30, color: "text-blue-400/40"  },
+  { Icon: Beaker,      top: "50%", left: "1%",    size: 28, color: "text-green-400/40" },
+  { Icon: Stethoscope, top: "84%", left: "1.5%",  size: 30, color: "text-purple-400/40" },
+  { Icon: Microscope,  top: "12%", left: "96.5%", size: 30, color: "text-amber-400/40"  },
+  { Icon: FlaskConical,top: "50%", left: "97%",   size: 28, color: "text-teal-400/40"   },
+  { Icon: Leaf,        top: "84%", left: "96.5%", size: 28, color: "text-red-400/40"    },
 ];
 
 const groups = [
@@ -44,13 +45,13 @@ const FeatureCard = ({ feat }: { feat: typeof groups[0]["items"][0] }) => {
   return (
     <motion.div variants={item} className="group">
       <Link href={feat.link} className="block h-full">
-        <div className="relative h-full rounded-2xl border border-gray-200/80 bg-white/90 backdrop-blur-sm p-6 flex flex-col hover:border-blue-300 hover:shadow-lg transition-all duration-300 overflow-hidden">
+        <div className="relative h-full rounded-2xl border border-gray-200/80 bg-white/90 p-6 flex flex-col hover:border-blue-300 hover:shadow-lg transition-all duration-300 overflow-hidden">
           {/* Gradient top stripe */}
           <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl bg-gradient-to-r from-blue-600 to-green-400" />
           {/* Subtle hover tint */}
           <div className="absolute inset-0 bg-blue-50/0 group-hover:bg-blue-50/40 transition-colors duration-300 pointer-events-none" />
 
-          <div className="relative z-10 w-11 h-11 rounded-xl bg-white/90 backdrop-blur-sm border border-gray-200/60 flex items-center justify-center mb-4 group-hover:bg-gradient-to-br group-hover:from-blue-600 group-hover:to-green-400 transition-all duration-300">
+          <div className="relative z-10 w-11 h-11 rounded-xl bg-white/90 border border-gray-200/60 flex items-center justify-center mb-4 group-hover:bg-gradient-to-br group-hover:from-blue-600 group-hover:to-green-400 transition-all duration-300">
             <Icon className="w-5 h-5 text-blue-600 group-hover:text-white transition-colors duration-300" />
           </div>
 
@@ -71,8 +72,8 @@ const FeatureCard = ({ feat }: { feat: typeof groups[0]["items"][0] }) => {
             ))}
           </div>
 
-          <div className="relative z-10 flex items-center gap-1 text-xs font-semibold text-blue-600 mt-auto">
-            Explore <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+          <div className="relative z-10 flex items-center gap-1 text-xs font-semibold text-blue-600 mt-auto group-hover:translate-x-1 transition-transform">
+            Explore <ArrowRight className="w-3.5 h-3.5" />
           </div>
         </div>
       </Link>
@@ -83,17 +84,14 @@ const FeatureCard = ({ feat }: { feat: typeof groups[0]["items"][0] }) => {
 export default function Features() {
   return (
     <section className="w-full py-24 bg-gradient-to-b from-blue-50/30 via-white/50 to-green-50/30 relative overflow-hidden">
-      {/* Soft background pattern */}
+      {/* Soft background pattern – static */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100/20 via-transparent to-green-100/20 pointer-events-none" />
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMzAgMTBhMjAgMjAgMCAwIDEgMjAgMjAgMjAgMjAgMCAwIDEtNDAgMCAyMCAyMCAwIDAgMSAyMC0yMHoiIGZpbGw9InJnYmEoMzcsOTksMjM1LDAuMDMpIiAvPjwvc3ZnPg==')] opacity-20 pointer-events-none" />
 
-      {bgIcons.map(({ Icon, top, left, size, delay, color }, i) => (
-        <motion.div key={i} className={`absolute pointer-events-none ${color}`}
-          style={{ top, left }}
-          animate={{ y: [0, -12, 0], opacity: [0.4, 0.6, 0.4] }}
-          transition={{ duration: 7, delay, repeat: Infinity, ease: "easeInOut" }}>
+      {bgIcons.map(({ Icon, top, left, size, color }, i) => (
+        <div key={i} className={`absolute pointer-events-none ${color}`} style={{ top, left }}>
           <Icon size={size} strokeWidth={1.4} />
-        </motion.div>
+        </div>
       ))}
 
       <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
@@ -129,7 +127,7 @@ export default function Features() {
           </div>
         ))}
 
-        {/* AI Banner */}
+        {/* AI Banner – no rotation animation */}
         <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           className="mt-4 relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 to-green-400">
           <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-white/10" />
@@ -138,10 +136,9 @@ export default function Features() {
           <div className="absolute right-44 bottom-3 opacity-15"><Pill size={30} className="text-white" /></div>
 
           <div className="relative z-10 p-8 lg:p-12 flex flex-col lg:flex-row items-center gap-8">
-            <motion.div animate={{ rotate: [0, 8, -8, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shrink-0">
+            <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shrink-0">
               <Bot className="w-8 h-8 text-white" />
-            </motion.div>
+            </div>
             <div className="flex-1 text-center lg:text-left">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold mb-3">
                 <Sparkles className="w-3 h-3" /> AI-POWERED · NEW
@@ -150,10 +147,9 @@ export default function Features() {
               <p className="text-blue-100 text-sm max-w-lg">An intelligent AI companion trained on pharmacy curricula — answers questions, explains concepts, and plans your study sessions 24/7.</p>
             </div>
             <Link href="/ai-guide">
-              <motion.span whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
-                className="shrink-0 inline-flex items-center gap-2 px-7 py-4 rounded-2xl bg-white font-bold text-sm text-blue-600 hover:bg-blue-50 shadow-xl cursor-pointer transition">
+              <span className="shrink-0 inline-flex items-center gap-2 px-7 py-4 rounded-2xl bg-white font-bold text-sm text-blue-600 hover:bg-blue-50 shadow-xl transition-transform duration-200 hover:scale-105 active:scale-95 cursor-pointer">
                 <MessageSquare className="w-4 h-4" /> Chat with AI Guide
-              </motion.span>
+              </span>
             </Link>
           </div>
         </motion.div>

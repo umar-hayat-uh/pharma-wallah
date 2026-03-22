@@ -11,13 +11,14 @@ const contactInfo = [
   { Icon: Clock, label: "Response Time", value: "Within 24 Hours",           sub: "For all queries"              },
 ];
 
+// Static background icons
 const bgIcons = [
-  { Icon: Pill,        top: "12%", left: "1.5%",  size: 30, delay: 0   },
-  { Icon: Beaker,      top: "50%", left: "1%",    size: 28, delay: 1.0 },
-  { Icon: Stethoscope, top: "84%", left: "1.5%",  size: 30, delay: 1.4 },
-  { Icon: Microscope,  top: "12%", left: "96.5%", size: 30, delay: 0.4 },
-  { Icon: FlaskConical,top: "50%", left: "97%",   size: 28, delay: 0.8 },
-  { Icon: Leaf,        top: "84%", left: "96.5%", size: 28, delay: 0.6 },
+  { Icon: Pill,        top: "12%", left: "1.5%",  size: 30 },
+  { Icon: Beaker,      top: "50%", left: "1%",    size: 28 },
+  { Icon: Stethoscope, top: "84%", left: "1.5%",  size: 30 },
+  { Icon: Microscope,  top: "12%", left: "96.5%", size: 30 },
+  { Icon: FlaskConical,top: "50%", left: "97%",   size: 28 },
+  { Icon: Leaf,        top: "84%", left: "96.5%", size: 28 },
 ];
 
 export default function ContactForm() {
@@ -51,13 +52,10 @@ export default function ContactForm() {
 
   return (
     <section className="w-full py-24 bg-white relative overflow-hidden">
-      {bgIcons.map(({ Icon, top, left, size, delay }, i) => (
-        <motion.div key={i} className="absolute pointer-events-none text-blue-200"
-          style={{ top, left }}
-          animate={{ y: [0, -12, 0], opacity: [0.3, 0.5, 0.3] }}
-          transition={{ duration: 7, delay, repeat: Infinity, ease: "easeInOut" }}>
+      {bgIcons.map(({ Icon, top, left, size }, i) => (
+        <div key={i} className="absolute pointer-events-none text-blue-200/40" style={{ top, left }}>
           <Icon size={size} strokeWidth={1.4} />
-        </motion.div>
+        </div>
       ))}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-green-400" />
 
@@ -114,8 +112,7 @@ export default function ContactForm() {
               </div>
 
               <Link href="/faqs">
-                <motion.div whileHover={{ x: 4 }}
-                  className="mt-5 flex items-center justify-between p-4 rounded-2xl bg-white/15 border border-white/20 cursor-pointer group">
+                <div className="mt-5 flex items-center justify-between p-4 rounded-2xl bg-white/15 border border-white/20 cursor-pointer group hover:bg-white/25 transition">
                   <div className="flex items-center gap-3">
                     <HelpCircle className="w-5 h-5 text-white" />
                     <div>
@@ -124,7 +121,7 @@ export default function ContactForm() {
                     </div>
                   </div>
                   <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform" />
-                </motion.div>
+                </div>
               </Link>
             </div>
           </motion.div>
@@ -164,13 +161,12 @@ export default function ContactForm() {
                 {errors.message && <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{errors.message}</p>}
               </div>
 
-              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit"
-                disabled={status === "loading"}
-                className={`w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition ${
-                  status === "loading" ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-lg shadow-blue-200/40 hover:shadow-blue-300/40"
+              <button type="submit" disabled={status === "loading"}
+                className={`w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-transform duration-200 ${
+                  status === "loading" ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-lg shadow-blue-200/40 hover:scale-105 active:scale-95"
                 }`}>
                 {status === "loading" ? (<><div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />Sending...</>) : (<>Send Message <Send className="w-4 h-4" /></>)}
-              </motion.button>
+              </button>
 
               {status === "success" && (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}

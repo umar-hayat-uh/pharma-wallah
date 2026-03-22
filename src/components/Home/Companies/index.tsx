@@ -3,7 +3,6 @@ import React from "react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Activity, Leaf, FlaskConical, Stethoscope, Beaker, Microscope,
@@ -24,11 +23,12 @@ const fields = [
   { name: "Clinical Pharmacy",            Icon: Users,        desc: "Therapeutic optimization"             },
 ];
 
+// Static background icons
 const bgIcons = [
-  { Icon: Pill,       top: "20%", left: "1.5%",  size: 30, delay: 0   },
-  { Icon: HeartPulse, top: "70%", left: "1.5%",  size: 28, delay: 1.2 },
-  { Icon: Dna,        top: "20%", left: "96.5%", size: 30, delay: 0.8 },
-  { Icon: Syringe,    top: "70%", left: "96.5%", size: 26, delay: 0.4 },
+  { Icon: Pill,       top: "20%", left: "1.5%",  size: 30 },
+  { Icon: HeartPulse, top: "70%", left: "1.5%",  size: 28 },
+  { Icon: Dna,        top: "20%", left: "96.5%", size: 30 },
+  { Icon: Syringe,    top: "70%", left: "96.5%", size: 26 },
 ];
 
 export default function Companies() {
@@ -44,13 +44,10 @@ export default function Companies() {
 
   return (
     <section className="w-full py-24 bg-gray-50/50 relative overflow-hidden">
-      {bgIcons.map(({ Icon, top, left, size, delay }, i) => (
-        <motion.div key={i} className="absolute pointer-events-none text-blue-200"
-          style={{ top, left }}
-          animate={{ y: [0, -10, 0], opacity: [0.3, 0.5, 0.3] }}
-          transition={{ duration: 7, delay, repeat: Infinity, ease: "easeInOut" }}>
+      {bgIcons.map(({ Icon, top, left, size }, i) => (
+        <div key={i} className="absolute pointer-events-none text-blue-200/40" style={{ top, left }}>
           <Icon size={size} strokeWidth={1.4} />
-        </motion.div>
+        </div>
       ))}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-green-400" />
 
@@ -78,21 +75,18 @@ export default function Companies() {
         <Slider {...settings}>
           {fields.map((f, i) => (
             <div key={i} className="px-3">
-              <motion.div whileHover={{ y: -5, boxShadow: "0 10px 30px rgba(37,99,235,0.10)" }}
-                transition={{ type: "spring", stiffness: 280 }}
-                className="group rounded-2xl border border-gray-200 bg-white p-6 text-center cursor-pointer min-h-[190px] flex flex-col items-center justify-center relative overflow-hidden hover:border-blue-300 transition-all duration-300">
+              <div className="group rounded-2xl border border-gray-200 bg-white p-6 text-center cursor-pointer min-h-[190px] flex flex-col items-center justify-center relative overflow-hidden hover:border-blue-300 hover:shadow-lg transition-all duration-300">
                 {/* Top stripe */}
                 <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl bg-gradient-to-r from-blue-600 to-green-400" />
                 {/* Hover tint */}
                 <div className="absolute inset-0 bg-blue-50/0 group-hover:bg-blue-50/50 transition-colors duration-300 pointer-events-none" />
 
-                <motion.div whileHover={{ scale: 1.1, rotate: 6 }} transition={{ type: "spring", stiffness: 300 }}
-                  className="relative z-10 w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto mb-4 group-hover:bg-gradient-to-br group-hover:from-blue-600 group-hover:to-green-400 transition-all duration-300">
+                <div className="relative z-10 w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto mb-4 group-hover:bg-gradient-to-br group-hover:from-blue-600 group-hover:to-green-400 transition-all duration-300">
                   <f.Icon className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors duration-300" />
-                </motion.div>
+                </div>
                 <h3 className="relative z-10 text-sm font-bold text-gray-900 mb-1.5 leading-tight">{f.name}</h3>
                 <p className="relative z-10 text-xs text-gray-400">{f.desc}</p>
-              </motion.div>
+              </div>
             </div>
           ))}
         </Slider>

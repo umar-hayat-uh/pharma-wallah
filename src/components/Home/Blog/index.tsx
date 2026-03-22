@@ -15,13 +15,14 @@ const posts = [
   { id:6, category:"Clinical",    title:"Common Drug Interactions You Must Know",               excerpt:"A quick reference for major drug-drug interactions encountered in clinical practice.",                      date:"Feb 12, 2025", author:"Dr. Ayesha Khan",  slug:"/blog/interactions"       },
 ];
 
+// Static background icons
 const bgIcons = [
-  { Icon: Pill,        top: "12%", left: "1.5%",  size: 30, delay: 0   },
-  { Icon: Beaker,      top: "50%", left: "1%",    size: 28, delay: 1.0 },
-  { Icon: Stethoscope, top: "84%", left: "1.5%",  size: 30, delay: 1.4 },
-  { Icon: Microscope,  top: "12%", left: "96.5%", size: 30, delay: 0.4 },
-  { Icon: FlaskConical,top: "50%", left: "97%",   size: 28, delay: 0.8 },
-  { Icon: Leaf,        top: "84%", left: "96.5%", size: 28, delay: 0.6 },
+  { Icon: Pill,        top: "12%", left: "1.5%",  size: 30 },
+  { Icon: Beaker,      top: "50%", left: "1%",    size: 28 },
+  { Icon: Stethoscope, top: "84%", left: "1.5%",  size: 30 },
+  { Icon: Microscope,  top: "12%", left: "96.5%", size: 30 },
+  { Icon: FlaskConical,top: "50%", left: "97%",   size: 28 },
+  { Icon: Leaf,        top: "84%", left: "96.5%", size: 28 },
 ];
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
@@ -36,13 +37,10 @@ export default function Blog() {
 
   return (
     <section className="w-full py-24 bg-gray-50/50 relative overflow-hidden">
-      {bgIcons.map(({ Icon, top, left, size, delay }, i) => (
-        <motion.div key={i} className="absolute pointer-events-none text-blue-200"
-          style={{ top, left }}
-          animate={{ y: [0, -10, 0], opacity: [0.3, 0.5, 0.3] }}
-          transition={{ duration: 7, delay, repeat: Infinity, ease: "easeInOut" }}>
+      {bgIcons.map(({ Icon, top, left, size }, i) => (
+        <div key={i} className="absolute pointer-events-none text-blue-200/40" style={{ top, left }}>
           <Icon size={size} strokeWidth={1.4} />
-        </motion.div>
+        </div>
       ))}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-green-400" />
 
@@ -60,9 +58,9 @@ export default function Blog() {
             <p className="mt-3 text-gray-500 max-w-xl">Insights, tips, and updates from our team of pharmacy educators and professionals.</p>
           </div>
           <Link href="/blog">
-            <motion.span whileHover={{ x: 4 }} className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-green-500 transition cursor-pointer shrink-0">
-              View All Posts <ArrowRight className="w-4 h-4" />
-            </motion.span>
+            <span className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-green-500 transition cursor-pointer shrink-0 group">
+              View All Posts <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </span>
           </Link>
         </motion.div>
 
@@ -82,9 +80,9 @@ export default function Blog() {
                 <p className="relative z-10 text-sm text-gray-500 leading-relaxed mb-6">{featured.excerpt}</p>
                 <div className="relative z-10 flex items-center justify-between pt-4 border-t border-gray-100">
                   <span className="flex items-center gap-1.5 text-xs text-gray-400"><User className="w-3.5 h-3.5" />{featured.author}</span>
-                  <motion.span whileHover={{ x: 2, y: -2 }} className="flex items-center gap-1 text-sm font-bold text-blue-600">
+                  <span className="flex items-center gap-1 text-sm font-bold text-blue-600 group-hover:translate-x-1 transition-transform">
                     Read More <ArrowUpRight className="w-4 h-4" />
-                  </motion.span>
+                  </span>
                 </div>
               </div>
             </Link>
@@ -113,7 +111,7 @@ export default function Blog() {
           </motion.div>
         </div>
 
-        {/* Newsletter – fully responsive */}
+        {/* Newsletter – responsive, no backdrop blur */}
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           className="mt-10 relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 to-green-400">
           <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10" />
@@ -129,7 +127,7 @@ export default function Blog() {
               <input
                 type="email"
                 placeholder="Your email address"
-                className="w-full sm:w-56 px-4 py-2.5 rounded-xl border border-white/30 bg-white/20 text-white placeholder:text-blue-200 focus:outline-none focus:ring-2 focus:ring-white/40 text-sm backdrop-blur"
+                className="w-full sm:w-56 px-4 py-2.5 rounded-xl border border-white/30 bg-white/20 text-white placeholder:text-blue-200 focus:outline-none focus:ring-2 focus:ring-white/40 text-sm"
               />
               <button className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white text-blue-600 font-bold text-sm hover:bg-blue-50 shadow-md transition">
                 Subscribe

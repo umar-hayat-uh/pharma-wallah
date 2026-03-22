@@ -23,13 +23,14 @@ const INITIAL: Review[] = [
   { id: 6, name: "Zainab Malik", university: "University of Sargodha",             year: "4th Year Pharm.D", rating: 4.8, comment: "Pharmaceutical Microbiology virtual labs are absolutely brilliant. Made a tough subject enjoyable.", specialty: "Pharmacology"          },
 ];
 
+// Static background icons – no animations
 const bgIcons = [
-  { Icon: Pill,        top: "12%", left: "1.5%",  size: 30, delay: 0   },
-  { Icon: Activity,    top: "48%", left: "1%",    size: 28, delay: 1.0 },
-  { Icon: Stethoscope, top: "82%", left: "1.5%",  size: 30, delay: 1.4 },
-  { Icon: Microscope,  top: "12%", left: "96.5%", size: 30, delay: 0.4 },
-  { Icon: FlaskConical,top: "48%", left: "97%",   size: 28, delay: 0.8 },
-  { Icon: Beaker,      top: "82%", left: "96.5%", size: 28, delay: 0.6 },
+  { Icon: Pill,        top: "12%", left: "1.5%",  size: 30 },
+  { Icon: Activity,    top: "48%", left: "1%",    size: 28 },
+  { Icon: Stethoscope, top: "82%", left: "1.5%",  size: 30 },
+  { Icon: Microscope,  top: "12%", left: "96.5%", size: 30 },
+  { Icon: FlaskConical,top: "48%", left: "97%",   size: 28 },
+  { Icon: Beaker,      top: "82%", left: "96.5%", size: 28 },
 ];
 
 const Stars = ({ r }: { r: number }) => (
@@ -78,11 +79,11 @@ const Modal = ({ open, onClose, onSubmit }: { open: boolean; onClose: () => void
               <textarea rows={3} value={f.comment} onChange={e => setF({ ...f, comment: e.target.value })} placeholder="Share your experience..."
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none" />
             </div>
-            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+            <button
               onClick={() => { onSubmit({ id: Date.now(), ...f, rating: Number(f.rating) }); onClose(); setF({ name:"",university:"",year:"",specialty:"",rating:5,comment:"" }); }}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold text-sm">
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold text-sm transition-transform duration-200 hover:scale-105 active:scale-95">
               Submit Review
-            </motion.button>
+            </button>
           </div>
         </div>
       </motion.div>
@@ -98,13 +99,10 @@ export default function Testimonial() {
 
   return (
     <section className="w-full py-24 bg-white relative overflow-hidden">
-      {bgIcons.map(({ Icon, top, left, size, delay }, i) => (
-        <motion.div key={i} className="absolute pointer-events-none text-blue-200"
-          style={{ top, left }}
-          animate={{ y: [0, -12, 0], opacity: [0.3, 0.5, 0.3] }}
-          transition={{ duration: 7, delay, repeat: Infinity, ease: "easeInOut" }}>
+      {bgIcons.map(({ Icon, top, left, size }, i) => (
+        <div key={i} className="absolute pointer-events-none text-blue-200/40" style={{ top, left }}>
           <Icon size={size} strokeWidth={1.4} />
-        </motion.div>
+        </div>
       ))}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-green-400" />
 
@@ -130,10 +128,10 @@ export default function Testimonial() {
                 <div className="text-[11px] text-gray-400 mt-1">{reviews.length}+ reviews</div>
               </div>
             </div>
-            <motion.button whileHover={{ scale: 1.04 }} onClick={() => setModal(true)}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white text-sm font-bold shadow-md hover:shadow-lg transition">
+            <button onClick={() => setModal(true)}
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white text-sm font-bold shadow-md transition-transform duration-200 hover:scale-105 active:scale-95">
               <MessageSquare className="w-4 h-4" /> Write a Review
-            </motion.button>
+            </button>
           </div>
         </motion.div>
 
@@ -157,11 +155,8 @@ export default function Testimonial() {
             const initials = r.name.split(" ").map(n => n[0]).join("");
             return (
               <div key={r.id} className="px-2.5">
-                <motion.div whileHover={{ y: -5, boxShadow: "0 14px 36px rgba(37,99,235,0.10)" }}
-                  transition={{ type: "spring", stiffness: 260 }}
-                  className="group rounded-2xl border border-gray-200 bg-white p-6 flex flex-col min-h-[270px] hover:border-blue-300 transition-all duration-300 overflow-hidden relative">
+                <div className="group rounded-2xl border border-gray-200 bg-white p-6 flex flex-col min-h-[270px] hover:border-blue-300 hover:shadow-lg transition-all duration-300 overflow-hidden relative">
                   <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 to-green-400" />
-                  {/* Hover tint */}
                   <div className="absolute inset-0 bg-blue-50/0 group-hover:bg-blue-50/30 transition-colors duration-300 pointer-events-none" />
 
                   <div className="relative z-10 flex items-start justify-between mb-3 gap-2">
@@ -179,7 +174,7 @@ export default function Testimonial() {
                       <div className="text-xs text-gray-400 mt-0.5 truncate">{r.university}</div>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               </div>
             );
           })}
@@ -187,9 +182,9 @@ export default function Testimonial() {
 
         <div className="mt-10 text-center">
           <Link href="/testimonials">
-            <motion.span whileHover={{ x: 4 }} className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-green-500 transition cursor-pointer">
-              Read more stories <ArrowRight className="w-4 h-4" />
-            </motion.span>
+            <span className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-green-500 transition cursor-pointer group">
+              Read more stories <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </span>
           </Link>
         </div>
       </div>
