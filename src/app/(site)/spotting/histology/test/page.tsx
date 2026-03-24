@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, BookOpen, Award, Shuffle,
   CheckCircle, XCircle, RotateCcw, Trophy, ZoomIn, X,
-  Images, Clock, AlertTriangle, Microscope as MicIcon,
+  Images, Clock, AlertTriangle, Microscope as MicIcon, PlayCircle,
 } from "lucide-react";
 import {
   Pill, FlaskConical, Beaker, Microscope, Stethoscope, Leaf, Dna, Activity,
@@ -30,7 +30,6 @@ const BG_ICONS = [
 // SLIDE DATA — 21 histology slides · 2 images each
 // ═══════════════════════════════════════════════════════════════════════════════
 const SLIDE_DATA = [
-  // Original slides (16)
   {
     id: "lungs",
     title: "Lungs",
@@ -292,8 +291,6 @@ const SLIDE_DATA = [
     lessonDetailed:
       "Connective tissue is characterised by cells scattered in an abundant extracellular matrix. Resident cells include fibroblasts (synthesise ECM), mast cells (allergy mediators), macrophages (phagocytosis), and adipocytes. The ECM contains collagen fibres (types I–IV), elastic fibres, and ground substance (GAGs, proteoglycans, glycoproteins). Special stains (Masson's trichrome, silver, orcein) help identify fibre types.",
   },
-
-  // New simple epithelium subtypes (4 slides)
   {
     id: "simple-squamous",
     title: "Simple Squamous Epithelium",
@@ -374,8 +371,6 @@ const SLIDE_DATA = [
     lessonDetailed:
       "Pseudostratified columnar epithelium appears stratified because nuclei are at different levels, but all cells rest on the basement membrane. In the respiratory tract, it is ciliated with goblet cells, forming the mucociliary escalator. In the epididymis, it has non-motile stereocilia.",
   },
-
-  // New stratified epithelium subtypes (4 slides)
   {
     id: "stratified-squamous-keratinised",
     title: "Stratified Squamous Keratinised Epithelium",
@@ -440,7 +435,7 @@ const SLIDE_DATA = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// REFERENCES (unchanged)
+// REFERENCES
 // ═══════════════════════════════════════════════════════════════════════════════
 const REFERENCES = [
   { authors: "Ross MH, Pawlina W.", title: "Histology: A Text and Atlas (8th ed.).", publisher: "Wolters Kluwer.", year: "2020" },
@@ -451,7 +446,7 @@ const REFERENCES = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// UTILITIES (unchanged)
+// UTILITIES
 // ═══════════════════════════════════════════════════════════════════════════════
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -467,12 +462,15 @@ function calculateMatch(userText: string, definition: string[]): number {
   const STOP = new Set<string>([
     "the", "and", "for", "with", "that", "this", "are", "was", "from", "into", "have", "also",
     "they", "its", "not", "but", "all", "has", "our", "more", "some", "been", "their", "there",
-    "when", "which", "present", "cells", "cell", "of", "in", "at", "to",
+    "when", "which", "present", "cells", "cell",
   ]);
   const tok = (s: string): string[] =>
-    s.toLowerCase().replace(/[^\w\s]/g, " ").split(/\s+/).filter((w: string) => w.length > 3 && !STOP.has(w));
+    s.toLowerCase()
+      .replace(/[^\w\s]/g, " ")
+      .split(/\s+/)
+      .filter((w: string) => w.length > 3 && !STOP.has(w));
   const userSet = new Set<string>(tok(userText));
-  const defSet  = new Set<string>(tok(defText));
+  const defSet = new Set<string>(tok(defText));
   if (!defSet.size) return 0;
   let matches = 0;
   userSet.forEach((w) => { if (defSet.has(w)) matches++; });
@@ -502,7 +500,7 @@ interface SlideAnswer {
 type Slide = typeof SLIDE_DATA[number];
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LIGHTBOX, IMAGE GALLERY, REFERENCES BLOCK (unchanged from previous code)
+// LIGHTBOX
 // ═══════════════════════════════════════════════════════════════════════════════
 function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
   useEffect(() => {
@@ -538,13 +536,16 @@ function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// IMAGE GALLERY – 2 images (low and high)
+// ═══════════════════════════════════════════════════════════════════════════════
 function ImageGallery({ images }: { images: Slide["images"] }) {
   const [activeIdx, setActiveIdx] = useState(0);
-  const [lightbox,  setLightbox]  = useState(false);
+  const [lightbox, setLightbox] = useState(false);
   useEffect(() => { setActiveIdx(0); }, [images]);
 
-  const active     = images[activeIdx];
-  const powerLabel = (i: number) => (["Low ×", "High ×"])[i] ?? `${i + 1}×`;
+  const active = images[activeIdx];
+  const powerLabel = (i: number) => (i === 0 ? "Low ×" : "High ×");
 
   return (
     <>
@@ -594,29 +595,27 @@ function ImageGallery({ images }: { images: Slide["images"] }) {
             <button
               key={i}
               onClick={() => setActiveIdx(i)}
-              title={`${powerLabel(i)} power`}
-              className={`relative flex-1 rounded-xl overflow-hidden border-2 transition-all duration-200 group/t ${
-                i === activeIdx
-                  ? "border-blue-500 shadow-md shadow-blue-200/40 scale-[1.03]"
-                  : "border-gray-200 hover:border-blue-300 hover:scale-[1.02]"
-              }`}
+              title={`View ${powerLabel(i)}`}
+              className={`relative flex-1 rounded-xl overflow-hidden border-2 transition-all duration-200 group/t ${i === activeIdx
+                ? "border-blue-500 shadow-md shadow-blue-200/40 scale-[1.03]"
+                : "border-gray-200 hover:border-blue-300 hover:scale-[1.02]"
+                }`}
               style={{ height: 58 }}
             >
-              <Image src={img.url} alt={`View ${i + 1}`} fill className="object-cover" sizes="200px" />
-              <div className={`absolute inset-0 transition-opacity ${
-                i === activeIdx ? "bg-blue-600/15" : "bg-black/0 group-hover/t:bg-black/10"
-              }`} />
+              <Image src={img.url} alt={`View ${i + 1}`} fill className="object-cover" sizes="110px" />
+              <div className={`absolute inset-0 transition-opacity ${i === activeIdx ? "bg-blue-600/15" : "bg-black/0 group-hover/t:bg-black/10"
+                }`} />
               {i === activeIdx && (
                 <div className={`absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
               )}
               <div className="absolute top-1 left-1 bg-black/60 rounded px-1 py-0.5 text-white text-[8px] font-extrabold uppercase">
-                {(["Low", "High"])[i] ?? i + 1}
+                {i === 0 ? "Low" : "High"}
               </div>
             </button>
           ))}
         </div>
 
-        {/* Mobile prev / next */}
+        {/* Mobile prev/next */}
         <div className="flex gap-2 sm:hidden">
           <button
             disabled={activeIdx === 0}
@@ -638,6 +637,9 @@ function ImageGallery({ images }: { images: Slide["images"] }) {
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// REFERENCES BLOCK
+// ═══════════════════════════════════════════════════════════════════════════════
 function ReferencesBlock() {
   return (
     <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden">
@@ -675,22 +677,22 @@ function ReferencesBlock() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// REPORT CARD COMPONENT (unchanged)
+// REPORT CARD COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
-function ReportCard({ 
-  slides, 
-  answers, 
-  roundTitle, 
-  timerExpired, 
-  onNextRound, 
+function ReportCard({
+  slides,
+  answers,
+  roundTitle,
+  timerExpired,
+  onNextRound,
   showNextButton = false,
   nextButtonText = "Continue to Next Round"
-}: { 
-  slides: Slide[]; 
-  answers: SlideAnswer[]; 
-  roundTitle: string; 
-  timerExpired?: boolean; 
-  onNextRound?: () => void; 
+}: {
+  slides: Slide[];
+  answers: SlideAnswer[];
+  roundTitle: string;
+  timerExpired?: boolean;
+  onNextRound?: () => void;
   showNextButton?: boolean;
   nextButtonText?: string;
 }) {
@@ -710,27 +712,27 @@ function ReportCard({
 
       {/* Hero */}
       <div className={`relative bg-gradient-to-r ${GRAD} overflow-hidden`}>
-        <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/10 pointer-events-none" />
-        <div className="absolute -bottom-10 left-20 w-32 h-32 rounded-full bg-white/10 pointer-events-none" />
+        <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/10" />
+        <div className="absolute -bottom-10 left-20 w-32 h-32 rounded-full bg-white/10" />
         <div className="absolute right-6 sm:right-20 bottom-4 opacity-15 pointer-events-none">
           <Trophy size={64} className="text-white" />
         </div>
         <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-8 py-10 sm:py-14 text-center">
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 text-white text-xs font-bold uppercase tracking-widest mb-4">
+          <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 text-white text-xs font-bold uppercase tracking-widest mb-4`}>
             <Trophy className="w-3.5 h-3.5" /> {roundTitle}
           </span>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4">Your Results</h1>
           {timerExpired && (
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/80 text-white text-xs font-bold mb-4 border border-red-400/60">
-              <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Time&apos;s up! 20 minutes elapsed.
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Time&apos;s up! 10 minutes elapsed.
             </div>
           )}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
               { n: `${totalCorrect}/${slides.length}`, l: "Correct Slides" },
-              { n: `${pct}%`,                          l: "MCQ Score"       },
-              { n: `${avgMatch}%`,                     l: "Avg Match Score" },
-              { n: pct >= 80 ? "🏆" : pct >= 50 ? "🎯" : "📚", l: "Grade"  },
+              { n: `${pct}%`, l: "MCQ Score" },
+              { n: `${avgMatch}%`, l: "Avg Match Score" },
+              { n: pct >= 80 ? "🏆" : pct >= 50 ? "🎯" : "📚", l: "Grade" },
             ].map(({ n, l }) => (
               <div key={l} className="bg-white/15 rounded-2xl p-3 sm:p-4">
                 <div className="text-2xl sm:text-3xl font-extrabold text-white leading-none">{n}</div>
@@ -751,7 +753,7 @@ function ReportCard({
         </h2>
 
         {slides.map((slide, idx) => {
-          const ans       = answers[idx];
+          const ans = answers[idx];
           const isCorrect = ans.selectedOption !== null && slide.options[ans.selectedOption] === slide.title;
           return (
             <div key={slide.id} className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden hover:shadow-md transition-all">
@@ -780,7 +782,7 @@ function ReportCard({
                     ))}
                   </div>
                 </div>
-                {/* score + lesson link */}
+                {/* score + link */}
                 <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-xl border ${scoreBadge(ans.matchScore)}`}>
                     {ans.matchScore}% match
@@ -809,7 +811,7 @@ function ReportCard({
           </button>
           <Link href="/spotting"
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-extrabold text-sm hover:border-blue-400 hover:text-blue-600 transition-all">
-            <ChevronLeft className="w-4 h-4" /> Back to Spotting
+            <ChevronLeft className="w-4 h-4" /> Back to Spotting Centre
           </Link>
         </div>
 
@@ -820,74 +822,109 @@ function ReportCard({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// START SCREEN COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
+function StartScreen({ onStart }: { onStart: () => void }) {
+  return (
+    <div className="relative z-10 max-w-4xl mx-auto px-4 py-12 sm:py-20 text-center">
+      <div className="mb-8 flex justify-center">
+        <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-600 to-green-400 flex items-center justify-center shadow-xl">
+          <MicIcon className="w-12 h-12 text-white" />
+        </div>
+      </div>
+      <h1 className="text-3xl sm:text-5xl font-extrabold text-gray-900 mb-4">
+        Histology Spotting Test
+      </h1>
+      <p className="text-gray-600 max-w-2xl mx-auto mb-6">
+        Test your ability to identify 21 histology slides. Each slide includes low and high magnification images.
+        You'll answer a multiple‑choice question and write key recognition points. The test is split into two rounds,
+        each with a 10‑minute timer. Good luck!
+      </p>
+      <ul className="inline-flex flex-wrap gap-3 justify-center mb-8 text-sm text-gray-600">
+        <li className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-600" /> 21 slides</li>
+        <li className="flex items-center gap-1"><Clock className="w-4 h-4 text-blue-600" /> 10 min per round</li>
+      </ul>
+      <button
+        onClick={onStart}
+        className="inline-flex items-center gap-3 px-8 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white font-extrabold text-lg shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all"
+      >
+        <PlayCircle className="w-5 h-5" /> Start Test
+      </button>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function HistologyTestPage() {
+  const [testStarted, setTestStarted] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [round, setRound] = useState(1); // 1 = round1 active, 2 = round2 active, 3 = round1 completed (showing report), 4 = round2 completed (final report)
+  const [round, setRound] = useState(1);
   const [shuffledSlides, setShuffledSlides] = useState<Slide[]>([]);
   const [round1Slides, setRound1Slides] = useState<Slide[]>([]);
   const [round2Slides, setRound2Slides] = useState<Slide[]>([]);
   const [round1Answers, setRound1Answers] = useState<SlideAnswer[]>([]);
   const [round2Answers, setRound2Answers] = useState<SlideAnswer[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<SlideAnswer[]>([]); // active round answers
-  const [slides, setSlides] = useState<Slide[]>([]); // active round slides
+  const [answers, setAnswers] = useState<SlideAnswer[]>([]);
+  const [slides, setSlides] = useState<Slide[]>([]);
 
-  // ── 20-min timer ────────────────────────────────────────────────────────────
-  const TOTAL_SECONDS = 20 * 60;
-  const [timeLeft,     setTimeLeft]     = useState(TOTAL_SECONDS);
-  const [timerActive,  setTimerActive]  = useState(false);
+  const ROUND_SECONDS = 10 * 60;
+  const [timeLeft, setTimeLeft] = useState(ROUND_SECONDS);
+  const [timerActive, setTimerActive] = useState(false);
   const [timerExpired, setTimerExpired] = useState(false);
 
-  // Initialise on mount
-  useEffect(() => {
+  // Initialise when test starts
+  const initTest = () => {
     const shuffled = shuffle([...SLIDE_DATA]);
     setShuffledSlides(shuffled);
-    // Split into two rounds: first 10, rest 11 (adjust as needed)
-    const round1 = shuffled.slice(0, 10);
-    const round2 = shuffled.slice(10);
+    const mid = Math.ceil(shuffled.length / 2);
+    const round1 = shuffled.slice(0, mid);
+    const round2 = shuffled.slice(mid);
     setRound1Slides(round1);
     setRound2Slides(round2);
     setRound1Answers(round1.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
     setRound2Answers(round2.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
-    // Start with round 1
     setSlides(round1);
     setAnswers(round1.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
     setMounted(true);
     setTimerActive(true);
-  }, []);
+    setTestStarted(true);
+  };
 
+  // Timer effect
   useEffect(() => {
-    if (!timerActive || round >= 3) return; // stop timer after test ends
+    if (!timerActive || round >= 3) return;
     if (timeLeft <= 0) {
       setTimerExpired(true);
       setTimerActive(false);
-      // Force end of current round
-      if (round === 1) {
-        setRound(3); // show round1 report
-      } else if (round === 2) {
-        setRound(4); // show final report
-      }
+      if (round === 1) setRound(3);
+      else if (round === 2) setRound(4);
       return;
     }
     const id = setInterval(() => setTimeLeft(t => t - 1), 1000);
     return () => clearInterval(id);
   }, [timerActive, timeLeft, round]);
 
-  const timerMins   = String(Math.floor(timeLeft / 60)).padStart(2, "0");
-  const timerSecs   = String(timeLeft % 60).padStart(2, "0");
-  const timerUrgent = timeLeft <= 120;
+  // Scroll to top when test starts or round changes
+  useEffect(() => {
+    if (testStarted) window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [testStarted, round]);
+
+  const timerMins = String(Math.floor(timeLeft / 60)).padStart(2, "0");
+  const timerSecs = String(timeLeft % 60).padStart(2, "0");
+  const timerUrgent = timeLeft <= 60;
 
   const current = slides[currentIndex];
   const currentAnswer = answers[currentIndex];
-  const allSubmitted = answers.every(a => a.submitted);
+  const allSubmitted = answers.length > 0 && answers.every(a => a.submitted);
   const submittedCount = answers.filter(a => a.submitted).length;
 
   const shuffledOptions = useMemo(() => {
     if (!mounted || !current) return [];
-    return shuffle(current.options.map((text, origIdx) => ({ text, origIdx })));
-  }, [current?.id, mounted]);
+    return shuffle(current.options.map((text: string, origIdx: number) => ({ text, origIdx })));
+  }, [current, mounted]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -900,7 +937,6 @@ export default function HistologyTestPage() {
       i === currentIndex ? { ...a, submitted: true, matchScore: score } : a
     );
     setAnswers(newAnswers);
-    // Update the round-specific answers
     if (round === 1) setRound1Answers(newAnswers);
     else if (round === 2) setRound2Answers(newAnswers);
   };
@@ -935,19 +971,32 @@ export default function HistologyTestPage() {
     setSlides(round2Slides);
     setAnswers(round2Answers);
     setCurrentIndex(0);
-    setTimerActive(true); // restart timer for round 2
+    setTimeLeft(ROUND_SECONDS);
+    setTimerActive(true);
+    setTimerExpired(false);
   };
 
   const handleFinishRound = () => {
-    if (round === 1) {
-      setRound(3); // show round1 report
-    } else if (round === 2) {
-      setRound(4); // show final report
-    }
+    if (round === 1) setRound(3);
+    else if (round === 2) setRound(4);
     setTimerActive(false);
   };
 
-  // Render round report (round 1 completed)
+  // Render start screen
+  if (!testStarted) {
+    return (
+      <section className="min-h-screen bg-white relative overflow-x-hidden">
+        {BG_ICONS.map(({ Icon, top, left, size }, i) => (
+          <div key={i} className="fixed pointer-events-none text-blue-200/60 z-0" style={{ top, left }}>
+            <Icon size={size} strokeWidth={1.4} />
+          </div>
+        ))}
+        <StartScreen onStart={initTest} />
+      </section>
+    );
+  }
+
+  // Render round reports
   if (round === 3) {
     return (
       <ReportCard
@@ -962,9 +1011,7 @@ export default function HistologyTestPage() {
     );
   }
 
-  // Render final report (round 2 completed)
   if (round === 4) {
-    // Combine answers from both rounds for final report
     const combinedSlides = [...round1Slides, ...round2Slides];
     const combinedAnswers = [...round1Answers, ...round2Answers];
     return (
@@ -978,21 +1025,21 @@ export default function HistologyTestPage() {
     );
   }
 
-  // Main test UI (round 1 or round 2)
+  // Main test UI
   if (!mounted || !current) return null;
 
   return (
     <section className="min-h-screen bg-white relative overflow-x-hidden">
       {BG_ICONS.map(({ Icon, top, left, size }, i) => (
-        <div key={i} className="fixed pointer-events-none text-blue-100 z-0" style={{ top, left }}>
+        <div key={i} className="fixed pointer-events-none text-blue-200/60 z-0" style={{ top, left }}>
           <Icon size={size} strokeWidth={1.4} />
         </div>
       ))}
 
-      {/* ════ HERO ════ */}
+      {/* ════════════════ HERO ════════════════ */}
       <div className={`relative bg-gradient-to-r ${GRAD} overflow-hidden`}>
-        <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/10 pointer-events-none" />
-        <div className="absolute -bottom-10 left-16 w-32 h-32 rounded-full bg-white/10 pointer-events-none" />
+        <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/10" />
+        <div className="absolute -bottom-10 left-16 w-32 h-32 rounded-full bg-white/10" />
         <div className="absolute right-6 sm:right-20 bottom-4 opacity-15 pointer-events-none">
           <Dna size={60} className="text-white" />
         </div>
@@ -1000,7 +1047,7 @@ export default function HistologyTestPage() {
           <Activity size={36} className="text-white" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 sm:py-10">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 sm:py-10 pt-14 sm:pt-0">
           <Link href="/spotting"
             className="inline-flex items-center gap-1.5 text-white/70 hover:text-white text-xs font-semibold mb-4 transition-colors">
             <ChevronLeft className="w-3.5 h-3.5" /> Back to Spotting Centre
@@ -1015,11 +1062,10 @@ export default function HistologyTestPage() {
                 Histology Spotting Test
               </h1>
               <p className="text-white/70 text-xs sm:text-sm mt-2 max-w-md">
-                <strong className="text-white">{current.images.length} views</strong> per slide — study both, then select the tissue and write your identification points.
+                <strong className="text-white">2 views</strong> per slide — study both, then select the tissue and write your points of recognition.
               </p>
             </div>
 
-            {/* Slide progress pills */}
             <div className="flex flex-wrap gap-1.5 max-w-xs">
               {slides.map((_, i) => (
                 <button
@@ -1042,7 +1088,6 @@ export default function HistologyTestPage() {
             </div>
           </div>
 
-          {/* Progress bar */}
           <div className="mt-5 w-full h-2 bg-white/20 rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-white rounded-full"
@@ -1052,7 +1097,6 @@ export default function HistologyTestPage() {
           </div>
           <div className="flex justify-between items-center text-xs text-white/60 mt-1.5">
             <span>Slide {currentIndex + 1} of {slides.length} (Round {round})</span>
-            {/* Timer */}
             <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-extrabold text-sm transition-all ${
               timerUrgent
                 ? "bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/40"
@@ -1066,7 +1110,7 @@ export default function HistologyTestPage() {
         </div>
       </div>
 
-      {/* ════ CONTENT ════ */}
+      {/* ════════════════ CONTENT ════════════════ */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
         <AnimatePresence mode="wait">
           <motion.div
@@ -1078,7 +1122,6 @@ export default function HistologyTestPage() {
             {/* ── LEFT: gallery + MCQ ── */}
             <div className="space-y-4">
 
-              {/* Slide chip */}
               <div className="flex items-center gap-3">
                 <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${GRAD} flex items-center justify-center shrink-0 shadow-md shadow-blue-200/40`}>
                   <MicIcon className="w-4 h-4 text-white" />
@@ -1093,10 +1136,8 @@ export default function HistologyTestPage() {
                 </div>
               </div>
 
-              {/* Image gallery */}
               <ImageGallery images={current.images} />
 
-              {/* Key features — revealed after submit */}
               <AnimatePresence>
                 {currentAnswer.submitted && (
                   <motion.div
@@ -1108,7 +1149,7 @@ export default function HistologyTestPage() {
                       Key Identifying Features
                     </p>
                     <div className="flex flex-wrap gap-1.5">
-                      {current.keyFeatures.map(f => (
+                      {current.keyFeatures.map((f: string) => (
                         <span key={f} className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-100 text-blue-700">
                           {f}
                         </span>
@@ -1118,7 +1159,6 @@ export default function HistologyTestPage() {
                 )}
               </AnimatePresence>
 
-              {/* MCQ */}
               <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden">
                 <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
                 <div className="p-4 sm:p-5">
@@ -1127,9 +1167,9 @@ export default function HistologyTestPage() {
                     Identify this tissue:
                   </h3>
                   <div className="space-y-2">
-                    {shuffledOptions.map(({ text, origIdx }) => {
-                      const isSelected    = currentAnswer.selectedOption === origIdx;
-                      const isCorrectOpt  = origIdx === current.correctOptionIndex;
+                    {(shuffledOptions as { text: string; origIdx: number }[]).map(({ text, origIdx }) => {
+                      const isSelected = currentAnswer.selectedOption === origIdx;
+                      const isCorrectOpt = origIdx === current.correctOptionIndex;
                       let state = "default";
                       if (currentAnswer.submitted) {
                         if (isCorrectOpt) state = "correct";
@@ -1141,8 +1181,8 @@ export default function HistologyTestPage() {
                           key={origIdx}
                           onClick={() => setOption(origIdx)}
                           className={`flex items-center gap-3 p-3 sm:p-3.5 rounded-xl border-2 transition-all duration-200 ${
-                            state === "correct"  ? "border-green-400 bg-green-50 cursor-default" :
-                            state === "wrong"    ? "border-red-400 bg-red-50 cursor-default" :
+                            state === "correct" ? "border-green-400 bg-green-50 cursor-default" :
+                            state === "wrong" ? "border-red-400 bg-red-50 cursor-default" :
                             state === "selected" ? "border-blue-500 bg-blue-50 cursor-pointer" :
                             currentAnswer.submitted ? "border-gray-100 bg-gray-50/50 cursor-default opacity-40" :
                             "border-gray-200 hover:border-blue-300 hover:bg-blue-50/30 cursor-pointer"
@@ -1156,10 +1196,10 @@ export default function HistologyTestPage() {
                           />
                           <span className={`text-sm font-semibold flex-1 ${
                             state === "correct" ? "text-green-800" :
-                            state === "wrong"   ? "text-red-700"   : "text-gray-800"
+                            state === "wrong" ? "text-red-700" : "text-gray-800"
                           }`}>{text}</span>
                           {currentAnswer.submitted && state === "correct" && <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />}
-                          {currentAnswer.submitted && state === "wrong"   && <XCircle    className="w-4 h-4 text-red-500 shrink-0"   />}
+                          {currentAnswer.submitted && state === "wrong" && <XCircle className="w-4 h-4 text-red-500 shrink-0" />}
                         </label>
                       );
                     })}
@@ -1171,7 +1211,6 @@ export default function HistologyTestPage() {
             {/* ── RIGHT: points textarea + feedback ── */}
             <div className="space-y-4">
 
-              {/* Points textarea */}
               <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden">
                 <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
                 <div className="p-4 sm:p-5">
@@ -1179,17 +1218,17 @@ export default function HistologyTestPage() {
                     <div className="w-6 h-6 rounded-lg bg-green-50 border border-green-100 flex items-center justify-center shrink-0">
                       <BookOpen className="w-3.5 h-3.5 text-green-600" />
                     </div>
-                    Points of Identification
+                    Points of Recognition
                   </h3>
                   <p className="text-xs text-gray-400 mb-3">
-                    Write the key histological features that helped you identify this tissue. Study both views first!
+                    Write the key microscopic features that helped you identify this slide. Study both views first!
                   </p>
                   <textarea
                     value={currentAnswer.points}
                     onChange={e => setPoints(e.target.value)}
                     rows={7}
                     disabled={currentAnswer.submitted}
-                    placeholder={`e.g., ${current.keyFeatures[0].toLowerCase()}, ${(current.keyFeatures[1] ?? "").toLowerCase()}...`}
+                    placeholder={`e.g., ${current.keyFeatures[0]?.toLowerCase() || ""}, ${(current.keyFeatures[1] || "").toLowerCase()}...`}
                     className="w-full px-3 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 text-sm text-gray-800 placeholder:text-gray-400 bg-white disabled:bg-gray-50 disabled:text-gray-500 resize-none transition-colors"
                   />
                   {!currentAnswer.submitted ? (
@@ -1210,14 +1249,12 @@ export default function HistologyTestPage() {
                 </div>
               </div>
 
-              {/* Feedback */}
               <AnimatePresence>
                 {currentAnswer.submitted && (
                   <motion.div
                     initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }} className="space-y-4"
                   >
-                    {/* Match score */}
                     <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden">
                       <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
                       <div className="p-4 sm:p-5">
@@ -1241,16 +1278,15 @@ export default function HistologyTestPage() {
                       </div>
                     </div>
 
-                    {/* Points comparison */}
                     <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden">
                       <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
                       <div className="p-4 sm:p-5 space-y-4">
                         <div>
                           <p className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400 mb-2">
-                            Expected Points of Identification
+                            Expected Points of Recognition
                           </p>
                           <ol className="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-1.5">
-                            {current.definition.map((point, pi) => (
+                            {current.definition.map((point: string, pi: number) => (
                               <li key={pi} className="flex gap-2 text-xs sm:text-sm text-gray-700 leading-relaxed">
                                 <span className="w-5 h-5 rounded-md bg-blue-100 border border-blue-200 flex items-center justify-center text-[9px] font-extrabold text-blue-700 shrink-0 mt-0.5">
                                   {pi + 1}
@@ -1271,7 +1307,6 @@ export default function HistologyTestPage() {
                       </div>
                     </div>
 
-                    {/* Lesson notes (expandable) */}
                     <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden">
                       <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
                       <details className="group">
@@ -1301,7 +1336,7 @@ export default function HistologyTestPage() {
           </motion.div>
         </AnimatePresence>
 
-        {/* ════ NAVIGATION ════ */}
+        {/* Navigation */}
         <div className="flex items-center justify-between mt-8 pt-5 border-t border-gray-100 gap-3">
           <button
             onClick={() => setCurrentIndex(i => Math.max(0, i - 1))}

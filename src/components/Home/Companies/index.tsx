@@ -23,7 +23,6 @@ const fields = [
   { name: "Clinical Pharmacy",            Icon: Users,        desc: "Therapeutic optimization"             },
 ];
 
-// Static background icons
 const bgIcons = [
   { Icon: Pill,       top: "20%", left: "1.5%",  size: 30 },
   { Icon: HeartPulse, top: "70%", left: "1.5%",  size: 28 },
@@ -43,7 +42,13 @@ export default function Companies() {
   };
 
   return (
-    <section className="w-full py-24 bg-gray-50/50 relative overflow-hidden">
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      viewport={{ once: true }}
+      className="w-full py-24 bg-gray-50/50 relative overflow-hidden"
+    >
       {bgIcons.map(({ Icon, top, left, size }, i) => (
         <div key={i} className="absolute pointer-events-none text-blue-200/40" style={{ top, left }}>
           <Icon size={size} strokeWidth={1.4} />
@@ -91,6 +96,6 @@ export default function Companies() {
           ))}
         </Slider>
       </div>
-    </section>
+    </motion.section>
   );
 }

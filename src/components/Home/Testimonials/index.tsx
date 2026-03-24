@@ -23,7 +23,6 @@ const INITIAL: Review[] = [
   { id: 6, name: "Zainab Malik", university: "University of Sargodha",             year: "4th Year Pharm.D", rating: 4.8, comment: "Pharmaceutical Microbiology virtual labs are absolutely brilliant. Made a tough subject enjoyable.", specialty: "Pharmacology"          },
 ];
 
-// Static background icons – no animations
 const bgIcons = [
   { Icon: Pill,        top: "12%", left: "1.5%",  size: 30 },
   { Icon: Activity,    top: "48%", left: "1%",    size: 28 },
@@ -98,7 +97,13 @@ export default function Testimonial() {
   const avg = (reviews.reduce((a, r) => a + r.rating, 0) / reviews.length).toFixed(1);
 
   return (
-    <section className="w-full py-24 bg-white relative overflow-hidden">
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      viewport={{ once: true }}
+      className="w-full py-24 bg-white relative overflow-hidden"
+    >
       {bgIcons.map(({ Icon, top, left, size }, i) => (
         <div key={i} className="absolute pointer-events-none text-blue-200/40" style={{ top, left }}>
           <Icon size={size} strokeWidth={1.4} />
@@ -189,6 +194,6 @@ export default function Testimonial() {
         </div>
       </div>
       <Modal open={modal} onClose={() => setModal(false)} onSubmit={r => setReviews([r, ...reviews])} />
-    </section>
+    </motion.section>
   );
 }

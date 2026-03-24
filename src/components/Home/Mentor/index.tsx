@@ -21,7 +21,6 @@ const mentors = [
   { name: "Dr. Bilal Raza",   role: "Hospital Pharmacy Director",   university: "Services Hospital, Lahore",              exp: "14 yrs", specialty: "Hospital Pharma",  quote: "The case-based clinical modules are exactly what students need.",       img: "/images/mentors/bilal.jpg",  initials: "BR", courses: 3, students: 2700, linkedin: "#" },
 ];
 
-// Static background icons
 const bgIcons = [
   { Icon: Pill,        top: "15%", left: "1.5%",  size: 30 },
   { Icon: Leaf,        top: "50%", left: "1%",    size: 28 },
@@ -92,7 +91,13 @@ export default function Mentor() {
   const ref = useRef<any>(null);
 
   return (
-    <section className="w-full py-24 bg-gray-50/50 relative overflow-hidden">
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      viewport={{ once: true }}
+      className="w-full py-24 bg-gray-50/50 relative overflow-hidden"
+    >
       {bgIcons.map(({ Icon, top, left, size }, i) => (
         <div key={i} className="absolute pointer-events-none text-blue-200/40" style={{ top, left }}>
           <Icon size={size} strokeWidth={1.4} />
@@ -165,6 +170,6 @@ export default function Mentor() {
           <span className="text-xs text-gray-400">All mentors are verified professionals at accredited Pakistani pharmaceutical institutions.</span>
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 }

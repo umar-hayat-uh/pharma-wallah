@@ -7,9 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, BookOpen, Award, Shuffle,
   CheckCircle, XCircle, RotateCcw, Trophy, ExternalLink,
-  ZoomIn, X, Images, Microscope as MicIcon, Clock, AlertTriangle,
-} from "lucide-react";
-import {
+  ZoomIn, X, Images, Microscope as MicIcon, Clock, AlertTriangle, PlayCircle,
   Pill, FlaskConical, Beaker, Microscope, Stethoscope, Leaf, Dna, Activity,
 } from "lucide-react";
 
@@ -795,9 +793,43 @@ function ReportCard({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// START SCREEN COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
+function StartScreen({ onStart }: { onStart: () => void }) {
+  return (
+    <div className="relative z-10 max-w-4xl mx-auto px-4 py-12 sm:py-20 text-center">
+      <div className="mb-8 flex justify-center">
+        <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-600 to-pink-500 flex items-center justify-center shadow-xl">
+          <MicIcon className="w-12 h-12 text-white" />
+        </div>
+      </div>
+      <h1 className="text-3xl sm:text-5xl font-extrabold text-gray-900 mb-4">
+        Pathology Spotting Test
+      </h1>
+      <p className="text-gray-600 max-w-2xl mx-auto mb-6">
+        Test your ability to identify 15 pathology slides. Each slide includes low and high magnification images.
+        You'll answer a multiple‑choice question and write key recognition points. The test is split into two rounds,
+        each with a 10‑minute timer. Good luck!
+      </p>
+      <ul className="inline-flex flex-wrap gap-3 justify-center mb-8 text-sm text-gray-600">
+        <li className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-600" /> 15 slides</li>
+        <li className="flex items-center gap-1"><Clock className="w-4 h-4 text-blue-600" /> 10 min per round</li>
+      </ul>
+      <button
+        onClick={onStart}
+        className="inline-flex items-center gap-3 px-8 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-pink-500 text-white font-extrabold text-lg shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all"
+      >
+        <PlayCircle className="w-5 h-5" /> Start Test
+      </button>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function SpottingTestPage() {
+  const [testStarted, setTestStarted] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [round, setRound] = useState(1); // 1 = round1 active, 2 = round2 active, 3 = round1 completed (report), 4 = round2 completed (final report)
 
@@ -819,11 +851,10 @@ export default function SpottingTestPage() {
   const [timerActive, setTimerActive] = useState(false);
   const [timerExpired, setTimerExpired] = useState(false);
 
-  // Initialise on mount
-  useEffect(() => {
+  // Initialise when test starts
+  const initTest = () => {
     const shuffled = shuffle([...SLIDE_DATA]);
     setShuffledSlides(shuffled);
-    // Split into two rounds: first 8, last 7 (or as evenly as possible)
     const mid = Math.ceil(shuffled.length / 2);
     const round1 = shuffled.slice(0, mid);
     const round2 = shuffled.slice(mid);
@@ -831,12 +862,12 @@ export default function SpottingTestPage() {
     setRound2Slides(round2);
     setRound1Answers(round1.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
     setRound2Answers(round2.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
-    // Start with round 1
     setSlides(round1);
     setAnswers(round1.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
     setMounted(true);
     setTimerActive(true);
-  }, []);
+    setTestStarted(true);
+  };
 
   // Timer effect
   useEffect(() => {
@@ -856,12 +887,10 @@ export default function SpottingTestPage() {
     return () => clearInterval(id);
   }, [timerActive, timeLeft, round]);
 
-  // Scroll to top when test page loads (after mounted)
+  // Scroll to top when test starts or round changes
   useEffect(() => {
-    if (mounted) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  }, [mounted]);
+    if (testStarted) window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [testStarted, round]);
 
   const timerMins = String(Math.floor(timeLeft / 60)).padStart(2, "0");
   const timerSecs = String(timeLeft % 60).padStart(2, "0");
@@ -937,6 +966,20 @@ export default function SpottingTestPage() {
     setTimerActive(false);
   };
 
+  // Render start screen
+  if (!testStarted) {
+    return (
+      <section className="min-h-screen bg-white relative overflow-x-hidden">
+        {BG_ICONS.map(({ Icon, top, left, size }, i) => (
+          <div key={i} className="fixed pointer-events-none text-indigo-200/60 z-0" style={{ top, left }}>
+            <Icon size={size} strokeWidth={1.4} />
+          </div>
+        ))}
+        <StartScreen onStart={initTest} />
+      </section>
+    );
+  }
+
   // Render round report (round 1 completed)
   if (round === 3) {
     return (
@@ -990,14 +1033,12 @@ export default function SpottingTestPage() {
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 sm:py-10 pt-14 sm:pt-0">
-          {/* back link */}
           <Link href="/spotting"
             className="inline-flex items-center gap-1.5 text-white/70 hover:text-white text-xs font-semibold mb-4 transition-colors">
             <ChevronLeft className="w-3.5 h-3.5" /> Back to Spotting Centre
           </Link>
 
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-            {/* title block */}
             <div>
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest mb-3">
                 <MicIcon className="w-3 h-3" /> Pathology Spotting Test · Round {round} · {current.category}
@@ -1017,12 +1058,13 @@ export default function SpottingTestPage() {
                   key={i}
                   onClick={() => setCurrentIndex(i)}
                   title={`Slide ${i + 1}`}
-                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-[9px] sm:text-xs font-extrabold transition-all duration-200 ${i === currentIndex
-                    ? "bg-white text-indigo-700 shadow-md scale-110"
-                    : answers[i].submitted
-                      ? "bg-white/30 text-white"
-                      : "bg-white/15 text-white/60 hover:bg-white/25"
-                    }`}
+                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-[9px] sm:text-xs font-extrabold transition-all duration-200 ${
+                    i === currentIndex
+                      ? "bg-white text-indigo-700 shadow-md scale-110"
+                      : answers[i].submitted
+                        ? "bg-white/30 text-white"
+                        : "bg-white/15 text-white/60 hover:bg-white/25"
+                  }`}
                 >
                   {answers[i].submitted
                     ? (slides[i].options[answers[i].selectedOption!] === slides[i].title ? "✓" : "✗")
@@ -1043,10 +1085,11 @@ export default function SpottingTestPage() {
           <div className="flex justify-between items-center text-xs text-white/60 mt-1.5">
             <span>Slide {currentIndex + 1} of {slides.length} (Round {round})</span>
             {/* ── Timer pill ── */}
-            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-extrabold text-sm transition-all ${timerUrgent
-              ? "bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/40"
-              : "bg-white/20 text-white"
-              }`}>
+            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-extrabold text-sm transition-all ${
+              timerUrgent
+                ? "bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/40"
+                : "bg-white/20 text-white"
+            }`}>
               <Clock className="w-3.5 h-3.5" />
               {timerMins}:{timerSecs}
             </div>
@@ -1129,12 +1172,13 @@ export default function SpottingTestPage() {
                         <label
                           key={origIdx}
                           onClick={() => setOption(origIdx)}
-                          className={`flex items-center gap-3 p-3 sm:p-3.5 rounded-xl border-2 transition-all duration-200 ${state === "correct" ? "border-green-400 bg-green-50 cursor-default" :
+                          className={`flex items-center gap-3 p-3 sm:p-3.5 rounded-xl border-2 transition-all duration-200 ${
+                            state === "correct" ? "border-green-400 bg-green-50 cursor-default" :
                             state === "wrong" ? "border-red-400 bg-red-50 cursor-default" :
-                              state === "selected" ? "border-indigo-500 bg-indigo-50 cursor-pointer" :
-                                currentAnswer.submitted ? "border-gray-100 bg-gray-50/50 cursor-default opacity-40" :
-                                  "border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/30 cursor-pointer"
-                            }`}
+                            state === "selected" ? "border-indigo-500 bg-indigo-50 cursor-pointer" :
+                            currentAnswer.submitted ? "border-gray-100 bg-gray-50/50 cursor-default opacity-40" :
+                            "border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/30 cursor-pointer"
+                          }`}
                         >
                           <input
                             type="radio" name="slideOption" value={origIdx}
@@ -1142,9 +1186,10 @@ export default function SpottingTestPage() {
                             onChange={() => setOption(origIdx)}
                             className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 shrink-0"
                           />
-                          <span className={`text-sm font-semibold flex-1 ${state === "correct" ? "text-green-800" :
+                          <span className={`text-sm font-semibold flex-1 ${
+                            state === "correct" ? "text-green-800" :
                             state === "wrong" ? "text-red-700" : "text-gray-800"
-                            }`}>{text}</span>
+                          }`}>{text}</span>
                           {currentAnswer.submitted && state === "correct" && <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />}
                           {currentAnswer.submitted && state === "wrong" && <XCircle className="w-4 h-4 text-red-500 shrink-0" />}
                         </label>
@@ -1176,7 +1221,7 @@ export default function SpottingTestPage() {
                     onChange={e => setPoints(e.target.value)}
                     rows={7}
                     disabled={currentAnswer.submitted}
-                    placeholder={`e.g., ${current.keyFeatures[0].toLowerCase()}, ${(current.keyFeatures[1] ?? "").toLowerCase()}...`}
+                    placeholder={`e.g., ${current.keyFeatures[0]?.toLowerCase() || ""}, ${(current.keyFeatures[1] || "").toLowerCase()}...`}
                     className="w-full px-3 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-indigo-400 text-sm text-gray-800 placeholder:text-gray-400 bg-white disabled:bg-gray-50 disabled:text-gray-500 resize-none transition-colors"
                   />
                   {!currentAnswer.submitted ? (

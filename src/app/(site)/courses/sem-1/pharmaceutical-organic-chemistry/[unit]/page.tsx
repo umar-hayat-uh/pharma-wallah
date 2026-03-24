@@ -209,7 +209,7 @@ export default function OrganicChemistryUnitPage({ params }: PageProps) {
 
       {/* ══ MOBILE TOP BAR ══ */}
       <div className="lg:hidden sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
-        <div className="flex items-center justify-between px-3 py-2.5">
+        <div className="flex items-center justify-between px-3 pt-[1.625rem] pb-2.5">
           <div className="flex items-center gap-1 text-xs text-gray-500 min-w-0 flex-1 mr-2">
             <Link href={BASE_PATH} className="hover:text-emerald-600 shrink-0 font-medium">Organic Chem</Link>
             <ChevronRight size={11} className="shrink-0 mx-0.5 text-gray-300" />

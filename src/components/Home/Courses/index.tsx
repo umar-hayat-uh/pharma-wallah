@@ -25,53 +25,53 @@ const bgIcons = [
 const notes = [
   {
     id: 1,
-    img: "/images/courses/homepage/AtomicNervousSystem.jpg",
-    title: "Autonomic Nervous System – Complete Notes",
+    img: "/previews/syspharm3/unit1-cns.jpg",
+    title: "Central Nervous System – Complete Notes",
     rating: 4.9,
     pages: 48,
     downloads: 1250,
     featured: true,
-    slug: "/images/courses/homepage/AtomicNervousSystem.jpg",
+    slug: "/courses/sem-7/systemic-pharmacology-3/unit1-cns-drugs",
   },
   {
     id: 2,
-    img: "/images/courses/homepage/thera.jpg",
-    title: "Therapeutic Drug Monitoring & Case Studies",
+    img: "/previews/orgchem/unit1-basics.jpg",
+    title: "Basic Concepts of Organic Chemistry in Pharmacy",
     rating: 4.8,
     pages: 32,
     downloads: 840,
     featured: false,
-    slug: "/images/courses/homepage/thera.jpg",
+    slug: "/courses/sem-1/pharmaceutical-organic-chemistry/unit1-basic-concepts",
   },
   {
     id: 3,
-    img: "/images/courses/homepage/pharmacology.jpeg",
-    title: "Pharmacology Rapid Revision",
+    img: "/previews/physpharm/unit6-micromeritics.jpg",
+    title: "Micromeritics & Powder Technology – Key Notes",
     rating: 5.0,
     pages: 112,
     downloads: 2100,
     featured: true,
-    slug: "/images/courses/homepage/pharmacology.jpeg",
+    slug: "/courses/sem-1/physical-pharmacy/unit6-micromeritics",
   },
   {
     id: 4,
-    img: "/images/courses/homepage/bio.jpg",
-    title: "Biopharmaceutics & Pharmacokinetics – Formulae & Concepts",
+    img: "/previews/pharmaanalysis/unit1-chemical.jpg",
+    title: "Chemical Analysis of Drugs – Essential Notes",
     rating: 4.9,
     pages: 64,
     downloads: 980,
     featured: true,
-    slug: "/images/courses/homepage/bio.jpg",
+    slug: "/courses/sem-6/pharmaceutical-analysis/unit1-chemical-methods",
   },
   {
     id: 5,
-    img: "/images/courses/homepage/steralization.jpg",
-    title: "Sterilization & Quality Control in Pharma",
+    img: "/previews/hosppharm/ch2-role.jpg",
+    title: "Role of Hospital Pharmacy – Comprehensive Notes",
     rating: 4.7,
     pages: 40,
     downloads: 620,
     featured: false,
-    slug: "/images/courses/homepage/steralization.jpg",
+    slug: "/courses/sem-7/hospital-pharmacy/chapter2-role-of-pharmacy-in-hospitals",
   },
 ];
 
@@ -138,7 +138,13 @@ export default function Courses() {
   const ref = useRef<any>(null);
 
   return (
-    <section className="w-full py-24 bg-white relative overflow-hidden">
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      viewport={{ once: true }}
+      className="w-full py-24 bg-white relative overflow-hidden"
+    >
       {bgIcons.map(({ Icon, top, left, size, color }, i) => (
         <div key={i} className={`absolute pointer-events-none ${color}`} style={{ top, left }}>
           <Icon size={size} strokeWidth={1.4} />
@@ -175,7 +181,7 @@ export default function Courses() {
             className="w-10 h-10 rounded-full border-2 border-gray-200 flex items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-600 transition bg-white">
             <ChevronRight className="w-5 h-5" />
           </button>
-          <Link href="/material">
+          <Link href="/courses">
             <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white text-sm font-bold shadow-md transition-transform duration-200 hover:scale-105 active:scale-95 cursor-pointer">
               View All Notes <ArrowRight className="w-4 h-4" />
             </span>
@@ -200,6 +206,6 @@ export default function Courses() {
           {notes.map(n => <Card key={n.id} n={n} />)}
         </Slider>
       </div>
-    </section>
+    </motion.section>
   );
 }
