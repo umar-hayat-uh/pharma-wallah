@@ -11,6 +11,7 @@
     "deploy": "touch out/.nojekyll && gh-pages -d out --dotfiles"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.0.7",
     "@google/generative-ai": "^0.24.1",
     "@iconify/icons-ion": "^1.2.10",
     "@iconify/react": "^5.0.1",

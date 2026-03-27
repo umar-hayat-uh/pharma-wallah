@@ -3,21 +3,35 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { headerData } from "../Header/Navigation/menuData";
+import {
+  SignIn,
+  SignInButton,
+  SignUpButton,
+  UserButton,
+} from "@clerk/nextjs";
 import Logo from "./Logo";
 import {
-  Pill, FlaskConical, Stethoscope, Microscope, Beaker,
-  Leaf, BookOpen, ChevronDown, Menu, X, Sparkles,
+  Pill,
+  FlaskConical,
+  Stethoscope,
+  Microscope,
+  Beaker,
+  Leaf,
+  BookOpen,
+  ChevronDown,
+  Menu,
+  X,
+  Sparkles,
 } from "lucide-react";
 
 // ─── Submenu icons ────────────────────────────────────────────────────────────
 const SUBMENU_ICONS: Record<string, React.ReactNode> = {
-  "Material":        <BookOpen     className="w-4 h-4 text-blue-500" />,
-  "MCQ's Bank":      <FlaskConical className="w-4 h-4 text-green-500" />,
-  "Slide Spotting":  <Microscope   className="w-4 h-4 text-blue-500" />,
-  "Flashcards":      <Beaker       className="w-4 h-4 text-green-500" />,
-  "Books Library":   <Leaf         className="w-4 h-4 text-blue-500" />,
+  Material: <BookOpen className="w-4 h-4 text-blue-500" />,
+  "MCQ's Bank": <FlaskConical className="w-4 h-4 text-green-500" />,
+  "Slide Spotting": <Microscope className="w-4 h-4 text-blue-500" />,
+  Flashcards: <Beaker className="w-4 h-4 text-green-500" />,
+  "Books Library": <Leaf className="w-4 h-4 text-blue-500" />,
 };
 
 // ─── Desktop dropdown ─────────────────────────────────────────────────────────
@@ -55,7 +69,12 @@ const DesktopDropdown = ({
         zIndex: 50,
       }}
     >
-      <div style={{ height: 3, background: "linear-gradient(90deg,#2563eb,#4ade80)" }} />
+      <div
+        style={{
+          height: 3,
+          background: "linear-gradient(90deg,#2563eb,#4ade80)",
+        }}
+      />
       <div style={{ padding: "6px 0" }}>
         {item.submenu.map((sub, i) => (
           <Link
@@ -65,7 +84,9 @@ const DesktopDropdown = ({
             className="group flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
           >
             <span className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0 group-hover:bg-gradient-to-br group-hover:from-blue-600 group-hover:to-green-400 transition-all duration-200">
-              {SUBMENU_ICONS[sub.label] ?? <Pill className="w-4 h-4 text-blue-500" />}
+              {SUBMENU_ICONS[sub.label] ?? (
+                <Pill className="w-4 h-4 text-blue-500" />
+              )}
             </span>
             <span className="font-medium">{sub.label}</span>
           </Link>
@@ -78,12 +99,12 @@ const DesktopDropdown = ({
 // ─────────────────────────────────────────────────────────────────────────────
 const Header: React.FC = () => {
   const pathUrl = usePathname();
-  const [navbarOpen,   setNavbarOpen]   = useState(false);
-  const [sticky,       setSticky]       = useState(false);
+  const [navbarOpen, setNavbarOpen] = useState(false);
+  const [sticky, setSticky] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   const mobileMenuRef = useRef<HTMLDivElement>(null);
-  const headerRef     = useRef<HTMLElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
 
   // ── Sticky ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -96,12 +117,21 @@ const Header: React.FC = () => {
   useEffect(() => {
     if (!navbarOpen) return;
     const handler = (e: MouseEvent) => {
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node))
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(e.target as Node)
+      )
         setNavbarOpen(false);
     };
     // slight delay so the open-tap doesn't immediately close
-    const t = setTimeout(() => document.addEventListener("mousedown", handler), 10);
-    return () => { clearTimeout(t); document.removeEventListener("mousedown", handler); };
+    const t = setTimeout(
+      () => document.addEventListener("mousedown", handler),
+      10,
+    );
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener("mousedown", handler);
+    };
   }, [navbarOpen]);
 
   // ── Lock body scroll ──────────────────────────────────────────────────────
@@ -123,9 +153,9 @@ const Header: React.FC = () => {
   }, [openDropdown]);
 
   const isActive = (href: string, submenu?: { href: string }[]) =>
-    pathUrl === href || submenu?.some(s => pathUrl === s.href);
+    pathUrl === href || submenu?.some((s) => pathUrl === s.href);
 
-  const openMenu  = () => setNavbarOpen(true);
+  const openMenu = () => setNavbarOpen(true);
   const closeMenu = () => setNavbarOpen(false);
 
   return (
@@ -136,13 +166,16 @@ const Header: React.FC = () => {
         className="fixed top-0 left-0 right-0 z-50 border-b border-gray-100/80"
         style={{
           // Pure CSS transition — no JS animation loop, no layout thrashing
-          backgroundColor: sticky ? "rgba(255,255,255,0.97)" : "rgba(255,255,255,0.88)",
+          backgroundColor: sticky
+            ? "rgba(255,255,255,0.97)"
+            : "rgba(255,255,255,0.88)",
           boxShadow: sticky ? "0 2px 20px rgba(37,99,235,0.07)" : "none",
           backdropFilter: "blur(12px)",
           WebkitBackdropFilter: "blur(12px)",
-          paddingTop:    sticky ? 10 : 14,
+          paddingTop: sticky ? 10 : 14,
           paddingBottom: sticky ? 10 : 14,
-          transition: "background-color 220ms ease, box-shadow 220ms ease, padding 220ms ease",
+          transition:
+            "background-color 220ms ease, box-shadow 220ms ease, padding 220ms ease",
           willChange: "background-color",
         }}
       >
@@ -152,38 +185,56 @@ const Header: React.FC = () => {
           {/* ── Desktop nav ── */}
           <nav className="hidden lg:flex items-center gap-1">
             {headerData.map((item, i) => {
-              const active      = isActive(item.href, item.submenu);
-              const hasSubmenu  = Boolean(item.submenu);
-              const dropOpen    = openDropdown === item.label;
+              const active = isActive(item.href, item.submenu);
+              const hasSubmenu = Boolean(item.submenu);
+              const dropOpen = openDropdown === item.label;
 
               return (
                 <div key={i} className="relative">
                   {hasSubmenu ? (
                     <button
-                      onClick={() => setOpenDropdown(dropOpen ? null : item.label)}
+                      onClick={() =>
+                        setOpenDropdown(dropOpen ? null : item.label)
+                      }
                       className={`flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-150 ${
-                        active ? "text-blue-700 bg-blue-50" : "text-gray-600 hover:text-blue-700 hover:bg-blue-50/60"
+                        active
+                          ? "text-blue-700 bg-blue-50"
+                          : "text-gray-600 hover:text-blue-700 hover:bg-blue-50/60"
                       }`}
                     >
                       {item.label}
                       <ChevronDown
                         className="w-3.5 h-3.5 transition-transform duration-200"
-                        style={{ transform: dropOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                        style={{
+                          transform: dropOpen
+                            ? "rotate(180deg)"
+                            : "rotate(0deg)",
+                        }}
                       />
-                      {active && <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-blue-500" />}
+                      {active && (
+                        <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-blue-500" />
+                      )}
                     </button>
                   ) : (
                     <Link
                       href={item.href}
                       className={`relative flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-150 ${
-                        active ? "text-blue-700 bg-blue-50" : "text-gray-600 hover:text-blue-700 hover:bg-blue-50/60"
+                        active
+                          ? "text-blue-700 bg-blue-50"
+                          : "text-gray-600 hover:text-blue-700 hover:bg-blue-50/60"
                       }`}
                     >
                       {item.label}
-                      {active && <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-blue-500" />}
+                      {active && (
+                        <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-blue-500" />
+                      )}
                     </Link>
                   )}
-                  <DesktopDropdown item={item} isOpen={dropOpen} onClose={() => setOpenDropdown(null)} />
+                  <DesktopDropdown
+                    item={item}
+                    isOpen={dropOpen}
+                    onClose={() => setOpenDropdown(null)}
+                  />
                 </div>
               );
             })}
@@ -191,14 +242,26 @@ const Header: React.FC = () => {
 
           {/* ── Desktop CTA ── */}
           <div className="hidden lg:flex items-center gap-3">
-            <Link
-              href="/ai-guide"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white text-sm font-bold shadow-md shadow-blue-200/50 hover:shadow-blue-300/60 transition-shadow active:scale-95"
-              style={{ transition: "box-shadow 150ms ease, transform 100ms ease" }}
-            >
-              <Sparkles className="w-4 h-4" />
-              Expert AI Guide
-            </Link>
+            <SignInButton mode="modal">
+              <button className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:text-blue-700 hover:bg-blue-50/60 transition-colors duration-150">
+                Sign In
+              </button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <button className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white text-sm font-bold shadow-md shadow-blue-200/50 hover:shadow-blue-300/60 transition-shadow active:scale-95">
+                Sign Up
+              </button>
+            </SignUpButton>
+            <SignInButton>
+              <UserButton
+                appearance={{
+                  elements: {
+                    avatarBox:
+                      "w-9 h-9 rounded-xl ring-2 ring-blue-100 hover:ring-blue-300 transition-all",
+                  },
+                }}
+              />
+            </SignInButton>
           </div>
 
           {/* ── Mobile hamburger ── */}
@@ -278,7 +341,13 @@ const Header: React.FC = () => {
         aria-hidden={!navbarOpen}
       >
         {/* Top strip */}
-        <div style={{ height: 4, background: "linear-gradient(90deg,#2563eb,#4ade80)", flexShrink: 0 }} />
+        <div
+          style={{
+            height: 4,
+            background: "linear-gradient(90deg,#2563eb,#4ade80)",
+            flexShrink: 0,
+          }}
+        />
 
         {/* Drawer header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
@@ -305,16 +374,37 @@ const Header: React.FC = () => {
           ))}
 
           {/* CTA */}
-          <div className="mt-4">
-            <Link
-              href="/ai-guide"
-              onClick={closeMenu}
-              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold text-sm shadow-md active:opacity-90 transition-opacity"
-              style={{ touchAction: "manipulation" }}
-            >
-              <Sparkles className="w-4 h-4" />
-              Expert AI Guide
-            </Link>
+          <div className="mt-4 flex flex-col gap-2">
+            <SignInButton mode="modal">
+              <button
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-blue-200 text-blue-600 font-semibold text-sm active:opacity-90 transition-opacity"
+                style={{ touchAction: "manipulation" }}
+              >
+                Sign In
+              </button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <button
+                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold text-sm shadow-md active:opacity-90 transition-opacity"
+                style={{ touchAction: "manipulation" }}
+              >
+                Sign Up
+              </button>
+            </SignUpButton>
+            <SignInButton>
+              <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-blue-50 border border-blue-100">
+                <UserButton
+                  appearance={{
+                    elements: {
+                      avatarBox: "w-8 h-8 rounded-lg",
+                    },
+                  }}
+                />
+                <span className="text-sm font-semibold text-gray-700">
+                  My Account
+                </span>
+              </div>
+            </SignInButton>
           </div>
         </nav>
 
@@ -322,7 +412,9 @@ const Header: React.FC = () => {
         <div className="px-5 py-4 border-t border-gray-100 bg-blue-50/40 shrink-0">
           <div className="flex items-center gap-2">
             <Stethoscope className="w-4 h-4 text-blue-400 shrink-0" />
-            <span className="text-xs text-gray-400">Pakistan's #1 Pharmacy eLearning Platform</span>
+            <span className="text-xs text-gray-400">
+              Pakistan's #1 Pharmacy eLearning Platform
+            </span>
           </div>
         </div>
       </aside>
@@ -343,16 +435,19 @@ const MobileNavItem = ({
 }) => {
   const [open, setOpen] = useState(false);
   const hasSubmenu = Boolean(item.submenu);
-  const isActive   = pathUrl === item.href || item.submenu?.some(s => pathUrl === s.href);
+  const isActive =
+    pathUrl === item.href || item.submenu?.some((s) => pathUrl === s.href);
 
   return (
     <div>
       {hasSubmenu ? (
         <>
           <button
-            onClick={() => setOpen(v => !v)}
+            onClick={() => setOpen((v) => !v)}
             className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-150 ${
-              isActive ? "bg-blue-50 text-blue-700 border border-blue-100" : "text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+              isActive
+                ? "bg-blue-50 text-blue-700 border border-blue-100"
+                : "text-gray-700 hover:bg-gray-50 active:bg-gray-100"
             }`}
             style={{ touchAction: "manipulation" }}
           >
@@ -390,10 +485,16 @@ const MobileNavItem = ({
                     }`}
                     style={{ touchAction: "manipulation" }}
                   >
-                    <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                      subActive ? "bg-white/20" : "bg-blue-50 border border-blue-100"
-                    }`}>
-                      {SUBMENU_ICONS[sub.label] ?? <Pill className="w-3.5 h-3.5 text-blue-500" />}
+                    <span
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                        subActive
+                          ? "bg-white/20"
+                          : "bg-blue-50 border border-blue-100"
+                      }`}
+                    >
+                      {SUBMENU_ICONS[sub.label] ?? (
+                        <Pill className="w-3.5 h-3.5 text-blue-500" />
+                      )}
                     </span>
                     {sub.label}
                   </Link>

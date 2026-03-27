@@ -1,15 +1,16 @@
 import { Poppins } from "next/font/google";
 import "./globals.css";
+import { ClerkProvider } from "@clerk/nextjs";
 import Header from "@/components/Layout/Header";
 import Footer from "@/components/Layout/Footer";
 import { ThemeProvider } from "next-themes";
 import ScrollToTop from "@/components/ScrollToTop";
-import { Analytics } from '@vercel/analytics/next';
+import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
-const font = Poppins({ 
-  subsets: ["latin"], 
-  weight: ["400", "500", "600", "700"] 
+const font = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export default function RootLayout({
@@ -18,21 +19,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={font.className}>
-        <ThemeProvider
-          attribute="class"
-          enableSystem={true}
-          defaultTheme="light"
-        >
-          <Header />
-          {children}
-          <Footer />
-          <ScrollToTop />
-        </ThemeProvider>
-        <Analytics />
-        <SpeedInsights />
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en" suppressHydrationWarning>
+        <body className={font.className}>
+          <ThemeProvider
+            attribute="class"
+            enableSystem={true}
+            defaultTheme="light"
+          >
+            <Header />
+            {children}
+            <Footer />
+            <ScrollToTop />
+          </ThemeProvider>
+          <Analytics />
+          <SpeedInsights />
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
