@@ -9,6 +9,20 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Pill, FlaskConical, Beaker, Microscope, Stethoscope, Leaf, Dna, Activity } from "lucide-react";
 
+export function getDirectDownloadLink(url: string) {
+  if (!url) return "";
+
+  const match =
+    url.match(/\/d\/(.*?)\//) || 
+    url.match(/id=(.*?)(?:&|$)/);
+
+  if (!match) return url;
+
+  const fileId = match[1];
+
+  return `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t`;
+}
+
 interface BookItem {
   id: string;
   title: string;
@@ -41,7 +55,7 @@ const booksData: BookItem[] = [
     image: "/images/books/tortora bp.jpg",
     imagePosition: "center",
     available: true,
-    book_url: "#",
+    book_url: "https://drive.google.com/file/d/1H6qo2JCcFW80ccKBMvbVoDEbH1J5cEGA/view?usp=drive_link",
     edition: "16th Edition",
     pages: 1232,
     publisher: "Wiley",
@@ -1464,7 +1478,7 @@ export default function BookLibraryPage() {
           <Icon size={size} strokeWidth={1.4} />
         </div>
       ))}
-
+     
       {/* Modal */}
       {selectedBook && <BookModal book={selectedBook} onClose={() => setSelectedBook(null)} />}
 

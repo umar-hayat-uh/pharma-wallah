@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { headerData } from "../Header/Navigation/menuData";
 import {
-  SignIn,
   SignInButton,
   SignUpButton,
   UserButton,
+  useUser,
 } from "@clerk/nextjs";
 import Logo from "./Logo";
 import {
@@ -35,7 +35,6 @@ const SUBMENU_ICONS: Record<string, React.ReactNode> = {
 };
 
 // ─── Desktop dropdown ─────────────────────────────────────────────────────────
-// Uses CSS transform/opacity — no JS animation loop, GPU-composited
 const DesktopDropdown = ({
   item,
   isOpen,
@@ -106,6 +105,9 @@ const Header: React.FC = () => {
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
 
+  // Clerk authentication state
+  const { isSignedIn } = useUser();
+
   // ── Sticky ────────────────────────────────────────────────────────────────
   useEffect(() => {
     const onScroll = () => setSticky(window.scrollY > 60);
@@ -123,7 +125,6 @@ const Header: React.FC = () => {
       )
         setNavbarOpen(false);
     };
-    // slight delay so the open-tap doesn't immediately close
     const t = setTimeout(
       () => document.addEventListener("mousedown", handler),
       10,
@@ -136,7 +137,6 @@ const Header: React.FC = () => {
 
   // ── Lock body scroll ──────────────────────────────────────────────────────
   useEffect(() => {
-    // Use a class rather than style mutation for less reflow
     document.documentElement.classList.toggle("overflow-hidden", navbarOpen);
     return () => document.documentElement.classList.remove("overflow-hidden");
   }, [navbarOpen]);
@@ -165,7 +165,6 @@ const Header: React.FC = () => {
         ref={headerRef}
         className="fixed top-0 left-0 right-0 z-50 border-b border-gray-100/80"
         style={{
-          // Pure CSS transition — no JS animation loop, no layout thrashing
           backgroundColor: sticky
             ? "rgba(255,255,255,0.97)"
             : "rgba(255,255,255,0.88)",
@@ -240,19 +239,22 @@ const Header: React.FC = () => {
             })}
           </nav>
 
-          {/* ── Desktop CTA ── */}
+          {/* ── Desktop CTA – conditionally show sign in/up or profile ── */}
           <div className="hidden lg:flex items-center gap-3">
-            <SignInButton mode="modal">
-              <button className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:text-blue-700 hover:bg-blue-50/60 transition-colors duration-150">
-                Sign In
-              </button>
-            </SignInButton>
-            <SignUpButton mode="modal">
-              <button className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white text-sm font-bold shadow-md shadow-blue-200/50 hover:shadow-blue-300/60 transition-shadow active:scale-95">
-                Sign Up
-              </button>
-            </SignUpButton>
-            <SignInButton>
+            {!isSignedIn ? (
+              <>
+                <SignInButton mode="modal">
+                  <button className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:text-blue-700 hover:bg-blue-50/60 transition-colors duration-150">
+                    Sign In
+                  </button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <button className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white text-sm font-bold shadow-md shadow-blue-200/50 hover:shadow-blue-300/60 transition-shadow active:scale-95">
+                    Sign Up
+                  </button>
+                </SignUpButton>
+              </>
+            ) : (
               <UserButton
                 appearance={{
                   elements: {
@@ -261,7 +263,7 @@ const Header: React.FC = () => {
                   },
                 }}
               />
-            </SignInButton>
+            )}
           </div>
 
           {/* ── Mobile hamburger ── */}
@@ -269,7 +271,6 @@ const Header: React.FC = () => {
             onClick={openMenu}
             className="lg:hidden p-2.5 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 active:bg-blue-100 transition-colors"
             aria-label="Open menu"
-            // touch-action: manipulation kills 300ms click delay on mobile
             style={{ touchAction: "manipulation" }}
           >
             <Menu className="w-5 h-5" />
@@ -291,18 +292,12 @@ const Header: React.FC = () => {
       <div className="h-[64px] lg:h-[68px]" />
 
       {/* ══ OVERLAY ════════════════════════════════════════════════════════ */}
-      {/*
-        Pure CSS transition instead of AnimatePresence + motion.div.
-        Avoids a full React render cycle on every frame during open/close.
-        pointer-events toggled so taps don't fall through when hidden.
-      */}
       <div
         onClick={closeMenu}
         aria-hidden="true"
         style={{
           position: "fixed",
           inset: 0,
-          // NO backdrop-filter — biggest mobile perf killer
           backgroundColor: "rgba(0,0,0,0.38)",
           zIndex: 40,
           opacity: navbarOpen ? 1 : 0,
@@ -313,11 +308,6 @@ const Header: React.FC = () => {
       />
 
       {/* ══ MOBILE DRAWER ══════════════════════════════════════════════════ */}
-      {/*
-        translateX CSS transition instead of spring physics.
-        Spring damping/stiffness runs JS per-frame; CSS transitions run on the
-        compositor thread — zero JS overhead, never janky on low-end devices.
-      */}
       <aside
         ref={mobileMenuRef}
         style={{
@@ -333,7 +323,6 @@ const Header: React.FC = () => {
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          // translateX CSS transition — compositor-only, no JS frames
           transform: navbarOpen ? "translateX(0)" : "translateX(100%)",
           transition: "transform 260ms cubic-bezier(0.32,0.72,0,1)",
           willChange: "transform",
@@ -362,7 +351,7 @@ const Header: React.FC = () => {
           </button>
         </div>
 
-        {/* Nav items — no staggered entrance animations: they add frames during open */}
+        {/* Nav items */}
         <nav className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-1">
           {headerData.map((item, i) => (
             <MobileNavItem
@@ -373,25 +362,28 @@ const Header: React.FC = () => {
             />
           ))}
 
-          {/* CTA */}
+          {/* Mobile CTA – conditionally show sign in/up or profile */}
           <div className="mt-4 flex flex-col gap-2">
-            <SignInButton mode="modal">
-              <button
-                className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-blue-200 text-blue-600 font-semibold text-sm active:opacity-90 transition-opacity"
-                style={{ touchAction: "manipulation" }}
-              >
-                Sign In
-              </button>
-            </SignInButton>
-            <SignUpButton mode="modal">
-              <button
-                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold text-sm shadow-md active:opacity-90 transition-opacity"
-                style={{ touchAction: "manipulation" }}
-              >
-                Sign Up
-              </button>
-            </SignUpButton>
-            <SignInButton>
+            {!isSignedIn ? (
+              <>
+                <SignInButton mode="modal">
+                  <button
+                    className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-blue-200 text-blue-600 font-semibold text-sm active:opacity-90 transition-opacity"
+                    style={{ touchAction: "manipulation" }}
+                  >
+                    Sign In
+                  </button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <button
+                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold text-sm shadow-md active:opacity-90 transition-opacity"
+                    style={{ touchAction: "manipulation" }}
+                  >
+                    Sign Up
+                  </button>
+                </SignUpButton>
+              </>
+            ) : (
               <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-blue-50 border border-blue-100">
                 <UserButton
                   appearance={{
@@ -404,7 +396,7 @@ const Header: React.FC = () => {
                   My Account
                 </span>
               </div>
-            </SignInButton>
+            )}
           </div>
         </nav>
 
@@ -423,7 +415,6 @@ const Header: React.FC = () => {
 };
 
 // ─── Mobile nav item ──────────────────────────────────────────────────────────
-// No entrance animations — they run during the drawer slide which doubles the work
 const MobileNavItem = ({
   item,
   pathUrl,
@@ -458,11 +449,6 @@ const MobileNavItem = ({
             />
           </button>
 
-          {/*
-            Height CSS transition instead of AnimatePresence height animation.
-            AnimatePresence measures DOM height on mount — expensive on mobile.
-            max-height trick: instant expand feel, no layout measurement.
-          */}
           <div
             style={{
               maxHeight: open ? 400 : 0,
