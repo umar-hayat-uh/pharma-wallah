@@ -9,20 +9,6 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Pill, FlaskConical, Beaker, Microscope, Stethoscope, Leaf, Dna, Activity } from "lucide-react";
 
-export function getDirectDownloadLink(url: string) {
-  if (!url) return "";
-
-  const match =
-    url.match(/\/d\/(.*?)\//) || 
-    url.match(/id=(.*?)(?:&|$)/);
-
-  if (!match) return url;
-
-  const fileId = match[1];
-
-  return `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t`;
-}
-
 interface BookItem {
   id: string;
   title: string;
