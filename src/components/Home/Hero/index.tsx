@@ -183,7 +183,8 @@ export default function Hero() {
             {/* Hero image */}
             <div className="relative w-[280px] sm:w-[320px] h-[360px] sm:h-[400px] rounded-3xl overflow-hidden z-10">
               <div className="absolute inset-0 bg-gradient-to-t from-blue-900/20 via-transparent to-transparent z-10" />
-              <Image
+              <Image  
+                quality={75}
                 src="/images/banner/mahila.jpeg"
                 alt="Pharmacy student"
                 fill

@@ -92,7 +92,7 @@ const Card = ({ n }: { n: typeof notes[0] }) => (
 
       {/* Thumbnail */}
       <div className="relative h-44 w-full overflow-hidden bg-blue-50 shrink-0">
-        <Image src={n.img} alt={n.title} fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
+        <Image src={n.img} alt={n.title}  quality={60} fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" /> 
         
         {/* Featured badge */}
