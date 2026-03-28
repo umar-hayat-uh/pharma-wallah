@@ -22,7 +22,7 @@ import {
   ChevronDown,
   Menu,
   X,
-  Sparkles,
+  LayoutDashboard, // <-- new import for dashboard icon
 } from "lucide-react";
 
 // ─── Submenu icons ────────────────────────────────────────────────────────────
@@ -239,7 +239,7 @@ const Header: React.FC = () => {
             })}
           </nav>
 
-          {/* ── Desktop CTA – conditionally show sign in/up or profile ── */}
+          {/* ── Desktop CTA – conditionally show dashboard + profile or sign in/up ── */}
           <div className="hidden lg:flex items-center gap-3">
             {!isSignedIn ? (
               <>
@@ -255,14 +255,24 @@ const Header: React.FC = () => {
                 </SignUpButton>
               </>
             ) : (
-              <UserButton
-                appearance={{
-                  elements: {
-                    avatarBox:
-                      "w-9 h-9 rounded-xl ring-2 ring-blue-100 hover:ring-blue-300 transition-all",
-                  },
-                }}
-              />
+              <>
+                {/* 👇 Dashboard button (only when signed in) */}
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white text-sm font-bold shadow-md shadow-blue-200/50 hover:shadow-blue-300/60 transition-shadow active:scale-95"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  Dashboard
+                </Link>
+                <UserButton
+                  appearance={{
+                    elements: {
+                      avatarBox:
+                        "w-9 h-9 rounded-xl ring-2 ring-blue-100 hover:ring-blue-300 transition-all",
+                    },
+                  }}
+                />
+              </>
             )}
           </div>
 
@@ -362,7 +372,7 @@ const Header: React.FC = () => {
             />
           ))}
 
-          {/* Mobile CTA – conditionally show sign in/up or profile */}
+          {/* Mobile CTA – conditionally show dashboard + profile or sign in/up */}
           <div className="mt-4 flex flex-col gap-2">
             {!isSignedIn ? (
               <>
@@ -384,17 +394,28 @@ const Header: React.FC = () => {
                 </SignUpButton>
               </>
             ) : (
-              <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-blue-50 border border-blue-100">
-                <UserButton
-                  appearance={{
-                    elements: {
-                      avatarBox: "w-8 h-8 rounded-lg",
-                    },
-                  }}
-                />
-                <span className="text-sm font-semibold text-gray-700">
-                  My Account
-                </span>
+              // 👇 Dashboard button + profile block (when signed in)
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/dashboard"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold text-sm shadow-md active:opacity-90 transition-opacity"
+                  style={{ touchAction: "manipulation" }}
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  Dashboard
+                </Link>
+                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-blue-50 border border-blue-100">
+                  <UserButton
+                    appearance={{
+                      elements: {
+                        avatarBox: "w-8 h-8 rounded-lg",
+                      },
+                    }}
+                  />
+                  <span className="text-sm font-semibold text-gray-700">
+                    My Account
+                  </span>
+                </div>
               </div>
             )}
           </div>

@@ -45,6 +45,7 @@ const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function timeAgo(iso: string) {
+  if (!iso) return "unknown";
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
   if (m < 1)   return "just now";
@@ -55,6 +56,7 @@ function timeAgo(iso: string) {
 }
 
 function fmtDate(iso: string) {
+  if (!iso) return "N/A";
   return new Date(iso).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" });
 }
 
@@ -167,26 +169,39 @@ export default function DashboardPage() {
   if (!isSignedIn)           return <NotSignedIn />;
   if (!progress)             return <Skeleton />;
 
+  // ── Safely extract data with fallbacks ──────────────────────────────────────
+  const units              = progress.units ?? [];
+  const flashcards         = progress.flashcards ?? [];
+  const quizAttempts       = progress.quizAttempts ?? [];
+  const spotting           = progress.spotting ?? [];
+  const recentActivity     = progress.recentActivity ?? [];
+  const currentStreak      = progress.currentStreak ?? 0;
+  const longestStreak      = progress.longestStreak ?? 0;
+  const totalTimeSpentMin  = progress.totalTimeSpentMin ?? 0;
+  const displayName        = progress.displayName ?? "Student";
+  const avatarUrl          = progress.avatarUrl ?? null;
+  const joinedAt           = progress.joinedAt ?? new Date().toISOString();
+
   // ── Derived stats ──────────────────────────────────────────────────────────
-  const totalUnits      = progress.units.length;
-  const completedUnits  = progress.units.filter(u => u.completed).length;
-  const totalFC         = progress.flashcards.reduce((s, f) => s + f.cardsReviewed, 0);
-  const totalQuizzes    = progress.quizAttempts.length;
+  const totalUnits      = units.length;
+  const completedUnits  = units.filter(u => u.completed).length;
+  const totalFC         = flashcards.reduce((s, f) => s + f.cardsReviewed, 0);
+  const totalQuizzes    = quizAttempts.length;
   const avgScore        = totalQuizzes
-    ? Math.round(progress.quizAttempts.reduce((s, q) => s + pct(q.score, q.total), 0) / totalQuizzes)
+    ? Math.round(quizAttempts.reduce((s, q) => s + pct(q.score, q.total), 0) / totalQuizzes)
     : 0;
-  const spottingDone    = progress.spotting.filter(s => s.completed).length;
-  const hoursStudied    = Math.round(progress.totalTimeSpentMin / 60 * 10) / 10;
+  const spottingDone    = spotting.filter(s => s.completed).length;
+  const hoursStudied    = Math.round(totalTimeSpentMin / 60 * 10) / 10;
 
   // Group units by subject
-  const unitsBySubject = progress.units.reduce<Record<string, typeof progress.units>>((acc, u) => {
+  const unitsBySubject = units.reduce<Record<string, typeof units>>((acc, u) => {
     (acc[u.subject] = acc[u.subject] || []).push(u);
     return acc;
   }, {});
 
   // Best quiz score
-  const bestQuiz = progress.quizAttempts.length
-    ? progress.quizAttempts.reduce((a, b) => pct(a.score, a.total) >= pct(b.score, b.total) ? a : b)
+  const bestQuiz = quizAttempts.length
+    ? quizAttempts.reduce((a, b) => pct(a.score, a.total) >= pct(b.score, b.total) ? a : b)
     : null;
 
   return (
@@ -210,13 +225,13 @@ export default function DashboardPage() {
             {/* Avatar + Clerk UserButton */}
             <div className="flex items-center gap-4">
               <div className="relative">
-                {progress.avatarUrl ? (
-                  <img src={progress.avatarUrl} alt={progress.displayName}
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={displayName}
                     className="w-16 h-16 rounded-2xl object-cover border-2 border-white/30 shadow-lg" />
                 ) : (
                   <div className="w-16 h-16 rounded-2xl bg-white/20 border-2 border-white/30 flex items-center justify-center">
                     <span className="text-2xl font-extrabold text-white">
-                      {progress.displayName.charAt(0).toUpperCase()}
+                      {displayName.charAt(0).toUpperCase()}
                     </span>
                   </div>
                 )}
@@ -238,21 +253,21 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight">
-                  {progress.displayName}
+                  {displayName}
                 </h1>
                 <p className="text-white/70 text-xs mt-0.5 flex items-center gap-1.5">
-                  <CalendarDays size={11} /> Joined {fmtDate(progress.joinedAt)}
+                  <CalendarDays size={11} /> Joined {fmtDate(joinedAt)}
                 </p>
               </div>
             </div>
 
             {/* Streak + last active */}
             <div className="sm:ml-auto flex items-center gap-3">
-              {progress.currentStreak > 0 && (
+              {currentStreak > 0 && (
                 <div className="flex items-center gap-2 bg-white/15 border border-white/20 rounded-2xl px-4 py-2.5">
                   <Flame size={18} className="text-orange-300" />
                   <div>
-                    <p className="text-white font-extrabold text-lg leading-none">{progress.currentStreak}</p>
+                    <p className="text-white font-extrabold text-lg leading-none">{currentStreak}</p>
                     <p className="text-white/60 text-[10px]">day streak</p>
                   </div>
                 </div>
@@ -286,7 +301,7 @@ export default function DashboardPage() {
             icon={<Brain size={18} className="text-white" />}
             label="Flashcards Reviewed"
             value={totalFC}
-            sub={`${progress.flashcards.length} categories`}
+            sub={`${flashcards.length} categories`}
             gradient="from-purple-600 to-pink-400"
           />
           <StatCard
@@ -300,7 +315,7 @@ export default function DashboardPage() {
             icon={<Microscope size={18} className="text-white" />}
             label="Spotting Done"
             value={spottingDone}
-            sub={`${progress.spotting.length} lessons visited`}
+            sub={`${spotting.length} lessons visited`}
             gradient="from-orange-500 to-amber-400"
           />
         </motion.div>
@@ -374,7 +389,7 @@ export default function DashboardPage() {
                 sub="Cards reviewed per category"
               />
 
-              {progress.flashcards.length === 0 ? (
+              {flashcards.length === 0 ? (
                 <EmptyState
                   icon={<Brain size={22} className="text-purple-300" />}
                   title="No flashcard sessions yet"
@@ -384,7 +399,7 @@ export default function DashboardPage() {
                 />
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {progress.flashcards.map(f => {
+                  {flashcards.map(f => {
                     const meta     = FLASHCARD_LABELS[f.category] ?? { label: f.category, color: "from-gray-500 to-gray-400" };
                     const accuracy = pct(f.cardsCorrect, f.cardsReviewed);
                     return (
@@ -427,7 +442,7 @@ export default function DashboardPage() {
                 sub="Recent test attempts and scores"
               />
 
-              {progress.quizAttempts.length === 0 ? (
+              {quizAttempts.length === 0 ? (
                 <EmptyState
                   icon={<Target size={22} className="text-green-300" />}
                   title="No quizzes attempted yet"
@@ -437,7 +452,7 @@ export default function DashboardPage() {
                 />
               ) : (
                 <div className="space-y-2.5">
-                  {[...progress.quizAttempts].reverse().slice(0, 6).map((q, i) => {
+                  {[...quizAttempts].reverse().slice(0, 6).map((q, i) => {
                     const score = pct(q.score, q.total);
                     const color = score >= 80 ? "text-green-600" : score >= 60 ? "text-amber-600" : "text-red-500";
                     return (
@@ -456,8 +471,8 @@ export default function DashboardPage() {
                       </div>
                     );
                   })}
-                  {progress.quizAttempts.length > 6 && (
-                    <p className="text-[11px] text-gray-400 pl-4 pt-1">+{progress.quizAttempts.length - 6} earlier attempts</p>
+                  {quizAttempts.length > 6 && (
+                    <p className="text-[11px] text-gray-400 pl-4 pt-1">+{quizAttempts.length - 6} earlier attempts</p>
                   )}
                 </div>
               )}
@@ -478,13 +493,13 @@ export default function DashboardPage() {
                   <Flame size={16} className="text-orange-300" />
                   <span className="text-[10px] font-extrabold uppercase tracking-widest text-white/70">Study Streak</span>
                 </div>
-                <p className="text-4xl font-extrabold leading-none mb-1">{progress.currentStreak || 0}</p>
-                <p className="text-white/70 text-xs mb-3">day{progress.currentStreak !== 1 ? "s" : ""} in a row</p>
+                <p className="text-4xl font-extrabold leading-none mb-1">{currentStreak || 0}</p>
+                <p className="text-white/70 text-xs mb-3">day{currentStreak !== 1 ? "s" : ""} in a row</p>
                 <div className="h-px bg-white/20 mb-3" />
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-white/60">Longest streak</span>
                   <span className="font-extrabold text-white flex items-center gap-1">
-                    <Trophy size={12} className="text-yellow-300" /> {progress.longestStreak || 0} days
+                    <Trophy size={12} className="text-yellow-300" /> {longestStreak || 0} days
                   </span>
                 </div>
               </div>
@@ -507,7 +522,7 @@ export default function DashboardPage() {
             )}
 
             {/* ── Spotting progress ── */}
-            {progress.spotting.length > 0 && (
+            {spotting.length > 0 && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
                 className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
                 <SectionHeader
@@ -516,7 +531,7 @@ export default function DashboardPage() {
                   sub={`${spottingDone} lessons completed`}
                 />
                 <div className="space-y-2">
-                  {progress.spotting.slice(0, 5).map((s, i) => (
+                  {spotting.slice(0, 5).map((s, i) => (
                     <div key={i} className="flex items-center gap-2.5">
                       {s.completed
                         ? <CheckCircle2 size={14} className="text-green-500 flex-shrink-0" />
@@ -540,11 +555,11 @@ export default function DashboardPage() {
                 icon={<Activity size={15} className="text-white" />}
                 title="Recent Activity"
               />
-              {progress.recentActivity.length === 0 ? (
+              {recentActivity.length === 0 ? (
                 <p className="text-xs text-gray-400 text-center py-6">No activity recorded yet</p>
               ) : (
                 <div className="space-y-2.5">
-                  {[...progress.recentActivity].reverse().slice(0, 8).map((a, i) => (
+                  {[...recentActivity].reverse().slice(0, 8).map((a, i) => (
                     <div key={i} className="flex items-start gap-2.5">
                       <div className="w-6 h-6 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                         {ACTIVITY_ICONS[a.type] ?? <Zap size={12} className="text-gray-400" />}
