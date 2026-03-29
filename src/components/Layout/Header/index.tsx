@@ -2,14 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { headerData } from "../Header/Navigation/menuData";
-import {
-  SignInButton,
-  SignUpButton,
-  UserButton,
-  useUser,
-} from "@clerk/nextjs";
+import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
 import Logo from "./Logo";
 import {
   Pill,
@@ -22,8 +17,47 @@ import {
   ChevronDown,
   Menu,
   X,
-  LayoutDashboard, // <-- new import for dashboard icon
+  LayoutDashboard,
+  Download,
+  Smartphone,
 } from "lucide-react";
+
+// ─── Type definition for the beforeinstallprompt event ───────────────────────
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
+// ─── Custom hook to handle PWA installation ───────────────────────────────────
+function useInstallPrompt() {
+  const [isInstallable, setIsInstallable] = useState(false);
+  const installPromptEvent = useRef<BeforeInstallPromptEvent | null>(null);
+
+  useEffect(() => {
+    const handler = (e: BeforeInstallPromptEvent) => {
+      e.preventDefault();
+      installPromptEvent.current = e;
+      setIsInstallable(true);
+    };
+
+    window.addEventListener("beforeinstallprompt", handler as EventListener);
+    return () =>
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handler as EventListener,
+      );
+  }, []);
+
+  const install = useCallback(async () => {
+    if (!installPromptEvent.current) return;
+    await installPromptEvent.current.prompt();
+    const { outcome } = await installPromptEvent.current.userChoice;
+    installPromptEvent.current = null;
+    setIsInstallable(false);
+  }, []);
+
+  return { isInstallable, install };
+}
 
 // ─── Submenu icons ────────────────────────────────────────────────────────────
 const SUBMENU_ICONS: Record<string, React.ReactNode> = {
@@ -101,12 +135,42 @@ const Header: React.FC = () => {
   const [navbarOpen, setNavbarOpen] = useState(false);
   const [sticky, setSticky] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
 
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
 
   // Clerk authentication state
   const { isSignedIn } = useUser();
+
+  // PWA installation
+  const { isInstallable, install } = useInstallPrompt();
+
+  // ── Auto‑show install banner (only once per device) ─────────────────────────
+  useEffect(() => {
+    if (!isInstallable) return;
+
+    // Check if user has already dismissed the banner
+    const dismissed = localStorage.getItem("installBannerDismissed");
+    if (dismissed === "true") return;
+
+    // Show banner after 3 seconds
+    const timer = setTimeout(() => {
+      setShowInstallBanner(true);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [isInstallable]);
+
+  const dismissBanner = useCallback(() => {
+    setShowInstallBanner(false);
+    localStorage.setItem("installBannerDismissed", "true");
+  }, []);
+
+  const handleInstall = useCallback(async () => {
+    await install();
+    dismissBanner(); // hide banner after install attempt
+  }, [install, dismissBanner]);
 
   // ── Sticky ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -239,7 +303,7 @@ const Header: React.FC = () => {
             })}
           </nav>
 
-          {/* ── Desktop CTA – conditionally show dashboard + profile or sign in/up ── */}
+          {/* ── Desktop CTA – conditionally show dashboard + install + profile or sign in/up ── */}
           <div className="hidden lg:flex items-center gap-3">
             {!isSignedIn ? (
               <>
@@ -256,7 +320,7 @@ const Header: React.FC = () => {
               </>
             ) : (
               <>
-                {/* 👇 Dashboard button (only when signed in) */}
+                {/* Dashboard button */}
                 <Link
                   href="/dashboard"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white text-sm font-bold shadow-md shadow-blue-200/50 hover:shadow-blue-300/60 transition-shadow active:scale-95"
@@ -264,6 +328,20 @@ const Header: React.FC = () => {
                   <LayoutDashboard className="w-4 h-4" />
                   Dashboard
                 </Link>
+
+                {/* Install button (only if installable) */}
+                {isInstallable && (
+                  <button
+                    onClick={handleInstall}
+                    className="p-2.5 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                    aria-label="Install app"
+                    title="Install app"
+                  >
+                    <Download className="w-5 h-5" />
+                  </button>
+                )}
+
+                {/* User profile */}
                 <UserButton
                   appearance={{
                     elements: {
@@ -300,6 +378,56 @@ const Header: React.FC = () => {
 
       {/* ── Spacer ── */}
       <div className="h-[64px] lg:h-[68px]" />
+
+      {/* ══ INSTALL BANNER (auto‑popup) ═══════════════════════════════════════ */}
+      {showInstallBanner && (
+        <div
+          className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:bottom-4 sm:max-w-md z-50 animate-in slide-in-from-bottom-5 duration-300"
+          style={{
+            background: "white",
+            borderRadius: 24,
+            boxShadow: "0 20px 35px -12px rgba(0,0,0,0.2)",
+            border: "1px solid #eef2ff",
+          }}
+        >
+          <div className="p-4">
+            <div className="flex gap-3">
+              <div className="shrink-0 w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 to-green-400 flex items-center justify-center text-white shadow-sm">
+                <Smartphone className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-gray-800">Install App</h3>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Get a faster, offline‑ready experience by installing our app
+                  on your device.
+                </p>
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={handleInstall}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-green-400 text-white text-sm font-semibold shadow-sm hover:shadow transition-all active:scale-95"
+                  >
+                    <Download className="w-4 h-4" />
+                    Install
+                  </button>
+                  <button
+                    onClick={dismissBanner}
+                    className="px-4 py-2 rounded-xl text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    Not now
+                  </button>
+                </div>
+              </div>
+              <button
+                onClick={dismissBanner}
+                className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ══ OVERLAY ════════════════════════════════════════════════════════ */}
       <div
@@ -372,8 +500,8 @@ const Header: React.FC = () => {
             />
           ))}
 
-          {/* Mobile CTA – conditionally show dashboard + profile or sign in/up */}
-          <div className="mt-4 flex flex-col gap-2">
+          {/* Mobile CTA – column layout for Dashboard + Profile */}
+          <div className="mt-4 flex flex-col gap-3">
             {!isSignedIn ? (
               <>
                 <SignInButton mode="modal">
@@ -394,17 +522,19 @@ const Header: React.FC = () => {
                 </SignUpButton>
               </>
             ) : (
-              // 👇 Dashboard button + profile block (when signed in)
-              <div className="flex items-center gap-3">
+              <>
+                {/* Dashboard button - full width */}
                 <Link
                   href="/dashboard"
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold text-sm shadow-md active:opacity-90 transition-opacity"
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold text-sm shadow-md active:opacity-90 transition-opacity"
                   style={{ touchAction: "manipulation" }}
                 >
                   <LayoutDashboard className="w-4 h-4" />
                   Dashboard
                 </Link>
-                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-blue-50 border border-blue-100">
+
+                {/* Profile block - full width */}
+                <div className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-blue-50 border border-blue-100">
                   <UserButton
                     appearance={{
                       elements: {
@@ -416,7 +546,19 @@ const Header: React.FC = () => {
                     My Account
                   </span>
                 </div>
-              </div>
+
+                {/* Install button (only if installable) */}
+                {isInstallable && (
+                  <button
+                    onClick={handleInstall}
+                    className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-blue-200 text-blue-600 font-semibold text-sm active:opacity-90 transition-opacity"
+                    style={{ touchAction: "manipulation" }}
+                  >
+                    <Download className="w-4 h-4" />
+                    Install App
+                  </button>
+                )}
+              </>
             )}
           </div>
         </nav>
