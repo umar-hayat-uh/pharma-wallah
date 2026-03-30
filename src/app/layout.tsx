@@ -16,17 +16,10 @@ const font = Poppins({
 export const metadata = {
   title: "PharmaWallah",
   description: "AI-powered pharmacy platform",
+  manifest: "/manifest.json",
+  themeColor: "#2563eb",
 };
 
-export function generateViewport() {
-  return {
-    viewport: "width=device-width, initial-scale=1",
-  };
-}
-
-export function generateThemeColor() {
-  return "#2563eb";
-}
 
 export default function RootLayout({
   children,
