@@ -122,8 +122,8 @@ export default function BiochemUnitPage({ params }: PageProps) {
         trackUnit({
           unitId:    unitSlug,
           unitTitle: unit.title,
-          subject:   SUBJECT_META.title,
-          semester:  SUBJECT_META.semester,
+          subject:   "Pharmaceutical Biochemistry",
+          semester:  "Semester 1",
         });
         trackActivity({
           type:  "unit_read",

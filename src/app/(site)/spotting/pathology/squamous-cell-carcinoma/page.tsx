@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useTracker } from "@/hooks/useTracker";
 import {
   ChevronLeft, ChevronRight, BookOpen, ExternalLink,
   Microscope, Play, X, Zap, ArrowUp, Menu,
@@ -15,12 +16,12 @@ import {
 } from "lucide-react";
 
 const BG_ICONS = [
-  { Icon: Pill,         top: "8%",  left: "1.5%",  size: 30 },
-  { Icon: Beaker,       top: "38%", left: "1%",    size: 28 },
-  { Icon: Stethoscope,  top: "70%", left: "1.5%",  size: 30 },
-  { Icon: MicIcon,      top: "8%",  left: "96.5%", size: 30 },
-  { Icon: FlaskConical, top: "38%", left: "97%",   size: 28 },
-  { Icon: Leaf,         top: "70%", left: "96.5%", size: 28 },
+  { Icon: Pill, top: "8%", left: "1.5%", size: 30 },
+  { Icon: Beaker, top: "38%", left: "1%", size: 28 },
+  { Icon: Stethoscope, top: "70%", left: "1.5%", size: 30 },
+  { Icon: MicIcon, top: "8%", left: "96.5%", size: 30 },
+  { Icon: FlaskConical, top: "38%", left: "97%", size: 28 },
+  { Icon: Leaf, top: "70%", left: "96.5%", size: 28 },
 ];
 
 const GRAD = "from-red-600 to-rose-400";
@@ -217,6 +218,20 @@ export default function PathologySquamousCellCarcinomaPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const { trackSpotting, trackActivity } = useTracker();
+
+  useEffect(() => {
+    trackSpotting({
+      lessonId: "squamous-cell-carcinoma",   // change this per page
+      category: "pathology",            // "pathology" | "histology" | "powder-microscopy"
+      completed: true,
+    });
+    trackActivity({
+      type: "spotting",
+      label: "Opened: Squamous Cell Carcinoma", // change label accordingly
+      href: window.location.pathname,
+    });
+  }, []);
   return (
     <section className="min-h-screen bg-white relative overflow-x-hidden">
       {/* Print watermark */}
@@ -298,11 +313,10 @@ export default function PathologySquamousCellCarcinomaPage() {
                   {ALL_LESSONS.map(l => (
                     <li key={l.id}>
                       <Link href={`/spotting/pathology/${l.id}`}
-                        className={`group flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs transition-all ${
-                          l.id === "squamous-cell-carcinoma"
+                        className={`group flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs transition-all ${l.id === "squamous-cell-carcinoma"
                             ? `bg-gradient-to-r ${GRAD} text-white font-semibold shadow-sm`
                             : "text-gray-600 hover:bg-red-50 hover:text-red-700"
-                        }`}>
+                          }`}>
                         <span className="flex-1 leading-snug truncate">{l.title}</span>
                         <ChevronRight size={11} className={`shrink-0 transition-opacity ${l.id === "squamous-cell-carcinoma" ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`} />
                       </Link>

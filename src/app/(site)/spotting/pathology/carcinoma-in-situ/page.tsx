@@ -1,6 +1,7 @@
 "use client";
 // app/spotting/pathology/lessons/carcinoma-in-situ/page.tsx
 
+import { useTracker } from "@/hooks/useTracker";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -218,6 +219,20 @@ export default function CarcinomaInSituPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const { trackSpotting, trackActivity } = useTracker();
+
+useEffect(() => {
+  trackSpotting({
+    lessonId: "carcinoma-in-situ",   // change this per page
+    category: "pathology",            // "pathology" | "histology" | "powder-microscopy"
+    completed: true,
+  });
+  trackActivity({
+    type: "spotting",
+    label: "Opened: Carcinoma In Situ", // change label accordingly
+    href: window.location.pathname,
+  });
+}, []);
   return (
     <section className="min-h-screen bg-white relative overflow-x-hidden">
       {/* Print watermark */}

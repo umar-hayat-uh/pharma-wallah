@@ -1,5 +1,7 @@
 "use client";
 
+
+import { useTracker } from "@/hooks/useTracker";
 import React, { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -18,12 +20,12 @@ const GRAD = "from-blue-600 to-green-400";
 
 // ─── Fixed BG icons ───────────────────────────────────────────────────────────
 const BG_ICONS = [
-  { Icon: Pill,         top: "8%",  left: "1.5%",  size: 30 },
-  { Icon: Beaker,       top: "38%", left: "1%",    size: 28 },
-  { Icon: Stethoscope,  top: "70%", left: "1.5%",  size: 30 },
-  { Icon: Microscope,   top: "8%",  left: "96.5%", size: 30 },
-  { Icon: FlaskConical, top: "38%", left: "97%",   size: 28 },
-  { Icon: Leaf,         top: "70%", left: "96.5%", size: 28 },
+  { Icon: Pill, top: "8%", left: "1.5%", size: 30 },
+  { Icon: Beaker, top: "38%", left: "1%", size: 28 },
+  { Icon: Stethoscope, top: "70%", left: "1.5%", size: 30 },
+  { Icon: Microscope, top: "8%", left: "96.5%", size: 30 },
+  { Icon: FlaskConical, top: "38%", left: "97%", size: 28 },
+  { Icon: Leaf, top: "70%", left: "96.5%", size: 28 },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -537,7 +539,7 @@ function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// IMAGE GALLERY – 2 images (low and high)
+// IMAGE GALLERY
 // ═══════════════════════════════════════════════════════════════════════════════
 function ImageGallery({ images }: { images: Slide["images"] }) {
   const [activeIdx, setActiveIdx] = useState(0);
@@ -554,7 +556,6 @@ function ImageGallery({ images }: { images: Slide["images"] }) {
       </AnimatePresence>
 
       <div className="space-y-2">
-        {/* Main image */}
         <div
           className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden group cursor-zoom-in"
           onClick={() => setLightbox(true)}
@@ -573,15 +574,12 @@ function ImageGallery({ images }: { images: Slide["images"] }) {
                 className="object-contain"
                 sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 600px"
               />
-              {/* Zoom badge */}
               <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-lg bg-black/50 backdrop-blur-sm text-white text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                 <ZoomIn className="w-3 h-3" /> Zoom
               </div>
-              {/* Counter */}
               <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-1 rounded-lg bg-black/50 backdrop-blur-sm text-white text-[10px] font-bold pointer-events-none">
                 <Images className="w-3 h-3" /> {activeIdx + 1}/{images.length}
               </div>
-              {/* Power badge */}
               <div className={`absolute bottom-2 right-2 px-2 py-1 rounded-lg bg-gradient-to-r ${GRAD} text-white text-[10px] font-extrabold pointer-events-none`}>
                 {powerLabel(activeIdx)}
               </div>
@@ -589,7 +587,6 @@ function ImageGallery({ images }: { images: Slide["images"] }) {
           </AnimatePresence>
         </div>
 
-        {/* Thumbnails */}
         <div className="flex gap-2">
           {images.map((img, i) => (
             <button
@@ -615,7 +612,6 @@ function ImageGallery({ images }: { images: Slide["images"] }) {
           ))}
         </div>
 
-        {/* Mobile prev/next */}
         <div className="flex gap-2 sm:hidden">
           <button
             disabled={activeIdx === 0}
@@ -709,8 +705,6 @@ function ReportCard({
           <Icon size={size} strokeWidth={1.4} />
         </div>
       ))}
-
-      {/* Hero */}
       <div className={`relative bg-gradient-to-r ${GRAD} overflow-hidden`}>
         <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/10" />
         <div className="absolute -bottom-10 left-20 w-32 h-32 rounded-full bg-white/10" />
@@ -743,7 +737,6 @@ function ReportCard({
         </div>
       </div>
 
-      {/* Per-slide summary */}
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-8 py-8 space-y-3">
         <h2 className="text-lg sm:text-2xl font-extrabold text-gray-900 mb-5 flex items-center gap-3">
           <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${GRAD} flex items-center justify-center shrink-0`}>
@@ -759,11 +752,9 @@ function ReportCard({
             <div key={slide.id} className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden hover:shadow-md transition-all">
               <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
               <div className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-                {/* thumbnail */}
                 <div className="relative w-14 h-11 rounded-xl overflow-hidden border border-gray-200 shrink-0">
                   <Image src={slide.images[0].url} alt={slide.title} fill className="object-cover" sizes="56px" />
                 </div>
-                {/* info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-extrabold text-gray-900 text-sm">{slide.title}</span>
@@ -782,7 +773,6 @@ function ReportCard({
                     ))}
                   </div>
                 </div>
-                {/* score + link */}
                 <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-xl border ${scoreBadge(ans.matchScore)}`}>
                     {ans.matchScore}% match
@@ -797,7 +787,6 @@ function ReportCard({
           );
         })}
 
-        {/* Actions */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
           {showNextButton && onNextRound && (
             <button onClick={onNextRound}
@@ -861,7 +850,6 @@ export default function HistologyTestPage() {
   const [testStarted, setTestStarted] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [round, setRound] = useState(1);
-  const [shuffledSlides, setShuffledSlides] = useState<Slide[]>([]);
   const [round1Slides, setRound1Slides] = useState<Slide[]>([]);
   const [round2Slides, setRound2Slides] = useState<Slide[]>([]);
   const [round1Answers, setRound1Answers] = useState<SlideAnswer[]>([]);
@@ -875,23 +863,15 @@ export default function HistologyTestPage() {
   const [timerActive, setTimerActive] = useState(false);
   const [timerExpired, setTimerExpired] = useState(false);
 
-  // Initialise when test starts
-  const initTest = () => {
-    const shuffled = shuffle([...SLIDE_DATA]);
-    setShuffledSlides(shuffled);
-    const mid = Math.ceil(shuffled.length / 2);
-    const round1 = shuffled.slice(0, mid);
-    const round2 = shuffled.slice(mid);
-    setRound1Slides(round1);
-    setRound2Slides(round2);
-    setRound1Answers(round1.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
-    setRound2Answers(round2.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
-    setSlides(round1);
-    setAnswers(round1.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
-    setMounted(true);
-    setTimerActive(true);
-    setTestStarted(true);
-  };
+  const { trackQuiz, trackActivity, trackTimeOnUnmount } = useTracker();
+  const [startTime] = useState(Date.now());
+  // ─── ALL HOOKS MUST COME BEFORE ANY CONDITIONAL RETURNS ───────────────────
+
+
+  useEffect(() => {
+    const cleanup = trackTimeOnUnmount();
+    return cleanup;
+  }, [trackTimeOnUnmount]);
 
   // Timer effect
   useEffect(() => {
@@ -912,22 +892,96 @@ export default function HistologyTestPage() {
     if (testStarted) window.scrollTo({ top: 0, behavior: "smooth" });
   }, [testStarted, round]);
 
-  const timerMins = String(Math.floor(timeLeft / 60)).padStart(2, "0");
-  const timerSecs = String(timeLeft % 60).padStart(2, "0");
-  const timerUrgent = timeLeft <= 60;
-
-  const current = slides[currentIndex];
-  const currentAnswer = answers[currentIndex];
-  const allSubmitted = answers.length > 0 && answers.every(a => a.submitted);
-  const submittedCount = answers.filter(a => a.submitted).length;
+  // ── useMemo MUST be here, before any conditional returns ──────────────────
+  const current = slides[currentIndex] ?? null;
 
   const shuffledOptions = useMemo(() => {
     if (!mounted || !current) return [];
     return shuffle(current.options.map((text: string, origIdx: number) => ({ text, origIdx })));
-  }, [current, mounted]);
+  }, [current?.id, mounted]);
+
+  // ─── DERIVED VALUES ────────────────────────────────────────────────────────
+  const timerMins = String(Math.floor(timeLeft / 60)).padStart(2, "0");
+  const timerSecs = String(timeLeft % 60).padStart(2, "0");
+  const timerUrgent = timeLeft <= 60;
+  const allSubmitted = answers.length > 0 && answers.every(a => a.submitted);
+  const submittedCount = answers.filter(a => a.submitted).length;
+  const currentAnswer = answers[currentIndex] ?? { selectedOption: null, points: "", submitted: false, matchScore: 0 };
+
+  // ─── HELPERS ───────────────────────────────────────────────────────────────
+  const initTest = () => {
+    const shuffled = shuffle([...SLIDE_DATA]);
+    const mid = Math.ceil(shuffled.length / 2);
+    const r1 = shuffled.slice(0, mid);
+    const r2 = shuffled.slice(mid);
+    setRound1Slides(r1);
+    setRound2Slides(r2);
+    setRound1Answers(r1.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
+    setRound2Answers(r2.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
+    setSlides(r1);
+    setAnswers(r1.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
+    setMounted(true);
+    setTimerActive(true);
+    setTestStarted(true);
+  };
+
+  const handleNextRound = () => {
+    setRound(2);
+    setSlides(round2Slides);
+    setAnswers(round2Answers);
+    setCurrentIndex(0);
+    setTimeLeft(ROUND_SECONDS);
+    setTimerActive(true);
+    setTimerExpired(false);
+  };
+
+  const handleFinishRound = () => {
+    setTimerActive(false);
+
+    // 🔹 ROUND 1 → go to report (no tracking)
+    if (round === 1) {
+      setRound(3);
+      return;
+    }
+
+    // 🔹 ROUND 2 → FINAL RESULT + TRACKING
+    if (round === 2) {
+      const allSlides = [...round1Slides, ...round2Slides];
+      const allAnswers = [...round1Answers, ...round2Answers];
+
+      const correctCount = allAnswers.filter((a, i) => {
+        if (a.selectedOption === null) return false;
+        return allSlides[i].options[a.selectedOption] === allSlides[i].title;
+      }).length;
+
+      const elapsedMinutes = Math.max(
+        1,
+        Math.round((Date.now() - startTime) / 60000)
+      );
+
+      // 🔥 TRACK QUIZ
+      trackQuiz({
+        quizId: `histology-${Date.now()}`,
+        subject: "Histology Spotting Test",
+        score: correctCount,
+        total: allSlides.length,
+        timeTakenMin: elapsedMinutes,
+      });
+
+      // 🔥 TRACK ACTIVITY
+      trackActivity({
+        type: "quiz",
+        label: `Completed Histology spotting — ${correctCount}/${allSlides.length}`,
+        href: window.location.pathname,
+      });
+
+      setRound(4);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!current) return;
     if (currentAnswer.selectedOption === null || !currentAnswer.points.trim()) {
       alert("Please select an answer and write your recognition points before submitting.");
       return;
@@ -966,23 +1020,8 @@ export default function HistologyTestPage() {
     else if (round === 2) setRound2Answers(newAnswers);
   };
 
-  const handleNextRound = () => {
-    setRound(2);
-    setSlides(round2Slides);
-    setAnswers(round2Answers);
-    setCurrentIndex(0);
-    setTimeLeft(ROUND_SECONDS);
-    setTimerActive(true);
-    setTimerExpired(false);
-  };
+  // ─── CONDITIONAL RENDERS (all hooks above, now safe) ──────────────────────
 
-  const handleFinishRound = () => {
-    if (round === 1) setRound(3);
-    else if (round === 2) setRound(4);
-    setTimerActive(false);
-  };
-
-  // Render start screen
   if (!testStarted) {
     return (
       <section className="min-h-screen bg-white relative overflow-x-hidden">
@@ -996,7 +1035,6 @@ export default function HistologyTestPage() {
     );
   }
 
-  // Render round reports
   if (round === 3) {
     return (
       <ReportCard
@@ -1012,12 +1050,10 @@ export default function HistologyTestPage() {
   }
 
   if (round === 4) {
-    const combinedSlides = [...round1Slides, ...round2Slides];
-    const combinedAnswers = [...round1Answers, ...round2Answers];
     return (
       <ReportCard
-        slides={combinedSlides}
-        answers={combinedAnswers}
+        slides={[...round1Slides, ...round2Slides]}
+        answers={[...round1Answers, ...round2Answers]}
         roundTitle="Final Results"
         timerExpired={timerExpired}
         showNextButton={false}
@@ -1025,9 +1061,9 @@ export default function HistologyTestPage() {
     );
   }
 
-  // Main test UI
   if (!mounted || !current) return null;
 
+  // ─── MAIN TEST UI ──────────────────────────────────────────────────────────
   return (
     <section className="min-h-screen bg-white relative overflow-x-hidden">
       {BG_ICONS.map(({ Icon, top, left, size }, i) => (
@@ -1036,7 +1072,6 @@ export default function HistologyTestPage() {
         </div>
       ))}
 
-      {/* ════════════════ HERO ════════════════ */}
       <div className={`relative bg-gradient-to-r ${GRAD} overflow-hidden`}>
         <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/10" />
         <div className="absolute -bottom-10 left-16 w-32 h-32 rounded-full bg-white/10" />
@@ -1072,13 +1107,12 @@ export default function HistologyTestPage() {
                   key={i}
                   onClick={() => setCurrentIndex(i)}
                   title={`Slide ${i + 1}`}
-                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-[9px] sm:text-xs font-extrabold transition-all duration-200 ${
-                    i === currentIndex
-                      ? "bg-white text-blue-700 shadow-md scale-110"
-                      : answers[i].submitted
-                        ? "bg-white/30 text-white"
-                        : "bg-white/15 text-white/60 hover:bg-white/25"
-                  }`}
+                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-[9px] sm:text-xs font-extrabold transition-all duration-200 ${i === currentIndex
+                    ? "bg-white text-blue-700 shadow-md scale-110"
+                    : answers[i].submitted
+                      ? "bg-white/30 text-white"
+                      : "bg-white/15 text-white/60 hover:bg-white/25"
+                    }`}
                 >
                   {answers[i].submitted
                     ? (slides[i].options[answers[i].selectedOption!] === slides[i].title ? "✓" : "✗")
@@ -1097,11 +1131,10 @@ export default function HistologyTestPage() {
           </div>
           <div className="flex justify-between items-center text-xs text-white/60 mt-1.5">
             <span>Slide {currentIndex + 1} of {slides.length} (Round {round})</span>
-            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-extrabold text-sm transition-all ${
-              timerUrgent
-                ? "bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/40"
-                : "bg-white/20 text-white"
-            }`}>
+            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-extrabold text-sm transition-all ${timerUrgent
+              ? "bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/40"
+              : "bg-white/20 text-white"
+              }`}>
               <Clock className="w-3.5 h-3.5" />
               {timerMins}:{timerSecs}
             </div>
@@ -1110,7 +1143,6 @@ export default function HistologyTestPage() {
         </div>
       </div>
 
-      {/* ════════════════ CONTENT ════════════════ */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
         <AnimatePresence mode="wait">
           <motion.div
@@ -1119,9 +1151,8 @@ export default function HistologyTestPage() {
             exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.22 }}
             className="grid lg:grid-cols-2 gap-4 lg:gap-8"
           >
-            {/* ── LEFT: gallery + MCQ ── */}
+            {/* LEFT: gallery + MCQ */}
             <div className="space-y-4">
-
               <div className="flex items-center gap-3">
                 <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${GRAD} flex items-center justify-center shrink-0 shadow-md shadow-blue-200/40`}>
                   <MicIcon className="w-4 h-4 text-white" />
@@ -1180,13 +1211,12 @@ export default function HistologyTestPage() {
                         <label
                           key={origIdx}
                           onClick={() => setOption(origIdx)}
-                          className={`flex items-center gap-3 p-3 sm:p-3.5 rounded-xl border-2 transition-all duration-200 ${
-                            state === "correct" ? "border-green-400 bg-green-50 cursor-default" :
+                          className={`flex items-center gap-3 p-3 sm:p-3.5 rounded-xl border-2 transition-all duration-200 ${state === "correct" ? "border-green-400 bg-green-50 cursor-default" :
                             state === "wrong" ? "border-red-400 bg-red-50 cursor-default" :
-                            state === "selected" ? "border-blue-500 bg-blue-50 cursor-pointer" :
-                            currentAnswer.submitted ? "border-gray-100 bg-gray-50/50 cursor-default opacity-40" :
-                            "border-gray-200 hover:border-blue-300 hover:bg-blue-50/30 cursor-pointer"
-                          }`}
+                              state === "selected" ? "border-blue-500 bg-blue-50 cursor-pointer" :
+                                currentAnswer.submitted ? "border-gray-100 bg-gray-50/50 cursor-default opacity-40" :
+                                  "border-gray-200 hover:border-blue-300 hover:bg-blue-50/30 cursor-pointer"
+                            }`}
                         >
                           <input
                             type="radio" name="slideOption" value={origIdx}
@@ -1194,10 +1224,9 @@ export default function HistologyTestPage() {
                             onChange={() => setOption(origIdx)}
                             className="w-4 h-4 text-blue-600 focus:ring-blue-500 shrink-0"
                           />
-                          <span className={`text-sm font-semibold flex-1 ${
-                            state === "correct" ? "text-green-800" :
+                          <span className={`text-sm font-semibold flex-1 ${state === "correct" ? "text-green-800" :
                             state === "wrong" ? "text-red-700" : "text-gray-800"
-                          }`}>{text}</span>
+                            }`}>{text}</span>
                           {currentAnswer.submitted && state === "correct" && <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />}
                           {currentAnswer.submitted && state === "wrong" && <XCircle className="w-4 h-4 text-red-500 shrink-0" />}
                         </label>
@@ -1208,9 +1237,8 @@ export default function HistologyTestPage() {
               </div>
             </div>
 
-            {/* ── RIGHT: points textarea + feedback ── */}
+            {/* RIGHT: points textarea + feedback */}
             <div className="space-y-4">
-
               <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden">
                 <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
                 <div className="p-4 sm:p-5">
@@ -1336,7 +1364,6 @@ export default function HistologyTestPage() {
           </motion.div>
         </AnimatePresence>
 
-        {/* Navigation */}
         <div className="flex items-center justify-between mt-8 pt-5 border-t border-gray-100 gap-3">
           <button
             onClick={() => setCurrentIndex(i => Math.max(0, i - 1))}

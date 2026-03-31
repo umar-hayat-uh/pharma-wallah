@@ -16,42 +16,75 @@ import {
 
 // ─── BG icons ─────────────────────────────────────────────────────────────────
 const bgIcons = [
-  { Icon: Pill,         top: "8%",  left: "1.5%",  size: 28 },
-  { Icon: Beaker,       top: "40%", left: "1%",    size: 26 },
-  { Icon: Stethoscope,  top: "72%", left: "1.5%",  size: 28 },
-  { Icon: Microscope,   top: "8%",  left: "96.5%", size: 28 },
-  { Icon: FlaskConical, top: "40%", left: "97%",   size: 26 },
-  { Icon: Leaf,         top: "72%", left: "96.5%", size: 26 },
+  { Icon: Pill, top: "8%", left: "1.5%", size: 28 },
+  { Icon: Beaker, top: "40%", left: "1%", size: 26 },
+  { Icon: Stethoscope, top: "72%", left: "1.5%", size: 28 },
+  { Icon: Microscope, top: "8%", left: "96.5%", size: 28 },
+  { Icon: FlaskConical, top: "40%", left: "97%", size: 26 },
+  { Icon: Leaf, top: "72%", left: "96.5%", size: 26 },
 ];
 
 // ─── Category label map ────────────────────────────────────────────────────────
 const FLASHCARD_LABELS: Record<string, { label: string; color: string }> = {
-  moa:              { label: "Mechanism of Action", color: "from-blue-600 to-cyan-400"    },
-  classification:   { label: "Classification",      color: "from-indigo-600 to-blue-400"  },
-  sideEffects:      { label: "Side Effects",        color: "from-rose-500 to-orange-400"  },
-  pharmacokinetics: { label: "Pharmacokinetics",    color: "from-purple-600 to-pink-500"  },
-  pharmacodynamics: { label: "Pharmacodynamics",    color: "from-teal-600 to-green-400"   },
-  indications:      { label: "Indications",         color: "from-emerald-600 to-cyan-400" },
+  moa: { label: "Mechanism of Action", color: "from-blue-600 to-cyan-400" },
+  classification: { label: "Classification", color: "from-indigo-600 to-blue-400" },
+  sideEffects: { label: "Side Effects", color: "from-rose-500 to-orange-400" },
+  pharmacokinetics: { label: "Pharmacokinetics", color: "from-purple-600 to-pink-500" },
+  pharmacodynamics: { label: "Pharmacodynamics", color: "from-teal-600 to-green-400" },
+  indications: { label: "Indications", color: "from-emerald-600 to-cyan-400" },
 };
 
 const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
-  unit_read:    <BookOpen   size={14} className="text-blue-500" />,
-  flashcard:    <Brain      size={14} className="text-purple-500" />,
-  quiz:         <Target     size={14} className="text-green-500" />,
-  spotting:     <Microscope size={14} className="text-orange-500" />,
-  drug_search:  <Database   size={14} className="text-pink-500" />,
-  book_view:    <Library    size={14} className="text-teal-500" />,
+  unit_read: <BookOpen size={14} className="text-blue-500" />,
+  flashcard: <Brain size={14} className="text-purple-500" />,
+  quiz: <Target size={14} className="text-green-500" />,
+  spotting: <Microscope size={14} className="text-orange-500" />,
+  drug_search: <Database size={14} className="text-pink-500" />,
+  book_view: <Library size={14} className="text-teal-500" />,
 };
+
+// ─── Calculate streak from recent activity ─────────────────────────────
+function calculateStreak(recentActivity: { timestamp: string }[]) {
+  if (!recentActivity.length) return { current: 0, longest: 0 };
+
+  // Get unique days
+  const days = Array.from(new Set(
+    recentActivity.map(a => new Date(a.timestamp).toDateString())
+  )).sort((a, b) => new Date(b).getTime() - new Date(a).getTime()); // newest first
+
+  let current = 1;
+  let longest = 1;
+
+  // Current streak (from newest date)
+  for (let i = 1; i < days.length; i++) {
+    const diff = (new Date(days[i - 1]).getTime() - new Date(days[i]).getTime()) / (1000 * 60 * 60 * 24);
+    if (diff === 1) current++;
+    else break;
+  }
+
+  // Longest streak
+  for (let i = 0; i < days.length; i++) {
+    let streak = 1;
+    for (let j = i + 1; j < days.length; j++) {
+      const diff = (new Date(days[j - 1]).getTime() - new Date(days[j]).getTime()) / (1000 * 60 * 60 * 24);
+      if (diff === 1) streak++;
+      else break;
+    }
+    longest = Math.max(longest, streak);
+  }
+
+  return { current, longest };
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function timeAgo(iso: string) {
   if (!iso) return "unknown";
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1)   return "just now";
-  if (m < 60)  return `${m}m ago`;
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60);
-  if (h < 24)  return `${h}h ago`;
+  if (h < 24) return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
 }
 
@@ -163,35 +196,38 @@ function Skeleton() {
 // ═════════════════════════════════════════════════════════════════════════════
 export default function DashboardPage() {
   const { user, isLoaded, isSignedIn } = useUser();
-  const { progress, loading }          = useProgress();
+  const { progress, loading } = useProgress();
 
-  if (!isLoaded || loading)  return <Skeleton />;
-  if (!isSignedIn)           return <NotSignedIn />;
-  if (!progress)             return <Skeleton />;
+  if (!isLoaded || loading) return <Skeleton />;
+  if (!isSignedIn) return <NotSignedIn />;
+  if (!progress) return <Skeleton />;
 
   // ── Safely extract data with fallbacks ──────────────────────────────────────
-  const units              = progress.units ?? [];
-  const flashcards         = progress.flashcards ?? [];
-  const quizAttempts       = progress.quizAttempts ?? [];
-  const spotting           = progress.spotting ?? [];
-  const recentActivity     = progress.recentActivity ?? [];
-  const currentStreak      = progress.currentStreak ?? 0;
-  const longestStreak      = progress.longestStreak ?? 0;
-  const totalTimeSpentMin  = progress.totalTimeSpentMin ?? 0;
-  const displayName        = progress.displayName ?? "Student";
-  const avatarUrl          = progress.avatarUrl ?? null;
-  const joinedAt           = progress.joinedAt ?? new Date().toISOString();
+  const units = progress.units ?? [];
+  const flashcards = progress.flashcards ?? [];
+  const quizAttempts = progress.quizAttempts ?? [];
+  const spotting = progress.spotting ?? [];
+  const recentActivity = progress.recentActivity ?? [];
+  const totalTimeSpentMin = progress.totalTimeSpentMin ?? 0;
+  const displayName = progress.displayName ?? "Student";
+  const avatarUrl = progress.avatarUrl ?? null;
+  const joinedAt = progress.joinedAt ?? new Date().toISOString();
+
+  // ── Compute streak from recent activity (dynamic) ──────────────────────────
+  const computedStreak = calculateStreak(recentActivity);
+  const currentStreak = computedStreak.current;
+  const longestStreak = computedStreak.longest;
 
   // ── Derived stats ──────────────────────────────────────────────────────────
-  const totalUnits      = units.length;
-  const completedUnits  = units.filter(u => u.completed).length;
-  const totalFC         = flashcards.reduce((s, f) => s + f.cardsReviewed, 0);
-  const totalQuizzes    = quizAttempts.length;
-  const avgScore        = totalQuizzes
+  const totalUnits = units.length;
+  const completedUnits = units.filter(u => u.completed).length;
+  const totalFC = flashcards.reduce((s, f) => s + f.cardsReviewed, 0);
+  const totalQuizzes = quizAttempts.length;
+  const avgScore = totalQuizzes
     ? Math.round(quizAttempts.reduce((s, q) => s + pct(q.score, q.total), 0) / totalQuizzes)
     : 0;
-  const spottingDone    = spotting.filter(s => s.completed).length;
-  const hoursStudied    = Math.round(totalTimeSpentMin / 60 * 10) / 10;
+  const spottingDone = spotting.filter(s => s.completed).length;
+  const hoursStudied = Math.round(totalTimeSpentMin / 60 * 10) / 10;
 
   // Group units by subject
   const unitsBySubject = units.reduce<Record<string, typeof units>>((acc, u) => {
@@ -362,7 +398,7 @@ export default function DashboardPage() {
                             <div key={u.unitId} className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-gray-50 hover:bg-blue-50/50 transition-colors">
                               {u.completed
                                 ? <CheckCircle2 size={14} className="text-green-500 flex-shrink-0" />
-                                : <Circle       size={14} className="text-gray-300 flex-shrink-0" />}
+                                : <Circle size={14} className="text-gray-300 flex-shrink-0" />}
                               <span className="text-xs text-gray-700 flex-1 truncate">{u.unitTitle}</span>
                               <span className="text-[10px] text-gray-400 flex-shrink-0 flex items-center gap-1">
                                 <BookOpen size={10} /> {u.readCount}× · {u.timeSpentMin}min
@@ -400,7 +436,7 @@ export default function DashboardPage() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {flashcards.map(f => {
-                    const meta     = FLASHCARD_LABELS[f.category] ?? { label: f.category, color: "from-gray-500 to-gray-400" };
+                    const meta = FLASHCARD_LABELS[f.category] ?? { label: f.category, color: "from-gray-500 to-gray-400" };
                     const accuracy = pct(f.cardsCorrect, f.cardsReviewed);
                     return (
                       <div key={f.category} className="relative rounded-xl border border-gray-100 p-4 overflow-hidden">
@@ -459,8 +495,8 @@ export default function DashboardPage() {
                       <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 hover:bg-blue-50/40 transition-colors">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-sm flex-shrink-0
                           ${score >= 80 ? "bg-green-50 border border-green-100 text-green-600"
-                          : score >= 60 ? "bg-amber-50 border border-amber-100 text-amber-600"
-                          : "bg-red-50 border border-red-100 text-red-500"}`}>
+                            : score >= 60 ? "bg-amber-50 border border-amber-100 text-amber-600"
+                              : "bg-red-50 border border-red-100 text-red-500"}`}>
                           {score}%
                         </div>
                         <div className="flex-1 min-w-0">
@@ -535,7 +571,7 @@ export default function DashboardPage() {
                     <div key={i} className="flex items-center gap-2.5">
                       {s.completed
                         ? <CheckCircle2 size={14} className="text-green-500 flex-shrink-0" />
-                        : <Circle       size={14} className="text-gray-300 flex-shrink-0" />}
+                        : <Circle size={14} className="text-gray-300 flex-shrink-0" />}
                       <span className="text-[11px] text-gray-600 flex-1 truncate capitalize">{s.lessonId.replace(/-/g, " ")}</span>
                       <span className="text-[10px] text-gray-400 flex-shrink-0 capitalize">{s.category}</span>
                     </div>
@@ -588,11 +624,11 @@ export default function DashboardPage() {
               </p>
               <div className="space-y-1.5">
                 {[
-                  { href: "/courses",     icon: <BookOpen   size={14} className="text-blue-500" />,   label: "Courses"      },
-                  { href: "/flashcards",  icon: <Brain      size={14} className="text-purple-500" />, label: "Flashcards"   },
-                  { href: "/spotting",    icon: <Microscope size={14} className="text-orange-500" />, label: "Spotting"     },
-                  { href: "/encyclopedia",icon: <Database   size={14} className="text-pink-500" />,   label: "Drug Search"  },
-                  { href: "/books",       icon: <Library    size={14} className="text-teal-500" />,   label: "Book Library" },
+                  { href: "/courses", icon: <BookOpen size={14} className="text-blue-500" />, label: "Courses" },
+                  { href: "/flashcards", icon: <Brain size={14} className="text-purple-500" />, label: "Flashcards" },
+                  { href: "/spotting", icon: <Microscope size={14} className="text-orange-500" />, label: "Spotting" },
+                  { href: "/encyclopedia", icon: <Database size={14} className="text-pink-500" />, label: "Drug Search" },
+                  { href: "/books", icon: <Library size={14} className="text-teal-500" />, label: "Book Library" },
                 ].map(({ href, icon, label }) => (
                   <Link key={href} href={href}
                     className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-blue-50 hover:text-blue-700 transition-colors group">

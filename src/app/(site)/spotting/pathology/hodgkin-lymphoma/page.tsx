@@ -2,6 +2,7 @@
 // app/spotting/pathology/lessons/hodgkin-lymphoma/page.tsx
 
 import { useState, useEffect } from "react";
+import { useTracker } from "@/hooks/useTracker";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -216,6 +217,20 @@ export default function PathologyHodgkinLymphomaPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const { trackSpotting, trackActivity } = useTracker();
+
+useEffect(() => {
+  trackSpotting({
+    lessonId: "hodgkin-lymphoma",   // change this per page
+    category: "pathology",            // "pathology" | "histology" | "powder-microscopy"
+    completed: true,
+  });
+  trackActivity({
+    type: "spotting",
+    label: "Opened: Hodgkin's Disease", // change label accordingly
+    href: window.location.pathname,
+  });
+}, []);
   return (
     <section className="min-h-screen bg-white relative overflow-x-hidden">
       {/* Print watermark */}
