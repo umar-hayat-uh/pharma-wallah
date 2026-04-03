@@ -17,9 +17,11 @@ export const metadata = {
   title: "PharmaWallah",
   description: "AI-powered pharmacy platform",
   manifest: "/manifest.json",
-  themeColor: "#2563eb",
 };
 
+export const viewport = {
+  themeColor: "#2563eb",
+};
 
 export default function RootLayout({
   children,
@@ -32,12 +34,11 @@ export default function RootLayout({
         <body className={font.className}>
           <ThemeProvider attribute="class" enableSystem defaultTheme="light">
             <Header />
-            <main>{children}</main> {/* ✅ Better structure */}
+            <main>{children}</main>
             <Footer />
             <ScrollToTop />
           </ThemeProvider>
 
-          {/* ✅ Keep these outside ThemeProvider */}
           <Analytics />
           <SpeedInsights />
         </body>
