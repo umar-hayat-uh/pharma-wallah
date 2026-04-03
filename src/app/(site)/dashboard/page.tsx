@@ -1,6 +1,7 @@
 "use client";
 
 // app/dashboard/page.tsx — PharmaWallah v2 Dashboard
+// Fully responsive design: mobile-first, tablet, desktop
 // Color scheme aligned with project: from-blue-600 to-green-400
 
 import { useUser, UserButton, SignInButton } from "@clerk/nextjs";
@@ -261,19 +262,56 @@ export default function DashboardPage() {
         .pw-link { text-decoration: none; }
         .pw-hover-lift { transition: transform 0.2s, box-shadow 0.2s; }
         .pw-hover-lift:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.10) !important; }
+        
+        /* Responsive breakpoints */
+        @media (max-width: 1024px) {
+          .bg-icon { display: none !important; }
+          .hero-meta { gap: 8px !important; }
+          .hero-meta > div { min-width: 70px !important; padding: 10px 12px !important; }
+        }
+        
         @media (max-width: 768px) {
           .dash-grid { grid-template-columns: 1fr !important; }
-          .stat-grid { grid-template-columns: repeat(2, 1fr) !important; }
-          .hero-row  { flex-direction: column !important; gap: 16px !important; }
-          .hero-meta { margin-left: 0 !important; }
+          .dash-grid-left { grid-column: auto !important; }
+          .inner-two-col { grid-template-columns: 1fr !important; gap: 16px !important; }
+          .stat-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+          .hero-row { flex-direction: column !important; align-items: stretch !important; gap: 20px !important; }
+          .hero-meta { justify-content: space-between !important; width: 100% !important; }
+          .hero-meta > div { flex: 1 !important; text-align: center !important; }
+          .card-padding { padding: 18px 16px !important; }
+          .week-strip { overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+          .week-strip-inner { display: inline-flex; gap: 12px; }
+          .stat-card-val { font-size: 22px !important; }
+          .hero-title { font-size: 22px !important; }
+          .hero-avatar { width: 56px !important; height: 56px !important; }
         }
+        
         @media (max-width: 480px) {
-          .stat-grid { grid-template-columns: 1fr 1fr !important; }
+          .stat-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+          .hero-meta > div { padding: 8px 10px !important; }
+          .hero-meta > div p:first-of-type { font-size: 16px !important; }
+          .hero-meta > div p:last-of-type { font-size: 9px !important; }
+          .card-padding { padding: 14px !important; }
+          .fc-item { padding: 8px 10px !important; }
+          .quiz-item { padding: 8px 10px !important; }
+          .recent-item { gap: 8px !important; }
+        }
+        
+        /* Scrollbar for week strip */
+        .week-strip::-webkit-scrollbar { height: 2px; }
+        .week-strip::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .week-strip::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.4); border-radius: 10px; }
+        
+        /* Touch-friendly tap targets */
+        .tap-target { cursor: pointer; transition: opacity 0.2s; }
+        .tap-target:active { opacity: 0.7; }
+        @media (max-width: 768px) {
+          .tap-target { min-height: 44px; display: flex; align-items: center; }
         }
       `}</style>
 
       {BG_ICONS.map(({ Icon, top, left, size, rotate }, i) => (
-        <div key={i} className="hidden xl:block" style={{ position: "fixed", top, left, color: "#BFDBFE", pointerEvents: "none", zIndex: 0, transform: `rotate(${rotate}deg)` }}>
+        <div key={i} className="bg-icon hidden xl:block" style={{ position: "fixed", top, left, color: "#BFDBFE", pointerEvents: "none", zIndex: 0, transform: `rotate(${rotate}deg)` }}>
           <Icon size={size} strokeWidth={1.2} />
         </div>
       ))}
@@ -291,9 +329,9 @@ export default function DashboardPage() {
             <div style={{ display: "flex", alignItems: "center", gap: 18, flex: 1 }}>
               <div style={{ position: "relative", flexShrink: 0 }}>
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt={displayName} style={{ width: 72, height: 72, borderRadius: 18, objectFit: "cover", border: "2.5px solid rgba(255,255,255,0.3)", boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }} />
+                  <img src={avatarUrl} alt={displayName} className="hero-avatar" style={{ width: 72, height: 72, borderRadius: 18, objectFit: "cover", border: "2.5px solid rgba(255,255,255,0.3)", boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }} />
                 ) : (
-                  <div style={{ width: 72, height: 72, borderRadius: 18, background: "rgba(255,255,255,0.15)", border: "2.5px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }}>
+                  <div className="hero-avatar" style={{ width: 72, height: 72, borderRadius: 18, background: "rgba(255,255,255,0.15)", border: "2.5px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }}>
                     <span style={{ fontSize: 28, fontWeight: 800, color: "white" }}>{displayName[0]?.toUpperCase()}</span>
                   </div>
                 )}
@@ -306,7 +344,7 @@ export default function DashboardPage() {
                   <Sparkles size={9} color="rgba(255,255,255,0.9)" />
                   <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.9)" }}>Pharm-D Student</span>
                 </div>
-                <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, color: "white", lineHeight: 1.2, marginBottom: 4 }}>
+                <h1 className="hero-title" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, color: "white", lineHeight: 1.2, marginBottom: 4 }}>
                   {displayName}
                 </h1>
                 <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", display: "flex", alignItems: "center", gap: 5 }}>
@@ -330,26 +368,28 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Week activity strip */}
-          <div style={{ marginTop: 22, padding: "14px 18px", background: "rgba(255,255,255,0.08)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.15)", display: "inline-flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.6)", marginRight: 4 }}>This week</span>
-            {weekDays.map(([dateStr, active], i) => {
-              const d = new Date(dateStr);
-              const label = dayLabels[d.getDay()];
-              return (
-                <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 8, background: active ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.3s" }}>
-                    {active && <CheckCircle2 size={14} color="#2563EB" />}
+          {/* Week activity strip - scrollable on mobile */}
+          <div className="week-strip" style={{ marginTop: 22, padding: "14px 18px", background: "rgba(255,255,255,0.08)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.15)" }}>
+            <div className="week-strip-inner" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.6)", marginRight: 4, flexShrink: 0 }}>This week</span>
+              {weekDays.map(([dateStr, active], i) => {
+                const d = new Date(dateStr);
+                const label = dayLabels[d.getDay()];
+                return (
+                  <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, flexShrink: 0 }}>
+                    <div style={{ width: 28, height: 28, borderRadius: 8, background: active ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.3s" }}>
+                      {active && <CheckCircle2 size={14} color="#2563EB" />}
+                    </div>
+                    <span style={{ fontSize: 9, color: "rgba(255,255,255,0.5)", fontWeight: 600 }}>{label}</span>
                   </div>
-                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.5)", fontWeight: 600 }}>{label}</span>
-                </div>
-              );
-            })}
-            {currentStreak > 0 && (
-              <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 700, color: "#FCD34D", display: "flex", alignItems: "center", gap: 4 }}>
-                <Flame size={12} color="#FCD34D" /> {currentStreak} day{currentStreak !== 1 ? "s" : ""}
-              </span>
-            )}
+                );
+              })}
+              {currentStreak > 0 && (
+                <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 700, color: "#FCD34D", display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                  <Flame size={12} color="#FCD34D" /> {currentStreak} day{currentStreak !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -357,7 +397,7 @@ export default function DashboardPage() {
       {/* ══ MAIN CONTENT ══ */}
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px", position: "relative", zIndex: 1 }}>
 
-        {/* Stat cards */}
+        {/* Stat cards - responsive grid */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
           className="stat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
           {[
@@ -372,24 +412,24 @@ export default function DashboardPage() {
               <div style={{ width: 40, height: 40, borderRadius: 12, background: gradient, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12, boxShadow: `0 4px 14px rgba(0,0,0,0.1)` }}>
                 {icon}
               </div>
-              <p style={{ fontSize: 26, fontWeight: 800, color: "#0F172A", lineHeight: 1, marginBottom: 2 }}>{val}</p>
+              <p className="stat-card-val" style={{ fontSize: 26, fontWeight: 800, color: "#0F172A", lineHeight: 1, marginBottom: 2 }}>{val}</p>
               <p style={{ fontSize: 12, fontWeight: 600, color: "#475569", marginBottom: 2 }}>{label}</p>
               <p style={{ fontSize: 11, color: "#94A3B8" }}>{sub}</p>
             </motion.div>
           ))}
         </motion.div>
 
-        {/* Main bento grid */}
+        {/* Main bento grid - responsive stacking */}
         <div className="dash-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 340px", gap: 16 }}>
 
           {/* LEFT COLUMN */}
-          <div style={{ gridColumn: "1 / 3", display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className="dash-grid-left" style={{ gridColumn: "1 / 3", display: "flex", flexDirection: "column", gap: 16 }}>
 
             {/* Course Units */}
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} style={card()}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 8 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #2563EB, #4ADE80)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #2563EB, #4ADE80)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <BookOpen size={16} color="white" />
                   </div>
                   <div>
@@ -397,7 +437,7 @@ export default function DashboardPage() {
                     <p style={{ fontSize: 11, color: "#94A3B8" }}>{units.length} units across {Object.keys(unitsBySubject).length} subject{Object.keys(unitsBySubject).length !== 1 ? "s" : ""}</p>
                   </div>
                 </div>
-                <Link href="/courses" className="pw-link" style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: "#2563EB" }}>
+                <Link href="/courses" className="pw-link tap-target" style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: "#2563EB" }}>
                   View all <ArrowUpRight size={13} />
                 </Link>
               </div>
@@ -415,9 +455,10 @@ export default function DashboardPage() {
                       <div key={subject} style={{ border: "1px solid #E2E8F0", borderRadius: 16, overflow: "hidden" }}>
                         <button
                           onClick={() => setExpandedSubject(isExpanded ? null : subject)}
+                          className="tap-target"
                           style={{ width: "100%", padding: "14px 16px", background: isExpanded ? "#F8FAFC" : "white", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left" }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 6 }}>
                               <span style={{ fontSize: 13, fontWeight: 700, color: "#0F172A" }}>{subject}</span>
                               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                 <Tag color="#2563EB">{done}/{subUnits.length} done</Tag>
@@ -433,7 +474,7 @@ export default function DashboardPage() {
                             <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} style={{ overflow: "hidden" }}>
                               <div style={{ padding: "0 16px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
                                 {subUnits.map(u => (
-                                  <div key={u.unitId} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 10, background: "#F8FAFC" }}>
+                                  <div key={u.unitId} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 10, background: "#F8FAFC", flexWrap: "wrap" }}>
                                     {u.completed
                                       ? <CheckCircle2 size={14} color="#059669" style={{ flexShrink: 0 }} />
                                       : <Circle size={14} color="#CBD5E1" style={{ flexShrink: 0 }} />}
@@ -454,14 +495,14 @@ export default function DashboardPage() {
               )}
             </motion.div>
 
-            {/* Flashcard Performance + Quiz History side by side */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            {/* Flashcard Performance + Quiz History side by side - responsive inner grid */}
+            <div className="inner-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
 
               {/* Flashcards */}
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} style={card()}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 9, background: "linear-gradient(135deg, #7C3AED, #DB2777)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 9, background: "linear-gradient(135deg, #7C3AED, #DB2777)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <Brain size={15} color="white" />
                     </div>
                     <div>
@@ -469,7 +510,7 @@ export default function DashboardPage() {
                       <p style={{ fontSize: 10, color: "#94A3B8" }}>{fcAccuracy}% overall accuracy</p>
                     </div>
                   </div>
-                  <Link href="/flashcards" className="pw-link" style={{ fontSize: 11, fontWeight: 600, color: "#7C3AED", display: "flex", alignItems: "center", gap: 3 }}>
+                  <Link href="/flashcards" className="pw-link tap-target" style={{ fontSize: 11, fontWeight: 600, color: "#7C3AED", display: "flex", alignItems: "center", gap: 3 }}>
                     Practice <ChevronRight size={12} />
                   </Link>
                 </div>
@@ -482,8 +523,8 @@ export default function DashboardPage() {
                       const meta = FC_META[f.category] ?? { label: f.category, color: "#64748B", bg: "rgba(100,116,139,0.08)" };
                       const acc = pct(f.cardsCorrect, f.cardsReviewed);
                       return (
-                        <div key={f.category} style={{ padding: "10px 12px", borderRadius: 12, background: meta.bg, border: `1px solid ${meta.color}18` }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                        <div key={f.category} className="fc-item" style={{ padding: "10px 12px", borderRadius: 12, background: meta.bg, border: `1px solid ${meta.color}18` }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6, flexWrap: "wrap", gap: 4 }}>
                             <p style={{ fontSize: 11, fontWeight: 700, color: "#1E293B" }}>{meta.label}</p>
                             {f.cardsCorrect > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: meta.color }}>{acc}%</span>}
                           </div>
@@ -501,9 +542,9 @@ export default function DashboardPage() {
 
               {/* Quiz History */}
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }} style={card()}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 9, background: "linear-gradient(135deg, #059669, #0891B2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 9, background: "linear-gradient(135deg, #059669, #0891B2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <Target size={15} color="white" />
                     </div>
                     <div>
@@ -511,7 +552,7 @@ export default function DashboardPage() {
                       <p style={{ fontSize: 10, color: "#94A3B8" }}>{totalQuizzes} attempt{totalQuizzes !== 1 ? "s" : ""}</p>
                     </div>
                   </div>
-                  <Link href="/spotting" className="pw-link" style={{ fontSize: 11, fontWeight: 600, color: "#059669", display: "flex", alignItems: "center", gap: 3 }}>
+                  <Link href="/spotting" className="pw-link tap-target" style={{ fontSize: 11, fontWeight: 600, color: "#059669", display: "flex", alignItems: "center", gap: 3 }}>
                     Try Test <ChevronRight size={12} />
                   </Link>
                 </div>
@@ -524,7 +565,7 @@ export default function DashboardPage() {
                       const score = pct(q.score, q.total);
                       const { grade, color, bg } = gradeInfo(score);
                       return (
-                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 12, background: "#F8FAFC" }}>
+                        <div key={i} className="quiz-item" style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 12, background: "#F8FAFC" }}>
                           <div style={{ width: 36, height: 36, borderRadius: 10, background: bg, border: `1px solid ${color}25`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                             <span style={{ fontSize: 11, fontWeight: 800, color }}>{grade}</span>
                           </div>
@@ -598,9 +639,9 @@ export default function DashboardPage() {
             {/* Spotting checklist */}
             {spotting.length > 0 && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} style={card({ padding: "18px 20px" })}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 30, height: 30, borderRadius: 8, background: "linear-gradient(135deg, #D97706, #DC2626)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ width: 30, height: 30, borderRadius: 8, background: "linear-gradient(135deg, #D97706, #DC2626)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <Microscope size={14} color="white" />
                     </div>
                     <div>
@@ -608,7 +649,7 @@ export default function DashboardPage() {
                       <p style={{ fontSize: 10, color: "#94A3B8" }}>{spottingDone}/{spotting.length} done</p>
                     </div>
                   </div>
-                  <Link href="/spotting" className="pw-link" style={{ fontSize: 11, fontWeight: 600, color: "#D97706", display: "flex", alignItems: "center", gap: 3 }}>
+                  <Link href="/spotting" className="pw-link tap-target" style={{ fontSize: 11, fontWeight: 600, color: "#D97706", display: "flex", alignItems: "center", gap: 3 }}>
                     View <ArrowUpRight size={12} />
                   </Link>
                 </div>
@@ -632,7 +673,7 @@ export default function DashboardPage() {
             {/* Recent Activity */}
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }} style={card({ padding: "18px 20px" })}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                <div style={{ width: 30, height: 30, borderRadius: 8, background: "linear-gradient(135deg, #2563EB, #4ADE80)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: 30, height: 30, borderRadius: 8, background: "linear-gradient(135deg, #2563EB, #4ADE80)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <Activity size={14} color="white" />
                 </div>
                 <h3 style={{ fontSize: 13, fontWeight: 700, color: "#0F172A" }}>Recent Activity</h3>
@@ -645,13 +686,13 @@ export default function DashboardPage() {
                   {[...recentActivity].reverse().slice(0, 6).map((a, i) => {
                     const color = ACT_COLOR[a.type] ?? "#64748B";
                     return (
-                      <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                      <div key={i} className="recent-item" style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                         <div style={{ width: 28, height: 28, borderRadius: 8, background: `${color}12`, border: `1px solid ${color}20`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color }}>
                           {ACT_ICON[a.type] ?? <Zap size={12} />}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           {a.href ? (
-                            <Link href={a.href} className="pw-link" style={{ fontSize: 11, color: "#334155", fontWeight: 500, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                            <Link href={a.href} className="pw-link tap-target" style={{ fontSize: 11, color: "#334155", fontWeight: 500, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                               {a.label}
                             </Link>
                           ) : (
@@ -679,7 +720,7 @@ export default function DashboardPage() {
                   { href: "/encyclopedia", icon: <Database size={14} />, label: "Drug Search", color: "#DB2777" },
                   { href: "/books", icon: <Library size={14} />, label: "Book Library", color: "#0891B2" },
                 ].map(({ href, icon, label, color }) => (
-                  <Link key={href} href={href} className="pw-link"
+                  <Link key={href} href={href} className="pw-link tap-target"
                     style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 12, transition: "background 0.15s" }}
                     onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "#F1F5F9"}
                     onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}>
@@ -710,7 +751,7 @@ function EmptyState({ icon, iconColor, title, desc, href, cta }: {
       </div>
       <p style={{ fontSize: 13, fontWeight: 700, color: "#334155", marginBottom: 6 }}>{title}</p>
       <p style={{ fontSize: 11, color: "#94A3B8", marginBottom: 16, maxWidth: 220, margin: "0 auto 16px" }}>{desc}</p>
-      <Link href={href} style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 10, background: `linear-gradient(135deg, ${iconColor}, ${iconColor}cc)`, color: "white", fontSize: 11, fontWeight: 700, boxShadow: `0 4px 12px ${iconColor}30` }}>
+      <Link href={href} className="tap-target" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 10, background: `linear-gradient(135deg, ${iconColor}, ${iconColor}cc)`, color: "white", fontSize: 11, fontWeight: 700, boxShadow: `0 4px 12px ${iconColor}30` }}>
         {cta} <ChevronRight size={11} />
       </Link>
     </div>

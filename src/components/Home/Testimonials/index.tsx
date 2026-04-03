@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -8,20 +8,16 @@ import { motion } from "framer-motion";
 import { Star, MessageSquare, ArrowRight, X, ChevronLeft, ChevronRight, Pill, FlaskConical, Stethoscope, Microscope, Activity, Beaker } from "lucide-react";
 
 interface Review {
-  id: number; name: string; university: string; year: string;
-  specialty: string; rating: number; comment: string;
+  id: number;
+  name: string;
+  university: string;
+  year: string;
+  specialty: string;
+  rating: number;
+  comment: string;
 }
 
 const SPECIALTIES = ["Pharmacology","Pharmacognosy","Pharmaceutical Chemistry","Pharmacy Practice","Pharmaceutics","Clinical Pharmacy"];
-
-const INITIAL: Review[] = [
-  { id: 1, name: "Ahmed Raza",   university: "University of Punjab, Lahore",       year: "5th Year Pharm.D", rating: 4.8, comment: "Pharmawallah's virtual labs transformed my understanding of Pharmaceutical Chemistry. The content quality is unmatched.", specialty: "Pharmaceutical Chemistry" },
-  { id: 2, name: "Sara Khan",    university: "Dow University of Health Sciences",   year: "4th Year Pharm.D", rating: 5.0, comment: "The visual drug encyclopedia and MCQ bank have been absolute lifesavers for Pharmacognosy.", specialty: "Pharmacognosy"             },
-  { id: 3, name: "Bilal Shah",   university: "University of Karachi",               year: "3rd Year Pharm.D", rating: 4.7, comment: "HEC-aligned curriculum coverage is exceptional. I no longer need multiple reference books.", specialty: "Pharmacy Practice"          },
-  { id: 4, name: "Fatima Noor",  university: "University of Health Sciences",       year: "6th Year Pharm.D", rating: 4.9, comment: "Clinical Pharmacy simulations helped me prepare tremendously for hospital rotations.", specialty: "Clinical Pharmacy"            },
-  { id: 5, name: "Omar Hassan",  university: "Bahauddin Zakariya University",       year: "2nd Year Pharm.D", rating: 4.6, comment: "The pharmaceutical calculators are a complete game-changer. So accurate and easy to use!", specialty: "Pharmaceutics"                },
-  { id: 6, name: "Zainab Malik", university: "University of Sargodha",             year: "4th Year Pharm.D", rating: 4.8, comment: "Pharmaceutical Microbiology virtual labs are absolutely brilliant. Made a tough subject enjoyable.", specialty: "Pharmacology"          },
-];
 
 const bgIcons = [
   { Icon: Pill,        top: "12%", left: "1.5%",  size: 30 },
@@ -91,10 +87,55 @@ const Modal = ({ open, onClose, onSubmit }: { open: boolean; onClose: () => void
 };
 
 export default function Testimonial() {
-  const [reviews, setReviews] = useState<Review[]>(INITIAL);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
   const ref = useRef<any>(null);
-  const avg = (reviews.reduce((a, r) => a + r.rating, 0) / reviews.length).toFixed(1);
+
+  // Fetch reviews from API on mount
+  useEffect(() => {
+    fetch('/api/reviews')
+      .then(res => res.json())
+      .then(data => {
+        setReviews(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to load reviews:', err);
+        setLoading(false);
+      });
+  }, []);
+
+  // Submit a new review via API
+  const addReview = async (newReview: Review) => {
+    try {
+      const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newReview),
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        setReviews(prev => [saved, ...prev]);
+      } else {
+        console.error('Failed to save review');
+      }
+    } catch (error) {
+      console.error('Error saving review:', error);
+    }
+  };
+
+  const avg = reviews.length ? (reviews.reduce((a, r) => a + r.rating, 0) / reviews.length).toFixed(1) : "0.0";
+
+  if (loading) {
+    return (
+      <section className="w-full py-24 bg-white relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="animate-pulse text-gray-400 text-center">Loading testimonials...</div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <motion.section
@@ -125,7 +166,6 @@ export default function Testimonial() {
             <p className="mt-3 text-gray-500 max-w-xl">Join thousands of pharmacy students transforming their education with Pharmawallah.</p>
           </div>
           <div className="flex items-center gap-4 shrink-0">
-            {/* Rating card */}
             <div className="rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 p-0.5">
               <div className="bg-white rounded-[calc(1rem-2px)] px-5 py-3 text-center">
                 <div className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-green-400">{avg}</div>
@@ -153,37 +193,39 @@ export default function Testimonial() {
         </div>
 
         {/* Slider */}
-        <Slider ref={ref} dots={false} infinite speed={600} autoplay autoplaySpeed={4000}
-          slidesToShow={3} slidesToScroll={1} arrows={false}
-          responsive={[{ breakpoint: 1024, settings: { slidesToShow: 2 } }, { breakpoint: 640, settings: { slidesToShow: 1 } }]}>
-          {reviews.map(r => {
-            const initials = r.name.split(" ").map(n => n[0]).join("");
-            return (
-              <div key={r.id} className="px-2.5">
-                <div className="group rounded-2xl border border-gray-200 bg-white p-6 flex flex-col min-h-[270px] hover:border-blue-300 hover:shadow-lg transition-all duration-300 overflow-hidden relative">
-                  <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 to-green-400" />
-                  <div className="absolute inset-0 bg-blue-50/0 group-hover:bg-blue-50/30 transition-colors duration-300 pointer-events-none" />
+        {reviews.length > 0 && (
+          <Slider ref={ref} dots={false} infinite speed={600} autoplay autoplaySpeed={4000}
+            slidesToShow={3} slidesToScroll={1} arrows={false}
+            responsive={[{ breakpoint: 1024, settings: { slidesToShow: 2 } }, { breakpoint: 640, settings: { slidesToShow: 1 } }]}>
+            {reviews.map(r => {
+              const initials = r.name.split(" ").map(n => n[0]).join("");
+              return (
+                <div key={r.id} className="px-2.5">
+                  <div className="group rounded-2xl border border-gray-200 bg-white p-6 flex flex-col min-h-[270px] hover:border-blue-300 hover:shadow-lg transition-all duration-300 overflow-hidden relative">
+                    <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 to-green-400" />
+                    <div className="absolute inset-0 bg-blue-50/0 group-hover:bg-blue-50/30 transition-colors duration-300 pointer-events-none" />
 
-                  <div className="relative z-10 flex items-start justify-between mb-3 gap-2">
-                    <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">{r.specialty}</span>
-                    <Stars r={r.rating} />
-                  </div>
-                  <p className="relative z-10 text-sm text-gray-600 leading-relaxed flex-1 mb-5">&ldquo;{r.comment}&rdquo;</p>
-                  <div className="relative z-10 flex items-center gap-3 pt-4 border-t border-gray-100">
-                    <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-xs font-bold text-blue-700 shrink-0">{initials}</div>
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-bold text-gray-900">{r.name}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100">{r.year}</span>
+                    <div className="relative z-10 flex items-start justify-between mb-3 gap-2">
+                      <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">{r.specialty}</span>
+                      <Stars r={r.rating} />
+                    </div>
+                    <p className="relative z-10 text-sm text-gray-600 leading-relaxed flex-1 mb-5">&ldquo;{r.comment}&rdquo;</p>
+                    <div className="relative z-10 flex items-center gap-3 pt-4 border-t border-gray-100">
+                      <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-xs font-bold text-blue-700 shrink-0">{initials}</div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-bold text-gray-900">{r.name}</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100">{r.year}</span>
+                        </div>
+                        <div className="text-xs text-gray-400 mt-0.5 truncate">{r.university}</div>
                       </div>
-                      <div className="text-xs text-gray-400 mt-0.5 truncate">{r.university}</div>
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </Slider>
+              );
+            })}
+          </Slider>
+        )}
 
         <div className="mt-10 text-center">
           <Link href="/testimonials">
@@ -193,7 +235,7 @@ export default function Testimonial() {
           </Link>
         </div>
       </div>
-      <Modal open={modal} onClose={() => setModal(false)} onSubmit={r => setReviews([r, ...reviews])} />
+      <Modal open={modal} onClose={() => setModal(false)} onSubmit={addReview} />
     </motion.section>
   );
 }

@@ -21,18 +21,18 @@ const groups = [
   {
     key: "learning", label: "Learning Resources", Icon: GraduationCap,
     items: [
-      { key: "Study Material",  Icon: BookOpen,  desc: "Curated notes, PDFs, and video lectures by pharmacy experts.",                    stat: "500+ Resources",    highlights: ["Detailed Notes", "Chapter PDFs", "Video Lectures", "Past Papers"], link: "/material"      },
-      { key: "Pharmacopedia",   Icon: Database,  desc: "Digital pharmaceutical encyclopedia covering drugs, terms, and dosages.",          stat: "2,000+ Entries",    highlights: ["Drug Database", "Medical Terms", "Dosage Info", "Side Effects"],  link: "/pharmacopedia" },
-      { key: "Books Library",   Icon: Library,   desc: "Essential pharmacy textbooks and reference books, all online.",                    stat: "150+ Titles",       highlights: ["Standard Texts", "Reference Manuals", "Bookmarks", "Search"],     link: "/books"         },
-      { key: "Flashcards",      Icon: Layers,    desc: "Master drug mechanisms with spaced-repetition flashcards.",                       stat: "1,200+ Cards",      highlights: ["MOA Cards", "Drug Classes", "Spaced Repetition", "Favourites"],    link: "/flashcards"    },
+      { key: "Study Material",  Icon: BookOpen,  desc: "Curated notes, PDFs, and video lectures by pharmacy experts.",                    stat: "500+ Resources",    highlights: ["Detailed Notes", "Chapter PDFs", "Video Lectures", "Past Papers"], link: "/courses"      },
+      { key: "Pharmacopedia",   Icon: Database,  desc: "Digital pharmaceutical encyclopedia covering drugs, terms, and dosages.",          stat: "2,000+ Entries",    highlights: ["Drug Database", "Medical Terms", "Dosage Info", "Side Effects"],  link: "/encyclopedia" },
+      { key: "Books Library",   Icon: Library,   desc: "Essential pharmacy textbooks and reference books, all online.",                    stat: "150+ Titles",       highlights: ["Standard Texts", "Reference Manuals", "Bookmarks", "Search"],     link: "/books-library"         },
+      { key: "Flashcards",      Icon: Layers,    desc: "Master drug mechanisms with spaced-repetition flashcards.",                       stat: "1,200+ Cards",      highlights: ["MOA Cards", "Drug Classes", "Spaced Repetition", "Favourites"],    link: "/flash-cards"    },
     ],
   },
   {
     key: "practice", label: "Practice & Assessment", Icon: Brain,
     items: [
-      { key: "MCQ Bank",          Icon: FileText,   desc: "Thousands of exam-ready MCQs with detailed explanations.",                    stat: "10,000+ Questions", highlights: ["Subject MCQs", "Mock Tests", "Analytics", "Year Questions"],     link: "/mcqs"             },
+      { key: "MCQ Bank",          Icon: FileText,   desc: "Thousands of exam-ready MCQs with detailed explanations.",                    stat: "10,000+ Questions", highlights: ["Subject MCQs", "Mock Tests", "Analytics", "Year Questions"],     link: "/mcqs-bank"             },
       { key: "Calculation Tools", Icon: Calculator, desc: "Interactive calculators for dosage, formulation, and pharmacokinetics.",       stat: "15+ Calculators",   highlights: ["Dosage Calc", "IV Flow Rate", "Alligation", "Concentration"],   link: "/calculation-tools" },
-      { key: "Slide Spotting",    Icon: Scan,       desc: "Identify microscopic slides and pharmaceutical specimens interactively.",      stat: "300+ Images",       highlights: ["Micro Slides", "Drug ID", "Specimen Library", "Self-Tests"],     link: "/slide-spotting"    },
+      { key: "Slide Spotting",    Icon: Scan,       desc: "Identify microscopic slides and pharmaceutical specimens interactively.",      stat: "300+ Images",       highlights: ["Micro Slides", "Drug ID", "Specimen Library", "Self-Tests"],     link: "/spotting"    },
     ],
   },
 ];
