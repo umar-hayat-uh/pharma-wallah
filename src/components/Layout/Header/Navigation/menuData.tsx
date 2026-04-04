@@ -15,5 +15,6 @@ export const headerData: HeaderItem[] = [
   },
   { label: "Pharmacopedia", href: "/encyclopedia" },
   { label: "Calculation Tools", href: "/calculation-tools" },
+  { label: "Blog", href: "/blog" },          // ← New blog link
   { label: "About Us", href: "/about-us" },
 ];

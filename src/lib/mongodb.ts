@@ -51,8 +51,8 @@ export async function connectDB(): Promise<typeof mongoose> {
   return cached.conn;
 }
 
-// Alias for compatibility with existing code expecting `connectToDatabase`
-export const connectToDatabase = connectDB;
+// Alias for compatibility – some files may import `dbConnect`
+export const dbConnect = connectDB;
 
 // Optional: get native MongoDB database instance (if needed later)
 export async function getDb() {
