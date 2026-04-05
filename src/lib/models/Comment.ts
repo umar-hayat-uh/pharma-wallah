@@ -8,7 +8,8 @@ const CommentSchema = new Schema(
     userAvatar: { type: String, default: "" },
     content: { type: String, required: true },
     likes: { type: Number, default: 0 },
-    parentCommentId: { type: String, default: null },
+    likedBy: { type: [String], default: [] }, // array of userIds who liked
+    parentCommentId: { type: String, default: null }, // null = top-level comment
   },
   { timestamps: true }
 );
