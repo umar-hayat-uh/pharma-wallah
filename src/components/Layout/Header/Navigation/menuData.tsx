@@ -8,6 +8,7 @@ export const headerData: HeaderItem[] = [
     submenu: [
       { label: "Material", href: "/courses" },
       { label: "MCQ's Bank", href: "/mcqs-bank" },
+      { label: "Lab Simulation", href: "/simulations" },
       { label: "Slide Spotting", href: "/spotting" },
       { label: "Flashcards", href: "/flash-cards" },
       { label: "Books Library", href: "/books-library" },
