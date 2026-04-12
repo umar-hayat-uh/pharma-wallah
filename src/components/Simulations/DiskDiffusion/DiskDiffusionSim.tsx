@@ -1,1545 +1,1390 @@
 'use client';
 
-// ============================================================
-//  PharmaWallah — Antibiotic Susceptibility Simulation
-//  Kirby-Bauer Disk Diffusion  |  Next.js + Tailwind CSS
-//  Professional Lab Simulation with Gamification
-// ============================================================
-
-import React, {
-    useState, useEffect, useRef, useCallback, useMemo
-} from 'react';
-import { useTracker } from '@/hooks/useTracker';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-    ANTIBIOTICS, ORGANISMS, SIM_STEPS, QUIZ_QUESTIONS,
-    interpretZone, getScoreLabel,
-    type Antibiotic, type Organism, type InterpretResult,
-} from './diskDiffusionData';
+    Beaker, Thermometer, Ruler, Activity, CheckCircle, AlertTriangle,
+    X, ChevronRight, RotateCcw, Download, BookOpen, Microscope,
+    Flame, Droplet, AlertCircle, FileText, Menu, ChevronLeft,
+    FlaskConical, Pipette, MoveHorizontal, Clock, Info, Star
+} from 'lucide-react';
+import jsPDF from 'jspdf';
 
-// ─── Types ───────────────────────────────────────────────────
+// ============================================================
+// TYPES & CONSTANTS
+// ============================================================
 
-interface SimState {
-    currentStep: number;
-    completedSteps: Set<number>;
-    selectedOrganism: Organism | null;
-    selectedDiskIds: string[];
-    measuredZones: Record<string, number>;
-    incubationProgress: number;    // 0-100
-    incubationDone: boolean;
-    quizAnswers: Record<string, number | null>;
-    quizScore: number;
-    xp: number;
-    badges: string[];
-    timeStarted: number;
-    timeCompleted: number | null;
-}
+type Organism = {
+    id: string; name: string; short: string; gram: string;
+    color: string; lawnColor: string; caseStudy: string;
+    atcc: string; morphology: string; clinicalNote: string;
+    zones: Record<string, number>;
+};
 
-interface QuizState {
-    currentIdx: number;
-    answered: number | null;
-    showExplanation: boolean;
-    score: number;
-    total: number;
-}
+type AntibioticDisk = {
+    id: string; name: string; shortClass: string; color: string;
+    bpS: number; bpR: number; mechanism: string; clinicalUse: string;
+};
 
-const TOTAL_XP = 500;
-const STEP_XP = [0, 30, 40, 60, 80, 80, 100, 80, 30]; // per step
+type NotifType = 'success' | 'error' | 'info' | 'warn';
 
-// ─── Helper: SVG Petri Dish Renderer ─────────────────────────
+const ORGANISMS: Organism[] = [
+    {
+        id: 'ec', name: 'Escherichia coli', short: 'E. coli', gram: 'Gram‑negative rod',
+        color: '#dc2626', lawnColor: '#bbf7d0',
+        atcc: 'ATCC 25922',
+        morphology: 'Non‑spore‑forming, motile, facultative anaerobe',
+        clinicalNote: 'Leading cause of UTI, neonatal meningitis, bacteremia. Watch for ESBL producers.',
+        caseStudy: '45‑year‑old female with dysuria, frequency, and left flank pain ×3 days. Temperature 38.4°C. Urinalysis: pyuria, nitrites positive. Mid‑stream urine culture growing lactose‑fermenting colonies on MacConkey agar.',
+        zones: { AMP: 12, CIP: 28, GEN: 21, TET: 16, CTX: 29 }
+    },
+    {
+        id: 'sa', name: 'Staphylococcus aureus', short: 'S. aureus', gram: 'Gram‑positive coccus',
+        color: '#d97706', lawnColor: '#fef9c3',
+        atcc: 'ATCC 25923',
+        morphology: 'Grape‑like clusters, beta‑hemolytic on blood agar, coagulase‑positive',
+        clinicalNote: 'Leading cause of skin/soft tissue, bone, endovascular infections. Screen for MRSA.',
+        caseStudy: '28‑year‑old male with painful, fluctuant skin abscess on left forearm following minor trauma. Wound aspirate: gram‑positive cocci in clusters, beta‑hemolytic, catalase‑positive, coagulase‑positive.',
+        zones: { AMP: 8, CIP: 22, GEN: 19, TET: 24, CTX: 31 }
+    },
+    {
+        id: 'pa', name: 'Pseudomonas aeruginosa', short: 'P. aeruginosa', gram: 'Gram‑negative rod',
+        color: '#16a34a', lawnColor: '#d1fae5',
+        atcc: 'ATCC 27853',
+        morphology: 'Motile, non‑fermenter, produces pyocyanin (blue‑green pigment)',
+        clinicalNote: 'Intrinsically resistant to many antibiotics. Critical pathogen in ICU, burn units, cystic fibrosis.',
+        caseStudy: '67‑year‑old male with COPD, now intubated in ICU for 5 days. Fever spike 39°C. Purulent green sputum via endotracheal tube. BAL culture: oxidase‑positive, non‑fermenter with characteristic grape‑like odour and pyocyanin pigment.',
+        zones: { AMP: 6, CIP: 18, GEN: 15, TET: 10, CTX: 12 }
+    },
+];
 
-function usePetriCanvas(
-    canvasRef: React.RefObject<HTMLCanvasElement>,
-    organism: Organism | null,
-    selectedDiskIds: string[],
-    measuredZones: Record<string, number>,
-    showZones: boolean,
-    showMeasurements: boolean,
-    incubProgress: number,
-) {
-    const drawPlate = useCallback(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+const DISKS: AntibioticDisk[] = [
+    { id: 'AMP', name: 'Ampicillin', shortClass: 'Penicillin', color: '#2563eb', bpS: 17, bpR: 13, mechanism: 'Inhibits cell‑wall transpeptidation', clinicalUse: 'Susceptible enterococci, Listeria, non‑ESBL coliforms' },
+    { id: 'CIP', name: 'Ciprofloxacin', shortClass: 'Fluoroquinolone', color: '#db2777', bpS: 21, bpR: 15, mechanism: 'Inhibits DNA gyrase and topoisomerase IV', clinicalUse: 'UTI, respiratory, GI, bone/joint infections' },
+    { id: 'GEN', name: 'Gentamicin', shortClass: 'Aminoglycoside', color: '#16a34a', bpS: 15, bpR: 12, mechanism: 'Irreversible 30S ribosome binding → misreading', clinicalUse: 'Serious Gram‑negative infections, synergy with beta‑lactams' },
+    { id: 'CTX', name: 'Cefotaxime', shortClass: '3rd‑gen Ceph', color: '#9333ea', bpS: 26, bpR: 22, mechanism: 'Extended‑spectrum PBP3 binding, beta‑lactamase stable', clinicalUse: 'Meningitis, septicaemia, ESBL screen by disk method' },
+    { id: 'TET', name: 'Tetracycline', shortClass: 'Tetracycline', color: '#ea580c', bpS: 15, bpR: 11, mechanism: 'Reversible 30S ribosome binding → blocks tRNA', clinicalUse: 'Atypicals, Brucella, Rickettsia, acne – avoid in children <8y' },
+];
 
-        const W = canvas.width, H = canvas.height;
-        const CX = W / 2, CY = H / 2;
-        const PLATE_R = W * 0.46;
-        const DISK_R = 10;
+const PROTOCOL_STEPS = [
+    { title: 'Clinical Case & Media', short: 'Media', desc: 'Review the case. Pour Mueller‑Hinton agar to 4 mm depth.', icon: FlaskConical },
+    { title: 'Select Isolate', short: 'Isolate', desc: 'Identify and select the organism matching the clinical presentation.', icon: Microscope },
+    { title: 'Inoculate Plate', short: 'Inoculate', desc: 'Flame the loop, then streak plate in three 60° directions.', icon: Flame },
+    { title: 'Apply Antibiotic Disks', short: 'Disks', desc: 'Drag ≥4 disks onto the plate. Maintain ≥24 mm center‑to‑center spacing.', icon: Pipette },
+    { title: 'Incubate', short: 'Incubate', desc: 'Open incubator, drag plate inside, close door, then start cycle (35°C/18h).', icon: Thermometer },
+    { title: 'Measure Zones', short: 'Measure', desc: 'Click a disk and drag outward – the line snaps to the true zone edge.', icon: Ruler },
+    { title: 'Interpret & Report', short: 'Interpret', desc: 'Compare zone diameters to CLSI M100 breakpoints. Generate report.', icon: FileText },
+];
 
-        ctx.clearRect(0, 0, W, H);
+// ============================================================
+// PDF GENERATOR (PharmaWallah branded)
+// ============================================================
+const generatePDFReport = (
+    org: Organism | null, placedDisks: string[],
+    measuredZones: Record<string, number>, calcZone: (id: string) => number,
+    interpret: (id: string, z: number) => string, score: number, grade: string
+) => {
+    const doc = new jsPDF(); const W = doc.internal.pageSize.getWidth(); const H = doc.internal.pageSize.getHeight();
+    doc.setFillColor(37, 99, 235); doc.rect(0, 0, W, 32, 'F');
+    doc.setFillColor(22, 163, 74); doc.rect(0, 29, W, 4, 'F');
+    doc.setTextColor(255, 255, 255); doc.setFontSize(20); doc.setFont('helvetica', 'bold');
+    doc.text('PharmaWallah', 15, 16);
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+    doc.text('Clinical Microbiology — Antimicrobial Susceptibility Report', 15, 26);
+    doc.text(new Date().toLocaleString('en-PK'), W - 15, 16, { align: 'right' });
+    doc.setTextColor(30, 41, 59); doc.setFontSize(14); doc.setFont('helvetica', 'bold');
+    doc.text('Susceptibility Test Report', 15, 48);
+    doc.setFillColor(248, 250, 252); doc.roundedRect(15, 54, W - 30, 38, 3, 3, 'F');
+    doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.text('Clinical Case:', 20, 63);
+    doc.setFont('helvetica', 'normal');
+    const cl = doc.splitTextToSize(org?.caseStudy || '', W - 50); doc.text(cl, 20, 70);
+    doc.setFont('helvetica', 'bold'); doc.text(`Isolate: ${org?.name || ''}`, 20, 86);
+    doc.setFont('helvetica', 'normal'); doc.text(`${org?.gram || ''}  ·  ${org?.atcc || ''}`, 20, 92);
+    doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.text('Susceptibility Results', 15, 108);
+    doc.setFillColor(241, 245, 249); doc.rect(15, 112, W - 30, 8, 'F');
+    doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(100, 116, 139);
+    ['Antibiotic', 'Class', 'Zone (mm)', 'Breakpoints', 'Interpretation'].forEach((h, i) => {
+        doc.text(h, [18, 65, 100, 128, 158][i], 118);
+    });
+    let y = 124;
+    placedDisks.forEach((id, i) => {
+        const d = DISKS.find(x => x.id === id)!; const z = measuredZones[id] || calcZone(id);
+        const r = interpret(id, z); const rTxt = r === 'S' ? 'Susceptible' : r === 'R' ? 'Resistant' : 'Intermediate';
+        if (i % 2 === 0) { doc.setFillColor(249, 250, 251); doc.rect(15, y - 5, W - 30, 9, 'F'); }
+        doc.setTextColor(30, 41, 59); doc.setFont('helvetica', 'bold'); doc.text(d.name, 18, y);
+        doc.setFont('helvetica', 'normal'); doc.text(d.shortClass, 65, y); doc.text(`${z}`, 104, y);
+        doc.text(`S≥${d.bpS}  R≤${d.bpR}`, 128, y);
+        const rc = r === 'S' ? [34, 197, 94] : r === 'R' ? [239, 68, 68] : [245, 158, 11];
+        doc.setTextColor(rc[0], rc[1], rc[2]); doc.setFont('helvetica', 'bold'); doc.text(rTxt, 158, y);
+        y += 9;
+    });
+    y += 6; doc.setFillColor(239, 246, 255); doc.roundedRect(15, y, W - 30, 28, 3, 3, 'F');
+    doc.setTextColor(30, 41, 59); doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.text('Clinical Interpretation:', 20, y + 8);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
+    const comment = org?.clinicalNote || ''; const cLines = doc.splitTextToSize(comment, W - 50); doc.text(cLines, 20, y + 15);
+    doc.setFillColor(241, 245, 249); doc.rect(0, H - 22, W, 22, 'F');
+    doc.setTextColor(100, 116, 139); doc.setFontSize(8);
+    doc.text(`Score: ${score}/500  ·  Grade: ${grade}  ·  CLSI M100 Latest Edition`, 15, H - 13);
+    doc.text("PharmaWallah – Pakistan's Leading Pharmacy eLearning Platform", W / 2, H - 6, { align: 'center' });
+    doc.save(`PharmaWallah_AST_${org?.id || 'report'}_${Date.now()}.pdf`);
+};
 
-        // Outer petri dish rim
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(CX, CY, PLATE_R + 6, 0, Math.PI * 2);
-        ctx.strokeStyle = '#9CA3AF';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-        ctx.restore();
-
-        // Agar base
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(CX, CY, PLATE_R, 0, Math.PI * 2);
-        const baseColor = organism
-            ? organism.agarColor
-            : '#F5F5DC';
-        ctx.fillStyle = baseColor;
-        ctx.fill();
-        ctx.restore();
-
-        // Bacterial lawn (fades in with incubation)
-        if (organism && incubProgress > 10) {
-            const opacity = Math.min(1, (incubProgress - 10) / 30);
-            ctx.save();
-            ctx.globalAlpha = opacity;
-            ctx.beginPath();
-            ctx.arc(CX, CY, PLATE_R - 2, 0, Math.PI * 2);
-            ctx.fillStyle = organism.agarColor;
-            ctx.fill();
-            // Subtle lawn texture
-            ctx.globalAlpha = opacity * 0.3;
-            for (let i = 0; i < 200; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const r = Math.random() * (PLATE_R - 12);
-                const x = CX + r * Math.cos(angle);
-                const y = CY + r * Math.sin(angle);
-                ctx.fillStyle = organism.color;
-                ctx.beginPath();
-                ctx.arc(x, y, 1.2, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            ctx.restore();
-        }
-
-        const positions = getDiskPositions(selectedDiskIds.length, CX, CY, PLATE_R);
-
-        // Inhibition zones (shown after incubation)
-        if (showZones && incubProgress >= 100) {
-            selectedDiskIds.forEach((id, i) => {
-                const [px, py] = positions[i];
-                const zone = measuredZones[id] ?? (organism?.zones[id] ?? 0);
-                const pixelR = zone * 2.5;
-                if (zone < 7) return;
-                const ab = ANTIBIOTICS.find(a => a.id === id);
-                if (!ab) return;
-
-                ctx.save();
-                // Zone of inhibition (clear zone)
-                const grad = ctx.createRadialGradient(px, py, DISK_R, px, py, pixelR);
-                grad.addColorStop(0, 'rgba(255,255,255,0.95)');
-                grad.addColorStop(0.6, 'rgba(255,255,255,0.7)');
-                grad.addColorStop(1, 'rgba(255,255,255,0.05)');
-                ctx.beginPath();
-                ctx.arc(px, py, pixelR, 0, Math.PI * 2);
-                ctx.fillStyle = grad;
-                ctx.fill();
-
-                // Zone border dashed
-                ctx.beginPath();
-                ctx.arc(px, py, pixelR, 0, Math.PI * 2);
-                ctx.strokeStyle = ab.color + '80';
-                ctx.lineWidth = 1.5;
-                ctx.setLineDash([4, 4]);
-                ctx.stroke();
-                ctx.restore();
-
-                // Measurement line
-                if (showMeasurements) {
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.moveTo(px - pixelR, py);
-                    ctx.lineTo(px + pixelR, py);
-                    ctx.strokeStyle = ab.color;
-                    ctx.lineWidth = 1.5;
-                    ctx.setLineDash([3, 3]);
-                    ctx.stroke();
-
-                    // tick marks
-                    [-1, 1].forEach(side => {
-                        ctx.beginPath();
-                        ctx.moveTo(px + side * pixelR, py - 5);
-                        ctx.lineTo(px + side * pixelR, py + 5);
-                        ctx.lineWidth = 2;
-                        ctx.setLineDash([]);
-                        ctx.stroke();
-                    });
-
-                    // label
-                    ctx.setLineDash([]);
-                    ctx.fillStyle = ab.color;
-                    ctx.font = 'bold 11px system-ui';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(`${zone}mm`, px, py - pixelR - 6);
-                    ctx.restore();
-                }
-            });
-        }
-
-
-        // Antibiotic disks
-        if (selectedDiskIds.length > 0) {
-            selectedDiskIds.forEach((id, i) => {
-                const [px, py] = positions[i];
-                const ab = ANTIBIOTICS.find(a => a.id === id);
-                if (!ab) return;
-
-                ctx.save();
-                // Disk shadow
-                ctx.shadowColor = 'rgba(0,0,0,0.2)';
-                ctx.shadowBlur = 4;
-                ctx.shadowOffsetY = 1;
-
-                // Disk body
-                ctx.beginPath();
-                ctx.arc(px, py, DISK_R, 0, Math.PI * 2);
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fill();
-
-                ctx.shadowBlur = 0;
-                ctx.shadowOffsetY = 0;
-
-                // Disk border
-                ctx.beginPath();
-                ctx.arc(px, py, DISK_R, 0, Math.PI * 2);
-                ctx.strokeStyle = ab.color;
-                ctx.lineWidth = 2.5;
-                ctx.stroke();
-
-                // Disk label
-                ctx.fillStyle = ab.color;
-                ctx.font = 'bold 8px system-ui';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(id, px, py);
-                ctx.restore();
-            });
-        }
-
-        // Interpretation badges overlay
-        if (showZones && incubProgress >= 100 && showMeasurements) {
-            selectedDiskIds.forEach((id, i) => {
-                const [px, py] = positions[i];
-                const zone = measuredZones[id] ?? (organism?.zones[id] ?? 0);
-                const result = interpretZone(id, zone);
-                const [bgColor, textColor] = result === 'S'
-                    ? ['#10B981', '#fff']
-                    : result === 'I'
-                        ? ['#F59E0B', '#fff']
-                        : ['#EF4444', '#fff'];
-
-                ctx.save();
-                const bx = px, by = py + 18;
-                ctx.beginPath();
-                ctx.roundRect(bx - 12, by - 8, 24, 16, 4);
-                ctx.fillStyle = bgColor;
-                ctx.fill();
-                ctx.fillStyle = textColor;
-                ctx.font = 'bold 10px system-ui';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(result, bx, by);
-                ctx.restore();
-            });
-        }
-
-    }, [canvasRef, organism, selectedDiskIds, measuredZones, showZones, showMeasurements, incubProgress]);
-
-    useEffect(() => {
-        drawPlate();
-    }, [drawPlate]);
-}
-
-function getDiskPositions(n: number, CX: number, CY: number, R: number): [number, number][] {
-    if (n === 0) return [];
-    const positions: [number, number][] = [];
-    const innerR = R * 0.52;
-    for (let i = 0; i < n; i++) {
-        const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
-        positions.push([
-            CX + innerR * Math.cos(angle),
-            CY + innerR * Math.sin(angle),
-        ]);
-    }
-    return positions;
-}
-
-// ─── Sub-components ──────────────────────────────────────────
-
-function XPBar({ xp, total }: { xp: number; total: number }) {
-    const pct = Math.min(100, (xp / total) * 100);
+// ============================================================
+// HYPER‑REALISTIC PETRI DISH SVG
+// ============================================================
+function PetriDishSVG({
+    org, placedDisks, diskPositions, measuredZones,
+    streaks, agarPoured, incubationDone, calcZone, interpret,
+    step, onDiskMouseDown, measuringDiskId, measureDistance
+}: {
+    org: Organism | null; placedDisks: string[]; diskPositions: Record<string, { x: number; y: number }>;
+    measuredZones: Record<string, number>; streaks: number; agarPoured: boolean; incubationDone: boolean;
+    calcZone: (id: string) => number; interpret: (id: string, z: number) => string; step: number;
+    onDiskMouseDown: (id: string, e: React.MouseEvent) => void;
+    measuringDiskId: string | null; measureDistance: number;
+}) {
+    const lawnAlpha = streaks === 0 ? 0 : streaks === 1 ? 0.18 : streaks === 2 ? 0.38 : incubationDone ? 0.82 : 0.55;
+    const n = placedDisks.length;
     return (
-        <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-blue-600 min-w-[60px]">{xp} / {total} XP</span>
-            <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                    className="h-full bg-gradient-to-r from-blue-500 to-green-400 rounded-full transition-all duration-700"
-                    style={{ width: `${pct}%` }}
-                />
-            </div>
-            <span className="text-xs text-gray-400">{Math.round(pct)}%</span>
+        <svg viewBox="0 0 200 200" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <radialGradient id="rimGrad" cx="42%" cy="35%" r="60%">
+                    <stop offset="0%" stopColor="#f8fafc" />
+                    <stop offset="55%" stopColor="#e2e8f0" />
+                    <stop offset="100%" stopColor="#94a3b8" />
+                </radialGradient>
+                <radialGradient id="agarGrad" cx="40%" cy="38%" r="62%">
+                    <stop offset="0%" stopColor={agarPoured ? '#fefce8' : '#f8fafc'} />
+                    <stop offset="50%" stopColor={agarPoured ? '#fef9c3' : '#f1f5f9'} />
+                    <stop offset="100%" stopColor={agarPoured ? '#fde68a' : '#e2e8f0'} />
+                </radialGradient>
+                <radialGradient id="lawnGrad" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor={org?.lawnColor || '#86efac'} stopOpacity="0.9" />
+                    <stop offset="100%" stopColor={org?.color || '#16a34a'} stopOpacity="0.6" />
+                </radialGradient>
+                <radialGradient id="zoneGrad" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="#fefce8" stopOpacity="0.95" />
+                    <stop offset="70%" stopColor="#fef9c3" stopOpacity="0.6" />
+                    <stop offset="100%" stopColor="#fefce8" stopOpacity="0" />
+                </radialGradient>
+                <linearGradient id="glare1" x1="20%" y1="15%" x2="55%" y2="45%">
+                    <stop offset="0%" stopColor="rgba(255,255,255,0.65)" />
+                    <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                </linearGradient>
+                <linearGradient id="glareRim" x1="15%" y1="10%" x2="50%" y2="40%">
+                    <stop offset="0%" stopColor="rgba(255,255,255,0.5)" />
+                    <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                </linearGradient>
+                <radialGradient id="diskGrad" cx="35%" cy="30%" r="60%">
+                    <stop offset="0%" stopColor="#ffffff" />
+                    <stop offset="100%" stopColor="#f1f5f9" />
+                </radialGradient>
+                <filter id="plateShadow" x="-8%" y="-8%" width="116%" height="116%">
+                    <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#0f172a" floodOpacity="0.22" />
+                </filter>
+                <filter id="diskShadow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feDropShadow dx="0" dy="1" stdDeviation="2" floodColor="#0f172a" floodOpacity="0.3" />
+                </filter>
+                <filter id="zoneShadow" x="-5%" y="-5%" width="110%" height="110%">
+                    <feDropShadow dx="0" dy="1" stdDeviation="3" floodColor="#0f172a" floodOpacity="0.08" />
+                </filter>
+                <clipPath id="plateClip"><circle cx="100" cy="100" r="88" /></clipPath>
+                <clipPath id="innerClip"><circle cx="100" cy="100" r="82" /></clipPath>
+            </defs>
+
+            <circle cx="100" cy="100" r="96" fill="url(#rimGrad)" stroke="#94a3b8" strokeWidth="1.5" filter="url(#plateShadow)" />
+            <circle cx="100" cy="100" r="88" fill="url(#agarGrad)" />
+
+            {agarPoured && <>
+                <circle cx="100" cy="100" r="88" fill="none" stroke="rgba(180,160,80,0.08)" strokeWidth="1" />
+                <circle cx="100" cy="100" r="70" fill="none" stroke="rgba(180,160,80,0.06)" strokeWidth="0.8" />
+                <circle cx="100" cy="100" r="50" fill="none" stroke="rgba(180,160,80,0.05)" strokeWidth="0.7" />
+            </>}
+
+            {agarPoured && org && lawnAlpha > 0 && (
+                <>
+                    <circle cx="100" cy="100" r="88" fill="url(#lawnGrad)" fillOpacity={lawnAlpha} clipPath="url(#innerClip)" />
+                    {streaks >= 1 && <path d="M30,90 Q60,72 100,85 Q140,98 170,80" stroke={org.color} strokeWidth="2" fill="none" strokeOpacity="0.25" clipPath="url(#innerClip)" strokeLinecap="round" />}
+                    {streaks >= 2 && <path d="M35,115 Q70,130 100,118 Q135,106 165,122" stroke={org.color} strokeWidth="2" fill="none" strokeOpacity="0.25" clipPath="url(#innerClip)" strokeLinecap="round" />}
+                    {streaks >= 3 && <>
+                        <path d="M50,75 Q80,55 100,70 Q122,87 150,68" stroke={org.color} strokeWidth="2" fill="none" strokeOpacity="0.2" clipPath="url(#innerClip)" strokeLinecap="round" />
+                        <path d="M50,130 Q80,148 100,135 Q122,122 155,140" stroke={org.color} strokeWidth="2" fill="none" strokeOpacity="0.2" clipPath="url(#innerClip)" strokeLinecap="round" />
+                        {Array.from({ length: 40 }, (_, i) => {
+                            const a = i * 17; const r = 15 + Math.random() * 68;
+                            return <circle key={i} cx={100 + r * Math.cos(a)} cy={100 + r * Math.sin(a)} r={0.8 + Math.random() * 1.2} fill={org.color} fillOpacity={0.35 * lawnAlpha} />
+                        })}
+                    </>}
+                </>
+            )}
+
+            {incubationDone && placedDisks.map((diskId, idx) => {
+                const disk = DISKS.find(d => d.id === diskId)!;
+                const zone = calcZone(diskId);
+                const pos = diskPositions[diskId] || defPos(idx, n);
+                const px = 100 + pos.x * 1.8, py = 100 + pos.y * 1.8;
+                const rPx = zone * 1.65;
+                const measured = diskId in measuredZones;
+                const interp = interpret(diskId, zone);
+                const interpCol = interp === 'S' ? '#16a34a' : interp === 'R' ? '#dc2626' : '#d97706';
+                if (rPx < 8) return null;
+                return (
+                    <g key={diskId + '-zone'} filter="url(#zoneShadow)">
+                        <circle cx={px} cy={py} r={rPx} fill="#fefce8" fillOpacity="0.88" clipPath="url(#innerClip)" />
+                        <circle cx={px} cy={py} r={rPx} fill="none"
+                            stroke={measured ? interpCol : 'rgba(148,163,184,0.5)'}
+                            strokeWidth={measured ? 1.5 : 0.8}
+                            strokeDasharray={measured ? "4,3" : "3,3"}
+                        />
+                        <circle cx={px} cy={py} r={rPx - 2} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1" />
+                        {measured && <>
+                            <line x1={px - rPx} y1={py} x2={px + rPx} y2={py} stroke={interpCol} strokeWidth="1" strokeDasharray="3,2" opacity="0.8" />
+                            <line x1={px - rPx} y1={py - 5} x2={px - rPx} y2={py + 5} stroke={interpCol} strokeWidth="1.5" />
+                            <line x1={px + rPx} y1={py - 5} x2={px + rPx} y2={py + 5} stroke={interpCol} strokeWidth="1.5" />
+                        </>}
+                    </g>
+                );
+            })}
+
+            {placedDisks.map((diskId, idx) => {
+                const disk = DISKS.find(d => d.id === diskId)!;
+                const zone = calcZone(diskId);
+                const pos = diskPositions[diskId] || defPos(idx, n);
+                const px = 100 + pos.x * 1.8, py = 100 + pos.y * 1.8;
+                const measured = diskId in measuredZones;
+                const interp = interpret(diskId, zone);
+                const interpCol = interp === 'S' ? '#16a34a' : interp === 'R' ? '#dc2626' : '#d97706';
+
+                return (
+                    <g key={diskId + '-disk'} filter="url(#diskShadow)">
+                        {step === 5 && incubationDone && !measured && (
+                            <g>
+                                <circle
+                                    cx={px} cy={py} r="24"
+                                    fill="rgba(59,130,246,0.08)"
+                                    stroke="rgba(59,130,246,0.5)"
+                                    strokeWidth="1.5"
+                                    strokeDasharray="4,3"
+                                    style={{ cursor: 'crosshair', animation: 'pulse-ring 1.5s ease-in-out infinite' }}
+                                    onMouseDown={(e) => onDiskMouseDown(diskId, e)}
+                                    className="hover:fill-blue-100/30 transition-colors"
+                                />
+                                <text x={px} y={py - 28} fontSize="4" textAnchor="middle" fill="#3b82f6" fontWeight="600">Drag →</text>
+                            </g>
+                        )}
+
+                        {measuringDiskId === diskId && (
+                            <g>
+                                <line x1={px} y1={py} x2={px + measureDistance * 1.8} y2={py} stroke="#3b82f6" strokeWidth="2" strokeDasharray="5,3" />
+                                <circle cx={px + measureDistance * 1.8} cy={py} r="3" fill="#3b82f6" />
+                                <rect x={px + measureDistance * 0.9 - 15} y={py - 15} width="30" height="12" rx="4" fill="#1e40af" opacity="0.9" />
+                                <text x={px + measureDistance * 0.9} y={py - 6} fontSize="5" textAnchor="middle" fill="white" fontWeight="700">{measureDistance}mm</text>
+                            </g>
+                        )}
+
+                        <circle cx={px} cy={py} r="11" fill="url(#diskGrad)" stroke={disk.color} strokeWidth="2.5" />
+                        <circle cx={px} cy={py} r="7" fill={disk.color} fillOpacity="0.12" />
+                        <circle cx={px} cy={py} r="3" fill={disk.color} fillOpacity="0.3" />
+                        <text x={px} y={py + 1.5} fontSize="5.5" textAnchor="middle" dominantBaseline="middle" fill={disk.color} fontWeight="900" fontFamily="system-ui,sans-serif">{diskId}</text>
+                        <circle cx={px - 3} cy={py - 3} r="3" fill="rgba(255,255,255,0.5)" />
+
+                        {measured && incubationDone && <>
+                            <rect x={px - 12} y={py + 13} width="24" height="8" rx="4" fill={interpCol} />
+                            <text x={px} y={py + 17.5} fontSize="4.5" textAnchor="middle" dominantBaseline="middle" fill="white" fontWeight="800" fontFamily="system-ui,sans-serif">{zone}mm·{interp}</text>
+                        </>}
+                    </g>
+                );
+            })}
+
+            {!agarPoured && <text x="100" y="105" fontSize="10" textAnchor="middle" fill="#94a3b8" fontFamily="system-ui,sans-serif">Empty Petri Dish</text>}
+
+            <circle cx="100" cy="100" r="88" fill="url(#glare1)" clipPath="url(#innerClip)" />
+            <circle cx="100" cy="100" r="95" fill="url(#glareRim)" clipPath="url(#plateClip)" />
+            <circle cx="100" cy="100" r="88" fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth="4" />
+        </svg>
+    );
+}
+
+function defPos(idx: number, n: number): { x: number; y: number } {
+    const a = (idx / n) * Math.PI * 2 - Math.PI / 4;
+    return { x: 28 * Math.cos(a), y: 28 * Math.sin(a) };
+}
+
+// ============================================================
+// REALISTIC INCUBATOR SVG WITH DOOR AND PLATE INSERTION
+// ============================================================
+function IncubatorSVG({ 
+  progress, org, disks, done, doorOpen, plateInside, onToggleDoor 
+}: { 
+  progress: number; org: Organism | null; disks: string[]; done: boolean; 
+  doorOpen: boolean; plateInside: boolean; onToggleDoor: () => void;
+}) {
+  return (
+    <svg viewBox="0 0 200 240" width="200" height="240" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="inc-body" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#e7e5e4" /><stop offset="100%" stopColor="#d6d3d1" />
+        </linearGradient>
+        <linearGradient id="inc-door-frame" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#78716c" /><stop offset="100%" stopColor="#57534e" />
+        </linearGradient>
+        <linearGradient id="inc-glass" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#e0f2fe" stopOpacity="0.4" /><stop offset="100%" stopColor="#bae6fd" stopOpacity="0.15" />
+        </linearGradient>
+        <linearGradient id="inc-prog" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#2563eb" /><stop offset="100%" stopColor="#16a34a" />
+        </linearGradient>
+        <filter id="inc-shadow">
+          <feDropShadow dx="2" dy="4" stdDeviation="4" floodColor="#0f172a" floodOpacity="0.25" />
+        </filter>
+        <clipPath id="doorClip">
+          <rect x="15" y="40" width="170" height="140" rx="8" />
+        </clipPath>
+      </defs>
+
+      {/* Main body */}
+      <rect x="5" y="5" width="190" height="230" rx="12" fill="url(#inc-body)" stroke="#a8a29e" strokeWidth="1.5" filter="url(#inc-shadow)" />
+      
+      {/* Top branding */}
+      <rect x="5" y="5" width="190" height="28" rx="12" fill="#44403c" />
+      <rect x="5" y="20" width="190" height="13" fill="#44403c" />
+      <text x="100" y="22" fontSize="9" textAnchor="middle" fill="#a8a29e" fontFamily="system-ui,sans-serif" fontWeight="700" letterSpacing="2">PHARMAWALLAH</text>
+      <text x="100" y="33" fontSize="5" textAnchor="middle" fill="#78716c" fontFamily="monospace">INCUBATOR 35°C · 24h</text>
+
+      {/* Door frame */}
+      <rect x="15" y="40" width="170" height="140" rx="8" fill="url(#inc-door-frame)" stroke="#44403c" strokeWidth="1.5" />
+      
+      {/* Interior (visible when door open) */}
+      <g clipPath="url(#doorClip)">
+        <rect x="20" y="45" width="160" height="130" rx="6" fill="#1c1917" />
+        <rect x="22" y="47" width="156" height="126" rx="4" fill="#292524" />
+        
+        {/* Interior shelf */}
+        <rect x="25" y="120" width="150" height="6" rx="2" fill="#44403c" />
+        <rect x="25" y="126" width="150" height="2" fill="#57534e" />
+        <rect x="25" y="118" width="150" height="2" fill="#78716c" />
+        
+        {/* Interior warm glow when incubating */}
+        {(progress > 0 || done) && (
+          <rect x="22" y="47" width="156" height="126" rx="4" fill="#f59e0b" fillOpacity={0.05 + (progress / 100) * 0.08} />
+        )}
+
+        {/* Petri dish inside (only when plateInside true) */}
+        {plateInside && (
+          <g transform="translate(100, 108)">
+            <ellipse cx="0" cy="0" rx="38" ry="14" fill="#fef9c3" stroke="#d1d5db" strokeWidth="1.2" />
+            <ellipse cx="0" cy="-3" rx="36" ry="12" fill={org?.lawnColor || '#86efac'} fillOpacity={done ? 0.75 : 0.35} />
+            {disks.slice(0, 5).map((id, i) => {
+              const d = DISKS.find(x => x.id === id)!;
+              const a = (i / disks.length) * Math.PI * 2;
+              const px = 16 * Math.cos(a), py = 6 * Math.sin(a) - 2;
+              return (
+                <g key={id}>
+                  <circle cx={px} cy={py} r="4.5" fill="white" stroke={d.color} strokeWidth="1.5" />
+                  <text x={px} y={py + 1} fontSize="2.5" textAnchor="middle" fill={d.color} fontWeight="900">{id}</text>
+                </g>
+              );
+            })}
+            {/* Plate label */}
+            <text x="0" y="18" fontSize="3.5" textAnchor="middle" fill="#78716c" fontFamily="monospace">{org?.short || '---'}</text>
+          </g>
+        )}
+
+        {/* No plate message */}
+        {!plateInside && (
+          <text x="100" y="115" fontSize="6" textAnchor="middle" fill="#78716c" fontFamily="system-ui,sans-serif">No plate</text>
+        )}
+      </g>
+
+      {/* Glass door (animated open/close) */}
+      <motion.g
+        animate={{ x: doorOpen ? -80 : 0, rotate: doorOpen ? -15 : 0 }}
+        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+        style={{ transformOrigin: '15px 110px' }}
+      >
+        <rect x="15" y="40" width="170" height="140" rx="8" fill="url(#inc-glass)" stroke="#94a3b8" strokeWidth="1" />
+        {/* Door handle */}
+        <rect x="170" y="90" width="10" height="40" rx="3" fill="#94a3b8" stroke="#64748b" strokeWidth="1" />
+        <rect x="172" y="95" width="6" height="30" rx="2" fill="#cbd5e1" />
+        {/* Glass reflection */}
+        <rect x="25" y="50" width="40" height="60" rx="4" fill="white" opacity="0.1" />
+        <line x1="30" y1="55" x2="60" y2="100" stroke="white" strokeWidth="0.5" opacity="0.15" />
+      </motion.g>
+
+      {/* Door click area */}
+      <rect x="15" y="40" width="40" height="140" rx="8" fill="transparent" className="cursor-pointer" onClick={onToggleDoor} />
+
+      {/* Bottom control panel */}
+      <rect x="5" y="185" width="190" height="50" rx="0" fill="#1c1917" />
+      <rect x="5" y="225" width="190" height="10" rx="0" fill="#1c1917" />
+      
+      {/* Digital display */}
+      <rect x="12" y="192" width="100" height="28" rx="4" fill="#0f172a" stroke="#334155" strokeWidth="1" />
+      <text x="62" y="202" fontSize="7" textAnchor="middle" fill="#4ade80" fontFamily="monospace">TEMP: 35.0°C</text>
+      <text x="62" y="214" fontSize="7" textAnchor="middle" fill={done ? '#4ade80' : '#fbbf24'} fontFamily="monospace">
+        {done ? 'COMPLETE ✓' : progress > 0 ? `${Math.round(progress)}% · ${Math.round(progress * 0.18)}h` : 'STANDBY'}
+      </text>
+      
+      {/* LED indicators */}
+      {[['PWR', '#4ade80'], ['HEAT', progress > 0 ? '#f97316' : '#374151'], ['DONE', done ? '#4ade80' : '#374151']].map(([lbl, col], i) => (
+        <g key={lbl as string}>
+          <circle cx={120 + i * 22} cy="200" r="4" fill={col as string} />
+          <text x={120 + i * 22} y="212" fontSize="4" textAnchor="middle" fill="#6b7280" fontFamily="system-ui,sans-serif">{lbl}</text>
+        </g>
+      ))}
+      
+      {/* Progress bar */}
+      <rect x="12" y="224" width="176" height="6" rx="3" fill="#374151" />
+      <rect x="12" y="224" width={176 * (progress / 100)} height="6" rx="3" fill="url(#inc-prog)" />
+    </svg>
+  );
+}
+
+// ============================================================
+// OTHER EQUIPMENT SVGs
+// ============================================================
+function BunsenBurnerSVG({ lit }: { lit: boolean }) {
+    return (
+        <svg viewBox="0 0 80 130" width="80" height="130" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="bb-body" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#78716c" /><stop offset="50%" stopColor="#a8a29e" /><stop offset="100%" stopColor="#78716c" />
+                </linearGradient>
+                <linearGradient id="bb-base" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#57534e" /><stop offset="50%" stopColor="#78716c" /><stop offset="100%" stopColor="#57534e" />
+                </linearGradient>
+                {lit && <filter id="flame-glow"><feGaussianBlur stdDeviation="4" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>}
+            </defs>
+            {lit && <>
+                <ellipse cx="40" cy="18" rx="10" ry="16" fill="#f97316" fillOpacity="0.9" filter="url(#flame-glow)" />
+                <ellipse cx="40" cy="22" rx="7" ry="12" fill="#fbbf24" fillOpacity="0.95" />
+                <ellipse cx="40" cy="26" rx="4" ry="8" fill="#fef3c7" />
+                <ellipse cx="40" cy="30" rx="2" ry="4" fill="#ffffff" />
+                <ellipse cx="40" cy="18" rx="10" ry="16" fill="none" stroke="#fed7aa" strokeWidth="1" opacity="0.6" />
+            </>}
+            <rect x="30" y="34" width="20" height="62" rx="4" fill="url(#bb-body)" />
+            <rect x="31" y="35" width="5" height="60" rx="2" fill="rgba(255,255,255,0.18)" />
+            <rect x="28" y="56" width="24" height="10" rx="3" fill="#57534e" />
+            <rect x="29" y="57" width="5" height="8" rx="2" fill="rgba(255,255,255,0.15)" />
+            <circle cx="56" cy="76" r="6" fill="#78716c" stroke="#57534e" strokeWidth="1" />
+            <line x1="52" y1="76" x2="60" y2="76" stroke="#a8a29e" strokeWidth="1.5" />
+            <rect x="35" y="96" width="10" height="8" rx="2" fill="#57534e" />
+            <rect x="15" y="104" width="50" height="18" rx="5" fill="url(#bb-base)" />
+            <rect x="16" y="105" width="12" height="16" rx="3" fill="rgba(255,255,255,0.1)" />
+            <path d="M40,122 Q20,126 10,124" stroke="#78716c" strokeWidth="5" fill="none" strokeLinecap="round" />
+        </svg>
+    );
+}
+
+function AgarBottleSVG() {
+    return (
+        <svg viewBox="0 0 70 160" width="70" height="160" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="agar-glass" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#d1d5db" /><stop offset="40%" stopColor="#f3f4f6" /><stop offset="100%" stopColor="#9ca3af" />
+                </linearGradient>
+                <linearGradient id="agar-liquid" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#d9f99d" /><stop offset="100%" stopColor="#a3e635" />
+                </linearGradient>
+                <linearGradient id="agar-highlight" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="rgba(255,255,255,0.7)" /><stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                </linearGradient>
+            </defs>
+            <rect x="24" y="0" width="22" height="24" rx="5" fill="#374151" />
+            <rect x="25" y="1" width="7" height="22" rx="3" fill="rgba(255,255,255,0.15)" />
+            <rect x="22" y="22" width="26" height="14" rx="4" fill="#6b7280" />
+            <rect x="23" y="23" width="7" height="12" rx="2" fill="rgba(255,255,255,0.2)" />
+            <rect x="8" y="34" width="54" height="118" rx="12" fill="url(#agar-glass)" stroke="#9ca3af" strokeWidth="1.5" />
+            <rect x="12" y="44" width="46" height="100" rx="8" fill="url(#agar-liquid)" fillOpacity="0.85" />
+            <line x1="12" y1="44" x2="58" y2="44" stroke="#84cc16" strokeWidth="1.5" />
+            <circle cx="24" cy="90" r="4" fill="rgba(255,255,255,0.4)" />
+            <circle cx="42" cy="110" r="2.5" fill="rgba(255,255,255,0.35)" />
+            <circle cx="34" cy="130" r="3" fill="rgba(255,255,255,0.3)" />
+            <rect x="12" y="60" width="46" height="58" rx="5" fill="white" fillOpacity="0.9" />
+            <rect x="13" y="61" width="44" height="56" rx="4" fill="#f0fdf4" stroke="#86efac" strokeWidth="0.8" />
+            <text x="35" y="76" fontSize="9" textAnchor="middle" fill="#15803d" fontWeight="900" fontFamily="system-ui,sans-serif">MHA</text>
+            <line x1="16" y1="80" x2="54" y2="80" stroke="#86efac" strokeWidth="0.8" />
+            <text x="35" y="88" fontSize="5.5" textAnchor="middle" fill="#166534" fontFamily="system-ui,sans-serif">Mueller-Hinton</text>
+            <text x="35" y="96" fontSize="5" textAnchor="middle" fill="#15803d" fontFamily="system-ui,sans-serif">Agar · 500 mL</text>
+            <text x="35" y="103" fontSize="4.5" textAnchor="middle" fill="#4ade80" fontFamily="system-ui,sans-serif">pH 7.2–7.4</text>
+            <text x="35" y="110" fontSize="4" textAnchor="middle" fill="#86efac" fontFamily="system-ui,sans-serif">Lot: PW-2025</text>
+            <rect x="10" y="36" width="10" height="110" rx="6" fill="url(#agar-highlight)" opacity="0.7" />
+        </svg>
+    );
+}
+
+function SwabSVG() {
+    return (
+        <svg viewBox="0 0 26 150" width="26" height="150" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="swab-stick" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#d6d3d1" /><stop offset="50%" stopColor="#e7e5e4" /><stop offset="100%" stopColor="#a8a29e" />
+                </linearGradient>
+                <radialGradient id="swab-cotton" cx="40%" cy="35%" r="55%">
+                    <stop offset="0%" stopColor="#fffbeb" /><stop offset="70%" stopColor="#fef3c7" /><stop offset="100%" stopColor="#fde68a" />
+                </radialGradient>
+            </defs>
+            <rect x="11" y="0" width="4" height="115" rx="2" fill="url(#swab-stick)" />
+            <rect x="12" y="2" width="1.5" height="112" rx="1" fill="rgba(255,255,255,0.4)" />
+            <ellipse cx="13" cy="128" rx="11" ry="20" fill="url(#swab-cotton)" stroke="#f59e0b" strokeWidth="0.8" />
+            <line x1="4" y1="118" x2="8" y2="122" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" />
+            <line x1="22" y1="119" x2="18" y2="123" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" />
+            <line x1="3" y1="128" x2="7" y2="130" stroke="rgba(255,255,255,0.6)" strokeWidth="1" strokeLinecap="round" />
+            <line x1="23" y1="129" x2="19" y2="131" stroke="rgba(255,255,255,0.6)" strokeWidth="1" strokeLinecap="round" />
+            <line x1="5" y1="138" x2="8" y2="135" stroke="rgba(255,255,255,0.55)" strokeWidth="1" strokeLinecap="round" />
+            <line x1="21" y1="137" x2="18" y2="135" stroke="rgba(255,255,255,0.55)" strokeWidth="1" strokeLinecap="round" />
+            <ellipse cx="13" cy="124" rx="6" ry="9" fill="rgba(255,255,255,0.22)" />
+        </svg>
+    );
+}
+
+// ============================================================
+// CLSI BREAKPOINTS TABLE COMPONENT
+// ============================================================
+function CLSITable({ org, placedDisks, measuredZones, calcZone, interpret }: {
+    org: Organism | null; placedDisks: string[]; measuredZones: Record<string, number>;
+    calcZone: (id: string) => number; interpret: (id: string, z: number) => string;
+}) {
+    return (
+        <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+                <thead>
+                    <tr className="border-b border-gray-200">
+                        <th className="text-left py-2 px-2 font-semibold text-gray-500 uppercase tracking-wider text-[10px]">Drug</th>
+                        <th className="text-center py-2 px-1 font-semibold text-gray-500 uppercase tracking-wider text-[10px]">S ≥</th>
+                        <th className="text-center py-2 px-1 font-semibold text-gray-500 uppercase tracking-wider text-[10px]">R ≤</th>
+                        <th className="text-center py-2 px-1 font-semibold text-gray-500 uppercase tracking-wider text-[10px]">Zone</th>
+                        <th className="text-center py-2 px-1 font-semibold text-gray-500 uppercase tracking-wider text-[10px]">Result</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                    {placedDisks.map(id => {
+                        const disk = DISKS.find(d => d.id === id)!;
+                        const zone = measuredZones[id] || (org ? calcZone(id) : 0);
+                        const r = zone > 0 ? interpret(id, zone) : '—';
+                        const col = r === 'S' ? 'text-green-700 bg-green-50' : r === 'R' ? 'text-red-700 bg-red-50' : r === 'I' ? 'text-amber-700 bg-amber-50' : 'text-gray-400';
+                        return (
+                            <tr key={id} className="hover:bg-gray-50 transition-colors">
+                                <td className="py-2 px-2">
+                                    <div className="font-bold text-gray-800">{disk.name}</div>
+                                    <div className="text-gray-400 text-[10px]">{disk.shortClass}</div>
+                                </td>
+                                <td className="text-center py-2 px-1 font-mono text-green-700 font-semibold">{disk.bpS}</td>
+                                <td className="text-center py-2 px-1 font-mono text-red-600 font-semibold">{disk.bpR}</td>
+                                <td className="text-center py-2 px-1 font-mono font-bold text-gray-800">{zone > 0 ? zone : '—'}</td>
+                                <td className="text-center py-2 px-1">
+                                    {r !== '—' && (
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${col}`}>{r}</span>
+                                    )}
+                                </td>
+                            </tr>
+                        );
+                    })}
+                    {placedDisks.length === 0 && (
+                        <tr><td colSpan={5} className="text-center py-4 text-gray-400 text-xs">Place disks to see results</td></tr>
+                    )}
+                </tbody>
+            </table>
         </div>
     );
 }
 
-function StepBadge({ n, active, done, label, onClick }: {
-    n: number; active: boolean; done: boolean; label: string; onClick: () => void;
-}) {
-    return (
-        <button
-            onClick={onClick}
-            className={`relative flex flex-col items-center gap-1 cursor-pointer group transition-all duration-200 ${!done && !active ? 'opacity-40 cursor-not-allowed' : ''}`}
-            disabled={!done && !active}
-        >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all duration-200
-        ${active
-                    ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200 scale-110'
-                    : done
-                        ? 'bg-green-500 border-green-500 text-white'
-                        : 'bg-gray-100 border-gray-300 text-gray-400'
-                }`}>
-                {done && !active ? (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                ) : n + 1}
-            </div>
-            <span className={`text-[10px] font-medium text-center leading-tight max-w-[52px] hidden sm:block
-        ${active ? 'text-blue-600' : done ? 'text-green-600' : 'text-gray-400'}`}>
-                {label}
-            </span>
-            {active && (
-                <div className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
-            )}
-        </button>
-    );
-}
+// ============================================================
+// MAIN COMPONENT
+// ============================================================
+export default function PharmaWallahKirbyBauer() {
+    const [step, setStep] = useState(0);
+    const [score, setScore] = useState(0);
+    const [notification, setNotification] = useState<{ msg: string; type: NotifType } | null>(null);
+    const [timer, setTimer] = useState(0);
+    const [timerActive, setTimerActive] = useState(false);
 
-function ResultBadge({ result }: { result: InterpretResult }) {
-    const config = {
-        S: { label: 'Susceptible', bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300' },
-        I: { label: 'Intermediate', bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300' },
-        R: { label: 'Resistant', bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300' },
-    };
-    const c = config[result];
-    return (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${c.bg} ${c.text} ${c.border}`}>
-            {result} — {c.label}
-        </span>
-    );
-}
+    const [agarPoured, setAgarPoured] = useState(false);
+    const [selectedOrg, setSelectedOrg] = useState<Organism | null>(null);
+    const [flameUsed, setFlameUsed] = useState(false);
+    const [streaks, setStreaks] = useState(0);
+    const [contaminated, setContaminated] = useState(false);
 
-// ─── Main Component ──────────────────────────────────────────
+    const [placedDisks, setPlacedDisks] = useState<string[]>([]);
+    const [diskPositions, setDiskPositions] = useState<Record<string, { x: number; y: number }>>({});
+    
+    // Incubator state
+    const [incubatorDoorOpen, setIncubatorDoorOpen] = useState(false);
+    const [plateInIncubator, setPlateInIncubator] = useState(false);
+    const [incubating, setIncubating] = useState(false);
+    const [incubationProgress, setIncubationProgress] = useState(0);
+    const [incubationDone, setIncubationDone] = useState(false);
+    
+    const [measuredZones, setMeasuredZones] = useState<Record<string, number>>({});
+    const [measuringDiskId, setMeasuringDiskId] = useState<string | null>(null);
+    const [measureDistance, setMeasureDistance] = useState<number>(0);
+    const [showReport, setShowReport] = useState(false);
 
-export default function DiskDiffusionSim() {
-    const { trackActivity, trackQuiz } = useTracker();
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const incubTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState<'case' | 'materials' | 'protocol' | 'clsi' | 'results'>('case');
+    const [isMobile, setIsMobile] = useState(false);
 
-    const [sim, setSim] = useState<SimState>({
-        currentStep: 0,
-        completedSteps: new Set(),
-        selectedOrganism: null,
-        selectedDiskIds: ['AMP', 'CIP', 'GEN'],
-        measuredZones: {},
-        incubationProgress: 0,
-        incubationDone: false,
-        quizAnswers: {},
-        quizScore: 0,
-        xp: 0,
-        badges: [],
-        timeStarted: Date.now(),
-        timeCompleted: null,
-    });
+    const plateRef = useRef<HTMLDivElement>(null);
+    const incubatorRef = useRef<HTMLDivElement>(null);
 
-    const [quiz, setQuiz] = useState<QuizState>({
-        currentIdx: 0,
-        answered: null,
-        showExplanation: false,
-        score: 0,
-        total: QUIZ_QUESTIONS.length,
-    });
+    // Responsive detection
+    useEffect(() => {
+        const check = () => {
+            const m = window.innerWidth < 768;
+            setIsMobile(m);
+            if (!m) setMobileDrawerOpen(false);
+            if (m) setSidebarOpen(false);
+        };
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
 
-    const [activeTab, setActiveTab] = useState<'lab' | 'theory' | 'quiz'>('lab');
-    const [showTip, setShowTip] = useState(true);
-    const [reportDownloading, setReportDownloading] = useState(false);
-
-    // Canvas rendering
-    const showZones = sim.incubationDone || sim.currentStep >= 6;
-    const showMeasurements = sim.currentStep >= 6;
-
-    usePetriCanvas(
-        canvasRef,
-        sim.selectedOrganism,
-        sim.selectedDiskIds,
-        sim.measuredZones,
-        showZones,
-        showMeasurements,
-        sim.incubationProgress,
-    );
-
-    // Derived
-    const currentStepData = SIM_STEPS[sim.currentStep];
-    const canProceed = useMemo(() => {
-        switch (sim.currentStep) {
-            case 0: return true;
-            case 1: return !!sim.selectedOrganism;
-            case 2: return !!sim.selectedOrganism;
-            case 3: return !!sim.selectedOrganism;
-            case 4: return sim.selectedDiskIds.length >= 2;
-            case 5: return sim.incubationDone;
-            case 6: return Object.keys(sim.measuredZones).length >= sim.selectedDiskIds.length;
-            case 7: return true;
-            case 8: return true;
-            default: return false;
-        }
-    }, [sim]);
-
-    function earnXP(amount: number, badge?: string) {
-        setSim(prev => ({
-            ...prev,
-            xp: Math.min(TOTAL_XP, prev.xp + amount),
-            badges: badge && !prev.badges.includes(badge)
-                ? [...prev.badges, badge]
-                : prev.badges,
-        }));
-    }
-
-    function completeStep(stepIdx: number) {
-        const xpAmount = STEP_XP[stepIdx] || 20;
-
-        setSim(prev => {
-            const next = new Set(prev.completedSteps);
-            next.add(stepIdx);
-            const nextStep = Math.min(SIM_STEPS.length - 1, stepIdx + 1);
-
-            return {
-                ...prev,
-                completedSteps: next,
-                currentStep: nextStep,
-                xp: Math.min(TOTAL_XP, prev.xp + xpAmount),
-                timeCompleted: nextStep === SIM_STEPS.length - 1 ? Date.now() : prev.timeCompleted,
-            };
-        });
-
-        trackActivity({
-            type: "unit_read", // 🔁 you can make this dynamic per step later
-            label: `Completed step ${stepIdx + 1}`,
-        });
-    }
-    function startIncubation() {
-        if (incubTimerRef.current) return;
-        let p = 0;
-        incubTimerRef.current = setInterval(() => {
-            p = Math.min(100, p + 1.5);
-            setSim(prev => ({
-                ...prev,
-                incubationProgress: p,
-                incubationDone: p >= 100,
-            }));
-            if (p >= 100) {
-                clearInterval(incubTimerRef.current!);
-                incubTimerRef.current = null;
-                earnXP(20, 'Incubation Expert');
+    // Client‑only style injection (fixes hydration error)
+    useEffect(() => {
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse-ring {
+                0%, 100% { opacity: 0.6; stroke-width: 1.5; }
+                50% { opacity: 1; stroke-width: 2.5; }
             }
-        }, 60);
-    }
+            circle[style*="pulse-ring"] {
+                animation: pulse-ring 1.5s ease-in-out infinite;
+            }
+        `;
+        document.head.appendChild(style);
+        return () => { document.head.removeChild(style); };
+    }, []);
 
-    function toggleDisk(id: string) {
-        setSim(prev => {
-            const has = prev.selectedDiskIds.includes(id);
-            if (has && prev.selectedDiskIds.length <= 2) return prev;
-            if (!has && prev.selectedDiskIds.length >= 7) return prev;
-            return {
-                ...prev,
-                selectedDiskIds: has
-                    ? prev.selectedDiskIds.filter(d => d !== id)
-                    : [...prev.selectedDiskIds, id],
-            };
-        });
-    }
+    // Lab timer
+    useEffect(() => {
+        if (!timerActive) return;
+        const id = setInterval(() => setTimer(t => t + 1), 1000);
+        return () => clearInterval(id);
+    }, [timerActive]);
 
-    function setMeasuredZone(diskId: string, value: number) {
-        setSim(prev => ({
-            ...prev,
-            measuredZones: { ...prev.measuredZones, [diskId]: value },
-        }));
-    }
+    useEffect(() => { if (step === 0 && agarPoured) setTimerActive(true); }, [step, agarPoured]);
 
-    function answerQuiz(optionIdx: number) {
-        const q = QUIZ_QUESTIONS[quiz.currentIdx];
-        const isCorrect = optionIdx === q.correctIndex;
-        if (isCorrect) earnXP(15);
-        setQuiz(prev => ({
-            ...prev,
-            answered: optionIdx,
-            showExplanation: true,
-            score: isCorrect ? prev.score + 1 : prev.score,
-        }));
-    }
+    const notify = (msg: string, type: NotifType = 'info') => {
+        setNotification({ msg, type });
+        setTimeout(() => setNotification(null), 3200);
+    };
 
-    function nextQuestion() {
-        const nextIdx = quiz.currentIdx + 1;
-        if (nextIdx >= QUIZ_QUESTIONS.length) {
-            const pct = (quiz.score / QUIZ_QUESTIONS.length) * 100;
-            trackQuiz({ quizId: 'disk-diffusion-quiz', subject: 'disk-diffusion', score: quiz.score, total: QUIZ_QUESTIONS.length, timeTakenMin: 0 });
-            setSim(prev => ({ ...prev, quizScore: quiz.score }));
+    const addScore = (pts: number, reason?: string) => {
+        setScore(p => Math.min(500, p + pts));
+        if (reason) notify(`${reason} (+${pts} XP)`, 'success');
+    };
+
+    const deductScore = (pts: number, reason: string) => {
+        setScore(p => Math.max(0, p - pts));
+        notify(`${reason} (−${pts} XP)`, 'error');
+    };
+
+    const calcZone = (id: string): number => {
+        if (!selectedOrg) return 0;
+        let base = selectedOrg.zones[id] || 0;
+        if (base === 0) return 0;
+        if (contaminated) base -= 2;
+        if (!flameUsed) base -= 1;
+        if (streaks < 3) base -= 1;
+        const pos = diskPositions[id];
+        if (pos && Math.sqrt(pos.x ** 2 + pos.y ** 2) > 35) base -= 1;
+        return Math.max(6, Math.round(base));
+    };
+
+    const interpret = (id: string, zone: number): string => {
+        const d = DISKS.find(x => x.id === id);
+        if (!d) return 'R';
+        if (zone >= d.bpS) return 'S';
+        if (zone <= d.bpR) return 'R';
+        return 'I';
+    };
+
+    const canAdvance = (): boolean => {
+        switch (step) {
+            case 0: return agarPoured;
+            case 1: return selectedOrg !== null;
+            case 2: return streaks === 3 && flameUsed && !contaminated;
+            case 3: return placedDisks.length >= 4;
+            case 4: return incubationDone;
+            case 5: return Object.keys(measuredZones).length === placedDisks.length;
+            default: return true;
         }
-        setQuiz(prev => ({
-            ...prev,
-            currentIdx: nextIdx,
-            answered: null,
-            showExplanation: false,
-        }));
-    }
+    };
 
-    async function downloadReport() {
-        if (!sim.selectedOrganism) return;
-        setReportDownloading(true);
-        try {
-            const { jsPDF } = await import('jspdf');
-            const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-            const W = 210, margin = 18;
+    const advanceStep = () => {
+        if (!canAdvance()) { notify('Complete the current step to proceed.', 'error'); return; }
+        if (step === 6) { setShowReport(true); return; }
+        setStep(p => p + 1);
+    };
 
-            // Header
-            doc.setFillColor(37, 99, 235);
-            doc.rect(0, 0, W, 28, 'F');
-            doc.setFillColor(16, 185, 129);
-            doc.rect(W - 40, 0, 40, 28, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(16);
-            doc.setFont('helvetica', 'bold');
-            doc.text('PharmaWallah Laboratory Report', margin, 12);
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'normal');
-            doc.text('Antibiotic Susceptibility Test — Kirby-Bauer Disk Diffusion', margin, 20);
-            doc.text(`Generated: ${new Date().toLocaleDateString('en-PK')}`, W - 55, 12);
+    const isValidPlacement = (x: number, y: number, excludeId?: string): boolean => {
+        if (Math.sqrt(x * x + y * y) > 38) { notify('Disk too close to plate edge (min 15 mm from edge).', 'error'); return false; }
+        for (const [id, pos] of Object.entries(diskPositions)) {
+            if (id === excludeId) continue;
+            if (Math.sqrt((x - pos.x) ** 2 + (y - pos.y) ** 2) < 18) { notify(`Too close to ${id} — maintain ≥24 mm spacing.`, 'error'); return false; }
+        }
+        return true;
+    };
 
-            // Patient & organism info
-            doc.setTextColor(30, 30, 30);
-            doc.setFillColor(248, 250, 252);
-            doc.rect(margin, 35, W - margin * 2, 30, 'F');
-            doc.setDrawColor(226, 232, 240);
-            doc.rect(margin, 35, W - margin * 2, 30, 'S');
+    // Simplified measurement handlers
+    const handleDiskMouseDown = (diskId: string, e: React.MouseEvent) => {
+        if (step !== 5 || !incubationDone || measuringDiskId) return;
+        e.preventDefault();
+        setMeasuringDiskId(diskId);
+        setMeasureDistance(0);
+    };
 
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'bold');
-            doc.text('Test Information', margin + 4, 43);
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(9);
-            doc.text(`Organism: ${sim.selectedOrganism.name}`, margin + 4, 51);
-            doc.text(`Gram Stain: ${sim.selectedOrganism.gramStain === 'positive' ? 'Gram-Positive' : 'Gram-Negative'}`, margin + 4, 57);
-            doc.text(`Method: Kirby-Bauer Disk Diffusion (CLSI Guidelines)`, margin + 90, 51);
-            doc.text(`Medium: Mueller-Hinton Agar (pH 7.2–7.4, 4mm depth)`, margin + 90, 57);
-            doc.text(`Incubation: 35–37°C, 16–18 hours`, margin + 90, 63);
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!measuringDiskId || !plateRef.current) return;
+        const rect = plateRef.current.getBoundingClientRect();
+        const diskPos = diskPositions[measuringDiskId] || defPos(placedDisks.indexOf(measuringDiskId), placedDisks.length);
+        const center = {
+            x: rect.left + rect.width / 2 + (diskPos.x * 1.8 / 100) * rect.width,
+            y: rect.top + rect.height / 2 + (diskPos.y * 1.8 / 100) * rect.height
+        };
+        const dx = e.clientX - center.x;
+        const dy = e.clientY - center.y;
+        const distancePx = Math.sqrt(dx * dx + dy * dy);
+        const distanceMm = Math.round((distancePx / (rect.width / 2)) * 45);
+        const trueZone = calcZone(measuringDiskId);
+        const clamped = Math.min(trueZone + 2, Math.max(trueZone - 2, distanceMm));
+        setMeasureDistance(clamped);
+    };
 
-            // Results table
-            const tableTop = 74;
-            doc.setFillColor(37, 99, 235);
-            doc.rect(margin, tableTop, W - margin * 2, 8, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'bold');
-            doc.text('Antibiotic', margin + 3, tableTop + 5.5);
-            doc.text('Class', margin + 42, tableTop + 5.5);
-            doc.text('Conc.', margin + 85, tableTop + 5.5);
-            doc.text('Zone (mm)', margin + 108, tableTop + 5.5);
-            doc.text('Breakpoint S/R', margin + 132, tableTop + 5.5);
-            doc.text('Result', margin + 160, tableTop + 5.5);
+    const handleMouseUp = () => {
+        if (!measuringDiskId) return;
+        const trueZone = calcZone(measuringDiskId);
+        const measuredMm = measureDistance;
+        if (Math.abs(measuredMm - trueZone) <= 3) {
+            setMeasuredZones(prev => ({ ...prev, [measuringDiskId]: measuredMm }));
+            addScore(25, `Measured ${measuringDiskId}: ${measuredMm} mm`);
+            notify(`Zone recorded: ${measuredMm} mm`, 'success');
+        } else {
+            notify(`Measurement ${measuredMm} mm is inaccurate. Expected ~${trueZone} mm.`, 'error');
+        }
+        setMeasuringDiskId(null);
+        setMeasureDistance(0);
+    };
 
-            let rowY = tableTop + 8;
-            sim.selectedDiskIds.forEach((id, i) => {
-                const ab = ANTIBIOTICS.find(a => a.id === id)!;
-                const zone = sim.measuredZones[id] ?? (sim.selectedOrganism!.zones[id] ?? 0);
-                const result = interpretZone(id, zone);
+    // Plate insertion into incubator
+    const handlePlateDragToIncubator = (info: PanInfo) => {
+        if (step !== 4 || plateInIncubator) return;
+        const rect = incubatorRef.current?.getBoundingClientRect();
+        if (rect && info.point.x > rect.left && info.point.x < rect.right && info.point.y > rect.top && info.point.y < rect.bottom) {
+            if (!incubatorDoorOpen) {
+                notify('Open the incubator door first!', 'warn');
+                return;
+            }
+            setPlateInIncubator(true);
+            addScore(25, 'Plate placed in incubator');
+            notify('Plate loaded into incubator. Close door and start cycle.', 'success');
+        }
+    };
 
-                const bg = i % 2 === 0 ? [255, 255, 255] : [249, 250, 251];
-                doc.setFillColor(bg[0], bg[1], bg[2]);
-                doc.rect(margin, rowY, W - margin * 2, 8, 'F');
-                doc.setDrawColor(226, 232, 240);
-                doc.line(margin, rowY + 8, W - margin, rowY + 8);
-
-                doc.setTextColor(30, 30, 30);
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(8.5);
-                doc.text(ab.name, margin + 3, rowY + 5.5);
-                doc.setFont('helvetica', 'normal');
-                doc.text(ab.class, margin + 42, rowY + 5.5);
-                doc.text(ab.concentration, margin + 85, rowY + 5.5);
-                doc.text(zone > 0 ? `${zone} mm` : 'No zone', margin + 110, rowY + 5.5);
-                doc.text(`S≥${ab.breakpoints.susceptible} / R≤${ab.breakpoints.resistant}`, margin + 132, rowY + 5.5);
-
-                const [rc, rg, rb] = result === 'S' ? [16, 185, 129] : result === 'I' ? [245, 158, 11] : [239, 68, 68];
-                doc.setFillColor(rc, rg, rb);
-                doc.roundedRect(margin + 158, rowY + 1.5, 22, 5.5, 1, 1, 'F');
-                doc.setTextColor(255, 255, 255);
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(8);
-                doc.text(result === 'S' ? 'SUSCEPT.' : result === 'I' ? 'INTERMED.' : 'RESISTANT', margin + 159, rowY + 5.5);
-
-                rowY += 8;
+    const startIncubation = () => {
+        if (!plateInIncubator) { notify('Load plate into incubator first.', 'error'); return; }
+        if (incubatorDoorOpen) { notify('Close the incubator door before starting.', 'warn'); return; }
+        setIncubating(true);
+        notify('Incubation started. 35°C / 18 hours.', 'info');
+        const iv = setInterval(() => {
+            setIncubationProgress(p => {
+                if (p >= 100) {
+                    clearInterval(iv);
+                    setIncubating(false);
+                    setIncubationDone(true);
+                    addScore(75, 'Incubation complete');
+                    notify('Incubation complete! Zones of inhibition visible.', 'success');
+                    return 100;
+                }
+                return p + 2;
             });
+        }, 40);
+    };
 
-            // Clinical significance
-            rowY += 8;
-            doc.setTextColor(30, 30, 30);
-            doc.setFillColor(239, 246, 255);
-            doc.rect(margin, rowY, W - margin * 2, 20, 'F');
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'bold');
-            doc.text('Clinical Significance:', margin + 4, rowY + 7);
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(8.5);
-            const lines = doc.splitTextToSize(sim.selectedOrganism.clinicalSignificance, W - margin * 2 - 8);
-            doc.text(lines, margin + 4, rowY + 13);
+    const resetLab = () => {
+        setStep(0); setScore(0); setTimer(0); setTimerActive(false);
+        setAgarPoured(false); setSelectedOrg(null); setFlameUsed(false);
+        setStreaks(0); setContaminated(false); setPlacedDisks([]); setDiskPositions({});
+        setIncubatorDoorOpen(false); setPlateInIncubator(false);
+        setIncubating(false); setIncubationProgress(0); setIncubationDone(false);
+        setMeasuredZones({}); setShowReport(false);
+        setMeasuringDiskId(null); setMeasureDistance(0);
+        notify('Lab reset. Begin the protocol.', 'info');
+    };
 
-            // XP score
-            rowY += 28;
-            doc.setFillColor(249, 250, 251);
-            doc.rect(margin, rowY, W - margin * 2, 16, 'F');
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'bold');
-            doc.text(`Simulation Score: ${sim.xp} / ${TOTAL_XP} XP`, margin + 4, rowY + 6);
-            doc.setFont('helvetica', 'normal');
-            const { label } = getScoreLabel((sim.xp / TOTAL_XP) * 100);
-            doc.text(`Grade: ${label}`, margin + 4, rowY + 12);
+    const grade = score >= 450 ? 'A+' : score >= 400 ? 'A' : score >= 350 ? 'B' : score >= 250 ? 'C' : 'F';
+    const fmtTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
-            // Footer
-            doc.setFillColor(249, 250, 251);
-            doc.rect(0, 280, W, 17, 'F');
-            doc.setDrawColor(226, 232, 240);
-            doc.line(0, 280, W, 280);
-            doc.setFontSize(7.5);
-            doc.setTextColor(107, 114, 128);
-            doc.text('PharmaWallah — Pharmacy eLearning Platform | pharmawallah.pk', margin, 288);
-            doc.text('This report is generated for educational purposes only. CLSI M100 breakpoints applied.', margin, 293);
-
-            doc.save(`DiskDiffusion_${sim.selectedOrganism.id}_${Date.now()}.pdf`);
-            earnXP(30, 'Report Generator');
-        } catch (e) {
-            console.error('PDF generation failed:', e);
-        }
-        setReportDownloading(false);
-    }
-
-    // ─── Step renderers ─────────────────────────────────────────
-
-    function renderStep() {
-        switch (sim.currentStep) {
-            case 0: return <StepIntro />;
-            case 1: return <StepSelectOrganism />;
-            case 2: return <StepPrepMedia />;
-            case 3: return <StepInoculate />;
-            case 4: return <StepPlaceDisks />;
-            case 5: return <StepIncubate />;
-            case 6: return <StepMeasure />;
-            case 7: return <StepInterpret />;
-            case 8: return <StepReport />;
-            default: return null;
-        }
-    }
-
-    // ─── Step 0: Intro ──────────────────────────────────────────
-
-    function StepIntro() {
-        return (
-            <div className="space-y-4">
-                <div className="bg-gradient-to-r from-blue-600 to-green-500 rounded-2xl p-5 text-white">
-                    <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h2 className="text-lg font-bold mb-1">Kirby-Bauer Disk Diffusion</h2>
-                            <p className="text-white/85 text-sm leading-relaxed">
-                                Perform the standard CLSI antibiotic susceptibility test — used daily in clinical microbiology labs worldwide.
-                            </p>
-                        </div>
-                    </div>
+    const NotebookSidebar = () => (
+        <div className="h-full flex flex-col bg-white overflow-hidden">
+            <div className="px-4 py-3 bg-gradient-to-r from-blue-600 to-green-400 flex items-center justify-between flex-shrink-0">
+                <div className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-white" />
+                    <span className="text-xs font-extrabold text-white uppercase tracking-widest">Lab Notebook</span>
                 </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                    {[
-                        { icon: '🧫', label: '9 Steps', sub: 'Lab protocol' },
-                        { icon: '🦠', label: '6 Organisms', sub: 'ATCC strains' },
-                        { icon: '💊', label: '7 Antibiotics', sub: 'CLSI breakpoints' },
-                    ].map(c => (
-                        <div key={c.label} className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
-                            <div className="text-2xl mb-1">{c.icon}</div>
-                            <div className="text-sm font-bold text-gray-800">{c.label}</div>
-                            <div className="text-xs text-gray-500">{c.sub}</div>
-                        </div>
-                    ))}
-                </div>
-
-                <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-                    <p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-2">Learning Objectives</p>
-                    <ul className="space-y-1.5">
-                        {[
-                            'Prepare and inoculate Mueller-Hinton agar',
-                            'Place antibiotic disks following CLSI spacing guidelines',
-                            'Measure zones of inhibition accurately',
-                            'Interpret S/I/R using CLSI M100 breakpoints',
-                            'Generate a professional lab susceptibility report',
-                        ].map(obj => (
-                            <li key={obj} className="flex items-start gap-2 text-sm text-blue-800">
-                                <svg className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                {obj}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-
-                <button
-                    onClick={() => completeStep(0)}
-                    className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-500 text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-sm"
-                >
-                    Begin Simulation →
-                </button>
-            </div>
-        );
-    }
-
-    // ─── Step 1: Select Organism ────────────────────────────────
-
-    function StepSelectOrganism() {
-        return (
-            <div className="space-y-3">
-                <p className="text-sm text-gray-600">Select the bacterial isolate to test against antibiotics.</p>
-                <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-                    {ORGANISMS.map(org => (
-                        <button
-                            key={org.id}
-                            onClick={() => {
-                                setSim(prev => ({ ...prev, selectedOrganism: org, measuredZones: {} }));
-                            }}
-                            className={`w-full text-left p-3 rounded-xl border-2 transition-all duration-200 ${sim.selectedOrganism?.id === org.id
-                                ? 'border-blue-500 bg-blue-50'
-                                : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50/30'
-                                }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <div
-                                    className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold"
-                                    style={{ backgroundColor: org.color }}
-                                >
-                                    {org.gramStain === 'positive' ? 'G+' : 'G−'}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="font-bold text-sm text-gray-900 italic">{org.name}</span>
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${org.gramStain === 'positive'
-                                            ? 'bg-purple-100 text-purple-700'
-                                            : 'bg-red-100 text-red-700'
-                                            }`}>
-                                            {org.gramStain === 'positive' ? 'Gram +' : 'Gram −'}
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-gray-500 truncate">{org.morphology}</p>
-                                </div>
-                                {sim.selectedOrganism?.id === org.id && (
-                                    <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                )}
-                            </div>
-                        </button>
-                    ))}
-                </div>
-                {sim.selectedOrganism && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-                        <p className="text-xs font-bold text-amber-700 mb-1">Clinical Significance</p>
-                        <p className="text-xs text-amber-800 leading-relaxed">{sim.selectedOrganism.clinicalSignificance}</p>
+                {timerActive && (
+                    <div className="flex items-center gap-1 bg-white/20 rounded-full px-2 py-0.5">
+                        <Clock className="w-3 h-3 text-white" />
+                        <span className="text-xs font-mono text-white font-bold">{fmtTime(timer)}</span>
                     </div>
                 )}
-                <button
-                    disabled={!sim.selectedOrganism}
-                    onClick={() => completeStep(1)}
-                    className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-500 text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                    {sim.selectedOrganism ? `Confirm — ${sim.selectedOrganism.shortName} →` : 'Select an organism first'}
-                </button>
             </div>
-        );
-    }
 
-    // ─── Step 2: Prepare Media ──────────────────────────────────
-
-    function StepPrepMedia() {
-        const [checked, setChecked] = useState<string[]>([]);
-        const checklist = [
-            { id: 'weigh', label: 'Weigh Mueller-Hinton agar powder (38g/L)' },
-            { id: 'dissolve', label: 'Dissolve in distilled water, autoclave 121°C / 15 min' },
-            { id: 'cool', label: 'Cool to 50°C, pour 25–30 mL per plate' },
-            { id: 'depth', label: 'Check agar depth — must be exactly 4 mm' },
-            { id: 'ph', label: 'Verify pH 7.2–7.4 at room temperature' },
-            { id: 'dry', label: 'Allow to solidify, store at 4°C until use' },
-        ];
-        const allDone = checked.length === checklist.length;
-        return (
-            <div className="space-y-4">
-                <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                    <p className="text-xs font-bold text-green-700 uppercase tracking-wider mb-1">Medium used</p>
-                    <p className="text-sm font-bold text-green-900">Mueller-Hinton Agar (MHA)</p>
-                    <p className="text-xs text-green-700 mt-1">CLSI-recommended for disk diffusion. Low in sulfonamide antagonists. Standard cation content (Ca²⁺, Mg²⁺).</p>
+            <div className="px-4 py-2 border-b border-gray-100 flex-shrink-0">
+                <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-gray-500 font-medium">Progress</span>
+                    <span className="text-xs font-black text-gray-800">{score}<span className="text-gray-400 font-normal">/500 XP</span></span>
                 </div>
-                <p className="text-sm font-medium text-gray-700">Check off each preparation step:</p>
-                <div className="space-y-2">
-                    {checklist.map(item => (
-                        <label key={item.id} className="flex items-start gap-3 p-3 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors">
-                            <input
-                                type="checkbox"
-                                checked={checked.includes(item.id)}
-                                onChange={() => setChecked(prev =>
-                                    prev.includes(item.id) ? prev.filter(x => x !== item.id) : [...prev, item.id]
-                                )}
-                                className="mt-0.5 w-4 h-4 rounded accent-blue-600"
-                            />
-                            <span className={`text-sm transition-colors ${checked.includes(item.id) ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
-                                {item.label}
-                            </span>
-                        </label>
-                    ))}
-                </div>
-                <button
-                    disabled={!allDone}
-                    onClick={() => completeStep(2)}
-                    className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-500 text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                    {allDone ? 'Media prepared ✓ Continue →' : `Complete all steps (${checked.length}/${checklist.length})`}
-                </button>
-            </div>
-        );
-    }
-
-    // ─── Step 3: Inoculate ──────────────────────────────────────
-
-    function StepInoculate() {
-        const [turbidity, setTurbidity] = useState(0);
-        const [swipes, setSwipes] = useState(0);
-        const mcfMatch = turbidity >= 45 && turbidity <= 55;
-        const swipeDone = swipes >= 3;
-        return (
-            <div className="space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-                    <p className="text-xs font-bold text-blue-700 mb-1">Target: 0.5 McFarland standard</p>
-                    <p className="text-xs text-gray-600">≈ 1.5 × 10⁸ CFU/mL — match your suspension to this turbidity</p>
-                </div>
-
-                <div>
-                    <div className="flex justify-between mb-2">
-                        <label className="text-sm font-medium text-gray-700">Suspension turbidity</label>
-                        <span className={`text-sm font-bold ${mcfMatch ? 'text-green-600' : 'text-gray-500'}`}>
-                            {turbidity < 30 ? 'Too light' : turbidity > 65 ? 'Too dense' : mcfMatch ? '0.5 McFarland ✓' : 'Adjust…'}
-                        </span>
-                    </div>
-                    <input
-                        type="range" min="0" max="100" value={turbidity}
-                        onChange={e => setTurbidity(+e.target.value)}
-                        className="w-full accent-blue-600"
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <motion.div
+                        className="h-full rounded-full bg-gradient-to-r from-blue-600 to-green-400"
+                        animate={{ width: `${(score / 500) * 100}%` }}
+                        transition={{ duration: 0.5, ease: 'easeOut' }}
                     />
-                    <div className="mt-2 h-8 rounded-lg border border-gray-200 overflow-hidden">
-                        <div className="h-full transition-all duration-300" style={{
-                            background: `rgba(${Math.round(turbidity * 1.5)}, ${Math.round(180 - turbidity)}, 100, ${0.1 + turbidity / 200})`,
-                            width: '100%',
-                        }} />
-                    </div>
                 </div>
-
-                <div>
-                    <p className="text-sm font-medium text-gray-700 mb-2">Swab direction passes: {swipes}/3</p>
-                    <div className="grid grid-cols-3 gap-2">
-                        {['0°', '60°', '120°'].map((angle, i) => (
-                            <button
-                                key={angle}
-                                onClick={() => setSwipes(prev => Math.min(3, prev + 1))}
-                                disabled={swipes > i}
-                                className={`py-3 rounded-xl text-sm font-bold border-2 transition-all duration-200 ${swipes > i
-                                    ? 'border-green-500 bg-green-50 text-green-700'
-                                    : 'border-gray-300 bg-white text-gray-500 hover:border-blue-400'
-                                    }`}
-                            >
-                                {swipes > i ? '✓' : angle} pass
-                            </button>
-                        ))}
-                    </div>
+                <div className="flex justify-between mt-1">
+                    <span className="text-[10px] text-gray-400">Grade: <span className="font-bold text-gray-700">{grade}</span></span>
+                    <span className="text-[10px] text-gray-400">Step {step + 1}/7</span>
                 </div>
-
-                {!mcfMatch && (
-                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-3">
-                        ⚠ Turbidity doesn't match 0.5 McFarland. Adjust the suspension before inoculating.
-                    </p>
-                )}
-
-                <button
-                    disabled={!mcfMatch || !swipeDone}
-                    onClick={() => completeStep(3)}
-                    className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-500 text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                    {mcfMatch && swipeDone ? 'Inoculation complete ✓ →' : 'Match turbidity & complete 3 swipe passes'}
-                </button>
             </div>
-        );
-    }
 
-    // ─── Step 4: Place Disks ─────────────────────────────────────
-
-    function StepPlaceDisks() {
-        return (
-            <div className="space-y-3">
-                <p className="text-sm text-gray-600">Select 2–7 antibiotic disks to place on the plate.</p>
-                <div className="space-y-2">
-                    {ANTIBIOTICS.map(ab => {
-                        const selected = sim.selectedDiskIds.includes(ab.id);
-                        return (
-                            <button
-                                key={ab.id}
-                                onClick={() => toggleDisk(ab.id)}
-                                className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all duration-200 text-left ${selected
-                                    ? 'border-blue-500 bg-blue-50'
-                                    : 'border-gray-200 bg-white hover:border-gray-300'
-                                    }`}
-                            >
-                                <div
-                                    className="w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold flex-shrink-0"
-                                    style={{ borderColor: ab.color, color: ab.color, backgroundColor: ab.diskColor }}
-                                >
-                                    {ab.id.slice(0, 3)}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="font-bold text-sm text-gray-900">{ab.name}</div>
-                                    <div className="text-xs text-gray-500">{ab.class} · {ab.concentration}</div>
-                                </div>
-                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${selected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}>
-                                    {selected && (
-                                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                        </svg>
-                                    )}
-                                </div>
-                            </button>
-                        );
-                    })}
-                </div>
-                <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 rounded-xl p-3">
-                    <svg className="w-4 h-4 flex-shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Selected: {sim.selectedDiskIds.length} disks. Spaces disks ≥24mm apart automatically.
-                </div>
-                <button
-                    disabled={sim.selectedDiskIds.length < 2}
-                    onClick={() => completeStep(4)}
-                    className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-500 text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                    {sim.selectedDiskIds.length >= 2 ? `Place ${sim.selectedDiskIds.length} disks →` : 'Select at least 2 disks'}
-                </button>
-            </div>
-        );
-    }
-
-    // ─── Step 5: Incubate ────────────────────────────────────────
-
-    function StepIncubate() {
-        const pct = sim.incubationProgress;
-        const hours = ((pct / 100) * 18).toFixed(1);
-        return (
-            <div className="space-y-4">
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="text-sm font-bold text-amber-800">Incubator Settings</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                        {[
-                            { label: 'Temperature', value: '35–37°C' },
-                            { label: 'Duration', value: '16–18 h' },
-                            { label: 'Position', value: 'Inverted' },
-                        ].map(s => (
-                            <div key={s.label} className="bg-white rounded-lg p-2">
-                                <div className="text-xs font-bold text-amber-700">{s.value}</div>
-                                <div className="text-[10px] text-gray-500">{s.label}</div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                <div>
-                    <div className="flex justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-700">Incubation progress</span>
-                        <span className="text-sm font-bold text-blue-600">{hours}h / 18h</span>
-                    </div>
-                    <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                            className="h-full bg-gradient-to-r from-amber-400 via-orange-400 to-green-500 rounded-full transition-all duration-300"
-                            style={{ width: `${pct}%` }}
-                        />
-                    </div>
-                    <div className="flex justify-between text-xs text-gray-400 mt-1">
-                        <span>0h</span>
-                        <span>8h</span>
-                        <span>18h ✓</span>
-                    </div>
-                </div>
-
-                {sim.incubationDone ? (
-                    <div className="bg-green-50 border border-green-300 rounded-xl p-4 text-center">
-                        <div className="text-2xl mb-1">✓</div>
-                        <p className="font-bold text-green-700">Incubation Complete!</p>
-                        <p className="text-xs text-green-600 mt-1">Zones of inhibition are visible. Proceed to measurement.</p>
-                    </div>
-                ) : (
-                    <button
-                        onClick={startIncubation}
-                        disabled={sim.incubationProgress > 0}
-                        className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-sm disabled:opacity-60"
-                    >
-                        {sim.incubationProgress > 0 ? `Incubating… ${Math.round(pct)}%` : 'Start Incubation →'}
+            <div className="flex border-b border-gray-100 flex-shrink-0 bg-gray-50/50">
+                {(['case', 'materials', 'protocol', 'clsi', 'results'] as const).map(tab => (
+                    <button key={tab} onClick={() => setActiveTab(tab)}
+                        className={`flex-1 py-2.5 text-[9px] font-bold uppercase tracking-wider transition-all ${activeTab === tab ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-gray-400 hover:text-gray-600'}`}>
+                        {tab === 'clsi' ? 'CLSI' : tab.charAt(0).toUpperCase() + tab.slice(1)}
                     </button>
-                )}
-
-                {sim.incubationDone && (
-                    <button
-                        onClick={() => completeStep(5)}
-                        className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-500 text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-sm"
-                    >
-                        Read the plate →
-                    </button>
-                )}
+                ))}
             </div>
-        );
-    }
 
-    // ─── Step 6: Measure Zones ───────────────────────────────────
-
-    function StepMeasure() {
-        const allMeasured = sim.selectedDiskIds.every(id => sim.measuredZones[id] !== undefined);
-        return (
-            <div className="space-y-3">
-                <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
-                    <p className="text-xs text-blue-700">
-                        Measure zone diameters <strong>including the 6mm disk</strong>. Read from back of plate under reflected light.
-                    </p>
-                </div>
-                <div className="space-y-3">
-                    {sim.selectedDiskIds.map(id => {
-                        const ab = ANTIBIOTICS.find(a => a.id === id)!;
-                        const actual = sim.selectedOrganism?.zones[id] ?? 0;
-                        const val = sim.measuredZones[id] ?? actual;
-                        return (
-                            <div key={id} className="bg-white border border-gray-200 rounded-xl p-3">
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded-full border-2 flex items-center justify-center text-[10px] font-bold"
-                                            style={{ borderColor: ab.color, color: ab.color }}>
-                                            {id.slice(0, 2)}
-                                        </div>
-                                        <span className="text-sm font-bold text-gray-800">{ab.name}</span>
-                                    </div>
-                                    <span className="text-base font-bold" style={{ color: ab.color }}>{val}mm</span>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {activeTab === 'case' && (
+                    <>
+                        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-3">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-600 to-green-400 flex items-center justify-center flex-shrink-0">
+                                    <FileText className="w-3 h-3 text-white" />
                                 </div>
-                                <input
-                                    type="range" min="6" max="45" step="1" value={val}
-                                    onChange={e => setMeasuredZone(id, +e.target.value)}
-                                    className="w-full"
-                                    style={{ accentColor: ab.color }}
-                                />
-                                <div className="flex justify-between text-[10px] text-gray-400 mt-1">
-                                    <span>6mm (no zone)</span>
-                                    <span>45mm (very sensitive)</span>
-                                </div>
+                                <span className="text-xs font-extrabold text-blue-800 uppercase tracking-wider">Clinical Case</span>
                             </div>
-                        );
-                    })}
-                </div>
-                <button
-                    disabled={!allMeasured}
-                    onClick={() => completeStep(6)}
-                    className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-500 text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-sm disabled:opacity-40"
-                >
-                    Record measurements →
-                </button>
-            </div>
-        );
-    }
-
-    // ─── Step 7: Interpret ───────────────────────────────────────
-
-    function StepInterpret() {
-        return (
-            <div className="space-y-3">
-                <div className="flex gap-2 text-xs">
-                    {(['S', 'I', 'R'] as const).map(r => (
-                        <div key={r} className={`flex-1 text-center py-2 rounded-xl font-bold ${r === 'S' ? 'bg-green-100 text-green-700' : r === 'I' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
-                            {r === 'S' ? 'Susceptible' : r === 'I' ? 'Intermediate' : 'Resistant'}
+                            <p className="text-xs text-blue-900 leading-relaxed">{selectedOrg?.caseStudy || ORGANISMS[0].caseStudy}</p>
                         </div>
-                    ))}
-                </div>
-                <div className="space-y-2">
-                    {sim.selectedDiskIds.map(id => {
-                        const ab = ANTIBIOTICS.find(a => a.id === id)!;
-                        const zone = sim.measuredZones[id] ?? (sim.selectedOrganism?.zones[id] ?? 0);
-                        const result = interpretZone(id, zone);
-                        return (
-                            <div key={id} className="bg-white border border-gray-200 rounded-xl p-3">
-                                <div className="flex items-center justify-between mb-1">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded-full border-2 flex items-center justify-center text-[10px] font-bold"
-                                            style={{ borderColor: ab.color, color: ab.color }}>
-                                            {id.slice(0, 2)}
-                                        </div>
-                                        <div>
-                                            <div className="text-sm font-bold text-gray-900">{ab.name}</div>
-                                            <div className="text-xs text-gray-500">{zone}mm · S≥{ab.breakpoints.susceptible} R≤{ab.breakpoints.resistant}</div>
-                                        </div>
+                        {selectedOrg && (
+                            <div className="bg-white border border-gray-200 rounded-2xl p-3 space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full flex-shrink-0" style={{ background: `${selectedOrg.color}22`, border: `2px solid ${selectedOrg.color}` }} />
+                                    <div>
+                                        <p className="text-xs font-extrabold text-gray-800 italic">{selectedOrg.name}</p>
+                                        <p className="text-[10px] text-gray-500">{selectedOrg.atcc}</p>
                                     </div>
-                                    <ResultBadge result={result} />
                                 </div>
-                                <p className="text-xs text-gray-500 mt-2 leading-relaxed">{ab.clinicalNote}</p>
+                                <div className="bg-gray-50 rounded-xl p-2">
+                                    <p className="text-[10px] font-bold text-gray-600 mb-1">Morphology</p>
+                                    <p className="text-[10px] text-gray-700 leading-relaxed">{selectedOrg.morphology}</p>
+                                </div>
+                                <div className="bg-amber-50 border border-amber-100 rounded-xl p-2">
+                                    <p className="text-[10px] font-bold text-amber-700 mb-1">Clinical Note</p>
+                                    <p className="text-[10px] text-amber-800 leading-relaxed">{selectedOrg.clinicalNote}</p>
+                                </div>
                             </div>
-                        );
-                    })}
-                </div>
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
-                    <p className="text-xs font-bold text-gray-700 mb-1">Summary for {sim.selectedOrganism?.shortName}</p>
-                    <div className="flex gap-3 text-sm">
-                        {(['S', 'I', 'R'] as const).map(r => {
-                            const count = sim.selectedDiskIds.filter(id => {
-                                const z = sim.measuredZones[id] ?? (sim.selectedOrganism?.zones[id] ?? 0);
-                                return interpretZone(id, z) === r;
-                            }).length;
+                        )}
+                    </>
+                )}
+
+                {activeTab === 'materials' && (
+                    <div className="space-y-2">
+                        <p className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">Step Checklist</p>
+                        {[
+                            { label: 'MHA plate poured (4 mm depth)', done: agarPoured, pts: 50 },
+                            { label: 'Organism isolate selected', done: !!selectedOrg, pts: 50 },
+                            { label: 'Inoculation loop flamed', done: flameUsed, pts: 15 },
+                            { label: 'Plate streaked 3× (60° each)', done: streaks === 3, pts: 75 },
+                            { label: 'Antibiotic disks placed (≥4)', done: placedDisks.length >= 4, pts: 100 },
+                            { label: 'Plate in incubator, door closed', done: plateInIncubator && !incubatorDoorOpen, pts: 25 },
+                            { label: 'Incubation cycle complete', done: incubationDone, pts: 75 },
+                            { label: 'All zones measured (mm)', done: Object.keys(measuredZones).length === placedDisks.length && placedDisks.length > 0, pts: 125 },
+                        ].map((item, i) => (
+                            <div key={i} className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all ${item.done ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-100'}`}>
+                                <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${item.done ? 'bg-green-500' : 'border-2 border-gray-300'}`}>
+                                    {item.done && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                                </div>
+                                <span className={`text-xs flex-1 leading-tight ${item.done ? 'text-green-800 font-medium' : 'text-gray-500'}`}>{item.label}</span>
+                                <span className={`text-[10px] font-bold ${item.done ? 'text-green-600' : 'text-gray-300'}`}>+{item.pts}</span>
+                            </div>
+                        ))}
+                        {contaminated && (
+                            <div className="flex items-center gap-2 p-2.5 rounded-xl bg-red-50 border border-red-200">
+                                <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                                <span className="text-xs text-red-700 font-medium">Plate contaminated — deducted 30 XP</span>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === 'protocol' && (
+                    <div className="space-y-1.5">
+                        {PROTOCOL_STEPS.map((s, i) => {
+                            const Icon = s.icon;
+                            const status = i < step ? 'done' : i === step ? 'active' : 'pending';
                             return (
-                                <div key={r} className="flex items-center gap-1.5">
-                                    <span className={`w-2 h-2 rounded-full ${r === 'S' ? 'bg-green-500' : r === 'I' ? 'bg-amber-500' : 'bg-red-500'}`} />
-                                    <span className="font-bold">{count}</span>
-                                    <span className="text-gray-500">{r === 'S' ? 'Susceptible' : r === 'I' ? 'Intermediate' : 'Resistant'}</span>
+                                <div key={i} className={`flex items-start gap-3 p-3 rounded-xl border transition-all ${status === 'done' ? 'bg-green-50 border-green-200' : status === 'active' ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-100'}`}>
+                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${status === 'done' ? 'bg-green-500' : status === 'active' ? 'bg-blue-600' : 'bg-gray-200'}`}>
+                                        {status === 'done' ? <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg> : <Icon className={`w-3.5 h-3.5 ${status === 'active' ? 'text-white' : 'text-gray-400'}`} />}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className={`text-xs font-bold ${status === 'active' ? 'text-blue-800' : status === 'done' ? 'text-green-700' : 'text-gray-400'}`}>{s.title}</p>
+                                        <p className={`text-[10px] leading-relaxed mt-0.5 ${status === 'active' ? 'text-blue-600' : status === 'done' ? 'text-green-600' : 'text-gray-400'}`}>{s.desc}</p>
+                                    </div>
                                 </div>
                             );
                         })}
                     </div>
-                </div>
-                <button
-                    onClick={() => completeStep(7)}
-                    className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-500 text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-sm"
-                >
-                    Generate report →
-                </button>
-            </div>
-        );
-    }
+                )}
 
-    // ─── Step 8: Report ──────────────────────────────────────────
-
-    function StepReport() {
-        const pct = Math.round((sim.xp / TOTAL_XP) * 100);
-        const { label, color } = getScoreLabel(pct);
-        const duration = sim.timeCompleted
-            ? Math.round((sim.timeCompleted - sim.timeStarted) / 60000)
-            : Math.round((Date.now() - sim.timeStarted) / 60000);
-
-        return (
-            <div className="space-y-4">
-                <div className="bg-gradient-to-r from-blue-600 to-green-500 rounded-2xl p-5 text-white text-center">
-                    <div className="text-4xl font-black mb-1">{sim.xp}<span className="text-xl font-normal opacity-75"> / {TOTAL_XP} XP</span></div>
-                    <div className="text-sm font-bold opacity-90">{label}</div>
-                    <div className="mt-3 h-2.5 bg-white/20 rounded-full overflow-hidden">
-                        <div className="h-full bg-white rounded-full transition-all duration-1000" style={{ width: `${pct}%` }} />
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 text-center">
-                    {[
-                        { label: 'Time taken', value: `${duration}m` },
-                        { label: 'Steps done', value: `${sim.completedSteps.size} / ${SIM_STEPS.length}` },
-                        { label: 'Disks tested', value: sim.selectedDiskIds.length.toString() },
-                    ].map(s => (
-                        <div key={s.label} className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                            <div className="text-base font-bold text-gray-900">{s.value}</div>
-                            <div className="text-[11px] text-gray-500">{s.label}</div>
-                        </div>
-                    ))}
-                </div>
-
-                {sim.badges.length > 0 && (
+                {activeTab === 'clsi' && (
                     <div>
-                        <p className="text-xs font-bold text-gray-600 mb-2 uppercase tracking-wider">Badges earned</p>
-                        <div className="flex flex-wrap gap-2">
-                            {sim.badges.map(badge => (
-                                <span key={badge} className="bg-gradient-to-r from-blue-500 to-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                                    🏆 {badge}
-                                </span>
-                            ))}
+                        <p className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">CLSI M100 Breakpoints</p>
+                        <CLSITable org={selectedOrg} placedDisks={placedDisks} measuredZones={measuredZones} calcZone={calcZone} interpret={interpret} />
+                        <div className="mt-3 bg-blue-50 border border-blue-100 rounded-xl p-3">
+                            <p className="text-[10px] font-bold text-blue-700 mb-1">Legend</p>
+                            <div className="flex gap-3">
+                                {[['S', 'Susceptible', 'green'], ['I', 'Intermediate', 'amber'], ['R', 'Resistant', 'red']].map(([k, v, c]) => (
+                                    <div key={k} className="flex items-center gap-1">
+                                        <span className={`w-4 h-4 rounded-full bg-${c}-100 border border-${c}-300 text-[9px] font-black text-${c}-700 flex items-center justify-center`}>{k}</span>
+                                        <span className="text-[10px] text-gray-600">{v}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )}
 
-                <button
-                    onClick={downloadReport}
-                    disabled={reportDownloading || !sim.selectedOrganism}
-                    className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-blue-600 to-green-500 text-white font-bold rounded-xl hover:opacity-90 transition-opacity text-sm disabled:opacity-50"
-                >
-                    {reportDownloading ? (
-                        <>
-                            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                            </svg>
-                            Generating PDF…
-                        </>
-                    ) : (
-                        <>
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            Download Lab Report (PDF)
-                        </>
-                    )}
-                </button>
-
-                <button
-                    onClick={() => {
-                        if (incubTimerRef.current) clearInterval(incubTimerRef.current);
-                        setSim({
-                            currentStep: 0,
-                            completedSteps: new Set(),
-                            selectedOrganism: null,
-                            selectedDiskIds: ['AMP', 'CIP', 'GEN'],
-                            measuredZones: {},
-                            incubationProgress: 0,
-                            incubationDone: false,
-                            quizAnswers: {},
-                            quizScore: 0,
-                            xp: 0,
-                            badges: [],
-                            timeStarted: Date.now(),
-                            timeCompleted: null,
-                        });
-                        setQuiz({ currentIdx: 0, answered: null, showExplanation: false, score: 0, total: QUIZ_QUESTIONS.length });
-                    }}
-                    className="w-full py-3 border-2 border-gray-200 text-gray-600 font-bold rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-all text-sm"
-                >
-                    Restart simulation
-                </button>
-            </div>
-        );
-    }
-
-    // ─── Quiz Panel ──────────────────────────────────────────────
-
-    function QuizPanel() {
-        const allDone = quiz.currentIdx >= QUIZ_QUESTIONS.length;
-        if (allDone) {
-            const pct = Math.round((quiz.score / QUIZ_QUESTIONS.length) * 100);
-            return (
-                <div className="space-y-4">
-                    <div className="bg-gradient-to-r from-blue-600 to-green-500 rounded-2xl p-6 text-white text-center">
-                        <div className="text-5xl font-black">{quiz.score}<span className="text-2xl opacity-70">/{QUIZ_QUESTIONS.length}</span></div>
-                        <div className="text-sm mt-1 opacity-80">{getScoreLabel(pct).label}</div>
-                    </div>
-                    <button
-                        onClick={() => setQuiz({ currentIdx: 0, answered: null, showExplanation: false, score: 0, total: QUIZ_QUESTIONS.length })}
-                        className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-500 text-white font-bold rounded-xl text-sm"
-                    >
-                        Retake quiz
-                    </button>
-                </div>
-            );
-        }
-
-        const q = QUIZ_QUESTIONS[quiz.currentIdx];
-        return (
-            <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                        Question {quiz.currentIdx + 1} / {QUIZ_QUESTIONS.length}
-                    </span>
-                    <span className="text-xs font-bold text-blue-600">{quiz.score} correct</span>
-                </div>
-                <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                        className="h-full bg-gradient-to-r from-blue-500 to-green-400 rounded-full transition-all duration-300"
-                        style={{ width: `${(quiz.currentIdx / QUIZ_QUESTIONS.length) * 100}%` }}
-                    />
-                </div>
-                <p className="text-sm font-bold text-gray-900 leading-relaxed">{q.question}</p>
-                <div className="space-y-2">
-                    {q.options.map((opt, i) => {
-                        const isAnswered = quiz.answered !== null;
-                        const isSelected = quiz.answered === i;
-                        const isCorrect = i === q.correctIndex;
-                        let cls = 'w-full text-left p-3.5 rounded-xl border-2 text-sm transition-all duration-200 ';
-                        if (!isAnswered) {
-                            cls += 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50 cursor-pointer';
-                        } else if (isCorrect) {
-                            cls += 'border-green-500 bg-green-50 text-green-800 font-medium';
-                        } else if (isSelected && !isCorrect) {
-                            cls += 'border-red-400 bg-red-50 text-red-800';
-                        } else {
-                            cls += 'border-gray-100 bg-gray-50 text-gray-400';
-                        }
-                        return (
-                            <button key={i} className={cls} onClick={() => !isAnswered && answerQuiz(i)}>
-                                <div className="flex items-start gap-2.5">
-                                    <span className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center text-xs font-bold mt-0.5
-                    ${isAnswered && isCorrect ? 'border-green-500 bg-green-500 text-white' : isAnswered && isSelected ? 'border-red-400 bg-red-400 text-white' : 'border-gray-300 text-gray-500'}`}>
-                                        {isAnswered && isCorrect ? '✓' : isAnswered && isSelected && !isCorrect ? '✗' : String.fromCharCode(65 + i)}
-                                    </span>
-                                    {opt}
+                {activeTab === 'results' && (
+                    <div className="space-y-2">
+                        <p className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">Zone Measurements</p>
+                        {Object.keys(measuredZones).length > 0 ? placedDisks.map(id => {
+                            const zone = measuredZones[id]; if (!zone) return null;
+                            const r = interpret(id, zone);
+                            const disk = DISKS.find(d => d.id === id)!;
+                            const colMap = { S: { bg: 'bg-green-100', text: 'text-green-700', bar: 'bg-green-500', border: 'border-green-200' }, I: { bg: 'bg-amber-100', text: 'text-amber-700', bar: 'bg-amber-500', border: 'border-amber-200' }, R: { bg: 'bg-red-100', text: 'text-red-700', bar: 'bg-red-500', border: 'border-red-200' } };
+                            const c = colMap[r as keyof typeof colMap];
+                            return (
+                                <div key={id} className={`p-3 rounded-xl border ${c.border} ${c.bg}`}>
+                                    <div className="flex justify-between items-start mb-1.5">
+                                        <div>
+                                            <span className="text-xs font-extrabold text-gray-800">{disk.name}</span>
+                                            <span className="text-[10px] text-gray-400 ml-1">{disk.shortClass}</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className={`text-sm font-black ${c.text} font-mono`}>{zone}mm</span>
+                                            <span className={`ml-2 text-xs font-bold ${c.text}`}>{r === 'S' ? 'Susceptible' : r === 'R' ? 'Resistant' : 'Intermediate'}</span>
+                                        </div>
+                                    </div>
+                                    <div className="w-full bg-white/60 h-1.5 rounded-full overflow-hidden">
+                                        <div className={`h-full rounded-full ${c.bar}`} style={{ width: `${Math.min(100, (zone / 35) * 100)}%` }} />
+                                    </div>
+                                    <div className="flex justify-between mt-1">
+                                        <span className="text-[9px] text-gray-400">R≤{disk.bpR}</span>
+                                        <span className="text-[9px] text-gray-400">I</span>
+                                        <span className="text-[9px] text-gray-400">S≥{disk.bpS}</span>
+                                    </div>
                                 </div>
-                            </button>
-                        );
-                    })}
-                </div>
-                {quiz.showExplanation && (
-                    <div className={`p-3.5 rounded-xl border text-sm leading-relaxed ${quiz.answered === q.correctIndex ? 'bg-green-50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
-                        <span className="font-bold block mb-1">{quiz.answered === q.correctIndex ? '✓ Correct!' : '✗ Incorrect'}</span>
-                        {q.explanation}
-                    </div>
-                )}
-                {quiz.showExplanation && (
-                    <button
-                        onClick={nextQuestion}
-                        className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-500 text-white font-bold rounded-xl text-sm"
-                    >
-                        {quiz.currentIdx + 1 < QUIZ_QUESTIONS.length ? 'Next question →' : 'See results →'}
-                    </button>
-                )}
-            </div>
-        );
-    }
-
-    // ─── Theory Panel ────────────────────────────────────────────
-
-    function TheoryPanel() {
-        const [expanded, setExpanded] = useState<string | null>('principle');
-        const sections = [
-            {
-                id: 'principle', title: 'Principle', content:
-                    'The Kirby-Bauer disk diffusion test is based on diffusion of antibiotic from a paper disk impregnated with a known concentration of drug into the agar medium. As the antibiotic diffuses outward, its concentration decreases. At the point where the concentration falls below the MIC for that organism, bacterial growth resumes — forming a visible zone of inhibition.',
-            },
-            {
-                id: 'media', title: 'Mueller-Hinton Agar', content:
-                    'MHA is the CLSI-recommended medium. It contains beef extract, casein hydrolysate, and starch. Low in thymidine and thymine (avoids false resistance to sulfonamides/trimethoprim). Calcium and magnesium levels are standardized (affects aminoglycoside and tetracycline results).',
-            },
-            {
-                id: 'clsi', title: 'CLSI Breakpoints', content:
-                    'Clinical breakpoints are defined by the Clinical and Laboratory Standards Institute (CLSI) in document M100. They define zone diameter thresholds for S (susceptible), I (intermediate), and R (resistant) categories. Breakpoints are organism-specific and drug-specific.',
-            },
-            {
-                id: 'factors', title: 'Factors Affecting Results', content:
-                    'Agar depth (must be 4mm) · Inoculum density (0.5 McFarland) · Disk potency and storage conditions · Incubation temperature and duration · pH of medium · Presence of inhibitors (blood, mucus in clinical samples)',
-            },
-        ];
-        return (
-            <div className="space-y-2">
-                {sections.map(s => (
-                    <div key={s.id} className="border border-gray-200 rounded-xl overflow-hidden">
-                        <button
-                            className="w-full flex items-center justify-between p-3.5 text-left hover:bg-gray-50 transition-colors"
-                            onClick={() => setExpanded(expanded === s.id ? null : s.id)}
-                        >
-                            <span className="text-sm font-bold text-gray-900">{s.title}</span>
-                            <svg
-                                className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${expanded === s.id ? 'rotate-180' : ''}`}
-                                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-                            >
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                        {expanded === s.id && (
-                            <div className="px-3.5 pb-3.5 text-sm text-gray-600 leading-relaxed border-t border-gray-100 pt-3">
-                                {s.content}
+                            );
+                        }) : (
+                            <div className="text-center py-8">
+                                <MoveHorizontal className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                <p className="text-xs text-gray-400">No measurements yet</p>
+                                <p className="text-[10px] text-gray-300">Complete steps 4–5 to see results</p>
                             </div>
                         )}
                     </div>
-                ))}
+                )}
             </div>
-        );
-    }
-
-    // ─── Render ──────────────────────────────────────────────────
+        </div>
+    );
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <div className="max-w-5xl mx-auto px-4 pt-[2.75rem] pb-5">
-                <div className="max-w-5xl mx-auto">
-                    <div className="flex items-center justify-between mb-3">
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 bg-gradient-to-br from-blue-600 to-green-500 rounded-lg flex items-center justify-center">
-                                    <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                                    </svg>
-                                </div>
-                                <h1 className="text-base font-extrabold text-gray-900">Disk Diffusion Simulation</h1>
-                                <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Kirby-Bauer</span>
-                            </div>
-                            <p className="text-xs text-gray-500 ml-8">Antibiotic Susceptibility Testing · CLSI M100</p>
-                        </div>
-                        {sim.currentStep > 0 && (
-                            <div className="text-right">
-                                <div className="text-xs font-bold text-gray-500">Step {sim.currentStep + 1} / {SIM_STEPS.length}</div>
-                                <div className="text-xs text-blue-600 font-medium">{currentStepData.title}</div>
-                            </div>
-                        )}
-                    </div>
-                    <XPBar xp={sim.xp} total={TOTAL_XP} />
+        <div className="relative w-full bg-white font-sans overflow-hidden flex flex-col pt-11" style={{ height: 'calc(100vh - 64px)', minHeight: 500 }}>
+            {/* Background */}
+            <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+                <img
+                    src="https://images.unsplash.com/photo-1576086213369-97a306d36557?w=1400&q=80&auto=format&fit=crop"
+                    alt="laboratory background"
+                    className="absolute inset-0 w-full h-full object-cover"
+                    style={{ opacity: 0.13, filter: 'saturate(0.6) contrast(1.1)' }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-slate-50/95 via-white/90 to-slate-50/98" />
+                <div className="absolute inset-0 opacity-[0.03]"
+                    style={{ backgroundImage: 'repeating-linear-gradient(0deg,#64748b 0,#64748b 1px,transparent 1px,transparent 60px),repeating-linear-gradient(90deg,#64748b 0,#64748b 1px,transparent 1px,transparent 60px)' }} />
+                <div className="absolute top-0 left-0 right-0 h-14 bg-gradient-to-b from-slate-200/80 to-transparent border-b border-slate-200/40" />
+                <div className="absolute bottom-0 left-0 right-0 h-28">
+                    <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-stone-200/70 to-stone-100/50 border-t-2 border-stone-300/50" />
+                    <div className="absolute top-8 left-0 right-0 bottom-0 bg-gradient-to-b from-stone-700/25 to-stone-800/30" />
+                    <div className="absolute top-8 left-0 right-0 bottom-0 opacity-10"
+                        style={{ backgroundImage: 'repeating-linear-gradient(90deg,#78716c 0,#78716c 1px,transparent 1px,transparent 8px)' }} />
+                </div>
+                <div className="absolute top-1 left-6 flex items-end gap-3 opacity-30">
+                    <div className="w-8 h-10 bg-blue-200 rounded-t-full border border-blue-300" />
+                    <div className="w-6 h-14 bg-green-200 rounded-t-full border border-green-300" />
+                    <div className="w-8 h-8 bg-amber-200 rounded border border-amber-300" />
+                    <div className="w-5 h-12 bg-purple-200 rounded-t-lg border border-purple-300" />
+                </div>
+                <div className="absolute top-1 right-6 flex items-end gap-3 opacity-30">
+                    <div className="w-7 h-11 bg-cyan-200 rounded-t-full border border-cyan-300" />
+                    <div className="w-10 h-8 bg-red-100 rounded border border-red-200" />
+                    <div className="w-6 h-13 bg-indigo-200 rounded-t-lg border border-indigo-300" />
                 </div>
             </div>
 
-            {/* Step progress */}
-            <div className="bg-white border-b border-gray-100 px-4 py-3">
-                <div className="max-w-5xl mx-auto">
-                    <div className="flex items-start gap-1 sm:gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                        {SIM_STEPS.map((step, i) => (
-                            <React.Fragment key={step.id}>
-                                <StepBadge
-                                    n={i}
-                                    label={step.shortTitle}
-                                    active={sim.currentStep === i}
-                                    done={sim.completedSteps.has(i)}
-                                    onClick={() => {
-                                        if (sim.completedSteps.has(i) || sim.currentStep === i) {
-                                            setSim(prev => ({ ...prev, currentStep: i }));
-                                        }
-                                    }}
-                                />
-                                {i < SIM_STEPS.length - 1 && (
-                                    <div className={`flex-1 h-0.5 mt-4 rounded-full min-w-[8px] transition-colors ${sim.completedSteps.has(i) ? 'bg-green-400' : 'bg-gray-200'}`} />
-                                )}
-                            </React.Fragment>
-                        ))}
-                    </div>
-                </div>
-            </div>
+            {/* Main layout */}
+            <div className="relative z-10 flex flex-1 min-h-0 overflow-hidden">
+                <AnimatePresence>
+                    {sidebarOpen && !isMobile && (
+                        <motion.div
+                            initial={{ width: 0, opacity: 0 }} animate={{ width: 288, opacity: 1 }} exit={{ width: 0, opacity: 0 }}
+                            transition={{ duration: 0.25, ease: 'easeInOut' }}
+                            className="hidden md:block flex-shrink-0 border-r border-gray-200/80 bg-white/98 backdrop-blur-sm overflow-hidden shadow-lg"
+                            style={{ height: '100%' }}
+                        >
+                            <NotebookSidebar />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
-            {/* Main content */}
-            <div className="max-w-5xl mx-auto px-4 pt-25 pb-5">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+                <AnimatePresence>
+                    {mobileDrawerOpen && (
+                        <>
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="md:hidden fixed inset-0 bg-black/40 z-40 backdrop-blur-sm" onClick={() => setMobileDrawerOpen(false)} />
+                            <motion.div initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }} transition={{ type: 'tween', duration: 0.25 }} className="md:hidden fixed inset-y-0 left-0 w-80 max-w-[90vw] z-50 bg-white shadow-2xl overflow-hidden">
+                                <NotebookSidebar />
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>
 
-                    {/* Left: controls */}
-                    <div className="space-y-4">
-                        {/* Lab tip */}
-                        {showTip && currentStepData.labTip && (
-                            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex gap-2">
-                                <svg className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-bold text-blue-700 mb-0.5">Lab Tip</p>
-                                    <p className="text-xs text-blue-800 leading-relaxed">{currentStepData.labTip}</p>
-                                </div>
-                                <button onClick={() => setShowTip(false)} className="text-blue-400 hover:text-blue-600 flex-shrink-0">
-                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-                        )}
-
-                        {/* Tab bar */}
-                        <div className="flex bg-gray-100 rounded-xl p-1">
-                            {(['lab', 'theory', 'quiz'] as const).map(tab => (
-                                <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab)}
-                                    className={`flex-1 py-2 rounded-lg text-xs font-bold capitalize transition-all duration-200 ${activeTab === tab
-                                        ? 'bg-white text-blue-700 shadow-sm'
-                                        : 'text-gray-500 hover:text-gray-700'
-                                        }`}
-                                >
-                                    {tab === 'lab' ? '🧪 Lab' : tab === 'theory' ? '📖 Theory' : '❓ Quiz'}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Tab content */}
-                        <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
-                            {activeTab === 'lab' && renderStep()}
-                            {activeTab === 'theory' && <TheoryPanel />}
-                            {activeTab === 'quiz' && <QuizPanel />}
-                        </div>
-                    </div>
-
-                    {/* Right: petri dish */}
-                    <div className="space-y-4">
-                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-sm font-bold text-gray-900">Petri Dish View</h3>
-                                {sim.selectedOrganism && (
-                                    <span className="text-xs font-medium italic text-gray-500">
-                                        {sim.selectedOrganism.shortName}
+                <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+                    <div className="flex-shrink-0 bg-white/95 backdrop-blur-sm border-b border-gray-200/80 px-3 sm:px-5 py-2.5 flex items-center justify-between gap-2 shadow-sm">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <button
+                                onClick={() => isMobile ? setMobileDrawerOpen(true) : setSidebarOpen(v => !v)}
+                                className="flex-shrink-0 p-2 rounded-xl bg-gray-100 border border-gray-200 hover:bg-gray-200 transition-colors"
+                            >
+                                {sidebarOpen && !isMobile ? <ChevronLeft className="w-4 h-4 text-gray-600" /> : <Menu className="w-4 h-4 text-gray-600" />}
+                            </button>
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="flex-shrink-0 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-blue-600 to-green-400 text-white text-[10px] font-extrabold uppercase tracking-widest">
+                                        {step + 1}/7
                                     </span>
-                                )}
+                                    <h2 className="text-sm sm:text-base font-extrabold text-gray-800 truncate">{PROTOCOL_STEPS[step].title}</h2>
+                                </div>
+                                <p className="text-[10px] sm:text-xs text-gray-500 truncate mt-0.5">{PROTOCOL_STEPS[step].desc}</p>
                             </div>
-                            <canvas
-                                ref={canvasRef}
-                                width={320}
-                                height={320}
-                                className="w-full max-w-[320px] mx-auto block"
-                                style={{ imageRendering: 'crisp-edges' }}
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                            {timerActive && (
+                                <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-xl bg-gray-100 border border-gray-200">
+                                    <Clock className="w-3.5 h-3.5 text-gray-400" />
+                                    <span className="text-xs font-mono font-bold text-gray-600">{fmtTime(timer)}</span>
+                                </div>
+                            )}
+                            <button onClick={resetLab} className="p-2 rounded-xl bg-gray-100 border border-gray-200 hover:bg-red-50 hover:border-red-200 transition-colors group">
+                                <RotateCcw className="w-4 h-4 text-gray-500 group-hover:text-red-500" />
+                            </button>
+                            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-2xl px-3 py-1.5 shadow-sm">
+                                <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                                <div className="text-right">
+                                    <div className="text-[10px] text-gray-400 uppercase leading-none">Score</div>
+                                    <div className="text-base font-black text-gray-800 leading-none">{score}<span className="text-xs text-gray-400 font-normal">/500</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 relative overflow-hidden min-h-0" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={() => { if (measuringDiskId) { setMeasuringDiskId(null); setMeasureDistance(0); } }}>
+                        <AnimatePresence>
+                            {notification && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
+                                    className={`absolute top-3 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2 max-w-xs text-sm font-semibold border ${notification.type === 'success' ? 'bg-green-50 text-green-800 border-green-200' : notification.type === 'error' ? 'bg-red-50 text-red-800 border-red-200' : notification.type === 'warn' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-blue-50 text-blue-800 border-blue-200'}`}
+                                >
+                                    {notification.type === 'success' ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : notification.type === 'error' ? <AlertCircle className="w-4 h-4 flex-shrink-0" /> : <Info className="w-4 h-4 flex-shrink-0" />}
+                                    <span className="truncate">{notification.msg}</span>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {(step === 2) && (
+                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="absolute bottom-16 sm:bottom-20 left-3 sm:left-6 z-30 cursor-pointer"
+                                onClick={() => setFlameUsed(v => { if (!v) { addScore(15, 'Sterile technique applied'); notify('Bunsen burner lit — aseptic conditions.', 'success'); } else notify('Burner extinguished.', 'info'); return !v; })}>
+                                <BunsenBurnerSVG lit={flameUsed} />
+                                <div className={`text-center text-[10px] font-bold mt-1 ${flameUsed ? 'text-orange-600' : 'text-gray-400'}`}>{flameUsed ? 'Lit ✓' : 'Click'}</div>
+                            </motion.div>
+                        )}
+
+                        {step === 2 && streaks < 3 && selectedOrg && (
+                            <motion.div
+                                drag dragElastic={0}
+                                whileDrag={{ scale: 1.08, filter: 'drop-shadow(0 12px 28px rgba(0,0,0,0.45))' }}
+                                onDragEnd={(_, info) => {
+                                    const rect = plateRef.current?.getBoundingClientRect();
+                                    if (!rect) return;
+                                    const plateCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+                                    if (Math.hypot(info.point.x - plateCenter.x, info.point.y - plateCenter.y) < 120) {
+                                        if (!flameUsed) { setContaminated(true); deductScore(30, 'Contamination! Flame the loop first'); }
+                                        else if (streaks < 3) {
+                                            setStreaks(s => { const nxt = s + 1; addScore(25, `Streak pass ${nxt}/3`); if (nxt === 3) notify('Confluent bacterial lawn established.', 'success'); return nxt; });
+                                        }
+                                    } else notify('Drag the swab directly over the agar surface.', 'error');
+                                }}
+                                className="absolute right-[10%] sm:right-[16%] top-[20%] z-30 cursor-grab touch-none"
+                            >
+                                <SwabSVG />
+                                <div className="text-center text-[10px] font-bold text-amber-600 mt-1">{streaks}/3 passes</div>
+                            </motion.div>
+                        )}
+
+                        <AnimatePresence>
+                            {step === 0 && !agarPoured && (
+                                <motion.div
+                                    drag dragConstraints={{ left: -300, right: 300, top: -200, bottom: 200 }} dragElastic={0.1}
+                                    whileDrag={{ scale: 1.05, rotate: -15, filter: 'drop-shadow(0 12px 32px rgba(0,0,0,0.4))' }}
+                                    initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
+                                    onDragEnd={(_, info) => {
+                                        const rect = plateRef.current?.getBoundingClientRect();
+                                        if (rect && Math.hypot(info.point.x - (rect.left + rect.width / 2), info.point.y - (rect.top + rect.height / 2)) < 110) {
+                                            setAgarPoured(true); addScore(50, 'Mueller-Hinton agar poured'); notify('MHA poured to 4 mm depth. pH 7.2–7.4 confirmed.', 'success');
+                                        } else notify('Tilt bottle directly over the petri dish.', 'error');
+                                    }}
+                                    className="absolute left-[5%] sm:left-[8%] top-[15%] sm:top-[20%] z-30 cursor-grab touch-none"
+                                >
+                                    <AgarBottleSVG />
+                                    <p className="text-center text-[10px] font-bold text-green-700 mt-1">Drag → dish</p>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {step === 1 && (
+                            <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="absolute right-2 sm:right-6 top-[12%] flex flex-col gap-2 z-30 max-h-[75%] overflow-y-auto pr-1">
+                                <div className="text-[10px] font-extrabold text-blue-600 uppercase tracking-widest px-1 mb-1">Culture Collection</div>
+                                {ORGANISMS.map(org => (
+                                    <motion.button key={org.id} onClick={() => { setSelectedOrg(org); addScore(50, `Isolate: ${org.short}`); }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                        className={`w-40 sm:w-52 bg-white/95 backdrop-blur-sm border-2 rounded-2xl p-3 text-left transition-all shadow-md ${selectedOrg?.id === org.id ? 'border-blue-500 shadow-blue-200' : 'border-gray-200 hover:border-gray-300'}`}>
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-black text-white" style={{ background: org.color }}>{org.gram.includes('positive') ? 'G+' : 'G−'}</div>
+                                            <div className="min-w-0"><div className="text-xs font-extrabold text-gray-800 italic leading-tight truncate">{org.short}</div><div className="text-[9px] text-gray-400 font-medium uppercase truncate">{org.atcc}</div></div>
+                                        </div>
+                                        {selectedOrg?.id === org.id && <div className="mt-2 flex items-center gap-1"><CheckCircle className="w-3 h-3 text-blue-600" /><span className="text-[10px] font-bold text-blue-600">Selected</span></div>}
+                                    </motion.button>
+                                ))}
+                            </motion.div>
+                        )}
+
+                        {step === 3 && placedDisks.length < 5 && selectedOrg && (
+                            <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="absolute right-2 sm:right-6 top-[10%] z-30">
+                                <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-2xl p-3 shadow-xl w-44 sm:w-52">
+                                    <div className="flex items-center gap-1.5 mb-3"><div className="w-4 h-4 rounded bg-gradient-to-br from-blue-600 to-green-400 flex items-center justify-center"><Pipette className="w-2.5 h-2.5 text-white" /></div><span className="text-[10px] font-extrabold text-gray-700 uppercase tracking-wider">Antibiotic Disks</span></div>
+                                    <div className="grid grid-cols-3 gap-1.5">
+                                        {DISKS.map(disk => {
+                                            const placed = placedDisks.includes(disk.id);
+                                            return (
+                                                <motion.div key={disk.id} drag={!placed} dragSnapToOrigin
+                                                    whileDrag={{ scale: 1.15, zIndex: 100, filter: 'drop-shadow(0 8px 20px rgba(0,0,0,0.35))' }}
+                                                    onDragEnd={(_, info) => {
+                                                        if (placed) return;
+                                                        const rect = plateRef.current?.getBoundingClientRect();
+                                                        if (rect && Math.hypot(info.point.x - (rect.left + rect.width / 2), info.point.y - (rect.top + rect.height / 2)) < 100) {
+                                                            const relX = (info.point.x - (rect.left + rect.width / 2)) / (rect.width / 2) * 45;
+                                                            const relY = (info.point.y - (rect.top + rect.height / 2)) / (rect.height / 2) * 45;
+                                                            if (isValidPlacement(relX, relY, disk.id)) {
+                                                                setDiskPositions(p => ({ ...p, [disk.id]: { x: relX, y: relY } }));
+                                                                setPlacedDisks(p => [...p, disk.id]);
+                                                                addScore(25, `${disk.id} placed`);
+                                                            }
+                                                        } else notify(`Drop ${disk.id} onto the agar plate.`, 'error');
+                                                    }}
+                                                    className={`h-14 rounded-xl border-2 flex flex-col items-center justify-center gap-0.5 select-none ${placed ? 'opacity-25 bg-gray-100 cursor-not-allowed' : 'bg-white hover:bg-gray-50 cursor-grab touch-none shadow-sm'}`}
+                                                    style={{ borderColor: disk.color }}
+                                                >
+                                                    <div className="w-7 h-7 rounded-full border-2 flex items-center justify-center" style={{ borderColor: disk.color, background: `${disk.color}15` }}><span className="text-[8px] font-black" style={{ color: disk.color }}>{disk.id}</span></div>
+                                                    <span className="text-[8px] text-gray-500 font-medium leading-none">{disk.shortClass.split(' ')[0]}</span>
+                                                </motion.div>
+                                            );
+                                        })}
+                                    </div>
+                                    <p className="text-[9px] text-gray-400 text-center mt-2">{placedDisks.length}/5 placed · need ≥4</p>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {step === 4 && (
+                            <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="absolute right-3 sm:right-8 top-[8%] sm:top-[10%] z-30">
+                                <div ref={incubatorRef}>
+                                    <IncubatorSVG 
+                                        progress={incubationProgress} 
+                                        org={selectedOrg} 
+                                        disks={placedDisks} 
+                                        done={incubationDone} 
+                                        doorOpen={incubatorDoorOpen}
+                                        plateInside={plateInIncubator}
+                                        onToggleDoor={() => setIncubatorDoorOpen(v => !v)}
+                                    />
+                                </div>
+                                
+                                {/* Plate drag target hint */}
+                                {!plateInIncubator && !incubationDone && (
+                                    <motion.div
+                                        drag={step === 4 && !plateInIncubator}
+                                        dragSnapToOrigin
+                                        onDragEnd={(_, info) => handlePlateDragToIncubator(info)}
+                                        className="absolute left-1/2 -translate-x-1/2 -bottom-8 cursor-grab touch-none"
+                                    >
+                                        <div className="text-center text-[10px] font-bold text-blue-600 bg-white/90 px-3 py-1 rounded-full border border-blue-200 shadow-sm">
+                                            Drag plate here
+                                        </div>
+                                    </motion.div>
+                                )}
+                                
+                                {/* Start incubation button */}
+                                {plateInIncubator && !incubating && !incubationDone && !incubatorDoorOpen && (
+                                    <button
+                                        onClick={startIncubation}
+                                        className="absolute left-1/2 -translate-x-1/2 -bottom-8 px-4 py-1.5 bg-gradient-to-r from-blue-600 to-green-400 text-white text-xs font-bold rounded-full shadow-md"
+                                    >
+                                        Start Incubation
+                                    </button>
+                                )}
+                                
+                                <p className="text-center text-[10px] text-gray-500 font-medium mt-12">
+                                    {!plateInIncubator ? 'Load plate →' : incubatorDoorOpen ? 'Close door' : !incubationDone ? 'Ready to start' : 'Complete'}
+                                </p>
+                            </motion.div>
+                        )}
+
+                        {step === 5 && incubationDone && (
+                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="absolute left-3 sm:left-6 bottom-24 sm:bottom-28 z-30">
+                                <div className="bg-white border border-gray-200 rounded-2xl p-3 shadow-lg flex items-center gap-3">
+                                    <Ruler className="w-5 h-5 text-blue-600" />
+                                    <div>
+                                        <p className="text-xs font-bold text-gray-800">Measurement Mode</p>
+                                        <p className="text-[10px] text-gray-500">Click a disk and drag outward – the line snaps to the true zone edge.</p>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        <div ref={plateRef} className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20" style={{ width: 'min(50vw,260px)', height: 'min(50vw,260px)' }}>
+                            <PetriDishSVG
+                                org={selectedOrg} placedDisks={placedDisks} diskPositions={diskPositions}
+                                measuredZones={measuredZones} streaks={streaks} agarPoured={agarPoured}
+                                incubationDone={incubationDone} calcZone={calcZone} interpret={interpret}
+                                step={step} onDiskMouseDown={handleDiskMouseDown}
+                                measuringDiskId={measuringDiskId} measureDistance={measureDistance}
                             />
-                            {sim.selectedOrganism && (
-                                <div className="mt-3 flex flex-wrap gap-1.5 justify-center">
-                                    {sim.selectedDiskIds.map(id => {
-                                        const ab = ANTIBIOTICS.find(a => a.id === id);
-                                        if (!ab) return null;
-                                        return (
-                                            <span key={id} className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
-                                                style={{ background: ab.diskColor, color: ab.color }}>
-                                                <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: ab.color }} />
-                                                {id} — {ab.name}
-                                            </span>
-                                        );
-                                    })}
+                            {agarPoured && (
+                                <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 flex items-center gap-1.5 whitespace-nowrap">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                                    <span className="text-[10px] font-medium text-gray-500">MHA · {selectedOrg?.short || 'Uninoculated'} · 90mm</span>
                                 </div>
                             )}
                         </div>
 
-                        {/* Breakpoint reference card */}
-                        {sim.currentStep >= 6 && (
-                            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
-                                <p className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3">CLSI Breakpoints Reference</p>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-xs">
-                                        <thead>
-                                            <tr className="text-gray-400">
-                                                <th className="text-left pb-2 font-medium">Antibiotic</th>
-                                                <th className="text-center pb-2 font-medium">S ≥</th>
-                                                <th className="text-center pb-2 font-medium">R ≤</th>
-                                                <th className="text-center pb-2 font-medium">Result</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-100">
-                                            {sim.selectedDiskIds.map(id => {
-                                                const ab = ANTIBIOTICS.find(a => a.id === id)!;
-                                                const zone = sim.measuredZones[id] ?? (sim.selectedOrganism?.zones[id] ?? 0);
-                                                const result = interpretZone(id, zone);
-                                                return (
-                                                    <tr key={id}>
-                                                        <td className="py-1.5 font-bold" style={{ color: ab.color }}>{ab.shortName}</td>
-                                                        <td className="py-1.5 text-center text-green-700 font-medium">{ab.breakpoints.susceptible}</td>
-                                                        <td className="py-1.5 text-center text-red-600 font-medium">{ab.breakpoints.resistant}</td>
-                                                        <td className="py-1.5 text-center"><ResultBadge result={result} /></td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </div>
+                        {contaminated && (
+                            <div className="absolute top-16 right-4 sm:right-8 z-30 bg-red-50 border border-red-300 rounded-2xl p-3 flex items-start gap-2 max-w-[200px] shadow-lg">
+                                <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                                <div><p className="text-xs font-bold text-red-700">Contaminated!</p><p className="text-[10px] text-red-600 mt-0.5">Flame the loop before streaking. −30 XP</p></div>
+                            </div>
+                        )}
+
+                        {step === 5 && incubationDone && Object.keys(measuredZones).length < placedDisks.length && (
+                            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-white/90 backdrop-blur-sm border border-blue-200 rounded-2xl px-4 py-2 flex items-center gap-2 shadow-md whitespace-nowrap">
+                                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                                <span className="text-xs font-semibold text-blue-700">{Object.keys(measuredZones).length}/{placedDisks.length} zones measured — click a ring to measure</span>
                             </div>
                         )}
                     </div>
+
+                    <div className="flex-shrink-0 bg-white/95 backdrop-blur-sm border-t border-gray-200/80 px-3 sm:px-5 py-3 flex items-center justify-between gap-3 shadow-sm">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`px-3 py-1.5 rounded-2xl text-xs font-extrabold ${score >= 450 ? 'bg-green-100 text-green-700' : score >= 350 ? 'bg-blue-100 text-blue-700' : score >= 250 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>{grade}</span>
+                            {flameUsed && <span className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-xl bg-orange-50 border border-orange-200 text-[10px] font-bold text-orange-700"><Flame className="w-3 h-3" />Aseptic</span>}
+                            {contaminated && <span className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-xl bg-red-50 border border-red-200 text-[10px] font-bold text-red-700"><AlertTriangle className="w-3 h-3" />Contaminated</span>}
+                            {step === 5 && <span className="flex items-center gap-1 text-xs text-gray-500"><Ruler className="w-3.5 h-3.5 text-blue-500" />{Object.keys(measuredZones).length}/{placedDisks.length} measured</span>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => setMobileDrawerOpen(true)} className="md:hidden p-2 rounded-xl bg-blue-50 border border-blue-200"><BookOpen className="w-4 h-4 text-blue-600" /></button>
+                            <motion.button
+                                onClick={advanceStep} disabled={!canAdvance() && step !== 6}
+                                whileHover={canAdvance() ? { scale: 1.03 } : {}} whileTap={canAdvance() ? { scale: 0.97 } : {}}
+                                className={`px-5 sm:px-7 py-2.5 rounded-2xl font-extrabold text-sm flex items-center gap-2 transition-all shadow-md ${canAdvance() ? 'bg-gradient-to-r from-blue-600 to-green-400 text-white hover:shadow-lg' : 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'}`}
+                            >
+                                {step === 6 ? <>View Report <FileText className="w-4 h-4" /></> : <>Confirm &amp; Proceed <ChevronRight className="w-4 h-4" /></>}
+                            </motion.button>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <AnimatePresence>
+                {showReport && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6">
+                        <motion.div initial={{ scale: 0.92, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }} className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+                            <div className="bg-gradient-to-r from-blue-600 to-green-400 px-6 py-4 flex items-center justify-between flex-shrink-0">
+                                <div><h2 className="text-lg font-extrabold text-white">Antimicrobial Susceptibility Report</h2><p className="text-xs text-white/80 mt-0.5">PharmaWallah Clinical Microbiology · CLSI M100</p></div>
+                                <button onClick={() => setShowReport(false)} className="p-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors"><X className="w-5 h-5 text-white" /></button>
+                            </div>
+                            <div className="overflow-y-auto flex-1 p-6 space-y-5">
+                                <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
+                                    <p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-2">Clinical Case</p>
+                                    <p className="text-xs text-blue-900 leading-relaxed">{selectedOrg?.caseStudy}</p>
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        <span className="px-3 py-1 rounded-full bg-white border border-blue-200 text-xs font-bold text-blue-700 italic">{selectedOrg?.name}</span>
+                                        <span className="px-3 py-1 rounded-full bg-white border border-blue-200 text-xs font-medium text-blue-600">{selectedOrg?.gram}</span>
+                                        <span className="px-3 py-1 rounded-full bg-white border border-blue-200 text-xs font-medium text-blue-600">{selectedOrg?.atcc}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-extrabold text-gray-800 mb-3">Susceptibility Results</p>
+                                    <div className="space-y-2">
+                                        {placedDisks.map(id => {
+                                            const zone = measuredZones[id] || calcZone(id);
+                                            const r = interpret(id, zone);
+                                            const disk = DISKS.find(d => d.id === id)!;
+                                            const c = r === 'S' ? { bg: 'bg-green-50', border: 'border-green-200', badge: 'bg-green-100 text-green-700', bar: 'bg-green-500' } : r === 'R' ? { bg: 'bg-red-50', border: 'border-red-200', badge: 'bg-red-100 text-red-700', bar: 'bg-red-500' } : { bg: 'bg-amber-50', border: 'border-amber-200', badge: 'bg-amber-100 text-amber-700', bar: 'bg-amber-500' };
+                                            return (
+                                                <div key={id} className={`${c.bg} border ${c.border} rounded-2xl p-3 sm:p-4 flex items-center gap-3`}>
+                                                    <div className="w-10 h-10 rounded-full border-2 flex items-center justify-center text-xs font-black flex-shrink-0" style={{ borderColor: disk.color, color: disk.color, background: `${disk.color}15` }}>{disk.id}</div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="font-extrabold text-gray-800 text-sm">{disk.name}</div>
+                                                        <div className="text-[10px] text-gray-500">{disk.shortClass} · S≥{disk.bpS} I({disk.bpR + 1}–{disk.bpS - 1}) R≤{disk.bpR}</div>
+                                                        <div className="mt-1 h-1.5 bg-white/60 rounded-full overflow-hidden w-full"><div className={`h-full ${c.bar} rounded-full`} style={{ width: `${Math.min(100, (zone / 35) * 100)}%` }} /></div>
+                                                    </div>
+                                                    <div className="text-right flex-shrink-0">
+                                                        <div className="font-black text-gray-800 text-base font-mono">{zone}mm</div>
+                                                        <span className={`text-xs font-extrabold px-2.5 py-0.5 rounded-full ${c.badge}`}>{r === 'S' ? 'Susceptible' : r === 'R' ? 'Resistant' : 'Intermediate'}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl p-4 flex items-center justify-between">
+                                    <div><div className="text-white/70 text-xs font-medium uppercase tracking-wider">Final Score</div><div className="text-white font-black text-3xl">{score}<span className="text-lg opacity-60">/500</span></div></div>
+                                    <div className="text-right"><div className="text-white/70 text-xs font-medium uppercase tracking-wider">Grade</div><div className="text-white font-black text-4xl">{grade}</div></div>
+                                    <div className="text-right"><div className="text-white/70 text-xs font-medium uppercase tracking-wider">Time</div><div className="text-white font-bold text-xl font-mono">{fmtTime(timer)}</div></div>
+                                </div>
+                            </div>
+                            <div className="border-t border-gray-200 p-4 flex flex-wrap justify-end gap-3 flex-shrink-0">
+                                <button onClick={resetLab} className="px-4 py-2.5 rounded-2xl border-2 border-gray-200 font-bold text-sm text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-all">New Simulation</button>
+                                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => generatePDFReport(selectedOrg, placedDisks, measuredZones, calcZone, interpret, score, grade)} className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white font-extrabold text-sm flex items-center gap-2 shadow-md">
+                                    <Download className="w-4 h-4" />Download PDF Report
+                                </motion.button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
