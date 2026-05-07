@@ -10,7 +10,7 @@ import { Metadata } from "next";
 import Courses from "@/components/Home/Courses";
 
 export const metadata: Metadata = {
-  title: "PharmaWallah | Pharmacy eLearning Platform",
+  title: "NiggiWallah | Pharmacy eLearning Platform",
   description: "Master Pharmacy and Pharmaceutical Sciences with comprehensive study materials, MCQs, tools, and community support.",
 };
 
