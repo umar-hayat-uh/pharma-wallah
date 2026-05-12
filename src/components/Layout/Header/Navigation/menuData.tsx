@@ -11,11 +11,12 @@ export const headerData: HeaderItem[] = [
       { label: "Lab Simulation", href: "/simulations" },
       { label: "Slide Spotting", href: "/spotting" },
       { label: "Flashcards", href: "/flash-cards" },
+      { label: "Prescription Reader", href: "/prescription-reader" },
       { label: "Books Library", href: "/books-library" },
     ],
   },
   { label: "Pharmacopedia", href: "/encyclopedia" },
   { label: "Calculation Tools", href: "/calculation-tools" },
-  { label: "Blog", href: "/blog" },          // ← New blog link
+  { label: "Blog", href: "/blog" },
   { label: "About Us", href: "/about-us" },
 ];
