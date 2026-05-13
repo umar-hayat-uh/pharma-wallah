@@ -73,7 +73,8 @@ export async function POST(req: NextRequest) {
             fullText += chunk;
         }
 
-        const jsonMatch = fullText.match(/\[\s*\{.*\}\s*\]/s);
+        // Fixed regex: [\s\S] matches any character including newlines (ES2017 compatible)
+        const jsonMatch = fullText.match(/\[\s*\{[\s\S]*?\}\s*\]/);
         if (!jsonMatch) {
             throw new Error('AI response did not contain a valid JSON array');
         }
