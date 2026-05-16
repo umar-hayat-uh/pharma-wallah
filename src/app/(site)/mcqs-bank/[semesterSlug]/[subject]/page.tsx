@@ -9,22 +9,20 @@ import {
   BookOpen, Trophy, RotateCcw, AlertTriangle, Zap, Layers,
   ClipboardList, ChevronDown, ChevronUp, Award, ArrowUp,
   Microscope, FlaskConical, Beaker, Stethoscope, Leaf, Pill,
-  LayoutDashboard, Timer, Play, FileText, Hash, Target,
+  Timer, Play, FileText, Hash, Target,
   BookMarked, Sparkles, CheckSquare, Clock,
 } from "lucide-react";
 import { SemesterData } from "@/app/api/semester-data";
 import { semesterToSlug, subjectToSlug } from "@/lib/mcq-utils";
 import type { MCQBank } from "@/lib/mcq-utils";
-import { useTracker } from "@/hooks/useTracker";
-import { useUser } from "@clerk/nextjs";
 import jsPDF from "jspdf";
 
 import biochemBank from "@/app/api/mcq-data/pharmaceutical-biochemistry";
-import physioBank  from "@/app/api/mcq-data/physiology-histology-i";
+import physioBank from "@/app/api/mcq-data/physiology-histology-i";
 
 const BANK_REGISTRY: Record<string, MCQBank> = {
   "pharmaceutical-biochemistry": biochemBank,
-  "physiology-histology-i":      physioBank,
+  "physiology-histology-i": physioBank,
 };
 
 interface PageProps { params: { semesterSlug: string; subject: string } }
@@ -32,72 +30,72 @@ interface PageProps { params: { semesterSlug: string; subject: string } }
 const QUIZ_DURATION_SECONDS = 15 * 60;
 
 const BG_ICONS = [
-  { Icon: Pill,         top: "8%",  left: "1.5%",  size: 30 },
-  { Icon: Beaker,       top: "38%", left: "1%",    size: 28 },
-  { Icon: Stethoscope,  top: "70%", left: "1.5%",  size: 30 },
-  { Icon: Microscope,   top: "8%",  left: "96.5%", size: 30 },
-  { Icon: FlaskConical, top: "38%", left: "97%",   size: 28 },
-  { Icon: Leaf,         top: "70%", left: "96.5%", size: 28 },
+  { Icon: Pill, top: "8%", left: "1.5%", size: 30 },
+  { Icon: Beaker, top: "38%", left: "1%", size: 28 },
+  { Icon: Stethoscope, top: "70%", left: "1.5%", size: 30 },
+  { Icon: Microscope, top: "8%", left: "96.5%", size: 30 },
+  { Icon: FlaskConical, top: "38%", left: "97%", size: 28 },
+  { Icon: Leaf, top: "70%", left: "96.5%", size: 28 },
 ];
 
 const SEM_GRADS: Record<string, string> = {
-  "semester-1":  "from-blue-600 to-cyan-400",
-  "semester-2":  "from-violet-600 to-purple-400",
-  "semester-3":  "from-emerald-600 to-teal-400",
-  "semester-4":  "from-amber-500 to-orange-400",
-  "semester-5":  "from-rose-600 to-pink-400",
-  "semester-6":  "from-cyan-600 to-sky-400",
-  "semester-7":  "from-indigo-600 to-blue-400",
-  "semester-8":  "from-green-600 to-lime-400",
-  "semester-9":  "from-orange-600 to-red-400",
+  "semester-1": "from-blue-600 to-cyan-400",
+  "semester-2": "from-violet-600 to-purple-400",
+  "semester-3": "from-emerald-600 to-teal-400",
+  "semester-4": "from-amber-500 to-orange-400",
+  "semester-5": "from-rose-600 to-pink-400",
+  "semester-6": "from-cyan-600 to-sky-400",
+  "semester-7": "from-indigo-600 to-blue-400",
+  "semester-8": "from-green-600 to-lime-400",
+  "semester-9": "from-orange-600 to-red-400",
   "semester-10": "from-fuchsia-600 to-violet-400",
 };
 
 const SEM_SOLID: Record<string, string> = {
-  "semester-1":  "#2563eb",
-  "semester-2":  "#7c3aed",
-  "semester-3":  "#059669",
-  "semester-4":  "#d97706",
-  "semester-5":  "#e11d48",
-  "semester-6":  "#0891b2",
-  "semester-7":  "#4f46e5",
-  "semester-8":  "#16a34a",
-  "semester-9":  "#ea580c",
+  "semester-1": "#2563eb",
+  "semester-2": "#7c3aed",
+  "semester-3": "#059669",
+  "semester-4": "#d97706",
+  "semester-5": "#e11d48",
+  "semester-6": "#0891b2",
+  "semester-7": "#4f46e5",
+  "semester-8": "#16a34a",
+  "semester-9": "#ea580c",
   "semester-10": "#a21caf",
 };
 
 function getGrade(pct: number) {
-  if (pct >= 90) return { label: "A+  Distinction",  color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", emoji: "🏆", pdfLabel: "A+ Distinction"   };
-  if (pct >= 80) return { label: "A  Excellent",      color: "text-green-700",   bg: "bg-green-50 border-green-200",     emoji: "🥇", pdfLabel: "A  Excellent"     };
-  if (pct >= 70) return { label: "B  Good",           color: "text-blue-700",    bg: "bg-blue-50 border-blue-200",       emoji: "🎯", pdfLabel: "B  Good"          };
-  if (pct >= 60) return { label: "C  Satisfactory",   color: "text-amber-700",   bg: "bg-amber-50 border-amber-200",     emoji: "📖", pdfLabel: "C  Satisfactory"  };
-  if (pct >= 50) return { label: "D  Pass",           color: "text-orange-700",  bg: "bg-orange-50 border-orange-200",   emoji: "✅", pdfLabel: "D  Pass"          };
-  return              { label: "F  Needs Revision",  color: "text-red-700",     bg: "bg-red-50 border-red-200",         emoji: "📚", pdfLabel: "F  Needs Revision" };
+  if (pct >= 90) return { label: "A+  Distinction", color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", emoji: "🏆", pdfLabel: "A+ Distinction" };
+  if (pct >= 80) return { label: "A  Excellent", color: "text-green-700", bg: "bg-green-50 border-green-200", emoji: "🥇", pdfLabel: "A  Excellent" };
+  if (pct >= 70) return { label: "B  Good", color: "text-blue-700", bg: "bg-blue-50 border-blue-200", emoji: "🎯", pdfLabel: "B  Good" };
+  if (pct >= 60) return { label: "C  Satisfactory", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", emoji: "📖", pdfLabel: "C  Satisfactory" };
+  if (pct >= 50) return { label: "D  Pass", color: "text-orange-700", bg: "bg-orange-50 border-orange-200", emoji: "✅", pdfLabel: "D  Pass" };
+  return { label: "F  Needs Revision", color: "text-red-700", bg: "bg-red-50 border-red-200", emoji: "📚", pdfLabel: "F  Needs Revision" };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PDF GENERATOR — fully corrected: proper width, text wrapping, page breaks
 // ═══════════════════════════════════════════════════════════════════════════
 function generatePDF(params: {
-  subjectName:  string;
+  subjectName: string;
   semesterName: string;
-  unitName:     string;
-  stats:        { correct: number; wrong: number; skipped: number; pct: number; total: number };
-  timeTaken:    number;
-  questions:    any[];
-  answers:      Record<number, string>;
-  accentColor:  string;
+  unitName: string;
+  stats: { correct: number; wrong: number; skipped: number; pct: number; total: number };
+  timeTaken: number;
+  questions: any[];
+  answers: Record<number, string>;
+  accentColor: string;
 }) {
   const { subjectName, semesterName, unitName, stats, timeTaken, questions, answers, accentColor } = params;
 
-  const doc  = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const PW   = 210;
-  const PH   = 297;
-  const ML   = 14;
-  const MR   = 14;
-  const CW   = PW - ML - MR; // 182 mm
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const PW = 210;
+  const PH = 297;
+  const ML = 14;
+  const MR = 14;
+  const CW = PW - ML - MR; // 182 mm
 
-  const FOOTER_H    = 11;
+  const FOOTER_H = 11;
   const SAFE_BOTTOM = PH - FOOTER_H - 4;
 
   // ── RGB helpers ────────────────────────────────────────────────────────
@@ -115,25 +113,25 @@ function generatePDF(params: {
 
   const C = {
     accent, accentLight,
-    white:    [255, 255, 255] as [number,number,number],
-    dark:     [15,  23,  42 ] as [number,number,number],
-    mid:      [51,  65,  85 ] as [number,number,number],
-    muted:    [100, 116, 139] as [number,number,number],
-    light:    [241, 245, 249] as [number,number,number],
-    border:   [226, 232, 240] as [number,number,number],
-    green:    [5,   150, 105] as [number,number,number],
-    greenBg:  [240, 253, 244] as [number,number,number],
-    red:      [185, 28,  28 ] as [number,number,number],
-    redBg:    [254, 242, 242] as [number,number,number],
-    amber:    [146, 64,  14 ] as [number,number,number],
-    amberBg:  [255, 251, 235] as [number,number,number],
-    indigo:   [67,  56,  202] as [number,number,number],
-    indigoBg: [238, 242, 255] as [number,number,number],
+    white: [255, 255, 255] as [number, number, number],
+    dark: [15, 23, 42] as [number, number, number],
+    mid: [51, 65, 85] as [number, number, number],
+    muted: [100, 116, 139] as [number, number, number],
+    light: [241, 245, 249] as [number, number, number],
+    border: [226, 232, 240] as [number, number, number],
+    green: [5, 150, 105] as [number, number, number],
+    greenBg: [240, 253, 244] as [number, number, number],
+    red: [185, 28, 28] as [number, number, number],
+    redBg: [254, 242, 242] as [number, number, number],
+    amber: [146, 64, 14] as [number, number, number],
+    amberBg: [255, 251, 235] as [number, number, number],
+    indigo: [67, 56, 202] as [number, number, number],
+    indigoBg: [238, 242, 255] as [number, number, number],
   };
 
-  const fill = (col: [number,number,number]) => doc.setFillColor(...col);
-  const text = (col: [number,number,number]) => doc.setTextColor(...col);
-  const draw = (col: [number,number,number]) => doc.setDrawColor(...col);
+  const fill = (col: [number, number, number]) => doc.setFillColor(...col);
+  const text = (col: [number, number, number]) => doc.setTextColor(...col);
+  const draw = (col: [number, number, number]) => doc.setDrawColor(...col);
   const strip = (s: string) => (s ?? "")
     .replace(/<[^>]+>/g, "")
     .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
@@ -144,7 +142,7 @@ function generatePDF(params: {
   const lh = (fs: number) => fs * 0.3528 * 1.45;
 
   // ── Page state ─────────────────────────────────────────────────────────
-  let y      = 0;
+  let y = 0;
   let pageNo = 1;
 
   const drawFooter = () => {
@@ -194,12 +192,7 @@ function generatePDF(params: {
   fill(accent);
   doc.rect(0, 0, PW, 60, "F");
 
-  // Decorative circles (low opacity using white rects — jsPDF GState trick)
-  // We use setFillColor with alpha via direct rect overlap
-  doc.setFillColor(255, 255, 255);
-  // We can't do actual opacity in basic jsPDF so we skip semi-transparent shapes
-  // Instead use solid white circles at very small size for texture
-  doc.circle(PW - 18, 10, 26, "S"); // just stroke for subtle shape
+  // Decorative circles (using white strokes for texture)
   doc.setDrawColor(255, 255, 255);
   doc.setLineWidth(0.3);
   doc.circle(PW - 18, 8, 28, "S");
@@ -241,7 +234,7 @@ function generatePDF(params: {
   y = 68;
 
   // ── Result banner ──────────────────────────────────────────────────
-  const grade    = getGrade(stats.pct);
+  const grade = getGrade(stats.pct);
   const timeMins = Math.floor(timeTaken / 60);
   const timeSecs = timeTaken % 60;
 
@@ -277,15 +270,15 @@ function generatePDF(params: {
   y += 33;
 
   // ── 4 stat boxes ─────────────────────────────────────────────────────
-  const GAP   = 3;
-  const BW    = (CW - GAP * 3) / 4;
-  const BH    = 22;
+  const GAP = 3;
+  const BW = (CW - GAP * 3) / 4;
+  const BH = 22;
 
   [
-    { label: "Correct",  val: String(stats.correct),      colFg: C.green, colBg: C.greenBg },
-    { label: "Wrong",    val: String(stats.wrong),         colFg: C.red,   colBg: C.redBg   },
-    { label: "Skipped",  val: String(stats.skipped),       colFg: C.amber, colBg: C.amberBg },
-    { label: "Score",    val: `${stats.pct}%`,             colFg: accent,  colBg: accentLight },
+    { label: "Correct", val: String(stats.correct), colFg: C.green, colBg: C.greenBg },
+    { label: "Wrong", val: String(stats.wrong), colFg: C.red, colBg: C.redBg },
+    { label: "Skipped", val: String(stats.skipped), colFg: C.amber, colBg: C.amberBg },
+    { label: "Score", val: `${stats.pct}%`, colFg: accent, colBg: accentLight },
   ].forEach(({ label, val, colFg, colBg }, i) => {
     const bx = ML + i * (BW + GAP);
     fill(colBg);
@@ -342,20 +335,20 @@ function generatePDF(params: {
   // ════════════════════════════════════════════════════════════════════
   // QUESTION CARDS
   // ════════════════════════════════════════════════════════════════════
-  const STRIPE_W  = 4;        // left colored stripe
-  const PAD       = 4;        // card inner padding
-  const TEXT_X    = ML + STRIPE_W + PAD + 8; // after stripe + pad + number circle diameter
-  const TEXT_W    = CW - STRIPE_W - PAD - 8 - PAD - 2; // usable text width
+  const STRIPE_W = 4;        // left colored stripe
+  const PAD = 4;        // card inner padding
+  const TEXT_X = ML + STRIPE_W + PAD + 8; // after stripe + pad + number circle diameter
+  const TEXT_W = CW - STRIPE_W - PAD - 8 - PAD - 2; // usable text width
 
   questions.forEach((q, idx) => {
-    const ua        = answers[q.id];
+    const ua = answers[q.id];
     const isCorrect = ua === q.correctAnswer;
-    const isWrong   = ua !== undefined && ua !== q.correctAnswer;
+    const isWrong = ua !== undefined && ua !== q.correctAnswer;
     const isSkipped = ua === undefined;
 
-    const sColor: [number,number,number] = isCorrect ? C.green : isWrong ? C.red : C.amber;
-    const sBg:    [number,number,number] = isCorrect ? C.greenBg : isWrong ? C.redBg : C.amberBg;
-    const sLabel  = isCorrect ? "CORRECT" : isWrong ? "WRONG" : "SKIPPED";
+    const sColor: [number, number, number] = isCorrect ? C.green : isWrong ? C.red : C.amber;
+    const sBg: [number, number, number] = isCorrect ? C.greenBg : isWrong ? C.redBg : C.amberBg;
+    const sLabel = isCorrect ? "CORRECT" : isWrong ? "WRONG" : "SKIPPED";
 
     // ── Pre-measure text for accurate card height ──────────────────
     doc.setFontSize(7.5);
@@ -380,11 +373,11 @@ function generatePDF(params: {
       refLines = doc.splitTextToSize(`Ref: ${strip(q.reference)}`, TEXT_W);
     }
 
-    const qH_    = qLines.length    * lh(7.5);
+    const qH_ = qLines.length * lh(7.5);
     const corrH_ = corrLines.length * lh(7);
-    const expH_  = expLines.length  > 0 ? expLines.length  * lh(6.5) + 7 : 0; // +7 for label + divider
-    const refH_  = refLines.length  > 0 ? refLines.length  * lh(6)   + 2 : 0;
-    const cardH  = PAD + 4 + qH_ + 2 + corrH_ + expH_ + refH_ + PAD;
+    const expH_ = expLines.length > 0 ? expLines.length * lh(6.5) + 7 : 0; // +7 for label + divider
+    const refH_ = refLines.length > 0 ? refLines.length * lh(6) + 2 : 0;
+    const cardH = PAD + 4 + qH_ + 2 + corrH_ + expH_ + refH_ + PAD;
 
     // ── Page break ──────────────────────────────────────────────────
     ensureSpace(cardH + 3);
@@ -491,35 +484,32 @@ function generatePDF(params: {
 // Adjust the pixel value to match your actual navbar height.
 // ════════════════════════════════════════════════════════════════════════
 function QuizTimer({ secondsLeft, semGrad }: { secondsLeft: number; semGrad: string }) {
-  const pct      = (secondsLeft / QUIZ_DURATION_SECONDS) * 100;
-  const mm       = Math.floor(secondsLeft / 60).toString().padStart(2, "0");
-  const ss       = (secondsLeft % 60).toString().padStart(2, "0");
+  const pct = (secondsLeft / QUIZ_DURATION_SECONDS) * 100;
+  const mm = Math.floor(secondsLeft / 60).toString().padStart(2, "0");
+  const ss = (secondsLeft % 60).toString().padStart(2, "0");
   const isUrgent = secondsLeft <= 60;
-  const isWarn   = secondsLeft <= 180 && !isUrgent;
+  const isWarn = secondsLeft <= 180 && !isUrgent;
 
   return (
     <div
-      className={`sticky z-40 shadow-md ${
-        isUrgent ? "bg-red-50 border-b-2 border-red-300"
-        : isWarn ? "bg-amber-50 border-b border-amber-300"
-                 : "bg-white border-b border-gray-200"
-      }`}
+      className={`sticky z-40 shadow-md ${isUrgent ? "bg-red-50 border-b-2 border-red-300"
+          : isWarn ? "bg-amber-50 border-b border-amber-300"
+            : "bg-white border-b border-gray-200"
+        }`}
       style={{ top: "var(--navbar-height, 64px)" }}
     >
       <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-2 flex items-center gap-3">
-        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono font-extrabold text-sm shrink-0 ${
-          isUrgent ? "bg-red-100 text-red-700 border border-red-300 animate-pulse"
-          : isWarn ? "bg-amber-100 text-amber-700 border border-amber-300"
-                   : `bg-gradient-to-r ${semGrad} text-white shadow-sm`
-        }`}>
+        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono font-extrabold text-sm shrink-0 ${isUrgent ? "bg-red-100 text-red-700 border border-red-300 animate-pulse"
+            : isWarn ? "bg-amber-100 text-amber-700 border border-amber-300"
+              : `bg-gradient-to-r ${semGrad} text-white shadow-sm`
+          }`}>
           <Timer className="w-3.5 h-3.5" />
           {mm}:{ss}
         </div>
         <div className="flex-1 h-2.5 bg-gray-200 rounded-full overflow-hidden">
           <div
-            className={`h-full rounded-full transition-all duration-1000 ease-linear ${
-              isUrgent ? "bg-red-500" : isWarn ? "bg-amber-400" : `bg-gradient-to-r ${semGrad}`
-            }`}
+            className={`h-full rounded-full transition-all duration-1000 ease-linear ${isUrgent ? "bg-red-500" : isWarn ? "bg-amber-400" : `bg-gradient-to-r ${semGrad}`
+              }`}
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -538,25 +528,23 @@ type Screen = "unit-select" | "lobby" | "quiz" | "results";
 // ════════════════════════════════════════════════════════════════════════
 export default function MCQBankQuizPage({ params }: PageProps) {
   const { semesterSlug, subject: subjectSlug } = params;
-  const { isSignedIn } = useUser();
-  const { trackQuiz, trackActivity, trackTimeOnUnmount } = useTracker();
 
-  const semData     = SemesterData.find(s => semesterToSlug(s.semester) === semesterSlug);
-  const subData     = semData?.subjects.find(s => subjectToSlug(s.name) === subjectSlug);
-  const bank        = BANK_REGISTRY[subjectSlug] ?? null;
-  const semGrad     = SEM_GRADS[semesterSlug] ?? "from-blue-600 to-green-400";
+  const semData = SemesterData.find(s => semesterToSlug(s.semester) === semesterSlug);
+  const subData = semData?.subjects.find(s => subjectToSlug(s.name) === subjectSlug);
+  const bank = BANK_REGISTRY[subjectSlug] ?? null;
+  const semGrad = SEM_GRADS[semesterSlug] ?? "from-blue-600 to-green-400";
   const accentColor = SEM_SOLID[semesterSlug] ?? "#2563eb";
 
-  const [screen,     setScreen]    = useState<Screen>("unit-select");
+  const [screen, setScreen] = useState<Screen>("unit-select");
   const [activeUnit, setActiveUnit] = useState<string | null>(null);
-  const [answers,    setAnswers]    = useState<Record<number, string>>({});
-  const [submitted,  setSubmitted]  = useState(false);
-  const [expanded,   setExpanded]   = useState<Set<number>>(new Set());
-  const [showTop,    setShowTop]    = useState(false);
-  const [quizStart,  setQuizStart]  = useState(0);
-  const [timeLeft,   setTimeLeft]   = useState(QUIZ_DURATION_SECONDS);
-  const [timeTaken,  setTimeTaken]  = useState(0);
-  const timerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [submitted, setSubmitted] = useState(false);
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const [showTop, setShowTop] = useState(false);
+  const [quizStart, setQuizStart] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(QUIZ_DURATION_SECONDS);
+  const [timeTaken, setTimeTaken] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const answersRef = useRef(answers);
   answersRef.current = answers;
 
@@ -567,7 +555,7 @@ export default function MCQBankQuizPage({ params }: PageProps) {
     return bank.questions.filter((q: any) => q.unit === activeUnit);
   }, [bank, activeUnit]);
 
-  const answeredCount   = Object.keys(answers).length;
+  const answeredCount = Object.keys(answers).length;
   const unansweredCount = questions.length - answeredCount;
 
   useEffect(() => {
@@ -576,8 +564,7 @@ export default function MCQBankQuizPage({ params }: PageProps) {
     return () => window.removeEventListener("scroll", fn);
   }, []);
 
-  useEffect(() => { const cleanup = trackTimeOnUnmount(); return cleanup; }, [subjectSlug]); // eslint-disable-line
-
+  // Timer logic
   useEffect(() => {
     if (screen !== "quiz" || submitted) return;
     timerRef.current = setInterval(() => {
@@ -607,13 +594,10 @@ export default function MCQBankQuizPage({ params }: PageProps) {
     const elapsed = Math.round((Date.now() - quizStart) / 1000);
     setTimeTaken(elapsed); setSubmitted(true); setScreen("results");
     window.scrollTo({ top: 0, behavior: "smooth" });
-    const correct  = questions.filter((q: any) => latestAnswers[q.id] === q.correctAnswer).length;
-    const timeMins = Math.max(1, Math.round(elapsed / 60));
-    trackQuiz({ quizId: `${subjectSlug}-${activeUnit ?? "all"}-${Date.now()}`, subject: subData?.name ?? subjectSlug, score: correct, total: questions.length, timeTakenMin: timeMins });
-    trackActivity({ type: "quiz", label: `${forced ? "⏰ Time up — " : ""}${subData?.name ?? subjectSlug} MCQs — ${correct}/${questions.length} correct`, href: `/mcqs-bank/${semesterSlug}/${subjectSlug}` });
-  }, [questions, quizStart, subjectSlug, subData, activeUnit, semesterSlug]); // eslint-disable-line
+    // No tracking calls — dashboard integration removed
+  }, [quizStart]);
 
-  const handleSubmit     = useCallback(() => doSubmit(answers), [answers, doSubmit]);
+  const handleSubmit = useCallback(() => doSubmit(answers), [answers, doSubmit]);
   const handleAutoSubmit = useCallback(() => doSubmit(answersRef.current, true), [doSubmit]);
 
   const handleReset = useCallback(() => {
@@ -628,9 +612,9 @@ export default function MCQBankQuizPage({ params }: PageProps) {
   const stats = useMemo(() => {
     if (!submitted) return null;
     const correct = questions.filter((q: any) => answers[q.id] === q.correctAnswer).length;
-    const wrong   = Object.keys(answers).length - correct;
+    const wrong = Object.keys(answers).length - correct;
     const skipped = questions.length - Object.keys(answers).length;
-    const pct     = questions.length ? Math.round((correct / questions.length) * 100) : 0;
+    const pct = questions.length ? Math.round((correct / questions.length) * 100) : 0;
     return { correct, wrong, skipped, pct, total: questions.length };
   }, [submitted, answers, questions]);
 
@@ -726,8 +710,8 @@ export default function MCQBankQuizPage({ params }: PageProps) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {units.map((unit: string, i: number) => {
                 const unitQCount = bank.questions.filter((q: any) => q.unit === unit).length;
-                const label      = getUnitLabel(unit);
-                const detail     = getUnitDetail(unit);
+                const label = getUnitLabel(unit);
+                const detail = getUnitDetail(unit);
                 return (
                   <button key={unit} onClick={() => handleSelectUnit(unit)}
                     className="group relative text-left bg-white rounded-2xl border-2 border-gray-200 hover:border-blue-400 hover:shadow-lg transition-all duration-200 overflow-hidden">
@@ -758,7 +742,7 @@ export default function MCQBankQuizPage({ params }: PageProps) {
   // SCREEN 2 — LOBBY
   // ════════════════════════════════════════════════════════════════════
   if (screen === "lobby") {
-    const label  = getUnitLabel(activeUnit);
+    const label = getUnitLabel(activeUnit);
     const detail = getUnitDetail(activeUnit);
     return (
       <section className="min-h-screen bg-gray-50">
@@ -870,7 +854,7 @@ export default function MCQBankQuizPage({ params }: PageProps) {
                         {userAnswer && <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-gradient-to-r ${semGrad} text-white`}>Answered</span>}
                       </div>
                       <p className="text-gray-900 font-semibold text-sm sm:text-base leading-relaxed"
-                         dangerouslySetInnerHTML={{ __html: q.question }} />
+                        dangerouslySetInnerHTML={{ __html: q.question }} />
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
@@ -920,7 +904,7 @@ export default function MCQBankQuizPage({ params }: PageProps) {
   // SCREEN 4 — RESULTS
   // ════════════════════════════════════════════════════════════════════
   if (screen === "results" && stats) {
-    const grade    = getGrade(stats.pct);
+    const grade = getGrade(stats.pct);
     const timeMins = Math.floor(timeTaken / 60);
     const timeSecs = timeTaken % 60;
     const unitLabel = getUnitLabel(activeUnit);
@@ -970,11 +954,6 @@ export default function MCQBankQuizPage({ params }: PageProps) {
                   <span className="text-red-500">✗ {stats.wrong} Wrong</span>
                   {stats.skipped > 0 && <span className="text-amber-500">— {stats.skipped} Skipped</span>}
                 </div>
-                {isSignedIn && (
-                  <Link href="/dashboard" className="inline-flex items-center gap-1.5 mt-3 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">
-                    <LayoutDashboard className="w-3.5 h-3.5" /> View your progress in Dashboard →
-                  </Link>
-                )}
               </div>
               <div className="flex sm:flex-col gap-2 shrink-0 w-full sm:w-auto">
                 <button onClick={handleDownloadPDF}
@@ -993,12 +972,12 @@ export default function MCQBankQuizPage({ params }: PageProps) {
           <div className="space-y-4 sm:space-y-5">
             {questions.map((q: any, qIdx: number) => {
               const userAnswer = answers[q.id];
-              const isCorrect  = userAnswer === q.correctAnswer;
-              const isWrong    = userAnswer !== undefined && userAnswer !== q.correctAnswer;
-              const isSkipped  = userAnswer === undefined;
-              const showExp    = (isWrong || isSkipped) && expanded.has(q.id);
+              const isCorrect = userAnswer === q.correctAnswer;
+              const isWrong = userAnswer !== undefined && userAnswer !== q.correctAnswer;
+              const isSkipped = userAnswer === undefined;
+              const showExp = (isWrong || isSkipped) && expanded.has(q.id);
               const cardBorder = isCorrect ? "border-green-300" : isWrong ? "border-red-300" : "border-amber-300";
-              const cardBg     = isCorrect ? "bg-green-50/40"   : isWrong ? "bg-red-50/30"   : "bg-amber-50/30";
+              const cardBg = isCorrect ? "bg-green-50/40" : isWrong ? "bg-red-50/30" : "bg-amber-50/30";
 
               return (
                 <div key={q.id} className={`relative rounded-2xl border-2 ${cardBorder} ${cardBg} overflow-hidden shadow-sm`}>
@@ -1013,7 +992,7 @@ export default function MCQBankQuizPage({ params }: PageProps) {
                           <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Q{qIdx + 1} of {questions.length}</span>
                           {q.unit && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-500">{q.unit.split(":")[0]}</span>}
                           {isCorrect && <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-200">✓ Correct</span>}
-                          {isWrong   && <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">✗ Incorrect</span>}
+                          {isWrong && <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">✗ Incorrect</span>}
                           {isSkipped && <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">— Unanswered</span>}
                         </div>
                         <p className="text-gray-900 font-semibold text-sm sm:text-base leading-relaxed" dangerouslySetInnerHTML={{ __html: q.question }} />
@@ -1079,11 +1058,10 @@ export default function MCQBankQuizPage({ params }: PageProps) {
             })}
           </div>
 
-          {/* Bottom actions */}
+          {/* Bottom actions – no dashboard link */}
           <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center items-center flex-wrap">
             <button onClick={handleDownloadPDF} className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl border-2 border-blue-300 bg-blue-50 text-blue-700 font-extrabold text-sm hover:bg-blue-100 hover:border-blue-400 transition-all"><FileText className="w-5 h-5" /> Download PDF Report</button>
             <button onClick={handleReset} className={`inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r ${semGrad} text-white font-extrabold text-sm shadow-lg hover:-translate-y-0.5 transition-all`}><RotateCcw className="w-5 h-5" /> Try Another Unit</button>
-            {isSignedIn && <Link href="/dashboard" className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl border-2 border-gray-200 text-gray-600 font-extrabold text-sm hover:border-blue-400 hover:text-blue-600 transition-all"><LayoutDashboard className="w-4 h-4" /> My Dashboard</Link>}
             {subData.href && <Link href={subData.href} className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl border-2 border-gray-200 text-gray-600 font-extrabold text-sm hover:border-blue-400 hover:text-blue-600 transition-all"><BookOpen className="w-4 h-4" /> Study Notes</Link>}
           </div>
 

@@ -1,12 +1,11 @@
-// src/app/(site)/simulations/page.tsx
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Beaker, FlaskConical } from 'lucide-react';
+import { Beaker, FlaskConical, Droplet } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Interactive Simulations — PharmaWallah',
   description:
-    'Explore pharmacy and chemistry lab simulations. Practice disk diffusion antibiotic testing and solution dilution techniques with real-time feedback and downloadable reports.',
+    'Explore pharmacy and chemistry lab simulations. Practice disk diffusion antibiotic testing, solution dilution techniques, and acid‑base titration with real‑time feedback and downloadable reports.',
 };
 
 const simulations = [
@@ -19,6 +18,7 @@ const simulations = [
     gradient: 'from-blue-600 to-green-400',
     image: '🧫',
     tags: ['Microbiology', 'CLSI', 'Antibiotics'],
+    comingSoon: false,
   },
   {
     title: 'Solution Dilution Lab',
@@ -29,7 +29,18 @@ const simulations = [
     gradient: 'from-purple-600 to-pink-500',
     image: '🧪',
     tags: ['Chemistry', 'Molarity', 'C₁V₁ = C₂V₂'],
-    comingSoon: false, // change to true if not yet deployed
+    comingSoon: false,
+  },
+  {
+    title: 'Acid‑Base Titration',
+    description:
+      'Simulate an acid‑base titration (HCl with NaOH). Step through equipment setup, burette filling, indicator addition, endpoint detection, concentration calculation, and generate a detailed PDF report.',
+    href: '/simulations/titration',
+    icon: Droplet,
+    gradient: 'from-amber-500 to-orange-600',
+    image: '🧴',
+    tags: ['Analytical Chemistry', 'Endpoint', 'C₁V₁ = C₂V₂'],
+    comingSoon: false,
   },
 ];
 

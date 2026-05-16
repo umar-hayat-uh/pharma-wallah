@@ -1,6 +1,6 @@
 import { Poppins } from "next/font/google";
+// @ts-ignore: CSS import type declarations are handled by Next.js
 import "./globals.css";
-import { ClerkProvider } from "@clerk/nextjs";
 import Header from "@/components/Layout/Header";
 import Footer from "@/components/Layout/Footer";
 import { ThemeProvider } from "next-themes";
@@ -29,20 +29,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ClerkProvider>
-      <html lang="en" suppressHydrationWarning>
-        <body className={font.className}>
-          <ThemeProvider attribute="class" enableSystem defaultTheme="light">
-            <Header />
-            <main>{children}</main>
-            <Footer />
-            <ScrollToTop />
-          </ThemeProvider>
-
-          <Analytics />
-          <SpeedInsights />
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body className={font.className}>
+        <ThemeProvider attribute="class" enableSystem defaultTheme="light">
+          <Header />
+          <main>{children}</main>
+          <Footer />
+          <ScrollToTop />
+        </ThemeProvider>
+        <Analytics />
+        <SpeedInsights />
+      </body>
+    </html>
   );
 }

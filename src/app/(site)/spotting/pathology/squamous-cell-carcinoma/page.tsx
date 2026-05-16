@@ -218,7 +218,10 @@ export default function PathologySquamousCellCarcinomaPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const { trackSpotting, trackActivity } = useTracker();
+  const { trackSpotting, trackActivity } = useTracker() as {
+    trackSpotting: (args?: any) => void;
+    trackActivity: (args?: any) => void;
+  };
 
   useEffect(() => {
     trackSpotting({

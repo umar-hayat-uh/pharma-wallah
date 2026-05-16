@@ -1,17 +1,14 @@
 "use client";
 // app/spotting/histology/lessons/page.tsx
-// ── Dashboard integration: tracks spotting lesson visits ──
+// Clerk & dashboard tracking removed
 
 import Link from "next/link";
 import {
   Microscope, ChevronRight, BookOpen, Play,
   Layers, ArrowRight, Zap, Clock, CheckCircle,
   Video, GraduationCap, FlaskConical, Beaker,
-  Stethoscope, Leaf, Pill, LayoutDashboard,
+  Stethoscope, Leaf, Pill,
 } from "lucide-react";
-import { useTracker } from "@/hooks/useTracker";   // ← dashboard tracking
-import { useUser } from "@clerk/nextjs";
-import Link2 from "next/link";
 
 const GRAD = "from-blue-600 to-green-400";
 
@@ -48,15 +45,7 @@ const totalIDPts = LESSONS.reduce((a, l) => a + l.points.length, 0);
 const totalVids  = LESSONS.filter(l => l.hasVideo).length;
 
 export default function HistologyLessonsHub() {
-  const { isSignedIn } = useUser();
-  const { trackSpotting, trackActivity } = useTracker();
-
-  // Track when a lesson card is clicked
-  const handleLessonClick = (lesson: typeof LESSONS[0]) => {
-    trackSpotting({ lessonId: lesson.id, category: "histology", completed: false });
-    trackActivity({ type: "spotting", label: `Opened: ${lesson.title}`, href: `${BASE}/${lesson.id}` });
-  };
-
+  // No auth, no tracking
   return (
     <section className="min-h-screen bg-white relative overflow-x-hidden">
       {BG_ICONS.map(({ Icon, top, left, size }, i) => (
@@ -90,7 +79,7 @@ export default function HistologyLessonsHub() {
             Detailed theory, points of identification, video lessons, and exam-ready notes for all {LESSONS.length} histology spotting slides.
           </p>
           <div className="flex flex-wrap gap-3 mb-8">
-            <Link href={`${BASE}/${LESSONS[0].id}`} onClick={() => handleLessonClick(LESSONS[0])}
+            <Link href={`${BASE}/${LESSONS[0].id}`}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-blue-700 font-extrabold text-sm shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
               <BookOpen className="w-4 h-4" /> Start Lesson 1
             </Link>
@@ -98,12 +87,6 @@ export default function HistologyLessonsHub() {
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/20 border border-white/40 text-white font-extrabold text-sm hover:bg-white/30 transition-all duration-300">
               <Microscope className="w-4 h-4" /> Take Spotting Test
             </Link>
-            {isSignedIn && (
-              <Link href="/dashboard"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/20 border border-white/40 text-white font-extrabold text-sm hover:bg-white/30 transition-all duration-300">
-                <LayoutDashboard className="w-4 h-4" /> My Dashboard
-              </Link>
-            )}
           </div>
           <div className="flex flex-wrap gap-6 sm:gap-10">
             {[{ n: LESSONS.length, l: "Lessons" }, { n: totalIDPts, l: "ID Points" }, { n: totalVids, l: "Videos" }, { n: "Free", l: "Access" }].map(({ n, l }) => (
@@ -127,7 +110,7 @@ export default function HistologyLessonsHub() {
         {/* Lesson grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {LESSONS.map((lesson, idx) => (
-            <Link key={lesson.id} href={`${BASE}/${lesson.id}`} onClick={() => handleLessonClick(lesson)}
+            <Link key={lesson.id} href={`${BASE}/${lesson.id}`}
               className="group relative flex flex-col rounded-2xl border border-gray-200 bg-white overflow-hidden hover:border-blue-300 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 h-full">
               <div className={`h-[3px] bg-gradient-to-r ${lesson.gradient}`} />
               <div className="relative w-full h-32 sm:h-36 bg-gray-100 border-b border-gray-200 overflow-hidden">
@@ -199,7 +182,7 @@ export default function HistologyLessonsHub() {
             </div>
             <div className="flex flex-wrap gap-2">
               {LESSONS.map((l, i) => (
-                <Link key={l.id} href={`${BASE}/${l.id}`} onClick={() => handleLessonClick(l)}
+                <Link key={l.id} href={`${BASE}/${l.id}`}
                   className="group flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 hover:border-blue-300 hover:bg-blue-50 transition-all text-xs font-semibold text-gray-700 hover:text-blue-700">
                   <span className="w-5 h-5 rounded-lg bg-gradient-to-br from-blue-600 to-green-400 flex items-center justify-center text-white text-[9px] font-extrabold shrink-0">{i + 1}</span>
                   {l.emoji} {l.title}

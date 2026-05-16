@@ -156,7 +156,7 @@ export default function Companies() {
           </div>
         </motion.div>
 
-        {/* Slider with fade edges */}
+        {/* Single row slider with fade edges */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -173,24 +173,6 @@ export default function Companies() {
 
           <Slider {...settings}>
             {fields.map((f, i) => <DisciplineCard key={i} f={f} />)}
-          </Slider>
-        </motion.div>
-
-        {/* Second pass — reverse direction */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.25 }}
-          className="relative mt-0"
-        >
-          <div className="absolute left-0 top-0 bottom-6 w-16 z-10 pointer-events-none"
-            style={{ background: "linear-gradient(to right, #f8faff, transparent)" }} />
-          <div className="absolute right-0 top-0 bottom-6 w-16 z-10 pointer-events-none"
-            style={{ background: "linear-gradient(to left, #f8faff, transparent)" }} />
-
-          <Slider {...{ ...settings, rtl: true, speed: 3500 }}>
-            {[...fields].reverse().map((f, i) => <DisciplineCard key={i} f={f} />)}
           </Slider>
         </motion.div>
 

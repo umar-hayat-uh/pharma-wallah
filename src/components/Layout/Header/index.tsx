@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { headerData } from "../Header/Navigation/menuData";
-import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
 import Logo from "./Logo";
 import {
   Pill,
@@ -17,7 +16,6 @@ import {
   ChevronDown,
   Menu,
   X,
-  LayoutDashboard,
   Download,
   Smartphone,
 } from "lucide-react";
@@ -140,9 +138,6 @@ const Header: React.FC = () => {
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
 
-  // Clerk authentication state
-  const { isSignedIn } = useUser();
-
   // PWA installation
   const { isInstallable, install } = useInstallPrompt();
 
@@ -259,11 +254,10 @@ const Header: React.FC = () => {
                       onClick={() =>
                         setOpenDropdown(dropOpen ? null : item.label)
                       }
-                      className={`flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-150 ${
-                        active
+                      className={`flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-150 ${active
                           ? "text-blue-700 bg-blue-50"
                           : "text-gray-600 hover:text-blue-700 hover:bg-blue-50/60"
-                      }`}
+                        }`}
                     >
                       {item.label}
                       <ChevronDown
@@ -281,11 +275,10 @@ const Header: React.FC = () => {
                   ) : (
                     <Link
                       href={item.href}
-                      className={`relative flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-150 ${
-                        active
+                      className={`relative flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-150 ${active
                           ? "text-blue-700 bg-blue-50"
                           : "text-gray-600 hover:text-blue-700 hover:bg-blue-50/60"
-                      }`}
+                        }`}
                     >
                       {item.label}
                       {active && (
@@ -303,54 +296,18 @@ const Header: React.FC = () => {
             })}
           </nav>
 
-          {/* ── Desktop CTA – conditionally show dashboard + install + profile or sign in/up ── */}
+          {/* ── Desktop CTA – no auth buttons for now ── */}
           <div className="hidden lg:flex items-center gap-3">
-            {!isSignedIn ? (
-              <>
-                <SignInButton mode="modal">
-                  <button className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:text-blue-700 hover:bg-blue-50/60 transition-colors duration-150">
-                    Sign In
-                  </button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <button className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white text-sm font-bold shadow-md shadow-blue-200/50 hover:shadow-blue-300/60 transition-shadow active:scale-95">
-                    Sign Up
-                  </button>
-                </SignUpButton>
-              </>
-            ) : (
-              <>
-                {/* Dashboard button */}
-                <Link
-                  href="/dashboard"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white text-sm font-bold shadow-md shadow-blue-200/50 hover:shadow-blue-300/60 transition-shadow active:scale-95"
-                >
-                  <LayoutDashboard className="w-4 h-4" />
-                  Dashboard
-                </Link>
-
-                {/* Install button (only if installable) */}
-                {isInstallable && (
-                  <button
-                    onClick={handleInstall}
-                    className="p-2.5 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
-                    aria-label="Install app"
-                    title="Install app"
-                  >
-                    <Download className="w-5 h-5" />
-                  </button>
-                )}
-
-                {/* User profile */}
-                <UserButton
-                  appearance={{
-                    elements: {
-                      avatarBox:
-                        "w-9 h-9 rounded-xl ring-2 ring-blue-100 hover:ring-blue-300 transition-all",
-                    },
-                  }}
-                />
-              </>
+            {/* Install button (only if installable) */}
+            {isInstallable && (
+              <button
+                onClick={handleInstall}
+                className="p-2.5 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                aria-label="Install app"
+                title="Install app"
+              >
+                <Download className="w-5 h-5" />
+              </button>
             )}
           </div>
 
@@ -500,65 +457,17 @@ const Header: React.FC = () => {
             />
           ))}
 
-          {/* Mobile CTA – column layout for Dashboard + Profile */}
+          {/* Mobile CTA – install button only (no auth) */}
           <div className="mt-4 flex flex-col gap-3">
-            {!isSignedIn ? (
-              <>
-                <SignInButton mode="modal">
-                  <button
-                    className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-blue-200 text-blue-600 font-semibold text-sm active:opacity-90 transition-opacity"
-                    style={{ touchAction: "manipulation" }}
-                  >
-                    Sign In
-                  </button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <button
-                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold text-sm shadow-md active:opacity-90 transition-opacity"
-                    style={{ touchAction: "manipulation" }}
-                  >
-                    Sign Up
-                  </button>
-                </SignUpButton>
-              </>
-            ) : (
-              <>
-                {/* Dashboard button - full width */}
-                <Link
-                  href="/dashboard"
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold text-sm shadow-md active:opacity-90 transition-opacity"
-                  style={{ touchAction: "manipulation" }}
-                >
-                  <LayoutDashboard className="w-4 h-4" />
-                  Dashboard
-                </Link>
-
-                {/* Profile block - full width */}
-                <div className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-blue-50 border border-blue-100">
-                  <UserButton
-                    appearance={{
-                      elements: {
-                        avatarBox: "w-8 h-8 rounded-lg",
-                      },
-                    }}
-                  />
-                  <span className="text-sm font-semibold text-gray-700">
-                    My Account
-                  </span>
-                </div>
-
-                {/* Install button (only if installable) */}
-                {isInstallable && (
-                  <button
-                    onClick={handleInstall}
-                    className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-blue-200 text-blue-600 font-semibold text-sm active:opacity-90 transition-opacity"
-                    style={{ touchAction: "manipulation" }}
-                  >
-                    <Download className="w-4 h-4" />
-                    Install App
-                  </button>
-                )}
-              </>
+            {isInstallable && (
+              <button
+                onClick={handleInstall}
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-blue-200 text-blue-600 font-semibold text-sm active:opacity-90 transition-opacity"
+                style={{ touchAction: "manipulation" }}
+              >
+                <Download className="w-4 h-4" />
+                Install App
+              </button>
             )}
           </div>
         </nav>
@@ -598,11 +507,10 @@ const MobileNavItem = ({
         <>
           <button
             onClick={() => setOpen((v) => !v)}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-150 ${
-              isActive
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-150 ${isActive
                 ? "bg-blue-50 text-blue-700 border border-blue-100"
                 : "text-gray-700 hover:bg-gray-50 active:bg-gray-100"
-            }`}
+              }`}
             style={{ touchAction: "manipulation" }}
           >
             <span>{item.label}</span>
@@ -627,19 +535,17 @@ const MobileNavItem = ({
                     key={j}
                     href={sub.href}
                     onClick={onClose}
-                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-colors duration-150 ${
-                      subActive
+                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-colors duration-150 ${subActive
                         ? "bg-gradient-to-r from-blue-600 to-green-400 text-white font-semibold"
                         : "text-gray-600 hover:bg-blue-50 hover:text-blue-700 active:bg-blue-100"
-                    }`}
+                      }`}
                     style={{ touchAction: "manipulation" }}
                   >
                     <span
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                        subActive
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${subActive
                           ? "bg-white/20"
                           : "bg-blue-50 border border-blue-100"
-                      }`}
+                        }`}
                     >
                       {SUBMENU_ICONS[sub.label] ?? (
                         <Pill className="w-3.5 h-3.5 text-blue-500" />
@@ -656,11 +562,10 @@ const MobileNavItem = ({
         <Link
           href={item.href}
           onClick={onClose}
-          className={`flex items-center px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-150 ${
-            isActive
+          className={`flex items-center px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-150 ${isActive
               ? "bg-gradient-to-r from-blue-600 to-green-400 text-white"
               : "text-gray-700 hover:bg-gray-50 active:bg-gray-100"
-          }`}
+            }`}
           style={{ touchAction: "manipulation" }}
         >
           {item.label}
