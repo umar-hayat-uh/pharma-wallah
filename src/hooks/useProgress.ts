@@ -1,7 +1,10 @@
 // src/hooks/useProgress.ts
-// Temporary placeholder – will be replaced when Supabase is integrated
+// Temporary placeholder – will be replaced when Supabase is integrated.
+// Accepts any arguments to stay future‑proof.
 
-export function useProgress() {
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
+export function useProgress(..._args: any[]) {
   return {
     units: [],
     flashcards: [],

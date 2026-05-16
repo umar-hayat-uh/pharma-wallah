@@ -1,18 +1,16 @@
 // src/hooks/useTracker.ts
-// Temporary no‑op tracker – auth will be reconnected later
+// Temporary no‑op tracker – will be reconnected when Supabase auth is added.
+// All tracking functions accept any arguments to avoid type errors in pages.
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 export function useTracker() {
-  // All tracking functions are no‑ops; they won't crash the pages
-  const noop = () => {};
-  const cleanup = () => {}; // for trackTimeOnUnmount
-
-  const trackUnit = noop;
-  const trackActivity = noop;
-  const trackFlashcard = noop;
-  const trackQuiz = noop;
-  const trackSpotting = noop;
-
-  const trackTimeOnUnmount = () => cleanup; // returns a cleanup function
+  const trackUnit = (..._args: any[]) => { };
+  const trackActivity = (..._args: any[]) => { };
+  const trackFlashcard = (..._args: any[]) => { };
+  const trackQuiz = (..._args: any[]) => { };
+  const trackSpotting = (..._args: any[]) => { };
+  const trackTimeOnUnmount = (..._args: any[]) => () => { }; // returns a cleanup function
 
   return {
     trackUnit,

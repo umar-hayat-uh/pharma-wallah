@@ -1,5 +1,5 @@
 // lib/models/userProgress.ts
-// MongoDB Mongoose model — one document per Clerk userId
+// MongoDB Mongoose model — one document per user (auth provider agnostic)
 
 import mongoose, { Schema, Document, Model } from "mongoose";
 
@@ -17,7 +17,7 @@ export interface IUnitProgress {
 }
 
 export interface IFlashcardProgress {
-  category:     string;     // "moa" | "classification" | etc.
+  category:      string;     // "moa" | "classification" | etc.
   cardsReviewed: number;
   cardsCorrect:  number;
   lastPracticed: Date;
@@ -25,10 +25,10 @@ export interface IFlashcardProgress {
 }
 
 export interface IQuizAttempt {
-  quizId:     string;
-  subject:    string;
-  score:      number;       // 0–100
-  total:      number;       // total questions
+  quizId:       string;
+  subject:      string;
+  score:        number;       // 0–100
+  total:        number;       // total questions
   timeTakenMin: number;
   attemptedAt:  Date;
 }
@@ -50,7 +50,7 @@ export interface IActivity {
 // ─── Main document interface ──────────────────────────────────────────────────
 
 export interface IUserProgress extends Document {
-  clerkUserId:       string;
+  userId:            string;          // <-- changed from clerkUserId
   email:             string;
   displayName:       string;
   avatarUrl?:        string;
@@ -114,7 +114,7 @@ const ActivitySchema = new Schema<IActivity>({
 
 const UserProgressSchema = new Schema<IUserProgress>(
   {
-    clerkUserId:       { type: String, required: true, unique: true, index: true },
+    userId:            { type: String, required: true, unique: true, index: true },  // <-- changed from clerkUserId
     email:             { type: String, required: true },
     displayName:       { type: String, required: true },
     avatarUrl:         { type: String },
