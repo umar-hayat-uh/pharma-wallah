@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Beaker, FlaskConical, Droplet } from 'lucide-react';
+import { Beaker, FlaskConical, Droplet, Microscope } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Interactive Simulations — PharmaWallah',
   description:
-    'Explore pharmacy and chemistry lab simulations. Practice disk diffusion antibiotic testing, solution dilution techniques, and acid‑base titration with real‑time feedback and downloadable reports.',
+    'Explore pharmacy and chemistry lab simulations. Practice disk diffusion antibiotic testing, solution dilution techniques, acid‑base titration, and microbiology staining with real‑time feedback and downloadable reports.',
 };
 
 const simulations = [
@@ -40,6 +40,17 @@ const simulations = [
     gradient: 'from-amber-500 to-orange-600',
     image: '🧴',
     tags: ['Analytical Chemistry', 'Endpoint', 'C₁V₁ = C₂V₂'],
+    comingSoon: false,
+  },
+  {
+    title: 'Microbiology Staining Lab',
+    description:
+      'Learn and perform Gram, Simple, Capsule, and Spore staining. Prepare a smear, apply dyes, rinse, and observe bacterial morphology under a virtual microscope. Identify unknown bacteria and generate a lab report.',
+    href: '/simulations/staining-lab',
+    icon: Microscope,
+    gradient: 'from-cyan-500 to-blue-600',
+    image: '🔬',
+    tags: ['Microbiology', 'Gram Stain', 'Bacteria'],
     comingSoon: false,
   },
 ];
