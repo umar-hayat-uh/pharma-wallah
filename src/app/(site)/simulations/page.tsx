@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Beaker, FlaskConical, Droplet, Microscope } from 'lucide-react';
+import { Beaker, FlaskConical, Droplet, Microscope, TestTube, Activity, Sun } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Interactive Simulations — PharmaWallah',
   description:
-    'Explore pharmacy and chemistry lab simulations. Practice disk diffusion antibiotic testing, solution dilution techniques, acid‑base titration, and microbiology staining with real‑time feedback and downloadable reports.',
+    'Explore pharmacy and chemistry lab simulations. Practice disk diffusion antibiotic testing, solution dilution techniques, acid‑base titration, microbiology staining, organic compound identification, buffer preparation, and UV‑Vis spectrophotometry with real‑time feedback and downloadable reports.',
 };
 
 const simulations = [
@@ -51,6 +51,39 @@ const simulations = [
     gradient: 'from-cyan-500 to-blue-600',
     image: '🔬',
     tags: ['Microbiology', 'Gram Stain', 'Bacteria'],
+    comingSoon: false,
+  },
+  {
+    title: 'Organic Compound Identification',
+    description:
+      'Identify unknown organic compounds using organoleptic evaluation, solubility tests, and functional group analysis. Drag reagents onto test tubes, observe color changes, and deduce the identity of the compound.',
+    href: '/simulations/organic-id-lab',
+    icon: TestTube,
+    gradient: 'from-emerald-500 to-teal-600',
+    image: '⚗️',
+    tags: ['Organic Chemistry', 'Qualitative Analysis', 'Functional Groups'],
+    comingSoon: false,
+  },
+  {
+    title: 'Buffer Preparation & pH Measurement',
+    description:
+      'Prepare buffer solutions using the Henderson‑Hasselbalch equation. Weigh components, dissolve in a volumetric flask, adjust pH, and measure buffer capacity with a real‑time pH graph.',
+    href: '/simulations/buffer-lab',
+    icon: Activity,
+    gradient: 'from-indigo-500 to-purple-600',
+    image: '📊',
+    tags: ['Analytical Chemistry', 'Buffer', 'Henderson‑Hasselbalch'],
+    comingSoon: false,
+  },
+  {
+    title: 'UV‑Visible Spectrophotometry',
+    description:
+      'Measure absorbance using a virtual spectrophotometer. Scan the spectrum, find λmax, build a calibration curve with standard solutions, and determine unknown concentration via the Beer‑Lambert Law.',
+    href: '/simulations/uv-lab',
+    icon: Sun,
+    gradient: 'from-yellow-500 to-orange-500',
+    image: '🌈',
+    tags: ['Spectroscopy', 'Beer‑Lambert Law', 'Calibration Curve'],
     comingSoon: false,
   },
 ];
