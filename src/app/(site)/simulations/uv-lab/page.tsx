@@ -1419,7 +1419,7 @@ export default function UVVisLabPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4 md:p-8 font-sans pb-20">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4 md:p-8 pt-10 font-sans pb-20">
             <header className="max-w-5xl mx-auto mb-8 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="bg-gradient-to-r from-blue-600 to-green-400 p-2 rounded-lg text-white"><FlaskConical className="w-6 h-6" /></div>
