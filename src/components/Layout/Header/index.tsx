@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { headerData } from "../Header/Navigation/menuData";
 import Logo from "./Logo";
@@ -18,15 +18,19 @@ import {
   X,
   Download,
   Smartphone,
+  LayoutDashboard,
+  LogOut,
+  User,
 } from "lucide-react";
+import { useSupabaseUser } from "@/hooks/useSupabaseUser";
+import { createClient } from "@/lib/supabase";
 
-// ─── Type definition for the beforeinstallprompt event ───────────────────────
+// ─── PWA installation hook (unchanged) ─────────────────────────────────────
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-// ─── Custom hook to handle PWA installation ───────────────────────────────────
 function useInstallPrompt() {
   const [isInstallable, setIsInstallable] = useState(false);
   const installPromptEvent = useRef<BeforeInstallPromptEvent | null>(null);
@@ -37,13 +41,9 @@ function useInstallPrompt() {
       installPromptEvent.current = e;
       setIsInstallable(true);
     };
-
     window.addEventListener("beforeinstallprompt", handler as EventListener);
     return () =>
-      window.removeEventListener(
-        "beforeinstallprompt",
-        handler as EventListener,
-      );
+      window.removeEventListener("beforeinstallprompt", handler as EventListener);
   }, []);
 
   const install = useCallback(async () => {
@@ -57,7 +57,7 @@ function useInstallPrompt() {
   return { isInstallable, install };
 }
 
-// ─── Submenu icons ────────────────────────────────────────────────────────────
+// ─── Submenu icons (unchanged) ─────────────────────────────────────────────
 const SUBMENU_ICONS: Record<string, React.ReactNode> = {
   Material: <BookOpen className="w-4 h-4 text-blue-500" />,
   "MCQ's Bank": <FlaskConical className="w-4 h-4 text-green-500" />,
@@ -66,7 +66,7 @@ const SUBMENU_ICONS: Record<string, React.ReactNode> = {
   "Books Library": <Leaf className="w-4 h-4 text-blue-500" />,
 };
 
-// ─── Desktop dropdown ─────────────────────────────────────────────────────────
+// ─── DesktopDropdown (unchanged) ──────────────────────────────────────────
 const DesktopDropdown = ({
   item,
   isOpen,
@@ -100,12 +100,7 @@ const DesktopDropdown = ({
         zIndex: 50,
       }}
     >
-      <div
-        style={{
-          height: 3,
-          background: "linear-gradient(90deg,#2563eb,#4ade80)",
-        }}
-      />
+      <div style={{ height: 3, background: "linear-gradient(90deg,#2563eb,#4ade80)" }} />
       <div style={{ padding: "6px 0" }}>
         {item.submenu.map((sub, i) => (
           <Link
@@ -115,9 +110,7 @@ const DesktopDropdown = ({
             className="group flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
           >
             <span className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0 group-hover:bg-gradient-to-br group-hover:from-blue-600 group-hover:to-green-400 transition-all duration-200">
-              {SUBMENU_ICONS[sub.label] ?? (
-                <Pill className="w-4 h-4 text-blue-500" />
-              )}
+              {SUBMENU_ICONS[sub.label] ?? <Pill className="w-4 h-4 text-blue-500" />}
             </span>
             <span className="font-medium">{sub.label}</span>
           </Link>
@@ -127,9 +120,10 @@ const DesktopDropdown = ({
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Main Header ────────────────────────────────────────────────────────────
 const Header: React.FC = () => {
   const pathUrl = usePathname();
+  const router = useRouter();
   const [navbarOpen, setNavbarOpen] = useState(false);
   const [sticky, setSticky] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -141,19 +135,22 @@ const Header: React.FC = () => {
   // PWA installation
   const { isInstallable, install } = useInstallPrompt();
 
-  // ── Auto‑show install banner (only once per device) ─────────────────────────
+  // ── Supabase auth state (destructure user + loading) ───────────────────
+  const { user, loading: authLoading } = useSupabaseUser();
+  const supabase = createClient();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/"); // send user to home page after sign out
+    router.refresh();
+  };
+
+  // ── Sticky & Banner effects (unchanged) ─────────────────────────────────
   useEffect(() => {
     if (!isInstallable) return;
-
-    // Check if user has already dismissed the banner
     const dismissed = localStorage.getItem("installBannerDismissed");
     if (dismissed === "true") return;
-
-    // Show banner after 3 seconds
-    const timer = setTimeout(() => {
-      setShowInstallBanner(true);
-    }, 3000);
-
+    const timer = setTimeout(() => setShowInstallBanner(true), 3000);
     return () => clearTimeout(timer);
   }, [isInstallable]);
 
@@ -164,43 +161,33 @@ const Header: React.FC = () => {
 
   const handleInstall = useCallback(async () => {
     await install();
-    dismissBanner(); // hide banner after install attempt
+    dismissBanner();
   }, [install, dismissBanner]);
 
-  // ── Sticky ────────────────────────────────────────────────────────────────
   useEffect(() => {
     const onScroll = () => setSticky(window.scrollY > 60);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // ── Close mobile on outside click ─────────────────────────────────────────
   useEffect(() => {
     if (!navbarOpen) return;
     const handler = (e: MouseEvent) => {
-      if (
-        mobileMenuRef.current &&
-        !mobileMenuRef.current.contains(e.target as Node)
-      )
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node))
         setNavbarOpen(false);
     };
-    const t = setTimeout(
-      () => document.addEventListener("mousedown", handler),
-      10,
-    );
+    const t = setTimeout(() => document.addEventListener("mousedown", handler), 10);
     return () => {
       clearTimeout(t);
       document.removeEventListener("mousedown", handler);
     };
   }, [navbarOpen]);
 
-  // ── Lock body scroll ──────────────────────────────────────────────────────
   useEffect(() => {
     document.documentElement.classList.toggle("overflow-hidden", navbarOpen);
     return () => document.documentElement.classList.remove("overflow-hidden");
   }, [navbarOpen]);
 
-  // ── Close desktop dropdown on outside click ───────────────────────────────
   useEffect(() => {
     if (!openDropdown) return;
     const handler = (e: MouseEvent) => {
@@ -224,16 +211,13 @@ const Header: React.FC = () => {
         ref={headerRef}
         className="fixed top-0 left-0 right-0 z-50 border-b border-gray-100/80"
         style={{
-          backgroundColor: sticky
-            ? "rgba(255,255,255,0.97)"
-            : "rgba(255,255,255,0.88)",
+          backgroundColor: sticky ? "rgba(255,255,255,0.97)" : "rgba(255,255,255,0.88)",
           boxShadow: sticky ? "0 2px 20px rgba(37,99,235,0.07)" : "none",
           backdropFilter: "blur(12px)",
           WebkitBackdropFilter: "blur(12px)",
           paddingTop: sticky ? 10 : 14,
           paddingBottom: sticky ? 10 : 14,
-          transition:
-            "background-color 220ms ease, box-shadow 220ms ease, padding 220ms ease",
+          transition: "background-color 220ms ease, box-shadow 220ms ease, padding 220ms ease",
           willChange: "background-color",
         }}
       >
@@ -251,9 +235,7 @@ const Header: React.FC = () => {
                 <div key={i} className="relative">
                   {hasSubmenu ? (
                     <button
-                      onClick={() =>
-                        setOpenDropdown(dropOpen ? null : item.label)
-                      }
+                      onClick={() => setOpenDropdown(dropOpen ? null : item.label)}
                       className={`flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-150 ${active
                           ? "text-blue-700 bg-blue-50"
                           : "text-gray-600 hover:text-blue-700 hover:bg-blue-50/60"
@@ -262,11 +244,7 @@ const Header: React.FC = () => {
                       {item.label}
                       <ChevronDown
                         className="w-3.5 h-3.5 transition-transform duration-200"
-                        style={{
-                          transform: dropOpen
-                            ? "rotate(180deg)"
-                            : "rotate(0deg)",
-                        }}
+                        style={{ transform: dropOpen ? "rotate(180deg)" : "rotate(0deg)" }}
                       />
                       {active && (
                         <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-blue-500" />
@@ -286,19 +264,52 @@ const Header: React.FC = () => {
                       )}
                     </Link>
                   )}
-                  <DesktopDropdown
-                    item={item}
-                    isOpen={dropOpen}
-                    onClose={() => setOpenDropdown(null)}
-                  />
+                  <DesktopDropdown item={item} isOpen={dropOpen} onClose={() => setOpenDropdown(null)} />
                 </div>
               );
             })}
           </nav>
 
-          {/* ── Desktop CTA – no auth buttons for now ── */}
+          {/* ── Desktop Auth CTA ── */}
           <div className="hidden lg:flex items-center gap-3">
-            {/* Install button (only if installable) */}
+            {/* Show nothing while auth is loading to prevent flicker */}
+            {!authLoading ? (
+              user ? (
+                <>
+                  <Link
+                    href="/dashboard"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-95"
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="p-2.5 rounded-xl bg-gray-100 text-gray-600 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    aria-label="Sign out"
+                  >
+                    <LogOut className="w-5 h-5" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/signin"
+                    className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:text-blue-700 hover:bg-blue-50/60 transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-95"
+                  >
+                    <User className="w-4 h-4" />
+                    Sign Up
+                  </Link>
+                </>
+              )
+            ) : null}
+
             {isInstallable && (
               <button
                 onClick={handleInstall}
@@ -336,7 +347,7 @@ const Header: React.FC = () => {
       {/* ── Spacer ── */}
       <div className="h-[64px] lg:h-[68px]" />
 
-      {/* ══ INSTALL BANNER (auto‑popup) ═══════════════════════════════════════ */}
+      {/* ══ INSTALL BANNER (unchanged) ═══════════════════════════════════════ */}
       {showInstallBanner && (
         <div
           className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:bottom-4 sm:max-w-md z-50 animate-in slide-in-from-bottom-5 duration-300"
@@ -355,8 +366,7 @@ const Header: React.FC = () => {
               <div className="flex-1">
                 <h3 className="font-bold text-gray-800">Install App</h3>
                 <p className="text-sm text-gray-500 mt-0.5">
-                  Get a faster, offline‑ready experience by installing our app
-                  on your device.
+                  Get a faster, offline‑ready experience by installing our app on your device.
                 </p>
                 <div className="flex gap-2 mt-3">
                   <button
@@ -386,7 +396,7 @@ const Header: React.FC = () => {
         </div>
       )}
 
-      {/* ══ OVERLAY ════════════════════════════════════════════════════════ */}
+      {/* ══ OVERLAY & MOBILE DRAWER (unchanged layout, same auth logic) ══════ */}
       <div
         onClick={closeMenu}
         aria-hidden="true"
@@ -402,7 +412,6 @@ const Header: React.FC = () => {
         }}
       />
 
-      {/* ══ MOBILE DRAWER ══════════════════════════════════════════════════ */}
       <aside
         ref={mobileMenuRef}
         style={{
@@ -425,13 +434,7 @@ const Header: React.FC = () => {
         aria-hidden={!navbarOpen}
       >
         {/* Top strip */}
-        <div
-          style={{
-            height: 4,
-            background: "linear-gradient(90deg,#2563eb,#4ade80)",
-            flexShrink: 0,
-          }}
-        />
+        <div style={{ height: 4, background: "linear-gradient(90deg,#2563eb,#4ade80)", flexShrink: 0 }} />
 
         {/* Drawer header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
@@ -449,36 +452,79 @@ const Header: React.FC = () => {
         {/* Nav items */}
         <nav className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-1">
           {headerData.map((item, i) => (
-            <MobileNavItem
-              key={i}
-              item={item}
-              pathUrl={pathUrl}
-              onClose={closeMenu}
-            />
+            <MobileNavItem key={i} item={item} pathUrl={pathUrl} onClose={closeMenu} />
           ))}
 
-          {/* Mobile CTA – install button only (no auth) */}
-          <div className="mt-4 flex flex-col gap-3">
-            {isInstallable && (
-              <button
-                onClick={handleInstall}
-                className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-blue-200 text-blue-600 font-semibold text-sm active:opacity-90 transition-opacity"
-                style={{ touchAction: "manipulation" }}
-              >
-                <Download className="w-4 h-4" />
-                Install App
-              </button>
-            )}
-          </div>
+          {/* Mobile Auth CTA */}
+          {!authLoading && (
+            <div className="mt-4 flex flex-col gap-3 pt-4 border-t border-gray-100">
+              {user ? (
+                <>
+                  <Link
+                    href="/dashboard"
+                    onClick={closeMenu}
+                    className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold text-sm shadow-md active:opacity-90 transition-opacity"
+                    style={{ touchAction: "manipulation" }}
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      closeMenu();
+                    }}
+                    className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-gray-200 text-gray-600 font-semibold text-sm active:bg-gray-100 transition-colors"
+                    style={{ touchAction: "manipulation" }}
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/signin"
+                    onClick={closeMenu}
+                    className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-blue-200 text-blue-600 font-semibold text-sm active:opacity-90 transition-opacity"
+                    style={{ touchAction: "manipulation" }}
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/signup"
+                    onClick={closeMenu}
+                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold text-sm shadow-md active:opacity-90 transition-opacity"
+                    style={{ touchAction: "manipulation" }}
+                  >
+                    <User className="w-4 h-4" />
+                    Sign Up
+                  </Link>
+                </>
+              )}
+
+              {isInstallable && (
+                <button
+                  onClick={() => {
+                    handleInstall();
+                    closeMenu();
+                  }}
+                  className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-blue-200 text-blue-600 font-semibold text-sm active:opacity-90 transition-opacity"
+                  style={{ touchAction: "manipulation" }}
+                >
+                  <Download className="w-4 h-4" />
+                  Install App
+                </button>
+              )}
+            </div>
+          )}
         </nav>
 
         {/* Footer */}
         <div className="px-5 py-4 border-t border-gray-100 bg-blue-50/40 shrink-0">
           <div className="flex items-center gap-2">
             <Stethoscope className="w-4 h-4 text-blue-400 shrink-0" />
-            <span className="text-xs text-gray-400">
-              Pakistan's #1 Pharmacy eLearning Platform
-            </span>
+            <span className="text-xs text-gray-400">Pakistan's #1 Pharmacy eLearning Platform</span>
           </div>
         </div>
       </aside>
@@ -486,7 +532,7 @@ const Header: React.FC = () => {
   );
 };
 
-// ─── Mobile nav item ──────────────────────────────────────────────────────────
+// ─── MobileNavItem (unchanged) ──────────────────────────────────────────────
 const MobileNavItem = ({
   item,
   pathUrl,
@@ -498,8 +544,7 @@ const MobileNavItem = ({
 }) => {
   const [open, setOpen] = useState(false);
   const hasSubmenu = Boolean(item.submenu);
-  const isActive =
-    pathUrl === item.href || item.submenu?.some((s) => pathUrl === s.href);
+  const isActive = pathUrl === item.href || item.submenu?.some((s) => pathUrl === s.href);
 
   return (
     <div>
@@ -542,14 +587,10 @@ const MobileNavItem = ({
                     style={{ touchAction: "manipulation" }}
                   >
                     <span
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${subActive
-                          ? "bg-white/20"
-                          : "bg-blue-50 border border-blue-100"
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${subActive ? "bg-white/20" : "bg-blue-50 border border-blue-100"
                         }`}
                     >
-                      {SUBMENU_ICONS[sub.label] ?? (
-                        <Pill className="w-3.5 h-3.5 text-blue-500" />
-                      )}
+                      {SUBMENU_ICONS[sub.label] ?? <Pill className="w-3.5 h-3.5 text-blue-500" />}
                     </span>
                     {sub.label}
                   </Link>
@@ -562,9 +603,7 @@ const MobileNavItem = ({
         <Link
           href={item.href}
           onClick={onClose}
-          className={`flex items-center px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-150 ${isActive
-              ? "bg-gradient-to-r from-blue-600 to-green-400 text-white"
-              : "text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+          className={`flex items-center px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-150 ${isActive ? "bg-gradient-to-r from-blue-600 to-green-400 text-white" : "text-gray-700 hover:bg-gray-50 active:bg-gray-100"
             }`}
           style={{ touchAction: "manipulation" }}
         >

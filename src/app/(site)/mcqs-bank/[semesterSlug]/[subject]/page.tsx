@@ -16,6 +16,7 @@ import { SemesterData } from "@/app/api/semester-data";
 import { semesterToSlug, subjectToSlug } from "@/lib/mcq-utils";
 import type { MCQBank } from "@/lib/mcq-utils";
 import jsPDF from "jspdf";
+import { useTracker } from "@/hooks/useTracker"; // ← added
 
 import biochemBank from "@/app/api/mcq-data/pharmaceutical-biochemistry";
 import physioBank from "@/app/api/mcq-data/physiology-histology-i";
@@ -493,15 +494,15 @@ function QuizTimer({ secondsLeft, semGrad }: { secondsLeft: number; semGrad: str
   return (
     <div
       className={`sticky z-40 shadow-md ${isUrgent ? "bg-red-50 border-b-2 border-red-300"
-          : isWarn ? "bg-amber-50 border-b border-amber-300"
-            : "bg-white border-b border-gray-200"
+        : isWarn ? "bg-amber-50 border-b border-amber-300"
+          : "bg-white border-b border-gray-200"
         }`}
       style={{ top: "var(--navbar-height, 64px)" }}
     >
       <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-2 flex items-center gap-3">
         <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono font-extrabold text-sm shrink-0 ${isUrgent ? "bg-red-100 text-red-700 border border-red-300 animate-pulse"
-            : isWarn ? "bg-amber-100 text-amber-700 border border-amber-300"
-              : `bg-gradient-to-r ${semGrad} text-white shadow-sm`
+          : isWarn ? "bg-amber-100 text-amber-700 border border-amber-300"
+            : `bg-gradient-to-r ${semGrad} text-white shadow-sm`
           }`}>
           <Timer className="w-3.5 h-3.5" />
           {mm}:{ss}
@@ -548,6 +549,8 @@ export default function MCQBankQuizPage({ params }: PageProps) {
   const answersRef = useRef(answers);
   answersRef.current = answers;
 
+  const { trackQuiz } = useTracker(); // ← added
+
   const units = useMemo(() => bank ? (bank.units ?? []) : [], [bank]);
   const questions = useMemo(() => {
     if (!bank) return [];
@@ -589,13 +592,24 @@ export default function MCQBankQuizPage({ params }: PageProps) {
     setAnswers(prev => ({ ...prev, [qId]: optId }));
   }, [submitted]);
 
+  // 🔥 Updated doSubmit with tracking
   const doSubmit = useCallback((latestAnswers: Record<number, string>, forced = false) => {
     if (timerRef.current) clearInterval(timerRef.current);
     const elapsed = Math.round((Date.now() - quizStart) / 1000);
+    const correct = questions.filter((q: any) => latestAnswers[q.id] === q.correctAnswer).length;
     setTimeTaken(elapsed); setSubmitted(true); setScreen("results");
     window.scrollTo({ top: 0, behavior: "smooth" });
-    // No tracking calls — dashboard integration removed
-  }, [quizStart]);
+
+    // Track the quiz attempt
+    trackQuiz({
+      quizId: `${subjectSlug}-${activeUnit ?? "all"}-${Date.now()}`,
+      subject: subData?.name ?? subjectSlug,
+      score: correct,
+      total: questions.length,
+      timeTakenMin: Math.max(1, Math.round(elapsed / 60)),
+      href: `/mcqs-bank/${semesterSlug}/${subjectSlug}`,
+    });
+  }, [quizStart, questions, trackQuiz, subjectSlug, activeUnit, subData, semesterSlug]);
 
   const handleSubmit = useCallback(() => doSubmit(answers), [answers, doSubmit]);
   const handleAutoSubmit = useCallback(() => doSubmit(answersRef.current, true), [doSubmit]);
