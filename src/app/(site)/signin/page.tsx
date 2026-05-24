@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { createClient } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Mail, Lock, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
 
-export default function SignInPage() {
+// ── Inner form component (uses useSearchParams) ──────────────────────────
+function SignInForm() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -32,7 +33,6 @@ export default function SignInPage() {
             return;
         }
 
-        // Redirect to dashboard on success
         router.push("/dashboard");
     };
 
@@ -146,7 +146,7 @@ export default function SignInPage() {
                     </div>
 
                     <p className="mt-8 text-center text-sm sm:text-base text-gray-600">
-                        Don’t have an account?{" "}
+                        Don't have an account?{" "}
                         <Link href="/signup" className="text-blue-600 font-semibold hover:text-blue-700 hover:underline transition-colors">
                             Sign up
                         </Link>
@@ -154,5 +154,18 @@ export default function SignInPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+// ── Page export – wraps the form in Suspense ────────────────────────────
+export default function SignInPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+                <Loader2 className="animate-spin w-10 h-10 text-blue-600" />
+            </div>
+        }>
+            <SignInForm />
+        </Suspense>
     );
 }
