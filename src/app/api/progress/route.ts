@@ -13,14 +13,13 @@ export async function GET() {
   // Service‑role client for DB operations
   const supabase = await createServiceSupabaseClient();
 
-  // Fetch the progress row
+  // Fetch progress row
   const { data: progressRow } = await supabase
     .from("progress")
     .select("id, total_time_spent_min, current_streak, longest_streak")
     .eq("user_id", user.id)
     .maybeSingle();
 
-  // If no progress row yet, return empty defaults
   if (!progressRow) {
     return NextResponse.json({
       units: [],
@@ -36,7 +35,7 @@ export async function GET() {
 
   const progressId = progressRow.id;
 
-  // Fetch each related table separately (much more reliable)
+  // Fetch child tables separately
   const { data: units } = await supabase
     .from("unit_progress")
     .select("*")
@@ -58,7 +57,7 @@ export async function GET() {
     .select("*")
     .eq("progress_id", progressId);
 
-  // Activity log is separate – linked by user_id, not progress_id
+  // Activity log is linked by user_id, not progress_id
   const { data: activityLog } = await supabase
     .from("activity_log")
     .select("*")
@@ -78,7 +77,152 @@ export async function GET() {
   });
 }
 
-// ── Keep your existing POST function unchanged ──
 export async function POST(req: Request) {
-  // ... your current POST function (no changes needed)
+  // Auth check
+  const userSupabase = await createServerSupabaseClient();
+  const { data: { user }, error: authError } = await userSupabase.auth.getUser();
+  if (authError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Service‑role client
+  const supabase = await createServiceSupabaseClient();
+
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const { type, ...payload } = body;
+
+  try {
+    // Ensure progress row exists
+    const { data: existing } = await supabase
+      .from("progress")
+      .select("id, total_time_spent_min")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    let progressId = existing?.id;
+
+    if (!progressId) {
+      const { data: newProgress, error: insertError } = await supabase
+        .from("progress")
+        .insert({
+          user_id: user.id,
+          email: user.email,
+          display_name: user.user_metadata?.full_name ?? user.email,
+          avatar_url: user.user_metadata?.avatar_url,
+        })
+        .select("id")
+        .single();
+
+      if (insertError) {
+        console.error("Progress insert error:", insertError);
+        return NextResponse.json({ error: insertError.message }, { status: 500 });
+      }
+      progressId = newProgress?.id;
+    }
+
+    // Handle event types
+    switch (type) {
+      case "unit":
+        await supabase.from("unit_progress").upsert(
+          {
+            progress_id: progressId,
+            unit_id: payload.unitId,
+            unit_title: payload.unitTitle || "",
+            subject: payload.subject || "",
+            semester: payload.semester || "",
+            last_visited: new Date().toISOString(),
+          },
+          { onConflict: "progress_id, unit_id" }
+        );
+        break;
+
+      case "flashcard":
+        await supabase.from("flashcard_progress").upsert(
+          {
+            progress_id: progressId,
+            category: payload.category,
+            cards_reviewed: 1,
+            cards_correct: payload.correct ? 1 : 0,
+            last_practiced: new Date().toISOString(),
+          },
+          { onConflict: "progress_id, category" }
+        );
+        break;
+
+      case "quiz":
+        await supabase.from("quiz_attempts").insert({
+          progress_id: progressId,
+          quiz_id: payload.quizId,
+          subject: payload.subject,
+          score: payload.score,
+          total: payload.total,
+          time_taken_min: payload.timeTakenMin || 0,
+          attempted_at: new Date().toISOString(),
+        });
+        break;
+
+      case "spotting":
+        await supabase.from("spotting_progress").upsert(
+          {
+            progress_id: progressId,
+            lesson_id: payload.lessonId,
+            category: payload.category,
+            last_visited: new Date().toISOString(),
+          },
+          { onConflict: "progress_id, lesson_id" }
+        );
+        break;
+
+      case "activity":
+        await supabase.from("activity_log").insert({
+          user_id: user.id,
+          type: payload.type || "generic",
+          label: payload.label || "",
+          href: payload.href || "",
+          timestamp: new Date().toISOString(),
+        });
+        break;
+
+      default:
+        return NextResponse.json({ error: "Unknown event type" }, { status: 400 });
+    }
+
+    // Also insert an activity log entry for the event (if not already an activity)
+    if (type !== "activity") {
+      const activityLabel: Record<string, string> = {
+        unit: `Visited: ${payload.unitTitle || payload.unitId}`,
+        flashcard: `Practiced flashcards: ${payload.category}`,
+        quiz: `Quiz: ${payload.subject} – ${payload.score}/${payload.total}`,
+        spotting: `Spotting: ${payload.lessonId}`,
+      };
+      await supabase.from("activity_log").insert({
+        user_id: user.id,
+        type: type,
+        label: activityLabel[type] || type,
+        href: payload.href || "",
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Update last active and total time
+    const timeToAdd = payload.timeSpentMin || 0;
+    await supabase
+      .from("progress")
+      .update({
+        last_active_at: new Date().toISOString(),
+        total_time_spent_min: (existing?.total_time_spent_min || 0) + timeToAdd,
+      })
+      .eq("id", progressId);
+
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    console.error("POST /api/progress error:", err);
+    return NextResponse.json({ error: err.message || "Internal error" }, { status: 500 });
+  }
 }
