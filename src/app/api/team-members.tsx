@@ -15,6 +15,16 @@ export
             role: "Fourth Year Representative",
             imgSrc: "/images/mentor/user1.png"
         },
+         {
+            name: "Abdul Wahab",
+            role: "Co-Material Content Strategist",
+            imgSrc: "/images/mentor/user3.png"
+        },
+         {
+            name: "Jalal bin Junaid",
+            role: "Co-Material Content Strategist",
+            imgSrc: "/images/mentor/user3.png"
+        },
         {
             name: "Jazil bin kashef",
             role: "Co-Material Content Strategist",
@@ -42,6 +52,16 @@ export
         }, 
         {
             name: "Misbah Yameen",
+            role: "Research & Content Collector",
+            imgSrc: "/images/mentor/user3.png"
+        },
+        {
+            name: "Saleem Ferozi",
+            role: "Research & Content Collector",
+            imgSrc: "/images/mentor/user3.png"
+        }, 
+        {
+            name: "Nawal Mirza",
             role: "Research & Content Collector",
             imgSrc: "/images/mentor/user3.png"
         },
