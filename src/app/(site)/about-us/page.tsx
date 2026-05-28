@@ -18,6 +18,16 @@ const bgIcons = [
   { Icon: Leaf,         top: "70%", left: "96.5%", size: 28 },
 ];
 
+// ── University overrides ──────────────────────────────────
+const universityOverrides: Record<string, string> = {
+  "Umar Hayat":     "SMIT",
+  "Abdul Wahab":    "Hamdard University",
+  "Jalal bin Junaid":"Hamdard University",
+};
+
+const getUniversity = (name: string) =>
+  universityOverrides[name] ?? "University of Karachi";
+
 export default function AboutPage() {
   const productionMembers = teamMembers.filter(m =>
     ["Shayan Hussain","Umar Hayat", "Jalal bin Junaid", "Abdul Wahab" ,"Jazil bin kashef","Sumaiya Saeed","Syed M. Ali","Rumaisa Farooqui","Misbah Yameen","Nawal Mirza", "Saleem Ferozi"  ,"Muhammad Salman"].includes(m.name)
@@ -44,9 +54,6 @@ export default function AboutPage() {
         <div className="absolute right-44 top-6      opacity-15"><Activity size={40} className="text-white" /></div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-16 md:py-20 text-center">
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 text-white text-xs font-bold uppercase tracking-widest mb-5">
-            <Users className="w-3.5 h-3.5" /> University of Karachi
-          </span>
 
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-5 leading-tight tracking-tight">
             About
@@ -57,18 +64,6 @@ export default function AboutPage() {
             Empowering pharmacy students with curated study materials, comprehensive guides, and a supportive learning community built by students, for students.
           </p>
 
-          <div className="flex items-center justify-center gap-8 flex-wrap">
-            {[
-              { n: "10+", l: "Team Members"    },
-              { n: "UOK", l: "Karachi"         },
-              { n: "Free", l: "Always"         },
-            ].map(({ n, l }) => (
-              <div key={l} className="text-center">
-                <div className="text-2xl font-extrabold text-white">{n}</div>
-                <div className="text-sm text-blue-200">{l}</div>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
 
@@ -146,7 +141,7 @@ export default function AboutPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {productionMembers.map((member, i) => (
-              <TeamCard key={i} member={member} />
+              <TeamCard key={i} member={member} university={getUniversity(member.name)} />
             ))}
           </div>
         </div>
@@ -169,7 +164,7 @@ export default function AboutPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-3xl">
             {marketingMembers.map((member, i) => (
-              <TeamCard key={i} member={member} />
+              <TeamCard key={i} member={member} university={getUniversity(member.name)} />
             ))}
           </div>
         </div>
@@ -189,7 +184,7 @@ export default function AboutPage() {
             <p className="text-gray-500 text-base max-w-xl mx-auto mb-8 leading-relaxed">
               Whether you're just starting your pharmacy journey or preparing for finals, PharmaWallah is here to support your success every step of the way.
             </p>
-            <Link href="/material"
+            <Link href="/courses"
               className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white font-extrabold text-sm shadow-lg shadow-blue-200/50 hover:shadow-xl hover:shadow-blue-300/50 hover:-translate-y-0.5 transition-all duration-300">
               <BookOpen className="w-4 h-4" />
               Explore Our Materials
@@ -203,7 +198,7 @@ export default function AboutPage() {
 }
 
 // ── Team Card ──────────────────────────────────────────────────────
-function TeamCard({ member }: { member: typeof teamMembers[0] }) {
+function TeamCard({ member, university }: { member: typeof teamMembers[0]; university: string }) {
   return (
     <div className="group relative rounded-2xl border border-gray-200 bg-white overflow-hidden hover:border-blue-300 hover:shadow-md transition-all duration-300">
       {/* Top stripe */}
@@ -237,7 +232,7 @@ function TeamCard({ member }: { member: typeof teamMembers[0] }) {
 
         <div className="w-full h-px bg-gray-100 mb-3" />
 
-        <div className="text-[10px] text-gray-400 mb-3 font-medium">University of Karachi</div>
+        <div className="text-[10px] text-gray-400 mb-3 font-medium">{university}</div>
 
         <div className="flex justify-center items-center gap-2">
           {[

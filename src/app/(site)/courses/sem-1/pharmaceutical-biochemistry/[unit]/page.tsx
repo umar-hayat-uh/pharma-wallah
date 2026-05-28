@@ -13,8 +13,7 @@ import {
 } from "lucide-react";
 import { Pill, FlaskConical, Beaker, Microscope, Stethoscope, Leaf } from "lucide-react";
 import { BiochemUnits, SUBJECT_META } from "@/app/api/biochemistry-data";
-import { useTracker } from "@/hooks/useTracker";   // ← dashboard tracking
-
+import UnitTracker from "@/components/UnitTracker";
 interface PageProps { params: { unit: string } }
 
 const bgIconDefs = [
@@ -107,38 +106,6 @@ export default function BiochemUnitPage({ params }: PageProps) {
   const [pdfLoading,    setPdfLoading]    = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
-  // ── Dashboard tracking ────────────────────────────────────────────────────
-  const { trackUnit, trackActivity, trackTimeOnUnmount } = useTracker();
-
-  useEffect(() => {
-    if (!unit) return;
-    setLoading(true); setError(false);
-    fetch(`/content/pharmaceutical-biochemistry/${unitSlug}.md`)
-      .then(r => { if (!r.ok) throw new Error(); return r.text(); })
-      .then(text => {
-        setContent(text.replace(/^---[\s\S]*?---\n?/, ""));
-        setLoading(false);
-        // ── Track: unit opened ──
-        trackUnit({
-          unitId:    unitSlug,
-          unitTitle: unit.title,
-          subject:   "Pharmaceutical Biochemistry",
-          semester:  "Semester 1",
-        });
-        trackActivity({
-          type:  "unit_read",
-          label: unit.title,
-          href:  `${BASE_PATH}/${unitSlug}`,
-        });
-      })
-      .catch(() => { setError(true); setLoading(false); });
-  }, [unitSlug, unit]);
-
-  // ── Time tracking — records minutes spent on unmount ─────────────────────
-  useEffect(() => {
-    const cleanup = trackTimeOnUnmount();
-    return cleanup;
-  }, [unitSlug]);
 
   useEffect(() => {
     const onKey    = (e: KeyboardEvent) => { if (e.key === "Escape") setMobileNavOpen(false); };
@@ -226,6 +193,7 @@ export default function BiochemUnitPage({ params }: PageProps) {
 
   return (
     <section className="min-h-screen bg-white relative" style={{ overflowX: "hidden" }}>
+      <UnitTracker unitTitle={unit.title} />
       {bgIconDefs.map(({ Icon, top, left, size }, i) => (
         <div key={i} className="fixed pointer-events-none text-blue-200 z-0 hidden sm:block" style={{ top, left }}>
           <Icon size={size} strokeWidth={1.4} />

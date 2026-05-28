@@ -12,16 +12,17 @@ import {
 } from "lucide-react";
 import { Pill, FlaskConical, Beaker, Microscope, Stethoscope, Leaf } from "lucide-react";
 import { PhysPharmUnits, PHYSPHARM_META } from "@/app/api/physical-pharmacy-data";
+import UnitTracker from "@/components/UnitTracker";
 
 interface PageProps { params: { unit: string } }
 
 const bgIconDefs = [
-  { Icon: Pill,         top: "8%",  left: "1.5%",  size: 26 },
-  { Icon: Beaker,       top: "38%", left: "1%",    size: 24 },
-  { Icon: Stethoscope,  top: "70%", left: "1.5%",  size: 26 },
-  { Icon: Microscope,   top: "8%",  left: "96.5%", size: 26 },
-  { Icon: FlaskConical, top: "38%", left: "97%",   size: 24 },
-  { Icon: Leaf,         top: "70%", left: "96.5%", size: 24 },
+  { Icon: Pill, top: "8%", left: "1.5%", size: 26 },
+  { Icon: Beaker, top: "38%", left: "1%", size: 24 },
+  { Icon: Stethoscope, top: "70%", left: "1.5%", size: 26 },
+  { Icon: Microscope, top: "8%", left: "96.5%", size: 26 },
+  { Icon: FlaskConical, top: "38%", left: "97%", size: 24 },
+  { Icon: Leaf, top: "70%", left: "96.5%", size: 24 },
 ];
 
 const BASE_PATH = `/courses/${PHYSPHARM_META.semesterSlug}/${PHYSPHARM_META.slug}`;
@@ -69,7 +70,7 @@ const mdComponents = {
   h4: ({ children }: any) => (
     <h4 className="text-sm sm:text-base font-semibold text-violet-700 mt-5 mb-2 break-words">{children}</h4>
   ),
-  p:  ({ children }: any) => <p className="text-gray-700 leading-relaxed text-sm sm:text-base mb-4 break-words">{children}</p>,
+  p: ({ children }: any) => <p className="text-gray-700 leading-relaxed text-sm sm:text-base mb-4 break-words">{children}</p>,
   ul: ({ children }: any) => <ul className="space-y-2 mb-4 pl-1">{children}</ul>,
   ol: ({ children }: any) => <ol className="space-y-2 mb-4 pl-4 list-decimal text-gray-700 text-sm sm:text-base">{children}</ol>,
   li: ({ children }: any) => (
@@ -78,17 +79,17 @@ const mdComponents = {
       <span className="break-words min-w-0 flex-1">{children}</span>
     </li>
   ),
-  strong:     ({ children }: any) => <strong className="font-bold text-gray-900">{children}</strong>,
-  em:         ({ children }: any) => <em className="italic text-gray-700">{children}</em>,
+  strong: ({ children }: any) => <strong className="font-bold text-gray-900">{children}</strong>,
+  em: ({ children }: any) => <em className="italic text-gray-700">{children}</em>,
   blockquote: ({ children }: any) => (
     <blockquote className="border-l-4 border-indigo-400 bg-indigo-50/60 px-4 py-3 rounded-r-xl my-4 text-gray-700 text-sm sm:text-base italic break-words">{children}</blockquote>
   ),
-  table:  ({ children }: any) => <ScrollTable>{children}</ScrollTable>,
-  thead:  ({ children }: any) => <thead className="bg-gradient-to-r from-indigo-50 to-violet-50">{children}</thead>,
-  th:     ({ children }: any) => <th className="px-3 py-3 text-left font-semibold text-gray-800 border border-gray-200 text-xs whitespace-nowrap">{children}</th>,
-  td:     ({ children }: any) => <td className="px-3 py-2.5 border border-gray-200 text-xs text-gray-700 whitespace-normal min-w-[100px]">{children}</td>,
-  tr:     ({ children }: any) => <tr className="hover:bg-indigo-50/30 transition-colors">{children}</tr>,
-  code:   ({ inline, children }: any) =>
+  table: ({ children }: any) => <ScrollTable>{children}</ScrollTable>,
+  thead: ({ children }: any) => <thead className="bg-gradient-to-r from-indigo-50 to-violet-50">{children}</thead>,
+  th: ({ children }: any) => <th className="px-3 py-3 text-left font-semibold text-gray-800 border border-gray-200 text-xs whitespace-nowrap">{children}</th>,
+  td: ({ children }: any) => <td className="px-3 py-2.5 border border-gray-200 text-xs text-gray-700 whitespace-normal min-w-[100px]">{children}</td>,
+  tr: ({ children }: any) => <tr className="hover:bg-indigo-50/30 transition-colors">{children}</tr>,
+  code: ({ inline, children }: any) =>
     inline
       ? <code className="bg-gray-100 text-indigo-700 px-1.5 py-0.5 rounded text-xs font-mono break-all">{children}</code>
       : <pre className="bg-gray-900 text-violet-300 rounded-2xl p-4 overflow-x-auto text-xs font-mono my-4 leading-relaxed"><code>{children}</code></pre>,
@@ -99,18 +100,18 @@ const mdComponents = {
 export default function PhysicalPharmacyUnitPage({ params }: PageProps) {
   const { unit: unitSlug } = params;
 
-  const unitIdx  = PhysPharmUnits.findIndex(u => u.id === unitSlug);
-  const unit     = PhysPharmUnits[unitIdx];
+  const unitIdx = PhysPharmUnits.findIndex(u => u.id === unitSlug);
+  const unit = PhysPharmUnits[unitIdx];
   const prevUnit = unitIdx > 0 ? PhysPharmUnits[unitIdx - 1] : null;
   const nextUnit = unitIdx < PhysPharmUnits.length - 1 ? PhysPharmUnits[unitIdx + 1] : null;
 
-  const [content,       setContent]       = useState("");
-  const [loading,       setLoading]       = useState(true);
-  const [error,         setError]         = useState(false);
+  const [content, setContent] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [imgError,      setImgError]      = useState(false);
-  const [pdfLoading,    setPdfLoading]    = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -125,7 +126,7 @@ export default function PhysicalPharmacyUnitPage({ params }: PageProps) {
   }, [unitSlug, unit]);
 
   useEffect(() => {
-    const onKey    = (e: KeyboardEvent) => { if (e.key === "Escape") setMobileNavOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMobileNavOpen(false); };
     const onScroll = () => setShowScrollTop(window.scrollY > 400);
     window.addEventListener("keydown", onKey);
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -156,16 +157,16 @@ export default function PhysicalPharmacyUnitPage({ params }: PageProps) {
 
       el.style.height = prevH;
 
-      const pdf         = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const pageW       = pdf.internal.pageSize.getWidth();
-      const pageH       = pdf.internal.pageSize.getHeight();
-      const margin      = 15;
-      const contentW    = pageW - margin * 2;
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+      const contentW = pageW - margin * 2;
       const headerSpace = 12;
-      const usableH     = (pageH - margin * 2) - headerSpace;
-      const scaledW     = contentW;
-      const scaledH     = (canvas.height / canvas.width) * scaledW;
-      const totalPages  = Math.ceil(scaledH / usableH);
+      const usableH = (pageH - margin * 2) - headerSpace;
+      const scaledW = contentW;
+      const scaledH = (canvas.height / canvas.width) * scaledW;
+      const totalPages = Math.ceil(scaledH / usableH);
 
       // branded indigo header bar on every page
       const addHeader = (doc: typeof pdf, pageNum: number, total: number) => {
@@ -193,13 +194,13 @@ export default function PhysicalPharmacyUnitPage({ params }: PageProps) {
         addHeader(pdf, page + 1, totalPages);
         addFooter(pdf);
 
-        const srcY     = (page * usableH * canvas.height) / scaledH;
+        const srcY = (page * usableH * canvas.height) / scaledH;
         const slicePxH = Math.min((usableH * canvas.height) / scaledH, canvas.height - srcY);
 
-        const sliceCanvas    = document.createElement("canvas");
-        sliceCanvas.width    = canvas.width;
-        sliceCanvas.height   = slicePxH;
-        const ctx            = sliceCanvas.getContext("2d")!;
+        const sliceCanvas = document.createElement("canvas");
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = slicePxH;
+        const ctx = sliceCanvas.getContext("2d")!;
         ctx.drawImage(canvas, 0, srcY, canvas.width, slicePxH, 0, 0, canvas.width, slicePxH);
 
         const drawH = (slicePxH / canvas.height) * scaledH;
@@ -231,6 +232,7 @@ export default function PhysicalPharmacyUnitPage({ params }: PageProps) {
 
   return (
     <section className="min-h-screen bg-white relative" style={{ overflowX: "hidden" }}>
+      <UnitTracker unitTitle={unit.title} />
 
       {/* BG icons */}
       {bgIconDefs.map(({ Icon, top, left, size }, i) => (
@@ -267,11 +269,10 @@ export default function PhysicalPharmacyUnitPage({ params }: PageProps) {
               {PhysPharmUnits.map(u => (
                 <li key={u.id}>
                   <Link href={`${BASE_PATH}/${u.id}`} onClick={() => setMobileNavOpen(false)}
-                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs transition-all ${
-                      u.id === unitSlug
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs transition-all ${u.id === unitSlug
                         ? `bg-gradient-to-r ${GRAD} text-white font-semibold`
                         : "text-gray-700 hover:bg-indigo-50"
-                    }`}>
+                      }`}>
                     <span className="shrink-0">{u.emoji}</span>
                     <span className="flex-1 leading-snug truncate">{u.title}</span>
                     {u.id === unitSlug && <span className="text-[9px] bg-white/25 px-1.5 py-0.5 rounded-full shrink-0">Now</span>}
@@ -307,10 +308,10 @@ export default function PhysicalPharmacyUnitPage({ params }: PageProps) {
         {/* Desktop breadcrumb */}
         <nav className="hidden lg:flex items-center gap-1.5 text-sm text-gray-500 mb-5 flex-wrap">
           {[
-            { href: "/",        label: "Home"     },
-            { href: "/courses", label: "Courses"  },
+            { href: "/", label: "Home" },
+            { href: "/courses", label: "Courses" },
             { href: `/courses/${PHYSPHARM_META.semesterSlug}`, label: PHYSPHARM_META.semester },
-            { href: BASE_PATH,  label: "Physical Pharmacy" },
+            { href: BASE_PATH, label: "Physical Pharmacy" },
           ].map(({ href, label }) => (
             <span key={href} className="flex items-center gap-1.5">
               <Link href={href} className="hover:text-indigo-600 transition-colors">{label}</Link>
@@ -344,11 +345,10 @@ export default function PhysicalPharmacyUnitPage({ params }: PageProps) {
                   {PhysPharmUnits.map(u => (
                     <li key={u.id}>
                       <Link href={`${BASE_PATH}/${u.id}`}
-                        className={`group flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs transition-all ${
-                          u.id === unitSlug
+                        className={`group flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs transition-all ${u.id === unitSlug
                             ? `bg-gradient-to-r ${GRAD} text-white font-semibold shadow-sm`
                             : "text-gray-600 hover:bg-indigo-50 hover:text-indigo-700"
-                        }`}>
+                          }`}>
                         <span>{u.emoji}</span>
                         <span className="flex-1 leading-snug truncate">{u.shortTitle}</span>
                         <ChevronRight size={11} className={`shrink-0 transition-opacity ${u.id === unitSlug ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`} />

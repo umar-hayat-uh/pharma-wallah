@@ -6,7 +6,7 @@ import {
   Search, Sparkles, X, Zap, Activity, FlaskConical, AlertTriangle,
   TrendingUp, Pill, Beaker, Microscope, Stethoscope, Leaf, Dna,
   ChevronLeft, ChevronRight, BookOpen, ExternalLink, Database, ArrowRight,
-  Target, ChevronDown, LayoutGrid,
+  Target, ChevronDown, LayoutGrid, BrainCircuit, CheckCircle2, XCircle, RotateCcw, ArrowLeft
 } from "lucide-react";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
@@ -44,7 +44,6 @@ const TABS: TabDef[] = [
 
 const CARDS_PER_PAGE = 12;
 
-// ─────────────────────────────────────────────────────────────────────────────
 // FLASHCARD DATA (your full datasets – I've kept them intact)
 // (All your moaData, classificationData, sideEffectsData, pharmacokineticsData,
 //  pharmacodynamicsData, indicationsData go here. For brevity I'm showing a
@@ -2419,11 +2418,18 @@ const REFERENCES = [
   { authors: "Brunton LL, Hilal-Dandan R, Knollmann BC.", title: "Goodman & Gilman's The Pharmacological Basis of Therapeutics (13th ed.).", publisher: "McGraw-Hill.", year: "2018" },
   { authors: "Tripathi KD.", title: "Essentials of Medical Pharmacology (8th ed.).", publisher: "Jaypee Brothers.", year: "2019" },
   { authors: "Joint Formulary Committee.", title: "British National Formulary (BNF) — online.", publisher: "BMJ Group & Pharmaceutical Press.", year: "2024", url: "https://bnf.nice.org.uk" },
-  { authors: "Trevor AJ, Katzung BG, Bhakta M.", title: "Katzung & Trevor's Pharmacology: Examination and Board Review (13th ed.).", publisher: "McGraw-Hill.", year: "2021" },
-  { authors: "Rowland M, Tozer TN.", title: "Clinical Pharmacokinetics and Pharmacodynamics (5th ed.).", publisher: "Lippincott Williams & Wilkins.", year: "2011" },
-  { authors: "Baxter K, Preston CL.", title: "Stockley's Drug Interactions (12th ed.).", publisher: "Pharmaceutical Press.", year: "2023", url: "https://www.medicinescomplete.com" },
-  { authors: "Wishart DS, et al.", title: "DrugBank Online v5.1.", publisher: "DrugBank.", year: "2024", url: "https://go.drugbank.com" },
 ];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Utility Functions
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Flashcard Component (with tracking callback)
@@ -2480,7 +2486,7 @@ function Flashcard({ drug, back, gradient, backLabel, onFlip }: {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Mobile Category Sheet (unchanged)
+// Mobile Category Sheet
 function MobileCategorySheet({
   activeTab,
   onSelect,
@@ -2494,12 +2500,10 @@ function MobileCategorySheet({
 
   return (
     <>
-      {/* Updated Trigger Button: High Visibility for Students */}
       <button
         onClick={() => setOpen(true)}
         className="w-full group relative flex items-center justify-between px-4 py-4 bg-white border-2 border-blue-500/20 rounded-2xl shadow-sm active:scale-[0.98] transition-all"
       >
-        {/* Visual "Tap" Indicator Pulse */}
         <div className="absolute -top-1 -right-1 flex h-3 w-3">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
           <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
@@ -2557,7 +2561,6 @@ function MobileCategorySheet({
               className="fixed bottom-0 left-0 right-0 z-[70] bg-gray-50 rounded-t-[32px] shadow-2xl overflow-hidden"
               style={{ maxHeight: "85vh" }}
             >
-              {/* Decorative Handle Bar */}
               <div className="flex justify-center pt-4 pb-2 bg-white">
                 <div className="w-12 h-1.5 rounded-full bg-gray-300" />
               </div>
@@ -2592,8 +2595,8 @@ function MobileCategorySheet({
                         setOpen(false);
                       }}
                       className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all text-left relative ${isActive
-                          ? "bg-white ring-2 ring-blue-500 shadow-md"
-                          : "bg-white/50 border border-transparent hover:bg-white"
+                        ? "bg-white ring-2 ring-blue-500 shadow-md"
+                        : "bg-white/50 border border-transparent hover:bg-white"
                         }`}
                     >
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br ${tab.color} ${isActive ? "shadow-lg shadow-blue-200" : "opacity-70"}`}>
@@ -2616,8 +2619,8 @@ function MobileCategorySheet({
 
                       <div className="flex flex-col items-end gap-1 flex-shrink-0">
                         <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${isActive
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-100 text-gray-500"
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-100 text-gray-500"
                           }`}>
                           {DATA_MAP[tab.key].length}
                         </span>
@@ -2636,8 +2639,9 @@ function MobileCategorySheet({
     </>
   );
 }
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Desktop Sidebar (unchanged)
+// Desktop Sidebar
 function DesktopSidebar({
   activeTab, onSelect, searchQuery, onSearch,
 }: {
@@ -2718,7 +2722,7 @@ function DesktopSidebar({
 
         <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
           <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600 mb-1">Study Tip</p>
-          <p className="text-xs text-blue-700 leading-relaxed">Tap any card to flip it and reveal the answer. Go through each category systematically for exam prep.</p>
+          <p className="text-xs text-blue-700 leading-relaxed">Tap any card to flip it and reveal the answer. Or, enter Quiz Mode to test your knowledge!</p>
         </div>
       </div>
     </aside>
@@ -2726,17 +2730,28 @@ function DesktopSidebar({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MAIN PAGE COMPONENT with Tracking Integration
+// MAIN PAGE COMPONENT
 export default function FlashcardsPage() {
-  const { trackFlashcard, trackActivity, trackTimeOnUnmount } = useTracker();
+  const { trackFlashcard, trackActivity, trackTimeOnUnmount } = useTracker() as any;
 
+  // -- Standard Page State --
   const [activeTab, setActiveTab] = useState<TabKey>("moa");
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
 
+  // -- Quiz Mode State --
+  const [isQuizMode, setIsQuizMode] = useState(false);
+  const [quizCards, setQuizCards] = useState<{ drug: string, back: string }[]>([]);
+  const [currentQIndex, setCurrentQIndex] = useState(0);
+  const [score, setScore] = useState(0);
+  const [selectedAns, setSelectedAns] = useState<string | null>(null);
+  const [quizFinished, setQuizFinished] = useState(false);
+  const [quizStartTime, setQuizStartTime] = useState<number>(0);
+  const [currentOptions, setCurrentOptions] = useState<string[]>([]);
+
   // Track time spent on this page
   useEffect(() => {
-    const cleanup = trackTimeOnUnmount();
+    const cleanup = trackTimeOnUnmount?.();
     return cleanup;
   }, [trackTimeOnUnmount]);
 
@@ -2758,9 +2773,9 @@ export default function FlashcardsPage() {
     setActiveTab(key);
     setSearchQuery("");
     setPage(1);
-    // 🔥 Track category change
+    setIsQuizMode(false); // Reset quiz mode if category changes
     const tab = TABS.find(t => t.key === key)!;
-    trackActivity({
+    trackActivity?.({
       type: "flashcard",
       label: `Studied ${tab.label} flashcards`,
     });
@@ -2771,13 +2786,86 @@ export default function FlashcardsPage() {
     setPage(1);
   };
 
-  // 🔥 Called every time a card is flipped to the back
   const handleCardFlip = () => {
-    trackFlashcard({
+    trackFlashcard?.({
       category: activeTab,
       cardsReviewed: 1,
     });
   };
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Quiz Logic Functions
+  const generateOptions = (correctBack: string, dataArray: typeof allData) => {
+    const distractors = dataArray.map(d => d.back).filter(b => b !== correctBack);
+    const uniqueDistractors = Array.from(new Set(distractors));
+    const shuffledDistractors = shuffleArray(uniqueDistractors);
+    const selectedDistractors = shuffledDistractors.slice(0, 3);
+
+    // Fill with generics if the category data is extremely small
+    while (selectedDistractors.length < 3) {
+      selectedDistractors.push(`Other ${activeTabDef.backLabel} Distractor ${selectedDistractors.length}`);
+    }
+
+    return shuffleArray([correctBack, ...selectedDistractors]);
+  };
+
+  const startQuiz = () => {
+    if (allData.length === 0) return;
+
+    // Shuffle all data, then take only the first 10 for the quiz round
+    const shuffled = shuffleArray(allData);
+    const selectedCards = shuffled.slice(0, 10);
+
+    setQuizCards(selectedCards);
+    setCurrentQIndex(0);
+    setScore(0);
+    setQuizFinished(false);
+    setSelectedAns(null);
+    setQuizStartTime(Date.now());
+    // Ensure you pass the first card of the sliced array to generateOptions
+    setCurrentOptions(generateOptions(selectedCards[0].back, allData));
+    setIsQuizMode(true);
+
+    trackActivity?.({
+      type: "quiz_started",
+      label: `Started ${activeTabDef.label} quiz`,
+    });
+  };
+
+  const handleAnswerSelect = (answer: string) => {
+    if (selectedAns !== null) return;
+    setSelectedAns(answer);
+
+    const currentCard = quizCards[currentQIndex];
+    const isCorrect = answer === currentCard.back;
+    const newScore = isCorrect ? score + 1 : score;
+
+    if (isCorrect) setScore(newScore);
+
+    setTimeout(() => {
+      const nextIndex = currentQIndex + 1;
+      if (nextIndex < quizCards.length) {
+        setCurrentQIndex(nextIndex);
+        setSelectedAns(null);
+        setCurrentOptions(generateOptions(quizCards[nextIndex].back, allData));
+      } else {
+        setQuizFinished(true);
+        const timeTaken = Math.round((Date.now() - quizStartTime) / 1000);
+        trackActivity?.({
+          type: "quiz_completed",
+          label: `Completed ${activeTabDef.label} quiz with score ${newScore}/${quizCards.length}`,
+          data: { score: newScore, total: quizCards.length, timeTaken }
+        });
+      }
+    }, 1500);
+  };
+
+  const exitQuiz = () => {
+    setIsQuizMode(false);
+    setQuizFinished(false);
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────────
 
   const totalAll = Object.values(DATA_MAP).reduce((s, d) => s + d.length, 0);
 
@@ -2811,7 +2899,7 @@ export default function FlashcardsPage() {
             <span className="block text-green-200 mt-1">Flip &amp; Learn</span>
           </h1>
           <p className="text-blue-100 text-lg max-w-2xl mx-auto mb-6 leading-relaxed">
-            Master mechanisms, classifications, side effects, pharmacokinetics, and pharmacodynamics — tap any card to reveal the answer.
+            Master mechanisms, classifications, side effects, pharmacokinetics, and pharmacodynamics — tap any card to reveal the answer or test yourself in Quiz Mode.
           </p>
           <div className="flex items-center justify-center gap-6 flex-wrap">
             {[
@@ -2842,107 +2930,268 @@ export default function FlashcardsPage() {
             {/* Mobile category selector + search */}
             <div className="lg:hidden space-y-3 mb-5">
               <MobileCategorySheet activeTab={activeTab} onSelect={handleTabChange} />
-              <div className="relative">
-                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                <input type="text" placeholder="Search drug name…"
-                  value={searchQuery} onChange={e => handleSearch(e.target.value)}
-                  className="w-full pl-10 pr-10 py-3 text-sm text-gray-800 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all placeholder:text-gray-400"
-                />
-                {searchQuery && (
-                  <button onClick={() => handleSearch("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors">
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
+
+              {!isQuizMode && (
+                <div className="relative">
+                  <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <input type="text" placeholder="Search drug name…"
+                    value={searchQuery} onChange={e => handleSearch(e.target.value)}
+                    className="w-full pl-10 pr-10 py-3 text-sm text-gray-800 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all placeholder:text-gray-400"
+                  />
+                  {searchQuery && (
+                    <button onClick={() => handleSearch("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors">
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Desktop header */}
-            <div className="hidden lg:flex items-center justify-between mb-5">
-              <div className="flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${activeTabDef.color} flex items-center justify-center shadow-sm`}>
-                  <activeTabDef.Icon size={16} className="text-white" />
+            {/* Desktop header & Quiz Toggle */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+              <div className="hidden lg:flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${activeTabDef.color} flex items-center justify-center shadow-sm`}>
+                  <activeTabDef.Icon size={18} className="text-white" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-extrabold text-gray-900 leading-tight">{activeTabDef.label}</h2>
-                  <p className="text-xs text-gray-400">{activeTabDef.desc}</p>
+                  <h2 className="text-xl font-extrabold text-gray-900 leading-tight">{activeTabDef.label}</h2>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-gray-400">{activeTabDef.desc}</p>
+                    <span className="text-[10px] font-bold text-gray-400 bg-gray-100 border border-gray-200 rounded-full px-2 py-0.5">
+                      {filtered.length} / {allData.length} cards
+                    </span>
+                  </div>
                 </div>
               </div>
-              <span className="text-xs font-semibold text-gray-400 bg-gray-100 border border-gray-200 rounded-full px-3 py-1.5">
-                {filtered.length} / {allData.length} cards
-              </span>
+
+              {/* Mobile count badge fallback */}
+              <div className="lg:hidden flex items-center justify-between">
+                <h2 className="text-sm font-extrabold text-gray-900">{activeTabDef.label}</h2>
+                <span className="text-[11px] font-semibold text-gray-400 bg-gray-100 border border-gray-200 rounded-full px-2.5 py-1">
+                  {filtered.length} cards
+                </span>
+              </div>
+
+              {/* Quiz Toggle Button */}
+              <button
+                onClick={isQuizMode ? exitQuiz : startQuiz}
+                disabled={allData.length === 0}
+                className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-extrabold transition-all duration-300 ${isQuizMode
+                  ? "bg-white border-2 border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  : "bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-md hover:shadow-lg hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  }`}
+              >
+                {isQuizMode ? (
+                  <>
+                    <ArrowLeft className="w-4 h-4" /> Exit Quiz
+                  </>
+                ) : (
+                  <>
+                    <BrainCircuit className="w-5 h-5" /> Quiz Me!
+                  </>
+                )}
+              </button>
             </div>
 
-            {/* Mobile count badge */}
-            <div className="lg:hidden flex items-center justify-between mb-4">
-              <h2 className="text-sm font-extrabold text-gray-900">{activeTabDef.label}</h2>
-              <span className="text-[11px] font-semibold text-gray-400 bg-gray-100 border border-gray-200 rounded-full px-2.5 py-1">
-                {filtered.length} cards
-              </span>
-            </div>
-
-            {/* Cards grid */}
+            {/* Content Area (Quiz OR Cards) */}
             <AnimatePresence mode="wait">
-              {paged.length > 0 ? (
-                <motion.div key={`${activeTab}-${searchQuery}-${page}`}
-                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                  transition={{ duration: 0.22 }}
-                  className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
-                  {paged.map((item, i) => (
-                    <motion.div key={`${activeTab}-${item.drug}-${i}`}
-                      initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.03, duration: 0.24 }}>
-                      <Flashcard
-                        drug={item.drug}
-                        back={item.back}
-                        gradient={activeTabDef.color}
-                        backLabel={activeTabDef.backLabel}
-                        onFlip={handleCardFlip}
-                      />
-                    </motion.div>
-                  ))}
+              {isQuizMode ? (
+                <motion.div
+                  key="quiz-view"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="w-full flex flex-col justify-center min-h-[400px]"
+                >
+                  {!quizFinished ? (
+                    // --- Active Quiz State ---
+                    <div className="bg-white rounded-[2rem] shadow-xl p-6 md:p-10 w-full border border-gray-100 relative overflow-hidden">
+                      <div className={`absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r ${activeTabDef.color}`} />
+
+                      {/* Progress Bar */}
+                      <div className="mb-8">
+                        <div className="flex justify-between items-center mb-3">
+                          <span className="text-xs font-black text-gray-400 uppercase tracking-widest">
+                            Question {currentQIndex + 1} of {quizCards.length}
+                          </span>
+                          <span className="text-sm font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                            Score: {score}
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                          <motion.div
+                            className={`h-full rounded-full bg-gradient-to-r ${activeTabDef.color}`}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${((currentQIndex) / quizCards.length) * 100}%` }}
+                            transition={{ duration: 0.3 }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Question Stem */}
+                      <div className="text-center mb-10">
+                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-50 text-blue-500 mb-4">
+                          <BrainCircuit size={24} />
+                        </div>
+                        <h3 className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-tight">
+                          What is the {activeTabDef.shortLabel.toLowerCase()} of <br className="hidden md:block" />
+                          <span className={`text-transparent bg-clip-text bg-gradient-to-r ${activeTabDef.color}`}>
+                            {quizCards[currentQIndex]?.drug}
+                          </span>?
+                        </h3>
+                      </div>
+
+                      {/* Options */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {currentOptions.map((opt, idx) => {
+                          const isSelected = selectedAns === opt;
+                          const isCorrect = opt === quizCards[currentQIndex].back;
+                          const showCorrect = selectedAns !== null && isCorrect;
+                          const showIncorrect = isSelected && !isCorrect;
+
+                          return (
+                            <button
+                              key={idx}
+                              onClick={() => handleAnswerSelect(opt)}
+                              disabled={selectedAns !== null}
+                              className={`relative flex items-center p-5 text-left rounded-2xl font-bold transition-all border-2 w-full
+                                ${selectedAns === null
+                                  ? 'border-gray-200 text-gray-700 hover:border-blue-400 hover:bg-blue-50 hover:shadow-md'
+                                  : showCorrect
+                                    ? 'border-transparent bg-gradient-to-r from-green-500 to-emerald-400 text-white shadow-lg'
+                                    : showIncorrect
+                                      ? 'border-transparent bg-gradient-to-r from-red-500 to-rose-400 text-white shadow-lg'
+                                      : 'border-gray-100 bg-gray-50 text-gray-400 opacity-50 cursor-not-allowed'
+                                }
+                              `}
+                            >
+                              <span className="flex-1 text-sm md:text-base leading-snug">{opt}</span>
+                              {showCorrect && <CheckCircle2 className="w-6 h-6 ml-3 flex-shrink-0" />}
+                              {showIncorrect && <XCircle className="w-6 h-6 ml-3 flex-shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    // --- Quiz Results ---
+                    <div className="bg-white rounded-[2rem] shadow-xl p-10 w-full text-center border border-gray-100 relative overflow-hidden">
+                      <div className={`absolute top-0 left-0 w-full h-2 bg-gradient-to-r ${activeTabDef.color}`} />
+
+                      <div className="mb-6 flex justify-center">
+                        <div className="w-24 h-24 rounded-full bg-blue-50 flex items-center justify-center border-4 border-blue-100">
+                          <CheckCircle2 className="w-12 h-12 text-blue-500" />
+                        </div>
+                      </div>
+
+                      <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Quiz Complete!</h2>
+
+                      <div className="my-8">
+                        <div className={`text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r ${activeTabDef.color} inline-block`}>
+                          {Math.round((score / quizCards.length) * 100)}%
+                        </div>
+                        <p className="text-lg font-bold text-gray-500 mt-2">
+                          You scored <span className="text-gray-900">{score}</span> out of <span className="text-gray-900">{quizCards.length}</span>
+                        </p>
+                      </div>
+
+                      <p className="text-base font-medium text-gray-600 mb-10 max-w-md mx-auto">
+                        {(score / quizCards.length) >= 0.8
+                          ? "Excellent work! You've mastered this category."
+                          : (score / quizCards.length) >= 0.5
+                            ? "Good job! You're getting there. Keep reviewing."
+                            : "Keep practicing! Review the flashcards and try again."}
+                      </p>
+
+                      <div className="flex flex-col sm:flex-row justify-center gap-4">
+                        <button
+                          onClick={startQuiz}
+                          className="flex items-center justify-center gap-2 px-8 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl font-extrabold transition-colors border-2 border-gray-200"
+                        >
+                          <RotateCcw className="w-5 h-5" /> Retry Quiz
+                        </button>
+                        <button
+                          onClick={exitQuiz}
+                          className={`flex items-center justify-center gap-2 px-8 py-3.5 bg-gradient-to-r ${activeTabDef.color} hover:opacity-90 text-white rounded-xl font-extrabold transition-opacity shadow-md`}
+                        >
+                          Back to Flashcards
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               ) : (
-                <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                  className="text-center py-20">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto mb-4">
-                    <Pill className="w-6 h-6 text-blue-300" />
-                  </div>
-                  <p className="text-gray-500 font-medium">No cards found for <span className="font-bold text-gray-700">"{searchQuery}"</span></p>
-                  <button onClick={() => handleSearch("")}
-                    className="mt-4 px-4 py-2 rounded-xl bg-blue-50 text-blue-600 text-sm font-semibold hover:bg-blue-100 transition">
-                    Clear search
-                  </button>
+                // --- Standard Flashcard Grid ---
+                <motion.div
+                  key="flashcards-view"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  {paged.length > 0 ? (
+                    <motion.div key={`${activeTab}-${searchQuery}-${page}`}
+                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                      transition={{ duration: 0.22 }}
+                      className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+                      {paged.map((item, i) => (
+                        <motion.div key={`${activeTab}-${item.drug}-${i}`}
+                          initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.03, duration: 0.24 }}>
+                          <Flashcard
+                            drug={item.drug}
+                            back={item.back}
+                            gradient={activeTabDef.color}
+                            backLabel={activeTabDef.backLabel}
+                            onFlip={handleCardFlip}
+                          />
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  ) : (
+                    <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      className="text-center py-20">
+                      <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto mb-4">
+                        <Pill className="w-6 h-6 text-blue-300" />
+                      </div>
+                      <p className="text-gray-500 font-medium">No cards found for <span className="font-bold text-gray-700">"{searchQuery}"</span></p>
+                      <button onClick={() => handleSearch("")}
+                        className="mt-4 px-4 py-2 rounded-xl bg-blue-50 text-blue-600 text-sm font-semibold hover:bg-blue-100 transition">
+                        Clear search
+                      </button>
+                    </motion.div>
+                  )}
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
+                      <p className="text-sm text-gray-400">
+                        Showing <span className="font-bold text-gray-600">{(page - 1) * CARDS_PER_PAGE + 1}–{Math.min(page * CARDS_PER_PAGE, filtered.length)}</span> of{" "}
+                        <span className="font-bold text-gray-600">{filtered.length}</span> cards
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                          className="w-9 h-9 rounded-xl border-2 border-gray-200 flex items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-600 disabled:opacity-40 disabled:pointer-events-none transition">
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        {pageNums.map((n, i) => n === "…"
+                          ? <span key={`e-${i}`} className="text-gray-400 text-sm w-4 text-center">…</span>
+                          : <button key={n} onClick={() => setPage(n as number)}
+                            className={`w-9 h-9 rounded-xl text-sm font-bold transition ${page === n ? "bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-md shadow-blue-200/50 border-0" : "border-2 border-gray-200 text-gray-500 hover:border-blue-400 hover:text-blue-600"}`}>
+                            {n}
+                          </button>
+                        )}
+                        <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                          className="w-9 h-9 rounded-xl border-2 border-gray-200 flex items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-600 disabled:opacity-40 disabled:pointer-events-none transition">
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
-                <p className="text-sm text-gray-400">
-                  Showing <span className="font-bold text-gray-600">{(page - 1) * CARDS_PER_PAGE + 1}–{Math.min(page * CARDS_PER_PAGE, filtered.length)}</span> of{" "}
-                  <span className="font-bold text-gray-600">{filtered.length}</span> cards
-                </p>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                    className="w-9 h-9 rounded-xl border-2 border-gray-200 flex items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-600 disabled:opacity-40 disabled:pointer-events-none transition">
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  {pageNums.map((n, i) => n === "…"
-                    ? <span key={`e-${i}`} className="text-gray-400 text-sm w-4 text-center">…</span>
-                    : <button key={n} onClick={() => setPage(n as number)}
-                      className={`w-9 h-9 rounded-xl text-sm font-bold transition ${page === n ? "bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-md shadow-blue-200/50 border-0" : "border-2 border-gray-200 text-gray-500 hover:border-blue-400 hover:text-blue-600"}`}>
-                      {n}
-                    </button>
-                  )}
-                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                    className="w-9 h-9 rounded-xl border-2 border-gray-200 flex items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-600 disabled:opacity-40 disabled:pointer-events-none transition">
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -2959,53 +3208,6 @@ export default function FlashcardsPage() {
             <h3 className="text-xl font-extrabold text-white mb-2 tracking-tight">Want Detailed Drug Information?</h3>
             <p className="text-blue-100 text-sm max-w-lg mx-auto mb-5 leading-relaxed">
               These flashcards are your quick-review tool. For comprehensive profiles including chemical properties, pharmacokinetics, interactions, dosing, and 17,430+ drug entries — visit <span className="font-extrabold text-white">Pharmacopedia</span>.
-            </p>
-            <Link href="/encyclopedia"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white text-blue-700 font-extrabold text-sm shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
-              <Database className="w-4 h-4" /> Explore Pharmacopedia <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* References */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 to-green-400" />
-          <div className="relative z-10 p-6 sm:p-8">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-green-400 flex items-center justify-center shrink-0">
-                <BookOpen className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h2 className="text-xl font-extrabold text-gray-900 tracking-tight">References</h2>
-                <p className="text-xs text-gray-400 mt-0.5">Authoritative sources used for flashcard content</p>
-              </div>
-              <div className="flex-1 h-px bg-gradient-to-r from-gray-200 to-transparent hidden sm:block" />
-              <span className="text-xs font-semibold text-gray-400 bg-gray-100 border border-gray-200 rounded-full px-3 py-1 shrink-0">
-                {REFERENCES.length} sources
-              </span>
-            </div>
-            <ol className="space-y-3">
-              {REFERENCES.map((ref, i) => (
-                <li key={i} className="flex gap-3">
-                  <span className="w-6 h-6 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-[10px] font-extrabold text-blue-700 shrink-0 mt-0.5">{i + 1}</span>
-                  <p className="text-sm text-gray-700 leading-relaxed min-w-0">
-                    <span className="text-gray-500">{ref.authors} </span>
-                    <span className="font-semibold text-gray-900 italic">{ref.title}</span>
-                    <span className="text-gray-500"> {ref.publisher} {ref.year}.</span>
-                    {"url" in ref && ref.url && (
-                      <a href={ref.url} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 ml-2 text-blue-600 hover:text-blue-700 text-xs font-semibold">
-                        <ExternalLink className="w-3 h-3" />{ref.url.replace("https://", "").replace("www.", "")}
-                      </a>
-                    )}
-                  </p>
-                </li>
-              ))}
-            </ol>
-            <p className="text-[11px] text-gray-400 mt-6 pt-4 border-t border-gray-100 leading-relaxed">
-              <span className="font-bold text-gray-500">Disclaimer:</span> Flashcard content is intended for educational and academic review only. Always verify clinical information with current drug references and consult qualified healthcare professionals for patient care decisions.
             </p>
           </div>
         </div>

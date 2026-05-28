@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Pill, FlaskConical, Beaker, Microscope, Stethoscope, Leaf } from "lucide-react";
 import { PhysUnits, PHYSIO_META } from "@/app/api/physiology-data";
+import UnitTracker from "@/components/UnitTracker";
 
 interface PageProps { params: { unit: string } }
 
@@ -246,6 +247,7 @@ export default function PhysiologyUnitPage({ params }: PageProps) {
 
   return (
     <section className="min-h-screen bg-white relative" style={{ overflowX: "hidden" }}>
+      <UnitTracker unitTitle={unit.title} />
 
       {/* BG icons */}
       {bgIconDefs.map(({ Icon, top, left, size }, i) => (
