@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import ScrollToTop from "@/components/ScrollToTop";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import LaunchPopup from "@/components/LaunchPopup";
 
 const font = Poppins({
   subsets: ["latin"],
@@ -36,6 +37,7 @@ export default function RootLayout({
           <main>{children}</main>
           <Footer />
           <ScrollToTop />
+          <LaunchPopup />
         </ThemeProvider>
         <Analytics />
         <SpeedInsights />

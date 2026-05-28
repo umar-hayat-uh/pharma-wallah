@@ -121,7 +121,7 @@ export default function Hero() {
                   className="w-full pl-11 pr-28 py-4 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none bg-transparent"
                 />
                 <button className="absolute right-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-green-400 hover:opacity-90 transition">
-                  Search :)
+                  Search 
                 </button>
               </div>
             </div>
@@ -185,7 +185,7 @@ export default function Hero() {
               <div className="absolute inset-0 bg-gradient-to-t from-blue-900/20 via-transparent to-transparent z-10" />
               <Image  
                 quality={75}
-                src="/images/banner/mahila.jpeg"
+                src="/images/banner/signup.webp"
                 alt="Pharmacy student"
                 fill
                 className="object-cover object-top"
