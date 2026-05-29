@@ -23,7 +23,12 @@ export default function SignUpPage() {
         const { error: signUpError } = await supabase.auth.signUp({
             email,
             password,
-            options: { data: { full_name: name } },
+            options: {
+                data: { full_name: name },
+                // Supabase will send the verification email automatically.
+                // After the user clicks the link, they land on /auth/callback.
+                emailRedirectTo: `${window.location.origin}/auth/callback`,
+            },
         });
 
         if (signUpError) {
@@ -32,25 +37,16 @@ export default function SignUpPage() {
             return;
         }
 
-        // Immediately sign the user in
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
-        if (signInError) {
-            setError(signInError.message);
-            setLoading(false);
-            return;
-        }
-
-        router.push("/dashboard");
+        // Do NOT auto-sign-in — redirect to the verify-email holding screen instead.
+        // Pass the email via query param so the screen can display it.
+        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
     };
 
     const handleGoogleSignUp = async () => {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: "google",
             options: {
-                redirectTo: `${window.location.origin}/dashboard`,
+                redirectTo: `${window.location.origin}/auth/callback`,
             },
         });
         if (error) setError(error.message);
@@ -77,7 +73,7 @@ export default function SignUpPage() {
                             Create an account
                         </h1>
                         <p className="text-slate-500 text-base leading-relaxed">
-                            Join Pakistan’s #1 pharmacy e‑learning platform and start your journey today.
+                            Join Pakistan&apos;s #1 pharmacy e‑learning platform and start your journey today.
                         </p>
                     </div>
 
@@ -212,11 +208,9 @@ export default function SignUpPage() {
 
             {/* Right Side: Visual/Branding Section (Hidden on Mobile) */}
             <div className="hidden lg:flex flex-1 relative bg-slate-50 items-center justify-center overflow-hidden">
-                {/* Background Decoration */}
                 <div className="absolute inset-0 bg-gradient-to-bl from-blue-50 to-green-50 z-0"></div>
                 <div className="absolute top-0 right-0 -translate-y-12 translate-x-1/3 w-[600px] h-[600px] bg-blue-400/10 rounded-full blur-3xl"></div>
                 <div className="absolute bottom-0 left-0 translate-y-1/3 -translate-x-1/4 w-[500px] h-[500px] bg-green-400/10 rounded-full blur-3xl"></div>
-
                 <div className="relative z-10 w-full max-w-lg px-8 flex flex-col items-center">
                     <img
                         src="/images/banner/signup.webp"
