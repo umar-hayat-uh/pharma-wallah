@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -13,18 +13,17 @@ import {
     AlertCircle,
 } from "lucide-react";
 
-export default function VerifyEmailPage() {
+// ─── Inner component — uses useSearchParams, must be inside <Suspense> ────────
+function VerifyEmailContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const supabase = createClient();
 
-    // The email is passed from the signup page via query param
     const email = searchParams.get("email") ?? "";
 
     const [resendLoading, setResendLoading] = useState(false);
     const [resendSuccess, setResendSuccess] = useState(false);
     const [resendError, setResendError] = useState("");
-    // Countdown timer to prevent spam-clicking resend (60 s)
     const [countdown, setCountdown] = useState(0);
 
     // If someone lands here already logged in, push them forward
@@ -34,7 +33,7 @@ export default function VerifyEmailPage() {
         });
     }, [router, supabase.auth]);
 
-    // Tick the countdown down every second
+    // Countdown timer
     useEffect(() => {
         if (countdown <= 0) return;
         const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
@@ -61,7 +60,7 @@ export default function VerifyEmailPage() {
             setResendError(error.message);
         } else {
             setResendSuccess(true);
-            setCountdown(60); // lock resend for 60 seconds
+            setCountdown(60);
         }
     };
 
@@ -89,7 +88,6 @@ export default function VerifyEmailPage() {
                     {/* Animated envelope */}
                     <div className="flex justify-center mb-8">
                         <div className="relative">
-                            {/* Outer pulse ring */}
                             <div className="absolute inset-0 rounded-full bg-blue-100 animate-ping opacity-30" />
                             <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-blue-600 to-green-400 flex items-center justify-center shadow-lg">
                                 <Mail className="w-9 h-9 text-white" />
@@ -221,7 +219,6 @@ export default function VerifyEmailPage() {
                 <div className="absolute bottom-0 left-0 translate-y-1/3 -translate-x-1/4 w-[500px] h-[500px] bg-green-400/10 rounded-full blur-3xl" />
 
                 <div className="relative z-10 max-w-md px-8 text-center">
-                    {/* Decorative molecule / capsule SVG */}
                     <svg
                         viewBox="0 0 320 260"
                         fill="none"
@@ -229,21 +226,14 @@ export default function VerifyEmailPage() {
                         className="w-72 mx-auto mb-8 drop-shadow-xl"
                         aria-hidden="true"
                     >
-                        {/* Envelope body */}
                         <rect x="30" y="60" width="260" height="170" rx="18" fill="#EFF6FF" stroke="#BFDBFE" strokeWidth="2" />
-                        {/* Envelope flap */}
                         <path d="M30 78 L160 155 L290 78" stroke="#93C5FD" strokeWidth="2" fill="none" />
-                        {/* Left fold line */}
                         <line x1="30" y1="230" x2="110" y2="155" stroke="#BFDBFE" strokeWidth="1.5" />
-                        {/* Right fold line */}
                         <line x1="290" y1="230" x2="210" y2="155" stroke="#BFDBFE" strokeWidth="1.5" />
-                        {/* Pill inside envelope */}
                         <rect x="120" y="170" width="80" height="34" rx="17" fill="url(#pillGrad)" />
                         <line x1="160" y1="170" x2="160" y2="204" stroke="white" strokeWidth="1.5" opacity="0.6" />
-                        {/* Check badge */}
                         <circle cx="240" cy="80" r="28" fill="url(#checkGrad)" />
                         <path d="M228 80 L237 89 L253 72" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                        {/* Floating dots */}
                         <circle cx="60" cy="50" r="6" fill="#93C5FD" opacity="0.6" />
                         <circle cx="270" cy="40" r="4" fill="#6EE7B7" opacity="0.5" />
                         <circle cx="290" cy="200" r="5" fill="#93C5FD" opacity="0.4" />
@@ -264,7 +254,6 @@ export default function VerifyEmailPage() {
                         Verify your email to unlock all courses, mock exams, and your personalised learning dashboard.
                     </p>
 
-                    {/* Feature chips */}
                     <div className="flex flex-wrap gap-2 justify-center">
                         {["120+ Courses", "Mock Exams", "Live Sessions", "Certificates"].map((f) => (
                             <span
@@ -278,5 +267,50 @@ export default function VerifyEmailPage() {
                 </div>
             </div>
         </main>
+    );
+}
+
+// ─── Skeleton shown while the inner component suspends ────────────────────────
+function VerifyEmailSkeleton() {
+    return (
+        <main className="min-h-screen flex w-full bg-white">
+            <div className="flex-1 flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-20 xl:px-24">
+                <div className="mx-auto w-full max-w-sm lg:max-w-md space-y-6 animate-pulse">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-slate-200" />
+                        <div className="h-5 w-32 rounded bg-slate-200" />
+                    </div>
+                    <div className="flex justify-center">
+                        <div className="w-20 h-20 rounded-full bg-slate-200" />
+                    </div>
+                    <div className="h-9 w-3/4 mx-auto rounded bg-slate-200" />
+                    <div className="h-4 w-full rounded bg-slate-100" />
+                    <div className="h-4 w-2/3 mx-auto rounded bg-slate-100" />
+                    <div className="h-16 rounded-xl bg-slate-100" />
+                    <div className="space-y-3">
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="flex gap-4">
+                                <div className="w-7 h-7 rounded-full bg-slate-200 flex-shrink-0" />
+                                <div className="flex-1 space-y-1.5">
+                                    <div className="h-4 w-1/3 rounded bg-slate-200" />
+                                    <div className="h-3 w-full rounded bg-slate-100" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="h-12 rounded-xl bg-slate-200" />
+                    <div className="h-12 rounded-xl bg-slate-100" />
+                </div>
+            </div>
+        </main>
+    );
+}
+
+// ─── Default export — wraps the content in Suspense ──────────────────────────
+export default function VerifyEmailPage() {
+    return (
+        <Suspense fallback={<VerifyEmailSkeleton />}>
+            <VerifyEmailContent />
+        </Suspense>
     );
 }
