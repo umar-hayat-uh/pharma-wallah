@@ -8,18 +8,15 @@ export async function GET(request: NextRequest) {
     const origin = requestUrl.origin;
 
     if (code) {
-        // Use the same reliable server client as the rest of your app
         const supabase = await createServerSupabaseClient();
-
-        // Exchange the one-time code for a session
         const { error } = await supabase.auth.exchangeCodeForSession(code);
 
         if (!error) {
-            // Redirect to the "email verified" page which shows the success UI
-            return NextResponse.redirect(`${origin}/email-verified`);
+            // Successful OAuth login – send to dashboard
+            return NextResponse.redirect(`${origin}/dashboard`);
         }
     }
 
-    // Something went wrong – send back to signup with an error flag
-    return NextResponse.redirect(`${origin}/signup?error=verification_failed`);
+    // OAuth failed – redirect to signup with error
+    return NextResponse.redirect(`${origin}/signup?error=oauth_failed`);
 }
