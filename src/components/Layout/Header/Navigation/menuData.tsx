@@ -11,6 +11,7 @@ export const headerData: HeaderItem[] = [
       { label: "Lab Simulation", href: "/simulations" },
       { label: "Slide Spotting", href: "/spotting" },
       { label: "Flashcards", href: "/flash-cards" },
+            { label: "Pharmacy Counter", href: "/pharmacy-counter" },
       { label: "Prescription Reader", href: "/prescription-reader" },
       { label: "Books Library", href: "/books-library" },
     ],
