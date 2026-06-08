@@ -1,1157 +1,1360 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Pill,
-    FlaskConical,
-    Stethoscope,
-    Microscope,
-    Beaker,
-    Leaf,
-    ShoppingCart,
-    Clock,
-    AlertTriangle,
-    CheckCircle,
-    User,
-    ShieldAlert,
-    FileText,
-    Tag,
-    HelpCircle,
-    UserCheck,
-    ArrowRight,
-    RotateCw,
-    ChevronRight,
-    Lightbulb,
-    Info,
-    X,
-    Circle,
+  ShoppingCart,
+  Lightbulb,
+  X,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  User,
+  Pill,
+  FlaskConical,
+  Activity,
+  ChevronRight,
+  RefreshCw,
+  SkipForward,
+  Star,
+  BookOpen,
+  Shield,
+  Tag,
+  MessageCircle,
 } from "lucide-react";
 
-/* ─────────────────────────────────────────────
-   Background Floating Icons
-   ───────────────────────────────────────────── */
-const bgIcons = [
-    { Icon: Pill, top: "6%", left: "2%", size: 30, color: "text-blue-400/25", rotate: 12 },
-    { Icon: Beaker, top: "25%", left: "1%", size: 26, color: "text-green-400/25", rotate: -8 },
-    { Icon: Stethoscope, top: "55%", left: "1.5%", size: 28, color: "text-blue-500/20", rotate: 15 },
-    { Icon: Leaf, top: "78%", left: "2%", size: 24, color: "text-green-400/25", rotate: -12 },
-    { Icon: Microscope, top: "8%", left: "95%", size: 30, color: "text-blue-400/25", rotate: -10 },
-    { Icon: FlaskConical, top: "35%", left: "96%", size: 26, color: "text-green-400/25", rotate: 8 },
-    { Icon: Pill, top: "60%", left: "95%", size: 22, color: "text-blue-500/20", rotate: 6 },
-    { Icon: Leaf, top: "82%", left: "96%", size: 20, color: "text-green-400/25", rotate: -6 },
-];
-
-/* ─────────────────────────────────────────────
-   Types & Data
-   ───────────────────────────────────────────── */
-interface CounselingQuestion {
-    question: string;
-    options: string[];
-    correctIndex: number;
-    rationale: string;
+// ─────────────────────────────────────────────
+//  TYPES
+// ─────────────────────────────────────────────
+interface DURAlert {
+  alertTitle: string;
+  severity: "Moderate" | "Severe" | "Critical";
+  description: string;
+  correctAction: "override" | "call_doctor";
+  rationale: string;
 }
 
-interface DurScreen {
-    alertTitle: string;
-    severity: "Moderate" | "Severe" | "Critical";
-    description: string;
-    correctAction: "override" | "call_doctor";
-    rationale: string;
+interface ShelfItem {
+  id: string;
+  name: string;
+  dose: string;
+  form: string;
+  isLookAlike: boolean;
+}
+
+interface CounselingQ {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  rationale: string;
 }
 
 interface PrescriptionCase {
-    id: string;
-    patientName: string;
-    patientDob: string;
-    patientAge: number;
-    allergies: string;
-    currentMedications: string;
-    avatarSeed: { skin: string; hair: string; shirt: string };
-    rxCursiveText: string;
-    correctDrug: string;
-    correctDose: string;
-    correctFrequency: string;
-    correctQty: number;
-    durAlert: DurScreen;
-    shelfItems: { id: string; name: string; dose: string; form: string; isLookAlike: boolean }[];
-    requiredAuxiliaryLabels: string[];
-    availableAuxiliaryLabels: string[];
-    counseling: CounselingQuestion[];
+  id: number;
+  patientName: string;
+  patientDob: string;
+  patientAge: number;
+  allergies: string[];
+  currentMedications: string[];
+  avatarSeed: { skin: string; hair: string; shirt: string };
+  rxCursiveText: string;
+  correctDrug: string;
+  correctDose: string;
+  correctFrequency: string;
+  correctQty: number;
+  durAlert: DURAlert;
+  shelfItems: ShelfItem[];
+  availableAuxiliaryLabels: string[];
+  requiredAuxiliaryLabels: string[];
+  counseling: CounselingQ[];
 }
 
-const PHARMACY_CASES: PrescriptionCase[] = [
-    {
-        id: "rx-2026-001",
-        patientName: "David Miller",
-        patientDob: "10/14/1974",
-        patientAge: 51,
-        allergies: "Sulfa Drugs",
-        currentMedications: "Lisinopril 10mg, Atorvastatin 40mg",
-        avatarSeed: { skin: "#fdba74", hair: "#4b5563", shirt: "#1e3a8a" },
-        rxCursiveText: "Bactrim DS (800-160)\nSig: 1 tab PO BID x 10 days\nQty: 20 tabs\nRefills: 0",
-        correctDrug: "Bactrim DS",
-        correctDose: "800-160 mg",
-        correctFrequency: "BID",
-        correctQty: 20,
-        durAlert: {
-            alertTitle: "Critical Allergy Conflict Detected",
-            severity: "Critical",
-            description:
-                "Patient profile displays a documented 'Sulfa Drugs' allergy. Sulfamethoxazole/Trimethoprim (Bactrim) cross-reactivity triggers severe hypersensitivity reactions.",
-            correctAction: "call_doctor",
-            rationale:
-                "Never fill a systemic sulfonamide antibiotic for a patient with verified sulfa hypersensitivity. Call the physician to switch therapy lines.",
-        },
-        shelfItems: [
-            { id: "s1", name: "Bactrim DS", dose: "800-160 mg", form: "Tablets", isLookAlike: false },
-            { id: "s2", name: "Baclofen", dose: "10 mg", form: "Tablets", isLookAlike: true },
-            {
-                id: "s3",
-                name: "Bactrim Regular Strength",
-                dose: "400-80 mg",
-                form: "Tablets",
-                isLookAlike: true,
-            },
-            { id: "s4", name: "Ciprofloxacin", dose: "500 mg", form: "Tablets", isLookAlike: false },
-        ],
-        availableAuxiliaryLabels: [
-            "Take with food or milk",
-            "Finish all of this medication unless otherwise directed",
-            "Avoid prolonged exposure to sunlight",
-            "May cause drowsiness",
-        ],
-        requiredAuxiliaryLabels: [
-            "Finish all of this medication unless otherwise directed",
-            "Avoid prolonged exposure to sunlight",
-        ],
-        counseling: [
-            {
-                question:
-                    "What primary adherence counseling point applies to this short-course medication cycle?",
-                options: [
-                    "Stop taking immediately when acute indicators subside",
-                    "Finish the entire continuous course to eradicate residual pathology and avoid resistance",
-                    "Take double doses if you miss a scheduled application window",
-                    "Store exclusively within localized deep freezing infrastructure",
-                ],
-                correctIndex: 1,
-                rationale:
-                    "Antibiotics must be completed fully to eliminate underlying infection pathways and prevent microbial resistance mutations.",
-            },
-        ],
+// ─────────────────────────────────────────────
+//  CASE DATA
+// ─────────────────────────────────────────────
+const CASES: PrescriptionCase[] = [
+  {
+    id: 1,
+    patientName: "David Miller",
+    patientDob: "1973-04-12",
+    patientAge: 51,
+    allergies: ["Sulfonamides (Sulfa)", "Penicillin"],
+    currentMedications: ["Metformin 500 mg BID", "Lisinopril 10 mg QD"],
+    avatarSeed: { skin: "#F5CBA7", hair: "#4A235A", shirt: "#2980B9" },
+    rxCursiveText:
+      "Bactrim DS\n800/160 mg\nBID × 10 days\nQty: 20 tabs\nDr. A. Torres",
+    correctDrug: "Bactrim DS",
+    correctDose: "800/160 mg",
+    correctFrequency: "BID",
+    correctQty: 20,
+    durAlert: {
+      alertTitle: "CRITICAL ALLERGY — Sulfonamide",
+      severity: "Critical",
+      description:
+        "Patient has a documented ALLERGY to Sulfonamides. Bactrim DS (sulfamethoxazole/trimethoprim) is a sulfonamide antibiotic. Dispensing may cause a life-threatening allergic reaction including anaphylaxis.",
+      correctAction: "call_doctor",
+      rationale:
+        "A Critical sulfa allergy alert MUST NOT be overridden. The prescriber must be contacted to select an alternative antibiotic such as Nitrofurantoin or Fosfomycin.",
     },
-    {
-        id: "rx-2026-002",
-        patientName: "Clara Jenkins",
-        patientDob: "03/22/1961",
-        patientAge: 65,
-        allergies: "NKA (No Known Allergies)",
-        currentMedications: "Amlodipine 5mg, Sildenafil 50mg PRN",
-        avatarSeed: { skin: "#fed7aa", hair: "#e5e7eb", shirt: "#047857" },
-        rxCursiveText:
-            "Isosorbide Mononitrate 30mg ER\nSig: 1 tab PO daily every morning\nQty: 30 tablets\nRefills: 3",
-        correctDrug: "Isosorbide Mononitrate ER",
-        correctDose: "30 mg",
-        correctFrequency: "QD",
-        correctQty: 30,
-        durAlert: {
-            alertTitle: "Severe Drug-Drug Interaction Warning",
-            severity: "Critical",
-            description:
-                "Co-administration of organic nitrates (Isosorbide) and PDE5 Inhibitors (Sildenafil) triggers dangerous, life-threatening drops in blood pressure (severe hypotension).",
-            correctAction: "call_doctor",
-            rationale:
-                "Nitrates mixed with PDE-5 inhibitors can induce catastrophic cardiovascular collapse. This fill requires immediate physician consultation.",
-        },
-        shelfItems: [
-            {
-                id: "cl1",
-                name: "Isosorbide Mononitrate ER",
-                dose: "30 mg",
-                form: "Tablets",
-                isLookAlike: false,
-            },
-            { id: "cl2", name: "Isosorbide Dinitrate", dose: "10 mg", form: "Tablets", isLookAlike: true },
-            { id: "cl3", name: "Amlodipine", dose: "5 mg", form: "Tablets", isLookAlike: false },
+    shelfItems: [
+      {
+        id: "s1",
+        name: "Bactrim DS",
+        dose: "800/160 mg",
+        form: "Tablet",
+        isLookAlike: false,
+      },
+      {
+        id: "s2",
+        name: "Bactrim",
+        dose: "400/80 mg",
+        form: "Tablet",
+        isLookAlike: true,
+      },
+      {
+        id: "s3",
+        name: "Septra DS",
+        dose: "800/160 mg",
+        form: "Tablet",
+        isLookAlike: true,
+      },
+      {
+        id: "s4",
+        name: "SMX-TMP DS",
+        dose: "800/160 mg",
+        form: "Tablet",
+        isLookAlike: true,
+      },
+      {
+        id: "s5",
+        name: "Cipro",
+        dose: "500 mg",
+        form: "Tablet",
+        isLookAlike: false,
+      },
+      {
+        id: "s6",
+        name: "Amoxicillin",
+        dose: "500 mg",
+        form: "Capsule",
+        isLookAlike: false,
+      },
+    ],
+    availableAuxiliaryLabels: [
+      "Take with plenty of water",
+      "Avoid prolonged sun exposure",
+      "Complete the full course",
+      "May cause dizziness",
+      "Take with food",
+      "Keep refrigerated",
+      "Shake well before use",
+    ],
+    requiredAuxiliaryLabels: [
+      "Take with plenty of water",
+      "Avoid prolonged sun exposure",
+      "Complete the full course",
+    ],
+    counseling: [
+      {
+        question:
+          "David asks, 'How much water should I drink while taking this antibiotic?' What is the best response?",
+        options: [
+          "Just drink normally, water doesn't matter.",
+          "Drink at least 8 full glasses of water daily to prevent kidney stones.",
+          "Limit fluids to avoid stomach upset.",
+          "Only drink water if you feel thirsty.",
         ],
-        availableAuxiliaryLabels: [
-            "Do not crush or chew extended-release formulations",
-            "May cause dizziness or fainting upon standing",
-            "Avoid drinking alcohol while taking this medicine",
-            "Keep stored in local refrigeration units",
+        correctIndex: 1,
+        rationale:
+          "Sulfonamides can crystallize in the renal tubules (crystalluria). Adequate hydration (≥8 glasses/day) is essential to maintain high urine flow and prevent nephrotoxicity.",
+      },
+      {
+        question:
+          "David plans a beach vacation next week. What sun-exposure counseling should you provide?",
+        options: [
+          "Sun exposure is fine; no special precautions needed.",
+          "Apply sunscreen only if you burn easily.",
+          "Avoid prolonged sun exposure and use SPF 30+ sunscreen; sulfonamides cause photosensitivity.",
+          "Wear a hat only if it is very sunny.",
         ],
-        requiredAuxiliaryLabels: [
-            "Do not crush or chew extended-release formulations",
-            "May cause dizziness or fainting upon standing",
-        ],
-        counseling: [
-            {
-                question:
-                    "How should the patient manage position modifications or sudden standing transitions?",
-                options: [
-                    "Jump up rapidly to stimulate micro-circulatory fluid feedback loops",
-                    "Rise slowly from sitting or lying profiles to minimize orthostatic hypotension events",
-                    "Consume a fast-acting glucose supplement prior to any muscle movement",
-                    "Hold breath for thirty seconds upon standing to build pressure gradients",
-                ],
-                correctIndex: 1,
-                rationale:
-                    "Nitrates cause systemic vasodilation. Patients should change positions slowly to prevent postural dizziness or syncope.",
-            },
-        ],
+        correctIndex: 2,
+        rationale:
+          "Sulfonamides are known photosensitizers. Patients should minimize UV exposure, use broad-spectrum SPF ≥30 sunscreen, and wear protective clothing.",
+      },
+    ],
+  },
+  {
+    id: 2,
+    patientName: "Clara Jenkins",
+    patientDob: "1959-08-27",
+    patientAge: 65,
+    allergies: ["Latex", "Aspirin (mild intolerance)"],
+    currentMedications: [
+      "Sildenafil (Viagra) 50 mg PRN",
+      "Atorvastatin 40 mg QD",
+      "Amlodipine 5 mg QD",
+    ],
+    avatarSeed: { skin: "#FAD7A0", hair: "#784212", shirt: "#8E44AD" },
+    rxCursiveText:
+      "Imdur (ISMN ER)\n30 mg\nQD\nQty: 30 tabs\nDr. R. Patel",
+    correctDrug: "Imdur",
+    correctDose: "30 mg",
+    correctFrequency: "QD",
+    correctQty: 30,
+    durAlert: {
+      alertTitle: "CRITICAL DDI — Nitrate + PDE5 Inhibitor",
+      severity: "Critical",
+      description:
+        "Patient takes Sildenafil (PDE5 inhibitor). Adding Isosorbide Mononitrate (Imdur), an organic nitrate, creates a potentially fatal synergistic vasodilation. Severe hypotension, syncope, myocardial infarction, or death may result.",
+      correctAction: "call_doctor",
+      rationale:
+        "This is an absolute contraindication. The prescriber must be notified immediately. An alternative anti-anginal agent (e.g., a beta-blocker or calcium channel blocker) must be substituted.",
     },
+    shelfItems: [
+      {
+        id: "s1",
+        name: "Imdur",
+        dose: "30 mg",
+        form: "ER Tablet",
+        isLookAlike: false,
+      },
+      {
+        id: "s2",
+        name: "Imdur",
+        dose: "60 mg",
+        form: "ER Tablet",
+        isLookAlike: true,
+      },
+      {
+        id: "s3",
+        name: "ISMO",
+        dose: "20 mg",
+        form: "Tablet",
+        isLookAlike: true,
+      },
+      {
+        id: "s4",
+        name: "Monoket",
+        dose: "30 mg",
+        form: "Tablet",
+        isLookAlike: true,
+      },
+      {
+        id: "s5",
+        name: "Isordil",
+        dose: "10 mg",
+        form: "Tablet",
+        isLookAlike: true,
+      },
+      {
+        id: "s6",
+        name: "NitroStat",
+        dose: "0.4 mg",
+        form: "SL Tablet",
+        isLookAlike: false,
+      },
+    ],
+    availableAuxiliaryLabels: [
+      "Do NOT crush or chew",
+      "May cause headache initially",
+      "Do not take with erectile dysfunction drugs",
+      "Take on empty stomach",
+      "Take with food",
+      "Keep refrigerated",
+      "Avoid grapefruit",
+    ],
+    requiredAuxiliaryLabels: [
+      "Do NOT crush or chew",
+      "May cause headache initially",
+      "Do not take with erectile dysfunction drugs",
+    ],
+    counseling: [
+      {
+        question:
+          "Clara asks why she can't take her sildenafil while on this new heart medication. What is the best explanation?",
+        options: [
+          "They have the same active ingredient and would double the dose.",
+          "Both medications lower blood pressure; combining them can cause dangerously low blood pressure leading to fainting or a heart attack.",
+          "Sildenafil increases the metabolism of nitrates, making them less effective.",
+          "There is no real interaction; this is just a precaution.",
+        ],
+        correctIndex: 1,
+        rationale:
+          "Nitrates and PDE5 inhibitors both dilate blood vessels through complementary pathways (cGMP potentiation). Co-administration can cause severe, potentially fatal hypotension. This is an absolute contraindication.",
+      },
+      {
+        question:
+          "Clara's Imdur is an extended-release tablet. What administration instruction is critical?",
+        options: [
+          "Crush the tablet and mix in applesauce for easier swallowing.",
+          "Swallow the tablet whole; crushing destroys the extended-release mechanism and causes a dangerous dose dump.",
+          "Break the tablet in half if it seems too large.",
+          "It can be crushed; the 'ER' just means it is extended in size.",
+        ],
+        correctIndex: 1,
+        rationale:
+          "Extended-release formulations must never be crushed or chewed. Doing so destroys the controlled-release matrix, releasing the full dose at once (dose dumping), which can cause severe hypotension.",
+      },
+    ],
+  },
 ];
 
-type GameStep = "intake" | "interpret" | "dur" | "select" | "labeling" | "counsel" | "result";
-
-/* ─────────────────────────────────────────────
-   Helper SVG Components
-   ───────────────────────────────────────────── */
-export function PillBottleSVG({ className }: { className?: string }) {
-    return (
-        <svg
-            className={className}
-            viewBox="0 0 40 40"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-        >
-            <defs>
-                {/* 3D Amber Bottle Gradient */}
-                <linearGradient id="bottleGrad" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#92400E" />
-                    <stop offset="25%" stopColor="#D97706" />
-                    <stop offset="60%" stopColor="#F59E0B" />
-                    <stop offset="90%" stopColor="#D97706" />
-                    <stop offset="100%" stopColor="#78350F" />
-                </linearGradient>
-
-                {/* Plastic Cap Gradient */}
-                <linearGradient id="capGrad" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#E5E7EB" />
-                    <stop offset="20%" stopColor="#FFFFFF" />
-                    <stop offset="80%" stopColor="#E5E7EB" />
-                    <stop offset="100%" stopColor="#9CA3AF" />
-                </linearGradient>
-
-                {/* Label Gradient */}
-                <linearGradient id="labelGrad" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#F3F4F6" />
-                    <stop offset="10%" stopColor="#FFFFFF" />
-                    <stop offset="90%" stopColor="#FFFFFF" />
-                    <stop offset="100%" stopColor="#E5E7EB" />
-                </linearGradient>
-
-                {/* Subtle Shadow */}
-                <filter id="pltShadow" x="-10%" y="-10%" width="120%" height="120%">
-                    <feDropShadow dx="0" dy="1" stdDeviation="1" floodOpacity="0.15" />
-                </filter>
-            </defs>
-
-            {/* Bottle Body */}
-            <rect
-                x="11" y="11" width="18" height="24" rx="3"
-                fill="url(#bottleGrad)"
-                filter="url(#pltShadow)"
-            />
-
-            {/* Inner Liquid/Pill Level Transparency Highlight (Optional Depth) */}
-            <rect x="12" y="13" width="16" height="21" rx="2" fill="#FFFFFF" opacity="0.08" />
-
-            {/* White Prescription Label */}
-            <rect x="11" y="16" width="18" height="14" fill="url(#labelGrad)" />
-
-            {/* Label Fake Text Lines */}
-            <line x1="13" y1="19" x2="21" y2="19" stroke="#9CA3AF" strokeWidth="1" strokeLinecap="round" />
-            <line x1="13" y1="22" x2="27" y2="22" stroke="#D1D5DB" strokeWidth="0.8" strokeLinecap="round" />
-            <line x1="13" y1="25" x2="25" y2="25" stroke="#D1D5DB" strokeWidth="0.8" strokeLinecap="round" />
-
-            {/* Warning Rx Block on Label */}
-            <rect x="13" y="27" width="3" height="2" rx="0.5" fill="#EF4444" opacity="0.8" />
-
-            {/* Bottle Neck Safety Ring */}
-            <rect x="12" y="9" width="16" height="2" rx="0.5" fill="url(#capGrad)" />
-
-            {/* Ridged Cap */}
-            <rect x="10" y="4" width="20" height="6" rx="1.5" fill="url(#capGrad)" filter="url(#pltShadow)" />
-
-            {/* Cap Vertical Ridges Texture */}
-            <path d="
-                M 12 5 L 12 9 M 14 5 L 14 9 M 16 5 L 16 9 M 18 5 L 18 9 
-                M 20 5 L 20 9 M 22 5 L 22 9 M 24 5 L 24 9 M 26 5 L 26 9 M 28 5 L 28 9
-            " stroke="#9CA3AF" strokeWidth="0.6" strokeLinecap="round" opacity="0.7" />
-
-            {/* Specular Glow/Highlight running down the left side */}
-            <path d="M 13 12 L 13 33" stroke="#FFFFFF" strokeWidth="0.8" strokeLinecap="round" opacity="0.3" />
-        </svg>
-    );
-}
-
-export function PatientAvatar({ seed }: { seed: { skin: string; hair: string; shirt: string } }) {
-    return (
-        <svg
-            viewBox="0 0 56 56"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-16 h-16"
-        >
-            <defs>
-                {/* Global drop shadow for realism */}
-                <filter id="avatarShadow" x="-10%" y="-10%" width="120%" height="120%">
-                    <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" floodOpacity="0.12" />
-                </filter>
-                {/* Clip path to keep shirt and clothing perfectly inside the avatar bounds */}
-                <clipPath id="avatarClip">
-                    <circle cx="28" cy="28" r="26" />
-                </clipPath>
-            </defs>
-
-            {/* Optional Background Circle to anchor the avatar */}
-            <circle cx="28" cy="28" r="26" fill="#F3F4F6" stroke="#E5E7EB" strokeWidth="1" />
-
-            <g clipPath="url(#avatarClip)">
-                {/* Neck */}
-                <rect x="23" y="30" width="10" height="10" rx="2" fill={seed.skin} />
-                {/* Neck Shadow (Under Chin) */}
-                <path d="M 23 32 C 23 32, 28 35, 33 32 L 33 35 L 23 35 Z" fill="#000000" opacity="0.12" />
-
-                {/* Torso / Realistic Curved Shoulders */}
-                <path
-                    d="M 6 48 C 6 41.5, 13 38, 28 38 C 43 38, 50 41.5, 50 48 L 50 58 L 6 58 Z"
-                    fill={seed.shirt}
-                />
-
-                {/* Shirt Collar / Depth Shadow */}
-                <path d="M 22 38 C 22 38, 28 42, 34 38" stroke="#000000" strokeWidth="1.5" opacity="0.15" strokeLinecap="round" />
-
-                {/* Head (Anatomically proportioned) */}
-                <circle cx="28" cy="21" r="10.5" fill={seed.skin} filter="url(#avatarShadow)" />
-
-                {/* Minimalist Facial Details for Realism */}
-                {/* Eyes */}
-                <circle cx="24.5" cy="20.5" r="0.9" fill="#374151" opacity="0.8" />
-                <circle cx="31.5" cy="20.5" r="0.9" fill="#374151" opacity="0.8" />
-                {/* Soft Smile */}
-                <path d="M 26 24 C 26 25.2, 30 25.2, 30 24" stroke="#374151" strokeWidth="0.8" strokeLinecap="round" opacity="0.7" />
-
-                {/* Hair - Layered to frame face realistically */}
-                <path
-                    d="M 16.5 21 C 15.5 14, 20 9, 28 9 C 36 9, 40.5 14, 39.5 21 C 40 21, 38.5 15, 36.5 14 C 34.5 13, 31 14, 28 14 C 24 14, 21.5 13, 19.5 14 C 17.5 15, 16 21, 16.5 21 Z"
-                    fill={seed.hair}
-                />
-                {/* Hair Volume Shadow Overlay */}
-                <path
-                    d="M 17.5 19 C 20 12, 36 12, 38.5 19 C 37 14, 19 14, 17.5 19 Z"
-                    fill="#000000"
-                    opacity="0.08"
-                />
-            </g>
-        </svg>
-    );
-}
-/* ─────────────────────────────────────────────
-   Hint Definitions per Step
-   ───────────────────────────────────────────── */
-const HINTS: Record<GameStep, string> = {
-    intake: "Check the patient's allergies and current medications. Look for any red flags before accepting the order.",
-    interpret:
-        "Read the cursive prescription carefully. Drug name, strength, frequency (BID = twice daily, QD = once daily), and quantity are critical.",
-    dur: "Drug utilization review alerts exist for a reason. If the alert is critical (allergy or life-threatening interaction), you must call the prescriber.",
-    select:
-        "Look for the exact drug and strength. Be careful of look‑alike/sound‑alike (LASA) bottles – a similar name may be the wrong product.",
-    labeling:
-        "Auxiliary labels warn patients about important precautions. For antibiotics, 'Finish all' and 'Sunlight' warnings are common.",
-    counsel:
-        "Always counsel on how to take the medication correctly and what to expect. Think about adherence, administration, and potential side effects.",
-    result: "",
+// ─────────────────────────────────────────────
+//  STEP HINTS
+// ─────────────────────────────────────────────
+const STEP_HINTS: Record<number, string> = {
+  0: "Review all allergies carefully before accepting. Check for drug-allergy conflicts now — it is easier to flag early.",
+  1: "Common abbreviations: QD = once daily, BID = twice/day, TID = three/day. Verify drug NAME and DOSE exactly as written.",
+  2: "Severity matters. Critical alerts almost always require contacting the prescriber. Never override a critical allergy.",
+  3: "LASA drugs look similar! Compare BOTH the name AND the strength/dose before selecting.",
+  4: "Select ONLY the labels that are specifically required for this medication. More is not always better.",
+  5: "Draw on the DUR information you reviewed earlier — it often directly answers the counseling question.",
 };
 
-/* ─────────────────────────────────────────────
-   Main Component
-   ───────────────────────────────────────────── */
-export default function PharmacyCounterPage() {
-    const [caseIndex, setCaseIndex] = useState(0);
-    const currentCase = PHARMACY_CASES[caseIndex];
+// ─────────────────────────────────────────────
+//  SVG COMPONENTS
+// ─────────────────────────────────────────────
+const PatientAvatar = ({
+  skin,
+  hair,
+  shirt,
+  size = 80,
+}: {
+  skin: string;
+  hair: string;
+  shirt: string;
+  size?: number;
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 100 120"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    {/* Body / shirt */}
+    <ellipse cx="50" cy="95" rx="28" ry="22" fill={shirt} />
+    {/* Neck */}
+    <rect x="44" y="64" width="12" height="14" rx="4" fill={skin} />
+    {/* Head */}
+    <circle cx="50" cy="52" r="22" fill={skin} />
+    {/* Hair */}
+    <ellipse cx="50" cy="33" rx="22" ry="12" fill={hair} />
+    <ellipse cx="30" cy="46" rx="6" ry="14" fill={hair} />
+    <ellipse cx="70" cy="46" rx="6" ry="14" fill={hair} />
+    {/* Eyes */}
+    <circle cx="42" cy="50" r="3" fill="#2c3e50" />
+    <circle cx="58" cy="50" r="3" fill="#2c3e50" />
+    <circle cx="43" cy="49" r="1" fill="white" />
+    <circle cx="59" cy="49" r="1" fill="white" />
+    {/* Smile */}
+    <path d="M 43 58 Q 50 64 57 58" stroke="#c0392b" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+    {/* Shirt collar */}
+    <path d="M 40 78 L 50 88 L 60 78" stroke="white" strokeWidth="1.5" fill="none" />
+  </svg>
+);
 
-    const [step, setStep] = useState<GameStep>("intake");
-    const [errorsCount, setErrorsCount] = useState(0);
-    const [score, setScore] = useState(100);
-    const [startTime, setStartTime] = useState<number>(0);
-    const [elapsedTime, setElapsedTime] = useState(0);
+const PillBottleSVG = ({
+  color = "#f39c12",
+  isSelected = false,
+  isWrong = false,
+  isLookAlike = false,
+}: {
+  color?: string;
+  isSelected?: boolean;
+  isWrong?: boolean;
+  isLookAlike?: boolean;
+}) => (
+  <svg
+    width="56"
+    height="80"
+    viewBox="0 0 56 80"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    {/* Cap */}
+    <rect
+      x="12"
+      y="2"
+      width="32"
+      height="14"
+      rx="4"
+      fill={isWrong ? "#e74c3c" : isSelected ? "#27ae60" : "#f39c12"}
+    />
+    {/* Bottle body */}
+    <rect
+      x="8"
+      y="14"
+      width="40"
+      height="58"
+      rx="6"
+      fill={color}
+      opacity="0.9"
+      stroke={isSelected ? "#27ae60" : isWrong ? "#e74c3c" : "#c0392b"}
+      strokeWidth={isSelected || isWrong ? "2.5" : "1"}
+    />
+    {/* Label background */}
+    <rect x="12" y="22" width="32" height="38" rx="3" fill="white" opacity="0.85" />
+    {/* Pill icons inside */}
+    <ellipse cx="21" cy="35" rx="5" ry="3" fill="#e74c3c" opacity="0.7" />
+    <ellipse cx="35" cy="35" rx="5" ry="3" fill="#3498db" opacity="0.7" />
+    <ellipse cx="28" cy="42" rx="5" ry="3" fill="#2ecc71" opacity="0.7" />
+    <ellipse cx="21" cy="49" rx="5" ry="3" fill="#e74c3c" opacity="0.7" />
+    <ellipse cx="35" cy="49" rx="5" ry="3" fill="#3498db" opacity="0.7" />
+    {/* LASA marker */}
+    {isLookAlike && (
+      <>
+        <rect x="8" y="66" width="40" height="8" rx="0" fill="#f39c12" opacity="0.9" />
+        <text x="28" y="73" textAnchor="middle" fill="white" fontSize="5" fontWeight="bold">
+          LASA
+        </text>
+      </>
+    )}
+    {/* Barcode lines */}
+    {[0, 2, 4, 6, 8, 10, 12].map((i) => (
+      <rect key={i} x={14 + i * 2.5} y="55" width="1.2" height="7" fill="#333" opacity="0.5" />
+    ))}
+  </svg>
+);
 
-    const [inputDrug, setInputDrug] = useState("");
-    const [inputDose, setInputDose] = useState("");
-    const [inputFreq, setInputFreq] = useState("");
-    const [inputQty, setInputQty] = useState("");
+// ─────────────────────────────────────────────
+//  FLOATING AMBIENT ICONS
+// ─────────────────────────────────────────────
+const FloatingIcon = ({
+  icon: Icon,
+  style,
+}: {
+  icon: React.ElementType;
+  style: React.CSSProperties;
+}) => (
+  <motion.div
+    className="absolute text-blue-200 opacity-20 pointer-events-none"
+    style={style}
+    animate={{ y: [0, -20, 0], rotate: [0, 10, -10, 0], opacity: [0.15, 0.25, 0.15] }}
+    transition={{ duration: 6 + Math.random() * 4, repeat: Infinity, ease: "easeInOut" }}
+  >
+    <Icon size={32} />
+  </motion.div>
+);
 
-    const [selectedShelfId, setSelectedShelfId] = useState<string | null>(null);
-    const [selectedAuxLabels, setSelectedAuxLabels] = useState<string[]>([]);
-    const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
-    const [preceptorFeedback, setPreceptorFeedback] = useState<string | null>(null);
+// ─────────────────────────────────────────────
+//  SEVERITY BADGE
+// ─────────────────────────────────────────────
+const SeverityBadge = ({ severity }: { severity: string }) => {
+  const map: Record<string, string> = {
+    Critical: "bg-red-600 text-white",
+    Severe: "bg-orange-500 text-white",
+    Moderate: "bg-yellow-400 text-gray-900",
+  };
+  return (
+    <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-widest uppercase ${map[severity] || "bg-gray-400 text-white"}`}>
+      {severity}
+    </span>
+  );
+};
 
-    // Hint & Correction states
-    const [showHint, setShowHint] = useState(false);
-    const [showCorrection, setShowCorrection] = useState(false);
-    const [correctionData, setCorrectionData] = useState<{
-        title: string;
-        details: string;
-        correctAnswer: string;
-    } | null>(null);
+// ─────────────────────────────────────────────
+//  MAIN COMPONENT
+// ─────────────────────────────────────────────
+export default function PharmacySimulation() {
+  const [caseIdx, setCaseIdx] = useState(0);
+  const [step, setStep] = useState(0);
+  const [score, setScore] = useState(100);
+  const [errors, setErrors] = useState(0);
+  const [timer, setTimer] = useState(0);
+  const [running, setRunning] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+  const [preceptorMsg, setPreceptorMsg] = useState<string | null>(null);
+  const [correction, setCorrection] = useState<{
+    title: string;
+    explanation: string;
+    correct: string;
+  } | null>(null);
 
-    useEffect(() => {
-        if (step !== "result" && step !== "intake") {
-            const timer = setInterval(() => {
-                setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
-            }, 1000);
-            return () => clearInterval(timer);
-        }
-    }, [step, startTime]);
+  // Transcription state
+  const [txDrug, setTxDrug] = useState("");
+  const [txDose, setTxDose] = useState("");
+  const [txFreq, setTxFreq] = useState("QD");
+  const [txQty, setTxQty] = useState("");
 
-    const startSimulation = () => {
-        setStartTime(Date.now());
-        setStep("interpret");
-        setErrorsCount(0);
-        setScore(100);
-        setInputDrug("");
-        setInputDose("");
-        setInputFreq("");
-        setInputQty("");
-        setSelectedShelfId(null);
-        setSelectedAuxLabels([]);
-        setCurrentQuestionIdx(0);
-        setPreceptorFeedback(null);
-        setShowHint(false);
-        setShowCorrection(false);
-        setCorrectionData(null);
+  // Shelf state
+  const [selectedBottle, setSelectedBottle] = useState<string | null>(null);
+  const [wrongBottle, setWrongBottle] = useState<string | null>(null);
+
+  // Labeling state
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
+
+  // Counseling state
+  const [counselingIdx, setCounselingIdx] = useState(0);
+  const [counselingDone, setCounselingDone] = useState(false);
+
+  // Done
+  const [done, setDone] = useState(false);
+
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const preceptorRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const activeCase = CASES[caseIdx % CASES.length];
+
+  // Timer management
+  useEffect(() => {
+    if (running) {
+      timerRef.current = setInterval(() => setTimer((t) => t + 1), 1000);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
     };
+  }, [running]);
 
-    const triggerPreceptorIntervention = (
-        message: string,
-        correction?: { title: string; details: string; correctAnswer: string }
-    ) => {
-        setErrorsCount((prev) => prev + 1);
-        setScore((prev) => Math.max(0, prev - 12));
-        setPreceptorFeedback(message);
-        if (correction) {
-            setCorrectionData(correction);
-            setShowCorrection(true);
-        }
-        setTimeout(() => setPreceptorFeedback(null), 6000);
-    };
+  // Preceptor banner auto-dismiss
+  const showPreceptor = useCallback((msg: string) => {
+    setPreceptorMsg(msg);
+    if (preceptorRef.current) clearTimeout(preceptorRef.current);
+    preceptorRef.current = setTimeout(() => setPreceptorMsg(null), 6000);
+  }, []);
 
-    // Step transitions
-    const handleVerifyProfileIntake = () => setStep("interpret");
+  const penalise = useCallback(
+    (correctionData: { title: string; explanation: string; correct: string }, preceptorText: string) => {
+      setScore((s) => Math.max(0, s - 12));
+      setErrors((e) => e + 1);
+      setCorrection(correctionData);
+      showPreceptor(preceptorText);
+    },
+    [showPreceptor]
+  );
 
-    const handleVerifyInterpretation = () => {
-        const checkDrug = inputDrug.trim().toLowerCase() === currentCase.correctDrug.toLowerCase();
-        const checkDose = inputDose.trim().toLowerCase() === currentCase.correctDose.toLowerCase();
-        const checkFreq = inputFreq.trim().toUpperCase() === currentCase.correctFrequency.toUpperCase();
-        const checkQty = parseInt(inputQty.trim(), 10) === currentCase.correctQty;
-        if (!checkDrug) {
-            triggerPreceptorIntervention(
-                `Transcription Error: Incorrect drug name. Expected '${currentCase.correctDrug}'.`,
-                {
-                    title: "Drug Name Mismatch",
-                    details: "The handwritten prescription states the drug name clearly. Cross‑reference with the patient profile.",
-                    correctAnswer: `Correct drug: ${currentCase.correctDrug}`,
-                }
-            );
-            return;
-        }
-        if (!checkDose) {
-            triggerPreceptorIntervention(
-                `Dosage strength mismatch. Target is '${currentCase.correctDose}'.`,
-                {
-                    title: "Incorrect Strength",
-                    details: "The prescribed strength must be entered exactly as written.",
-                    correctAnswer: `Correct dose: ${currentCase.correctDose}`,
-                }
-            );
-            return;
-        }
-        if (!checkFreq) {
-            triggerPreceptorIntervention(
-                `SIG frequency translation failure. Should be '${currentCase.correctFrequency}'.`,
-                {
-                    title: "Frequency Error",
-                    details: "Common abbreviations: QD = once daily, BID = twice daily, TID = three times daily.",
-                    correctAnswer: `Correct frequency: ${currentCase.correctFrequency}`,
-                }
-            );
-            return;
-        }
-        if (!checkQty) {
-            triggerPreceptorIntervention(
-                `Dispense quantity deviation. Expected value: ${currentCase.correctQty}.`,
-                {
-                    title: "Quantity Mismatch",
-                    details: "Calculate the total tablets/capsules based on days supply and dosage.",
-                    correctAnswer: `Correct quantity: ${currentCase.correctQty}`,
-                }
-            );
-            return;
-        }
-        setStep("dur");
-    };
+  const resetForCase = (idx: number) => {
+    setCaseIdx(idx);
+    setStep(0);
+    setScore(100);
+    setErrors(0);
+    setTimer(0);
+    setRunning(false);
+    setTxDrug("");
+    setTxDose("");
+    setTxFreq("QD");
+    setTxQty("");
+    setSelectedBottle(null);
+    setWrongBottle(null);
+    setSelectedLabels([]);
+    setCounselingIdx(0);
+    setCounselingDone(false);
+    setDone(false);
+    setPreceptorMsg(null);
+    setCorrection(null);
+    setShowHint(false);
+  };
 
-    const handleDurResolve = (action: "override" | "call_doctor") => {
-        if (action === currentCase.durAlert.correctAction) {
-            setStep("select");
-        } else {
-            triggerPreceptorIntervention(
-                `Clinical Intervention Error: ${currentCase.durAlert.rationale}`,
-                {
-                    title: "Incorrect DUR Action",
-                    details: currentCase.durAlert.rationale,
-                    correctAnswer: `Required action: ${currentCase.durAlert.correctAction === "call_doctor" ? "Call Prescriber" : "Override with documentation"
-                        }`,
-                }
-            );
-        }
-    };
+  // ── STEP HANDLERS ──────────────────────────
 
-    const handleShelfSelection = (itemId: string, itemName: string, itemDose: string) => {
-        setSelectedShelfId(itemId);
-        if (
-            itemName.toLowerCase() === currentCase.correctDrug.toLowerCase() &&
-            itemDose.toLowerCase() === currentCase.correctDose.toLowerCase()
-        ) {
-            setTimeout(() => setStep("labeling"), 800);
-        } else {
-            triggerPreceptorIntervention(
-                "Product Selection Misstep: Look‑Alike/Sound‑Alike (LASA) inventory bottle selected.",
-                {
-                    title: "LASA Error",
-                    details: "A drug with a similar name or appearance was chosen. Always verify the NDC and strength.",
-                    correctAnswer: `Correct product: ${currentCase.correctDrug} ${currentCase.correctDose}`,
-                }
-            );
-        }
-    };
+  const handleAccept = () => {
+    setRunning(true);
+    setStep(1);
+  };
 
-    const toggleAuxiliaryLabel = (label: string) => {
-        setSelectedAuxLabels((prev) =>
-            prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label]
-        );
-    };
+  const handleTranscription = () => {
+    const c = activeCase;
+    const drugOk = txDrug.trim().toLowerCase() === c.correctDrug.toLowerCase();
+    const doseOk = txDose.trim().toLowerCase() === c.correctDose.toLowerCase();
+    const freqOk = txFreq === c.correctFrequency;
+    const qtyOk = parseInt(txQty) === c.correctQty;
 
-    const verifyLabelingConfiguration = () => {
-        const missedLabels = currentCase.requiredAuxiliaryLabels.filter(
-            (l) => !selectedAuxLabels.includes(l)
-        );
-        const incorrectLabels = selectedAuxLabels.filter(
-            (l) => !currentCase.requiredAuxiliaryLabels.includes(l)
-        );
-        if (missedLabels.length === 0 && incorrectLabels.length === 0) {
-            setStep("counsel");
-        } else {
-            triggerPreceptorIntervention(
-                "Label Validation Warning: Missing required auxiliary labels or incorrect ones selected.",
-                {
-                    title: "Labeling Error",
-                    details:
-                        "Auxiliary labels must include all required warnings and should not include irrelevant ones.",
-                    correctAnswer: `Required labels: ${currentCase.requiredAuxiliaryLabels.join(", ")}`,
-                }
-            );
-        }
-    };
+    if (!drugOk || !doseOk || !freqOk || !qtyOk) {
+      const wrongs: string[] = [];
+      if (!drugOk) wrongs.push(`Drug (correct: ${c.correctDrug})`);
+      if (!doseOk) wrongs.push(`Dose (correct: ${c.correctDose})`);
+      if (!freqOk) wrongs.push(`Frequency (correct: ${c.correctFrequency})`);
+      if (!qtyOk) wrongs.push(`Quantity (correct: ${c.correctQty})`);
+      penalise(
+        {
+          title: "Transcription Error",
+          explanation: `The following field(s) were incorrect: ${wrongs.join(", ")}.`,
+          correct: `${c.correctDrug} | ${c.correctDose} | ${c.correctFrequency} | Qty: ${c.correctQty}`,
+        },
+        "⚠️ Preceptor: Transcription mismatch detected. Verify the prescription carefully."
+      );
+      return;
+    }
+    setStep(2);
+  };
 
-    const handleCounselingAnswer = (optionIdx: number) => {
-        const targetQuestion = currentCase.counseling[currentQuestionIdx];
-        if (optionIdx === targetQuestion.correctIndex) {
-            if (currentQuestionIdx + 1 < currentCase.counseling.length) {
-                setCurrentQuestionIdx((prev) => prev + 1);
-            } else {
-                setStep("result");
-            }
-        } else {
-            triggerPreceptorIntervention(
-                `Counseling Clinical Inaccuracy: ${targetQuestion.rationale}`,
-                {
-                    title: "Incorrect Counseling",
-                    details: targetQuestion.rationale,
-                    correctAnswer: `Correct answer: ${targetQuestion.options[targetQuestion.correctIndex]}`,
-                }
-            );
-        }
-    };
+  const handleDUR = (action: "override" | "call_doctor") => {
+    if (action !== activeCase.durAlert.correctAction) {
+      penalise(
+        {
+          title: "Incorrect DUR Action",
+          explanation: `You chose to ${action === "override" ? "override" : "call the doctor"}, but the correct action was ${activeCase.durAlert.correctAction === "override" ? "to override" : "to call the prescriber"}.`,
+          correct: activeCase.durAlert.rationale,
+        },
+        "⚠️ Preceptor: Incorrect DUR response. A Critical alert must go to the prescriber."
+      );
+      return;
+    }
+    setStep(3);
+  };
 
-    const nextCaseInstance = () => {
-        setCaseIndex((prev) => (prev + 1) % PHARMACY_CASES.length);
-        setStep("intake");
-    };
+  const handleBottleClick = (item: ShelfItem) => {
+    const c = activeCase;
+    if (item.name === c.correctDrug && item.dose === c.correctDose) {
+      setSelectedBottle(item.id);
+      setTimeout(() => setStep(4), 700);
+    } else {
+      setWrongBottle(item.id);
+      penalise(
+        {
+          title: "LASA Selection Error",
+          explanation: `You selected "${item.name} ${item.dose}" which is ${item.isLookAlike ? "a look-alike/sound-alike medication" : "an incorrect medication"}.`,
+          correct: `${c.correctDrug} ${c.correctDose} ${c.shelfItems.find((s) => s.name === c.correctDrug && s.dose === c.correctDose)?.form || ""}`,
+        },
+        "⚠️ Preceptor: LASA error. Always verify the exact drug name AND strength."
+      );
+      setTimeout(() => setWrongBottle(null), 1200);
+    }
+  };
 
-    // Progress calculations
-    const stepsOrder: GameStep[] = ["intake", "interpret", "dur", "select", "labeling", "counsel", "result"];
-    const currentStepIndex = stepsOrder.indexOf(step);
-    const progressPercent = ((currentStepIndex) / (stepsOrder.length - 2)) * 100; // exclude result
+  const handleLabels = () => {
+    const req = [...activeCase.requiredAuxiliaryLabels].sort().join("|");
+    const sel = [...selectedLabels].sort().join("|");
+    if (req !== sel) {
+      const missing = activeCase.requiredAuxiliaryLabels.filter((l) => !selectedLabels.includes(l));
+      const extra = selectedLabels.filter((l) => !activeCase.requiredAuxiliaryLabels.includes(l));
+      penalise(
+        {
+          title: "Auxiliary Label Error",
+          explanation: `${missing.length ? `Missing: ${missing.join(", ")}. ` : ""}${extra.length ? `Extra (not required): ${extra.join(", ")}.` : ""}`,
+          correct: activeCase.requiredAuxiliaryLabels.join(" | "),
+        },
+        "⚠️ Preceptor: Incorrect auxiliary labels. Each drug has specific required warnings."
+      );
+      return;
+    }
+    setStep(5);
+  };
 
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 pb-12 font-sans relative overflow-hidden">
-            {/* Floating pharmacy icons */}
-            {bgIcons.map(({ Icon, top, left, size, color, rotate }, i) => (
-                <motion.div
-                    key={i}
-                    className={`absolute pointer-events-none hidden md:block ${color}`}
-                    style={{ top, left }}
-                    animate={{ y: [0, -10, 0], rotate: [rotate, rotate + 3, rotate] }}
-                    transition={{
-                        duration: 5 + i * 0.5,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: i * 0.7,
-                    }}
-                >
-                    <Icon size={size} strokeWidth={1.4} />
-                </motion.div>
-            ))}
+  const handleCounseling = (idx: number) => {
+    const q = activeCase.counseling[counselingIdx];
+    if (idx !== q.correctIndex) {
+      penalise(
+        {
+          title: "Counseling Error",
+          explanation: `"${q.options[idx]}" is not the best answer.`,
+          correct: `${q.options[q.correctIndex]} — ${q.rationale}`,
+        },
+        "⚠️ Preceptor: Review the drug's pharmacology to counsel patients accurately."
+      );
+      return;
+    }
+    if (counselingIdx + 1 < activeCase.counseling.length) {
+      setCounselingIdx((i) => i + 1);
+    } else {
+      setCounselingDone(true);
+      setRunning(false);
+      setDone(true);
+    }
+  };
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 space-y-6">
-                {/* Header */}
-                <header className="bg-white/90 backdrop-blur-md rounded-2xl border border-gray-200 p-4 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="p-3 rounded-xl bg-gradient-to-br from-blue-600 to-green-400 text-white shadow-lg">
-                            <ShoppingCart className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-extrabold tracking-tight text-gray-900">
-                                Virtual Pharmacy Counter
-                            </h1>
-                            <p className="text-xs text-gray-500">Dispensing Simulation & Clinical Verification</p>
-                        </div>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3 text-sm">
-                        <div className="flex items-center gap-1.5 bg-gray-100 rounded-xl px-3 py-1.5">
-                            <Clock className="w-4 h-4 text-blue-600" />
-                            <span className="font-mono font-bold">{elapsedTime}s</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 bg-gray-100 rounded-xl px-3 py-1.5">
-                            <span className="text-gray-500">Score:</span>
-                            <span className={`font-bold ${score > 80 ? "text-green-600" : "text-amber-600"}`}>
-                                {score}%
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-1.5 bg-gray-100 rounded-xl px-3 py-1.5">
-                            <span className="text-gray-500">Errors:</span>
-                            <span className={`font-bold ${errorsCount > 0 ? "text-red-500" : "text-gray-400"}`}>
-                                {errorsCount}
-                            </span>
-                        </div>
-                    </div>
-                </header>
+  // ── RENDER HELPERS ─────────────────────────
 
-                {/* Progress bar */}
-                {step !== "result" && (
-                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                        <motion.div
-                            className="h-full bg-gradient-to-r from-blue-500 to-green-400 rounded-full"
-                            animate={{ width: `${progressPercent}%` }}
-                            transition={{ duration: 0.5 }}
-                        />
-                    </div>
-                )}
+  const fmtTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
-                {/* Step indicator */}
-                <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-                    {[
-                        { key: "intake", label: "1. Intake" },
-                        { key: "interpret", label: "2. Transcribe" },
-                        { key: "dur", label: "3. DUR" },
-                        { key: "select", label: "4. Pick" },
-                        { key: "labeling", label: "5. Label" },
-                        { key: "counsel", label: "6. Counsel" },
-                    ].map((s) => {
-                        const isActive = step === s.key;
-                        return (
-                            <div
-                                key={s.key}
-                                className={`text-center py-2 px-1 rounded-lg text-xs font-bold transition-all border ${isActive
-                                    ? "bg-gradient-to-r from-blue-600 to-green-400 text-white border-transparent shadow-md"
-                                    : "bg-white border-gray-200 text-gray-400"
-                                    }`}
-                            >
-                                {s.label}
-                            </div>
-                        );
-                    })}
-                </div>
+  const scoreColor =
+    score >= 80 ? "text-green-400" : score >= 60 ? "text-yellow-400" : "text-red-400";
 
-                {/* Preceptor Feedback Banner */}
-                <AnimatePresence>
-                    {preceptorFeedback && (
-                        <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-2xl flex items-start gap-3"
-                        >
-                            <ShieldAlert className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                            <div>
-                                <h4 className="text-sm font-bold text-red-700">Preceptor Intervention</h4>
-                                <p className="text-sm mt-0.5">{preceptorFeedback}</p>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+  const STEP_LABELS = ["Intake", "Transcription", "DUR Review", "Shelf Select", "Labeling", "Counseling"];
 
-                {/* Main Content Grid */}
-                <main className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    {/* Left Panel - Patient Profile */}
-                    <section className="lg:col-span-4 bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
-                        <div className="p-4 bg-gradient-to-r from-blue-600 to-green-400 text-white">
-                            <h3 className="text-sm font-bold flex items-center gap-1.5">
-                                <User className="w-4 h-4" /> Patient Profile
-                            </h3>
-                            <p className="text-xs text-white/70 font-mono">CASE: {currentCase.id}</p>
-                        </div>
-                        <div className="p-6 flex flex-col items-center text-center flex-grow justify-center space-y-4">
-                            {step !== "result" && (
-                                <motion.div
-                                    key={currentCase.id}
-                                    initial={{ scale: 0.9, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    className="w-full space-y-4"
-                                >
-                                    <div className="flex justify-center">
-                                        <PatientAvatar seed={currentCase.avatarSeed} />
-                                    </div>
-                                    <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 text-left space-y-3">
-                                        <div>
-                                            <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                                                Name
-                                            </label>
-                                            <p className="text-base font-bold text-gray-900">
-                                                {currentCase.patientName}
-                                            </p>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <div>
-                                                <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                                                    DOB
-                                                </label>
-                                                <p className="text-xs text-gray-600">{currentCase.patientDob}</p>
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                                                    Age
-                                                </label>
-                                                <p className="text-xs text-gray-600">{currentCase.patientAge} yrs</p>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] uppercase font-bold text-red-500 tracking-wider">
-                                                Allergies
-                                            </label>
-                                            <p
-                                                className={`text-xs font-bold ${currentCase.allergies.includes("NKA")
-                                                    ? "text-gray-600"
-                                                    : "text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-100 inline-block"
-                                                    }`}
-                                            >
-                                                {currentCase.allergies}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                                                Current Meds
-                                            </label>
-                                            <p className="text-xs text-gray-500 italic">
-                                                {currentCase.currentMedications}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </div>
-                    </section>
+  // ── JSX ────────────────────────────────────
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white font-sans relative overflow-hidden">
+      {/* Ambient floating icons */}
+      {[
+        { icon: Pill, style: { top: "8%", left: "3%" } },
+        { icon: FlaskConical, style: { top: "20%", right: "4%" } },
+        { icon: Activity, style: { top: "55%", left: "2%" } },
+        { icon: Shield, style: { top: "70%", right: "3%" } },
+        { icon: BookOpen, style: { top: "40%", left: "5%" } },
+        { icon: Star, style: { top: "85%", left: "40%" } },
+      ].map(({ icon, style }, i) => (
+        <FloatingIcon key={i} icon={icon} style={style} />
+      ))}
 
-                    {/* Right Panel - Interactive Work Area */}
-                    <section className="lg:col-span-8 bg-white rounded-3xl border border-gray-200 shadow-sm p-6 flex flex-col justify-between relative">
-                        {/* Hint button */}
-                        {step !== "intake" && step !== "result" && (
-                            <div className="absolute top-3 right-3 z-10">
-                                <button
-                                    onClick={() => setShowHint(!showHint)}
-                                    className="p-2 bg-amber-100 hover:bg-amber-200 rounded-full text-amber-600 transition-colors"
-                                    title="Show Hint"
-                                >
-                                    <Lightbulb className="w-4 h-4" />
-                                </button>
-                                <AnimatePresence>
-                                    {showHint && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: -5, scale: 0.95 }}
-                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                            exit={{ opacity: 0, y: -5, scale: 0.95 }}
-                                            className="absolute right-0 mt-2 w-72 bg-white border border-amber-200 rounded-2xl p-4 shadow-lg text-sm text-amber-800"
-                                        >
-                                            <div className="flex items-start gap-2">
-                                                <Info className="w-4 h-4 mt-0.5 shrink-0" />
-                                                <p>{HINTS[step]}</p>
-                                            </div>
-                                            <button
-                                                onClick={() => setShowHint(false)}
-                                                className="mt-2 text-xs font-bold text-amber-600 hover:underline"
-                                            >
-                                                Got it
-                                            </button>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        )}
-
-                        <AnimatePresence mode="wait">
-                            {/* INTRO */}
-                            {step === "intake" && (
-                                <motion.div
-                                    key="intake"
-                                    initial={{ opacity: 0, x: 10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -10 }}
-                                    className="space-y-6"
-                                >
-                                    <div>
-                                        <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                            <UserCheck className="w-5 h-5 text-blue-600" /> Patient Drop‑Off
-                                        </h3>
-                                        <p className="text-sm text-gray-500 mt-1">
-                                            Cross‑reference the patient profile before starting the order.
-                                        </p>
-                                    </div>
-                                    <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
-                                        <blockquote className="text-gray-700 italic text-sm">
-                                            "Hi, I need to get this prescription filled as soon as possible."
-                                        </blockquote>
-                                    </div>
-                                    <button
-                                        onClick={handleVerifyProfileIntake}
-                                        className="w-full bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all"
-                                    >
-                                        Accept Order & Start <ArrowRight className="w-4 h-4 inline ml-1" />
-                                    </button>
-                                </motion.div>
-                            )}
-
-                            {/* INTERPRET */}
-                            {step === "interpret" && (
-                                <motion.div
-                                    key="interpret"
-                                    initial={{ opacity: 0, x: 10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -10 }}
-                                    className="space-y-4"
-                                >
-                                    <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
-                                        <FileText className="w-4 h-4 text-blue-600" /> Prescription Transcription
-                                    </h3>
-                                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
-                                        <span className="font-serif text-3xl text-amber-600">℞</span>
-                                        <p className="font-serif italic text-lg text-amber-800 whitespace-pre-wrap leading-relaxed mt-1">
-                                            {currentCase.rxCursiveText}
-                                        </p>
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <input
-                                            type="text"
-                                            placeholder="Drug name"
-                                            value={inputDrug}
-                                            onChange={(e) => setInputDrug(e.target.value)}
-                                            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-200 outline-none"
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="Dose (e.g., 800-160 mg)"
-                                            value={inputDose}
-                                            onChange={(e) => setInputDose(e.target.value)}
-                                            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-200 outline-none"
-                                        />
-                                        <select
-                                            value={inputFreq}
-                                            onChange={(e) => setInputFreq(e.target.value)}
-                                            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-200 outline-none"
-                                        >
-                                            <option value="">Frequency</option>
-                                            <option value="QD">QD (Once Daily)</option>
-                                            <option value="BID">BID (Twice Daily)</option>
-                                            <option value="TID">TID (Three Times Daily)</option>
-                                        </select>
-                                        <input
-                                            type="number"
-                                            placeholder="Quantity"
-                                            value={inputQty}
-                                            onChange={(e) => setInputQty(e.target.value)}
-                                            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-200 outline-none"
-                                        />
-                                    </div>
-                                    <button
-                                        onClick={handleVerifyInterpretation}
-                                        className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all"
-                                    >
-                                        Verify & Run DUR
-                                    </button>
-                                </motion.div>
-                            )}
-
-                            {/* DUR */}
-                            {step === "dur" && (
-                                <motion.div
-                                    key="dur"
-                                    initial={{ opacity: 0, x: 10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -10 }}
-                                    className="space-y-4"
-                                >
-                                    <div className="bg-red-50 border border-red-200 rounded-2xl p-5 space-y-3">
-                                        <div className="flex items-center gap-3 text-red-600">
-                                            <AlertTriangle className="w-6 h-6 animate-bounce" />
-                                            <div>
-                                                <h3 className="text-base font-bold text-red-800">
-                                                    {currentCase.durAlert.alertTitle}
-                                                </h3>
-                                                <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded font-bold uppercase">
-                                                    {currentCase.durAlert.severity} ALERT
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <p className="text-sm text-red-700">{currentCase.durAlert.description}</p>
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <button
-                                            onClick={() => handleDurResolve("override")}
-                                            className="p-4 bg-white border border-gray-200 rounded-xl hover:border-amber-400 text-left transition-all"
-                                        >
-                                            <span className="text-sm font-bold">Force Override</span>
-                                            <p className="text-xs text-gray-500 mt-0.5">
-                                                Log benefit‑outweighs‑risk waiver
-                                            </p>
-                                        </button>
-                                        <button
-                                            onClick={() => handleDurResolve("call_doctor")}
-                                            className="p-4 bg-white border border-gray-200 rounded-xl hover:border-blue-400 text-left transition-all"
-                                        >
-                                            <span className="text-sm font-bold">Call Prescriber</span>
-                                            <p className="text-xs text-gray-500 mt-0.5">
-                                                Hold order, request alternative
-                                            </p>
-                                        </button>
-                                    </div>
-                                </motion.div>
-                            )}
-
-                            {/* SELECT */}
-                            {step === "select" && (
-                                <motion.div
-                                    key="select"
-                                    initial={{ opacity: 0, x: 10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -10 }}
-                                    className="space-y-4"
-                                >
-                                    <h3 className="text-base font-bold text-gray-800">Select Medicine from Shelf</h3>
-                                    <p className="text-xs text-gray-500">
-                                        Watch for look‑alike/sound‑alike packages.
-                                    </p>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                        {currentCase.shelfItems.map((item) => (
-                                            <button
-                                                key={item.id}
-                                                onClick={() =>
-                                                    handleShelfSelection(item.id, item.name, item.dose)
-                                                }
-                                                className={`p-4 rounded-2xl border-2 transition-all text-center flex flex-col items-center gap-2 ${selectedShelfId === item.id
-                                                    ? "border-blue-500 bg-blue-50 shadow-md"
-                                                    : "border-gray-200 bg-white hover:border-blue-300"
-                                                    }`}
-                                            >
-                                                <PillBottleSVG className="w-10 h-10" />
-                                                <span className="text-xs font-bold text-gray-700">
-                                                    {item.name}
-                                                </span>
-                                                <span className="text-[11px] text-gray-400">
-                                                    {item.dose} · {item.form}
-                                                </span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-sm text-blue-800">
-                                        Target: <strong>{currentCase.correctDrug} {currentCase.correctDose}</strong>
-                                    </div>
-                                </motion.div>
-                            )}
-
-                            {/* LABELING */}
-                            {step === "labeling" && (
-                                <motion.div
-                                    key="labeling"
-                                    initial={{ opacity: 0, x: 10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -10 }}
-                                    className="space-y-4"
-                                >
-                                    <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
-                                        <Tag className="w-4 h-4 text-blue-600" /> Auxiliary Labels
-                                    </h3>
-                                    <p className="text-xs text-gray-500">
-                                        Select required warning labels for the medication.
-                                    </p>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        {currentCase.availableAuxiliaryLabels.map((label, idx) => {
-                                            const isSelected = selectedAuxLabels.includes(label);
-                                            return (
-                                                <button
-                                                    key={idx}
-                                                    onClick={() => toggleAuxiliaryLabel(label)}
-                                                    className={`p-3 rounded-xl border text-xs font-medium text-left transition-all flex items-center justify-between gap-2 ${isSelected
-                                                        ? "bg-blue-50 border-blue-300 text-blue-700"
-                                                        : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
-                                                        }`}
-                                                >
-                                                    <span>{label}</span>
-                                                    <div
-                                                        className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${isSelected
-                                                            ? "bg-blue-500 border-blue-500"
-                                                            : "border-gray-300"
-                                                            }`}
-                                                    >
-                                                        {isSelected && (
-                                                            <CheckCircle className="w-3 h-3 text-white" />
-                                                        )}
-                                                    </div>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                    <button
-                                        onClick={verifyLabelingConfiguration}
-                                        className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all"
-                                    >
-                                        Confirm Labels & Package
-                                    </button>
-                                </motion.div>
-                            )}
-
-                            {/* COUNSEL */}
-                            {step === "counsel" && (
-                                <motion.div
-                                    key="counsel"
-                                    initial={{ opacity: 0, x: 10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -10 }}
-                                    className="space-y-4"
-                                >
-                                    <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
-                                        <HelpCircle className="w-4 h-4 text-blue-600" /> Patient Counseling
-                                    </h3>
-                                    <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
-                                        <p className="text-sm text-blue-800 font-medium">
-                                            {currentCase.counseling[currentQuestionIdx].question}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        {currentCase.counseling[currentQuestionIdx].options.map((opt, idx) => (
-                                            <button
-                                                key={idx}
-                                                onClick={() => handleCounselingAnswer(idx)}
-                                                className="w-full text-left p-3 bg-white border border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 text-sm font-medium text-gray-700 transition-all"
-                                            >
-                                                {opt}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </motion.div>
-                            )}
-
-                            {/* RESULT */}
-                            {step === "result" && (
-                                <motion.div
-                                    key="result"
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="space-y-6 text-center py-4"
-                                >
-                                    <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
-                                    <h3 className="text-xl font-bold text-gray-800">Dispensing Complete</h3>
-                                    <div className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-green-400">
-                                        {score}/100
-                                    </div>
-                                    <p className="text-sm text-gray-500">
-                                        Errors: {errorsCount} | Time: {elapsedTime}s
-                                    </p>
-                                    <div className="flex gap-3 justify-center">
-                                        <button
-                                            onClick={startSimulation}
-                                            className="px-5 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-all"
-                                        >
-                                            <RotateCw className="w-4 h-4 inline mr-1" /> Retry
-                                        </button>
-                                        <button
-                                            onClick={nextCaseInstance}
-                                            className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all"
-                                        >
-                                            Next Case <ChevronRight className="w-4 h-4 inline ml-1" />
-                                        </button>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {/* Correction Details Panel (slides from right) */}
-                        <AnimatePresence>
-                            {showCorrection && correctionData && (
-                                <motion.div
-                                    initial={{ x: "100%", opacity: 0 }}
-                                    animate={{ x: 0, opacity: 1 }}
-                                    exit={{ x: "100%", opacity: 0 }}
-                                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                    className="absolute top-0 right-0 h-full w-full max-w-md bg-white border-l border-gray-200 shadow-2xl rounded-l-3xl p-6 z-20 overflow-y-auto"
-                                >
-                                    <div className="flex items-start justify-between">
-                                        <h4 className="text-lg font-bold text-red-700 flex items-center gap-2">
-                                            <AlertTriangle className="w-5 h-5" /> Correction Details
-                                        </h4>
-                                        <button
-                                            onClick={() => setShowCorrection(false)}
-                                            className="p-1 hover:bg-gray-100 rounded-full"
-                                        >
-                                            <X className="w-5 h-5 text-gray-400" />
-                                        </button>
-                                    </div>
-                                    <div className="mt-4 space-y-4">
-                                        <div className="bg-red-50 p-4 rounded-xl border border-red-100">
-                                            <p className="text-sm font-semibold text-red-800">
-                                                {correctionData.title}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                                                What went wrong?
-                                            </p>
-                                            <p className="text-sm text-gray-700 mt-1">{correctionData.details}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-bold text-green-600 uppercase tracking-wide">
-                                                Correct Answer
-                                            </p>
-                                            <p className="text-sm font-medium text-green-800 bg-green-50 p-3 rounded-xl mt-1 border border-green-100">
-                                                {correctionData.correctAnswer}
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={() => setShowCorrection(false)}
-                                            className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-all"
-                                        >
-                                            Close
-                                        </button>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </section>
-                </main>
+      {/* ── HEADER ── */}
+      <header className="sticky top-0 z-40 bg-gradient-to-r from-blue-800 via-indigo-800 to-blue-900 shadow-2xl border-b border-blue-700">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 rounded-xl p-2">
+              <ShoppingCart className="text-white" size={22} />
             </div>
+            <div>
+              <h1 className="text-xl font-extrabold tracking-tight text-white">
+                Virtual Pharmacy Counter
+              </h1>
+              <p className="text-blue-200 text-xs font-medium">
+                Dispensing Simulation — Case {activeCase.id} of {CASES.length}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-1 bg-white/10 rounded-lg px-3 py-1.5">
+              <Clock size={14} className="text-blue-200" />
+              <span className="font-mono font-bold text-white">{fmtTime(timer)}</span>
+            </div>
+            <div className="flex items-center gap-1 bg-white/10 rounded-lg px-3 py-1.5">
+              <Star size={14} className="text-yellow-300" />
+              <span className={`font-bold ${scoreColor}`}>{score} pts</span>
+            </div>
+            <div className="flex items-center gap-1 bg-white/10 rounded-lg px-3 py-1.5">
+              <AlertTriangle size={14} className="text-orange-300" />
+              <span className="font-bold text-orange-200">{errors} err</span>
+            </div>
+          </div>
         </div>
-    );
+        {/* Progress bar */}
+        <div className="w-full bg-blue-950 h-1.5">
+          <motion.div
+            className="h-1.5 bg-gradient-to-r from-cyan-400 to-blue-400"
+            animate={{ width: `${(step / 6) * 100}%` }}
+            transition={{ duration: 0.4 }}
+          />
+        </div>
+        {/* Step indicators */}
+        <div className="max-w-7xl mx-auto px-4 py-2 flex gap-2 overflow-x-auto">
+          {STEP_LABELS.map((label, i) => (
+            <div
+              key={i}
+              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full whitespace-nowrap transition-all ${
+                i < step
+                  ? "bg-green-500/30 text-green-300 border border-green-500/40"
+                  : i === step
+                  ? "bg-blue-500/40 text-white border border-blue-400 font-bold"
+                  : "bg-white/5 text-blue-300/50 border border-transparent"
+              }`}
+            >
+              {i < step ? <CheckCircle size={10} /> : <span className="w-3 h-3 rounded-full border border-current flex items-center justify-center text-[9px] font-bold">{i + 1}</span>}
+              {label}
+            </div>
+          ))}
+        </div>
+      </header>
+
+      {/* ── PRECEPTOR BANNER ── */}
+      <AnimatePresence>
+        {preceptorMsg && (
+          <motion.div
+            initial={{ y: -60, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -60, opacity: 0 }}
+            className="fixed top-0 left-0 right-0 z-50 bg-red-700 border-b-2 border-red-500 px-6 py-3 flex items-center justify-between shadow-2xl"
+          >
+            <div className="flex items-center gap-2 text-white font-semibold text-sm">
+              <AlertTriangle size={18} className="animate-pulse" />
+              {preceptorMsg}
+            </div>
+            <button
+              onClick={() => setPreceptorMsg(null)}
+              className="text-red-200 hover:text-white"
+            >
+              <X size={18} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── CORRECTION PANEL ── */}
+      <AnimatePresence>
+        {correction && (
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed right-0 top-24 bottom-0 w-full max-w-sm z-50 bg-slate-900 border-l border-red-700 shadow-2xl flex flex-col"
+          >
+            <div className="bg-red-800 px-5 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <X size={18} className="text-red-200" />
+                <h3 className="font-bold text-white text-sm">{correction.title}</h3>
+              </div>
+              <button
+                onClick={() => setCorrection(null)}
+                className="text-red-200 hover:text-white transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              <div className="bg-red-950/60 border border-red-700 rounded-xl p-4">
+                <p className="text-sm text-red-200 font-medium mb-1">What went wrong:</p>
+                <p className="text-sm text-white">{correction.explanation}</p>
+              </div>
+              <div className="bg-green-950/60 border border-green-600 rounded-xl p-4">
+                <p className="text-sm text-green-300 font-medium mb-1 flex items-center gap-1">
+                  <CheckCircle size={14} /> Correct Answer:
+                </p>
+                <p className="text-sm text-green-100 font-semibold">{correction.correct}</p>
+              </div>
+              <p className="text-xs text-slate-400 text-center">
+                −12 points applied. Learn and continue.
+              </p>
+            </div>
+            <div className="p-4 border-t border-slate-700">
+              <button
+                onClick={() => setCorrection(null)}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl transition text-sm"
+              >
+                Understood — Continue
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── MAIN LAYOUT ── */}
+      <main className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* LEFT: Patient Profile */}
+        <aside className="lg:sticky lg:top-36 space-y-4 lg:col-span-1 h-fit">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4 backdrop-blur"
+          >
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-600/30 rounded-full p-2">
+                <User size={18} className="text-blue-300" />
+              </div>
+              <h2 className="font-bold text-white text-sm uppercase tracking-wider">
+                Patient Profile
+              </h2>
+            </div>
+            <div className="flex flex-col items-center gap-3">
+              <motion.div
+                animate={{ y: [0, -4, 0] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <PatientAvatar
+                  skin={activeCase.avatarSeed.skin}
+                  hair={activeCase.avatarSeed.hair}
+                  shirt={activeCase.avatarSeed.shirt}
+                  size={90}
+                />
+              </motion.div>
+              <div className="text-center">
+                <p className="font-extrabold text-white text-lg leading-tight">
+                  {activeCase.patientName}
+                </p>
+                <p className="text-blue-300 text-xs">
+                  DOB: {activeCase.patientDob} · Age: {activeCase.patientAge}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="bg-red-900/30 border border-red-700/50 rounded-xl p-3">
+                <p className="text-red-300 text-xs font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                  <AlertTriangle size={11} /> Allergies
+                </p>
+                {activeCase.allergies.map((a) => (
+                  <span key={a} className="inline-block bg-red-700/40 text-red-200 text-xs px-2 py-0.5 rounded-full mr-1 mb-1 font-medium">
+                    {a}
+                  </span>
+                ))}
+              </div>
+              <div className="bg-blue-900/30 border border-blue-700/30 rounded-xl p-3">
+                <p className="text-blue-300 text-xs font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                  <Pill size={11} /> Current Medications
+                </p>
+                {activeCase.currentMedications.map((m) => (
+                  <p key={m} className="text-blue-100 text-xs mb-0.5">
+                    • {m}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+          {/* Prescription image */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-5 shadow-xl"
+          >
+            <p className="text-amber-800 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
+              <BookOpen size={11} /> Prescription
+            </p>
+            <pre
+              className="font-serif italic text-amber-900 text-sm leading-relaxed whitespace-pre-wrap"
+              style={{ fontFamily: "'Dancing Script', 'Palatino', cursive" }}
+            >
+              {activeCase.rxCursiveText}
+            </pre>
+            <div className="mt-3 border-t border-amber-200 pt-2">
+              <p className="text-amber-600 text-xs">Rx # {1000 + activeCase.id} · DEA Licensed</p>
+            </div>
+          </motion.div>
+        </aside>
+
+        {/* RIGHT: Interactive Step */}
+        <div className="lg:col-span-2 relative">
+          {/* Hint button */}
+          <button
+            onClick={() => setShowHint((h) => !h)}
+            className="absolute top-0 right-0 z-10 flex items-center gap-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 text-yellow-300 rounded-xl px-3 py-2 text-xs font-semibold transition"
+          >
+            <Lightbulb size={14} />
+            Hint
+          </button>
+
+          {/* Hint card */}
+          <AnimatePresence>
+            {showHint && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: -10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: -10 }}
+                className="absolute top-10 right-0 z-20 w-72 bg-yellow-900/95 border border-yellow-600 rounded-2xl p-4 shadow-2xl text-sm text-yellow-100"
+              >
+                <div className="flex items-center gap-2 mb-2 font-bold text-yellow-300">
+                  <Lightbulb size={14} /> Step Hint
+                </div>
+                <p className="leading-relaxed">{STEP_HINTS[step]}</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence mode="wait">
+            {/* ──────── STEP 0: INTAKE ──────── */}
+            {step === 0 && !done && (
+              <motion.div
+                key="intake"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur space-y-5"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="bg-green-500/20 rounded-xl p-2">
+                    <CheckCircle className="text-green-400" size={22} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-extrabold text-white">Step 1 — Patient Intake</h2>
+                    <p className="text-blue-300 text-xs">Review the patient profile and accept the prescription.</p>
+                  </div>
+                </div>
+                <div className="bg-blue-950/60 rounded-xl p-4 border border-blue-800 text-sm text-blue-100 leading-relaxed">
+                  <p>
+                    <strong>{activeCase.patientName}</strong> has arrived at the counter and handed you
+                    a written prescription. Before accepting, review:
+                  </p>
+                  <ul className="mt-3 space-y-1.5 list-disc list-inside text-sm">
+                    <li>
+                      Allergies:{" "}
+                      <span className="text-red-300 font-semibold">
+                        {activeCase.allergies.join(", ")}
+                      </span>
+                    </li>
+                    <li>
+                      Current medications:{" "}
+                      <span className="text-yellow-200">
+                        {activeCase.currentMedications.join("; ")}
+                      </span>
+                    </li>
+                  </ul>
+                  <p className="mt-3 text-blue-200 text-xs">
+                    Scan the prescription note on the left panel, note the drug and any potential flags,
+                    then click Accept to begin.
+                  </p>
+                </div>
+                <button
+                  onClick={handleAccept}
+                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-extrabold py-3.5 rounded-xl transition shadow-lg text-base flex items-center justify-center gap-2"
+                >
+                  <CheckCircle size={18} />
+                  Accept Order & Start Timer
+                </button>
+              </motion.div>
+            )}
+
+            {/* ──────── STEP 1: TRANSCRIPTION ──────── */}
+            {step === 1 && !done && (
+              <motion.div
+                key="transcription"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur space-y-5"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="bg-blue-500/20 rounded-xl p-2">
+                    <BookOpen className="text-blue-400" size={22} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-extrabold text-white">Step 2 — Transcription</h2>
+                    <p className="text-blue-300 text-xs">
+                      Interpret the handwritten Rx and enter the details below.
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <label className="space-y-1.5">
+                    <span className="text-xs text-blue-300 font-semibold uppercase tracking-wide">Drug Name *</span>
+                    <input
+                      value={txDrug}
+                      onChange={(e) => setTxDrug(e.target.value)}
+                      placeholder="e.g. Amoxicillin"
+                      className="w-full bg-slate-800 border border-slate-600 focus:border-blue-400 rounded-xl px-4 py-2.5 text-white text-sm outline-none transition"
+                    />
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-xs text-blue-300 font-semibold uppercase tracking-wide">Dose / Strength *</span>
+                    <input
+                      value={txDose}
+                      onChange={(e) => setTxDose(e.target.value)}
+                      placeholder="e.g. 500 mg"
+                      className="w-full bg-slate-800 border border-slate-600 focus:border-blue-400 rounded-xl px-4 py-2.5 text-white text-sm outline-none transition"
+                    />
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-xs text-blue-300 font-semibold uppercase tracking-wide">Frequency *</span>
+                    <select
+                      value={txFreq}
+                      onChange={(e) => setTxFreq(e.target.value)}
+                      className="w-full bg-slate-800 border border-slate-600 focus:border-blue-400 rounded-xl px-4 py-2.5 text-white text-sm outline-none transition"
+                    >
+                      <option value="QD">QD — Once daily</option>
+                      <option value="BID">BID — Twice daily</option>
+                      <option value="TID">TID — Three times daily</option>
+                      <option value="QID">QID — Four times daily</option>
+                      <option value="PRN">PRN — As needed</option>
+                    </select>
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-xs text-blue-300 font-semibold uppercase tracking-wide">Quantity *</span>
+                    <input
+                      type="number"
+                      value={txQty}
+                      onChange={(e) => setTxQty(e.target.value)}
+                      placeholder="e.g. 30"
+                      min={1}
+                      className="w-full bg-slate-800 border border-slate-600 focus:border-blue-400 rounded-xl px-4 py-2.5 text-white text-sm outline-none transition"
+                    />
+                  </label>
+                </div>
+                <button
+                  onClick={handleTranscription}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold py-3.5 rounded-xl transition shadow-lg text-base flex items-center justify-center gap-2"
+                >
+                  <ChevronRight size={18} />
+                  Verify & Submit Transcription
+                </button>
+              </motion.div>
+            )}
+
+            {/* ──────── STEP 2: DUR ──────── */}
+            {step === 2 && !done && (
+              <motion.div
+                key="dur"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                className="space-y-4"
+              >
+                <div className="bg-red-950/80 border-2 border-red-700 rounded-2xl p-6 backdrop-blur space-y-4">
+                  <div className="flex items-start gap-4">
+                    <motion.div
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ duration: 1, repeat: Infinity }}
+                      className="bg-red-600 rounded-full p-3 shrink-0"
+                    >
+                      <AlertTriangle size={24} className="text-white" />
+                    </motion.div>
+                    <div>
+                      <div className="flex items-center gap-3 mb-1 flex-wrap">
+                        <h2 className="text-xl font-extrabold text-white">
+                          {activeCase.durAlert.alertTitle}
+                        </h2>
+                        <SeverityBadge severity={activeCase.durAlert.severity} />
+                      </div>
+                      <p className="text-sm text-red-200 leading-relaxed">
+                        {activeCase.durAlert.description}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-red-900/40 rounded-xl p-3 text-xs text-red-300 border border-red-700/40">
+                    <strong>Clinical Context:</strong> This alert was triggered during automated Drug Utilization Review (DUR). Your response is mandatory before dispensing can proceed.
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <button
+                    onClick={() => handleDUR("call_doctor")}
+                    className="bg-gradient-to-br from-blue-700 to-blue-900 hover:from-blue-600 hover:to-blue-800 border-2 border-blue-500 text-white font-extrabold py-5 px-6 rounded-2xl transition shadow-xl text-base flex flex-col items-center gap-2"
+                  >
+                    <MessageCircle size={24} />
+                    Call Prescriber
+                    <span className="text-xs font-normal text-blue-200">
+                      Contact the doctor for alternative
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => handleDUR("override")}
+                    className="bg-gradient-to-br from-orange-700 to-orange-900 hover:from-orange-600 hover:to-orange-800 border-2 border-orange-500 text-white font-extrabold py-5 px-6 rounded-2xl transition shadow-xl text-base flex flex-col items-center gap-2"
+                  >
+                    <Shield size={24} />
+                    Force Override
+                    <span className="text-xs font-normal text-orange-200">
+                      Proceed with pharmacist override
+                    </span>
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ──────── STEP 3: SHELF SELECTION ──────── */}
+            {step === 3 && !done && (
+              <motion.div
+                key="shelf"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur space-y-5"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="bg-purple-500/20 rounded-xl p-2">
+                    <Tag className="text-purple-400" size={22} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-extrabold text-white">Step 4 — Shelf Selection</h2>
+                    <p className="text-blue-300 text-xs">
+                      Select the correct medication. Beware of LASA drugs!
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-yellow-900/20 border border-yellow-700/40 rounded-xl p-3 text-xs text-yellow-200 flex items-center gap-2">
+                  <AlertTriangle size={14} className="text-yellow-400 shrink-0" />
+                  LASA alert active: Look-alike/sound-alike drugs are present on the shelf. Verify the exact name AND dose.
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {activeCase.shelfItems.map((item) => (
+                    <motion.button
+                      key={item.id}
+                      whileHover={{ scale: 1.04 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => handleBottleClick(item)}
+                      className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition cursor-pointer ${
+                        selectedBottle === item.id
+                          ? "border-green-500 bg-green-900/30"
+                          : wrongBottle === item.id
+                          ? "border-red-500 bg-red-900/30 animate-pulse"
+                          : item.isLookAlike
+                          ? "border-yellow-600/50 bg-yellow-900/10 hover:border-yellow-500"
+                          : "border-slate-600/50 bg-slate-800/40 hover:border-blue-500"
+                      }`}
+                    >
+                      {item.isLookAlike && (
+                        <span className="absolute top-2 right-2 text-[9px] bg-yellow-600 text-white px-1.5 py-0.5 rounded-full font-bold">
+                          LASA
+                        </span>
+                      )}
+                      <PillBottleSVG
+                        isSelected={selectedBottle === item.id}
+                        isWrong={wrongBottle === item.id}
+                        isLookAlike={item.isLookAlike}
+                        color={item.isLookAlike ? "#e67e22" : "#3498db"}
+                      />
+                      <div className="text-center">
+                        <p className="text-white font-bold text-sm leading-tight">{item.name}</p>
+                        <p className="text-blue-300 text-xs">{item.dose}</p>
+                        <p className="text-slate-400 text-xs">{item.form}</p>
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* ──────── STEP 4: LABELING ──────── */}
+            {step === 4 && !done && (
+              <motion.div
+                key="labeling"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur space-y-5"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="bg-orange-500/20 rounded-xl p-2">
+                    <Tag className="text-orange-400" size={22} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-extrabold text-white">Step 5 — Auxiliary Labeling</h2>
+                    <p className="text-blue-300 text-xs">
+                      Select ONLY the required warning labels for this medication.
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {activeCase.availableAuxiliaryLabels.map((label) => {
+                    const isSelected = selectedLabels.includes(label);
+                    return (
+                      <motion.button
+                        key={label}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() =>
+                          setSelectedLabels((prev) =>
+                            isSelected ? prev.filter((l) => l !== label) : [...prev, label]
+                          )
+                        }
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition text-sm font-medium text-left ${
+                          isSelected
+                            ? "border-orange-500 bg-orange-900/30 text-orange-100"
+                            : "border-slate-600 bg-slate-800/40 text-slate-300 hover:border-slate-400"
+                        }`}
+                      >
+                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition ${isSelected ? "border-orange-400 bg-orange-500" : "border-slate-500"}`}>
+                          {isSelected && <CheckCircle size={12} className="text-white" />}
+                        </div>
+                        {label}
+                      </motion.button>
+                    );
+                  })}
+                </div>
+                <p className="text-slate-400 text-xs text-center">
+                  {selectedLabels.length} label(s) selected
+                </p>
+                <button
+                  onClick={handleLabels}
+                  className="w-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-extrabold py-3.5 rounded-xl transition shadow-lg text-base flex items-center justify-center gap-2"
+                >
+                  <Tag size={18} />
+                  Confirm Labels & Package
+                </button>
+              </motion.div>
+            )}
+
+            {/* ──────── STEP 5: COUNSELING ──────── */}
+            {step === 5 && !done && (
+              <motion.div
+                key="counseling"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur space-y-5"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="bg-teal-500/20 rounded-xl p-2">
+                    <MessageCircle className="text-teal-400" size={22} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-extrabold text-white">Step 6 — Patient Counseling</h2>
+                    <p className="text-blue-300 text-xs">
+                      Question {counselingIdx + 1} of {activeCase.counseling.length}
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-teal-950/50 border border-teal-700 rounded-2xl p-5">
+                  <div className="flex items-start gap-3">
+                    <motion.div
+                      animate={{ y: [0, -3, 0] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      <PatientAvatar
+                        skin={activeCase.avatarSeed.skin}
+                        hair={activeCase.avatarSeed.hair}
+                        shirt={activeCase.avatarSeed.shirt}
+                        size={60}
+                      />
+                    </motion.div>
+                    <div className="bg-white/10 rounded-2xl rounded-tl-none px-4 py-3 text-sm text-white leading-relaxed flex-1">
+                      <p className="text-teal-300 text-xs font-bold mb-1">
+                        {activeCase.patientName} asks:
+                      </p>
+                      {activeCase.counseling[counselingIdx]?.question}
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {activeCase.counseling[counselingIdx]?.options.map((opt, i) => (
+                    <motion.button
+                      key={i}
+                      whileHover={{ x: 4 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleCounseling(i)}
+                      className="w-full text-left flex items-center gap-3 px-4 py-3.5 rounded-xl border border-slate-600 bg-slate-800/60 hover:border-teal-500 hover:bg-teal-900/20 text-sm text-white transition"
+                    >
+                      <span className="w-7 h-7 rounded-full bg-slate-700 text-blue-300 text-xs font-bold flex items-center justify-center shrink-0">
+                        {String.fromCharCode(65 + i)}
+                      </span>
+                      {opt}
+                    </motion.button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* ──────── RESULTS ──────── */}
+            {done && (
+              <motion.div
+                key="results"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur text-center space-y-6"
+              >
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
+                  transition={{ duration: 0.6 }}
+                  className="flex justify-center"
+                >
+                  <div className="bg-green-500/20 border-2 border-green-500 rounded-full p-6">
+                    <CheckCircle size={52} className="text-green-400" />
+                  </div>
+                </motion.div>
+                <div>
+                  <h2 className="text-3xl font-black text-white mb-1">Dispensing Complete!</h2>
+                  <p className="text-blue-300 text-sm">
+                    Case {activeCase.id} — {activeCase.patientName}
+                  </p>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-slate-800/60 rounded-2xl p-4 border border-slate-700">
+                    <p className="text-slate-400 text-xs mb-1 uppercase tracking-wide">Final Score</p>
+                    <p className={`text-3xl font-black ${scoreColor}`}>{score}</p>
+                    <p className="text-slate-400 text-xs">/ 100 pts</p>
+                  </div>
+                  <div className="bg-slate-800/60 rounded-2xl p-4 border border-slate-700">
+                    <p className="text-slate-400 text-xs mb-1 uppercase tracking-wide">Errors</p>
+                    <p className={`text-3xl font-black ${errors === 0 ? "text-green-400" : "text-red-400"}`}>
+                      {errors}
+                    </p>
+                    <p className="text-slate-400 text-xs">mistake(s)</p>
+                  </div>
+                  <div className="bg-slate-800/60 rounded-2xl p-4 border border-slate-700">
+                    <p className="text-slate-400 text-xs mb-1 uppercase tracking-wide">Time</p>
+                    <p className="text-3xl font-black text-blue-300">{fmtTime(timer)}</p>
+                    <p className="text-slate-400 text-xs">elapsed</p>
+                  </div>
+                </div>
+                {score === 100 && (
+                  <div className="bg-green-900/30 border border-green-600 rounded-xl p-3 text-sm text-green-200 font-semibold flex items-center justify-center gap-2">
+                    <Star className="text-yellow-400" size={16} />
+                    Perfect Score! Zero errors — excellent clinical judgment.
+                  </div>
+                )}
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => resetForCase(caseIdx)}
+                    className="flex-1 flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl transition"
+                  >
+                    <RefreshCw size={16} />
+                    Retry Case
+                  </button>
+                  <button
+                    onClick={() => resetForCase(caseIdx + 1)}
+                    className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 rounded-xl transition"
+                  >
+                    Next Patient
+                    <SkipForward size={16} />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </main>
+    </div>
+  );
 }
