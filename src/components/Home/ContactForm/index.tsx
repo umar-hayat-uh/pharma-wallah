@@ -1,7 +1,11 @@
 "use client";
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Send, Mail, Phone, MapPin, Clock, CheckCircle, AlertCircle, HelpCircle, ArrowRight, Pill, FlaskConical, Stethoscope, Microscope, Beaker, Leaf } from "lucide-react";
+import {
+  Send, Mail, Phone, MapPin, Clock, CheckCircle, AlertCircle,
+  HelpCircle, ArrowRight, Pill, FlaskConical, Stethoscope,
+  Microscope, Beaker, Leaf, BookOpen, ExternalLink,
+} from "lucide-react";
 import Link from "next/link";
 
 const contactInfo = [
@@ -11,7 +15,6 @@ const contactInfo = [
   { Icon: Clock, label: "Response Time", value: "Within 24 Hours",           sub: "For all queries"              },
 ];
 
-// Static background icons
 const bgIcons = [
   { Icon: Pill,        top: "12%", left: "1.5%",  size: 30 },
   { Icon: Beaker,      top: "50%", left: "1%",    size: 28 },
@@ -40,11 +43,28 @@ export default function ContactForm() {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
+
     setStatus("loading");
-    await new Promise(r => setTimeout(r, 1500));
-    setStatus("success");
-    setForm({ name:"", email:"", subject:"", message:"" });
-    setTimeout(() => setStatus("idle"), 5000);
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to send");
+      }
+
+      setStatus("success");
+      setForm({ name: "", email: "", subject: "", message: "" });
+    } catch (err: any) {
+      setStatus("error");
+      console.error(err);
+      setTimeout(() => setStatus("idle"), 5000);
+    }
   };
 
   const inputCls = (f: string) =>
@@ -168,16 +188,38 @@ export default function ContactForm() {
                 {status === "loading" ? (<><div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />Sending...</>) : (<>Send Message <Send className="w-4 h-4" /></>)}
               </button>
 
+              {/* Success Message with Healthcare CTA */}
               {status === "success" && (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                  className="p-4 rounded-xl bg-green-50 border border-green-200 flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
-                  <div>
-                    <div className="text-sm font-bold text-green-800">Message Sent!</div>
-                    <div className="text-xs text-green-600 mt-0.5">We'll get back to you within 24 hours.</div>
+                  className="space-y-4">
+                  <div className="p-4 rounded-xl bg-green-50 border border-green-200 flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
+                    <div>
+                      <div className="text-sm font-bold text-green-800">Message Sent!</div>
+                      <div className="text-xs text-green-600 mt-0.5">We'll get back to you within 24 hours.</div>
+                    </div>
+                  </div>
+
+                  {/* Healthcare CTA */}
+                  <div className="p-5 rounded-2xl bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 flex flex-col sm:flex-row items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                      <Pill className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div className="flex-1 text-center sm:text-left">
+                      <p className="text-sm font-bold text-gray-900">Explore Free Pharmacy Resources</p>
+                      <p className="text-xs text-gray-600 mt-0.5">While you wait, dive into our curated study materials, drug encyclopedia, and interactive MCQs.</p>
+                    </div>
+                    <Link href="/courses"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-green-400 text-white text-sm font-bold shadow-md shadow-blue-200/50 hover:shadow-lg transition-all active:scale-95 shrink-0">
+                      <BookOpen className="w-4 h-4" />
+                      Start Learning
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
                   </div>
                 </motion.div>
               )}
+
+              {/* Error Message */}
               {status === "error" && (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                   className="p-4 rounded-xl bg-red-50 border border-red-200 flex items-center gap-3">

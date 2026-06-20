@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { Beaker, Calculator, RefreshCw, Info, BookOpen, AlertCircle, Activity, Scale } from 'lucide-react';
+import { Beaker, Calculator, RefreshCw, Info, BookOpen, AlertCircle, Activity, Scale, Camera, Loader2, CheckCircle2, XCircle, ImageOff } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function CFUCalculator() {
@@ -18,6 +18,19 @@ export default function CFUCalculator() {
     } | null>(null);
     const [chartData, setChartData] = useState<any[]>([]);
     const [showDetails, setShowDetails] = useState<boolean>(false);
+
+    // --- Image scan state ---
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [imageBase64, setImageBase64] = useState<string | null>(null);
+    const [imageMediaType, setImageMediaType] = useState<string>('image/jpeg');
+    const [isScanning, setIsScanning] = useState<boolean>(false);
+    const [scanResult, setScanResult] = useState<{
+        colonyCount: number;
+        confidence: 'high' | 'medium' | 'low';
+        confidencePercent: number;
+        reasoning: string;
+    } | null>(null);
+    const [scanError, setScanError] = useState<string | null>(null);
 
     // Sample type reference limits (CFU/mL)
     const typeLimits = {
@@ -101,6 +114,88 @@ export default function CFUCalculator() {
         setSampleType('water');
         setCfuResult(null);
         setChartData([]);
+        clearImage();
+    };
+
+    // --- Image scan handlers ---
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setScanResult(null);
+        setScanError(null);
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            const result = reader.result as string;
+            setImagePreview(result);
+            const [header, data] = result.split(',');
+            const mediaTypeMatch = header.match(/data:(.*);base64/);
+            setImageMediaType(mediaTypeMatch ? mediaTypeMatch[1] : file.type || 'image/jpeg');
+            setImageBase64(data);
+        };
+        reader.onerror = () => setScanError('Could not read that image file. Please try another photo.');
+        reader.readAsDataURL(file);
+    };
+
+    const clearImage = () => {
+        setImagePreview(null);
+        setImageBase64(null);
+        setScanResult(null);
+        setScanError(null);
+    };
+
+    const handleScanImage = async () => {
+        if (!imageBase64) return;
+        setIsScanning(true);
+        setScanError(null);
+        setScanResult(null);
+
+        try {
+            const response = await fetch('/api/scan-colonies', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    imageBase64,
+                    mediaType: imageMediaType,
+                }),
+            });
+
+            if (!response.ok) {
+                const errBody = await response.json().catch(() => null);
+                throw new Error(errBody?.error || `Request failed with status ${response.status}`);
+            }
+
+            const parsed = await response.json();
+
+            if (
+                typeof parsed.colonyCount !== 'number' ||
+                typeof parsed.confidence !== 'string'
+            ) {
+                throw new Error('Unexpected response shape from scan service');
+            }
+
+            setScanResult({
+                colonyCount: parsed.colonyCount,
+                confidence: parsed.confidence,
+                confidencePercent: parsed.confidencePercent ?? 0,
+                reasoning: parsed.reasoning ?? '',
+            });
+
+            // Auto-fill the colony count field; the student can still edit it
+            setColonyCount(String(parsed.colonyCount));
+        } catch (err) {
+            console.error('Colony scan error:', err);
+            setScanError("Couldn't analyze that image. Please try a clearer photo, or enter the colony count manually.");
+        } finally {
+            setIsScanning(false);
+        }
+    };
+
+    const confidenceStyles: Record<string, { bg: string; text: string; icon: JSX.Element }> = {
+        high: { bg: 'bg-green-100', text: 'text-green-800', icon: <CheckCircle2 className="w-4 h-4" /> },
+        medium: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: <Info className="w-4 h-4" /> },
+        low: { bg: 'bg-red-100', text: 'text-red-800', icon: <XCircle className="w-4 h-4" /> },
     };
 
     const sampleScenarios = [
@@ -143,6 +238,103 @@ export default function CFUCalculator() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Left Column: Inputs & Visualization */}
                     <div className="lg:col-span-2 space-y-6">
+
+                        {/* Scan Plate Photo */}
+                        <div className="bg-white rounded-2xl shadow-lg p-6">
+                            <h2 className="text-xl font-bold text-gray-800 mb-2 flex items-center">
+                                <Camera className="w-6 h-6 mr-2 text-blue-600" />
+                                Scan Plate Photo
+                            </h2>
+                            <p className="text-sm text-gray-500 mb-4">
+                                Take or upload a photo of your plate to get an AI-estimated colony count and confidence level. Always verify against a manual count for graded or critical work.
+                            </p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                                {/* Upload / preview */}
+                                <div>
+                                    {!imagePreview ? (
+                                        <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-blue-300 rounded-xl cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors">
+                                            <Camera className="w-10 h-10 text-blue-400 mb-2" />
+                                            <span className="text-sm font-medium text-blue-700">Take or upload a photo</span>
+                                            <span className="text-xs text-gray-500 mt-1">JPG or PNG, plate filling the frame</span>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                capture="environment"
+                                                className="hidden"
+                                                onChange={handleImageUpload}
+                                            />
+                                        </label>
+                                    ) : (
+                                        <div className="relative">
+                                            <img
+                                                src={imagePreview}
+                                                alt="Uploaded plate"
+                                                className="w-full h-48 object-cover rounded-xl border border-gray-200"
+                                            />
+                                            <button
+                                                onClick={clearImage}
+                                                className="absolute top-2 right-2 bg-white/90 hover:bg-white text-gray-700 rounded-full p-1.5 shadow"
+                                                title="Remove photo"
+                                            >
+                                                <ImageOff className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    <button
+                                        onClick={handleScanImage}
+                                        disabled={!imageBase64 || isScanning}
+                                        className="w-full mt-3 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-xl shadow flex items-center justify-center"
+                                    >
+                                        {isScanning ? (
+                                            <>
+                                                <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Analyzing plate...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Activity className="w-5 h-5 mr-2" /> Scan for Colonies
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+
+                                {/* Scan result */}
+                                <div className="bg-gray-50 rounded-xl p-4 h-full min-h-[12rem] flex flex-col">
+                                    {!scanResult && !scanError && !isScanning && (
+                                        <div className="flex-1 flex items-center justify-center text-sm text-gray-400 text-center px-4">
+                                            Results will appear here after scanning a photo.
+                                        </div>
+                                    )}
+                                    {isScanning && (
+                                        <div className="flex-1 flex items-center justify-center text-sm text-gray-500 text-center px-4">
+                                            Counting visible colonies and checking image quality…
+                                        </div>
+                                    )}
+                                    {scanError && (
+                                        <div className="flex-1 flex items-center justify-center text-sm text-red-600 text-center px-4">
+                                            {scanError}
+                                        </div>
+                                    )}
+                                    {scanResult && (
+                                        <div>
+                                            <div className="flex items-baseline justify-between mb-2">
+                                                <span className="text-3xl font-bold text-gray-800">{scanResult.colonyCount}</span>
+                                                <span className="text-sm text-gray-500">colonies detected</span>
+                                            </div>
+                                            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${confidenceStyles[scanResult.confidence]?.bg} ${confidenceStyles[scanResult.confidence]?.text}`}>
+                                                {confidenceStyles[scanResult.confidence]?.icon}
+                                                {scanResult.confidence.toUpperCase()} CONFIDENCE
+                                                {typeof scanResult.confidencePercent === 'number' && ` · ${scanResult.confidencePercent}%`}
+                                            </div>
+                                            <p className="text-xs text-gray-600 mt-3">{scanResult.reasoning}</p>
+                                            <p className="text-xs text-gray-400 mt-3 italic">Auto-filled into Colony Count below — review and adjust if needed.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="bg-white rounded-2xl shadow-lg p-6">
                             <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
                                 <Calculator className="w-6 h-6 mr-2 text-blue-600" />
@@ -378,6 +570,7 @@ export default function CFUCalculator() {
                                     <p><span className="font-semibold">Countable range:</span> 30–300 colonies per plate for statistical validity . Plates with {"<"}30 colonies yield unreliable counts; {"">""}300 colonies may lead to overcrowding and inaccurate counting .</p>
                                     <p><span className="font-semibold">Dilution factor:</span> The reciprocal of the dilution used. For a 10⁻³ dilution, dilution factor = 1000. </p>
                                     <p><span className="font-semibold">Applications:</span> Water quality testing (coliforms), food microbiology, urine culture, environmental monitoring, pharmaceutical sterility testing .</p>
+                                    <p><span className="font-semibold">AI plate scanning:</span> The photo-scan feature gives a vision-model estimate of colony count, not a certified lab measurement. Overlapping colonies, glare, shadows, and low-resolution photos all reduce accuracy — always confirm visually for graded or regulatory results.</p>
                                 </div>
                             )}
                         </div>
