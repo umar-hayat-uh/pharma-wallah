@@ -49,6 +49,14 @@ interface CounselingQ {
     rationale: string;
 }
 
+interface StudyGuide {
+    overview: string;
+    pharmacology: string;
+    interactionMechanism: string;
+    keyTakeaways: string[];
+    references?: string;
+}
+
 interface PrescriptionCase {
     id: number;
     patientName: string;
@@ -67,12 +75,14 @@ interface PrescriptionCase {
     availableAuxiliaryLabels: string[];
     requiredAuxiliaryLabels: string[];
     counseling: CounselingQ[];
+    studyGuide: StudyGuide;
 }
 
 // ─────────────────────────────────────────────
-//  CASE DATA
+//  ROBUST CASE DATA (6 cases)
 // ─────────────────────────────────────────────
 const CASES: PrescriptionCase[] = [
+    // Case 1: Sulfa allergy
     {
         id: 1,
         patientName: "David Miller",
@@ -146,7 +156,22 @@ const CASES: PrescriptionCase[] = [
                     "Sulfonamides are known photosensitizers. Patients should minimize UV exposure, use broad-spectrum SPF ≥30 sunscreen, and wear protective clothing.",
             },
         ],
+        studyGuide: {
+            overview:
+                "David Miller, a 51‑year‑old with a documented sulfonamide allergy, presents with a prescription for Bactrim DS (sulfamethoxazole/trimethoprim). This case tests your ability to identify a critical drug‑allergy interaction and intervene appropriately.",
+            pharmacology:
+                "Bactrim DS is a combination sulfonamide antibiotic that inhibits folate synthesis in bacteria. However, sulfonamides are known to cause hypersensitivity reactions ranging from rash to Stevens‑Johnson syndrome, especially in patients with prior exposure.",
+            interactionMechanism:
+                "The patient’s allergy to sulfonamides directly contraindicates Bactrim because cross‑reactivity among sulfonamide drugs is well‑documented. The DUR alert is CRITICAL, meaning the pharmacist must contact the prescriber and must not override the alert under any circumstances.",
+            keyTakeaways: [
+                "Sulfonamide allergy is a life‑threatening contraindication – always verify allergies before dispensing.",
+                "A Critical DUR alert requires prescriber contact; overriding can cause patient harm and professional liability.",
+                "Counseling on hydration and photosensitivity is essential for all sulfonamide antibiotics.",
+            ],
+            references: "Dipiro’s Pharmacotherapy, Chapter 92: Allergic Drug Reactions",
+        },
     },
+    // Case 2: Nitrate + PDE5 inhibitor
     {
         id: 2,
         patientName: "Clara Jenkins",
@@ -224,6 +249,374 @@ const CASES: PrescriptionCase[] = [
                     "Extended-release formulations must never be crushed or chewed. Doing so destroys the controlled-release matrix, releasing the full dose at once (dose dumping), which can cause severe hypotension.",
             },
         ],
+        studyGuide: {
+            overview:
+                "Clara Jenkins, a 65‑year‑old woman taking sildenafil for pulmonary hypertension, has been prescribed Imdur (isosorbide mononitrate ER). This scenario highlights a classic, life‑threatening drug‑drug interaction between nitrates and PDE5 inhibitors.",
+            pharmacology:
+                "Isosorbide mononitrate is an organic nitrate that acts as a vasodilator, primarily used for angina prophylaxis. It works by releasing nitric oxide, which activates guanylate cyclase and increases cGMP, leading to smooth muscle relaxation. Sildenafil inhibits PDE5, the enzyme that breaks down cGMP, thereby potentiating the vasodilatory effect.",
+            interactionMechanism:
+                "When a nitrate and a PDE5 inhibitor are combined, cGMP levels rise synergistically, causing profound vasodilation and severe hypotension. This can result in syncope, myocardial infarction, or death. The interaction is absolute contraindication; the prescriber must be called immediately.",
+            keyTakeaways: [
+                "Nitrate + PDE5 inhibitor = absolute contraindication due to risk of fatal hypotension.",
+                "Always check a patient’s complete medication list, including PRN drugs like sildenafil.",
+                "Extended‑release nitrate tablets must never be crushed; dose dumping can be life‑threatening.",
+            ],
+            references: "ACC/AHA Guidelines for Stable Ischemic Heart Disease",
+        },
+    },
+    // Case 3: Warfarin + NSAID (GI bleed risk)
+    {
+        id: 3,
+        patientName: "Harold Whitfield",
+        patientDob: "1945-11-30",
+        patientAge: 78,
+        allergies: ["Sulfa", "Codeine"],
+        currentMedications: ["Warfarin 5 mg QD", "Digoxin 0.125 mg QD", "Pantoprazole 40 mg QD"],
+        avatarSeed: { skin: "#E8BEAC", hair: "#B0B0B0", shirt: "#2C3E50" },
+        rxCursiveText:
+            "Naproxen 500 mg\nBID PRN\nQty: 60 tabs\nDr. L. Carter",
+        correctDrug: "Naproxen",
+        correctDose: "500 mg",
+        correctFrequency: "BID",
+        correctQty: 60,
+        durAlert: {
+            alertTitle: "CRITICAL DDI — Warfarin + NSAID",
+            severity: "Critical",
+            description:
+                "Naproxen (NSAID) significantly increases the risk of GI bleeding in patients on warfarin. It also displaces warfarin from protein binding and inhibits platelet aggregation, potentiating anticoagulant effects and raising INR dangerously.",
+            correctAction: "call_doctor",
+            rationale:
+                "Concomitant use of warfarin and NSAIDs is a well‑known high‑risk combination. The prescriber must be contacted to consider alternative analgesics (e.g., acetaminophen) or adjust anticoagulant therapy.",
+        },
+        shelfItems: [
+            { id: "s1", name: "Naproxen", dose: "500 mg", form: "Tablet", isLookAlike: false },
+            { id: "s2", name: "Naproxen", dose: "250 mg", form: "Tablet", isLookAlike: true },
+            { id: "s3", name: "Naprosyn", dose: "500 mg", form: "Tablet", isLookAlike: true },
+            { id: "s4", name: "Naproxen Sodium", dose: "550 mg", form: "Tablet", isLookAlike: true },
+            { id: "s5", name: "Ibuprofen", dose: "400 mg", form: "Tablet", isLookAlike: false },
+            { id: "s6", name: "Celecoxib", dose: "200 mg", form: "Capsule", isLookAlike: false },
+        ],
+        availableAuxiliaryLabels: [
+            "Take with food or milk",
+            "May cause GI bleeding",
+            "Do not take with other NSAIDs",
+            "Avoid alcohol",
+            "Consult doctor if taking blood thinners",
+            "Take with plenty of water",
+            "May cause dizziness",
+        ],
+        requiredAuxiliaryLabels: [
+            "Take with food or milk",
+            "May cause GI bleeding",
+            "Do not take with other NSAIDs",
+            "Avoid alcohol",
+        ],
+        counseling: [
+            {
+                question:
+                    "Harold asks, 'I already take warfarin. Why is the pharmacist concerned about this pain reliever?'",
+                options: [
+                    "Naproxen will make warfarin less effective, increasing clot risk.",
+                    "Naproxen increases the risk of bleeding when taken with warfarin, possibly causing stomach bleeding or bruising.",
+                    "There is no interaction; just take them at different times.",
+                    "Naproxen reduces the metabolism of warfarin, causing toxicity.",
+                ],
+                correctIndex: 1,
+                rationale:
+                    "NSAIDs impair platelet function and can cause GI mucosal damage, while warfarin inhibits clotting factors. Together they dramatically raise the risk of gastrointestinal and intracerebral bleeding.",
+            },
+            {
+                question:
+                    "What additional advice should you give Harold regarding his pantoprazole?",
+                options: [
+                    "Stop pantoprazole while taking naproxen.",
+                    "Continue pantoprazole; it helps protect the stomach but does not eliminate the bleeding risk.",
+                    "Double the pantoprazole dose.",
+                    "Switch pantoprazole to ranitidine.",
+                ],
+                correctIndex: 1,
+                rationale:
+                    "Proton pump inhibitors like pantoprazole reduce NSAID‑induced gastric damage but do not fully prevent bleeding. Patients must remain vigilant for signs of GI bleeding (black stools, abdominal pain).",
+            },
+        ],
+        studyGuide: {
+            overview:
+                "Harold Whitfield, a 78‑year‑old on chronic warfarin therapy, presents with a prescription for naproxen. This case highlights the high‑risk combination of warfarin and NSAIDs, which can lead to life‑threatening GI hemorrhage.",
+            pharmacology:
+                "Naproxen is a non‑selective NSAID that inhibits COX‑1 and COX‑2, reducing prostaglandin synthesis. This leads to decreased gastric mucosal protection and impaired platelet aggregation. Warfarin inhibits vitamin K‑dependent clotting factors. Their combined anti‑hemostatic effects are synergistic.",
+            interactionMechanism:
+                "NSAIDs displace warfarin from plasma proteins, transiently increasing free warfarin levels. More importantly, they cause direct mucosal injury and inhibit platelet thromboxane A2, drastically increasing bleeding risk. The DUR alert is Critical; the prescriber must be contacted.",
+            keyTakeaways: [
+                "Warfarin + NSAID = high risk of GI bleeding; always verify pain management strategy.",
+                "Proton pump inhibitors provide partial protection but do not eliminate the risk.",
+                "Counsel patients on signs of bleeding: black tarry stools, unusual bruising, epistaxis.",
+            ],
+            references: "Chest Guidelines for Antithrombotic Therapy",
+        },
+    },
+    // Case 4: ACE inhibitor + Potassium supplement (hyperkalemia)
+    {
+        id: 4,
+        patientName: "Maria Gonzalez",
+        patientDob: "1962-03-21",
+        patientAge: 61,
+        allergies: ["ACE inhibitors (dry cough, not true allergy)"],
+        currentMedications: ["Lisinopril 20 mg QD", "Hydrochlorothiazide 25 mg QD"],
+        avatarSeed: { skin: "#C68642", hair: "#2C3E50", shirt: "#E67E22" },
+        rxCursiveText:
+            "K-Dur 20 mEq\nBID\nQty: 60 tabs\nDr. S. Lee",
+        correctDrug: "K-Dur",
+        correctDose: "20 mEq",
+        correctFrequency: "BID",
+        correctQty: 60,
+        durAlert: {
+            alertTitle: "SEVERE DDI — ACE Inhibitor + Potassium Supplement",
+            severity: "Severe",
+            description:
+                "Lisinopril (ACE inhibitor) reduces aldosterone, leading to potassium retention. Adding a potassium supplement (K-Dur) can cause life‑threatening hyperkalemia, especially in patients with reduced renal function. Serum potassium must be monitored closely.",
+            correctAction: "call_doctor",
+            rationale:
+                "Although not an absolute contraindication, this combination requires prescriber verification of recent potassium levels and renal function. The dose may need adjustment or an alternative therapy considered.",
+        },
+        shelfItems: [
+            { id: "s1", name: "K-Dur", dose: "20 mEq", form: "ER Tablet", isLookAlike: false },
+            { id: "s2", name: "K-Dur", dose: "10 mEq", form: "ER Tablet", isLookAlike: true },
+            { id: "s3", name: "Klor-Con", dose: "20 mEq", form: "ER Tablet", isLookAlike: true },
+            { id: "s4", name: "K-Tab", dose: "20 mEq", form: "ER Tablet", isLookAlike: true },
+            { id: "s5", name: "Potassium Chloride", dose: "20 mEq", form: "Liquid", isLookAlike: false },
+            { id: "s6", name: "Magnesium Oxide", dose: "400 mg", form: "Tablet", isLookAlike: false },
+        ],
+        availableAuxiliaryLabels: [
+            "Take with food or after meals",
+            "Do not crush or chew",
+            "May cause stomach upset",
+            "Take with a full glass of water",
+            "Avoid salt substitutes containing potassium",
+            "Keep out of reach of children",
+            "May cause dizziness",
+        ],
+        requiredAuxiliaryLabels: [
+            "Take with food or after meals",
+            "Do not crush or chew",
+            "Avoid salt substitutes containing potassium",
+        ],
+        counseling: [
+            {
+                question:
+                    "Maria asks, 'Why do I need to avoid salt substitutes while taking this potassium pill?'",
+                options: [
+                    "Salt substitutes contain sodium, which will raise your blood pressure.",
+                    "Many salt substitutes contain potassium chloride; combining them can cause dangerously high potassium levels.",
+                    "Salt substitutes interfere with the absorption of potassium.",
+                    "There is no issue; you can use them freely.",
+                ],
+                correctIndex: 1,
+                rationale:
+                    "Salt substitutes often replace sodium with potassium chloride. Adding a potassium supplement on top of an ACE inhibitor can lead to severe hyperkalemia, causing cardiac arrhythmias.",
+            },
+            {
+                question:
+                    "What symptoms of high potassium should Maria watch for?",
+                options: [
+                    "Excessive urination and dry mouth.",
+                    "Muscle weakness, palpitations, or irregular heartbeat.",
+                    "Increased appetite and weight gain.",
+                    "Skin rash and itching.",
+                ],
+                correctIndex: 1,
+                rationale:
+                    "Hyperkalemia can cause muscle weakness, fatigue, palpitations, and life‑threatening cardiac arrhythmias. Patients should seek immediate medical attention if these occur.",
+            },
+        ],
+        studyGuide: {
+            overview:
+                "Maria Gonzalez, on lisinopril and HCTZ, is prescribed a potassium supplement (K-Dur). ACE inhibitors can elevate serum potassium, and adding exogenous potassium requires careful evaluation. This case reinforces the importance of checking drug‑drug interactions that affect electrolyte balance.",
+            pharmacology:
+                "ACE inhibitors like lisinopril block angiotensin II production, which reduces aldosterone secretion. Aldosterone normally promotes potassium excretion; thus, ACE inhibitors can cause hyperkalemia. Hydrochlorothiazide, a thiazide diuretic, may partially offset this by promoting potassium loss, but the net effect can still be dangerous.",
+            interactionMechanism:
+                "The combination of an ACE inhibitor and a potassium supplement can lead to additive hyperkalemia. While not an absolute contraindication, it requires verification of renal function and potassium levels. The prescriber should be contacted to confirm the indication and recent labs.",
+            keyTakeaways: [
+                "ACE inhibitors + potassium supplements = risk of severe hyperkalemia.",
+                "Always inquire about salt substitutes; many contain potassium.",
+                "Counsel patients on signs of hyperkalemia: muscle weakness, palpitations.",
+            ],
+            references: "KDIGO Guidelines for Potassium Management in CKD",
+        },
+    },
+    // Case 5: Methotrexate + TMP/SMX (bone marrow suppression)
+    {
+        id: 5,
+        patientName: "Robert Chen",
+        patientDob: "1970-08-15",
+        patientAge: 53,
+        allergies: ["Penicillin"],
+        currentMedications: ["Methotrexate 15 mg weekly", "Folic acid 1 mg daily"],
+        avatarSeed: { skin: "#FDEBD0", hair: "#1C2833", shirt: "#27AE60" },
+        rxCursiveText:
+            "Bactrim DS\n800/160 mg\nBID × 7 days\nQty: 14 tabs\nDr. J. Kumar",
+        correctDrug: "Bactrim DS",
+        correctDose: "800/160 mg",
+        correctFrequency: "BID",
+        correctQty: 14,
+        durAlert: {
+            alertTitle: "CRITICAL DDI — Methotrexate + Trimethoprim",
+            severity: "Critical",
+            description:
+                "Trimethoprim (in Bactrim) inhibits dihydrofolate reductase, synergistically exacerbating methotrexate's antifolate effects. This can lead to severe bone marrow suppression, pancytopenia, and fatal toxicity.",
+            correctAction: "call_doctor",
+            rationale:
+                "This combination is contraindicated in many guidelines. The prescriber must be contacted to prescribe an alternative antibiotic (e.g., amoxicillin) and to monitor blood counts if no alternative exists.",
+        },
+        shelfItems: [
+            { id: "s1", name: "Bactrim DS", dose: "800/160 mg", form: "Tablet", isLookAlike: false },
+            { id: "s2", name: "Bactrim", dose: "400/80 mg", form: "Tablet", isLookAlike: true },
+            { id: "s3", name: "Septra DS", dose: "800/160 mg", form: "Tablet", isLookAlike: true },
+            { id: "s4", name: "Sulfatrim DS", dose: "800/160 mg", form: "Tablet", isLookAlike: true },
+            { id: "s5", name: "Nitrofurantoin", dose: "100 mg", form: "Capsule", isLookAlike: false },
+            { id: "s6", name: "Cephalexin", dose: "500 mg", form: "Capsule", isLookAlike: false },
+        ],
+        availableAuxiliaryLabels: [
+            "Take with plenty of water",
+            "Complete the full course",
+            "May cause photosensitivity",
+            "Do not take with methotrexate",
+            "Report unusual bleeding or bruising",
+            "Take with food",
+        ],
+        requiredAuxiliaryLabels: [
+            "Complete the full course",
+            "Report unusual bleeding or bruising",
+        ],
+        counseling: [
+            {
+                question:
+                    "Robert asks, 'Why can't I take this antibiotic with my methotrexate?'",
+                options: [
+                    "The antibiotic stops methotrexate from working.",
+                    "Both drugs suppress the bone marrow; together they can cause dangerously low blood counts.",
+                    "It will cause severe nausea and vomiting.",
+                    "There is no interaction; you can take them together.",
+                ],
+                correctIndex: 1,
+                rationale:
+                    "Trimethoprim and methotrexate both inhibit folate metabolism, leading to synergistic bone marrow suppression. This can result in life‑threatening pancytopenia.",
+            },
+            {
+                question:
+                    "What signs of bone marrow suppression should Robert watch for?",
+                options: [
+                    "Increased appetite and weight gain.",
+                    "Fever, sore throat, unusual bruising or bleeding.",
+                    "Increased energy and restlessness.",
+                    "Constipation and dry mouth.",
+                ],
+                correctIndex: 1,
+                rationale:
+                    "Symptoms of bone marrow suppression include fever (neutropenia), easy bruising (thrombocytopenia), and fatigue (anemia). Immediate medical attention is necessary.",
+            },
+        ],
+        studyGuide: {
+            overview:
+                "Robert Chen, on low‑dose methotrexate for rheumatoid arthritis, presents with a prescription for Bactrim DS. This case tests the recognition of the synergistic antifolate toxicity between methotrexate and trimethoprim, which can cause fatal bone marrow suppression.",
+            pharmacology:
+                "Methotrexate is a folate antimetabolite that inhibits dihydrofolate reductase (DHFR), blocking DNA synthesis. Trimethoprim also inhibits bacterial DHFR, and at high doses can affect human DHFR. Together they deplete folate stores, leading to severe myelosuppression.",
+            interactionMechanism:
+                "Both drugs inhibit DHFR, albeit with different selectivity. Their additive antifolate effects can cause pancytopenia, oral ulcers, and gastrointestinal necrosis. This interaction is considered a critical DUR alert requiring prescriber contact.",
+            keyTakeaways: [
+                "Methotrexate + trimethoprim = high risk of bone marrow suppression.",
+                "Always verify antibiotic choice in patients on methotrexate.",
+                "Counsel patients on signs of myelosuppression: fever, bruising, sore throat.",
+            ],
+            references: "ASHP Therapeutic Guidelines on Drug Interactions",
+        },
+    },
+    // Case 6: Anticholinergic in elderly with BPH (urinary retention)
+    {
+        id: 6,
+        patientName: "Evelyn Smith",
+        patientDob: "1940-06-05",
+        patientAge: 84,
+        allergies: ["Codeine"],
+        currentMedications: ["Tamsulosin 0.4 mg QD", "Metformin 850 mg BID"],
+        avatarSeed: { skin: "#FAD7A0", hair: "#E0E0E0", shirt: "#8E44AD" },
+        rxCursiveText:
+            "Ditropan XL 10 mg\nQD\nQty: 30 tabs\nDr. N. Ahmed",
+        correctDrug: "Ditropan XL",
+        correctDose: "10 mg",
+        correctFrequency: "QD",
+        correctQty: 30,
+        durAlert: {
+            alertTitle: "SEVERE DDI — Anticholinergic + BPH",
+            severity: "Severe",
+            description:
+                "Ditropan XL (oxybutynin ER) is a potent anticholinergic used for overactive bladder. In patients with benign prostatic hyperplasia (BPH) already on tamsulosin, it can cause urinary retention and acute kidney injury. A prescriber review is recommended.",
+            correctAction: "call_doctor",
+            rationale:
+                "Anticholinergics can cause urinary hesitancy and retention, especially in elderly males with BPH. The prescriber should be contacted to discuss a possible alternative, such as mirabegron (a beta-3 agonist).",
+        },
+        shelfItems: [
+            { id: "s1", name: "Ditropan XL", dose: "10 mg", form: "ER Tablet", isLookAlike: false },
+            { id: "s2", name: "Ditropan XL", dose: "5 mg", form: "ER Tablet", isLookAlike: true },
+            { id: "s3", name: "Oxybutynin ER", dose: "10 mg", form: "ER Tablet", isLookAlike: true },
+            { id: "s4", name: "Detrol LA", dose: "4 mg", form: "Capsule", isLookAlike: true },
+            { id: "s5", name: "Myrbetriq", dose: "50 mg", form: "Tablet", isLookAlike: false },
+            { id: "s6", name: "Flomax", dose: "0.4 mg", form: "Capsule", isLookAlike: false },
+        ],
+        availableAuxiliaryLabels: [
+            "May cause drowsiness",
+            "Avoid alcohol",
+            "Do not crush or chew",
+            "May cause dry mouth",
+            "May cause constipation",
+            "Take with a full glass of water",
+        ],
+        requiredAuxiliaryLabels: [
+            "May cause drowsiness",
+            "May cause dry mouth",
+            "May cause constipation",
+        ],
+        counseling: [
+            {
+                question:
+                    "Evelyn asks, 'Will this bladder medicine affect my urination problems?'",
+                options: [
+                    "No, it only helps with bladder control.",
+                    "It may make it harder to start urination because it relaxes the bladder muscle.",
+                    "It will make you urinate more frequently.",
+                    "It has no effect on urination.",
+                ],
+                correctIndex: 1,
+                rationale:
+                    "Oxybutynin is an anticholinergic that reduces bladder contractions, which can impair the ability to initiate urination, especially in patients with BPH.",
+            },
+            {
+                question:
+                    "What side effects should Evelyn expect from this medication?",
+                options: [
+                    "Increased sweating and salivation.",
+                    "Dry mouth, constipation, and drowsiness.",
+                    "Weight loss and insomnia.",
+                    "Increased heart rate and anxiety.",
+                ],
+                correctIndex: 1,
+                rationale:
+                    "Anticholinergic side effects include dry mouth, constipation, blurred vision, and drowsiness. Elderly patients are particularly susceptible to cognitive impairment.",
+            },
+        ],
+        studyGuide: {
+            overview:
+                "Evelyn Smith, an 84‑year‑old woman with BPH (unusual for females but possible due to anatomical variations or medication‑induced), is prescribed Ditropan XL for overactive bladder. This case emphasizes the risk of anticholinergic‑induced urinary retention in patients with voiding difficulties.",
+            pharmacology:
+                "Oxybutynin is a tertiary amine anticholinergic that competitively blocks muscarinic receptors in the detrusor muscle, reducing bladder contractions. In patients with BPH, the anticholinergic effect can exacerbate urinary outflow obstruction, leading to acute retention.",
+            interactionMechanism:
+                "The additive anticholinergic burden from oxybutynin can cause urinary hesitancy, retention, and subsequent kidney injury. While tamsulosin (alpha blocker) helps relax the prostate, it does not fully counteract the anticholinergic effect on the detrusor. A prescriber call is warranted.",
+            keyTakeaways: [
+                "Anticholinergics in BPH patients risk urinary retention.",
+                "Consider alternative overactive bladder therapies like beta-3 agonists (mirabegron).",
+                "Elderly patients are more prone to anticholinergic side effects including confusion and constipation.",
+            ],
+            references: "Beers Criteria for Potentially Inappropriate Medication Use in Older Adults",
+        },
     },
 ];
 
@@ -312,7 +705,7 @@ const PillBottleSVG = ({
 );
 
 // ─────────────────────────────────────────────
-//  FLOATING AMBIENT ICONS  (low-opacity on light bg)
+//  FLOATING AMBIENT ICONS
 // ─────────────────────────────────────────────
 const FloatingIcon = ({
     icon: Icon,
@@ -375,6 +768,7 @@ export default function PharmacySimulation() {
     const [counselingIdx, setCounselingIdx] = useState(0);
     const [counselingDone, setCounselingDone] = useState(false);
     const [done, setDone] = useState(false);
+    const [showStudyGuide, setShowStudyGuide] = useState(true);
 
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const preceptorRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -424,10 +818,10 @@ export default function PharmacySimulation() {
         setPreceptorMsg(null);
         setCorrection(null);
         setShowHint(false);
+        setShowStudyGuide(true);
     };
 
     // ── STEP HANDLERS ──────────────────────────
-
     const handleAccept = () => { setRunning(true); setStep(1); };
 
     const handleTranscription = () => {
@@ -532,11 +926,9 @@ export default function PharmacySimulation() {
     };
 
     // ── RENDER HELPERS ─────────────────────────
-
     const fmtTime = (s: number) =>
         `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
-    // Score color for light backgrounds (PharmaWallah semantic colors)
     const scoreColor =
         score >= 80 ? "text-green-600" : score >= 60 ? "text-amber-500" : "text-red-500";
 
@@ -544,7 +936,6 @@ export default function PharmacySimulation() {
 
     // ── JSX ────────────────────────────────────
     return (
-        // ── PAGE BACKGROUND: PharmaWallah light gradient ──
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 text-gray-900 font-sans relative overflow-hidden">
 
             {/* Background dot-grid texture */}
@@ -569,7 +960,110 @@ export default function PharmacySimulation() {
                 <FloatingIcon key={i} icon={icon} style={style} />
             ))}
 
-            {/* ── HEADER — PharmaWallah primary gradient ── */}
+            {/* ── STUDY GUIDE OVERLAY ── */}
+            <AnimatePresence>
+                {showStudyGuide && (
+                    <motion.div
+                        key="study-guide"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 bg-gradient-to-br from-blue-600/80 to-green-600/80 backdrop-blur-sm flex items-center justify-center p-4"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-6"
+                        >
+                            <div className="flex items-center gap-3 border-b pb-4">
+                                <BookOpen className="text-blue-600" size={28} />
+                                <div>
+                                    <h2 className="text-2xl font-black text-gray-900">
+                                        Case Study #{activeCase.id} — {activeCase.patientName}
+                                    </h2>
+                                    <p className="text-gray-500 text-sm">
+                                        Pharmacological Background & Safety Review
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Patient snapshot */}
+                            <div className="flex gap-4 items-center bg-blue-50 rounded-xl p-4 border border-blue-200">
+                                <PatientAvatar {...activeCase.avatarSeed} size={70} />
+                                <div className="flex-1">
+                                    <p className="font-bold text-gray-800">{activeCase.patientName}</p>
+                                    <p className="text-sm text-gray-600">{activeCase.patientAge} yrs, Allergies: {activeCase.allergies.join(", ")}</p>
+                                    <p className="text-sm text-gray-600">Current meds: {activeCase.currentMedications.join("; ")}</p>
+                                </div>
+                            </div>
+
+                            {/* Prescription preview */}
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                                <p className=" text-amber-700 text-xs font-bold uppercase mb-2">Written Prescription</p>
+                                <pre className="font-serif italic bg-white text-amber-900 text-sm whitespace-pre-wrap">{activeCase.rxCursiveText}</pre>
+                            </div>
+
+                            {/* Study guide content */}
+                            <div className="space-y-4">
+                                <div>
+                                    <h3 className="text-lg font-extrabold text-blue-700 flex items-center gap-2">
+                                        <FlaskConical size={18} /> Clinical Overview
+                                    </h3>
+                                    <p className="text-gray-700 text-sm leading-relaxed mt-1">
+                                        {activeCase.studyGuide.overview}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <h3 className="text-lg font-extrabold text-green-700 flex items-center gap-2">
+                                        <Pill size={18} /> Pharmacology
+                                    </h3>
+                                    <p className="text-gray-700 text-sm leading-relaxed mt-1">
+                                        {activeCase.studyGuide.pharmacology}
+                                    </p>
+                                </div>
+
+                                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                                    <h3 className="text-lg font-extrabold text-red-700 flex items-center gap-2">
+                                        <AlertTriangle size={18} /> Interaction Mechanism
+                                    </h3>
+                                    <p className="text-gray-700 text-sm leading-relaxed mt-1">
+                                        {activeCase.studyGuide.interactionMechanism}
+                                    </p>
+                                </div>
+
+                                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                                    <h3 className="text-lg font-extrabold text-green-700 flex items-center gap-2">
+                                        <Star size={18} /> Key Takeaways
+                                    </h3>
+                                    <ul className="list-disc list-inside mt-2 space-y-1 text-sm text-gray-700">
+                                        {activeCase.studyGuide.keyTakeaways.map((k, i) => (
+                                            <li key={i}>{k}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+
+                                {activeCase.studyGuide.references && (
+                                    <p className="text-xs text-gray-400 italic">
+                                        Reference: {activeCase.studyGuide.references}
+                                    </p>
+                                )}
+                            </div>
+
+                            <button
+                                onClick={() => setShowStudyGuide(false)}
+                                className="w-full bg-gradient-to-r from-blue-600 to-green-500 text-white font-extrabold py-3.5 rounded-xl shadow-md hover:shadow-lg transition text-base flex items-center justify-center gap-2"
+                            >
+                                <ChevronRight size={20} />
+                                Begin Simulation
+                            </button>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ── HEADER ── */}
             <header className="sticky top-0 z-40 bg-gradient-to-r from-blue-700 via-blue-600 to-green-600 shadow-lg border-b border-blue-800">
                 <div className="max-w-7xl mx-auto px-4 py-3 pt-10 flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -609,10 +1103,10 @@ export default function PharmacySimulation() {
                         <div
                             key={i}
                             className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full whitespace-nowrap transition-all ${i < step
-                                    ? "bg-white/25 text-white border border-white/40 font-medium"
-                                    : i === step
-                                        ? "bg-white text-blue-700 border border-white font-bold shadow-sm"
-                                        : "bg-transparent text-green-100/50 border border-transparent"
+                                ? "bg-white/25 text-white border border-white/40 font-medium"
+                                : i === step
+                                    ? "bg-white text-blue-700 border border-white font-bold shadow-sm"
+                                    : "bg-transparent text-green-100/50 border border-transparent"
                                 }`}
                         >
                             {i < step
@@ -655,7 +1149,6 @@ export default function PharmacySimulation() {
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         className="fixed right-0 top-24 bottom-0 w-full max-w-sm z-50 bg-white border-l border-gray-200 shadow-2xl flex flex-col"
                     >
-                        {/* Panel header */}
                         <div className="bg-red-600 px-5 py-4 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <AlertTriangle size={18} className="text-red-200" />
@@ -665,7 +1158,6 @@ export default function PharmacySimulation() {
                                 <X size={20} />
                             </button>
                         </div>
-                        {/* Panel body */}
                         <div className="flex-1 overflow-y-auto p-5 space-y-4">
                             <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                                 <p className="text-sm text-red-600 font-semibold mb-1">What went wrong:</p>
@@ -679,7 +1171,6 @@ export default function PharmacySimulation() {
                             </div>
                             <p className="text-xs text-gray-400 text-center">−12 points applied. Learn and continue.</p>
                         </div>
-                        {/* Panel footer */}
                         <div className="p-4 border-t border-gray-100">
                             <button
                                 onClick={() => setCorrection(null)}
@@ -695,7 +1186,7 @@ export default function PharmacySimulation() {
             {/* ── MAIN LAYOUT ── */}
             <main className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                {/* ── LEFT: Patient Profile ── */}
+                {/* LEFT: Patient Profile */}
                 <aside className="lg:sticky lg:top-36 space-y-4 lg:col-span-1 h-fit">
                     <motion.div
                         initial={{ opacity: 0, x: -30 }}
@@ -734,7 +1225,6 @@ export default function PharmacySimulation() {
                         </div>
 
                         <div className="space-y-2">
-                            {/* Allergies — error semantic color */}
                             <div className="bg-red-50 border border-red-200 rounded-xl p-3">
                                 <p className="text-red-600 text-xs font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1">
                                     <AlertTriangle size={11} /> Allergies
@@ -745,7 +1235,6 @@ export default function PharmacySimulation() {
                                     </span>
                                 ))}
                             </div>
-                            {/* Medications */}
                             <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
                                 <p className="text-blue-600 text-xs font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1">
                                     <Pill size={11} /> Current Medications
@@ -757,18 +1246,17 @@ export default function PharmacySimulation() {
                         </div>
                     </motion.div>
 
-                    {/* Prescription card — amber/parchment feel */}
                     <motion.div
                         initial={{ opacity: 0, x: -30 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="bg-amber-50 border-2 border-amber-200  rounded-2xl p-5 shadow-sm"
+                        className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-5 shadow-sm"
                     >
                         <p className="text-amber-700 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
                             <BookOpen size={11} /> Prescription
                         </p>
                         <pre
-                            className=" bg-white font-serif italic text-amber-900 text-sm leading-relaxed whitespace-pre-wrap"
+                            className="bg-white font-serif italic text-amber-900 text-sm leading-relaxed whitespace-pre-wrap"
                             style={{ fontFamily: "'Dancing Script', 'Palatino', cursive" }}
                         >
                             {activeCase.rxCursiveText}
@@ -779,7 +1267,7 @@ export default function PharmacySimulation() {
                     </motion.div>
                 </aside>
 
-                {/* ── RIGHT: Interactive Steps ── */}
+                {/* RIGHT: Interactive Steps */}
                 <div className="lg:col-span-2 relative">
 
                     {/* Hint toggle */}
@@ -791,7 +1279,6 @@ export default function PharmacySimulation() {
                         Hint
                     </button>
 
-                    {/* Hint card */}
                     <AnimatePresence>
                         {showHint && (
                             <motion.div
@@ -810,7 +1297,7 @@ export default function PharmacySimulation() {
 
                     <AnimatePresence mode="wait">
 
-                        {/* ──────── STEP 0: INTAKE ──────── */}
+                        {/* STEP 0: INTAKE */}
                         {step === 0 && !done && (
                             <motion.div
                                 key="intake"
@@ -862,7 +1349,7 @@ export default function PharmacySimulation() {
                             </motion.div>
                         )}
 
-                        {/* ──────── STEP 1: TRANSCRIPTION ──────── */}
+                        {/* STEP 1: TRANSCRIPTION */}
                         {step === 1 && !done && (
                             <motion.div
                                 key="transcription"
@@ -937,7 +1424,7 @@ export default function PharmacySimulation() {
                             </motion.div>
                         )}
 
-                        {/* ──────── STEP 2: DUR ──────── */}
+                        {/* STEP 2: DUR */}
                         {step === 2 && !done && (
                             <motion.div
                                 key="dur"
@@ -946,7 +1433,6 @@ export default function PharmacySimulation() {
                                 exit={{ opacity: 0, y: -30 }}
                                 className="space-y-4"
                             >
-                                {/* Alert card — error semantic */}
                                 <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 space-y-4">
                                     <div className="flex items-start gap-4">
                                         <motion.div
@@ -974,7 +1460,6 @@ export default function PharmacySimulation() {
                                     </div>
                                 </div>
 
-                                {/* Action buttons — outline style per design system */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <button
                                         onClick={() => handleDUR("call_doctor")}
@@ -1000,7 +1485,7 @@ export default function PharmacySimulation() {
                             </motion.div>
                         )}
 
-                        {/* ──────── STEP 3: SHELF SELECTION ──────── */}
+                        {/* STEP 3: SHELF SELECTION */}
                         {step === 3 && !done && (
                             <motion.div
                                 key="shelf"
@@ -1021,7 +1506,6 @@ export default function PharmacySimulation() {
                                     </div>
                                 </div>
 
-                                {/* LASA warning — warning semantic */}
                                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700 flex items-center gap-2">
                                     <AlertTriangle size={14} className="text-amber-600 shrink-0" />
                                     LASA alert active: Look-alike/sound-alike drugs are present on the shelf. Verify the exact name AND dose.
@@ -1035,12 +1519,12 @@ export default function PharmacySimulation() {
                                             whileTap={{ scale: 0.97 }}
                                             onClick={() => handleBottleClick(item)}
                                             className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition cursor-pointer ${selectedBottle === item.id
-                                                    ? "border-green-500 bg-green-50 shadow-md"
-                                                    : wrongBottle === item.id
-                                                        ? "border-red-500 bg-red-50 animate-pulse"
-                                                        : item.isLookAlike
-                                                            ? "border-amber-300 bg-amber-50 hover:border-amber-500 hover:shadow-md"
-                                                            : "border-gray-200 bg-white hover:border-blue-400 hover:shadow-md"
+                                                ? "border-green-500 bg-green-50 shadow-md"
+                                                : wrongBottle === item.id
+                                                    ? "border-red-500 bg-red-50 animate-pulse"
+                                                    : item.isLookAlike
+                                                        ? "border-amber-300 bg-amber-50 hover:border-amber-500 hover:shadow-md"
+                                                        : "border-gray-200 bg-white hover:border-blue-400 hover:shadow-md"
                                                 }`}
                                         >
                                             {item.isLookAlike && (
@@ -1065,7 +1549,7 @@ export default function PharmacySimulation() {
                             </motion.div>
                         )}
 
-                        {/* ──────── STEP 4: LABELING ──────── */}
+                        {/* STEP 4: LABELING */}
                         {step === 4 && !done && (
                             <motion.div
                                 key="labeling"
@@ -1099,8 +1583,8 @@ export default function PharmacySimulation() {
                                                     )
                                                 }
                                                 className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition text-sm font-medium text-left ${isSelected
-                                                        ? "border-blue-500 bg-blue-50 text-blue-800"
-                                                        : "border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:bg-gray-50"
+                                                    ? "border-blue-500 bg-blue-50 text-blue-800"
+                                                    : "border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:bg-gray-50"
                                                     }`}
                                             >
                                                 <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition ${isSelected ? "border-blue-500 bg-blue-600" : "border-gray-300 bg-white"}`}>
@@ -1125,7 +1609,7 @@ export default function PharmacySimulation() {
                             </motion.div>
                         )}
 
-                        {/* ──────── STEP 5: COUNSELING ──────── */}
+                        {/* STEP 5: COUNSELING */}
                         {step === 5 && !done && (
                             <motion.div
                                 key="counseling"
@@ -1146,7 +1630,6 @@ export default function PharmacySimulation() {
                                     </div>
                                 </div>
 
-                                {/* Chat bubble */}
                                 <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5">
                                     <div className="flex items-start gap-3">
                                         <motion.div
@@ -1169,7 +1652,6 @@ export default function PharmacySimulation() {
                                     </div>
                                 </div>
 
-                                {/* Answer options */}
                                 <div className="space-y-3">
                                     {activeCase.counseling[counselingIdx]?.options.map((opt, i) => (
                                         <motion.button
@@ -1189,7 +1671,7 @@ export default function PharmacySimulation() {
                             </motion.div>
                         )}
 
-                        {/* ──────── RESULTS ──────── */}
+                        {/* RESULTS */}
                         {done && (
                             <motion.div
                                 key="results"
@@ -1214,7 +1696,6 @@ export default function PharmacySimulation() {
                                     </p>
                                 </div>
 
-                                {/* Stat cards */}
                                 <div className="grid grid-cols-3 gap-4">
                                     <div className="bg-gray-50 rounded-2xl p-4 border border-gray-200">
                                         <p className="text-gray-500 text-xs mb-1 uppercase tracking-wide">Final Score</p>
@@ -1260,7 +1741,6 @@ export default function PharmacySimulation() {
                                 </div>
                             </motion.div>
                         )}
-
                     </AnimatePresence>
                 </div>
             </main>
