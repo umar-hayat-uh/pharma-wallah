@@ -11,6 +11,7 @@
     "deploy": "touch out/.nojekyll && gh-pages -d out --dotfiles"
   },
   "dependencies": {
+    "3dmol": "^2.5.5",
     "@ai-sdk/google": "^3.0.72",
     "@google/generative-ai": "^0.24.1",
     "@iconify/icons-ion": "^1.2.10",
