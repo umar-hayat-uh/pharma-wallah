@@ -44,7 +44,6 @@ const BG_ICONS = [
 // ═══════════════════════════════════════════════════════════════════════════════
 //  SLIDE DATA — 21 histology slides (20 used: 2 rounds × 10)
 //  (unchanged from your original, I'm keeping the full array as provided)
-// ═══════════════════════════════════════════════════════════════════════════════
 const SLIDE_DATA = [
   {
     id: "lungs",
@@ -66,8 +65,367 @@ const SLIDE_DATA = [
     lessonDetailed:
       "Lung histology is characterised by thin-walled alveoli — the gas-exchange units — lined by type I (flat) and type II (cuboidal) pneumocytes. Bronchioles lead air into alveolar ducts and alveolar sacs. The interstitium contains a rich capillary network for O₂/CO₂ exchange. Distinct lobes are separated by connective tissue septa.",
   },
-  // ... (all 20 other slides as in your original) – I'll abbreviate here for space
-  // Include every slide exactly from your provided file.
+  {
+    id: "stomach",
+    title: "Stomach",
+    category: "Digestive System",
+    images: [
+      { url: "/images/spotting/histology/stomach.jpg" },
+      { url: "/images/spotting/histology/stomach-high.jpg" },
+    ],
+    options: ["Stomach", "Small Intestine", "Oesophagus", "Large Intestine"],
+    correctOptionIndex: 0,
+    definition: [
+      "Identification of gastric pits",
+      "Observation of gastric glands",
+      "Detection of mucosal lining",
+      "Presence of rugae (folds) in the stomach lining",
+    ],
+    keyFeatures: ["Gastric pits", "Gastric glands", "Mucosal lining", "Rugae (folds)"],
+    lessonDetailed:
+      "The stomach wall has four layers — mucosa, submucosa, muscularis externa, and serosa. The mucosa is thrown into longitudinal folds called rugae. Simple columnar epithelium dips down to form gastric pits, opening into tubular gastric glands containing parietal cells (HCl), chief cells (pepsinogen), and mucous neck cells.",
+  },
+  {
+    id: "kidney",
+    title: "Kidney",
+    category: "Urinary System",
+    images: [
+      { url: "/images/spotting/histology/kidney.jpg" },
+      { url: "/images/spotting/histology/kidney-high.jpg" },
+    ],
+    options: ["Kidney", "Liver", "Adrenal Gland", "Pancreas"],
+    correctOptionIndex: 0,
+    definition: [
+      "Observation of renal tubules",
+      "Detection of glomeruli",
+      "Recognition of renal corpuscles",
+      "Visualization of renal blood vessels",
+    ],
+    keyFeatures: ["Renal tubules", "Glomeruli", "Renal corpuscles", "Renal blood vessels"],
+    lessonDetailed:
+      "Kidney cortex contains renal corpuscles — a glomerulus (capillary tuft) enclosed in Bowman's capsule — alongside proximal and distal convoluted tubules. The medulla contains loops of Henle and collecting ducts arranged in pyramids. Rich peritubular capillary networks support tubular reabsorption and secretion.",
+  },
+  {
+    id: "small-intestine",
+    title: "Small Intestine",
+    category: "Digestive System",
+    images: [
+      { url: "/images/spotting/histology/small-intestine.jpg" },
+      { url: "/images/spotting/histology/small-intestine-high.jpg" },
+    ],
+    options: ["Small Intestine", "Large Intestine", "Stomach", "Appendix"],
+    correctOptionIndex: 0,
+    definition: [
+      "Detection of villi on the mucosal surface",
+      "Identification of intestinal crypts (Crypts of Lieberkühn)",
+      "Observation of intestinal glands",
+      "Presence of Peyer's patches",
+    ],
+    keyFeatures: ["Villi on mucosal surface", "Crypts of Lieberkühn", "Intestinal glands", "Peyer's patches"],
+    lessonDetailed:
+      "The small intestine mucosa has finger-like villi that project into the lumen, dramatically increasing surface area, lined by enterocytes with microvilli (brush border). Crypts of Lieberkühn at the base contain stem cells, Paneth cells, and goblet cells. Peyer's patches — aggregated lymphoid nodules — are prominent in the ileum submucosa.",
+  },
+  {
+    id: "large-intestine",
+    title: "Large Intestine",
+    category: "Digestive System",
+    images: [
+      { url: "/images/spotting/histology/large-intestine.jpg" },
+      { url: "/images/spotting/histology/large-intestine-high.jpg" },
+    ],
+    options: ["Large Intestine", "Small Intestine", "Rectum", "Appendix"],
+    correctOptionIndex: 0,
+    definition: [
+      "Identification of numerous goblet cells",
+      "Observation of prominent taeniae coli",
+      "Visualization of abundant lymphoid tissue in the mucosa",
+      "Detection of haustra in the colon",
+    ],
+    keyFeatures: ["Numerous goblet cells", "Taeniae coli", "Abundant mucosal lymphoid tissue", "Haustra"],
+    lessonDetailed:
+      "The large intestine lacks villi. Its mucosa has straight, parallel crypts packed with goblet cells secreting mucus. The outer longitudinal muscle layer condenses into three bands called taeniae coli; their contraction creates sacculations known as haustra. Abundant lymphoid tissue is scattered throughout the lamina propria.",
+  },
+  {
+    id: "appendix",
+    title: "Appendix",
+    category: "Lymphoid / GI",
+    images: [
+      { url: "/images/spotting/histology/appendix.jpg" },
+      { url: "/images/spotting/histology/appendix-high.jpg" },
+    ],
+    options: ["Appendix", "Large Intestine", "Small Intestine", "Lymph Node"],
+    correctOptionIndex: 0,
+    definition: [
+      "Identification of abundant lymphoid tissue",
+      "Observation of mucosal folds",
+      "Detection of epithelial lining",
+      "Presence of lymphoid follicles in the submucosa",
+    ],
+    keyFeatures: ["Abundant lymphoid tissue", "Mucosal folds", "Epithelial lining", "Submucosal lymphoid follicles"],
+    lessonDetailed:
+      "The appendix resembles the large intestine but is distinguished by its enormous lymphoid tissue load — prominent follicles span the mucosa and submucosa. The lumen is small and irregular with mucosal folds. Simple columnar epithelium lines the crypts; goblet cells are present but fewer than in the colon.",
+  },
+  {
+    id: "smooth-muscle",
+    title: "Smooth Muscle",
+    category: "Muscle Tissue",
+    images: [
+      { url: "/images/spotting/histology/smooth-muscle.jpg" },
+      { url: "/images/spotting/histology/smooth-muscle-high.jpg" },
+    ],
+    options: ["Smooth Muscle", "Skeletal Muscle", "Cardiac Muscle", "Dense Connective Tissue"],
+    correctOptionIndex: 0,
+    definition: [
+      "Observation of spindle-shaped cells",
+      "Presence of central nuclei",
+      "Detection of dense bodies or plaques",
+      "Visualization of capillaries around muscle bundles",
+    ],
+    keyFeatures: ["Spindle-shaped cells", "Central nuclei", "Dense bodies / plaques", "Surrounding capillaries"],
+    lessonDetailed:
+      "Smooth muscle is non-striated, involuntary muscle found in hollow viscera, blood vessels, and airways. Cells are elongated spindles with a single, centrally placed oval nucleus. Thick and thin filaments attach to dense bodies (intracellular) and dense plaques (membrane-associated). No sarcomeres → no striations.",
+  },
+  {
+    id: "skeletal-muscle",
+    title: "Skeletal Muscle",
+    category: "Muscle Tissue",
+    images: [
+      { url: "/images/spotting/histology/skeletal-muscle.jpg" },
+      { url: "/images/spotting/histology/skeletal-muscle-high.jpg" },
+    ],
+    options: ["Skeletal Muscle", "Smooth Muscle", "Cardiac Muscle", "Tendon"],
+    correctOptionIndex: 0,
+    definition: [
+      "Presence of striations",
+      "Observation of multinucleated muscle fibres",
+      "Detection of peripheral nuclei",
+      "Identification of alternating light (I) and dark (A) bands",
+    ],
+    keyFeatures: ["Cross striations", "Multinucleated fibres", "Peripheral nuclei", "Alternating I and A bands"],
+    lessonDetailed:
+      "Skeletal muscle is striated voluntary muscle. Each fibre is a syncytium — multiple nuclei pushed to the periphery beneath the sarcolemma. The regular arrangement of sarcomeres (actin I-bands + myosin A-bands with H-zone and Z-lines) creates characteristic cross-striations. Fibres are grouped into fascicles by perimysium.",
+  },
+  {
+    id: "cardiac-muscle",
+    title: "Cardiac Muscle",
+    category: "Muscle Tissue",
+    images: [
+      { url: "/images/spotting/histology/cardiac.jpg" },
+      { url: "/images/spotting/histology/cardiac-high.jpg" },
+    ],
+    options: ["Cardiac Muscle", "Skeletal Muscle", "Smooth Muscle", "Myocardium"],
+    correctOptionIndex: 0,
+    definition: [
+      "Presence of striations",
+      "Centrally placed single or double nuclei",
+      "Branched, anastomosing muscle fibres",
+      "Intercalated discs — step-like dark transverse bands between cells",
+    ],
+    keyFeatures: ["Striations", "Central nuclei", "Branched fibres", "Intercalated discs"],
+    lessonDetailed:
+      "Cardiac muscle is striated involuntary muscle found only in the heart. Cells are branched and connected by intercalated discs — specialised junctions containing desmosomes and gap junctions. Nuclei are centrally located (1–2 per cell). Rich capillary network supports continuous aerobic metabolism.",
+  },
+  {
+    id: "gall-bladder",
+    title: "Gall Bladder",
+    category: "Organ Histology",
+    images: [
+      { url: "/images/spotting/histology/gall.jpg" },
+      { url: "/images/spotting/histology/gall-bladder.avif" },
+    ],
+    options: ["Gall Bladder", "Small Intestine", "Stomach", "Urinary Bladder"],
+    correctOptionIndex: 0,
+    definition: [
+      "Mucosal folds (rugae-like) — tall, branching folds that flatten with distension",
+      "Simple tall columnar epithelium with basally located nuclei and apical microvilli — NO goblet cells",
+      "Thin, poorly defined muscularis propria",
+      "No submucosa — perimuscular connective tissue directly under muscularis",
+    ],
+    keyFeatures: ["Mucosal folds", "Simple columnar epithelium (no goblet cells)", "Thin muscularis", "No submucosa"],
+    lessonDetailed:
+      "The gall bladder stores and concentrates bile. Its mucosa is highly folded (rugae) and lined by simple tall columnar epithelium with microvilli — NO goblet cells. It lacks a submucosa; the muscularis propria is thin and poorly organised. In chronic cholecystitis, Rokitansky–Aschoff sinuses (epithelial outpouchings) may be seen.",
+  },
+  {
+    id: "wbcs",
+    title: "White Blood Cells (WBCs)",
+    category: "Blood / Haematology",
+    images: [
+      { url: "/images/spotting/histology/wbcs.jpg" },
+      { url: "/images/spotting/histology/wbcs-low.jpg" },
+    ],
+    options: ["White Blood Cells (WBCs)", "Red Blood Cells", "Platelets", "Bone Marrow"],
+    correctOptionIndex: 0,
+    definition: [
+      "Neutrophils: multilobed nucleus, fine pink granules – most common",
+      "Eosinophils: bilobed nucleus, coarse red-orange granules",
+      "Basophils: large purple-black granules often obscuring nucleus",
+      "Lymphocytes: round dense nucleus, scant blue cytoplasm",
+      "Monocytes: kidney-shaped nucleus, abundant grey-blue cytoplasm",
+    ],
+    keyFeatures: ["Multilobed neutrophils", "Bilobed eosinophils with red granules", "Basophils with dark granules", "Lymphocytes (round dense nuclei)", "Monocytes (indented nucleus)"],
+    lessonDetailed:
+      "Leukocytes are classified into granulocytes (neutrophils, eosinophils, basophils) and agranulocytes (lymphocytes, monocytes). On a Wright-stained smear, neutrophils have multilobed nuclei and fine granules; eosinophils have bilobed nuclei and coarse red-orange granules; basophils have large purple-black granules often obscuring the nucleus; lymphocytes have round dense nuclei with scant cytoplasm; monocytes are largest with indented nuclei and abundant grey-blue cytoplasm.",
+  },
+  {
+    id: "rbcs",
+    title: "Red Blood Cells (RBCs)",
+    category: "Blood / Haematology",
+    images: [
+      { url: "/images/spotting/histology/rbcs.jpg" },
+      { url: "/images/spotting/histology/rbcs-high.jpg" },
+    ],
+    options: ["Red Blood Cells (RBCs)", "Platelets", "White Blood Cells", "Reticulocytes"],
+    correctOptionIndex: 0,
+    definition: [
+      "Observation of biconcave disc shape",
+      "Identification of red colouration due to haemoglobin",
+      "Recognition of flexible and deformable structure",
+      "Measurement of approximately 7–8 micrometres in diameter",
+    ],
+    keyFeatures: ["Biconcave disc shape", "Red colour (haemoglobin)", "Flexible / deformable", "~7–8 µm diameter"],
+    lessonDetailed:
+      "Mature RBCs (erythrocytes) are anucleate biconcave discs optimised for oxygen transport. The biconcave shape maximises surface-area-to-volume ratio for gas diffusion and creates central pallor on H&E. They are filled with haemoglobin (eosinophilic staining) and are highly deformable. Diameter ~7–8 µm — used as a histological size reference.",
+  },
+  {
+    id: "connective-tissue",
+    title: "Connective Tissue & ECM",
+    category: "Connective Tissue",
+    images: [
+      { url: "/images/spotting/histology/connect.jpg" },
+      { url: "/images/spotting/histology/fubers.jpg" },
+    ],
+    options: ["Connective Tissue", "Epithelial Tissue", "Muscle Tissue", "Nervous Tissue"],
+    correctOptionIndex: 0,
+    definition: [
+      "Fibroblasts: most numerous CT cell — spindle-shaped, pale nucleus, responsible for ECM synthesis",
+      "Mast cells: large cells with metachromatic granules (purple with toluidine blue); near vessels",
+      "Collagen fibres: eosinophilic wavy bundles (Type I most common); Type III = reticular fibres",
+      "Elastic fibres: thin, branching, refractile fibres stained by orcein or Weigert's; found in skin, arteries, lungs",
+    ],
+    keyFeatures: ["Fibroblasts", "Mast cells", "Collagen fibres", "Elastic fibres"],
+    lessonDetailed:
+      "Connective tissue is characterised by cells scattered in an abundant extracellular matrix. Resident cells include fibroblasts (synthesise ECM), mast cells (allergy mediators), macrophages (phagocytosis), and adipocytes. The ECM contains collagen fibres (types I–IV), elastic fibres, and ground substance (GAGs, proteoglycans, glycoproteins). Special stains (Masson's trichrome, silver, orcein) help identify fibre types.",
+  },
+  {
+    id: "simple-squamous",
+    title: "Simple Squamous Epithelium",
+    category: "Epithelial Tissue",
+    images: [
+      { url: "/images/spotting/histology/simple-squamous.jpg" },
+      { url: "/images/spotting/histology/simple-squamous-high.jpg" },
+    ],
+    options: ["Simple Squamous Epithelium", "Simple Cuboidal Epithelium", "Simple Columnar Epithelium", "Pseudostratified Epithelium"],
+    correctOptionIndex: 0,
+    definition: [
+      "Single layer of flat, thin cells",
+      "Central disc-shaped or ovoid nucleus that bulges into the lumen",
+      "Cells fit together like floor tiles",
+      "Found in alveoli, endothelium, mesothelium",
+    ],
+    keyFeatures: ["Flat cells", "Single layer", "Central bulging nuclei", "Lining of blood vessels and body cavities"],
+    lessonDetailed:
+      "Simple squamous epithelium consists of a single layer of flat cells. It is found in areas where rapid diffusion or filtration is required, such as lung alveoli (type I pneumocytes), the lining of blood vessels (endothelium), and serous membranes (mesothelium). The thinness of the cells facilitates efficient exchange.",
+  },
+  {
+    id: "simple-cuboidal",
+    title: "Simple Cuboidal Epithelium",
+    category: "Epithelial Tissue",
+    images: [
+      { url: "/images/spotting/histology/simple-cuboidal.jpg" },
+      { url: "/images/spotting/histology/cuboidal.jpg" },
+    ],
+    options: ["Simple Squamous Epithelium", "Simple Cuboidal Epithelium", "Simple Columnar Epithelium", "Pseudostratified Epithelium"],
+    correctOptionIndex: 1,
+    definition: [
+      "Single layer of cube-shaped cells",
+      "Centrally placed spherical nucleus",
+      "Height approximately equal to width",
+      "Found in thyroid follicles, kidney tubules, and gland ducts",
+    ],
+    keyFeatures: ["Cube-shaped cells", "Central round nuclei", "Single layer", "Secretory or absorptive function"],
+    lessonDetailed:
+      "Simple cuboidal epithelium consists of a single layer of cube-shaped cells with central spherical nuclei. It is involved in secretion and absorption, found in thyroid follicles, kidney tubules (proximal and distal convoluted tubules), and ducts of many glands.",
+  },
+  {
+    id: "simple-columnar",
+    title: "Simple Columnar Epithelium",
+    category: "Epithelial Tissue",
+    images: [
+      { url: "/images/spotting/histology/simple-columnar.jpg" },
+      { url: "/images/spotting/histology/columinar.jpg" },
+    ],
+    options: ["Simple Squamous Epithelium", "Simple Cuboidal Epithelium", "Simple Columnar Epithelium", "Pseudostratified Epithelium"],
+    correctOptionIndex: 2,
+    definition: [
+      "Single layer of tall, column-shaped cells",
+      "Oval nuclei aligned near the base",
+      "May have microvilli (brush border) or goblet cells",
+      "Lines stomach, intestines, gallbladder",
+    ],
+    keyFeatures: ["Tall columnar cells", "Basal nuclei", "Brush border or goblet cells", "Absorption/secretion"],
+    lessonDetailed:
+      "Simple columnar epithelium consists of a single layer of tall cells with basal oval nuclei. It is specialised for absorption (e.g., intestinal enterocytes with microvilli) and secretion (e.g., stomach mucous cells). Goblet cells are interspersed in intestinal epithelium.",
+  },
+  {
+    id: "pseudostratified-columnar",
+    title: "Pseudostratified Columnar Epithelium",
+    category: "Epithelial Tissue",
+    images: [
+      { url: "/images/spotting/histology/pseudostratified.jpg" },
+      { url: "/images/spotting/histology/pseudo.png" },
+    ],
+    options: ["Simple Squamous Epithelium", "Simple Cuboidal Epithelium", "Simple Columnar Epithelium", "Pseudostratified Columnar Epithelium"],
+    correctOptionIndex: 3,
+    definition: [
+      "Appears multilayered but all cells contact the basement membrane",
+      "Nuclei at different levels",
+      "Ciliated with goblet cells in respiratory tract",
+      "Also found in epididymis (with stereocilia)",
+    ],
+    keyFeatures: ["Appears stratified", "All cells touch basement membrane", "Cilia and goblet cells in respiratory type", "Nuclei at multiple levels"],
+    lessonDetailed:
+      "Pseudostratified columnar epithelium appears stratified because nuclei are at different levels, but all cells rest on the basement membrane. In the respiratory tract, it is ciliated with goblet cells, forming the mucociliary escalator. In the epididymis, it has non-motile stereocilia.",
+  },
+  {
+    id: "stratified-squamous-keratinised",
+    title: "Stratified Squamous Keratinised Epithelium",
+    category: "Epithelial Tissue",
+    images: [
+      { url: "/images/spotting/histology/stratified-squamous-keratinised.jpg" },
+      { url: "/images/spotting/histology/stratified-squamous-high.jpg" },
+    ],
+    options: ["Stratified Squamous Keratinised", "Stratified Squamous Non-keratinised", "Stratified Cuboidal", "Transitional Epithelium"],
+    correctOptionIndex: 0,
+    definition: [
+      "Multiple cell layers",
+      "Surface cells are anucleate, filled with keratin (stratum corneum)",
+      "Found only in skin (epidermis)",
+      "Five layers: basale, spinosum, granulosum, lucidum (thick skin), corneum",
+    ],
+    keyFeatures: ["Multiple layers", "Anucleate keratinised surface", "Stratum corneum", "Skin only"],
+    lessonDetailed:
+      "Keratinised stratified squamous epithelium forms the epidermis of skin. Surface cells are dead and filled with keratin, providing a waterproof barrier. It consists of five layers: stratum basale (mitotic), spinosum, granulosum, lucidum (in thick skin), and corneum (anucleate squames).",
+  },
+  {
+    id: "stratified-cuboidal",
+    title: "Stratified Cuboidal Epithelium",
+    category: "Epithelial Tissue",
+    images: [
+      { url: "/images/spotting/histology/stratified-cuboidal.jpg" },
+      { url: "/images/spotting/histology/cuboidal.jpg" },
+    ],
+    options: ["Stratified Squamous Keratinised", "Stratified Squamous Non-keratinised", "Stratified Cuboidal", "Transitional Epithelium"],
+    correctOptionIndex: 2,
+    definition: [
+      "Two or more layers of cuboidal cells",
+      "Rare; found in large ducts of exocrine glands",
+      "Provides mechanical protection",
+      "Lines sweat gland ducts, salivary gland ducts",
+    ],
+    keyFeatures: ["Multiple cuboidal layers", "Large gland ducts", "Sweat glands", "Salivary ducts"],
+    lessonDetailed:
+      "Stratified cuboidal epithelium consists of two or more layers of cube-shaped cells. It is relatively rare and found in the large ducts of exocrine glands (e.g., sweat glands, salivary glands). It provides a sturdy lining while allowing secretion transport.",
+  },
   {
     id: "transitional-epithelium",
     title: "Transitional Epithelium (Urothelium)",
