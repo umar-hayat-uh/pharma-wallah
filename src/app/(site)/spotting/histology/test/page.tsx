@@ -1040,7 +1040,7 @@ export default function HistologyTestPage() {
           <Activity size={36} className="text-white" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 sm:py-10 pt-16 sm:pt-10">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 sm:py-10 flex flex-col gap-4">
           <Link href="/spotting"
             className="inline-flex items-center gap-1.5 text-white/70 hover:text-white text-xs font-semibold mb-4 transition-colors">
             <ChevronLeft className="w-3.5 h-3.5" /> Back to Spotting Centre
