@@ -1,9 +1,10 @@
+// Header.tsx
 "use client";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { headerData } from "../Header/Navigation/menuData";
+import { headerData } from "../Header/Navigation/menuData"; // Update this path if needed
 import Logo from "./Logo";
 import {
   Pill,
@@ -21,11 +22,16 @@ import {
   LayoutDashboard,
   LogOut,
   User,
+  TestTube,
+  ShoppingCart,
+  FileSearch,
+  ShieldAlert,
+  Atom,
 } from "lucide-react";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { createClient } from "@/lib/supabase";
 
-// ─── PWA installation hook (unchanged) ─────────────────────────────────────
+// ─── PWA installation hook ─────────────────────────────────────────────────
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
@@ -57,16 +63,34 @@ function useInstallPrompt() {
   return { isInstallable, install };
 }
 
-// ─── Submenu icons (unchanged) ─────────────────────────────────────────────
+// ─── Submenu Icons & Descriptions ──────────────────────────────────────────
 const SUBMENU_ICONS: Record<string, React.ReactNode> = {
-  Material: <BookOpen className="w-4 h-4 text-blue-500" />,
-  "MCQ's Bank": <FlaskConical className="w-4 h-4 text-green-500" />,
-  "Slide Spotting": <Microscope className="w-4 h-4 text-blue-500" />,
-  Flashcards: <Beaker className="w-4 h-4 text-green-500" />,
-  "Books Library": <Leaf className="w-4 h-4 text-blue-500" />,
+  Material: <BookOpen className="w-5 h-5 text-blue-500" />,
+  "MCQ's Bank": <FlaskConical className="w-5 h-5 text-green-500" />,
+  "Slide Spotting": <Microscope className="w-5 h-5 text-blue-500" />,
+  Flashcards: <Beaker className="w-5 h-5 text-green-500" />,
+  "Books Library": <Leaf className="w-5 h-5 text-emerald-500" />,
+  "Lab Simulation": <TestTube className="w-5 h-5 text-purple-500" />,
+  "Pharmacy Counter": <ShoppingCart className="w-5 h-5 text-orange-500" />,
+  "Prescription Reader": <FileSearch className="w-5 h-5 text-cyan-500" />,
+  "Antibiogram Simulator": <ShieldAlert className="w-5 h-5 text-red-500" />,
+  "Molecule Viewer": <Atom className="w-5 h-5 text-indigo-500" />,
 };
 
-// ─── DesktopDropdown (unchanged) ──────────────────────────────────────────
+const SUBMENU_DESCRIPTIONS: Record<string, string> = {
+  Material: "Curated curriculum notes & modules.",
+  "MCQ's Bank": "Extensive practice question sets.",
+  "Lab Simulation": "Interactive 2D & 3D experiments.",
+  "Slide Spotting": "Histology and pathology practice.",
+  Flashcards: "Quick review with spaced repetition.",
+  "Pharmacy Counter": "Virtual retail dispensing training.",
+  "Prescription Reader": "Decipher and analyze Rx forms.",
+  "Books Library": "Comprehensive textbook collection.",
+  "Antibiogram Simulator": "Analyze resistance patterns.",
+  "Molecule Viewer": "Explore 3D chemical structures.",
+};
+
+// ─── Two‑Column Desktop Mega‑Dropdown ────────────────────────────────────
 const DesktopDropdown = ({
   item,
   isOpen,
@@ -77,44 +101,49 @@ const DesktopDropdown = ({
   onClose: () => void;
 }) => {
   if (!item.submenu) return null;
+
   return (
     <div
+      className="absolute left-1/2 -translate-x-1/2 mt-1 bg-white rounded-2xl border border-slate-100 shadow-[0_20px_40px_-15px_rgba(37,99,235,0.15)] overflow-hidden z-50"
       style={{
-        position: "absolute",
-        top: "100%",
-        left: "50%",
+        width: 680,
         transform: isOpen
           ? "translateX(-50%) translateY(8px) scale(1)"
           : "translateX(-50%) translateY(4px) scale(0.97)",
         opacity: isOpen ? 1 : 0,
         pointerEvents: isOpen ? "auto" : "none",
-        transition: "opacity 160ms ease, transform 160ms ease",
+        transition: "opacity 200ms ease, transform 200ms ease",
         willChange: "opacity, transform",
-        marginTop: 4,
-        width: 224,
-        background: "#fff",
-        borderRadius: 16,
-        border: "1px solid #f0f0f0",
-        boxShadow: "0 8px 28px rgba(37,99,235,0.10)",
-        overflow: "hidden",
-        zIndex: 50,
       }}
     >
-      <div style={{ height: 3, background: "linear-gradient(90deg,#2563eb,#4ade80)" }} />
-      <div style={{ padding: "6px 0" }}>
+      <div className="h-[3px] w-full bg-gradient-to-r from-blue-600 to-green-400" />
+
+      {/* 2-column CSS Grid */}
+      <div className="p-4 grid grid-cols-2 gap-2">
         {item.submenu.map((sub, i) => (
           <Link
             key={i}
             href={sub.href}
             onClick={onClose}
-            className="group flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+            className="group flex items-start gap-4 p-3 rounded-xl hover:bg-slate-50 transition-all duration-200"
           >
-            <span className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0 group-hover:bg-gradient-to-br group-hover:from-blue-600 group-hover:to-green-400 transition-all duration-200">
-              {SUBMENU_ICONS[sub.label] ?? <Pill className="w-4 h-4 text-blue-500" />}
-            </span>
-            <span className="font-medium">{sub.label}</span>
+            <div className="shrink-0 w-11 h-11 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center group-hover:scale-110 group-hover:border-blue-200 group-hover:shadow-md transition-all duration-300">
+              {SUBMENU_ICONS[sub.label] ?? <Pill className="w-5 h-5 text-blue-500" />}
+            </div>
+            <div className="flex flex-col justify-center">
+              <div className="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">
+                {sub.label}
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5 leading-snug">
+                {SUBMENU_DESCRIPTIONS[sub.label] || "Explore this resource"}
+              </div>
+            </div>
           </Link>
         ))}
+      </div>
+
+      <div className="bg-slate-50/80 border-t border-slate-100 p-3 px-6 flex items-center justify-between">
+        <span className="text-xs font-medium text-slate-500">Press Esc to close</span>
       </div>
     </div>
   );
@@ -132,20 +161,17 @@ const Header: React.FC = () => {
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
 
-  // PWA installation
   const { isInstallable, install } = useInstallPrompt();
-
-  // ── Supabase auth state (destructure user + loading) ───────────────────
   const { user, loading: authLoading } = useSupabaseUser();
   const supabase = createClient();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push("/"); // send user to home page after sign out
+    router.push("/");
     router.refresh();
   };
 
-  // ── Sticky & Banner effects (unchanged) ─────────────────────────────────
+  // ── Sticky & Banner effects ─────────────────────────────────────────────
   useEffect(() => {
     if (!isInstallable) return;
     const dismissed = localStorage.getItem("installBannerDismissed");
@@ -170,6 +196,7 @@ const Header: React.FC = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // ── Close mobile menu on outside click ────────────────────────────────
   useEffect(() => {
     if (!navbarOpen) return;
     const handler = (e: MouseEvent) => {
@@ -188,6 +215,7 @@ const Header: React.FC = () => {
     return () => document.documentElement.classList.remove("overflow-hidden");
   }, [navbarOpen]);
 
+  // ── Close dropdown on outside click or Esc ────────────────────────────
   useEffect(() => {
     if (!openDropdown) return;
     const handler = (e: MouseEvent) => {
@@ -196,6 +224,14 @@ const Header: React.FC = () => {
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
+  }, [openDropdown]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && openDropdown) setOpenDropdown(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [openDropdown]);
 
   const isActive = (href: string, submenu?: { href: string }[]) =>
@@ -236,9 +272,7 @@ const Header: React.FC = () => {
                   {hasSubmenu ? (
                     <button
                       onClick={() => setOpenDropdown(dropOpen ? null : item.label)}
-                      className={`flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-150 ${active
-                          ? "text-blue-700 bg-blue-50"
-                          : "text-gray-600 hover:text-blue-700 hover:bg-blue-50/60"
+                      className={`flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-150 ${active ? "text-blue-700 bg-blue-50" : "text-gray-600 hover:text-blue-700 hover:bg-blue-50/60"
                         }`}
                     >
                       {item.label}
@@ -253,9 +287,7 @@ const Header: React.FC = () => {
                   ) : (
                     <Link
                       href={item.href}
-                      className={`relative flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-150 ${active
-                          ? "text-blue-700 bg-blue-50"
-                          : "text-gray-600 hover:text-blue-700 hover:bg-blue-50/60"
+                      className={`relative flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-150 ${active ? "text-blue-700 bg-blue-50" : "text-gray-600 hover:text-blue-700 hover:bg-blue-50/60"
                         }`}
                     >
                       {item.label}
@@ -272,7 +304,6 @@ const Header: React.FC = () => {
 
           {/* ── Desktop Auth CTA ── */}
           <div className="hidden lg:flex items-center gap-3">
-            {/* Show nothing while auth is loading to prevent flicker */}
             {!authLoading ? (
               user ? (
                 <>
@@ -347,7 +378,7 @@ const Header: React.FC = () => {
       {/* ── Spacer ── */}
       <div className="h-[64px] lg:h-[68px]" />
 
-      {/* ══ INSTALL BANNER (unchanged) ═══════════════════════════════════════ */}
+      {/* ══ INSTALL BANNER ═══════════════════════════════════════════════════ */}
       {showInstallBanner && (
         <div
           className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:bottom-4 sm:max-w-md z-50 animate-in slide-in-from-bottom-5 duration-300"
@@ -396,7 +427,7 @@ const Header: React.FC = () => {
         </div>
       )}
 
-      {/* ══ OVERLAY & MOBILE DRAWER (unchanged layout, same auth logic) ══════ */}
+      {/* ══ OVERLAY & MOBILE DRAWER ══════════════════════════════════════════ */}
       <div
         onClick={closeMenu}
         aria-hidden="true"
@@ -449,7 +480,7 @@ const Header: React.FC = () => {
           </button>
         </div>
 
-        {/* Nav items */}
+        {/* Nav items (accordion for submenus) */}
         <nav className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-1">
           {headerData.map((item, i) => (
             <MobileNavItem key={i} item={item} pathUrl={pathUrl} onClose={closeMenu} />
@@ -532,7 +563,7 @@ const Header: React.FC = () => {
   );
 };
 
-// ─── MobileNavItem (unchanged) ──────────────────────────────────────────────
+// ─── MobileNavItem (Accordion) with New Grid Design ─────────────────────────
 const MobileNavItem = ({
   item,
   pathUrl,
@@ -549,12 +580,10 @@ const MobileNavItem = ({
   return (
     <div>
       {hasSubmenu ? (
-        <>
+        <div className="bg-white rounded-xl overflow-hidden">
           <button
             onClick={() => setOpen((v) => !v)}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-150 ${isActive
-                ? "bg-blue-50 text-blue-700 border border-blue-100"
-                : "text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-150 ${isActive ? "bg-blue-50 text-blue-700 border border-blue-100" : "text-gray-700 hover:bg-gray-50 active:bg-gray-100"
               }`}
             style={{ touchAction: "manipulation" }}
           >
@@ -567,38 +596,38 @@ const MobileNavItem = ({
 
           <div
             style={{
-              maxHeight: open ? 400 : 0,
+              maxHeight: open ? 800 : 0, // Increased to accommodate the 2-column grid
+              opacity: open ? 1 : 0,
               overflow: "hidden",
-              transition: "max-height 220ms cubic-bezier(0.4,0,0.2,1)",
+              transition: "max-height 300ms cubic-bezier(0.4,0,0.2,1), opacity 300ms ease",
             }}
           >
-            <div className="mt-1.5 ml-3 pl-3 border-l-2 border-blue-100 flex flex-col gap-1 pb-1">
+            {/* NEW 2-COLUMN GRID UI FOR MOBILE */}
+            <div className="mt-2 grid grid-cols-2 gap-2 px-1 pb-2">
               {item.submenu!.map((sub, j) => {
                 const subActive = pathUrl === sub.href;
                 return (
-                  <Link
-                    key={j}
-                    href={sub.href}
-                    onClick={onClose}
-                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-colors duration-150 ${subActive
-                        ? "bg-gradient-to-r from-blue-600 to-green-400 text-white font-semibold"
-                        : "text-gray-600 hover:bg-blue-50 hover:text-blue-700 active:bg-blue-100"
-                      }`}
-                    style={{ touchAction: "manipulation" }}
-                  >
-                    <span
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${subActive ? "bg-white/20" : "bg-blue-50 border border-blue-100"
-                        }`}
-                    >
-                      {SUBMENU_ICONS[sub.label] ?? <Pill className="w-3.5 h-3.5 text-blue-500" />}
-                    </span>
-                    {sub.label}
-                  </Link>
+                 <Link
+  key={j}
+  href={sub.href}
+  onClick={onClose}
+  className="group flex flex-col items-center justify-center p-3 rounded-2xl gap-2 transition-all duration-300 border border-gray-100 bg-gray-50/50 hover:bg-white hover:border-blue-200 hover:shadow-sm active:scale-95" // Added active:scale-95
+>
+  <span
+    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-gray-100 bg-white shadow-sm transition-all duration-300 group-hover:scale-110 group-hover:border-blue-200 group-hover:shadow-md"
+  >
+    {/* The icon will now scale and shadow-lift when the parent container is hovered/tapped */}
+    {SUBMENU_ICONS[sub.label] ?? <Pill className="w-5 h-5 text-blue-500 transition-colors duration-300 group-hover:text-blue-600" />}
+  </span>
+  <span className="text-[11px] font-semibold text-center leading-tight px-1 text-gray-600 group-hover:text-blue-700 transition-colors">
+    {sub.label}
+  </span>
+</Link>
                 );
               })}
             </div>
           </div>
-        </>
+        </div>
       ) : (
         <Link
           href={item.href}

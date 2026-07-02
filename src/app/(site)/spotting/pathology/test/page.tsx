@@ -1,36 +1,53 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ChevronLeft, ChevronRight, BookOpen, Award, Shuffle,
-  CheckCircle, XCircle, RotateCcw, Trophy, ExternalLink,
-  ZoomIn, X, Images, Microscope as MicIcon, Clock, AlertTriangle, PlayCircle,
-  Pill, FlaskConical, Beaker, Microscope, Stethoscope, Leaf, Dna, Activity,
+  ChevronLeft, ChevronRight, BookOpen, Award, CheckCircle, XCircle, RotateCcw,
+  Trophy, ExternalLink, ZoomIn, X, Images, Microscope as MicIcon, Clock,
+  AlertTriangle, Pill, FlaskConical, Beaker, Microscope, Stethoscope, Leaf,
+  Star, Zap, Flame, Lock, Target, Medal, Sparkles, ArrowRight, ChevronDown,
 } from "lucide-react";
 import { useTracker } from "@/hooks/useTracker";
 
-// ─── Constant site-wide gradient ─────────────────────────────────────────────
-const GRAD = "from-indigo-600 to-pink-500";
+// ══════════════════════════════════════════════════════════════════════════════
+//  DESIGN TOKENS — palette drawn from actual histology stains
+//  (hematoxylin violet → eosin rose is the signature gradient; teal nods to
+//  Papanicolaou counterstain for "correct"; parchment paper for the canvas)
+// ══════════════════════════════════════════════════════════════════════════════
+const INK = "#241C28";
+const INK_SOFT = "#5B4F63";
+const PAPER = "#FBF7F1";
+const PAPER_MUTED = "#F1E9DE";
+const VIOLET = "#4C2E7A";     // hematoxylin
+const VIOLET_DEEP = "#331F54";
+const ROSE = "#E14B72";       // eosin
+const ROSE_SOFT = "#FCE4EA";
+const TEAL = "#12876F";       // Papanicolaou green — "correct"
+const TEAL_SOFT = "#DEF3EE";
+const AMBER = "#DB9A34";
+const AMBER_SOFT = "#FBEDD3";
+const RED = "#D14545";
+const RED_SOFT = "#FBE3E3";
+const GRAD = "from-[#4C2E7A] via-[#8A3F86] to-[#E14B72]";
+const GRAD_FLAT = "linear-gradient(90deg, #4C2E7A 0%, #8A3F86 50%, #E14B72 100%)";
 
-// ─── Fixed BG icons ──────────────────────────────────────────────────────────
 const BG_ICONS = [
-  { Icon: Pill, top: "8%", left: "1.5%", size: 30 },
-  { Icon: Beaker, top: "38%", left: "1%", size: 28 },
-  { Icon: Stethoscope, top: "70%", left: "1.5%", size: 30 },
-  { Icon: Microscope, top: "8%", left: "96.5%", size: 30 },
-  { Icon: FlaskConical, top: "38%", left: "97%", size: 28 },
-  { Icon: Leaf, top: "70%", left: "96.5%", size: 28 },
+  { Icon: Pill, top: "9%", left: "2%", size: 26, rot: -12 },
+  { Icon: Beaker, top: "40%", left: "1.2%", size: 24, rot: 8 },
+  { Icon: Stethoscope, top: "74%", left: "2%", size: 26, rot: -6 },
+  { Icon: Microscope, top: "10%", left: "96%", size: 26, rot: 10 },
+  { Icon: FlaskConical, top: "42%", left: "97%", size: 24, rot: -8 },
+  { Icon: Leaf, top: "74%", left: "96%", size: 24, rot: 14 },
 ];
 
-// PathologyOutlines base URL
 const PO_BASE = "https://www.pathologyoutlines.com";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// SLIDE DATA — 15 slides
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
+//  FULL SLIDE DATA (15 slides) — unchanged content, same source of truth
+// ══════════════════════════════════════════════════════════════════════════════
 const SLIDE_DATA = [
   {
     id: "acute-appendicitis",
@@ -359,9 +376,6 @@ const SLIDE_DATA = [
   },
 ];
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// REFERENCES
-// ═══════════════════════════════════════════════════════════════════════════════
 const REFERENCES = [
   { authors: "Kumar V, Abbas AK, Aster JC.", title: "Robbins and Cotran Pathologic Basis of Disease (10th ed.).", publisher: "Elsevier.", year: "2020" },
   { authors: "Harsh Mohan.", title: "Textbook of Pathology (8th ed.).", publisher: "Jaypee Brothers Medical Publishers.", year: "2019" },
@@ -371,9 +385,7 @@ const REFERENCES = [
   { authors: "PathologyOutlines.com.", title: "Slide references for histological images used in this test.", publisher: "PathologyOutlines.com.", year: "2024", url: PO_BASE },
 ];
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// UTILITIES
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── UTILITIES ──────────────────────────────────────────────────────────────
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -391,10 +403,7 @@ function calculateMatch(userText: string, definition: string[]): number {
     "when", "which", "present", "cells", "cell",
   ]);
   const tok = (s: string): string[] =>
-    s.toLowerCase()
-      .replace(/[^\w\s]/g, " ")
-      .split(/\s+/)
-      .filter((w: string) => w.length > 3 && !STOP.has(w));
+    s.toLowerCase().replace(/[^\w\s]/g, " ").split(/\s+/).filter((w: string) => w.length > 3 && !STOP.has(w));
   const userSet = new Set<string>(tok(userText));
   const defSet = new Set<string>(tok(defText));
   if (!defSet.size) return 0;
@@ -403,10 +412,10 @@ function calculateMatch(userText: string, definition: string[]): number {
   return Math.min(100, Math.round((matches / defSet.size) * 100));
 }
 
-function scoreBadge(s: number) {
-  if (s >= 75) return "text-green-700 bg-green-50 border-green-200";
-  if (s >= 40) return "text-amber-700 bg-amber-50 border-amber-200";
-  return "text-red-700 bg-red-50 border-red-200";
+function scoreTone(s: number) {
+  if (s >= 75) return { fg: TEAL, bg: TEAL_SOFT, border: "#B7E3D8" };
+  if (s >= 40) return { fg: AMBER, bg: AMBER_SOFT, border: "#F0D9A6" };
+  return { fg: RED, bg: RED_SOFT, border: "#F3C6C6" };
 }
 function scoreLabel(s: number) {
   if (s >= 75) return "Excellent — spot-on recognition!";
@@ -414,9 +423,7 @@ function scoreLabel(s: number) {
   return "Study the key features carefully and try again.";
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// TYPES
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── TYPES ──────────────────────────────────────────────────────────────────
 interface SlideAnswer {
   selectedOption: number | null;
   points: string;
@@ -425,21 +432,42 @@ interface SlideAnswer {
 }
 type Slide = typeof SLIDE_DATA[number];
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// COMPONENTS
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
+//  GLOBAL STYLE (fonts + keyframes + scrollbar) — self-contained, no config edits
+// ══════════════════════════════════════════════════════════════════════════════
+function GlobalStyle() {
+  return (
+    <style jsx global>{`
+      @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650;9..144,800&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap');
+      .font-display { font-family: 'Fraunces', ui-serif, Georgia, serif; font-feature-settings: 'ss01' on; }
+      .font-body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; }
+      .font-lab { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+      .spot-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+      .spot-scroll::-webkit-scrollbar-thumb { background: #d9cdbd; border-radius: 999px; }
+      html, body { overflow-x: hidden; }
+      @keyframes spot-float { 0%,100% { transform: translateY(0) rotate(var(--r,0deg)); } 50% { transform: translateY(-10px) rotate(var(--r,0deg)); } }
+      @keyframes spot-pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(76,46,122,0.35); } 100% { box-shadow: 0 0 0 14px rgba(76,46,122,0); } }
+    `}</style>
+  );
+}
+
+// ─── SLIDE LABEL (glass-slide styled citation strip) ──────────────────────
 function POCitation({ url }: { url: string }) {
   return (
-    <div className="flex items-center justify-between px-3 py-2 bg-indigo-50/60 border-t border-indigo-100/80">
-      <p className="text-[10px] text-indigo-500 font-semibold leading-tight">
-        Image reference: PathologyOutlines.com
+    <div
+      className="flex items-center justify-between px-3 py-2 border-t"
+      style={{ background: "#F7EFE4", borderColor: "#E9DCC7" }}
+    >
+      <p className="text-[10px] font-bold tracking-wide" style={{ color: VIOLET }}>
+        SPECIMEN REF · PathologyOutlines.com
       </p>
       <a
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 hover:text-pink-600 transition-colors shrink-0 ml-2"
-        onClick={e => e.stopPropagation()}
+        className="inline-flex items-center gap-1 text-[10px] font-extrabold transition-colors shrink-0 ml-2 hover:opacity-70"
+        style={{ color: ROSE }}
+        onClick={(e) => e.stopPropagation()}
       >
         View topic <ExternalLink className="w-2.5 h-2.5" />
       </a>
@@ -455,32 +483,22 @@ function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
   }, [onClose]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/92 backdrop-blur-sm p-3 sm:p-6"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ scale: 0.93 }} animate={{ scale: 1 }} exit={{ scale: 0.93 }}
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/92 backdrop-blur-sm p-3 sm:p-6" onClick={onClose}>
+      <motion.div initial={{ scale: 0.93 }} animate={{ scale: 1 }} exit={{ scale: 0.93 }}
         transition={{ type: "spring", damping: 24, stiffness: 280 }}
-        className="relative w-full max-w-5xl rounded-2xl overflow-hidden shadow-2xl"
-        style={{ maxHeight: "88vh" }}
-        onClick={e => e.stopPropagation()}
-      >
-        <Image src={src} alt="Microscope slide" width={1400} height={900}
-          className="w-full object-contain bg-gray-950" style={{ maxHeight: "84vh" }} />
-        <button onClick={onClose}
-          className="absolute top-3 right-3 w-9 h-9 rounded-xl bg-black/60 backdrop-blur text-white flex items-center justify-center hover:bg-black/80 transition">
+        className="relative w-full max-w-5xl rounded-2xl overflow-hidden shadow-2xl" style={{ maxHeight: "88vh" }} onClick={e => e.stopPropagation()}>
+        <Image src={src} alt="Microscope slide" width={1400} height={900} className="w-full object-contain bg-gray-950" style={{ maxHeight: "84vh" }} />
+        <button onClick={onClose} className="absolute top-3 right-3 w-9 h-9 rounded-xl bg-black/60 backdrop-blur text-white flex items-center justify-center hover:bg-black/80 transition">
           <X className="w-4 h-4" />
         </button>
-        <p className="absolute bottom-3 left-1/2 -translate-x-1/2 text-white/50 text-[10px] whitespace-nowrap">
-          Press Esc or tap outside to close
-        </p>
+        <p className="absolute bottom-3 left-1/2 -translate-x-1/2 text-white/50 text-[10px] whitespace-nowrap">Press Esc or tap outside to close</p>
       </motion.div>
     </motion.div>
   );
 }
 
+// ─── IMAGE GALLERY — styled like a physical glass microscope slide ─────────
 function ImageGallery({ images, poUrl }: { images: Slide["images"]; poUrl: string }) {
   const filteredImages = [images[0], images[images.length - 1]];
   const [activeIdx, setActiveIdx] = useState(0);
@@ -488,44 +506,27 @@ function ImageGallery({ images, poUrl }: { images: Slide["images"]; poUrl: strin
   useEffect(() => { setActiveIdx(0); }, [images]);
 
   const active = filteredImages[activeIdx];
-  const powerLabel = (i: number) => (i === 0 ? "Low ×" : "High ×");
+  const powerLabel = (i: number) => (i === 0 ? "Low ×10" : "High ×40");
 
   return (
     <>
       <AnimatePresence mode="wait">
-        {lightbox && (
-          <Lightbox key="lb" src={active.url} onClose={() => setLightbox(false)} />
-        )}
+        {lightbox && <Lightbox key="lb" src={active.url} onClose={() => setLightbox(false)} />}
       </AnimatePresence>
-
-      <div className="space-y-2">
+      <div className="space-y-2.5">
         <div
-          className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden group cursor-zoom-in"
+          className="relative rounded-[20px] border overflow-hidden group cursor-zoom-in shadow-sm"
+          style={{ borderColor: "#E9DCC7", background: "#fff" }}
           onClick={() => setLightbox(true)}
         >
-          <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD} z-10`} />
+          <div className="absolute top-0 left-0 right-0 h-[4px] z-10" style={{ background: GRAD_FLAT }} />
           <AnimatePresence mode="wait">
-            <motion.div
-              key={activeIdx}
-              initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
-              className="relative w-full bg-gray-50"
-              style={{ height: 230 }}
-            >
-              <Image
-                src={active.url} alt="Microscope slide" fill
-                className="object-contain"
-                sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 600px"
-              />
-              <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-lg bg-black/50 backdrop-blur-sm text-white text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                <ZoomIn className="w-3 h-3" /> Zoom
-              </div>
-              <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-1 rounded-lg bg-black/50 backdrop-blur-sm text-white text-[10px] font-bold pointer-events-none">
-                <Images className="w-3 h-3" /> {activeIdx + 1}/{filteredImages.length}
-              </div>
-              <div className={`absolute bottom-2 right-2 px-2 py-1 rounded-lg bg-gradient-to-r ${GRAD} text-white text-[10px] font-extrabold pointer-events-none`}>
-                {powerLabel(activeIdx)}
-              </div>
+            <motion.div key={activeIdx} initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+              className="relative w-full" style={{ height: 240, background: "radial-gradient(circle at 50% 40%, #fdfaf5 0%, #efe6d8 100%)" }}>
+              <Image src={active.url} alt="Microscope slide" fill className="object-contain" sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 600px" />
+              <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-lg bg-black/55 backdrop-blur-sm text-white text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"><ZoomIn className="w-3 h-3" /> Zoom</div>
+              <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-1 rounded-lg bg-black/55 backdrop-blur-sm text-white text-[10px] font-bold pointer-events-none"><Images className="w-3 h-3" /> {activeIdx + 1}/{filteredImages.length}</div>
+              <div className="absolute bottom-2 right-2 px-2.5 py-1 rounded-lg text-white text-[10px] font-extrabold pointer-events-none font-lab" style={{ background: GRAD_FLAT }}>{powerLabel(activeIdx)}</div>
             </motion.div>
           </AnimatePresence>
           <POCitation url={poUrl} />
@@ -533,42 +534,31 @@ function ImageGallery({ images, poUrl }: { images: Slide["images"]; poUrl: strin
 
         <div className="flex gap-2">
           {filteredImages.map((img, i) => (
-            <button
-              key={i}
-              onClick={() => setActiveIdx(i)}
-              title={`View ${powerLabel(i)}`}
-              className={`relative flex-1 rounded-xl overflow-hidden border-2 transition-all duration-200 group/t ${i === activeIdx
-                ? "border-indigo-500 shadow-md shadow-indigo-200/40 scale-[1.03]"
-                : "border-gray-200 hover:border-indigo-300 hover:scale-[1.02]"
-                }`}
-              style={{ height: 58 }}
-            >
+            <button key={i} onClick={() => setActiveIdx(i)} title={`View ${powerLabel(i)}`}
+              className="relative flex-1 rounded-xl overflow-hidden border-2 transition-all duration-200 group/t"
+              style={{
+                height: 60,
+                borderColor: i === activeIdx ? VIOLET : "#E9DCC7",
+                transform: i === activeIdx ? "scale(1.03)" : "scale(1)",
+                boxShadow: i === activeIdx ? "0 4px 14px -4px rgba(76,46,122,0.35)" : "none",
+              }}>
               <Image src={img.url} alt={`View ${i + 1}`} fill className="object-cover" sizes="110px" />
-              <div className={`absolute inset-0 transition-opacity ${i === activeIdx ? "bg-indigo-600/15" : "bg-black/0 group-hover/t:bg-black/10"
-                }`} />
-              {i === activeIdx && (
-                <div className={`absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
-              )}
-              <div className="absolute top-1 left-1 bg-black/60 rounded px-1 py-0.5 text-white text-[8px] font-extrabold uppercase">
-                {i === 0 ? "Low" : "High"}
-              </div>
+              <div className="absolute inset-0 transition-opacity" style={{ background: i === activeIdx ? "rgba(76,46,122,0.18)" : "rgba(0,0,0,0)" }} />
+              {i === activeIdx && <div className="absolute bottom-0 left-0 right-0 h-[3px]" style={{ background: GRAD_FLAT }} />}
+              <div className="absolute top-1 left-1 bg-black/60 rounded px-1 py-0.5 text-white text-[8px] font-extrabold uppercase font-lab">{i === 0 ? "Low" : "High"}</div>
             </button>
           ))}
         </div>
 
         <div className="flex gap-2 sm:hidden">
-          <button
-            disabled={activeIdx === 0}
-            onClick={() => setActiveIdx(i => Math.max(0, i - 1))}
-            className="flex-1 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-500 disabled:opacity-30 flex items-center justify-center gap-1"
-          >
+          <button disabled={activeIdx === 0} onClick={() => setActiveIdx(i => Math.max(0, i - 1))}
+            className="flex-1 py-2.5 rounded-xl border text-xs font-bold disabled:opacity-30 flex items-center justify-center gap-1"
+            style={{ borderColor: "#E9DCC7", color: INK_SOFT }}>
             <ChevronLeft className="w-3.5 h-3.5" /> Prev
           </button>
-          <button
-            disabled={activeIdx === filteredImages.length - 1}
-            onClick={() => setActiveIdx(i => Math.min(filteredImages.length - 1, i + 1))}
-            className="flex-1 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-500 disabled:opacity-30 flex items-center justify-center gap-1"
-          >
+          <button disabled={activeIdx === filteredImages.length - 1} onClick={() => setActiveIdx(i => Math.min(filteredImages.length - 1, i + 1))}
+            className="flex-1 py-2.5 rounded-xl border text-xs font-bold disabled:opacity-30 flex items-center justify-center gap-1"
+            style={{ borderColor: "#E9DCC7", color: INK_SOFT }}>
             Next <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -579,31 +569,26 @@ function ImageGallery({ images, poUrl }: { images: Slide["images"]; poUrl: strin
 
 function ReferencesBlock() {
   return (
-    <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden">
-      <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
+    <div className="relative rounded-2xl border overflow-hidden" style={{ borderColor: "#E9DCC7", background: "#fff" }}>
+      <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: GRAD_FLAT }} />
       <div className="p-4 sm:p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${GRAD} flex items-center justify-center shrink-0`}>
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: GRAD_FLAT }}>
             <BookOpen className="w-4 h-4 text-white" />
           </div>
-          <h2 className="text-sm sm:text-base font-extrabold text-gray-900">References</h2>
-          <span className="ml-auto text-xs text-gray-400 bg-gray-100 border border-gray-200 rounded-full px-2.5 py-1 shrink-0">
-            {REFERENCES.length} sources
-          </span>
+          <h2 className="text-sm sm:text-base font-extrabold font-display" style={{ color: INK }}>References</h2>
+          <span className="ml-auto text-xs rounded-full px-2.5 py-1 shrink-0" style={{ color: INK_SOFT, background: PAPER_MUTED, border: "1px solid #E9DCC7" }}>{REFERENCES.length} sources</span>
         </div>
         <ol className="space-y-2.5">
           {REFERENCES.map((ref, i) => (
             <li key={i} className="flex gap-2.5">
-              <span className="w-5 h-5 rounded-md bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[9px] font-extrabold text-indigo-700 shrink-0 mt-0.5">
-                {i + 1}
-              </span>
-              <p className="text-xs text-gray-700 leading-relaxed">
-                <span className="text-gray-400">{ref.authors} </span>
-                <em className="font-semibold text-gray-900">{ref.title}</em>
-                <span className="text-gray-400"> {ref.publisher} {ref.year}.</span>
+              <span className="w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-extrabold shrink-0 mt-0.5" style={{ background: ROSE_SOFT, color: VIOLET, border: "1px solid #F0CBD8" }}>{i + 1}</span>
+              <p className="text-xs leading-relaxed" style={{ color: INK_SOFT }}>
+                <span className="opacity-60">{ref.authors} </span>
+                <em className="font-semibold not-italic" style={{ color: INK }}>{ref.title}</em>
+                <span className="opacity-60"> {ref.publisher} {ref.year}.</span>
                 {"url" in ref && ref.url && (
-                  <a href={ref.url} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 ml-1 text-indigo-600 text-[11px] font-semibold hover:text-pink-600 transition-colors">
+                  <a href={ref.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 ml-1 text-[11px] font-semibold hover:opacity-70 transition-colors" style={{ color: ROSE }}>
                     <ExternalLink className="w-2.5 h-2.5" />{ref.url.replace("https://", "")}
                   </a>
                 )}
@@ -611,749 +596,834 @@ function ReferencesBlock() {
             </li>
           ))}
         </ol>
-        <p className="text-[10px] text-gray-400 mt-4 pt-3 border-t border-gray-100">
-          <strong className="text-gray-500">Disclaimer:</strong> Content is for educational review only. Clinical diagnosis requires a qualified pathologist.
+        <p className="text-[10px] mt-4 pt-3 border-t" style={{ color: INK_SOFT, borderColor: "#EEE4D6", opacity: 0.8 }}>
+          <strong>Disclaimer:</strong> Content is for educational review only. Clinical diagnosis requires a qualified pathologist.
         </p>
       </div>
     </div>
   );
 }
 
-function ReportCard({
-  slides,
-  answers,
-  roundTitle,
-  timerExpired,
-  onNextRound,
-  showNextButton = false,
-  nextButtonText = "Continue to Next Round"
-}: {
-  slides: Slide[];
-  answers: SlideAnswer[];
-  roundTitle: string;
-  timerExpired?: boolean;
-  onNextRound?: () => void;
-  showNextButton?: boolean;
-  nextButtonText?: string;
-}) {
-  const totalCorrect = answers.filter((a, i) =>
-    a.selectedOption !== null && slides[i].options[a.selectedOption] === slides[i].title
-  ).length;
-  const avgMatch = (answers.reduce((s, a) => s + a.matchScore, 0) / answers.length).toFixed(1);
-  const pct = Math.round((totalCorrect / slides.length) * 100);
+// ══════════════════════════════════════════════════════════════════════════════
+//  GAMIFICATION UI ELEMENTS
+// ══════════════════════════════════════════════════════════════════════════════
+const XP_PER_LEVEL = 150;
+const BASE_TIME_PER_SLIDE = 90; // seconds
 
+const XPBar = ({ xp }: { xp: number }) => {
+  const level = Math.floor(xp / XP_PER_LEVEL) + 1;
+  const into = xp % XP_PER_LEVEL;
+  const pct = (into / XP_PER_LEVEL) * 100;
   return (
-    <section className="min-h-screen bg-white relative overflow-x-hidden">
-      {BG_ICONS.map(({ Icon, top, left, size }, i) => (
-        <div key={i} className="fixed pointer-events-none text-indigo-200/60 z-0" style={{ top, left }}>
-          <Icon size={size} strokeWidth={1.4} />
-        </div>
-      ))}
-      <div className={`relative bg-gradient-to-r ${GRAD} overflow-hidden`}>
-        <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/10" />
-        <div className="absolute -bottom-10 left-20 w-32 h-32 rounded-full bg-white/10" />
-        <div className="absolute right-6 sm:right-20 bottom-4 opacity-15 pointer-events-none">
-          <Trophy size={64} className="text-white" />
-        </div>
-        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-8 py-10 sm:py-14 text-center">
-          <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 text-white text-xs font-bold uppercase tracking-widest mb-4`}>
-            <Trophy className="w-3.5 h-3.5" /> {roundTitle}
-          </span>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4">Your Results</h1>
-          {timerExpired && (
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/80 text-white text-xs font-bold mb-4 border border-red-400/60">
-              <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Time&apos;s up! 10 minutes elapsed.
-            </div>
-          )}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { n: `${totalCorrect}/${slides.length}`, l: "Correct Slides" },
-              { n: `${pct}%`, l: "MCQ Score" },
-              { n: `${avgMatch}%`, l: "Avg Match Score" },
-              { n: pct >= 80 ? "🏆" : pct >= 50 ? "🎯" : "📚", l: "Grade" },
-            ].map(({ n, l }) => (
-              <div key={l} className="bg-white/15 rounded-2xl p-3 sm:p-4">
-                <div className="text-2xl sm:text-3xl font-extrabold text-white leading-none">{n}</div>
-                <div className="text-xs text-pink-200 mt-1">{l}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-8 py-8 space-y-3">
-        <h2 className="text-lg sm:text-2xl font-extrabold text-gray-900 mb-5 flex items-center gap-3">
-          <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${GRAD} flex items-center justify-center shrink-0`}>
-            <Award className="w-5 h-5 text-white" />
-          </div>
-          Slide-by-Slide Summary
-        </h2>
-        {slides.map((slide, idx) => {
-          const ans = answers[idx];
-          const isCorrect = ans.selectedOption !== null && slide.options[ans.selectedOption] === slide.title;
-          return (
-            <div key={slide.id} className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden hover:shadow-md transition-all">
-              <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
-              <div className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-                <div className="relative w-14 h-11 rounded-xl overflow-hidden border border-gray-200 shrink-0">
-                  <Image src={slide.images[0].url} alt={slide.title} fill className="object-cover" sizes="56px" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-extrabold text-gray-900 text-sm">{slide.title}</span>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">{slide.category}</span>
-                    {isCorrect
-                      ? <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-green-700"><CheckCircle className="w-2.5 h-2.5" /> Correct</span>
-                      : <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-red-50 border border-red-200 text-red-700"><XCircle className="w-2.5 h-2.5" /> Incorrect</span>}
-                  </div>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    Your answer: <span className="font-semibold text-gray-600">{ans.selectedOption !== null ? slide.options[ans.selectedOption] : "—"}</span>
-                    {!isCorrect && <span className="ml-2 text-indigo-600">✓ <strong>{slide.title}</strong></span>}
-                  </p>
-                  <div className="mt-1.5 flex flex-wrap gap-1">
-                    {slide.keyFeatures.slice(0, 3).map(f => (
-                      <span key={f} className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700">{f}</span>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-xl border ${scoreBadge(ans.matchScore)}`}>
-                    {ans.matchScore}% match
-                  </span>
-                  <Link href={`/spotting/pathology/${slide.id}`}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-pink-600 transition-colors">
-                    Lesson <ChevronRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
-          {showNextButton && onNextRound && (
-            <button onClick={onNextRound}
-              className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r ${GRAD} text-white font-extrabold text-sm shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all`}>
-              {nextButtonText} <ChevronRight className="w-4 h-4" />
-            </button>
-          )}
-          <button onClick={() => window.location.reload()}
-            className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-extrabold text-sm hover:border-indigo-400 hover:text-indigo-600 transition-all`}>
-            <Shuffle className="w-4 h-4" /> Retake Full Test
-          </button>
-          <Link href="/spotting"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-extrabold text-sm hover:border-indigo-400 hover:text-indigo-600 transition-all">
-            <ChevronLeft className="w-4 h-4" /> Back to Spotting Centre
-          </Link>
-        </div>
-        <ReferencesBlock />
-      </div>
-    </section>
-  );
-}
-
-function StartScreen({ onStart }: { onStart: () => void }) {
-  return (
-    <div className="relative z-10 max-w-4xl mx-auto px-4 py-12 sm:py-20 text-center">
-      <div className="mb-8 flex justify-center">
-        <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-600 to-pink-500 flex items-center justify-center shadow-xl">
-          <MicIcon className="w-12 h-12 text-white" />
-        </div>
-      </div>
-      <h1 className="text-3xl sm:text-5xl font-extrabold text-gray-900 mb-4">
-        Pathology Spotting Test
-      </h1>
-      <p className="text-gray-600 max-w-2xl mx-auto mb-6">
-        Test your ability to identify 15 pathology slides. Each slide includes low and high magnification images.
-        You'll answer a multiple‑choice question and write key recognition points. The test is split into two rounds,
-        each with a 10‑minute timer. Good luck!
-      </p>
-      <ul className="inline-flex flex-wrap gap-3 justify-center mb-8 text-sm text-gray-600">
-        <li className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-600" /> 15 slides</li>
-        <li className="flex items-center gap-1"><Clock className="w-4 h-4 text-blue-600" /> 10 min per round</li>
-      </ul>
-      <button
-        onClick={onStart}
-        className="inline-flex items-center gap-3 px-8 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-pink-500 text-white font-extrabold text-lg shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all"
+    <div className="flex items-center gap-2 sm:gap-3">
+      <div
+        className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-full text-white flex items-center justify-center font-black text-sm shadow-sm shrink-0 font-lab"
+        style={{ background: GRAD_FLAT }}
       >
-        <PlayCircle className="w-5 h-5" /> Start Test
-      </button>
+        {level}
+        <span className="absolute -inset-0.5 rounded-full pointer-events-none" style={{ animation: "spot-pulse-ring 2.4s ease-out infinite" }} />
+      </div>
+      <div className="w-20 sm:w-32 md:w-40">
+        <div className="flex items-center justify-between mb-0.5">
+          <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wide font-lab" style={{ color: INK_SOFT }}>Lv {level}</span>
+          <span className="text-[9px] sm:text-[10px] font-bold font-lab" style={{ color: INK_SOFT }}>{into}/{XP_PER_LEVEL}</span>
+        </div>
+        <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: PAPER_MUTED }}>
+          <motion.div className="h-full rounded-full" style={{ background: GRAD_FLAT }} animate={{ width: `${pct}%` }} transition={{ duration: 0.4 }} />
+        </div>
+      </div>
     </div>
   );
+};
+
+const ComboBadge = ({ streak }: { streak: number }) => (
+  <motion.div
+    animate={streak >= 3 ? { scale: [1, 1.14, 1] } : {}}
+    transition={{ duration: 0.6, repeat: streak >= 3 ? Infinity : 0, repeatDelay: 0.4 }}
+    className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl border"
+    style={{ background: ROSE_SOFT, borderColor: "#F0CBD8" }}
+  >
+    <Flame size={14} style={{ color: ROSE, fill: streak >= 3 ? ROSE : "transparent" }} />
+    <span className="font-bold text-xs sm:text-sm font-lab" style={{ color: VIOLET_DEEP }}>{streak}</span>
+  </motion.div>
+);
+
+// Circular "microscope aperture" timer ring — the page's signature motif
+const TimerRing = ({ timeLeft, timeLimit }: { timeLeft: number; timeLimit: number }) => {
+  const pct = Math.max(0, Math.min(1, timeLeft / timeLimit));
+  const color = pct > 0.5 ? TEAL : pct > 0.2 ? AMBER : RED;
+  const r = 42, c = 2 * Math.PI * r;
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative w-28 h-28">
+        <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+          <circle cx="50" cy="50" r={r} stroke={PAPER_MUTED} strokeWidth="7" fill="none" />
+          <motion.circle
+            cx="50" cy="50" r={r} stroke={color} strokeWidth="7" fill="none" strokeLinecap="round"
+            strokeDasharray={c}
+            animate={{ strokeDashoffset: c * (1 - pct) }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
+          />
+          {/* faint aperture blades for the "iris diaphragm" motif */}
+          {[0, 60, 120, 180, 240, 300].map((deg) => (
+            <line key={deg} x1="50" y1="50" x2={50 + 34 * Math.cos((deg * Math.PI) / 180)} y2={50 + 34 * Math.sin((deg * Math.PI) / 180)}
+              stroke="#EEE4D6" strokeWidth="1" />
+          ))}
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="font-lab font-black text-2xl tabular-nums" style={{ color }}>{Math.max(0, timeLeft)}</span>
+          <span className="text-[9px] uppercase tracking-wider font-bold" style={{ color: INK_SOFT }}>seconds</span>
+        </div>
+      </div>
+      <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide mt-1" style={{ color: INK_SOFT }}>
+        <Clock size={12} /> Time on slide
+      </span>
+    </div>
+  );
+};
+
+const AccuracyRing = ({ pct, label, color }: { pct: number; label: string; color: string }) => {
+  const r = 34, c = 2 * Math.PI * r;
+  return (
+    <div className="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto">
+      <svg viewBox="0 0 84 84" className="w-full h-full -rotate-90">
+        <circle cx="42" cy="42" r={r} stroke={PAPER_MUTED} strokeWidth="7" fill="none" />
+        <motion.circle cx="42" cy="42" r={r} stroke={color} strokeWidth="7" fill="none" strokeLinecap="round"
+          strokeDasharray={c} initial={{ strokeDashoffset: c }} animate={{ strokeDashoffset: c * (1 - pct / 100) }} transition={{ duration: 1, ease: "easeOut" }} />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="font-lab font-black text-lg" style={{ color }}>{pct}%</span>
+      </div>
+      <p className="text-center text-[10px] font-bold uppercase tracking-wide mt-1" style={{ color: INK_SOFT }}>{label}</p>
+    </div>
+  );
+};
+
+const LevelUpModal = ({ level, onClose }: { level: number; onClose: () => void }) => (
+  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] backdrop-blur-md flex items-center justify-center p-4" style={{ background: "rgba(36,28,40,0.55)" }}>
+    <motion.div initial={{ scale: 0.8, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.8, opacity: 0 }} transition={{ type: "spring", damping: 18 }}
+      className="relative bg-white rounded-3xl shadow-2xl p-8 sm:p-10 text-center max-w-xs w-full overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 h-1.5" style={{ background: GRAD_FLAT }} />
+      <motion.div animate={{ rotate: [0, -8, 8, 0] }} transition={{ duration: 0.6, delay: 0.2 }}
+        className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: GRAD_FLAT }}>
+        <Trophy size={30} className="text-white" />
+      </motion.div>
+      <h2 className="text-2xl font-black font-display" style={{ color: INK }}>Level {level}!</h2>
+      <p className="text-sm mt-2" style={{ color: INK_SOFT }}>Your pathology skills are advancing.</p>
+      <button onClick={onClose} className="mt-6 w-full text-white font-bold py-3 rounded-2xl shadow-lg transition-transform active:scale-95" style={{ background: GRAD_FLAT }}>
+        Keep Going
+      </button>
+    </motion.div>
+  </motion.div>
+);
+
+const Toast = ({ message, icon: Icon, tone = "dark" }: { message: string; icon: any; tone?: "dark" | "rose" }) => (
+  <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+    className="fixed top-20 left-1/2 -translate-x-1/2 z-[70] text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-sm font-bold"
+    style={{ background: tone === "rose" ? GRAD_FLAT : INK }}>
+    <Icon size={16} style={{ color: "#F5CD6B" }} /> {message}
+  </motion.div>
+);
+
+// Small popup shown after a wrong / weak-match answer: your points vs. what was expected
+const ReviewPopup = ({
+  slideTitle, userText, expected, matchScore, onClose,
+}: {
+  slideTitle: string; userText: string; expected: string[]; matchScore: number; onClose: () => void;
+}) => (
+  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+    className="fixed inset-0 z-[95] backdrop-blur-md flex items-center justify-center p-4" style={{ background: "rgba(36,28,40,0.5)" }}
+    onClick={onClose}>
+    <motion.div initial={{ scale: 0.92, y: 14 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.92, opacity: 0 }}
+      transition={{ type: "spring", damping: 22, stiffness: 260 }}
+      className="relative bg-white rounded-3xl shadow-2xl max-w-sm w-full max-h-[85vh] overflow-y-auto spot-scroll"
+      onClick={(e) => e.stopPropagation()}>
+      <div className="px-5 pt-5 pb-4 text-white" style={{ background: GRAD_FLAT }}>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-white/75">Answer: {slideTitle}</p>
+            <h3 className="text-base font-black font-display mt-0.5">Let's compare notes</h3>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center shrink-0 hover:bg-white/25 transition-colors">
+            <X size={14} className="text-white" />
+          </button>
+        </div>
+      </div>
+
+      <div className="p-5 space-y-4">
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: INK_SOFT }}>Your points</p>
+            <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-lg font-lab" style={{ ...scoreToneStyle(matchScore) }}>{matchScore}% match</span>
+          </div>
+          <p className="text-sm rounded-xl p-3 whitespace-pre-wrap" style={{ background: PAPER_MUTED, color: INK, border: "1px solid #EEE4D6" }}>
+            {userText?.trim() || "—"}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-wide mb-1.5" style={{ color: ROSE }}>Expected features</p>
+          <ul className="space-y-1.5">
+            {expected.map((d, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm rounded-xl p-2.5" style={{ background: ROSE_SOFT }}>
+                <CheckCircle size={14} className="shrink-0 mt-0.5" style={{ color: VIOLET }} />
+                <span style={{ color: VIOLET_DEEP }}>{d}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div className="px-5 pb-5">
+        <button onClick={onClose} className="w-full text-white font-extrabold py-3 rounded-2xl shadow-md active:scale-[0.98] transition-transform" style={{ background: GRAD_FLAT }}>
+          Got it — continue
+        </button>
+      </div>
+    </motion.div>
+  </motion.div>
+);
+
+function scoreToneStyle(s: number) {
+  const t = s >= 75 ? { fg: TEAL, bg: TEAL_SOFT } : s >= 40 ? { fg: AMBER, bg: AMBER_SOFT } : { fg: RED, bg: RED_SOFT };
+  return { color: t.fg, background: t.bg };
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN PAGE COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
+// Lightweight confetti burst — fires on perfect matches & level-ups
+const Confetti = () => {
+  const pieces = useMemo(() => Array.from({ length: 26 }).map((_, i) => ({
+    id: i,
+    x: (Math.random() - 0.5) * 360,
+    delay: Math.random() * 0.25,
+    rotate: Math.random() * 360,
+    color: [VIOLET, ROSE, TEAL, AMBER][i % 4],
+    w: 5 + Math.random() * 4,
+  })), []);
+  return (
+    <div className="fixed inset-0 z-[75] pointer-events-none overflow-hidden">
+      {pieces.map((p) => (
+        <motion.span
+          key={p.id}
+          initial={{ y: -20, x: `calc(50% + ${p.x}px)`, opacity: 1, rotate: 0 }}
+          animate={{ y: "70vh", opacity: 0, rotate: p.rotate }}
+          transition={{ duration: 1.5, delay: p.delay, ease: "easeIn" }}
+          style={{ background: p.color, width: p.w, height: p.w * 1.6, position: "absolute", top: "18%", borderRadius: 2 }}
+        />
+      ))}
+    </div>
+  );
+};
+
+// ─── Case Map Node ──────────────────────────────────────────────────────────
+const CaseNode = ({
+  slide, index, unlocked, prog, onSelect,
+}: {
+  slide: Slide; index: number; unlocked: boolean; prog?: { completed: boolean; stars: number }; onSelect: () => void;
+}) => {
+  const alignRight = index % 2 === 1;
+  return (
+    <div className={`relative z-10 flex w-full ${alignRight ? "justify-end pr-2 sm:pr-12" : "justify-start pl-2 sm:pl-12"}`}>
+      <motion.button whileHover={unlocked ? { scale: 1.06 } : {}} whileTap={unlocked ? { scale: 0.94 } : {}} onClick={onSelect} disabled={!unlocked}
+        className={`flex flex-col items-center gap-2 w-24 sm:w-32 ${!unlocked ? "opacity-50 cursor-not-allowed" : ""}`}>
+        <div
+          className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center border-[3px] shadow-md"
+          style={{
+            borderColor: unlocked ? (prog?.completed ? TEAL : VIOLET) : "#DED2C0",
+            background: unlocked ? (prog?.completed ? TEAL_SOFT : ROSE_SOFT) : "#fff",
+          }}
+        >
+          {unlocked ? (
+            prog?.completed ? <CheckCircle size={26} style={{ color: TEAL }} /> : <MicIcon size={26} style={{ color: VIOLET }} />
+          ) : (
+            <Lock size={18} style={{ color: "#B7A88F" }} />
+          )}
+        </div>
+        <span className="text-[11px] font-bold text-center leading-tight truncate max-w-full font-body" style={{ color: prog?.completed ? INK : INK_SOFT }}>
+          {prog?.completed ? slide.title : `Case ${String(index + 1).padStart(2, "0")}`}
+        </span>
+        <div className="flex gap-0.5">
+          {[0, 1, 2].map(i => (
+            <Star key={i} size={11} style={{ color: i < (prog?.stars || 0) ? AMBER : "#E3D8C6" }} fill={i < (prog?.stars || 0) ? AMBER : "#E3D8C6"} />
+          ))}
+        </div>
+      </motion.button>
+    </div>
+  );
+};
+
+// ─── TEST INSTRUCTIONS / STUDY GUIDE ───────────────────────────────────────
+const TestInstructions = ({ onClose }: { onClose: () => void }) => (
+  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 backdrop-blur-md flex items-center justify-center p-4" style={{ background: "rgba(36,28,40,0.45)" }}>
+    <motion.div initial={{ scale: 0.95, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }}
+      className="bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[88vh] overflow-y-auto spot-scroll">
+      <div className="relative px-6 pt-6 pb-5" style={{ background: GRAD_FLAT }}>
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center shrink-0"><MicIcon className="text-white" size={22} /></div>
+          <div>
+            <h2 className="text-xl font-black text-white font-display">Pathology Spotting Challenge</h2>
+            <p className="text-white/80 text-xs">Test your slide recognition skills</p>
+          </div>
+        </div>
+      </div>
+      <div className="p-6 space-y-4">
+        <p className="text-sm" style={{ color: INK }}>You will be shown <strong>15 pathology slides</strong> in random order. For each slide you must:</p>
+        <ul className="space-y-2">
+          {["Identify the correct diagnosis from 4 options", "Write your key points of recognition", "Submit within the 90-second time limit"].map((t, i) => (
+            <li key={i} className="flex items-start gap-2 text-sm" style={{ color: INK_SOFT }}>
+              <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0 mt-0.5" style={{ background: GRAD_FLAT }}>{i + 1}</span>
+              {t}
+            </li>
+          ))}
+        </ul>
+        <div className="rounded-2xl p-4" style={{ background: ROSE_SOFT, border: "1px solid #F0CBD8" }}>
+          <p className="text-xs font-bold uppercase mb-2 flex items-center gap-1.5" style={{ color: VIOLET }}><Medal size={13} /> Scoring & Progression</p>
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 text-xs" style={{ color: VIOLET_DEEP }}>
+              <span className="flex gap-0.5">{[0, 1, 2].map(i => <Star key={i} size={11} fill={AMBER} color={AMBER} />)}</span> correct + match ≥75%
+            </div>
+            <div className="flex items-center gap-2 text-xs" style={{ color: VIOLET_DEEP }}>
+              <span className="flex gap-0.5">{[0, 1].map(i => <Star key={i} size={11} fill={AMBER} color={AMBER} />)}<Star size={11} color="#E3D8C6" fill="#E3D8C6" /></span> correct + match ≥40%
+            </div>
+            <div className="flex items-center gap-2 text-xs" style={{ color: VIOLET_DEEP }}>
+              <span className="flex gap-0.5"><Star size={11} fill={AMBER} color={AMBER} /><Star size={11} color="#E3D8C6" fill="#E3D8C6" /><Star size={11} color="#E3D8C6" fill="#E3D8C6" /></span> correct only
+            </div>
+          </div>
+          <p className="text-xs mt-2.5 flex items-center gap-1.5" style={{ color: VIOLET }}><Zap size={12} /> Earn XP and level up as you complete slides!</p>
+        </div>
+        <div className="rounded-2xl p-3 text-xs flex items-start gap-2" style={{ background: AMBER_SOFT, color: "#7A5A17" }}>
+          <Sparkles size={14} className="shrink-0 mt-0.5" />
+          <span><strong>Pro tip:</strong> Use the low and high magnification views. Write what you see — match scoring rewards key terms.</span>
+        </div>
+      </div>
+      <div className="px-6 pb-6">
+        <button onClick={onClose} className="w-full text-white font-extrabold py-3.5 rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2" style={{ background: GRAD_FLAT }}>
+          Begin Challenge <ArrowRight size={16} />
+        </button>
+      </div>
+    </motion.div>
+  </motion.div>
+);
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  MAIN PAGE COMPONENT
+// ══════════════════════════════════════════════════════════════════════════════
 export default function SpottingTestPage() {
   const { trackQuiz, trackActivity, trackTimeOnUnmount } = useTracker();
 
-  const [testStarted, setTestStarted] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [round, setRound] = useState(1);
-  const [round1Slides, setRound1Slides] = useState<Slide[]>([]);
-  const [round2Slides, setRound2Slides] = useState<Slide[]>([]);
-  const [round1Answers, setRound1Answers] = useState<SlideAnswer[]>([]);
-  const [round2Answers, setRound2Answers] = useState<SlideAnswer[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<SlideAnswer[]>([]);
+  // ── Game / Meta state ──
+  const [xp, setXp] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
+  const [progress, setProgress] = useState<Record<string, { completed: boolean; stars: number }>>({});
+  const [levelUpTo, setLevelUpTo] = useState<number | null>(null);
+  const [toast, setToast] = useState<{ message: string; icon: any } | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [reviewPopup, setReviewPopup] = useState<{ slideTitle: string; userText: string; expected: string[]; matchScore: number } | null>(null);
+  const toastRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const confettiRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Screen & test state ──
+  const [screen, setScreen] = useState<"map" | "lab" | "result">("map");
+  const [showInstructions, setShowInstructions] = useState(true);
+  const [currentIdx, setCurrentIdx] = useState(0);
   const [slides, setSlides] = useState<Slide[]>([]);
-  const [timeLeft, setTimeLeft] = useState(600);
+  const [answers, setAnswers] = useState<SlideAnswer[]>([]);
+  const [timeLeft, setTimeLeft] = useState(BASE_TIME_PER_SLIDE);
   const [timerActive, setTimerActive] = useState(false);
-  const [timerExpired, setTimerExpired] = useState(false);
-  const ROUND_SECONDS = 10 * 60;
 
   const testStartTimeRef = useRef<number | null>(null);
 
-  // ─── ALL HOOKS MUST COME BEFORE ANY CONDITIONAL RETURNS ───────────────────
-
-  // Track time spent on test page (only after test starts)
+  // Initialize slides once on client
   useEffect(() => {
-    if (!testStarted) return;
+    const shuffled = shuffle([...SLIDE_DATA]);
+    setSlides(shuffled);
+    setAnswers(shuffled.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
+    testStartTimeRef.current = Date.now();
+  }, []);
+
+  useEffect(() => {
     const cleanup = trackTimeOnUnmount();
     return cleanup;
-  }, [testStarted, trackTimeOnUnmount]);
+  }, [trackTimeOnUnmount]);
 
   // Timer effect
   useEffect(() => {
-    if (!timerActive || round >= 3) return;
-    if (timeLeft <= 0) {
-      setTimerExpired(true);
-      setTimerActive(false);
-      if (round === 1) {
-        setRound(3);
-      } else if (round === 2) {
-        const allAnswers = [...round1Answers, ...round2Answers];
-        const allSlides = [...round1Slides, ...round2Slides];
-        const finalCorrect = allAnswers.filter((a, i) =>
-          a.selectedOption !== null && allSlides[i]?.options[a.selectedOption] === allSlides[i]?.title
-        ).length;
-        const timeMins = Math.max(1, Math.round((Date.now() - (testStartTimeRef.current || Date.now())) / 60000));
-        trackQuiz({
-          quizId: `spotting-pathology-${Date.now()}`,
-          subject: "Pathology Spotting Test",
-          score: finalCorrect,
-          total: SLIDE_DATA.length,
-          timeTakenMin: timeMins,
-        });
-        trackActivity({
-          type: "quiz",
-          label: `Completed Pathology spotting test — ${finalCorrect}/${SLIDE_DATA.length} correct (timer expired)`,
-          href: window.location.pathname,
-        });
-        setRound(4);
-      }
-      return;
-    }
+    if (screen !== "lab" || !timerActive || timeLeft <= 0) return;
     const id = setInterval(() => setTimeLeft(t => t - 1), 1000);
     return () => clearInterval(id);
-  }, [timerActive, timeLeft, round]);
+  }, [screen, timerActive, timeLeft]);
 
-  // Scroll to top
+  // Auto-submit on timeout
   useEffect(() => {
-    if (testStarted) window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [testStarted, round]);
-
-  // ── useMemo MUST be here, before any conditional returns ──────────────────
-  const current = slides[currentIndex] ?? null;
-
-  const shuffledOptions = useMemo(() => {
-    if (!current) return [];
-    return shuffle(current.options.map((text, origIdx) => ({ text, origIdx })));
-  }, [current?.id]);
-
-  // ─── DERIVED VALUES ────────────────────────────────────────────────────────
-  const timerMins = String(Math.floor(timeLeft / 60)).padStart(2, "0");
-  const timerSecs = String(timeLeft % 60).padStart(2, "0");
-  const timerUrgent = timeLeft <= 60;
-  const submittedCount = answers.filter(a => a.submitted).length;
-  const allSubmitted = answers.length > 0 && answers.every(a => a.submitted);
-  const currentAnswer = answers[currentIndex] ?? { selectedOption: null, points: "", submitted: false, matchScore: 0 };
-
-  // ─── HELPERS ───────────────────────────────────────────────────────────────
-  const initTest = () => {
-    const shuffled = shuffle([...SLIDE_DATA]);
-    const mid = Math.ceil(shuffled.length / 2);
-    const r1 = shuffled.slice(0, mid);
-    const r2 = shuffled.slice(mid);
-    setRound1Slides(r1);
-    setRound2Slides(r2);
-    setRound1Answers(r1.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
-    setRound2Answers(r2.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
-    setSlides(r1);
-    setAnswers(r1.map(() => ({ selectedOption: null, points: "", submitted: false, matchScore: 0 })));
-    setMounted(true);
-    setTimerActive(true);
-    setTestStarted(true);
-    testStartTimeRef.current = Date.now();
-  };
-
-  const handleFinishRound = () => {
-    if (round === 1) {
-      setRound(3);
-    } else if (round === 2) {
-      const allAnswersCombined = [...round1Answers, ...round2Answers];
-      const allSlidesCombined = [...round1Slides, ...round2Slides];
-      const finalCorrect = allAnswersCombined.filter((a, i) =>
-        a.selectedOption !== null && allSlidesCombined[i]?.options[a.selectedOption] === allSlidesCombined[i]?.title
-      ).length;
-      const timeMins = Math.max(1, Math.round((Date.now() - (testStartTimeRef.current || Date.now())) / 60000));
-      trackQuiz({
-        quizId: `spotting-pathology-${Date.now()}`,
-        subject: "Pathology Spotting Test",
-        score: finalCorrect,
-        total: SLIDE_DATA.length,
-        timeTakenMin: timeMins,
-      });
-      trackActivity({
-        type: "quiz",
-        label: `Completed Pathology spotting test — ${finalCorrect}/${SLIDE_DATA.length} correct`,
-        href: window.location.pathname,
-      });
-      setRound(4);
+    if (screen === "lab" && timeLeft <= 0 && slides.length > 0 && !answers[currentIdx]?.submitted) {
+      handleTimeout();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeLeft]);
+
+  // ── Helpers ──
+  const showToast = useCallback((msg: string, icon: any) => {
+    setToast({ message: msg, icon });
+    if (toastRef.current) clearTimeout(toastRef.current);
+    toastRef.current = setTimeout(() => setToast(null), 2600);
+  }, []);
+
+  const burstConfetti = useCallback(() => {
+    setShowConfetti(true);
+    if (confettiRef.current) clearTimeout(confettiRef.current);
+    confettiRef.current = setTimeout(() => setShowConfetti(false), 1600);
+  }, []);
+
+  const finishTest = useCallback(() => {
     setTimerActive(false);
-  };
+    const finalCorrect = answers.filter((a, i) => a.submitted && slides[i]?.options[a.selectedOption!] === slides[i]?.title).length;
+    const timeMins = Math.max(1, Math.round((Date.now() - (testStartTimeRef.current || Date.now())) / 60000));
+    trackQuiz({
+      quizId: `spotting-pathology-gamified-${Date.now()}`,
+      subject: "Pathology Spotting",
+      score: finalCorrect,
+      total: slides.length,
+      timeTakenMin: timeMins,
+    });
+    trackActivity({
+      type: "quiz",
+      label: `Completed Pathology Spotting Challenge — ${finalCorrect}/${slides.length}`,
+      href: window.location.pathname,
+    });
+    setScreen("result");
+  }, [answers, slides, trackQuiz, trackActivity]);
 
-  const handleNextRound = () => {
-    setRound(2);
-    setSlides(round2Slides);
-    setAnswers(round2Answers);
-    setCurrentIndex(0);
-    setTimeLeft(ROUND_SECONDS);
-    setTimerActive(true);
-    setTimerExpired(false);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!current) return;
-    if (currentAnswer.selectedOption === null || !currentAnswer.points.trim()) {
-      alert("Please select an answer and write your recognition points before submitting.");
+  const handleSubmit = useCallback((e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!slides[currentIdx] || answers[currentIdx]?.submitted) return;
+    const cur = answers[currentIdx];
+    if (cur.selectedOption === null || !cur.points.trim()) {
+      showToast("Select an answer and write your points first.", AlertTriangle);
       return;
     }
-    const score = calculateMatch(currentAnswer.points, current.definition);
-    const newAnswers = answers.map((a, i) =>
-      i === currentIndex ? { ...a, submitted: true, matchScore: score } : a
-    );
+    const matchScore = calculateMatch(cur.points, slides[currentIdx].definition);
+    const newAnswers = answers.map((a, i) => i === currentIdx ? { ...a, submitted: true, matchScore } : a);
     setAnswers(newAnswers);
-    if (round === 1) setRound1Answers(newAnswers);
-    else if (round === 2) setRound2Answers(newAnswers);
-  };
 
-  const handleReset = () => {
-    const newAnswers = answers.map((a, i) =>
-      i === currentIndex ? { selectedOption: null, points: "", submitted: false, matchScore: 0 } : a
-    );
+    const isCorrect = slides[currentIdx].options[cur.selectedOption] === slides[currentIdx].title;
+    let stars = 0;
+    if (isCorrect) {
+      if (matchScore >= 75) stars = 3;
+      else if (matchScore >= 40) stars = 2;
+      else stars = 1;
+    }
+
+    const prevLevel = Math.floor(xp / XP_PER_LEVEL);
+    const xpGain = isCorrect ? (stars === 3 ? 60 : stars === 2 ? 40 : 20) : 0;
+    const newXp = xp + xpGain;
+    setXp(newXp);
+    if (isCorrect) {
+      setStreak(s => { const ns = s + 1; setBestStreak(bs => Math.max(bs, ns)); return ns; });
+    } else {
+      setStreak(0);
+    }
+
+    const newLevel = Math.floor(newXp / XP_PER_LEVEL);
+    if (newLevel > prevLevel) setTimeout(() => { setLevelUpTo(newLevel); burstConfetti(); }, 700);
+
+    setProgress(prev => ({ ...prev, [slides[currentIdx].id]: { completed: true, stars } }));
+
+    if (stars === 3) { showToast("Perfect identification!", Award); burstConfetti(); }
+
+    const needsReview = !isCorrect || matchScore < 40;
+
+    if (needsReview) {
+      // Pop up a small comparison card; advancing waits until the person closes it
+      setReviewPopup({
+        slideTitle: slides[currentIdx].title,
+        userText: cur.points,
+        expected: slides[currentIdx].definition,
+        matchScore,
+      });
+    } else if (currentIdx < slides.length - 1) {
+      setTimeout(() => {
+        setCurrentIdx(idx => idx + 1);
+        setTimeLeft(BASE_TIME_PER_SLIDE);
+      }, 1200);
+    } else {
+      setTimeout(finishTest, 1200);
+    }
+  }, [slides, currentIdx, answers, xp, showToast, finishTest, burstConfetti]);
+
+  const closeReviewPopup = useCallback(() => {
+    setReviewPopup(null);
+    if (currentIdx < slides.length - 1) {
+      setCurrentIdx(idx => idx + 1);
+      setTimeLeft(BASE_TIME_PER_SLIDE);
+    } else {
+      finishTest();
+    }
+  }, [currentIdx, slides.length, finishTest]);
+
+  const handleTimeout = useCallback(() => {
+    const newAnswers = answers.map((a, i) => i === currentIdx ? { ...a, submitted: true, matchScore: 0 } : a);
     setAnswers(newAnswers);
-    if (round === 1) setRound1Answers(newAnswers);
-    else if (round === 2) setRound2Answers(newAnswers);
-  };
+    setStreak(0);
+    setProgress(prev => ({ ...prev, [slides[currentIdx].id]: { completed: true, stars: 0 } }));
+    if (currentIdx < slides.length - 1) {
+      setTimeout(() => {
+        setCurrentIdx(idx => idx + 1);
+        setTimeLeft(BASE_TIME_PER_SLIDE);
+      }, 500);
+    } else {
+      finishTest();
+    }
+  }, [answers, currentIdx, slides, finishTest]);
 
-  const setOption = (origIdx: number) => {
-    if (currentAnswer.submitted) return;
-    const newAnswers = answers.map((a, i) => i === currentIndex ? { ...a, selectedOption: origIdx } : a);
-    setAnswers(newAnswers);
-    if (round === 1) setRound1Answers(newAnswers);
-    else if (round === 2) setRound2Answers(newAnswers);
-  };
+  const setOption = useCallback((origIdx: number) => {
+    setAnswers(prev => prev.map((a, i) => i === currentIdx ? { ...a, selectedOption: origIdx } : a));
+  }, [currentIdx]);
 
-  const setPoints = (val: string) => {
-    if (currentAnswer.submitted) return;
-    const newAnswers = answers.map((a, i) => i === currentIndex ? { ...a, points: val } : a);
-    setAnswers(newAnswers);
-    if (round === 1) setRound1Answers(newAnswers);
-    else if (round === 2) setRound2Answers(newAnswers);
-  };
+  const setPoints = useCallback((val: string) => {
+    setAnswers(prev => prev.map((a, i) => i === currentIdx ? { ...a, points: val } : a));
+  }, [currentIdx]);
 
-  // ─── CONDITIONAL RENDERS (all hooks above, now safe) ──────────────────────
+  const resetCurrent = useCallback(() => {
+    setAnswers(prev => prev.map((a, i) => i === currentIdx ? { selectedOption: null, points: "", submitted: false, matchScore: 0 } : a));
+    setProgress(prev => { const { [slides[currentIdx]?.id]: _, ...rest } = prev; return rest; });
+  }, [currentIdx, slides]);
 
-  if (!testStarted) {
-    return (
-      <section className="min-h-screen bg-white relative overflow-x-hidden">
-        {BG_ICONS.map(({ Icon, top, left, size }, i) => (
-          <div key={i} className="fixed pointer-events-none text-indigo-200/60 z-0" style={{ top, left }}>
-            <Icon size={size} strokeWidth={1.4} />
-          </div>
-        ))}
-        <StartScreen onStart={initTest} />
-      </section>
-    );
-  }
+  const startChallenge = useCallback(() => {
+    setShowInstructions(false);
+    setScreen("lab");
+    setCurrentIdx(0);
+    setTimeLeft(BASE_TIME_PER_SLIDE);
+    setTimerActive(true);
+  }, []);
 
-  if (round === 3) {
-    return (
-      <ReportCard
-        slides={round1Slides}
-        answers={round1Answers}
-        roundTitle="Round 1 Complete"
-        timerExpired={timerExpired}
-        onNextRound={handleNextRound}
-        showNextButton={round2Slides.length > 0}
-        nextButtonText={`Continue to Round 2 (${round2Slides.length} slides)`}
-      />
-    );
-  }
+  const currentSlide = slides[currentIdx];
+  const currentAnswer = answers[currentIdx] ?? { selectedOption: null, points: "", submitted: false, matchScore: 0 };
 
-  if (round === 4) {
-    return (
-      <ReportCard
-        slides={[...round1Slides, ...round2Slides]}
-        answers={[...round1Answers, ...round2Answers]}
-        roundTitle="Final Results"
-        timerExpired={timerExpired}
-        showNextButton={false}
-      />
-    );
-  }
+  const shuffledOptions = useMemo(() => {
+    if (!currentSlide) return [];
+    return shuffle(currentSlide.options.map((text, origIdx) => ({ text, origIdx })));
+  }, [currentSlide?.id]);
 
-  if (!mounted || !current) return null;
+  const isUnlocked = useCallback((idx: number) => {
+    if (idx === 0) return true;
+    for (let i = 0; i < idx; i++) {
+      if (!progress[slides[i]?.id]?.completed) return false;
+    }
+    return true;
+  }, [progress, slides]);
 
-  // ─── MAIN TEST UI ──────────────────────────────────────────────────────────
+  const completedCount = Object.values(progress).filter(p => p.completed).length;
+  const totalStars = Object.values(progress).reduce((sum, p) => sum + p.stars, 0);
+  const finalCorrectCount = answers.filter((a, i) => a.submitted && slides[i]?.options[a.selectedOption!] === slides[i]?.title).length;
+  const accuracyPct = slides.length ? Math.round((finalCorrectCount / slides.length) * 100) : 0;
+
+  // ── RENDER ──────────────────────────────────────────────
   return (
-    <section className="min-h-screen bg-white relative overflow-x-hidden">
-      {BG_ICONS.map(({ Icon, top, left, size }, i) => (
-        <div key={i} className="fixed pointer-events-none text-indigo-200/60 z-0" style={{ top, left }}>
+    <section className="min-h-screen relative font-body" style={{ background: PAPER, color: INK }}>
+      <GlobalStyle />
+
+      {/* Ambient background icons */}
+      {BG_ICONS.map(({ Icon, top, left, size, rot }, i) => (
+        <div
+          key={i}
+          className="fixed pointer-events-none z-0 hidden sm:block"
+          style={{ top, left, color: i % 2 === 0 ? VIOLET : ROSE, opacity: 0.12, ["--r" as any]: `${rot}deg`, animation: `spot-float ${5 + i}s ease-in-out infinite` }}
+        >
           <Icon size={size} strokeWidth={1.4} />
         </div>
       ))}
 
-      <div className={`relative bg-gradient-to-r ${GRAD} overflow-hidden`}>
-        <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/10" />
-        <div className="absolute -bottom-10 left-16 w-32 h-32 rounded-full bg-white/10" />
-        <div className="absolute right-6 sm:right-20 bottom-4 opacity-15 pointer-events-none">
-          <Dna size={60} className="text-white" />
-        </div>
-        <div className="absolute right-20 sm:right-44 top-5 opacity-15 pointer-events-none">
-          <Activity size={36} className="text-white" />
-        </div>
+      <AnimatePresence>{toast && <Toast message={toast.message} icon={toast.icon} />}</AnimatePresence>
+      <AnimatePresence>{showConfetti && <Confetti key="confetti" />}</AnimatePresence>
+      <AnimatePresence>{levelUpTo && <LevelUpModal level={levelUpTo} onClose={() => setLevelUpTo(null)} />}</AnimatePresence>
+      <AnimatePresence>
+        {reviewPopup && (
+          <ReviewPopup
+            slideTitle={reviewPopup.slideTitle}
+            userText={reviewPopup.userText}
+            expected={reviewPopup.expected}
+            matchScore={reviewPopup.matchScore}
+            onClose={closeReviewPopup}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>{showInstructions && <TestInstructions onClose={startChallenge} />}</AnimatePresence>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 sm:py-10 pt-14 sm:pt-0">
-          <Link href="/spotting"
-            className="inline-flex items-center gap-1.5 text-white/70 hover:text-white text-xs font-semibold mb-4 transition-colors">
-            <ChevronLeft className="w-3.5 h-3.5" /> Back to Spotting Centre
+      {/* Header HUD */}
+      <div className="sticky top-0 z-40 pt-10 backdrop-blur-xl border-b" style={{ background: "rgba(251,247,241,0.85)", borderColor: "#EEE4D6" }}>
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2">
+          <Link href="/spotting" className="flex items-center gap-2 shrink-0">
+            <div className="p-1.5 sm:p-2 rounded-xl text-white" style={{ background: GRAD_FLAT }}><MicIcon size={18} /></div>
+            <span className="font-black text-base sm:text-lg hidden sm:block font-display" style={{ color: INK }}>Pathology Spotting</span>
           </Link>
-
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-            <div>
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest mb-3">
-                <MicIcon className="w-3 h-3" /> Pathology Spotting Test · Round {round} · {current.category}
-              </span>
-              <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
-                Pathology Spotting Test
-              </h1>
-              <p className="text-white/70 text-xs sm:text-sm mt-2 max-w-md">
-                <strong className="text-white">2 views</strong> per slide — study both, then select the diagnosis and write your points of recognition.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-1.5 max-w-xs">
-              {slides.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentIndex(i)}
-                  title={`Slide ${i + 1}`}
-                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-[9px] sm:text-xs font-extrabold transition-all duration-200 ${i === currentIndex
-                    ? "bg-white text-indigo-700 shadow-md scale-110"
-                    : answers[i].submitted
-                      ? "bg-white/30 text-white"
-                      : "bg-white/15 text-white/60 hover:bg-white/25"
-                    }`}
-                >
-                  {answers[i].submitted
-                    ? (slides[i].options[answers[i].selectedOption!] === slides[i].title ? "✓" : "✗")
-                    : i + 1}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-5 w-full h-2 bg-white/20 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-white rounded-full"
-              animate={{ width: `${(submittedCount / slides.length) * 100}%` }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            />
-          </div>
-          <div className="flex justify-between items-center text-xs text-white/60 mt-1.5">
-            <span>Slide {currentIndex + 1} of {slides.length} (Round {round})</span>
-            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-extrabold text-sm transition-all ${timerUrgent
-              ? "bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/40"
-              : "bg-white/20 text-white"
-              }`}>
-              <Clock className="w-3.5 h-3.5" />
-              {timerMins}:{timerSecs}
-            </div>
-            <span>{submittedCount}/{slides.length} answered</span>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <XPBar xp={xp} />
+            <ComboBadge streak={streak} />
           </div>
         </div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={current.id}
-            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.22 }}
-            className="grid lg:grid-cols-2 gap-4 lg:gap-8"
-          >
-            {/* LEFT: gallery + MCQ */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${GRAD} flex items-center justify-center shrink-0 shadow-md shadow-indigo-200/40`}>
-                  <MicIcon className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">
-                    Slide {currentIndex + 1} of {slides.length} · {current.category}
-                  </p>
-                  <p className="text-xs font-semibold text-gray-500">
-                    Study both views before answering
-                  </p>
-                </div>
-              </div>
+      {/* MAP SCREEN */}
+      {screen === "map" && slides.length > 0 && (
+        <div className="max-w-3xl mx-auto px-4 py-10 relative z-10">
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-6">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3" style={{ background: ROSE_SOFT, color: VIOLET }}>
+              <Microscope size={12} /> Specimen Trail
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-black font-display" style={{ color: INK }}>Spotting Challenge</h1>
+            <p className="text-sm font-medium mt-1" style={{ color: INK_SOFT }}>Complete all {slides.length} slides to become a Pathology Pro.</p>
+          </motion.div>
 
-              <ImageGallery images={current.images} poUrl={current.pathologyOutlinesUrl} />
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <div className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: TEAL_SOFT, color: TEAL }}>
+              <CheckCircle size={13} /> {completedCount}/{slides.length} slides
+            </div>
+            <div className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: AMBER_SOFT, color: "#9A6E15" }}>
+              <Star size={13} fill="#9A6E15" /> {totalStars}/{slides.length * 3} stars
+            </div>
+          </div>
 
-              <AnimatePresence>
-                {currentAnswer.submitted && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                    className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden p-4"
-                  >
-                    <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
-                    <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-2.5">
-                      Key Identifying Features
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {current.keyFeatures.map(f => (
-                        <span key={f} className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700">
-                          {f}
-                        </span>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+          <div className="relative flex flex-col gap-9 py-4">
+            <div className="absolute left-1/2 top-4 bottom-4 w-0.5 -translate-x-1/2 z-0" style={{ background: "repeating-linear-gradient(to bottom, #D9C7B3 0, #D9C7B3 6px, transparent 6px, transparent 12px)" }} />
+            {slides.map((s, idx) => (
+              <CaseNode key={s.id} slide={s} index={idx} unlocked={isUnlocked(idx)} prog={progress[s.id]}
+                onSelect={() => { setCurrentIdx(idx); setScreen("lab"); setTimeLeft(BASE_TIME_PER_SLIDE); setTimerActive(true); }} />
+            ))}
+          </div>
+        </div>
+      )}
 
-              <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden">
-                <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
-                <div className="p-4 sm:p-5">
-                  <h3 className="text-sm font-extrabold text-gray-900 mb-3 flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[10px] font-extrabold text-indigo-700 shrink-0">?</span>
-                    Identify this slide:
-                  </h3>
-                  <div className="space-y-2">
-                    {shuffledOptions.map(({ text, origIdx }) => {
-                      const isSelected = currentAnswer.selectedOption === origIdx;
-                      const isCorrectOpt = origIdx === current.correctOptionIndex;
-                      let state = "default";
-                      if (currentAnswer.submitted) {
-                        if (isCorrectOpt) state = "correct";
-                        else if (isSelected) state = "wrong";
-                      } else if (isSelected) state = "selected";
+      {/* LAB SCREEN */}
+      {screen === "lab" && currentSlide && (
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 relative z-10 pb-28 lg:pb-6">
+          {/* Sidebar */}
+          <aside className="lg:sticky lg:top-24 space-y-4 lg:col-span-1 h-fit order-2 lg:order-1">
+            <div className="bg-white rounded-2xl p-4 shadow-sm border flex flex-col items-center" style={{ borderColor: "#EEE4D6" }}>
+              <TimerRing timeLeft={timeLeft} timeLimit={BASE_TIME_PER_SLIDE} />
+            </div>
+            <div className="bg-white rounded-2xl p-4 shadow-sm border" style={{ borderColor: "#EEE4D6" }}>
+              <p className="text-xs font-bold uppercase font-lab" style={{ color: INK_SOFT }}>Slide {currentIdx + 1} of {slides.length}</p>
+              <h3 className="font-bold text-lg mt-1 font-display" style={{ color: currentAnswer.submitted ? INK : INK_SOFT }}>
+                {currentAnswer.submitted ? currentSlide.title : "Unidentified Specimen"}
+              </h3>
+              {currentAnswer.submitted && (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full inline-block mt-1" style={{ background: ROSE_SOFT, color: VIOLET }}>{currentSlide.category}</span>
+              )}
+            </div>
+            <button onClick={resetCurrent} className="hidden lg:flex items-center justify-between bg-white border rounded-2xl p-3 w-full hover:bg-[#FBF3E9] transition-colors" style={{ borderColor: "#EEE4D6" }}>
+              <div className="flex items-center gap-2"><RotateCcw size={16} style={{ color: INK_SOFT }} /><span className="text-sm font-semibold" style={{ color: INK }}>Reset This Slide</span></div>
+            </button>
+          </aside>
 
-                      return (
-                        <label
-                          key={origIdx}
-                          onClick={() => setOption(origIdx)}
-                          className={`flex items-center gap-3 p-3 sm:p-3.5 rounded-xl border-2 transition-all duration-200 ${state === "correct" ? "border-green-400 bg-green-50 cursor-default" :
-                            state === "wrong" ? "border-red-400 bg-red-50 cursor-default" :
-                              state === "selected" ? "border-indigo-500 bg-indigo-50 cursor-pointer" :
-                                currentAnswer.submitted ? "border-gray-100 bg-gray-50/50 cursor-default opacity-40" :
-                                  "border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/30 cursor-pointer"
-                            }`}
-                        >
-                          <input
-                            type="radio" name="slideOption" value={origIdx}
-                            checked={isSelected} disabled={currentAnswer.submitted}
-                            onChange={() => setOption(origIdx)}
-                            className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 shrink-0"
-                          />
-                          <span className={`text-sm font-semibold flex-1 ${state === "correct" ? "text-green-800" :
-                            state === "wrong" ? "text-red-700" : "text-gray-800"
-                            }`}>{text}</span>
-                          {currentAnswer.submitted && state === "correct" && <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />}
-                          {currentAnswer.submitted && state === "wrong" && <XCircle className="w-4 h-4 text-red-500 shrink-0" />}
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
+          {/* Main content */}
+          <div className="lg:col-span-2 space-y-4 order-1 lg:order-2">
+            <div className="bg-white rounded-2xl p-4 shadow-sm border" style={{ borderColor: "#EEE4D6" }}>
+              <ImageGallery images={currentSlide.images} poUrl={currentSlide.pathologyOutlinesUrl} />
+            </div>
+
+            {/* MCQ */}
+            <div className="bg-white rounded-2xl p-4 shadow-sm border" style={{ borderColor: "#EEE4D6" }}>
+              <h3 className="text-sm font-extrabold mb-3 flex items-center gap-2 font-display" style={{ color: INK }}>
+                <span className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-extrabold text-white shrink-0" style={{ background: GRAD_FLAT }}>?</span>
+                Identify this slide:
+              </h3>
+              <div className="space-y-2">
+                {shuffledOptions.map(({ text, origIdx }, i) => {
+                  const isSelected = currentAnswer.selectedOption === origIdx;
+                  const isCorrectOpt = origIdx === currentSlide.correctOptionIndex;
+                  let state = "default";
+                  if (currentAnswer.submitted) {
+                    if (isCorrectOpt) state = "correct";
+                    else if (isSelected) state = "wrong";
+                  } else if (isSelected) state = "selected";
+
+                  const styles: Record<string, { border: string; bg: string; text: string; opacity?: number }> = {
+                    correct: { border: TEAL, bg: TEAL_SOFT, text: TEAL },
+                    wrong: { border: RED, bg: RED_SOFT, text: RED },
+                    selected: { border: VIOLET, bg: ROSE_SOFT, text: INK },
+                    default: currentAnswer.submitted
+                      ? { border: "#EEE4D6", bg: "#FAF6EF", text: INK, opacity: 0.4 }
+                      : { border: "#E9DCC7", bg: "#fff", text: INK },
+                  };
+                  const st = styles[state];
+
+                  return (
+                    <label key={origIdx} onClick={() => setOption(origIdx)}
+                      className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all duration-200 ${currentAnswer.submitted ? "cursor-default" : "cursor-pointer"}`}
+                      style={{ borderColor: st.border, background: st.bg, opacity: st.opacity ?? 1 }}>
+                      <span className="w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0 font-lab"
+                        style={{ background: state === "default" ? "#F1E9DE" : "#fff", color: state === "default" ? INK_SOFT : st.text, border: `1px solid ${st.border}` }}>
+                        {String.fromCharCode(65 + i)}
+                      </span>
+                      <span className="text-sm font-semibold flex-1" style={{ color: st.text }}>{text}</span>
+                      {currentAnswer.submitted && state === "correct" && <CheckCircle className="w-4 h-4 shrink-0" style={{ color: TEAL }} />}
+                      {currentAnswer.submitted && state === "wrong" && <XCircle className="w-4 h-4 shrink-0" style={{ color: RED }} />}
+                    </label>
+                  );
+                })}
               </div>
             </div>
 
-            {/* RIGHT: recognition textarea + feedback */}
-            <div className="space-y-4">
-              <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden">
-                <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
-                <div className="p-4 sm:p-5">
-                  <h3 className="text-sm font-extrabold text-gray-900 mb-1 flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-pink-50 border border-pink-100 flex items-center justify-center shrink-0">
-                      <BookOpen className="w-3.5 h-3.5 text-pink-600" />
-                    </div>
-                    Points of Recognition
-                  </h3>
-                  <p className="text-xs text-gray-400 mb-3">
-                    Write the key microscopic features that helped you identify this slide. Study both views first!
-                  </p>
-                  <textarea
-                    value={currentAnswer.points}
-                    onChange={e => setPoints(e.target.value)}
-                    rows={7}
-                    disabled={currentAnswer.submitted}
-                    placeholder={`e.g., ${current.keyFeatures[0]?.toLowerCase() || ""}, ${(current.keyFeatures[1] || "").toLowerCase()}...`}
-                    className="w-full px-3 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-indigo-400 text-sm text-gray-800 placeholder:text-gray-400 bg-white disabled:bg-gray-50 disabled:text-gray-500 resize-none transition-colors"
-                  />
-                  {!currentAnswer.submitted ? (
-                    <button
-                      onClick={handleSubmit}
-                      className={`mt-3 w-full py-3 rounded-2xl bg-gradient-to-r ${GRAD} text-white font-extrabold text-sm shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300`}
-                    >
-                      Submit Answer
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleReset}
-                      className="mt-3 w-full py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-extrabold text-sm hover:border-indigo-400 hover:text-indigo-600 flex items-center justify-center gap-2 transition-all"
-                    >
-                      <RotateCcw className="w-4 h-4" /> Try Again
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <AnimatePresence>
-                {currentAnswer.submitted && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }} className="space-y-4"
-                  >
-                    <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden">
-                      <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
-                      <div className="p-4 sm:p-5">
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="text-sm font-extrabold text-gray-900 flex items-center gap-2">
-                            <Award className="w-4 h-4 text-yellow-500" /> Match Score
-                          </h3>
-                          <span className={`text-base sm:text-lg font-extrabold px-3 py-1 rounded-xl border ${scoreBadge(currentAnswer.matchScore)}`}>
+            {/* Points of Recognition */}
+            <div className="bg-white rounded-2xl p-4 shadow-sm border" style={{ borderColor: "#EEE4D6" }}>
+              <h3 className="text-sm font-extrabold mb-1 flex items-center gap-2 font-display" style={{ color: INK }}>
+                <BookOpen className="w-4 h-4" style={{ color: ROSE }} /> Points of Recognition
+              </h3>
+              <p className="text-xs mb-3" style={{ color: INK_SOFT, opacity: 0.8 }}>Write the key microscopic features you used to identify this slide.</p>
+              <textarea value={currentAnswer.points} onChange={e => setPoints(e.target.value)}
+                rows={6} disabled={currentAnswer.submitted}
+                placeholder="e.g., Neutrophil exudate, hyperplastic follicles, etc."
+                className="w-full px-3 py-3 border-2 rounded-xl focus:outline-none text-sm resize-none transition-colors font-body"
+                style={{ borderColor: "#E9DCC7", color: INK, background: currentAnswer.submitted ? "#FAF6EF" : "#fff" }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = VIOLET)}
+                onBlur={(e) => (e.currentTarget.style.borderColor = "#E9DCC7")}
+              />
+              {!currentAnswer.submitted ? (
+                <button onClick={(e) => handleSubmit(e)}
+                  className="hidden lg:block mt-3 w-full py-3.5 rounded-xl text-white font-extrabold text-sm shadow-md hover:shadow-lg transition-all active:scale-[0.98]"
+                  style={{ background: GRAD_FLAT }}>
+                  Submit Answer
+                </button>
+              ) : (
+                <div className="mt-3">
+                  {(() => {
+                    const tone = scoreTone(currentAnswer.matchScore);
+                    return (
+                      <>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-bold" style={{ color: INK_SOFT }}>Match Score</span>
+                          <span className="text-base font-extrabold px-3 py-1 rounded-xl border font-lab" style={{ color: tone.fg, background: tone.bg, borderColor: tone.border }}>
                             {currentAnswer.matchScore}%
                           </span>
                         </div>
-                        <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-                          <motion.div
-                            className={`h-full bg-gradient-to-r ${GRAD} rounded-full`}
-                            initial={{ width: 0 }}
-                            animate={{ width: `${currentAnswer.matchScore}%` }}
-                            transition={{ duration: 0.7, ease: "easeOut" }}
-                          />
+                        <div className="w-full h-3 rounded-full overflow-hidden" style={{ background: PAPER_MUTED }}>
+                          <motion.div className="h-full rounded-full" style={{ background: GRAD_FLAT }}
+                            initial={{ width: 0 }} animate={{ width: `${currentAnswer.matchScore}%` }} transition={{ duration: 0.7 }} />
                         </div>
-                        <p className="text-xs text-gray-400 mt-2">{scoreLabel(currentAnswer.matchScore)}</p>
-                      </div>
-                    </div>
+                        <p className="text-xs mt-2" style={{ color: INK_SOFT, opacity: 0.85 }}>{scoreLabel(currentAnswer.matchScore)}</p>
+                      </>
+                    );
+                  })()}
+                  <details className="mt-3 group">
+                    <summary className="text-xs font-bold cursor-pointer flex items-center gap-1 select-none" style={{ color: ROSE }}>
+                      Show expected features <ChevronDown size={13} className="transition-transform group-open:rotate-180" />
+                    </summary>
+                    <ul className="mt-2 text-xs space-y-1.5" style={{ color: INK_SOFT }}>
+                      {currentSlide.definition.map((d, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: ROSE }} />
+                          {d}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
-                    <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden">
-                      <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
-                      <div className="p-4 sm:p-5 space-y-4">
-                        <div>
-                          <p className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400 mb-2">
-                            Expected Points of Recognition
-                          </p>
-                          <ol className="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-1.5">
-                            {current.definition.map((point, pi) => (
-                              <li key={pi} className="flex gap-2 text-xs sm:text-sm text-gray-700 leading-relaxed">
-                                <span className="w-5 h-5 rounded-md bg-indigo-100 border border-indigo-200 flex items-center justify-center text-[9px] font-extrabold text-indigo-700 shrink-0 mt-0.5">
-                                  {pi + 1}
-                                </span>
-                                <span>{point}</span>
-                              </li>
-                            ))}
-                          </ol>
+      {/* Sticky mobile submit bar (visible only when unsubmitted, on lab screen) */}
+      {screen === "lab" && currentSlide && !currentAnswer.submitted && (
+        <div className="fixed bottom-0 left-0 right-0 z-30 lg:hidden p-3 backdrop-blur-xl border-t" style={{ background: "rgba(251,247,241,0.92)", borderColor: "#EEE4D6" }}>
+          <div className="flex gap-2 max-w-7xl mx-auto">
+            <button onClick={resetCurrent} className="px-4 py-3 rounded-xl border bg-white" style={{ borderColor: "#E9DCC7" }}>
+              <RotateCcw size={16} style={{ color: INK_SOFT }} />
+            </button>
+            <button onClick={(e) => handleSubmit(e)} className="flex-1 py-3 rounded-xl text-white font-extrabold text-sm shadow-md active:scale-[0.98] transition-transform" style={{ background: GRAD_FLAT }}>
+              Submit Answer
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* RESULT SCREEN */}
+      {screen === "result" && (
+        <div className="max-w-4xl mx-auto px-4 py-10 relative z-10">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-3xl shadow-xl border overflow-hidden" style={{ borderColor: "#EEE4D6" }}>
+            <div className="px-6 sm:px-8 pt-8 pb-6 text-center text-white" style={{ background: GRAD_FLAT }}>
+              <Trophy size={44} className="mx-auto mb-3" />
+              <h2 className="text-2xl font-black font-display">Challenge Complete!</h2>
+              <p className="text-white/80 text-sm mt-1">Nice work — here's how your specimen trail went.</p>
+            </div>
+
+            <div className="p-6 sm:p-8">
+              <div className="grid grid-cols-3 gap-3 sm:gap-4 -mt-2">
+                <AccuracyRing pct={accuracyPct} label="Accuracy" color={accuracyPct >= 75 ? TEAL : accuracyPct >= 40 ? AMBER : RED} />
+                <div className="flex flex-col items-center justify-center">
+                  <div className="flex items-center gap-1.5">
+                    <Flame size={22} style={{ color: ROSE }} />
+                    <span className="font-lab font-black text-2xl" style={{ color: ROSE }}>{bestStreak}</span>
+                  </div>
+                  <p className="text-center text-[10px] font-bold uppercase tracking-wide mt-1" style={{ color: INK_SOFT }}>Best Streak</p>
+                </div>
+                <div className="flex flex-col items-center justify-center">
+                  <div className="flex items-center gap-1.5">
+                    <Zap size={22} style={{ color: VIOLET }} />
+                    <span className="font-lab font-black text-2xl" style={{ color: VIOLET }}>{xp}</span>
+                  </div>
+                  <p className="text-center text-[10px] font-bold uppercase tracking-wide mt-1" style={{ color: INK_SOFT }}>XP Earned</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-6">
+                <div className="rounded-2xl p-4" style={{ background: TEAL_SOFT }}>
+                  <p className="text-2xl font-black font-lab" style={{ color: TEAL }}>{finalCorrectCount}/{slides.length}</p>
+                  <p className="text-xs font-semibold" style={{ color: TEAL }}>Correct</p>
+                </div>
+                <div className="rounded-2xl p-4" style={{ background: AMBER_SOFT }}>
+                  <p className="text-2xl font-black font-lab" style={{ color: "#9A6E15" }}>{totalStars}</p>
+                  <p className="text-xs font-semibold" style={{ color: "#9A6E15" }}>Total Stars</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6 justify-center">
+                <button onClick={() => window.location.reload()} className="px-6 py-3 text-white font-bold rounded-xl shadow-md active:scale-[0.98] transition-transform" style={{ background: GRAD_FLAT }}>
+                  Retry Challenge
+                </button>
+                <Link href="/spotting" className="px-6 py-3 border font-bold rounded-xl hover:bg-[#FBF3E9] transition-colors" style={{ borderColor: "#E9DCC7", color: INK }}>
+                  Back to Spotting
+                </Link>
+              </div>
+
+              <div className="mt-8">
+                <h3 className="text-lg font-bold mb-4 font-display flex items-center gap-2" style={{ color: INK }}>
+                  <Target size={18} style={{ color: ROSE }} /> Slide Details
+                </h3>
+                <div className="space-y-2.5">
+                  {slides.map((s, i) => {
+                    const ans = answers[i];
+                    const isCorrect = ans?.submitted && s.options[ans.selectedOption!] === s.title;
+                    return (
+                      <div key={s.id} className="flex items-center gap-3 sm:gap-4 p-3 rounded-xl" style={{ background: PAPER_MUTED }}>
+                        <div className="relative w-12 h-9 rounded-lg overflow-hidden shrink-0 border" style={{ borderColor: "#E9DCC7" }}>
+                          <Image src={s.images[0].url} alt={s.title} fill className="object-cover" />
                         </div>
-                        <div>
-                          <p className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400 mb-2">
-                            Your Points
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm truncate" style={{ color: INK }}>{s.title}</p>
+                          <p className="text-xs truncate" style={{ color: INK_SOFT }}>
+                            {ans?.submitted ? s.options[ans.selectedOption!] : "—"}
+                            {!isCorrect && <span className="ml-2 font-semibold" style={{ color: TEAL }}>✓ {s.title}</span>}
                           </p>
-                          <p className="text-xs sm:text-sm text-gray-700 bg-indigo-50 border border-indigo-100 p-3 rounded-xl leading-relaxed">
-                            {currentAnswer.points}
-                          </p>
+                        </div>
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          {[...Array(3)].map((_, si) => (
+                            <Star key={si} size={13} style={{ color: si < (progress[s.id]?.stars || 0) ? AMBER : "#E3D8C6" }} fill={si < (progress[s.id]?.stars || 0) ? AMBER : "#E3D8C6"} />
+                          ))}
                         </div>
                       </div>
-                    </div>
-
-                    <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden">
-                      <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
-                      <details className="group">
-                        <summary className="flex items-center justify-between p-4 sm:p-5 cursor-pointer list-none select-none">
-                          <h3 className="text-sm font-extrabold text-gray-900 flex items-center gap-2">
-                            <BookOpen className="w-4 h-4 text-pink-600" /> Detailed Lesson Notes
-                          </h3>
-                          <ChevronRight className="w-4 h-4 text-gray-400 group-open:rotate-90 transition-transform duration-200" />
-                        </summary>
-                        <div className="px-4 sm:px-5 pb-4 sm:pb-5 border-t border-gray-100 pt-3 space-y-3">
-                          <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-                            {current.lessonDetailed}
-                          </p>
-                          <div className="flex flex-col sm:flex-row gap-2">
-                            <Link
-                              href={`/spotting/pathology/${current.id}`}
-                              className="inline-flex items-center gap-1.5 text-xs font-extrabold text-indigo-600 hover:text-pink-600 transition-colors"
-                            >
-                              Open full lesson <ChevronRight className="w-3.5 h-3.5" />
-                            </Link>
-                            <a
-                              href={current.pathologyOutlinesUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 text-xs font-extrabold text-indigo-400 hover:text-pink-600 transition-colors"
-                            >
-                              PathologyOutlines.com <ExternalLink className="w-3 h-3" />
-                            </a>
-                          </div>
-                        </div>
-                      </details>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </motion.div>
-        </AnimatePresence>
 
-        <div className="flex items-center justify-between mt-8 pt-5 border-t border-gray-100 gap-3">
-          <button
-            onClick={() => setCurrentIndex(i => Math.max(0, i - 1))}
-            disabled={currentIndex === 0}
-            className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2.5 rounded-xl border-2 border-gray-200 text-gray-500 text-xs sm:text-sm font-bold hover:border-indigo-400 hover:text-indigo-600 disabled:opacity-40 disabled:pointer-events-none transition-all"
-          >
-            <ChevronLeft className="w-4 h-4" /> Prev
-          </button>
-
-          <div className="text-xs text-gray-400 hidden sm:block">
-            {submittedCount}/{slides.length} answered
+          <div className="mt-6">
+            <ReferencesBlock />
           </div>
-
-          {currentIndex === slides.length - 1 ? (
-            <button
-              onClick={handleFinishRound}
-              disabled={!allSubmitted}
-              className={`inline-flex items-center gap-1.5 px-4 sm:px-6 py-2.5 rounded-xl bg-gradient-to-r ${GRAD} text-white text-xs sm:text-sm font-extrabold shadow-md hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-40 disabled:pointer-events-none transition-all`}
-            >
-              <Trophy className="w-4 h-4" /> {round === 1 ? "Complete Round 1" : "See Final Results"}
-            </button>
-          ) : (
-            <button
-              onClick={() => setCurrentIndex(i => Math.min(slides.length - 1, i + 1))}
-              disabled={!answers[currentIndex].submitted}
-              className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2.5 rounded-xl border-2 border-gray-200 text-gray-500 text-xs sm:text-sm font-bold hover:border-indigo-400 hover:text-indigo-600 disabled:opacity-40 disabled:pointer-events-none transition-all"
-            >
-              Next <ChevronRight className="w-4 h-4" />
-            </button>
-          )}
         </div>
-
-        <div className="mt-8">
-          <ReferencesBlock />
-        </div>
-      </div>
+      )}
     </section>
   );
 }

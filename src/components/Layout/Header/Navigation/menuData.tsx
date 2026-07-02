@@ -1,3 +1,4 @@
+// menuData.ts
 import { HeaderItem } from "@/types/menu";
 
 export const headerData: HeaderItem[] = [
@@ -14,10 +15,11 @@ export const headerData: HeaderItem[] = [
       { label: "Pharmacy Counter", href: "/pharmacy-counter" },
       { label: "Prescription Reader", href: "/prescription-reader" },
       { label: "Books Library", href: "/books-library" },
+      { label: "Antibiogram Simulator", href: "/antibiogram-simulator" },
+      { label: "Molecule Viewer", href: "/molecule-viewer" },
     ],
   },
   { label: "Pharmacopedia", href: "/encyclopedia" },
   { label: "Calculation Tools", href: "/calculation-tools" },
-  { label: "Molecule Viewer", href: "/molecule-viewer" },
   { label: "About Us", href: "/about-us" },
 ];

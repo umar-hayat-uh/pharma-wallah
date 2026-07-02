@@ -97,3 +97,30 @@ li:not(.prose li) {
 .animate-fadeInUp {
   animation: fadeInUp 0.3s ease-out;
 }
+
+/* ── Force all form inputs to have a white background by default ── */
+input,
+textarea,
+select {
+  background-color: #ffffff !important;
+  color: #1e293b;            /* slate‑800, good contrast on white */
+}
+
+/* Optional: remove any default outlines you don't want */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid #6366f1;   /* indigo‑500 ring for accessibility */
+  outline-offset: 2px;
+}
+
+
+/* Hide scrollbar for all elements, but keep functionality */
+* {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+*::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari, Opera */
+}
