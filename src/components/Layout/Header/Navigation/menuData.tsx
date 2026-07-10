@@ -13,6 +13,8 @@ export const headerData: HeaderItem[] = [
       { label: "Slide Spotting", href: "/spotting" },
       { label: "Flashcards", href: "/flash-cards" },
       { label: "Pharmacy Counter", href: "/pharmacy-counter" },
+      { label: "Compounding Lab", href: "/compounding-lab" },
+      { label: "ADR Detective", href: "/adr-detective" },
       { label: "Prescription Reader", href: "/prescription-reader" },
       { label: "Books Library", href: "/books-library" },
       { label: "Antibiogram Simulator", href: "/antibiogram-simulator" },

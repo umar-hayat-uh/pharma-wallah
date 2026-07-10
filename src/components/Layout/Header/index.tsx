@@ -12,7 +12,6 @@ import {
   Stethoscope,
   Microscope,
   Beaker,
-  Leaf,
   BookOpen,
   ChevronDown,
   Menu,
@@ -27,6 +26,10 @@ import {
   FileSearch,
   ShieldAlert,
   Atom,
+  ListChecks,
+  Layers,
+  Search,
+  Library,
 } from "lucide-react";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { createClient } from "@/lib/supabase";
@@ -63,18 +66,37 @@ function useInstallPrompt() {
   return { isInstallable, install };
 }
 
-// ─── Submenu Icons & Descriptions ──────────────────────────────────────────
+// ─── Submenu Icons, Colors & Descriptions ──────────────────────────────────
+// Every entry is matched to what the feature actually does, with its own
+// accent color so the grid doesn't read as one repeated tile.
 const SUBMENU_ICONS: Record<string, React.ReactNode> = {
-  Material: <BookOpen className="w-5 h-5 text-blue-500" />,
-  "MCQ's Bank": <FlaskConical className="w-5 h-5 text-green-500" />,
-  "Slide Spotting": <Microscope className="w-5 h-5 text-blue-500" />,
-  Flashcards: <Beaker className="w-5 h-5 text-green-500" />,
-  "Books Library": <Leaf className="w-5 h-5 text-emerald-500" />,
-  "Lab Simulation": <TestTube className="w-5 h-5 text-purple-500" />,
-  "Pharmacy Counter": <ShoppingCart className="w-5 h-5 text-orange-500" />,
-  "Prescription Reader": <FileSearch className="w-5 h-5 text-cyan-500" />,
-  "Antibiogram Simulator": <ShieldAlert className="w-5 h-5 text-red-500" />,
-  "Molecule Viewer": <Atom className="w-5 h-5 text-indigo-500" />,
+  Material: <BookOpen className="w-5 h-5" />,
+  "MCQ's Bank": <ListChecks className="w-5 h-5" />,
+  "Lab Simulation": <TestTube className="w-5 h-5" />,
+  "Slide Spotting": <Microscope className="w-5 h-5" />,
+  Flashcards: <Layers className="w-5 h-5" />,
+  "Pharmacy Counter": <ShoppingCart className="w-5 h-5" />,
+  "Compounding Lab": <FlaskConical className="w-5 h-5" />,
+  "ADR Detective": <Search className="w-5 h-5" />,
+  "Prescription Reader": <FileSearch className="w-5 h-5" />,
+  "Books Library": <Library className="w-5 h-5" />,
+  "Antibiogram Simulator": <ShieldAlert className="w-5 h-5" />,
+  "Molecule Viewer": <Atom className="w-5 h-5" />,
+};
+
+const SUBMENU_COLORS: Record<string, { icon: string; bg: string; ring: string }> = {
+  Material: { icon: "text-blue-500", bg: "from-blue-50 to-blue-100/40", ring: "group-hover:border-blue-200" },
+  "MCQ's Bank": { icon: "text-green-500", bg: "from-green-50 to-green-100/40", ring: "group-hover:border-green-200" },
+  "Lab Simulation": { icon: "text-purple-500", bg: "from-purple-50 to-purple-100/40", ring: "group-hover:border-purple-200" },
+  "Slide Spotting": { icon: "text-sky-500", bg: "from-sky-50 to-sky-100/40", ring: "group-hover:border-sky-200" },
+  Flashcards: { icon: "text-amber-500", bg: "from-amber-50 to-amber-100/40", ring: "group-hover:border-amber-200" },
+  "Pharmacy Counter": { icon: "text-orange-500", bg: "from-orange-50 to-orange-100/40", ring: "group-hover:border-orange-200" },
+  "Compounding Lab": { icon: "text-teal-500", bg: "from-teal-50 to-teal-100/40", ring: "group-hover:border-teal-200" },
+  "ADR Detective": { icon: "text-red-500", bg: "from-red-50 to-red-100/40", ring: "group-hover:border-red-200" },
+  "Prescription Reader": { icon: "text-cyan-500", bg: "from-cyan-50 to-cyan-100/40", ring: "group-hover:border-cyan-200" },
+  "Books Library": { icon: "text-emerald-500", bg: "from-emerald-50 to-emerald-100/40", ring: "group-hover:border-emerald-200" },
+  "Antibiogram Simulator": { icon: "text-rose-500", bg: "from-rose-50 to-rose-100/40", ring: "group-hover:border-rose-200" },
+  "Molecule Viewer": { icon: "text-indigo-500", bg: "from-indigo-50 to-indigo-100/40", ring: "group-hover:border-indigo-200" },
 };
 
 const SUBMENU_DESCRIPTIONS: Record<string, string> = {
@@ -84,13 +106,15 @@ const SUBMENU_DESCRIPTIONS: Record<string, string> = {
   "Slide Spotting": "Histology and pathology practice.",
   Flashcards: "Quick review with spaced repetition.",
   "Pharmacy Counter": "Virtual retail dispensing training.",
+  "Compounding Lab": "Practice pharmaceutical compounding.",
+  "ADR Detective": "Spot and analyze adverse drug reactions.",
   "Prescription Reader": "Decipher and analyze Rx forms.",
   "Books Library": "Comprehensive textbook collection.",
   "Antibiogram Simulator": "Analyze resistance patterns.",
   "Molecule Viewer": "Explore 3D chemical structures.",
 };
 
-// ─── Two‑Column Desktop Mega‑Dropdown ────────────────────────────────────
+// ─── Three‑Column Desktop Mega‑Dropdown ────────────────────────────────────
 const DesktopDropdown = ({
   item,
   isOpen,
@@ -104,47 +128,82 @@ const DesktopDropdown = ({
 
   return (
     <div
-      className="absolute left-1/2 -translate-x-1/2 mt-1 bg-white rounded-2xl border border-slate-100 shadow-[0_20px_40px_-15px_rgba(37,99,235,0.15)] overflow-hidden z-50"
+      className="absolute left-1/2 -translate-x-1/2 mt-1 bg-white rounded-2xl border border-slate-100 shadow-[0_25px_50px_-15px_rgba(37,99,235,0.18)] overflow-hidden z-50"
       style={{
-        width: 680,
+        width: 780,
         transform: isOpen
           ? "translateX(-50%) translateY(8px) scale(1)"
           : "translateX(-50%) translateY(4px) scale(0.97)",
         opacity: isOpen ? 1 : 0,
         pointerEvents: isOpen ? "auto" : "none",
-        transition: "opacity 200ms ease, transform 200ms ease",
+        transition: "opacity 220ms ease, transform 220ms ease",
         willChange: "opacity, transform",
       }}
     >
       <div className="h-[3px] w-full bg-gradient-to-r from-blue-600 to-green-400" />
 
-      {/* 2-column CSS Grid */}
-      <div className="p-4 grid grid-cols-2 gap-2">
-        {item.submenu.map((sub, i) => (
-          <Link
-            key={i}
-            href={sub.href}
-            onClick={onClose}
-            className="group flex items-start gap-4 p-3 rounded-xl hover:bg-slate-50 transition-all duration-200"
-          >
-            <div className="shrink-0 w-11 h-11 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center group-hover:scale-110 group-hover:border-blue-200 group-hover:shadow-md transition-all duration-300">
-              {SUBMENU_ICONS[sub.label] ?? <Pill className="w-5 h-5 text-blue-500" />}
-            </div>
-            <div className="flex flex-col justify-center">
-              <div className="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">
-                {sub.label}
+      {/* 3-column CSS Grid */}
+      <div className="p-4 grid grid-cols-3 gap-2">
+        {item.submenu.map((sub, i) => {
+          const colors = SUBMENU_COLORS[sub.label] ?? {
+            icon: "text-blue-500",
+            bg: "from-blue-50 to-blue-100/40",
+            ring: "group-hover:border-blue-200",
+          };
+          return (
+            <Link
+              key={i}
+              href={sub.href}
+              onClick={onClose}
+              className="group relative flex items-start gap-3 p-3 rounded-xl overflow-hidden transition-all duration-200 hover:bg-slate-50"
+              style={{
+                animation: isOpen
+                  ? `submenuFadeIn 320ms ease both`
+                  : undefined,
+                animationDelay: isOpen ? `${i * 25}ms` : undefined,
+              }}
+            >
+              {/* Hover sweep highlight */}
+              <span
+                className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${colors.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+              />
+
+              <div
+                className={`relative shrink-0 w-11 h-11 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5 group-hover:shadow-md ${colors.ring}`}
+              >
+                <span className={colors.icon}>
+                  {SUBMENU_ICONS[sub.label] ?? <Pill className="w-5 h-5 text-blue-500" />}
+                </span>
               </div>
-              <div className="text-xs text-slate-500 mt-0.5 leading-snug">
-                {SUBMENU_DESCRIPTIONS[sub.label] || "Explore this resource"}
+              <div className="relative flex flex-col justify-center min-w-0">
+                <div className="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors duration-200 truncate">
+                  {sub.label}
+                </div>
+                <div className="text-xs text-slate-500 mt-0.5 leading-snug line-clamp-2">
+                  {SUBMENU_DESCRIPTIONS[sub.label] || "Explore this resource"}
+                </div>
               </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          );
+        })}
       </div>
 
       <div className="bg-slate-50/80 border-t border-slate-100 p-3 px-6 flex items-center justify-between">
         <span className="text-xs font-medium text-slate-500">Press Esc to close</span>
       </div>
+
+      <style jsx>{`
+        @keyframes submenuFadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(6px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 };
@@ -243,18 +302,18 @@ const Header: React.FC = () => {
   return (
     <>
       {/* ══ HEADER ══════════════════════════════════════════════════════════ */}
+      {/* Background is a flat, fully opaque white at all times — no
+          translucency, so nothing from the hero section shows through.
+          Only the shadow/padding shift slightly once the page is scrolled,
+          for a subtle sense of depth. */}
       <header
         ref={headerRef}
-        className="fixed top-0 left-0 right-0 z-50 border-b border-gray-100/80"
+        className="fixed top-0 left-0 right-0 z-50 border-b border-gray-100/80 bg-white"
         style={{
-          backgroundColor: sticky ? "rgba(255,255,255,0.97)" : "rgba(255,255,255,0.88)",
           boxShadow: sticky ? "0 2px 20px rgba(37,99,235,0.07)" : "none",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
           paddingTop: sticky ? 10 : 14,
           paddingBottom: sticky ? 10 : 14,
-          transition: "background-color 220ms ease, box-shadow 220ms ease, padding 220ms ease",
-          willChange: "background-color",
+          transition: "box-shadow 220ms ease, padding 220ms ease",
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
@@ -563,7 +622,7 @@ const Header: React.FC = () => {
   );
 };
 
-// ─── MobileNavItem (Accordion) with New Grid Design ─────────────────────────
+// ─── MobileNavItem (Accordion) with 3‑Column Grid Design ────────────────────
 const MobileNavItem = ({
   item,
   pathUrl,
@@ -596,33 +655,43 @@ const MobileNavItem = ({
 
           <div
             style={{
-              maxHeight: open ? 800 : 0, // Increased to accommodate the 2-column grid
+              maxHeight: open ? 1000 : 0,
               opacity: open ? 1 : 0,
               overflow: "hidden",
-              transition: "max-height 300ms cubic-bezier(0.4,0,0.2,1), opacity 300ms ease",
+              transition: "max-height 320ms cubic-bezier(0.4,0,0.2,1), opacity 300ms ease",
             }}
           >
-            {/* NEW 2-COLUMN GRID UI FOR MOBILE */}
-            <div className="mt-2 grid grid-cols-2 gap-2 px-1 pb-2">
+            {/* 3-COLUMN GRID UI FOR MOBILE */}
+            <div className="mt-2 grid grid-cols-3 gap-2 px-1 pb-2">
               {item.submenu!.map((sub, j) => {
-                const subActive = pathUrl === sub.href;
+                const colors = SUBMENU_COLORS[sub.label] ?? {
+                  icon: "text-blue-500",
+                  bg: "from-blue-50 to-blue-100/40",
+                  ring: "group-hover:border-blue-200",
+                };
                 return (
-                 <Link
-  key={j}
-  href={sub.href}
-  onClick={onClose}
-  className="group flex flex-col items-center justify-center p-3 rounded-2xl gap-2 transition-all duration-300 border border-gray-100 bg-gray-50/50 hover:bg-white hover:border-blue-200 hover:shadow-sm active:scale-95" // Added active:scale-95
->
-  <span
-    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-gray-100 bg-white shadow-sm transition-all duration-300 group-hover:scale-110 group-hover:border-blue-200 group-hover:shadow-md"
-  >
-    {/* The icon will now scale and shadow-lift when the parent container is hovered/tapped */}
-    {SUBMENU_ICONS[sub.label] ?? <Pill className="w-5 h-5 text-blue-500 transition-colors duration-300 group-hover:text-blue-600" />}
-  </span>
-  <span className="text-[11px] font-semibold text-center leading-tight px-1 text-gray-600 group-hover:text-blue-700 transition-colors">
-    {sub.label}
-  </span>
-</Link>
+                  <Link
+                    key={j}
+                    href={sub.href}
+                    onClick={onClose}
+                    className={`group relative flex flex-col items-center justify-center p-2.5 rounded-2xl gap-1.5 overflow-hidden transition-all duration-300 border border-gray-100 bg-gray-50/50 hover:bg-white ${colors.ring} hover:shadow-sm active:scale-95`}
+                    style={{
+                      animation: open ? "submenuFadeInMobile 300ms ease both" : undefined,
+                      animationDelay: open ? `${j * 20}ms` : undefined,
+                    }}
+                  >
+                    <span
+                      className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${colors.bg} opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-300`}
+                    />
+                    <span className="relative w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border border-gray-100 bg-white shadow-sm transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5 group-hover:shadow-md">
+                      <span className={colors.icon}>
+                        {SUBMENU_ICONS[sub.label] ?? <Pill className="w-4 h-4 text-blue-500" />}
+                      </span>
+                    </span>
+                    <span className="relative text-[10.5px] font-semibold text-center leading-tight px-0.5 text-gray-600 group-hover:text-blue-700 transition-colors">
+                      {sub.label}
+                    </span>
+                  </Link>
                 );
               })}
             </div>
@@ -639,6 +708,19 @@ const MobileNavItem = ({
           {item.label}
         </Link>
       )}
+
+      <style jsx>{`
+        @keyframes submenuFadeInMobile {
+          from {
+            opacity: 0;
+            transform: translateY(4px) scale(0.96);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+      `}</style>
     </div>
   );
 };
