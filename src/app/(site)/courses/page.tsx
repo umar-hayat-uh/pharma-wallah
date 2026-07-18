@@ -1,5 +1,14 @@
 "use client";
 
+// src/app/(site)/courses/page.tsx
+//
+// Rewritten to read from the registry (src/lib/courses/registry.ts) instead
+// of the separate app/api/semester-data.tsx file. This guarantees the links
+// on this page always match the real routes — old approach had two sources
+// of truth (registry for routing, semester-data.tsx for this listing) that
+// could drift apart. Also fixes hrefs for the simplified /courses/[subjectSlug]
+// route (no semester in the URL anymore).
+
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -8,7 +17,7 @@ import {
   Pill, FlaskConical, Stethoscope, Microscope, Beaker, Leaf,
   Dna, Activity,
 } from "lucide-react";
-import { SemesterData } from "@/app/api/semester-data";
+import { getSemesters, SUBJECTS } from "@/lib/courses/registry";
 
 const bgIcons = [
   { Icon: Pill,         top: "8%",  left: "1.5%",  size: 30, delay: 0   },
@@ -22,23 +31,22 @@ const bgIcons = [
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 const fadeUp  = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: "easeOut" } } };
 
-export default function MaterialPage() {
+export default function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const semesters = useMemo(() => getSemesters(), []);
 
   const filteredSemesters = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return SemesterData;
-    return SemesterData
-      .map((sem: any) => ({ ...sem, subjects: sem.subjects.filter((s: any) => s.name.toLowerCase().includes(q)) }))
-      .filter((sem: any) => sem.subjects.length > 0);
-  }, [searchQuery]);
+    if (!q) return semesters;
+    return semesters
+      .map((sem) => ({ ...sem, subjects: sem.subjects.filter((s) => s.title.toLowerCase().includes(q)) }))
+      .filter((sem) => sem.subjects.length > 0);
+  }, [searchQuery, semesters]);
 
-  const totalSubjects = SemesterData.reduce((a: number, s: any) => a + s.subjects.length, 0);
+  const totalSubjects = SUBJECTS.length;
 
   return (
     <section className="min-h-screen bg-white relative overflow-x-hidden">
-
-      {/* Floating BG icons — hidden on small screens to avoid clutter */}
       {bgIcons.map(({ Icon, top, left, size, delay }, i) => (
         <motion.div key={i}
           className="fixed pointer-events-none text-blue-200 z-0 hidden md:block"
@@ -49,7 +57,7 @@ export default function MaterialPage() {
         </motion.div>
       ))}
 
-      {/* ── Hero ── */}
+      {/* Hero */}
       <div className="relative bg-gradient-to-r from-blue-600 to-green-400 overflow-hidden">
         <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/10 pointer-events-none" />
         <div className="absolute -bottom-10 left-20 w-32 h-32 rounded-full bg-white/10 pointer-events-none" />
@@ -80,7 +88,6 @@ export default function MaterialPage() {
             Semester-organised lecture notes, handouts and subject guides — structured to help you ace sessionals, finals, vivas, and competitive exams.
           </motion.p>
 
-          {/* Search bar */}
           <motion.div
             initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}
             className="relative max-w-lg mx-auto px-4 sm:px-0">
@@ -103,14 +110,13 @@ export default function MaterialPage() {
             </div>
           </motion.div>
 
-          {/* Stats */}
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.28 }}
             className="flex items-center justify-center gap-6 sm:gap-8 mt-8 flex-wrap">
             {[
-              { n: `${SemesterData.length}`, l: "Semesters" },
-              { n: `${totalSubjects}+`,      l: "Subjects"  },
-              { n: "UOK & HEC",              l: "Aligned"   },
+              { n: `${semesters.length}`, l: "Semesters" },
+              { n: `${totalSubjects}+`,   l: "Subjects"  },
+              { n: "UOK & HEC",           l: "Aligned"   },
             ].map(({ n, l }) => (
               <div key={l} className="flex items-center gap-2 text-white/80">
                 <span className="text-xl sm:text-2xl font-extrabold text-white">{n}</span>
@@ -121,10 +127,8 @@ export default function MaterialPage() {
         </div>
       </div>
 
-      {/* ── Content ── */}
+      {/* Content */}
       <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
-
-        {/* No results */}
         <AnimatePresence>
           {filteredSemesters.length === 0 && searchQuery && (
             <motion.div
@@ -142,15 +146,13 @@ export default function MaterialPage() {
           )}
         </AnimatePresence>
 
-        {/* Semester sections */}
-        {filteredSemesters.map(({ semester, subjects }: any) => (
-          <motion.div key={semester}
+        {filteredSemesters.map(({ semester, semesterSlug, subjects }) => (
+          <motion.div key={semesterSlug}
             initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }} transition={{ duration: 0.4 }}
-            id={semester.replace(/\s+/g, "-").toLowerCase()}
+            id={semesterSlug}
             className="mb-10 sm:mb-16 scroll-mt-24">
 
-            {/* Semester heading */}
             <div className="flex items-center gap-3 mb-5 sm:mb-8 flex-wrap">
               <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-blue-600 to-green-400 flex items-center justify-center shrink-0">
                 <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
@@ -162,36 +164,30 @@ export default function MaterialPage() {
               </span>
             </div>
 
-            {/* Subject cards grid */}
             <motion.div
               variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true }}
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
-              {subjects.map((subj: any) => {
-                // ✅ KEY FIX: use custom href if defined, otherwise build from subject name
-                const href: string = subj.href
-                  ?? `/courses/${subj.name.toLowerCase().replace(/\s+/g, "-")}`;
+              {subjects.map((subj) => {
+                const href = `/courses/${subj.slug}`; // simplified route — no semester segment
 
                 return (
-                  <motion.div key={subj.name} variants={fadeUp}>
+                  <motion.div key={subj.slug} variants={fadeUp}>
                     <Link href={href} className="group block h-full">
                       <motion.div
                         whileHover={{ y: -4, boxShadow: "0 12px 28px rgba(37,99,235,0.10)" }}
                         transition={{ type: "spring", stiffness: 260 }}
                         className="relative h-full rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 flex flex-col hover:border-blue-300 transition-all duration-300 overflow-hidden">
 
-                        {/* Top accent stripe */}
                         <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl bg-gradient-to-r from-blue-600 to-green-400" />
-                        {/* Hover tint */}
                         <div className="absolute inset-0 bg-blue-50/0 group-hover:bg-blue-50/40 transition-colors duration-300 pointer-events-none rounded-2xl" />
 
-                        {/* Icon */}
                         <div className="relative z-10 w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-3 sm:mb-4 text-xl sm:text-2xl
                           group-hover:bg-gradient-to-br group-hover:from-blue-600 group-hover:to-green-400 transition-all duration-300">
                           {subj.icon}
                         </div>
 
                         <h3 className="relative z-10 text-xs sm:text-sm font-extrabold text-gray-900 mb-1.5 sm:mb-2 leading-snug line-clamp-2 group-hover:text-blue-700 transition-colors">
-                          {subj.name}
+                          {subj.title}
                         </h3>
                         <p className="relative z-10 text-xs text-gray-400 leading-relaxed line-clamp-3 flex-1">
                           {subj.description}
