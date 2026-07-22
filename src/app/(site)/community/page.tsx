@@ -18,6 +18,12 @@ import {
     Share2,
     UserCircle2,
     Sparkles,
+    X,
+    Twitter,
+    Facebook,
+    Linkedin,
+    Link2,
+    MessageCircle,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -79,12 +85,13 @@ function CommunityFeedInner() {
         setMounted(true);
     }, []);
 
-    // Build share URL only after mount – otherwise fall back to empty string
+    // Build share URL safely after mount
     const getShareUrl = (questionId: string) =>
         mounted ? `${window.location.origin}/community/question/${questionId}` : "";
 
     const [page, setPage] = useState(1);
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
+    const [shareModal, setShareModal] = useState<{ url: string; title: string } | null>(null);
     const limit = 10;
 
     const cacheKey = `questions:p${page}:t${selectedTag ?? "all"}`;
@@ -113,6 +120,9 @@ function CommunityFeedInner() {
         const t = setTimeout(() => router.replace("/community"), 4000);
         return () => clearTimeout(t);
     }, [highlightId, router]);
+
+    // Prevent hydration mismatch by ensuring skeleton is shown on server and initial client render
+    const showSkeleton = !mounted || loading;
 
     const questions = data?.questions ?? [];
     const total = data?.total ?? 0;
@@ -160,15 +170,17 @@ function CommunityFeedInner() {
         }
     }
 
+    const askLinkHref = mounted && user ? "/community/ask" : "/signin";
+
     return (
-        <div className="min-h-screen py-4 sm:py-6 px-3 sm:px-4 pt-10 font-sans text-slate-900">
+        <div className="min-h-screen py-4 sm:py-6 px-3 sm:px-4 pt-10 font-sans text-slate-900 relative">
             <div className="max-w-6xl mx-auto flex gap-6 justify-center">
                 {/* LEFT SIDEBAR - Desktop Only */}
-                <aside className="hidden md:block w-44 shrink-0">
+                <aside className="hidden md:block w-44 pt-5 shrink-0">
                     <div className="sticky top-6">
                         <Link
-                            href="/community/ask"
-                            className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-green-400 hover:shadow-lg text-white px-4 py-2.5 rounded-2xl font-extrabold text-sm mb-6 transition-all shadow-md w-max"
+                            href={askLinkHref}
+                            className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-green-400 hover:opacity-95 hover:shadow-lg text-white px-4 py-2.5 rounded-2xl font-extrabold text-sm mb-6 transition-all shadow-md w-full text-center"
                         >
                             <PenSquare size={16} />
                             Ask Question
@@ -184,8 +196,8 @@ function CommunityFeedInner() {
                                     setPage(1);
                                 }}
                                 className={`text-left px-3 py-2 rounded-xl text-sm font-medium transition-colors ${!selectedTag
-                                    ? "bg-blue-50 text-blue-700 font-bold"
-                                    : "hover:bg-gray-100 text-slate-600"
+                                        ? "bg-blue-50 text-blue-700 font-bold"
+                                        : "hover:bg-gray-100 text-slate-600"
                                     }`}
                             >
                                 All Questions
@@ -198,8 +210,8 @@ function CommunityFeedInner() {
                                         setPage(1);
                                     }}
                                     className={`text-left px-3 py-2 rounded-xl text-sm font-medium transition-colors capitalize ${selectedTag === tag
-                                        ? "bg-blue-50 text-blue-700 font-bold"
-                                        : "hover:bg-gray-100 text-slate-600"
+                                            ? "bg-blue-50 text-blue-700 font-bold"
+                                            : "hover:bg-gray-100 text-slate-600"
                                         }`}
                                 >
                                     {tag.replace("-", " ")}
@@ -221,7 +233,6 @@ function CommunityFeedInner() {
                     <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden mb-4 shadow-sm">
                         <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 to-green-400" />
                         <div className="flex items-center gap-3 p-4">
-                            {/* Avatar: always show placeholder until mounted, then use real avatar */}
                             {mounted && user?.user_metadata?.avatar_url ? (
                                 <img
                                     src={user.user_metadata.avatar_url}
@@ -232,7 +243,7 @@ function CommunityFeedInner() {
                                 <UserCircle2 className="w-9 h-9 text-gray-400" />
                             )}
                             <Link
-                                href={user ? "/community/ask" : "/signin"}
+                                href={askLinkHref}
                                 className="flex-1 bg-slate-50 hover:bg-slate-100 transition-colors rounded-full px-4 py-2.5 text-sm text-slate-400 text-left border border-gray-200"
                             >
                                 What do you want to ask or share?
@@ -243,7 +254,7 @@ function CommunityFeedInner() {
                     {/* Mobile: Ask button + scrollable tags */}
                     <div className="md:hidden mb-3">
                         <Link
-                            href="/community/ask"
+                            href={askLinkHref}
                             className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-green-400 text-white px-4 py-2.5 rounded-2xl font-extrabold text-sm mb-3 shadow-md w-full"
                         >
                             <PenSquare size={16} />
@@ -256,8 +267,8 @@ function CommunityFeedInner() {
                                     setPage(1);
                                 }}
                                 className={`whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${!selectedTag
-                                    ? "bg-slate-900 text-white border-slate-900"
-                                    : "bg-white text-slate-600 border-gray-300"
+                                        ? "bg-slate-900 text-white border-slate-900"
+                                        : "bg-white text-slate-600 border-gray-300"
                                     }`}
                             >
                                 All
@@ -270,8 +281,8 @@ function CommunityFeedInner() {
                                         setPage(1);
                                     }}
                                     className={`whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium border transition-colors capitalize ${selectedTag === tag
-                                        ? "bg-slate-900 text-white border-slate-900"
-                                        : "bg-white text-slate-600 border-gray-300"
+                                            ? "bg-slate-900 text-white border-slate-900"
+                                            : "bg-white text-slate-600 border-gray-300"
                                         }`}
                                 >
                                     {tag.replace("-", " ")}
@@ -285,7 +296,7 @@ function CommunityFeedInner() {
                         className={`space-y-4 transition-opacity ${isRevalidating ? "opacity-60" : "opacity-100"
                             }`}
                     >
-                        {loading ? (
+                        {showSkeleton ? (
                             [...Array(3)].map((_, i) => (
                                 <div
                                     key={i}
@@ -307,8 +318,8 @@ function CommunityFeedInner() {
                                 <div
                                     key={q.id}
                                     className={`relative rounded-2xl border bg-white overflow-hidden shadow-sm hover:shadow-md transition-all ${q.id === highlightId
-                                        ? "border-emerald-300 ring-2 ring-emerald-100"
-                                        : "border-gray-200"
+                                            ? "border-emerald-300 ring-2 ring-emerald-100"
+                                            : "border-gray-200"
                                         }`}
                                 >
                                     <div className="p-4">
@@ -335,7 +346,7 @@ function CommunityFeedInner() {
                                                 </div>
                                             </div>
                                             <ActionsMenu
-                                                isOwner={!!user && user.id === q.user_id}
+                                                isOwner={mounted && !!user && user.id === q.user_id}
                                                 shareUrl={getShareUrl(q.id)}
                                                 onDelete={() => handleDelete(q.id)}
                                                 deleteLabel="this question"
@@ -376,8 +387,8 @@ function CommunityFeedInner() {
                                                         aria-pressed={q.user_vote === "up"}
                                                         aria-label="Upvote"
                                                         className={`flex items-center gap-1.5 px-3 py-1.5 hover:bg-gray-200 rounded-l-full border-r border-gray-200 transition-colors disabled:opacity-50 ${q.user_vote === "up"
-                                                            ? "text-blue-600 bg-blue-50"
-                                                            : "text-slate-500"
+                                                                ? "text-blue-600 bg-blue-50"
+                                                                : "text-slate-500"
                                                             }`}
                                                     >
                                                         <ArrowBigUp
@@ -398,8 +409,8 @@ function CommunityFeedInner() {
                                                         aria-pressed={q.user_vote === "down"}
                                                         aria-label="Downvote"
                                                         className={`px-3 py-1.5 hover:bg-gray-200 rounded-r-full transition-colors disabled:opacity-50 ${q.user_vote === "down"
-                                                            ? "text-red-600 bg-red-50"
-                                                            : "text-slate-500"
+                                                                ? "text-red-600 bg-red-50"
+                                                                : "text-slate-500"
                                                             }`}
                                                     >
                                                         <ArrowBigDown
@@ -424,16 +435,18 @@ function CommunityFeedInner() {
                                                 </Link>
 
                                                 <button
-                                                    onClick={() => {
-                                                        navigator.clipboard.writeText(
-                                                            `${window.location.origin}/community/question/${q.id}`
-                                                        );
-                                                        toast.success("Link copied!");
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        setShareModal({
+                                                            url: getShareUrl(q.id),
+                                                            title: q.title,
+                                                        });
                                                     }}
-                                                    className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-slate-500 hover:bg-gray-100 rounded-full transition-colors"
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 text-slate-500 hover:bg-gray-100 rounded-full transition-colors"
                                                     aria-label="Share"
                                                 >
                                                     <Share2 size={18} />
+                                                    <span className="hidden sm:inline text-sm font-bold">Share</span>
                                                 </button>
                                             </div>
                                         </div>
@@ -442,7 +455,7 @@ function CommunityFeedInner() {
                             ))
                         )}
 
-                        {totalPages > 1 && !loading && (
+                        {totalPages > 1 && !showSkeleton && (
                             <div className="flex justify-center gap-2 mt-8 pb-8">
                                 <button
                                     disabled={page === 1}
@@ -494,6 +507,90 @@ function CommunityFeedInner() {
                     </div>
                 </aside>
             </div>
+
+            {/* Share Modal */}
+            {shareModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4"
+                    onClick={() => setShareModal(null)}
+                >
+                    <div
+                        className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                            <h3 className="font-bold text-slate-800">Share Question</h3>
+                            <button
+                                onClick={() => setShareModal(null)}
+                                className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-5 grid grid-cols-4 gap-4">
+                            <a
+                                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareModal.url)}&text=${encodeURIComponent(shareModal.title)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex flex-col items-center gap-2 group"
+                            >
+                                <div className="w-12 h-12 rounded-full bg-sky-50 flex items-center justify-center text-sky-500 group-hover:bg-sky-500 group-hover:text-white transition-colors">
+                                    <Twitter size={20} />
+                                </div>
+                                <span className="text-xs font-medium text-slate-600">Twitter</span>
+                            </a>
+                            <a
+                                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareModal.url)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex flex-col items-center gap-2 group"
+                            >
+                                <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                    <Facebook size={20} />
+                                </div>
+                                <span className="text-xs font-medium text-slate-600">Facebook</span>
+                            </a>
+                            <a
+                                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareModal.url)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex flex-col items-center gap-2 group"
+                            >
+                                <div className="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                    <Linkedin size={20} />
+                                </div>
+                                <span className="text-xs font-medium text-slate-600">LinkedIn</span>
+                            </a>
+                            <a
+                                href={`https://wa.me/?text=${encodeURIComponent(shareModal.title + " " + shareModal.url)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex flex-col items-center gap-2 group"
+                            >
+                                <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center text-green-500 group-hover:bg-green-500 group-hover:text-white transition-colors">
+                                    <MessageCircle size={20} />
+                                </div>
+                                <span className="text-xs font-medium text-slate-600">WhatsApp</span>
+                            </a>
+                        </div>
+
+                        <div className="p-4 bg-slate-50 border-t border-gray-100">
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(shareModal.url);
+                                    toast.success("Link copied!");
+                                    setShareModal(null);
+                                }}
+                                className="w-full flex items-center justify-center gap-2 py-2.5 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 rounded-xl text-sm font-bold text-slate-700 transition-colors shadow-sm"
+                            >
+                                <Link2 size={18} />
+                                Copy Link
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
