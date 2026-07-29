@@ -1,13 +1,12 @@
-// src/app/(site)/courses/[subjectSlug]/page.tsx
-// Replaces src/app/(site)/courses/[semesterSlug]/[subjectSlug]/page.tsx
-
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookOpen, Clock, ChevronRight } from "lucide-react";
 import { SUBJECTS, getSubject } from "@/lib/courses/registry";
 import type { Metadata } from "next";
 
-interface Params { subjectSlug: string }
+interface Params {
+  subjectSlug: string;
+}
 
 export function generateStaticParams() {
   return SUBJECTS.map((s) => ({ subjectSlug: s.slug }));
@@ -16,7 +15,10 @@ export function generateStaticParams() {
 export function generateMetadata({ params }: { params: Params }): Metadata {
   const subject = getSubject(params.subjectSlug);
   if (!subject) return {};
-  return { title: `${subject.title} | Pharmawallah`, description: subject.description };
+  return {
+    title: `${subject.title} | Pharmawallah`,
+    description: subject.description,
+  };
 }
 
 export const revalidate = 3600;
@@ -53,11 +55,26 @@ export default function SubjectPage({ params }: { params: Params }) {
             <Link key={unit.id} href={`${basePath}/${unit.id}`} className="group block">
               <div className="relative h-full rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 hover:border-blue-300 hover:-translate-y-0.5 transition-all shadow-sm hover:shadow-md overflow-hidden">
                 <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${unit.gradient}`} />
+
+                {/* Static preview image */}
+                {unit.previewImage && (
+                  <img
+                    src={unit.previewImage}
+                    alt={unit.title}
+                    className="w-full h-32 object-cover rounded-xl border mb-3"
+                    loading="lazy"
+                  />
+                )}
+
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-2xl">{unit.emoji}</span>
-                  <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Unit {i + 1}</span>
+                  <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                    Unit {i + 1}
+                  </span>
                 </div>
-                <h3 className="font-bold text-gray-900 mb-1 group-hover:text-blue-700 transition-colors">{unit.title}</h3>
+                <h3 className="font-bold text-gray-900 mb-1 group-hover:text-blue-700 transition-colors">
+                  {unit.title}
+                </h3>
                 <p className="text-xs text-gray-500 line-clamp-2 mb-3">{unit.description}</p>
                 <div className="flex items-center gap-3 text-[11px] text-gray-400 pt-3 border-t border-gray-100">
                   <span className="flex items-center gap-1"><Clock size={11} /> {unit.readTime} min</span>

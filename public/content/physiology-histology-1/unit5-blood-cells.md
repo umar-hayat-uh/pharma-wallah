@@ -1,786 +1,333 @@
-## Unit 5: The Blood Cells
+# Unit 5: The Blood Cells
 
-### Introduction to Blood
-
-Blood is a specialized connective tissue composed of cellular elements suspended in a liquid matrix called plasma. It constitutes approximately 7-8% of body weight, with a total volume of 5-6 liters in an average adult. Blood performs essential functions including transport, regulation, and protection.
-
-**Functions of Blood**:
-
-| Function | Description |
-|----------|-------------|
-| **Transport** | Oxygen from lungs to tissues; carbon dioxide from tissues to lungs; nutrients from digestive tract; hormones from endocrine glands; waste products to kidneys |
-| **Regulation** | Maintains body temperature (by distributing heat); pH balance (via buffers); fluid and electrolyte balance |
-| **Protection** | Clotting prevents blood loss; white blood cells and antibodies defend against pathogens |
-
-**Composition of Blood**:
-
-| Component | Percentage | Description |
-|-----------|------------|-------------|
-| **Plasma** | 55% | Liquid matrix (92% water, 7% proteins, 1% other solutes) |
-| **Buffy coat** | <1% | White blood cells and platelets |
-| **Red blood cells (erythrocytes)** | 45% | Most numerous cells; carry oxygen |
+## Learning Objectives
+- Describe the structure, function, and life cycle of red blood cells, including erythropoiesis and hemoglobin metabolism.
+- Identify the types of white blood cells, their genesis, and their specific roles in immunity.
+- Explain the functions of T‑cells, B‑cells, memory cells, and antibodies in the immune response.
+- Describe the formation of platelets, the platelet plug, and the mechanisms of blood coagulation (intrinsic and extrinsic pathways).
+- Explain blood typing, agglutinogens, Rh blood types, and the composition of plasma and serum.
+- Understand the clinical significance of anemia, leukopenia, and pus formation.
 
 ---
 
+## Core Content
+
 ### 1. Red Blood Cells (Erythrocytes)
+Red blood cells (RBCs) are the most abundant blood cells, specialised for oxygen and carbon dioxide transport.
 
-#### 1.1 Structure and Characteristics
-
-Red blood cells are highly specialized cells optimized for oxygen transport.
-
-**Features**:
-
+#### A. Structure and Characteristics
 | Feature | Description | Functional Significance |
-|---------|-------------|------------------------|
-| **Shape** | Biconcave disc | Maximizes surface area-to-volume ratio for gas exchange; allows deformation through capillaries |
-| **Size** | Diameter: 7.5-8.5 μm; thickness: 2 μm (rim), 1 μm (center) | Slightly larger than capillary diameter (requires deformation) |
-| **Membrane** | Flexible cytoskeleton (spectrin, actin, ankyrin) | Allows reversible deformation; maintains shape |
-| **Nucleus** | Absent (extruded during maturation) | Maximizes space for hemoglobin; prevents cell division |
-| **Organelles** | Absent (mitochondria, ribosomes, ER) | No oxidative metabolism (uses glycolysis); prevents oxygen consumption |
-| **Hemoglobin** | 280 million molecules per cell | Binds and transports oxygen |
+|---------|-------------|-------------------------|
+| **Shape** | Biconcave disc | Maximises surface area for gas exchange; allows deformation through narrow capillaries |
+| **Size** | ~7.5 µm diameter | Slightly larger than capillary diameter, requiring deformation |
+| **Nucleus** | Absent (extruded during maturation) | Maximises space for haemoglobin; prevents cell division |
+| **Organelles** | Absent (no mitochondria, ribosomes, ER) | Glycolysis only – no consumption of transported O₂ |
+| **Haemoglobin** | ~280 million molecules per cell | Binds and transports O₂ and CO₂ |
 | **Lifespan** | ~120 days | |
-| **Count** | Males: 4.7-6.1 million/μL; Females: 4.2-5.4 million/μL | |
+| **Count** | Males: 4.5–6.0 million/µL; Females: 4.0–5.5 million/µL | |
 
-**Membrane Skeleton**:
-- Proteins: spectrin (α and β chains), actin, ankyrin, band 3, protein 4.1, etc.
-- Mutations cause hereditary spherocytosis (spherical RBCs, hemolytic anemia)
+**Membrane skeleton:** Spectrin, actin, ankyrin – defects cause hereditary spherocytosis.
 
-#### 1.2 Erythropoiesis (Formation of Red Blood Cells)
+#### B. Erythropoiesis (Formation of RBCs)
+Erythropoiesis occurs in red bone marrow.
 
-Erythropoiesis is the process of RBC production, occurring primarily in bone marrow.
+**Sites throughout life:**
+- **Fetus:** Yolk sac → liver & spleen → bone marrow
+- **Adult:** Flat bones (sternum, ribs, pelvis, vertebrae, skull) and proximal ends of long bones.
 
-**Sites of Erythropoiesis**:
+**Stages of erythropoiesis:**
+1. **Pluripotent haematopoietic stem cell** → 2. **Myeloid stem cell** → 3. **Proerythroblast** (large, nucleated) → 4. **Basophilic erythroblast** (haemoglobin synthesis begins) → 5. **Polychromatophilic erythroblast** (haemoglobin increases) → 6. **Orthochromatic erythroblast** (nucleus condenses and is extruded) → 7. **Reticulocyte** (released into blood; residual RNA, matures in 1–2 days) → 8. **Mature erythrocyte**
 
-| Age | Site |
-|-----|------|
-| Fetal (first months) | Yolk sac |
-| Fetal (mid-gestation) | Liver, spleen |
-| Fetal (late) and postnatal | Bone marrow (all bones) |
-| Adult | Red bone marrow (vertebrae, sternum, ribs, skull, proximal ends of long bones) |
+![Erythropoiesis – RBC Production](/previews/physio/unit5.1.webp)
 
-**Stages of Erythropoiesis**:
+**Regulation by Erythropoietin (EPO):**
+- Produced mainly by kidneys (peritubular fibroblasts) in response to hypoxia.
+- Hypoxia‑inducible factor (HIF‑1α) stimulates EPO gene transcription.
+- EPO acts on bone marrow CFU‑E and BFU‑E, promoting proliferation, differentiation, and inhibiting apoptosis.
+- Negative feedback: increased RBC mass → improved O₂ delivery → decreased EPO.
 
-| Stage | Characteristics | Nucleus | Hemoglobin |
-|-------|-----------------|---------|------------|
-| **Proerythroblast** | Large cell (20 μm), basophilic cytoplasm | Large, nucleoli | None |
-| **Basophilic erythroblast** | Smaller, intensely basophilic (RNA) | Condensing | Traces |
-| **Polychromatophilic erythroblast** | Mixed staining (acidophilic + basophilic) | Smaller, clumped | Increasing |
-| **Orthochromatic erythroblast (normoblast)** | Acidophilic cytoplasm; nucleus pyknotic | Small, dark, about to be extruded | Near final |
-| **Reticulocyte** | Anucleate; residual RNA (reticulum) visible with special stains | Absent | 80-90% of final |
-| **Mature erythrocyte** | Biconcave disc; no organelles | Absent | 100% |
+**Factors required for erythropoiesis:**
+| Factor | Role | Deficiency result |
+|--------|------|-------------------|
+| Iron | Heme synthesis | Microcytic hypochromic anaemia |
+| Vitamin B₁₂ | DNA synthesis | Megaloblastic anaemia |
+| Folate | DNA synthesis | Megaloblastic anaemia |
+| Vitamin B₆ | Heme synthesis (ALA synthase cofactor) | Sideroblastic anaemia |
+| Copper | Iron mobilisation | Microcytic anaemia |
 
-**Reticulocytes**:
-- Remain in bone marrow 1-2 days, then released into blood
-- Mature in circulation within 1-2 days (lose RNA)
-- Normal count: 0.5-1.5% of RBCs
-- Increased reticulocytes (reticulocytosis) indicates increased RBC production (e.g., after hemorrhage, hemolysis)
+#### C. Haemoglobin (Hb)
+- Tetramer of four globin chains: 2α + 2β (HbA), each with a heme group (protoporphyrin IX + Fe²⁺).
+- Each heme binds one O₂; cooperative binding (sigmoidal O₂ dissociation curve).
+- **Types:** HbA (α₂β₂, >95%), HbA₂ (α₂δ₂, 2–3.5%), HbF (α₂γ₂, fetal – higher O₂ affinity).
 
-**Regulation of Erythropoiesis: Erythropoietin (EPO)** :
+**Normal values:** Males 13.5–17.5 g/dL; Females 12.0–16.0 g/dL.
 
-| Aspect | Details |
-|--------|---------|
-| **Source** | 85% from kidney (peritubular interstitial fibroblasts); 15% from liver |
-| **Stimulus** | Tissue hypoxia (low O₂ delivery) |
-| **Mechanism** | Hypoxia-inducible factor (HIF-1α) stabilized in low O₂ → increases EPO gene transcription |
-| **Target** | Bone marrow erythroid progenitor cells (CFU-E, burst-forming units – BFU-E) |
-| **Effects** | Stimulates proliferation, differentiation, and maturation; increases RBC release; prevents apoptosis of erythroid precursors |
-| **Half-life** | ~5 hours |
-| **Clinical use** | Recombinant EPO for anemia of chronic kidney disease, chemotherapy-induced anemia |
-
-**Factors Required for Erythropoiesis**:
-
-| Factor | Role | Deficiency |
-|--------|------|------------|
-| **Iron** | Hemoglobin synthesis (heme) | Microcytic hypochromic anemia |
-| **Vitamin B₁₂ (cobalamin)** | DNA synthesis (methionine synthase) | Megaloblastic anemia |
-| **Folate** | DNA synthesis | Megaloblastic anemia |
-| **Vitamin B₆ (pyridoxine)** | Heme synthesis (ALA synthase) | Sideroblastic anemia |
-| **Copper** | Iron mobilization | Microcytic anemia |
-| **Amino acids** | Globin synthesis | Protein malnutrition |
-| **Erythropoietin** | Stimulates production | Anemia of chronic disease, renal failure |
-
-#### 1.3 Hemoglobin
-
-Hemoglobin is the oxygen-carrying molecule in RBCs, constituting ~95% of RBC protein.
-
-**Structure**:
-- Tetramer of four globin chains (polypeptides)
-- Each chain contains a heme group (protoporphyrin IX + ferrous iron, Fe²⁺)
-- Each heme binds one O₂ molecule → each hemoglobin binds up to 4 O₂
-
-**Types of Hemoglobin**:
-
-| Type | Composition | Timing |
-|------|-------------|--------|
-| **Hb A (adult)** | α₂β₂ | >95% after 6 months |
-| **Hb A₂** | α₂δ₂ | 2-3.5% |
-| **Hb F (fetal)** | α₂γ₂ | Major in fetus; <1% in adults |
-| **Hb Gower 1, Portland, etc.** | Embryonic | Early gestation |
-
-**Hemoglobin Synthesis**:
-- **Heme synthesis**: Occurs in mitochondria and cytoplasm; starts with glycine + succinyl-CoA (ALA synthase, rate-limiting); requires vitamin B₆
-- **Globin synthesis**: On ribosomes; coordinated with heme production
-
-**Oxygen Binding**:
-- Cooperative binding (sigmoidal O₂ dissociation curve)
-- Allosteric effectors: 2,3-bisphosphoglycerate (2,3-BPG), H⁺ (Bohr effect), CO₂
-- Fetal hemoglobin has higher O₂ affinity (binds 2,3-BPG less) → facilitates O₂ transfer from mother to fetus
-
-#### 1.4 Formation and Destruction of Hemoglobin
-
-**Hemoglobin Synthesis** (as above)
-
-**Hemoglobin Breakdown**:
-
-RBCs are removed after ~120 days by macrophages in spleen, liver, and bone marrow.
-
-**Steps**:
-
-| Step | Location | Process | Products |
-|------|----------|---------|----------|
-| **1. RBC phagocytosis** | Macrophages (spleen, liver) | Senescent RBCs engulfed; hemoglobin released | Globin + heme |
-| **2. Globin degradation** | Macrophages | Hydrolyzed to amino acids | Amino acids recycled for protein synthesis |
-| **3. Heme degradation** | Macrophage ER | Heme oxygenase cleaves heme ring | Biliverdin + CO + Fe²⁺ |
-| **4. Biliverdin reduction** | Macrophage cytoplasm | Biliverdin reductase | Bilirubin (unconjugated) |
-| **5. Iron recycling** | Macrophage | Fe²⁺ released; binds transferrin | Transported to bone marrow or stored as ferritin/hemosiderin |
-| **6. Carbon monoxide** | Blood | Exhaled via lungs | Used clinically to measure RBC lifespan |
-| **7. Bilirubin transport** | Blood (bound to albumin) | To liver | Unconjugated bilirubin |
-
-**Further Bilirubin Metabolism**:
-
-| Step | Location | Process |
-|------|----------|---------|
-| **Uptake** | Hepatocytes | Unconjugated bilirubin taken up |
-| **Conjugation** | Hepatocyte ER | UDP-glucuronosyltransferase adds glucuronic acid → bilirubin diglucuronide (conjugated, water-soluble) |
-| **Secretion** | Bile canaliculi | Conjugated bilirubin secreted into bile |
-| **Intestinal phase** | Gut | Bacteria convert bilirubin to urobilinogen |
-| **Fate of urobilinogen** | | Part excreted in feces (as stercobilin); part reabsorbed, excreted in urine (as urobilin) |
-
-**Clinical Correlation: Jaundice**:
-- Yellow discoloration due to elevated bilirubin
-- Types:
-  - **Pre-hepatic (hemolytic)** : Unconjugated hyperbilirubinemia (excess RBC breakdown)
-  - **Hepatic** : Impaired uptake, conjugation, or secretion (e.g., hepatitis, cirrhosis, Gilbert's syndrome)
-  - **Post-hepatic (obstructive)** : Conjugated hyperbilirubinemia (bile duct obstruction)
+**Haemoglobin breakdown (RBC lifecycle):**
+1. Senescent RBCs phagocytosed by macrophages in spleen/liver/bone marrow.
+2. Globin hydrolysed to amino acids → recycled.
+3. Heme oxygenase cleaves heme → biliverdin, CO, Fe²⁺.
+4. Biliverdin → bilirubin (unconjugated, bound to albumin in blood).
+5. Liver conjugates bilirubin → excreted in bile.
+6. Gut bacteria convert to urobilinogen → partly excreted in faeces (stercobilin) and urine (urobilin).
+**Jaundice:** Pre‑hepatic (haemolytic, unconjugated), Hepatic (impaired conjugation), Post‑hepatic (obstructive, conjugated).
 
 ---
 
 ### 2. White Blood Cells (Leukocytes)
+White blood cells are the immune system’s mobile defence units. Normal count: 4,000–11,000/µL.
 
-White blood cells are the mobile units of the immune system, defending against infection and removing debris.
+#### A. Classification
+| Type | % of WBCs | Granules | Nucleus | Key Function |
+|------|-----------|----------|---------|--------------|
+| **Granulocytes** | | | | |
+| Neutrophils | 50–70% | Fine, pale | 3–5 lobes | Phagocytosis of bacteria; first responders; pus formation |
+| Eosinophils | 1–4% | Coarse, red‑orange | 2 lobes | Parasite defence; allergic reactions |
+| Basophils | <1% | Coarse, deep blue‑purple | 2 lobes | Release histamine, heparin; allergy & inflammation |
+| **Agranulocytes** | | | | |
+| Lymphocytes | 20–40% | None (clear cytoplasm) | Round, dense | Specific immunity (T‑cells, B‑cells, NK cells) |
+| Monocytes | 2–8% | None (fine azurophilic) | Kidney‑shaped | Phagocytosis; differentiate into macrophages and dendritic cells |
 
-**Normal Count**: 4,000-11,000/μL
+![Haematopoiesis – Blood Cell Lineages](/previews/physio/unit5.2.webp)
 
-**Classification**:
+#### B. Leukopoiesis
+All blood cells arise from haematopoietic stem cells:
+- **Myeloid stem cell** → granulocytes, monocytes, megakaryocytes, erythrocytes.
+- **Lymphoid stem cell** → T‑lymphocytes, B‑lymphocytes, NK cells.
+Regulated by colony‑stimulating factors (G‑CSF, GM‑CSF, M‑CSF) and interleukins (IL‑3, IL‑5, IL‑7).
 
-| Type | Percentage | Diameter (μm) | Nucleus | Cytoplasmic Granules | Function |
-|------|------------|----------------|---------|---------------------|----------|
-| **Granulocytes** | 50-70% | | | | |
-| - Neutrophils | 55-65% | 10-12 | 3-5 lobes | Fine, pale lilac | Phagocytosis of bacteria |
-| - Eosinophils | 1-4% | 10-14 | 2 lobes | Coarse, red-orange | Parasite defense; allergic reactions |
-| - Basophils | 0.5-1% | 10-14 | 2 lobes (often S-shaped) | Coarse, deep blue-purple | Release histamine, heparin (allergic responses) |
-| **Agranulocytes** | 20-40% | | | | |
-| - Lymphocytes | 20-30% | 6-15 | Round, dense | None (clear cytoplasm) | Immune responses (B cells, T cells, NK cells) |
-| - Monocytes | 2-8% | 12-20 | Kidney-shaped | None; fine azurophilic granules | Phagocytosis; differentiate into macrophages, dendritic cells |
-
-**Nucleus Lobes and Aging**:
-- Neutrophil nuclei become more segmented with age
-- "Shift to left": increased band forms (immature neutrophils) in infection
-
-#### 2.1 Genesis of White Blood Cells (Leukopoiesis)
-
-White blood cells are derived from hematopoietic stem cells in bone marrow.
-
-**Lineages**:
-
-```
-                     Hematopoietic Stem Cell
-                               |
-               +---------------+---------------+
-               |                               |
-        Myeloid Stem Cell               Lymphoid Stem Cell
-               |                               |
-    +----------+---------+               +-----+-----+
-    |          |         |               |           |
- Myeloblast   Monoblast  ?           B-progenitor  T-progenitor
-    |          |                       |           |
- Neutrophil   Monocyte                B-cell      T-cell
- Eosinophil    ↓
- Basophil    Macrophage
-```
-
-**Regulation of Leukopoiesis**:
-- Colony-stimulating factors (CSFs): stimulate production of specific lineages
-  - G-CSF (granulocyte CSF): stimulates neutrophil production
-  - GM-CSF (granulocyte-macrophage CSF): stimulates neutrophils, monocytes, eosinophils
-  - M-CSF: stimulates monocytes
-  - Interleukins (IL-3, IL-5, IL-7): various effects
-- Cytokines from immune cells regulate production during infection
-
-#### 2.2 Roles of Different White Blood Cells
-
-**A. Neutrophils**:
-- First responders to bacterial infection
-- Phagocytose bacteria, then die (forming pus)
-- Mechanisms:
-  - Chemotaxis (follow chemical signals: bacterial products, complement C5a, chemokines)
-  - Adhesion to endothelium (selectins, integrins)
-  - Diapedesis (migration through vessel wall)
-  - Phagocytosis (engulf bacteria into phagosome)
-  - Killing: oxidative burst (superoxide, H₂O₂, hypochlorous acid) and enzymatic (lysozyme, defensins, proteases)
-- Neutrophilia: increased neutrophils (infection, inflammation)
-- Neutropenia: decreased neutrophils (increased infection risk)
-
-**B. Eosinophils**:
-- Defense against parasitic infections (helminths)
-- Release granule contents (major basic protein, eosinophil cationic protein) toxic to parasites
-- Involved in allergic reactions (asthma, hay fever)
-- Eosinophilia: allergic conditions, parasitic infections,某些 malignancies
-
-**C. Basophils and Mast Cells**:
-- Basophils circulate in blood; mast cells reside in tissues
-- Bind IgE via high-affinity receptors (FcεRI)
-- Cross-linking by antigen triggers degranulation
-- Release: histamine (vasodilation, increased permeability), heparin (anticoagulant), leukotrienes (slow-reacting substance of anaphylaxis), cytokines
-- Role in allergic reactions (type I hypersensitivity)
-
-**D. Monocytes and Macrophages**:
-- Monocytes circulate 1-3 days, then enter tissues and differentiate into macrophages
-- Macrophages:
-  - Phagocytosis (bacteria, debris, apoptotic cells)
-  - Antigen presentation (to T cells)
-  - Cytokine production (IL-1, TNF-α, IL-6)
-  - Tissue repair
-- Named in different tissues: Kupffer cells (liver), microglia (brain), alveolar macrophages (lung), osteoclasts (bone), histiocytes (connective tissue)
-
-**E. Lymphocytes** (see detailed section below)
-
-#### 2.3 Types of T-Cells and Their Functions
-
-T-cells (thymus-derived) are central to cell-mediated immunity. They recognize antigens presented by major histocompatibility complex (MHC) molecules.
-
-**Development**:
-- Progenitors from bone marrow migrate to thymus
-- Undergo positive selection (recognize self-MHC) and negative selection (eliminate self-reactive cells)
-- Mature T-cells enter circulation and lymphoid tissues
-
-**Major T-Cell Subsets**:
-
-| Subset | Surface Marker | MHC Restriction | Function |
-|--------|---------------|-----------------|----------|
-| **Helper T-cells (CD4+)** | CD4 | MHC class II | Orchestrate immune responses; produce cytokines |
-| - Th1 | | | Activate macrophages; promote cell-mediated immunity (IFN-γ) |
-| - Th2 | | | Promote humoral immunity (B-cell help); allergic responses (IL-4, IL-5, IL-13) |
-| - Th17 | | | Recruit neutrophils; defense against extracellular bacteria (IL-17) |
-| - Treg (regulatory) | CD4, CD25, FoxP3 | | Suppress immune responses; maintain self-tolerance |
-| - Tfh (follicular helper) | | | Help B cells in germinal centers |
-| **Cytotoxic T-cells (CD8+)** | CD8 | MHC class I | Kill virus-infected cells, tumor cells (perforin, granzymes, Fas ligand) |
-| **Memory T-cells** | CD4 or CD8 | | Long-lived; rapid response upon re-exposure |
-| **γδ T-cells** | γδ TCR | Non-MHC | Innate-like; at mucosal surfaces |
-
-**T-Cell Activation**:
-1. Antigen presented by APC (dendritic cell, macrophage, B cell) via MHC
-2. Co-stimulation (CD28 on T cell binding CD80/86 on APC) required for full activation
-3. Proliferation (clonal expansion) and differentiation into effector and memory cells
-
-#### 2.4 B-Cells and Antibodies
-
-B-cells (bone marrow-derived) are responsible for humoral immunity, producing antibodies.
-
-**Development**:
-- Mature in bone marrow
-- Each B-cell expresses unique surface immunoglobulin (B-cell receptor, BCR)
-- Upon encountering antigen, with T-cell help, differentiate into plasma cells and memory B-cells
-
-**B-Cell Subsets**:
-
-| Subset | Location | Function |
-|--------|----------|----------|
-| **Follicular B-cells** | Lymphoid follicles | T-dependent responses; produce high-affinity antibodies |
-| **Marginal zone B-cells** | Spleen | T-independent responses to blood-borne pathogens |
-| **B-1 cells** | Peritoneal and pleural cavities | Produce natural antibodies (IgM); T-independent |
-| **Regulatory B-cells** | Various | Suppress inflammation via IL-10 |
-
-**Plasma Cells**:
-- Terminally differentiated B-cells
-- Abundant rough ER (for antibody production)
-- Reside in bone marrow and lymphoid tissues
-- Produce large quantities of antibodies (immunoglobulins)
-
-**Memory B-cells**:
-- Long-lived
-- Rapid response upon re-exposure (secondary response)
-
-**Antibodies (Immunoglobulins)** :
-
-| Class | Structure | Serum Level | Half-life (days) | Function |
-|-------|-----------|-------------|------------------|----------|
-| **IgG** | Monomer | 75% | 21-28 | Main antibody in secondary response; opsonization; complement activation; crosses placenta |
-| **IgA** | Monomer (serum) or dimer (secretory) | 15% | 5-6 | Mucosal immunity (secretory IgA); in saliva, tears, breast milk, GI/respiratory secretions |
-| **IgM** | Pentamer | 10% | 5-10 | Primary response; complement activation (most efficient); B-cell receptor (monomer) |
-| **IgE** | Monomer | <0.1% | 2 | Mast cell/basophil sensitization; allergic reactions; parasite defense |
-| **IgD** | Monomer | <1% | 3 | B-cell receptor (with IgM); function unclear |
-
-**Antibody Structure**:
-- Y-shaped molecule
-- Two heavy chains (H) and two light chains (L)
-- Variable region (antigen-binding site)
-- Constant region (effector functions)
-- Fab (fragment antigen-binding) and Fc (fragment crystallizable) regions
-
-#### 2.5 Memory Cells
-
-Immunological memory is the basis of vaccine efficacy.
-
-**Memory B-cells**:
-- Generated during germinal center reaction (with T-cell help)
-- Express high-affinity BCR (class-switched, somatically mutated)
-- Reside in marginal zone, lymph nodes, bone marrow
-- Upon re-exposure: rapidly proliferate and differentiate into plasma cells
-
-**Memory T-cells**:
-- Two main subsets:
-  - **Central memory T-cells (Tcm)** : In lymph nodes; proliferate and differentiate upon re-stimulation
-  - **Effector memory T-cells (Tem)** : In peripheral tissues; immediate effector function
-- Rapid response to previously encountered antigens
-
-#### 2.6 Formation of Pus
-
-Pus is a thick, yellowish fluid composed of dead neutrophils, necrotic tissue, bacteria, and inflammatory exudate.
-
-**Formation Process**:
-1. Bacterial infection triggers neutrophil recruitment (chemotaxis)
-2. Neutrophils phagocytose bacteria and die (apoptosis or necrosis)
-3. Accumulation of dead neutrophils and debris forms pus
-4. Liquefaction of necrotic tissue by proteolytic enzymes from neutrophils
-5. Pus may drain (if superficial) or form an abscess (if walled off)
-
-**Components of Pus**:
-- Neutrophils (living and dead)
-- Bacteria (living and dead)
-- Necrotic tissue
-- Serum exudate
-- Enzymes (proteases, lysozyme)
-
-#### 2.7 Anemia and Leukopenia
-
-**A. Anemia**: Reduction in RBC mass or hemoglobin concentration, impairing oxygen delivery.
-
-| Type | Cause | Laboratory Findings |
-|------|-------|---------------------|
-| **Microcytic hypochromic** (low MCV, low MCH) | | |
-| - Iron deficiency | Blood loss, poor intake | Low ferritin, low iron, high TIBC |
-| - Thalassemia | Reduced globin synthesis | Normal/high ferritin, abnormal Hb electrophoresis |
-| - Anemia of chronic disease | Inflammation | Low iron, low TIBC, normal/high ferritin |
-| - Sideroblastic anemia | Heme synthesis defect | Ringed sideroblasts in bone marrow |
-| **Macrocytic** (high MCV) | | |
-| - Megaloblastic | B₁₂ or folate deficiency | Hypersegmented neutrophils; low B₁₂/folate |
-| - Non-megaloblastic | Liver disease, alcoholism, hypothyroidism | No hypersegmentation |
-| **Normocytic normochromic** (normal MCV) | | |
-| - Hemolytic | RBC destruction | Increased reticulocytes, LDH, bilirubin; low haptoglobin |
-| - Acute blood loss | Hemorrhage | |
-| - Bone marrow failure | Aplastic anemia, infiltration | Pancytopenia |
-| - Anemia of chronic disease (early) | Inflammation | |
-
-**B. Leukopenia**: Reduction in WBC count (<4000/μL).
-
-| Type | Cause |
-|------|-------|
-| **Neutropenia** | Chemotherapy, radiation, bone marrow failure, drugs (clozapine, methimazole), severe infection, autoimmune, cyclic neutropenia |
-| **Lymphopenia** | HIV/AIDS, immunosuppressive drugs, corticosteroids, radiation, protein malnutrition |
-| **Pancytopenia** | Aplastic anemia, myelodysplasia, bone marrow infiltration, hypersplenism |
-
-**Consequences**:
-- Increased risk of infection (especially bacterial for neutropenia; opportunistic for lymphopenia)
-- Severity correlates with degree and duration of deficiency
+#### C. Roles of Different WBCs
+- **Neutrophils:** Phagocytose bacteria; use oxidative burst (superoxide, H₂O₂) and enzymes. Dead neutrophils + bacteria + debris = pus.
+- **Eosinophils:** Attack parasites (release major basic protein); modulate allergy.
+- **Basophils/Mast cells:** Bind IgE; degranulate histamine, heparin, leukotrienes → vasodilation, bronchoconstriction.
+- **Monocytes/Macrophages:** Phagocytosis, antigen presentation, cytokine secretion (IL‑1, TNF‑α). Named in tissues: Kupffer cells (liver), microglia (brain), osteoclasts (bone).
+- **Lymphocytes:** Mediate adaptive immunity.
 
 ---
 
-### 3. Platelets (Thrombocytes)
+### 3. T‑Cells and B‑Cells in Immunity
 
-#### 3.1 Formation of Platelets (Thrombopoiesis)
+#### A. T‑Cells (Cell‑mediated immunity)
+Develop in thymus; recognise antigen presented by MHC molecules.
 
-Platelets are small, anucleate cell fragments derived from megakaryocytes in bone marrow.
+| T‑Cell Subset | Surface Marker | Function |
+|---------------|----------------|----------|
+| Helper T‑cells (Th) | CD4+ (MHC‑II restricted) | Orchestrate immune responses by secreting cytokines: Th1 (activate macrophages), Th2 (help B‑cells, allergy), Th17 (extracellular bacteria), Tfh (germinal centre B‑cell help), Treg (suppress immunity) |
+| Cytotoxic T‑cells (Tc) | CD8+ (MHC‑I restricted) | Kill virus‑infected/tumour cells via perforin, granzymes, Fas ligand |
+| Regulatory T‑cells (Treg) | CD4+ CD25+ FoxP3+ | Maintain self‑tolerance; prevent autoimmunity |
+| Memory T‑cells | CD4+ or CD8+ | Long‑lived; rapid response upon re‑exposure |
 
-**Megakaryocyte Development**:
-- Megakaryoblasts → megakaryocytes
-- Undergo endomitosis (DNA replication without cell division) → become polyploid (16-32 N)
-- Develop cytoplasmic granules and demarcation membranes
-- Extend proplatelets into sinusoids
-- Platelets fragment from proplatelet ends (~1000-3000 platelets per megakaryocyte)
+**Activation:** Requires antigen presentation + co‑stimulation (CD28–CD80/86). Results in clonal expansion and differentiation.
 
-**Regulation**: Thrombopoietin (TPO)
-- Produced constitutively by liver
-- TPO receptors (c-Mpl) on megakaryocytes and platelets
-- Circulating TPO levels inversely related to platelet mass
+#### B. B‑Cells and Antibodies (Humoral immunity)
+Mature in bone marrow; each B‑cell expresses a unique surface immunoglobulin (BCR).
+- Upon activation (with T‑cell help), differentiate into:
+  - **Plasma cells:** antibody factories (abundant rough ER).
+  - **Memory B‑cells:** long‑lived, rapid secondary response.
 
-**Platelet Structure**:
+**Antibody (Immunoglobulin) Classes:**
+| Class | Structure | Serum % | Key Functions |
+|-------|-----------|---------|---------------|
+| IgG | Monomer | 75% | Main antibody in secondary response; opsonisation; complement; crosses placenta |
+| IgA | Monomer (serum) / Dimer (secretory) | 15% | Mucosal immunity (saliva, tears, breast milk) |
+| IgM | Pentamer | 10% | Primary response; most efficient complement activator; BCR (monomer) |
+| IgE | Monomer | <0.1% | Binds mast cells/basophils; allergy; anti‑parasite |
+| IgD | Monomer | <1% | BCR (with IgM); B‑cell activation |
 
-| Component | Description | Function |
-|-----------|-------------|----------|
-| **Glycocalyx** | Surface coat with glycoproteins (GP Ib, GP IIb/IIIa) | Adhesion, aggregation |
-| **Marginal microtubule band** | Circular microtubules | Maintains discoid shape |
-| **Open canalicular system** | Invaginations of plasma membrane | Increases surface area; releases granule contents |
-| **Dense tubular system** | Smooth ER | Stores calcium; synthesizes thromboxane A₂ |
-| **Granules** | | |
-| - α-granules | Contain fibrinogen, vWF, PDGF, PF4, thrombospondin | Adhesion, aggregation, growth factors |
-| - Dense granules (δ-granules) | Contain ADP, ATP, serotonin, Ca²⁺ | Recruit more platelets |
-| - Lysosomal granules | Hydrolytic enzymes | Degrade clot |
+**Antibody structure:** Y‑shaped, 2 heavy + 2 light chains; variable region binds antigen; constant region mediates effector functions.
 
-**Normal Count**: 150,000-450,000/μL
-
-#### 3.2 Formation of Platelet Plug (Primary Hemostasis)
-
-When vessel wall is injured, platelets rapidly adhere, activate, and aggregate to form a temporary plug.
-
-**Steps**:
-
-| Step | Process | Key Molecules |
-|------|---------|---------------|
-| **1. Adhesion** | Platelets bind to exposed subendothelial collagen via von Willebrand factor (vWF) bridging | GP Ib-IX-V (platelet) binds vWF (from endothelium); GP VI binds collagen directly |
-| **2. Activation** | Adhesion triggers shape change (spherical with pseudopods); granules release contents | Thromboxane A₂ synthesis; ADP, serotonin, Ca²⁺ released |
-| **3. Recruitment (aggregation)** | Released ADP activates nearby platelets; thromboxane A₂ amplifies response | ADP receptors (P2Y₁, P2Y₁₂) on platelets |
-| **4. Aggregation** | Platelets bind to each other via fibrinogen bridges linking GP IIb/IIIa receptors | GP IIb/IIIa (activated) binds fibrinogen |
-| **5. Stabilization** | Platelet plug reinforced by fibrin (from coagulation cascade) | Fibrinogen → fibrin (thrombin) |
-
-**Platelet Activation Pathways**:
-
-| Agonist | Source | Receptor | Effect |
-|---------|--------|----------|--------|
-| **Collagen** | Exposed subendothelium | GP VI, integrin α₂β₁ | Activation, granule release |
-| **Thrombin** | Coagulation cascade | PAR1, PAR4 (protease-activated receptors) | Potent activation |
-| **ADP** | Dense granules | P2Y₁, P2Y₁₂ | Shape change, aggregation (P2Y₁₂: target of clopidogrel, ticagrelor) |
-| **Thromboxane A₂** | Synthesized from arachidonic acid | TP receptor | Vasoconstriction, activation (target of aspirin) |
-| **Epinephrine** | Adrenal medulla | α₂-adrenergic | Enhances activation |
+#### C. Memory Cells
+- **Central memory T‑cells (Tcm):** in lymphoid organs; proliferate upon re‑stimulation.
+- **Effector memory T‑cells (Tem):** in tissues; immediate effector function.
+- **Memory B‑cells:** express high‑affinity, class‑switched BCR; rapidly become plasma cells.
+- Immunological memory is the basis of vaccination.
 
 ---
 
-### 4. Mechanism of Blood Coagulation (Hemostasis)
+### 4. Pus Formation
+Pus is a thick, yellowish fluid consisting of:
+- Dead and dying neutrophils
+- Necrotic tissue debris
+- Living and dead bacteria
+- Inflammatory exudate
 
-Hemostasis is the process that stops bleeding from an injured vessel. It involves vascular constriction, platelet plug formation, and fibrin clot formation.
+**Formation:** Neutrophils are attracted by chemotactic signals → phagocytose pathogens → die (apoptosis/necrosis) → release proteolytic enzymes → liquefaction of tissue. Accumulated mass may form an abscess if walled off.
 
-#### 4.1 Overview of Hemostasis
+---
 
-| Phase | Process |
-|-------|---------|
-| **1. Vascular phase** | Vasoconstriction (reflex and local mediators: endothelin, thromboxane A₂) |
-| **2. Platelet phase** | Formation of temporary platelet plug (primary hemostasis) |
-| **3. Coagulation phase** | Fibrin clot formation (secondary hemostasis) |
-| **4. Fibrinolysis** | Clot dissolution after healing |
+### 5. Anaemia and Leukopenia
 
-#### 4.2 Coagulation Factors
+#### A. Anaemia (reduced O₂‑carrying capacity)
+Classified by RBC size (MCV) and mechanism:
+| Type | Causes | Lab Features |
+|------|--------|--------------|
+| **Microcytic hypochromic** (MCV <80 fL) | Iron deficiency (chronic blood loss, poor diet); Thalassaemia; Anaemia of chronic disease; Sideroblastic anaemia | Low ferritin (iron deficiency); abnormal Hb electrophoresis (thalassaemia) |
+| **Macrocytic** (MCV >100 fL) | Megaloblastic (B₁₂/folate deficiency); Non‑megaloblastic (liver disease, alcohol, hypothyroidism) | Hypersegmented neutrophils (megaloblastic); low B₁₂/folate |
+| **Normocytic normochromic** (MCV 80–100 fL) | Acute blood loss; Haemolytic anaemia; Bone marrow failure; Anaemia of chronic disease (early) | Increased reticulocytes (haemolysis); pancytopenia (marrow failure) |
 
-Coagulation factors are proteins (except factor IV, calcium) synthesized primarily in liver (vitamin K-dependent: II, VII, IX, X). They circulate as inactive zymogens.
+#### B. Leukopenia (WBC count <4,000/µL)
+- **Neutropenia:** chemotherapy, radiation, bone marrow disorders, severe infection, drugs (clozapine). Increases risk of bacterial/fungal infections.
+- **Lymphopenia:** HIV/AIDS, immunosuppressive drugs, corticosteroids. Risk of opportunistic infections.
+- **Pancytopenia:** aplastic anaemia, myelodysplasia, hypersplenism.
 
-**Roman Numeral Designations**:
+---
 
-| Factor | Name | Pathway | Vitamin K-Dependent |
+### 6. Platelets (Thrombocytes)
+Platelets are anucleate cell fragments from megakaryocytes. Normal count: 150,000–450,000/µL; lifespan 7–10 days.
+
+#### A. Formation (Thrombopoiesis)
+- Regulated by **thrombopoietin (TPO)** from liver; TPO receptors (c‑Mpl) on megakaryocytes and platelets.
+- Megakaryocytes undergo endomitosis → polyploid → extend proplatelets into sinusoids → shed platelets.
+
+**Platelet structure:**
+- Glycocalyx with glycoproteins (GP Ib‑IX‑V, GP IIb/IIIa) for adhesion/aggregation.
+- α‑granules: fibrinogen, vWF, PDGF, PF4.
+- Dense granules: ADP, ATP, serotonin, Ca²⁺.
+- Open canalicular system for granule release.
+
+#### B. Platelet Plug Formation (Primary Haemostasis)
+1. **Vascular spasm:** vasoconstriction (endothelin, serotonin).
+2. **Adhesion:** Platelet GP Ib binds vWF on exposed collagen.
+3. **Activation:** Shape change, release of ADP, thromboxane A₂ (TXA₂), serotonin.
+4. **Aggregation:** Fibrinogen bridges activated GP IIb/IIIa receptors → platelet plug.
+**Key drugs:** Aspirin inhibits COX‑1 → ↓ TXA₂; Clopidogrel blocks P2Y₁₂ (ADP receptor).
+
+---
+
+### 7. Blood Coagulation (Secondary Haemostasis)
+Conversion of soluble fibrinogen → insoluble fibrin via a cascade of serine protease zymogens. Most factors are synthesised in the liver; **Vitamin K** is required for factors II, VII, IX, X.
+
+#### A. Coagulation Factors (Roman numerals)
+| Factor | Name | Pathway | Vitamin K‑dependent |
 |--------|------|---------|---------------------|
-| **I** | Fibrinogen | Common | No |
-| **II** | Prothrombin | Common | Yes |
-| **III** | Tissue factor | Extrinsic | No |
-| **IV** | Calcium (Ca²⁺) | All | No |
-| **V** | Proaccelerin (labile factor) | Common | No |
-| **VII** | Proconvertin | Extrinsic | Yes |
-| **VIII** | Antihemophilic factor | Intrinsic | No |
-| **IX** | Christmas factor | Intrinsic | Yes |
-| **X** | Stuart-Prower factor | Common | Yes |
-| **XI** | Plasma thromboplastin antecedent | Intrinsic | No |
-| **XII** | Hageman factor | Intrinsic | No |
-| **XIII** | Fibrin-stabilizing factor | Common | No |
+| I | Fibrinogen | Common | No |
+| II | Prothrombin | Common | Yes |
+| III | Tissue factor | Extrinsic | No |
+| IV | Calcium | All | No |
+| V | Proaccelerin | Common | No |
+| VII | Proconvertin | Extrinsic | Yes |
+| VIII | Anti‑haemophilic factor | Intrinsic | No |
+| IX | Christmas factor | Intrinsic | Yes |
+| X | Stuart‑Prower factor | Common | Yes |
+| XI | Plasma thromboplastin antecedent | Intrinsic | No |
+| XII | Hageman factor | Intrinsic | No |
+| XIII | Fibrin‑stabilising factor | Common | No |
 
-#### 4.3 Extrinsic and Intrinsic Pathways of Initiating Clotting
+![Coagulation Cascade – Extrinsic and Intrinsic Pathways](/previews/physio/unit5.3.webp)
 
-The coagulation cascade is traditionally divided into intrinsic and extrinsic pathways that converge on a common pathway.
+#### B. Pathways
+**Extrinsic pathway** (initiated by tissue factor from damaged cells):  
+TF + VIIa → activates X → common pathway. **Fast (seconds).**
 
-**Extrinsic Pathway** (Tissue Factor Pathway):
-- Initiated by tissue factor (factor III) from damaged endothelial cells, fibroblasts, monocytes
-- Faster pathway (seconds)
+**Intrinsic pathway** (contact activation, e.g., exposed collagen):  
+XII → XIIa → XIa → IXa (+ VIIIa) → activates X. **Slower (minutes).**
 
-```
-Tissue damage → Tissue factor (III) exposed
-          ↓
-     VII → VIIa (with Ca²⁺)
-          ↓
-     X → Xa (activation)
-```
+**Common pathway:**  
+Xa + Va + Ca²⁺ + phospholipid (prothrombinase complex) → Prothrombin (II) → Thrombin (IIa).  
+Thrombin converts fibrinogen (I) to fibrin monomers; activates XIII → cross‑links fibrin → stable clot.
 
-**Intrinsic Pathway** (Contact Activation Pathway):
-- Initiated by exposure of blood to negatively charged surfaces (collagen, glass)
-- Slower pathway (minutes)
+**Thrombin also:** Activates platelets; enhances factors V, VIII, XI (positive feedback); activates protein C (negative feedback).
 
-```
-Factor XII exposed to collagen → XIIa
-          ↓
-     XI → XIa
-          ↓
-     IX → IXa (with Ca²⁺)
-          ↓ (VIIIa, Ca²⁺, phospholipid)
-     X → Xa
-```
-
-**Common Pathway**:
-
-```
-           Xa
-           ↓ (Va, Ca²⁺, phospholipid – prothrombinase complex)
-Prothrombin (II) → Thrombin (IIa)
-           ↓
-Fibrinogen (I) → Fibrin monomers (Ia)
-           ↓ (XIIIa)
-Fibrin polymer (stabilized clot)
-```
-
-**Thrombin Functions**:
-- Converts fibrinogen to fibrin
-- Activates factor XIII (stabilizes clot)
-- Activates factors V, VIII, XI (positive feedback)
-- Activates platelets (via PAR receptors)
-- Activates protein C (with thrombomodulin) – anticoagulant feedback
-
-**Summary Cascade**:
-
-```
-Extrinsic Pathway                Intrinsic Pathway
-        ↓                                ↓
-    VIIa/TF                         XIIa → XIa
-        ↓                                ↓
-        X ←───────────── IXa + VIIIa
-        ↓
-    Common Pathway
-        ↓
-    Prothrombin → Thrombin
-        ↓
-    Fibrinogen → Fibrin
-```
-
-#### 4.4 Regulation of Coagulation
-
-To prevent excessive clot formation, multiple anticoagulant mechanisms exist.
-
-**Natural Anticoagulants**:
-
-| Inhibitor | Mechanism | Target |
-|-----------|-----------|--------|
-| **Antithrombin (AT-III)** | Serine protease inhibitor; neutralizes thrombin, Xa, IXa, XIa, XIIa | Enhanced by heparin |
-| **Protein C** | Activated by thrombin + thrombomodulin; inactivates Va, VIIIa | Vitamin K-dependent |
-| **Protein S** | Cofactor for protein C | Vitamin K-dependent |
-| **TFPI (tissue factor pathway inhibitor)** | Inhibits VIIa/TF complex and Xa | |
-| **Prostacyclin (PGI₂)** | From endothelium; inhibits platelet activation | |
-
-#### 4.5 Laboratory Tests of Coagulation
-
-| Test | Measures | Pathway | Normal Range |
-|------|----------|---------|--------------|
-| **Bleeding time** | Platelet function (in vivo) | Primary hemostasis | 2-9 minutes |
-| **Prothrombin time (PT)** | Extrinsic + common pathways (VII, X, V, II, I) | Extrinsic | 11-13 seconds (INR: 0.8-1.2) |
-| **Partial thromboplastin time (PTT, aPTT)** | Intrinsic + common pathways (XII, XI, IX, VIII, X, V, II, I) | Intrinsic | 25-35 seconds |
-| **Thrombin time (TT)** | Fibrinogen → fibrin conversion | Common | 12-14 seconds |
-
-**Clinical Use**:
-- PT/INR monitors warfarin therapy (affects II, VII, IX, X)
-- aPTT monitors heparin therapy
-- Mixing studies to distinguish factor deficiency from inhibitor
+#### C. Regulation & Fibrinolysis
+- Natural anticoagulants: Antithrombin III (enhanced by heparin), Protein C + S (inactivate Va, VIIIa), TFPI (inhibits VIIa/TF).
+- **Fibrinolysis:** Tissue plasminogen activator (tPA) converts plasminogen (in clot) to plasmin → digests fibrin → fibrin degradation products (e.g., D‑dimer). α₂‑antiplasmin and PAI‑1 limit the process.
+- **Clinical:** PT/INR monitors warfarin; aPTT monitors heparin; D‑dimer detects thrombosis.
 
 ---
 
-### 5. Lysis of Blood Clot (Fibrinolysis)
+### 8. Blood Types
 
-Fibrinolysis is the process of dissolving the fibrin clot after healing, preventing vessel occlusion.
+![ABO and Rh Blood Group Systems](/previews/physio/unit5.4.webp)
 
-**Key Components**:
+#### A. ABO System
+| Blood Group | RBC Antigens | Plasma Antibodies | Can Donate To | Can Receive From |
+|-------------|--------------|-------------------|---------------|------------------|
+| A | A | Anti‑B | A, AB | A, O |
+| B | B | Anti‑A | B, AB | B, O |
+| AB | A & B | None (universal recipient) | AB | A, B, AB, O |
+| O | None (H antigen) | Anti‑A, Anti‑B (universal donor) | A, B, AB, O | O |
 
-| Component | Function |
-|-----------|----------|
-| **Plasminogen** | Inactive precursor; binds to fibrin during clot formation |
-| **Tissue plasminogen activator (tPA)** | From endothelial cells; converts plasminogen to plasmin (enhanced by fibrin binding) |
-| **Urokinase (uPA)** | From kidney and other cells; activates plasminogen |
-| **Plasmin** | Active enzyme; digests fibrin and fibrinogen |
-| **Fibrin degradation products (FDPs)** | Fragments of digested fibrin; D-dimer is specific for cross-linked fibrin |
-| **α₂-antiplasmin** | Inhibits plasmin |
-| **PAI-1 (plasminogen activator inhibitor-1)** | Inhibits tPA and uPA |
-
-**Fibrinolysis Pathway**:
-
-```
-Fibrin clot
-    ↓ (plasminogen binds)
-Plasminogen → Plasmin (activated by tPA, uPA)
-    ↓
-Fibrin → Fibrin degradation products (including D-dimer)
-```
-
-**Clinical Relevance**:
-- **D-dimer**: Elevated in thrombosis (DVT, PE), disseminated intravascular coagulation (DIC)
-- **Thrombolytic therapy**: tPA (alteplase) used in acute MI, stroke
-- **Antifibrinolytics**: Tranexamic acid, aminocaproic acid (inhibit plasminogen activation) used in bleeding disorders, surgery
+#### B. Rh System
+- Rh‑positive: D antigen present (85%); Rh‑negative: absent (15%).
+- Anti‑D antibodies are not naturally occurring; produced after exposure (transfusion or pregnancy).
+- **Erythroblastosis fetalis:** Rh‑negative mother with Rh‑positive fetus → maternal anti‑D IgG crosses placenta in subsequent pregnancies → haemolytic disease of newborn.
+- **Prevention:** Rh immunoglobulin (RhoGAM) at 28 weeks and after delivery.
 
 ---
 
-### 6. Blood Types
-
-Blood types are determined by antigens (agglutinogens) on RBC surfaces and corresponding antibodies (agglutinins) in plasma.
-
-#### 6.1 ABO Blood Group System
-
-**Antigens and Antibodies**:
-
-| Blood Type | Antigens on RBC | Antibodies in Plasma | Frequency (US) |
-|------------|-----------------|----------------------|----------------|
-| **A** | A | Anti-B | 40% |
-| **B** | B | Anti-A | 10% |
-| **AB** | A and B | None | 4% |
-| **O** | None | Anti-A and Anti-B | 46% |
-
-**Genetics**:
-- ABO gene on chromosome 9
-- A and B alleles co-dominant; O allele recessive
-- Genotypes: AA, AO (type A); BB, BO (type B); AB (type AB); OO (type O)
-
-**Transfusion Compatibility**:
-
-| Recipient Type | Can Receive From | Can Donate To |
-|----------------|------------------|---------------|
-| **A** | A, O | A, AB |
-| **B** | B, O | B, AB |
-| **AB** | A, B, AB, O (universal recipient) | AB |
-| **O** | O | O, A, B, AB (universal donor) |
-
-**Cross-matching**: Donor RBCs mixed with recipient serum to detect incompatibility.
-
-#### 6.2 Rh Blood Group System
-
-**Antigen**: Rh factor (D antigen) – most immunogenic
-- **Rh-positive**: Have D antigen (85% of population)
-- **Rh-negative**: Lack D antigen (15%)
-
-**Antibodies**:
-- Anti-D not naturally present; formed after exposure (transfusion or pregnancy)
-- IgG type (crosses placenta)
-
-**Clinical Significance: Hemolytic Disease of Newborn (HDN)** :
-- Rh-negative mother carries Rh-positive fetus
-- Fetal RBCs enter maternal circulation at delivery (or during pregnancy)
-- Mother produces anti-D antibodies
-- Subsequent Rh-positive pregnancy: maternal IgG anti-D crosses placenta, destroys fetal RBCs → hydrops fetalis, kernicterus
-
-**Prevention**: Anti-D immunoglobulin (RhoGAM) given to Rh-negative mother at 28 weeks and within 72 hours of delivery (or after sensitizing events) to prevent immune response.
-
----
-
-### 7. Plasma and Serum
-
-#### 7.1 Plasma
-
-Plasma is the liquid portion of blood (55% of total blood volume), containing water, proteins, electrolytes, nutrients, wastes, and gases.
-
-**Composition**:
-
-| Component | Percentage | Examples |
-|-----------|------------|----------|
-| **Water** | 92% | Solvent |
-| **Proteins** | 7% | |
-| - Albumin | 55-60% of proteins | Maintains oncotic pressure; transports fatty acids, bilirubin, drugs |
-| - Globulins | 35-40% of proteins | α₁, α₂, β, γ (immunoglobulins); transport, immunity |
-| - Fibrinogen | 4% of proteins | Coagulation |
-| - Regulatory proteins | <1% | Enzymes, hormones, clotting factors |
-| **Electrolytes** | 1% | Na⁺, K⁺, Ca²⁺, Mg²⁺, Cl⁻, HCO₃⁻, PO₄³⁻ |
-| **Nutrients** | | Glucose, amino acids, lipids, vitamins |
-| **Wastes** | | Urea, creatinine, bilirubin |
-| **Gases** | | O₂, CO₂ (dissolved) |
-
-**Plasma Proteins**:
-
-| Protein | Source | Function | Normal Level |
-|---------|--------|----------|--------------|
-| **Albumin** | Liver | Oncotic pressure; transport | 3.5-5.0 g/dL |
-| **Globulins** | Liver (α, β), plasma cells (γ) | Transport, immunity | 2.0-3.5 g/dL |
-| **Fibrinogen** | Liver | Coagulation | 200-400 mg/dL |
-
-**Plasma vs. Serum**:
+### 9. Plasma and Serum
 
 | Feature | Plasma | Serum |
 |---------|--------|-------|
-| **Definition** | Liquid portion of unclotted blood | Liquid remaining after blood clots |
-| **Preparation** | Add anticoagulant, centrifuge | Allow clotting, then centrifuge |
-| **Contains** | All clotting factors, fibrinogen | No fibrinogen (consumed in clot); no clotting factors |
-| **Volume** | ~55% of blood volume | ~45% of blood volume |
+| Definition | Liquid portion of unclotted blood (anticoagulant added) | Liquid after blood has clotted (no anticoagulant) |
+| Fibrinogen | Present | Absent (consumed as fibrin) |
+| Clotting factors | All present | Absent (consumed) |
+| Use | Coagulation studies, fresh frozen plasma | Chemistry tests (electrolytes, proteins, etc.) |
+| Colour | Straw‑coloured | Slightly lighter |
+
+**Plasma proteins:**
+- **Albumin** (55–60%): oncotic pressure, transport.
+- **Globulins** (35–40%): α, β (transport), γ (immunoglobulins).
+- **Fibrinogen** (4%): coagulation.
 
 ---
 
-### 8. Summary Tables
+## Tables
 
-#### Table 1: Blood Cell Characteristics
+### Table 1: Summary of Clotting Pathways
+| Pathway | Trigger | Key Activated Factors | Speed |
+|---------|---------|-----------------------|-------|
+| Extrinsic | Tissue factor (TF) | VII, X | Seconds |
+| Intrinsic | Contact with collagen | XII, XI, IX, VIII, X | Minutes |
+| Common | Factor Xa from either pathway | II (prothrombin), I (fibrinogen), XIII | – |
 
-| Cell Type | Count (per μL) | Diameter (μm) | Nucleus | Granules | Lifespan | Function |
-|-----------|----------------|---------------|---------|----------|----------|----------|
-| **RBC** | 4.5-6 million | 7.5-8.5 | None | None | 120 days | O₂/CO₂ transport |
-| **Neutrophil** | 2,500-7,500 | 10-12 | 3-5 lobes | Fine, pale | 6-8 hours (in blood) | Phagocytosis (bacteria) |
-| **Eosinophil** | 50-400 | 10-14 | 2 lobes | Coarse, red | 8-12 hours | Parasite defense; allergy |
-| **Basophil** | 20-50 | 10-14 | 2 lobes | Coarse, blue | Hours-days | Allergy; heparin, histamine |
-| **Monocyte** | 100-700 | 12-20 | Kidney-shaped | None | 1-3 days | Precursor to macrophage |
-| **Lymphocyte** | 1,500-3,500 | 6-15 | Round | None | Variable (years for memory) | Immune responses |
-| **Platelet** | 150,000-450,000 | 2-4 | None | α, dense | 7-10 days | Hemostasis |
-
-#### Table 2: Coagulation Factors
-
-| Factor | Name | Pathway | Vitamin K Dependent | Deficiency |
-|--------|------|---------|---------------------|------------|
-| I | Fibrinogen | Common | No | Afibrinogenemia |
-| II | Prothrombin | Common | Yes | Hypoprothrombinemia |
-| III | Tissue factor | Extrinsic | No | - |
-| IV | Calcium | All | No | - |
-| V | Proaccelerin | Common | No | Parahemophilia |
-| VII | Proconvertin | Extrinsic | Yes | Factor VII deficiency |
-| VIII | Antihemophilic factor | Intrinsic | No | Hemophilia A |
-| IX | Christmas factor | Intrinsic | Yes | Hemophilia B |
-| X | Stuart-Prower factor | Common | Yes | Factor X deficiency |
-| XI | Plasma thromboplastin antecedent | Intrinsic | No | Hemophilia C |
-| XII | Hageman factor | Intrinsic | No | Factor XII deficiency (no bleeding) |
-| XIII | Fibrin-stabilizing factor | Common | No | Factor XIII deficiency |
-
-#### Table 3: ABO Blood Types
-
-| Blood Type | Antigens | Antibodies | Can Donate To | Can Receive From | Frequency (US) |
-|------------|----------|------------|---------------|------------------|----------------|
-| **A** | A | Anti-B | A, AB | A, O | 40% |
-| **B** | B | Anti-A | B, AB | B, O | 10% |
-| **AB** | A, B | None | AB | A, B, AB, O | 4% |
-| **O** | None | Anti-A, Anti-B | A, B, AB, O | O | 46% |
-
-#### Table 4: Anemia Classification
-
-| MCV | Condition | Examples |
-|-----|-----------|----------|
-| **Microcytic** (MCV <80 fL) | Iron deficiency, thalassemia, anemia of chronic disease, sideroblastic anemia | Low ferritin (iron deficiency); high HbA₂ (thalassemia) |
-| **Normocytic** (MCV 80-100 fL) | Hemolytic anemia, acute blood loss, bone marrow failure, anemia of chronic disease (early) | Increased reticulocytes (hemolysis) |
-| **Macrocytic** (MCV >100 fL) | Megaloblastic (B₁₂/folate deficiency), non-megaloblastic (liver disease, alcoholism, hypothyroidism) | Low B₁₂/folate; hypersegmented neutrophils (megaloblastic) |
+### Table 2: Normal Haematological Values
+| Parameter | Normal Range |
+|-----------|--------------|
+| RBC count (male) | 4.5–6.0 million/µL |
+| Haemoglobin (male) | 13.5–17.5 g/dL |
+| Haematocrit (male) | 40–54% |
+| WBC count | 4,000–11,000/µL |
+| Platelet count | 150,000–450,000/µL |
+| Reticulocytes | 0.5–1.5% of RBCs |
 
 ---
 
-### References
+## Exam Angle
 
-1. Hall, J. E. (2021). *Guyton and Hall textbook of medical physiology* (14th ed.). Elsevier. (Chapters 32-36: Blood Cells, Immunity, Hemostasis)
+### Short Answer Questions
+- Describe the regulation of erythropoiesis by erythropoietin.
+- Differentiate between the extrinsic and intrinsic coagulation pathways.
+- Compare the functions of neutrophils, eosinophils, and basophils.
+- What is the difference between plasma and serum?
+- Explain the role of memory cells in immunity.
 
-2. Barrett, K. E., Barman, S. M., Brooks, H. L., & Yuan, J. X. J. (2019). *Ganong's review of medical physiology* (26th ed.). McGraw-Hill Education. (Chapters 27-28: Blood; Hemostasis)
+### Essay Questions
+- Discuss the formation, structure, and breakdown of haemoglobin, including the fate of its components.
+- Describe the mechanisms of haemostasis, including platelet plug formation and the coagulation cascade.
+- Explain the ABO and Rh blood group systems and their clinical significance in transfusion and pregnancy.
 
-3. Costanzo, L. S. (2024). *BRS physiology* (7th ed.). Wolters Kluwer. (Chapter 5: Blood and Hemostasis)
-
-4. Sembulingam, K., & Sembulingam, P. (2022). *Essentials of medical physiology* (9th ed.). Jaypee Brothers Medical Publishers. (Section 4: Blood and Body Fluids)
-
-5. Widmaier, E. P., Raff, H., & Strang, K. T. (2023). *Vander's human physiology: The mechanisms of body function* (16th ed.). McGraw-Hill Education. (Chapter 12: Blood)
-
-6. Hoffbrand, A. V., & Moss, P. A. H. (2020). *Hoffbrand's essential haematology* (8th ed.). Wiley-Blackwell. (Comprehensive hematology text)
-
-7. Rodak, B. F., & Carr, J. H. (2020). *Clinical hematology atlas* (6th ed.). Elsevier. (Atlas for blood cell morphology)
-
-8. Kumar, V., Abbas, A. K., & Aster, J. C. (2020). *Robbins & Cotran pathologic basis of disease* (10th ed.). Elsevier. (Chapters on hematopathology)
+### Viva / Short Notes
+- Erythropoiesis stages.
+- Bilirubin metabolism and jaundice.
+- Platelet adhesion and aggregation.
+- Fibrinolysis.
+- Functions of different immunoglobulin classes.
 
 ---
 
-**Recommended Textbooks for Further Reading:**
-- Hall, J. E. (2021). *Guyton and Hall textbook of medical physiology* (14th ed.). Elsevier. (Excellent for foundational blood physiology)
-- Costanzo, L. S. (2024). *BRS physiology* (7th ed.). Wolters Kluwer. (Concise review with clinical correlations)
-- Hoffbrand, A. V., & Moss, P. A. H. (2020). *Hoffbrand's essential haematology* (8th ed.). Wiley-Blackwell. (Clinical hematology focus)
+## Summary Box
+- **Red blood cells** are biconcave, anucleate, filled with haemoglobin (120‑day lifespan). Erythropoiesis is driven by EPO from kidneys in response to hypoxia. Old RBCs are broken down: heme → bilirubin; iron recycled.
+- **White blood cells** protect against infection. Granulocytes (neutrophils, eosinophils, basophils) act non‑specifically; lymphocytes (T‑cells, B‑cells, NK cells) mediate specific immunity. Pus is an accumulation of dead neutrophils and debris.
+- **T‑cells** mediate cellular immunity (helper CD4+, cytotoxic CD8+, regulatory). **B‑cells** produce antibodies (IgG, IgA, IgM, IgE, IgD). Memory cells enable rapid secondary responses.
+- **Platelets** form the primary haemostatic plug (adhesion → activation → aggregation). Secondary haemostasis involves the **coagulation cascade** (extrinsic, intrinsic, common pathways) culminating in fibrin clot stabilisation. Clot is removed by **fibrinolysis** (plasmin).
+- **Blood groups** are determined by ABO antigens (naturally occurring antibodies) and Rh factor. Rh incompatibility can cause haemolytic disease of newborn, prevented by RhoGAM.
+- **Plasma** contains clotting factors (fibrinogen); **serum** is plasma without fibrinogen. Anaemia is reduced O₂‑carrying capacity; leukopenia increases infection risk.
 
+---
 
+## References
+1. Hall, J. E. (2021). *Guyton and Hall Textbook of Medical Physiology* (14th ed.). Elsevier.
+2. Barrett, K. E., et al. (2019). *Ganong’s Review of Medical Physiology* (26th ed.). McGraw‑Hill.
+3. Costanzo, L. S. (2024). *BRS Physiology* (7th ed.). Wolters Kluwer.
+4. Hoffbrand, A. V. & Moss, P. A. H. (2020). *Hoffbrand’s Essential Haematology* (8th ed.). Wiley‑Blackwell.
+5. Katzung, B. G. (2018). *Basic and Clinical Pharmacology* (14th ed.). McGraw‑Hill.

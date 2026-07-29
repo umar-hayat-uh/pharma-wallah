@@ -1,614 +1,269 @@
-## Unit 2: Muscle Physiology
+# Unit 2: Muscle Physiology
 
-### Introduction to Muscle Physiology
-
-Muscles are specialized tissues that convert chemical energy (ATP) into mechanical work, producing force and movement. They constitute approximately 40-50% of total body weight and are essential for all body movements, posture, heat production, and function of internal organs. Understanding muscle physiology is fundamental for comprehending movement, exercise, and numerous clinical conditions affecting the muscular system.
-
-**Functions of Muscles**:
-- **Movement**: Skeletal muscles move bones; smooth muscles move internal organs; cardiac muscle pumps blood
-- **Posture maintenance**: Sustained contraction of skeletal muscles maintains body position
-- **Joint stabilization**: Muscles and tendons stabilize joints
-- **Heat production**: Muscle contractions generate ~85% of body heat (thermogenesis)
-- **Regulation of organ volume**: Smooth muscle sphincters control passage of substances
-- **Propulsion of materials**: Smooth muscle moves food, urine, bile; cardiac muscle propels blood
+## Learning Objectives
+- Describe the physiological anatomy of skeletal muscle, including its hierarchical organization from whole muscle to the molecular level.
+- Explain the sliding filament theory and the molecular mechanisms of muscle contraction.
+- Differentiate between the types of skeletal muscle fibers based on their structural, metabolic, and functional characteristics.
+- Describe the structure and function of the neuromuscular junction and the process of excitation‑contraction coupling.
+- Understand the clinical and pharmaceutical relevance of muscle physiology.
 
 ---
+
+## Types of Muscle Tissue
+The human body contains three distinct types of muscle tissue, each specialized for particular functions:
+
+- **Skeletal Muscle** – Voluntary, striated muscle attached to bones; responsible for locomotion, posture, and heat generation.
+- **Smooth Muscle** – Involuntary, non‑striated muscle found in the walls of hollow organs (blood vessels, gastrointestinal tract, bladder, uterus); controls internal movements such as peristalsis and vasoconstriction.
+- **Cardiac Muscle** – Involuntary, striated muscle found exclusively in the heart; responsible for pumping blood throughout the body.
+
+Despite their differences, all muscle types share the fundamental property of **contractility** – the ability to shorten and generate force. The following table summarizes their key characteristics.
+
+![Types of Muscle Tissue](/previews/physio/unit2.1.webp)
+
+### Comparison of Muscle Tissue Types
+
+| Feature                     | Skeletal Muscle                     | Smooth Muscle                         | Cardiac Muscle                       |
+|-----------------------------|-------------------------------------|---------------------------------------|--------------------------------------|
+| **Location**                | Attached to bones                   | Walls of hollow organs (gut, vessels, bladder, uterus) | Heart only                        |
+| **Control**                 | Voluntary                           | Involuntary                           | Involuntary                          |
+| **Striations**              | Yes (highly organized sarcomeres)   | No (actin and myosin not arranged in sarcomeres) | Yes (striated, but less regular than skeletal) |
+| **Nucleus**                 | Multinucleated (peripheral)         | Single, centrally located             | Single (or occasionally binucleated), centrally located |
+| **T-tubules**               | Well developed, at A‑I junction     | Absent (caveolae instead)             | Well developed, at Z‑disc, larger diameter |
+| **Sarcoplasmic Reticulum**  | Extensive, well organized           | Poorly developed; Ca²⁺ enters mainly from extracellular fluid | Moderate; Ca²⁺ from both SR and extracellular space |
+| **Source of Ca²⁺ for contraction** | Sarcoplasmic reticulum (SR) only | Extracellular fluid and SR (mainly extracellular) | SR and extracellular fluid |
+| **Regulation of Contraction** | Troponin‑tropomyosin system         | Calmodulin‑myosin light chain kinase (MLCK) system | Troponin‑tropomyosin system (similar to skeletal) |
+| **Gap Junctions**           | No (each fiber stimulated independently) | Yes (single‑unit smooth muscle) – allows coordinated contraction | Yes (intercalated discs) – functional syncytium |
+| **Autorhythmicity**         | No (requires nerve stimulation)     | Yes (some types, e.g., pacemaker cells in gut) | Yes (pacemaker cells in SA node) |
+| **Speed of Contraction**    | Fast to slow (depending on fiber type) | Very slow                            | Moderate (slower than skeletal, faster than smooth) |
+| **Energy Source**           | ATP (oxidative and glycolytic)      | ATP (mainly glycolytic)               | ATP (mainly oxidative, rich in mitochondria) |
+| **Regeneration Ability**    | Limited (satellite cells)           | High (mitosis of smooth muscle cells) | Very limited (no mitosis in adults) |
+
+---
+
+## Core Content
 
 ### 1. Physiological Anatomy of Skeletal Muscle
+Skeletal muscle is a highly organized tissue responsible for voluntary movement, posture, and heat production. Its structure is hierarchical, enabling efficient force generation.
 
-#### 1.1 Organization of Skeletal Muscle
+![Skeletal Muscle Structure](/previews/physio/unit2.2.webp)
 
-Skeletal muscle is organized in a hierarchical manner from the whole muscle down to individual contractile proteins.
+#### A. Gross Anatomy (Organ Level)
+Each skeletal muscle is an organ composed of muscle tissue, blood vessels, nerve fibers, and connective tissues. The connective tissue layers organize and support the muscle:
+- **Epimysium:** The outermost layer that surrounds the entire muscle organ. It allows the muscle to contract and move powerfully while maintaining structural integrity.
+- **Perimysium:** The connective tissue that separates muscle fibers into bundles called fascicles. This organization allows the nervous system to activate specific subsets of fibers for precise movements.
+- **Endomysium:** A thin layer of connective tissue encasing each individual muscle fiber. It contains extracellular fluid and supplies nutrients.
 
-**Structural Hierarchy**:
+These connective tissue layers are continuous with tendons, which attach muscles to bones.
 
-| Level | Structure | Description |
-|-------|-----------|-------------|
-| **Whole muscle** | Epimysium | Dense connective tissue sheath surrounding entire muscle |
-| **Fascicle** | Perimysium | Connective tissue surrounding bundles of muscle fibers (fascicles) |
-| **Muscle fiber (cell)** | Endomysium | Connective tissue surrounding individual muscle fibers |
-| **Myofibril** | Intracellular | Cylindrical organelles (1-2 μm diameter) running length of fiber; contain contractile proteins |
-| **Sarcomere** | Functional unit | Repeating unit between Z-discs (~2.5 μm at rest); basic contractile unit |
-| **Myofilaments** | Protein filaments | Thick filaments (myosin) and thin filaments (actin, troponin, tropomyosin) |
+#### B. Microscopic Anatomy (Muscle Fiber/Cell Level)
+A skeletal muscle fiber is a single, multinucleated cell formed by the fusion of hundreds of myoblasts during development. It has specialized terminology:
+- **Sarcolemma:** The plasma membrane of the muscle fiber.
+- **Sarcoplasm:** The cytoplasm of the muscle fiber.
+- **Sarcoplasmic Reticulum (SR):** A specialized smooth endoplasmic reticulum that stores and releases calcium ions (Ca²⁺), essential for contraction.
+- **Transverse (T) Tubules:** Invaginations of the sarcolemma that extend deep into the muscle fiber. They transmit action potentials from the cell surface to the interior.
 
-**Connective Tissue Layers**:
-- **Epimysium**: Dense irregular connective tissue; surrounds entire muscle; continuous with tendon
-- **Perimysium**: Divides muscle into fascicles; contains blood vessels and nerves
-- **Endomysium**: Loose connective tissue; surrounds individual muscle fibers; contains capillaries, nerve endings, satellite cells
+Within the sarcoplasm are myofibrils, the contractile organelles. Each myofibril is a thread‑like structure composed of repeating units called sarcomeres.
 
-**Tendons**: Continuation of connective tissue layers (epimysium, perimysium, endomysium) that attach muscle to bone (periosteum) or skin.
+#### C. The Sarcomere (Functional Unit)
+The sarcomere is the basic contractile unit of skeletal muscle, extending from one Z‑disc to the next. It contains two types of protein filaments:
+- **Thick Filaments:** Composed of the protein myosin.
+- **Thin Filaments:** Composed primarily of actin.
 
-#### 1.2 The Muscle Fiber (Myofiber)
+The arrangement of these filaments creates the striated pattern of skeletal muscle. Key regions of the sarcomere include:
 
-Skeletal muscle fibers are large, multinucleated cells formed by fusion of myoblasts during development.
-
-**Characteristics of Skeletal Muscle Fibers**:
-
-| Feature | Description |
-|---------|-------------|
-| **Length** | 1 mm to 30 cm (depending on muscle) |
-| **Diameter** | 10-100 μm |
-| **Shape** | Cylindrical, tapering at ends |
-| **Nuclei** | Multiple, located peripherally beneath sarcolemma |
-| **Sarcolemma** | Plasma membrane of muscle fiber |
-| **Sarcoplasm** | Cytoplasm of muscle fiber; contains glycogen, myoglobin, ATP, organelles |
-| **Sarcoplasmic reticulum (SR)** | Specialized smooth ER; stores and releases Ca²⁺ |
-| **T-tubules (transverse tubules)** | Invaginations of sarcolemma; conduct action potentials deep into fiber |
-| **Mitochondria** | Abundant (especially in oxidative fibers); provide ATP |
-| **Myoglobin** | Oxygen-binding protein (similar to hemoglobin); stores O₂ |
-| **Glycogen granules** | Store glucose for energy |
-
-**Sarcolemma and Basal Lamina**:
-- **Sarcolemma**: Plasma membrane; contains ion channels, pumps, and receptors
-- **Basal lamina**: External to sarcolemma; composed of collagen, laminin; anchors muscle fiber to endomysium; contains acetylcholinesterase at neuromuscular junction
-- **Satellite cells**: Myogenic stem cells between basal lamina and sarcolemma; responsible for muscle regeneration after injury
-
-#### 1.3 Myofibrils and Sarcomeres
-
-Myofibrils are cylindrical organelles (1-2 μm diameter) that run the entire length of the muscle fiber. They contain the contractile proteins arranged in repeating units called sarcomeres.
-
-**Sarcomere Structure**:
-
-| Band/Zone | Description | Composition |
-|-----------|-------------|-------------|
-| **A band** | Dark band; entire length of thick filaments | Thick filaments (myosin) plus overlapping thin filaments at ends |
-| **I band** | Light band; region of thin filaments only (no thick filaments) | Thin filaments (actin) only; extends from Z-disc to edge of A band |
-| **H zone** | Central region of A band; thick filaments only (no thin filaments) | Thick filaments only; seen in relaxed muscle |
-| **M line** | Dark line in center of H zone | Proteins linking thick filaments (myomesin) |
-| **Z disc (Z line)** | Dense structure at boundaries of sarcomere | α-actinin, CapZ; anchors thin filaments |
-
-**Sarcomere Dimensions**:
-- Resting length: ~2.5 μm (from Z-disc to Z-disc)
-- During contraction: A band remains constant; I band and H zone shorten
-
-**Structural Proteins**:
-
-| Protein | Location | Function |
-|---------|----------|----------|
-| **Titin** | From Z-disc to M line | Elastic protein; centers thick filaments; provides passive elasticity |
-| **Nebulin** | Along thin filaments | Acts as molecular ruler for thin filament length |
-| **α-Actinin** | Z-disc | Cross-links actin filaments |
-| **Myomesin** | M line | Cross-links myosin filaments |
-| **Dystrophin** | Sarcolemma (inner surface) | Links actin cytoskeleton to extracellular matrix (via dystroglycan complex); mutations cause muscular dystrophy |
-| **Desmin** | Z-disc to Z-disc | Connects adjacent myofibrils; maintains alignment |
-
-#### 1.4 Contractile Proteins
-
-**A. Thick Filaments (Myosin)** :
-
-- **Composition**: 200-300 myosin molecules per filament
-- **Myosin II structure**:
-  - **Two heavy chains**: Each has a globular head (cross-bridge) and a tail (coiled-coil α-helix)
-  - **Four light chains**: Two regulatory and two essential light chains per head
-- **Myosin head features**:
-  - Actin-binding site
-  - ATP-binding site (ATPase activity)
-  - Hinges at head-tail junction and between head and neck (allows movement)
-
-**B. Thin Filaments** :
-
-| Protein | Structure | Function |
-|---------|-----------|----------|
-| **Actin (F-actin)** | Double helix of G-actin monomers | Contains myosin-binding sites; provides track for myosin movement |
-| **Tropomyosin** | Long, rod-shaped protein coiled around actin helix | Covers myosin-binding sites on actin in relaxed muscle; moves during activation |
-| **Troponin complex** | Three subunits | Regulates position of tropomyosin |
-| - **TnC** | Binds Ca²⁺ | Calcium-binding subunit (4 Ca²⁺ binding sites) |
-| - **TnI** | Inhibitory subunit | Binds actin, inhibits actin-myosin interaction |
-| - **TnT** | Tropomyosin-binding subunit | Anchors troponin to tropomyosin |
-
-**C. Regulatory Mechanism**:
-- In relaxed muscle (low Ca²⁺), tropomyosin blocks myosin-binding sites on actin
-- Ca²⁺ binding to TnC causes conformational change, moving tropomyosin away from binding sites
-- Myosin heads can now bind actin (cross-bridge formation)
-
----
+| Region | Description |
+|--------|-------------|
+| Z‑disc (Z‑line) | Boundary of the sarcomere; anchors thin filaments. |
+| I‑band | Light‑colored region containing only thin filaments; bisected by the Z‑disc. |
+| A‑band | Dark‑colored region containing the entire length of thick filaments (and overlapping thin filaments). |
+| H‑zone | Lighter region in the center of the A‑band containing only thick filaments. |
+| M‑line | The center of the sarcomere; holds thick filaments together. |
 
 ### 2. Types of Skeletal Muscle Fibers
+Skeletal muscle fibers are classified based on two main criteria: their speed of contraction and their primary metabolic pathway for generating ATP.
 
-Skeletal muscle fibers are classified based on their speed of contraction and metabolic characteristics. Most muscles contain a mixture of fiber types, but proportions vary depending on muscle function and genetic factors.
+#### A. Slow Oxidative (Type I, Slow‑Twitch)
+- **Contraction Speed:** Slow.
+- **Metabolism:** Aerobic (oxidative). Rich in mitochondria and myoglobin, giving them a red color. Extensively supplied with capillaries.
+- **Fatigue Resistance:** High. Can contract for long periods without fatiguing.
+- **Function:** Maintain posture, stabilize bones and joints. Used for endurance activities.
 
-#### 2.1 Classification Systems
+#### B. Fast Oxidative (Type IIa, Fast‑Twitch Oxidative‑Glycolytic)
+- **Contraction Speed:** Fast.
+- **Metabolism:** Combination of aerobic and anaerobic. Intermediate numbers of mitochondria and moderate myoglobin content.
+- **Fatigue Resistance:** Moderate to high.
+- **Function:** Used for movements requiring more energy than postural control, such as walking.
 
-**A. Based on Contraction Speed and Metabolism**:
+#### C. Fast Glycolytic (Type IIx, Fast‑Twitch Anaerobic)
+- **Contraction Speed:** Fastest.
+- **Metabolism:** Anaerobic (glycolytic). Few mitochondria, low myoglobin (white color), large glycogen stores. Limited capillary supply.
+- **Fatigue Resistance:** Low. Fatigue quickly due to lactic acid production and inefficient ATP production.
+- **Function:** Produces rapid, forceful contractions for short, powerful movements.
 
-| Fiber Type | Type I (Slow Oxidative) | Type IIa (Fast Oxidative-Glycolytic) | Type IIb (Fast Glycolytic) |
-|------------|-------------------------|-------------------------------------|----------------------------|
-| **Other names** | Slow-twitch, red muscle | Fast-twitch intermediate | Fast-twitch white muscle |
-| **Contraction speed** | Slow | Fast | Fast |
-| **Twitch duration** | Long | Intermediate | Short |
-| **Force production** | Low | Moderate | High |
-| **Fatigue resistance** | High (fatigue-resistant) | Moderate (fatigue-resistant) | Low (fatigable) |
-| **Myosin ATPase isoform** | Slow (Type I) | Fast (Type IIa) | Fast (Type IIx/IIb in rodents) |
-| **Oxidative capacity** | High | High | Low |
-| **Glycolytic capacity** | Low | Moderate | High |
-| **Capillary density** | High | Moderate | Low |
-| **Mitochondrial density** | High | High | Low |
-| **Myoglobin content** | High (red color) | Moderate | Low (white color) |
-| **Glycogen content** | Low | Moderate | High |
-| **Fiber diameter** | Small | Medium | Large |
-| **Motor unit size** | Small (few fibers per neuron) | Medium | Large (many fibers per neuron) |
-| **Recruitment order** | First | Second | Last |
-| **Primary function** | Posture, endurance activities | Walking, sustained activities | Sprinting, powerful movements |
-
-**B. Based on Myosin Heavy Chain (MHC) Isoforms**:
-- MHC I: Type I fibers
-- MHC IIa: Type IIa fibers
-- MHC IIx (humans) or MHC IIb (rodents): Type IIx fibers (equivalent to IIb in function)
-
-#### 2.2 Distribution and Plasticity
-
-**Fiber Type Distribution**:
-- Determined by genetics (predisposition for certain sports)
-- Influenced by training:
-  - Endurance training increases oxidative capacity (Type I and IIa)
-  - Resistance training increases fiber size (hypertrophy) but may shift Type IIx toward IIa
-  - Cross-innervation experiments show fiber types can change with nerve input
-
-**Examples of Muscle Composition**:
-
-| Muscle | Dominant Fiber Type | Function |
-|--------|---------------------|----------|
-| **Soleus** | Type I (~80%) | Posture (antigravity) |
-| **Gastrocnemius** | Mixed (Type I and II) | Locomotion, power |
-| **Quadriceps** | Mixed (varies by depth) | Knee extension |
-| **Extraocular muscles** | Type II (very fast) | Rapid eye movements |
-| **Postural muscles (back)** | Type I | Sustained contraction |
-
-#### 2.3 Clinical Significance
-
-| Condition | Fiber Type Involvement |
-|-----------|------------------------|
-| **Aging (sarcopenia)** | Preferential loss of Type II fibers (especially IIx) |
-| **Muscular dystrophy** | Affects all fiber types; degeneration and regeneration |
-| **Denervation atrophy** | Initial fast fiber atrophy; slow fibers more resistant |
-| **Myasthenia gravis** | Weakness in repetitive use (affects all types) |
-| **McArdle's disease** | Glycogen phosphorylase deficiency; affects glycolytic fibers more |
-| **Mitochondrial myopathies** | Affect oxidative fibers (Type I) more |
-
----
+Most human muscles contain a mixture of all three fiber types.
 
 ### 3. General and Molecular Mechanisms of Muscle Contraction
 
-#### 3.1 Overview of Contraction Sequence
+#### A. The Sliding Filament Theory
+Muscle contraction occurs when sarcomeres shorten. According to the sliding filament theory, the thick and thin filaments do not change length; instead, they slide past each other, increasing the degree of overlap. This causes the Z‑discs to move closer together, shortening the sarcomere and the entire muscle fiber. The I‑bands and H‑zones shorten, while the A‑bands remain the same length.
 
-The process of muscle contraction involves a sequence of events from the arrival of a nerve impulse to the generation of force.
+#### B. The Cross‑Bridge Cycle (Molecular Mechanism)
+The sliding of filaments is driven by a cyclical interaction between myosin heads and actin filaments, powered by ATP.
 
-**Summary of Events**:
-1. Nerve impulse reaches neuromuscular junction
-2. Acetylcholine released, binds to receptors, generates end-plate potential
-3. Action potential propagates along sarcolemma and into T-tubules
-4. T-tubule depolarization activates voltage sensors (dihydropyridine receptors)
-5. Ryanodine receptors open, releasing Ca²⁺ from sarcoplasmic reticulum
-6. Ca²⁺ binds to troponin C, causing tropomyosin movement
-7. Myosin heads bind actin (cross-bridge formation)
-8. Power stroke (myosin head pivots, pulling thin filament)
-9. ATP binds myosin, causing detachment
-10. ATP hydrolysis re-energizes myosin head (returns to cocked position)
-11. Cycle repeats as long as Ca²⁺ remains elevated
-12. Ca²⁺ reuptake into SR (via SERCA) when stimulation ceases
-13. Tropomyosin reblocks binding sites; relaxation occurs
+1. **Cocked State:** A myosin head, with bound ATP hydrolyzed to ADP and Pi (inorganic phosphate), is in a high‑energy, “cocked” conformation. The myosin‑binding sites on actin are blocked by the tropomyosin‑troponin complex.
+2. **Cross‑Bridge Formation:** When calcium ions (Ca²⁺) bind to troponin, it causes a conformational change that moves tropomyosin away from the myosin‑binding sites on actin. The energized myosin head binds to the exposed site, forming a cross‑bridge.
+3. **Power Stroke:** The release of Pi and ADP triggers the myosin head to pivot, pulling the actin filament toward the center of the sarcomere. This is the “power stroke” that generates force.
+4. **Detachment:** A new ATP molecule binds to the myosin head, causing it to detach from the actin filament.
+5. **Re‑cocking:** ATP is hydrolyzed, providing the energy to re‑cock the myosin head, returning it to its high‑energy state and readying it for another cycle.
 
-#### 3.2 The Sliding Filament Mechanism
+This cycle repeats as long as Ca²⁺ is available and ATP is present.
 
-**Historical Context**: Proposed independently by Hugh Huxley and Andrew Huxley in 1954 based on electron microscopy and X-ray diffraction studies.
+#### C. Excitation‑Contraction Coupling
+This process links the electrical signal from the nervous system to the mechanical contraction of the muscle.
 
-**Key Observations**:
-- During contraction, A band length remains constant
-- I band and H zone shorten
-- Z-discs move closer together
-- Thick and thin filaments do not change length
+1. **Nerve Stimulus:** An action potential travels down a motor neuron to the neuromuscular junction.
+2. **Neuromuscular Transmission:** The action potential triggers the release of the neurotransmitter acetylcholine (ACh) into the synaptic cleft. ACh binds to receptors on the motor end plate of the muscle fiber, generating an end‑plate potential.
+3. **Muscle Action Potential:** The end‑plate potential triggers an action potential in the muscle fiber’s sarcolemma.
+4. **Signal Propagation:** The action potential propagates along the sarcolemma and down into the T‑tubules.
+5. **Calcium Release:** The action potential in the T‑tubules triggers the sarcoplasmic reticulum (SR) to release large amounts of stored Ca²⁺ into the sarcoplasm.
+6. **Contraction:** The released Ca²⁺ binds to troponin, initiating the cross‑bridge cycle and muscle contraction.
+7. **Relaxation:** When stimulation stops, the SR pumps Ca²⁺ back into its stores using active transport (ATP‑dependent). The drop in intracellular Ca²⁺ causes tropomyosin to re‑cover the myosin‑binding sites, and the muscle relaxes.
 
-**Conclusion**: Contraction occurs by thin filaments sliding inward over thick filaments, pulling Z-discs toward each other.
+### 4. Physiological Anatomy of the Neuromuscular Junction
+The neuromuscular junction (NMJ) is the specialized synapse between a somatic motor neuron and a skeletal muscle fiber. It is the only point of neural control for skeletal muscle contraction.
 
-**Evidence**:
-- Electron microscopy shows filament overlap changes
-- Tension development proportional to filament overlap (length-tension relationship)
+**Key Structures:**
+- **Motor Neuron Terminal (Presynaptic):** The enlarged, unmyelinated ending of the motor neuron. It contains synaptic vesicles filled with the neurotransmitter acetylcholine (ACh).
+- **Synaptic Cleft:** The narrow gap (approximately 50 nanometers) between the neuron and the muscle fiber.
+- **Motor End Plate (Postsynaptic):** The highly folded region of the sarcolemma directly across from the neuron. It is densely packed with ACh receptors.
+- **Acetylcholinesterase (AChE):** An enzyme located on the postsynaptic membrane that rapidly breaks down ACh, ensuring a single nerve impulse produces a single muscle contraction.
 
-#### 3.3 Molecular Mechanism of Cross-Bridge Cycling
+**Process of Neuromuscular Transmission:**
+1. An action potential reaches the motor neuron terminal.
+2. The depolarization opens voltage‑gated calcium (Ca²⁺) channels in the presynaptic membrane. Ca²⁺ enters the terminal.
+3. The influx of Ca²⁺ triggers the exocytosis of synaptic vesicles, releasing ACh into the synaptic cleft.
+4. ACh diffuses across the cleft and binds to ACh receptors on the motor end plate.
+5. These receptors are ligand‑gated cation channels. Their opening allows Na⁺ to enter the muscle fiber and K⁺ to leave. The net influx of Na⁺ creates a depolarization called the end‑plate potential (EPP).
+6. The EPP is always suprathreshold, meaning it always triggers an action potential in the adjacent sarcolemma.
+7. The action potential then propagates across the muscle fiber surface and into the T‑tubules, initiating excitation‑contraction coupling.
+8. ACh is rapidly degraded by AChE, terminating the signal and allowing the muscle fiber to repolarize.
 
-The cross-bridge cycle describes the cyclic interaction between myosin heads and actin filaments, driven by ATP hydrolysis.
+### 5. The Action Potential in Skeletal Muscle
 
-**Steps of Cross-Bridge Cycle**:
+![Action Potential and NMJ](/previews/physio/unit2.3.webp)
 
-| Step | State | Description | Energy |
-|------|-------|-------------|--------|
-| **1** | **Resting (cocked)** | Myosin head tightly bound to ATP (not actin); ATP hydrolyzed to ADP + Pi, which remain bound; myosin head in high-energy conformation (cocked) | ATP hydrolyzed (energy stored) |
-| **2** | **Attachment** | Ca²⁺ binds troponin, exposing actin-binding sites; myosin head (with ADP + Pi) binds actin weakly, then strongly | No ATP used |
-| **3** | **Power stroke** | Conformational change in myosin head; Pi released; head pivots, pulling thin filament toward M line; ADP released | Energy released from stored cocked state |
-| **4** | **Detachment** | New ATP binds myosin head; affinity for actin decreases; myosin detaches from actin | ATP binding (not hydrolysis) |
-| **5** | **Recocking** | ATP hydrolyzed to ADP + Pi; myosin head returns to cocked conformation; cycle ready to repeat | ATP hydrolyzed |
+The action potential is the electrical signal that triggers muscle contraction. It is a rapid, transient change in the membrane potential that propagates along the sarcolemma and into the T‑tubules, ensuring the entire fiber contracts synchronously.
 
-**Key Points**:
-- Rigor mortis: After death, ATP depleted; myosin heads remain bound to actin (rigor state)
-- Each cross-bridge cycle produces ~2-10 nm movement
-- Many cycles per second per myosin head (rapid cycling in fast muscle)
-- Force proportional to number of active cross-bridges
+#### A. Resting Membrane Potential (RMP)
+The inside of a resting skeletal muscle fiber is about **‑80 to ‑90 mV** relative to the outside. This potential is maintained by:
+- **Na⁺/K⁺ ATPase pump** – actively transports 3 Na⁺ out and 2 K⁺ in per ATP hydrolyzed.
+- **Differential permeability** – at rest, the membrane is far more permeable to K⁺ than Na⁺, allowing K⁺ to leak out, making the interior negative.
+- **Fixed anions** – negatively charged proteins and organic phosphates inside the cell.
 
-#### 3.4 Role of Calcium in Excitation-Contraction Coupling
+#### B. Phases of the Skeletal Muscle Action Potential
 
-Excitation-contraction coupling refers to the sequence of events linking membrane depolarization to Ca²⁺ release and contraction.
+| Phase | Ionic Event | Membrane Potential |
+|-------|-------------|--------------------|
+| **Resting** | K⁺ efflux through leak channels; Na⁺/K⁺ pump maintains gradients. | –90 mV |
+| **Threshold** | Sufficient depolarization (e.g., from end‑plate potential) opens voltage‑gated Na⁺ channels. | ~ –65 mV |
+| **Depolarization** | Rapid Na⁺ influx through voltage‑gated Na⁺ channels → membrane potential shoots up to +30 mV. | –90 to +30 mV |
+| **Repolarization** | Voltage‑gated Na⁺ channels inactivate; voltage‑gated K⁺ channels open → K⁺ efflux restores negative interior. | +30 mV back toward –90 mV |
+| **After‑hyperpolarization** | K⁺ channels close slowly, causing a brief undershoot below RMP. | ~ –95 mV |
+| **Return to RMP** | Na⁺/K⁺ pump and leak channels restore resting state. | –90 mV |
 
-**Structures Involved**:
+**Key Points:**
+- The action potential in skeletal muscle is very similar to that in neurons, but lasts longer (~2‑5 ms).
+- The depolarization phase is due to **voltage‑gated Na⁺ channels** opening, while repolarization is due to **voltage‑gated K⁺ channels** opening and Na⁺ channel inactivation.
+- The action potential is **all‑or‑none** – once threshold is reached, a full action potential is generated.
+- After an action potential, there is a brief **absolute refractory period** (no stimulus can trigger another AP) followed by a **relative refractory period** (a stronger‑than‑normal stimulus is required).
 
-| Structure | Location | Function |
-|-----------|----------|----------|
-| **T-tubules** | Invaginations of sarcolemma at A-I junctions | Conduct action potential deep into fiber |
-| **Terminal cisternae** | Enlarged regions of SR adjacent to T-tubules | Store and release Ca²⁺ |
-| **Triad** | T-tubule flanked by two terminal cisternae | Structural unit for E-C coupling |
-| **Dihydropyridine receptor (DHPR)** | T-tubule membrane (L-type Ca²⁺ channel) | Voltage sensor; mechanically coupled to RyR |
-| **Ryanodine receptor (RyR1)** | SR membrane (Ca²⁺ release channel) | Releases Ca²⁺ from SR |
+#### C. Propagation of the Action Potential
+- The action potential is generated at the motor end plate (NMJ).
+- It spreads bidirectionally along the sarcolemma.
+- The depolarization wave enters the **T‑tubules**, which carry it deep into the fiber.
+- At the T‑tubules, dihydropyridine (DHP) receptors (voltage sensors) trigger Ca²⁺ release from the sarcoplasmic reticulum via ryanodine receptors, linking the action potential to contraction (excitation‑contraction coupling).
 
-**Mechanism in Skeletal Muscle**:
-1. Action potential depolarizes T-tubule membrane
-2. DHPR (voltage sensor) undergoes conformational change
-3. DHPR physically interacts with RyR1 (mechanical coupling)
-4. RyR1 opens, releasing Ca²⁺ from SR into sarcoplasm
-5. Ca²⁺ concentration rises from ~0.1 μM to ~10 μM
-6. Ca²⁺ binds troponin C, initiating contraction
-7. Relaxation: Ca²⁺ pumped back into SR by SERCA (sarco/endoplasmic reticulum Ca²⁺-ATPase)
+#### D. Comparison: Action Potential in Nerve vs. Skeletal Muscle
 
-**Note**: In cardiac muscle, Ca²⁺ influx through DHPR triggers Ca²⁺ release from RyR2 (calcium-induced calcium release, CICR). Skeletal muscle uses direct mechanical coupling (faster).
-
-#### 3.5 The Relaxation Phase
-
-Relaxation occurs when Ca²⁺ is removed from the cytoplasm, allowing tropomyosin to reblock actin-binding sites.
-
-**Mechanisms of Ca²⁺ Removal**:
-- **SERCA pump**: Active transport of Ca²⁺ into SR (2 Ca²⁺ per ATP)
-- **Plasma membrane Ca²⁺ ATPase (PMCA)** : Minor role
-- **Na⁺/Ca²⁺ exchanger (NCX)** : Minor role in skeletal muscle (major in cardiac)
-
-**SR Ca²⁺ Storage**:
-- **Calsequestrin**: Ca²⁺-binding protein in SR lumen; binds Ca²⁺ with low affinity but high capacity; allows high Ca²⁺ storage without precipitation
-- **Calreticulin**: Similar protein in endoplasmic reticulum (non-muscle cells)
-
-**Time Course**:
-- Twitch duration: 20-100 ms (varies with fiber type)
-- Fast-twitch fibers have faster SERCA (different isoforms) and faster relaxation
-
-#### 3.6 Length-Tension Relationship
-
-The force generated by a muscle fiber depends on its initial length (sarcomere length) before stimulation.
-
-**Optimal Length**:
-- Maximum tension at sarcomere length ~2.2-2.5 μm (optimal overlap of thick and thin filaments)
-- At shorter lengths (<2.0 μm): Thin filaments overlap, interfere; reduced tension
-- At longer lengths (>3.0 μm): Reduced overlap; fewer cross-bridges; reduced tension
-- Beyond 3.6 μm: No overlap; no tension
-
-**Physiological Relevance**:
-- Muscles operate near optimal length in body due to joint angles and resting tone
-- Explains importance of joint position in strength testing
-
-#### 3.7 Force Generation and Summation
-
-**Twitch**: Mechanical response to a single action potential
-
-**Factors Affecting Twitch Force**:
-- Fiber type (fast vs. slow)
-- Temperature (higher temperature increases rate)
-- Initial length (length-tension relationship)
-- Fatigue state
-
-**Summation and Tetanus**:
-
-| Phenomenon | Description | Mechanism |
-|------------|-------------|-----------|
-| **Wave summation** | Increased force with repeated stimulation due to incomplete relaxation between stimuli | Ca²⁺ remains elevated; additional Ca²⁺ release adds to existing concentration |
-| **Unfused tetanus** | Partial relaxation between stimuli; force oscillates | Stimulation frequency high enough to prevent complete relaxation |
-| **Fused tetanus** | Smooth, maximal contraction; no relaxation between stimuli | Stimulation frequency very high; Ca²⁺ remains maximal throughout |
-| **Treppe (staircase)** | Progressive increase in force with repeated stimulation at moderate frequency | Increased cytosolic Ca²⁺; increased temperature; improved cross-bridge cycling |
-
-**Force-Frequency Relationship**:
-- Low frequency: Individual twitches
-- Increasing frequency: Summation, unfused tetanus
-- Optimal frequency: Fused tetanus (maximal force; 3-5× twitch force)
-- Very high frequency: Fatigue
-
-#### 3.8 Types of Contractions
-
-| Type | Description | Example |
-|------|-------------|---------|
-| **Isometric** | Muscle develops tension but length constant (no joint movement) | Holding a weight steady; postural muscles |
-| **Isotonic** | Muscle shortens against constant load; tension constant | Lifting a weight (concentric); lowering a weight (eccentric) |
-| - Concentric | Muscle shortens during contraction | Biceps curl (lifting phase) |
-| - Eccentric | Muscle lengthens during contraction (tension developed) | Biceps curl (lowering phase); downhill running |
-| **Isokinetic** | Constant velocity of shortening | Specialized equipment; not typical in vivo |
-
-**Eccentric Contractions**:
-- Generate greater force than concentric (up to 1.5×)
-- Less metabolic cost per unit force
-- More muscle damage (soreness) due to mechanical disruption
-
-#### 3.9 Energy Metabolism in Muscle
-
-Muscle fibers use multiple pathways to generate ATP for contraction.
-
-**ATP Sources**:
-
-| Pathway | Rate of ATP Production | Capacity | Duration | Fiber Type Preference |
-|---------|------------------------|----------|----------|----------------------|
-| **Phosphocreatine (PCr) system** | Very fast | Very limited | 5-10 seconds | Type II (especially IIx) |
-| **Glycolysis (anaerobic)** | Fast | Limited | 30-60 seconds | Type II (especially IIx) |
-| **Oxidative phosphorylation** | Slow | Unlimited (with O₂) | Hours | Type I, Type IIa |
-
-**Creatine Phosphate Shuttle**:
-- Creatine kinase catalyzes: PCr + ADP → Creatine + ATP
-- Rapid regeneration of ATP at onset of contraction
-- Muscle PCr stores depleted in ~10 seconds of maximal exercise
-
-**Oxygen Debt (Excess Post-Exercise Oxygen Consumption, EPOC)** :
-- Extra O₂ consumed after exercise to:
-  - Restore PCr stores
-  - Convert lactate back to glucose (Cori cycle, liver)
-  - Replenish myoglobin O₂
-  - Elevated metabolism (temperature, hormones)
+| Feature | Nerve (Axon) | Skeletal Muscle |
+|---------|--------------|-----------------|
+| Resting potential | –70 mV | –80 to –90 mV |
+| Duration | ~1 ms | ~2‑5 ms |
+| Main depolarizing ion | Na⁺ (voltage‑gated) | Na⁺ (voltage‑gated) |
+| Repolarizing ion | K⁺ (voltage‑gated) | K⁺ (voltage‑gated) |
+| Propagation speed | Up to 120 m/s (myelinated) | ~3‑5 m/s (along sarcolemma) |
+| Role of Ca²⁺ | Triggers neurotransmitter release | Triggers contraction |
 
 ---
 
-### 4. Physiological Anatomy of Neuromuscular Junction
+## Tables
 
-The neuromuscular junction (NMJ) is the specialized synapse between a motor neuron and a skeletal muscle fiber. It is the site where the nervous system communicates with muscle to initiate contraction.
+### Table 1: Comparison of Skeletal Muscle Fiber Types
 
-#### 4.1 Structure of the Neuromuscular Junction
+| Characteristic       | Slow Oxidative (Type I) | Fast Oxidative (Type IIa) | Fast Glycolytic (Type IIx) |
+|----------------------|-------------------------|---------------------------|----------------------------|
+| Other Names          | Slow‑Twitch, Red        | Fast‑Twitch, Intermediate | Fast‑Twitch, White         |
+| Contraction Speed    | Slow                    | Fast                      | Fastest                    |
+| Primary Metabolism   | Aerobic (Oxidative)     | Combination (Aerobic/Anaerobic) | Anaerobic (Glycolytic)  |
+| ATPase Activity      | Low                     | High                      | Highest                    |
+| Mitochondria         | High                    | Moderate                  | Low                        |
+| Myoglobin Content    | High                    | Moderate                  | Low                        |
+| Glycogen Content     | Low                     | Moderate                  | High                       |
+| Capillary Supply     | Rich                    | Moderate                  | Poor                       |
+| Fatigue Resistance   | High                    | Moderate                  | Low                        |
+| Function             | Posture, Endurance      | Walking, Sustained force  | Powerful, Short bursts     |
 
-**Components**:
+### Table 2: Steps of the Cross‑Bridge Cycle
 
-| Component | Description |
-|-----------|-------------|
-| **Presynaptic terminal** | Enlarged axon terminal of motor neuron; contains synaptic vesicles filled with acetylcholine (ACh) |
-| **Synaptic cleft** | Narrow space (~50 nm) between presynaptic and postsynaptic membranes |
-| **Postsynaptic membrane (motor end-plate)** | Specialized region of muscle sarcolemma with folds (junctional folds) |
-| **Synaptic vesicles** | 40-50 nm vesicles; each contains ~5,000-10,000 ACh molecules |
-| **Active zones** | Dense regions on presynaptic membrane where vesicles dock and release |
-| **Acetylcholine receptors (AChRs)** | Concentrated at crests of junctional folds; nicotinic type (ionotropic) |
-| **Acetylcholinesterase (AChE)** | Enzyme in synaptic cleft (basal lamina); hydrolyzes ACh to acetate and choline |
-| **Schwann cells** | Cover the presynaptic terminal (capping cells) |
-
-**Detailed Structure**:
-
-**Presynaptic Terminal**:
-- Contains mitochondria (ATP for vesicle recycling)
-- Voltage-gated Ca²⁺ channels (P/Q-type) clustered at active zones
-- Vesicle release machinery (SNARE proteins: synaptobrevin, SNAP-25, syntaxin)
-- Large numbers of vesicles (ready-releasable pool, recycling pool, reserve pool)
-
-**Synaptic Cleft**:
-- 50 nm wide
-- Contains basal lamina with AChE anchored
-- Extracellular fluid composition (Ca²⁺ critical for release)
-
-**Motor End-Plate**:
-- Specialized region of sarcolemma
-- Junctional folds increase surface area
-- AChRs densely packed (~10,000/μm²) at crests
-- Voltage-gated Na⁺ channels at depths of folds
-- No voltage-gated Na⁺ channels at crests (to prevent ectopic firing)
-
-#### 4.2 Events at the Neuromuscular Junction
-
-**Sequence of Events**:
-
-| Step | Event | Mechanism |
-|------|-------|-----------|
-| **1** | Action potential arrives at presynaptic terminal | Depolarization opens voltage-gated Ca²⁺ channels |
-| **2** | Ca²⁺ influx | Ca²⁺ enters terminal down electrochemical gradient |
-| **3** | Vesicle fusion | Ca²⁺ binds synaptotagmin (Ca²⁺ sensor); triggers SNARE-mediated vesicle fusion with presynaptic membrane |
-| **4** | ACh release | Vesicles release ACh into synaptic cleft (quantal release) |
-| **5** | ACh binding | ACh diffuses across cleft and binds nicotinic ACh receptors on motor end-plate |
-| **6** | Ion channel opening | AChR opens, allowing Na⁺ influx (and some K⁺ efflux) |
-| **7** | End-plate potential (EPP) | Local depolarization of end-plate (up to ~60 mV) |
-| **8** | Action potential initiation | EPP depolarizes adjacent membrane to threshold; voltage-gated Na⁺ channels open; action potential propagates along muscle fiber |
-| **9** | ACh degradation | AChE hydrolyzes ACh to acetate and choline |
-| **10** | Choline reuptake | Choline transported back into presynaptic terminal for resynthesis of ACh |
-
-**Quantal Release**:
-- Spontaneous release of single vesicles produces miniature end-plate potentials (MEPPs) (~0.5-1 mV)
-- Nerve impulse releases ~100-200 vesicles simultaneously
-- Total EPP (~60 mV) far exceeds threshold (~15 mV depolarization) – safety factor
-
-**Safety Factor**:
-- EPP amplitude is 3-4 times threshold for action potential
-- Ensures reliable transmission even with partial block
-- Reduced in myasthenia gravis (AChR loss) or botulism (impaired release)
-
-#### 4.3 Acetylcholine Receptor (Nicotinic)
-
-**Structure**:
-- Pentameric ion channel: (α₁)₂β₁γδ (fetal) or (α₁)₂β₁εδ (adult)
-- Each subunit has four transmembrane domains (M1-M4)
-- Two α subunits each have ACh-binding sites (at α-δ and α-ε/γ interfaces)
-- Central pore permeable to cations (Na⁺, K⁺, Ca²⁺)
-
-**Activation**:
-- Two ACh molecules must bind (cooperativity)
-- Channel opens within microseconds
-- Conducts ~10⁷ ions/second
-- Open time ~1 ms (adult) or longer (fetal)
-- Desensitization occurs with prolonged ACh exposure
-
-**Distribution**:
-- Clustered at crests of junctional folds (high density)
-- Anchored by rapsyn (43K protein) to dystrophin-associated complex
-- Extra-junctional receptors in denervated muscle (upregulated)
-
-#### 4.4 Acetylcholinesterase (AChE)
-
-**Properties**:
-- Extremely efficient enzyme (turnover number ~10,000/s)
-- Hydrolyzes ACh to acetate and choline
-- Located in basal lamina of synaptic cleft (anchored by collagen tail)
-- Terminates synaptic transmission rapidly (within milliseconds)
-
-**Isoforms**:
-- **AChE-T** (tailed form): Synaptic basal lamina (muscle, brain)
-- **AChE-R** (readthrough): Stress-induced; soluble
-
-**Choline Reuptake**:
-- High-affinity choline transporter (CHT1) on presynaptic membrane
-- Rate-limiting step for ACh synthesis
-- Choline acetyltransferase (ChAT) synthesizes ACh from choline + acetyl-CoA
-
-#### 4.5 Pharmacology of the Neuromuscular Junction
-
-The NMJ is a major target for drugs, toxins, and diseases.
-
-**Agents Affecting ACh Release**:
-
-| Agent | Effect | Mechanism |
-|-------|--------|-----------|
-| **Botulinum toxin** | Blocks release | Protease cleaves SNARE proteins (synaptobrevin, SNAP-25, syntaxin) |
-| **Tetanus toxin** | Blocks release (inhibitory neurons) | Similar to botulinum; affects spinal cord |
-| **Mg²⁺ (hypermagnesemia)** | Blocks release | Competes with Ca²⁺ at voltage-gated Ca²⁺ channels |
-| **Ca²⁺ channel blockers** | Reduce release | Inhibit presynaptic Ca²⁺ channels |
-| **Aminoglycoside antibiotics** | Reduce release | Block presynaptic Ca²⁺ channels (mechanism complex) |
-| **3,4-Diaminopyridine** | Enhances release | Blocks K⁺ channels, prolongs depolarization, increases Ca²⁺ influx |
-
-**Agents Affecting ACh Receptors**:
-
-| Agent | Effect | Mechanism | Clinical Use |
-|-------|--------|-----------|--------------|
-| **d-Tubocurarine** | Competitive antagonist | Blocks ACh binding | Muscle relaxant (anesthesia) |
-| **Atracurium, vecuronium, rocuronium** | Competitive antagonists | Similar to curare | Muscle relaxants |
-| **Succinylcholine** | Depolarizing blocker | Persistent depolarization → desensitization | Short-acting muscle relaxant |
-| **α-Bungarotoxin** | Irreversible antagonist | Binds AChR (snake venom) | Research tool |
-| **Nicotine** | Agonist | Activates AChR | Not used clinically at NMJ |
-
-**Agents Affecting AChE**:
-
-| Agent | Effect | Mechanism | Clinical Use |
-|-------|--------|-----------|--------------|
-| **Neostigmine, pyridostigmine** | Reversible inhibitors | Carbamylate AChE active site | Myasthenia gravis |
-| **Edrophonium** | Short-acting reversible | Competitive inhibition | Diagnostic (Tensilon test) |
-| **Organophosphates (parathion, sarin)** | Irreversible inhibitors | Phosphorylate AChE (aging) | Insecticides, nerve agents |
-| **Pralidoxime (2-PAM)** | Reactivator | Removes phosphate from AChE (if given before aging) | Antidote for organophosphates |
-
-#### 4.6 Clinical Correlations
-
-**Myasthenia Gravis**:
-- Autoimmune disorder: antibodies against nicotinic ACh receptors (most common) or MuSK, LRP4
-- Reduced number of functional AChRs → decreased EPP amplitude → failure of transmission
-- Symptoms: Muscle weakness, fatigability (worse with repetitive use); ptosis, diplopia, dysphagia, limb weakness
-- Diagnosis: Tensilon test (edrophonium improves strength); anti-AChR antibodies; EMG shows decrement
-- Treatment: AChE inhibitors (pyridostigmine), immunosuppression (corticosteroids, azathioprine), thymectomy, IVIg, plasmapheresis
-
-**Lambert-Eaton Myasthenic Syndrome (LEMS)** :
-- Autoimmune: antibodies against presynaptic voltage-gated Ca²⁺ channels (P/Q-type)
-- Reduced ACh release → decreased EPP
-- Associated with small cell lung cancer (paraneoplastic)
-- Symptoms: Proximal muscle weakness, autonomic dysfunction; strength improves with repeated contraction (facilitation)
-- Treatment: 3,4-diaminopyridine (enhances release), treat underlying cancer, immunosuppression
-
-**Botulism**:
-- Clostridium botulinum toxin blocks ACh release (cleaves SNARE proteins)
-- Sources: Foodborne, wound, infant botulism (spores in honey)
-- Symptoms: Descending flaccid paralysis, autonomic dysfunction, respiratory failure
-- Treatment: Antitoxin, supportive care (ventilation)
-
-**Organophosphate Poisoning**:
-- Irreversible AChE inhibition → excess ACh at NMJ and synapses
-- Symptoms: Muscle fasciculations, weakness, paralysis (depolarizing block); cholinergic crisis (salivation, lacrimation, urination, defecation, GI upset, emesis – SLUDGE syndrome)
-- Treatment: Atropine (muscarinic antagonist), pralidoxime (if given early), supportive care
-
-**Malignant Hyperthermia**:
-- Genetic disorder (usually RyR1 mutation)
-- Triggered by volatile anesthetics (halothane) or succinylcholine
-- Uncontrolled Ca²⁺ release from SR → sustained contraction, hyperthermia, acidosis, rhabdomyolysis
-- Treatment: Dantrolene (blocks RyR), cooling, supportive care
+| Step                  | Event                                                                 | Key Molecules                    |
+|-----------------------|-----------------------------------------------------------------------|----------------------------------|
+| 1. Cocked State       | Myosin head is energized (ADP + Pi bound). Binding sites on actin are blocked by tropomyosin. | Myosin, Actin, ADP, Pi, Tropomyosin, Troponin |
+| 2. Cross‑Bridge Formation | Ca²⁺ binds to troponin, moving tropomyosin. Myosin head binds to exposed site on actin. | Myosin, Actin, Ca²⁺, Troponin    |
+| 3. Power Stroke       | Myosin head pivots, pulling actin filament. Pi and ADP are released.   | Myosin, Actin                    |
+| 4. Detachment         | ATP binds to myosin head, causing it to detach from actin.            | Myosin, Actin, ATP               |
+| 5. Re‑cocking         | ATP is hydrolyzed to ADP + Pi, energy is stored in the myosin head.   | Myosin, ATP → ADP + Pi           |
 
 ---
 
-### 5. Summary Tables
+## Exam Angle
 
-#### Table 1: Comparison of Skeletal Muscle Fiber Types
+### Short Answer Questions
+- Define a sarcomere and draw and label its major regions (Z‑disc, I‑band, A‑band, H‑zone, M‑line).
+- Differentiate between the three types of skeletal muscle fibers based on their structure and function.
+- Describe the structure of the neuromuscular junction.
+- What is the role of calcium ions in muscle contraction?
+- Explain the sliding filament theory of muscle contraction.
+- Describe the phases of the action potential in skeletal muscle.
 
-| Feature | Type I | Type IIa | Type IIx (IIb) |
-|---------|--------|----------|----------------|
-| Contraction speed | Slow | Fast | Fast |
-| Myosin ATPase isoform | Slow | Fast | Fast |
-| Oxidative capacity | High | High | Low |
-| Glycolytic capacity | Low | Moderate | High |
-| Fatigue resistance | High | Moderate | Low |
-| Myoglobin content | High (red) | Moderate | Low (white) |
-| Mitochondrial density | High | High | Low |
-| Capillary density | High | Moderate | Low |
-| Glycogen content | Low | Moderate | High |
-| Motor unit size | Small | Medium | Large |
-| Recruitment order | First | Second | Last |
-| Function | Posture, endurance | Walking, sustained | Sprinting, power |
+### Essay Questions
+- Describe the molecular mechanisms of muscle contraction, detailing the cross‑bridge cycle, excitation‑contraction coupling, and the role of ATP.
+- Trace the sequence of events from an action potential arriving at the neuromuscular junction to the relaxation of a skeletal muscle fiber.
+- Compare and contrast the three types of skeletal muscle fibers.
 
-#### Table 2: Cross-Bridge Cycle Steps
-
-| Step | State | ATP Status | Actin Binding | Myosin Position |
-|------|-------|------------|---------------|-----------------|
-| 1 | Cocked (resting) | ADP + Pi bound | No (blocked by tropomyosin) | High-energy, extended |
-| 2 | Attachment | ADP + Pi bound | Yes (weak then strong) | Still extended |
-| 3 | Power stroke | Pi released; ADP released | Yes | Pivoted, pulled actin |
-| 4 | Detachment | ATP binds | No | Attached to ATP |
-| 5 | Recocking | ATP hydrolyzed | No | Returns to cocked |
-
-#### Table 3: Neuromuscular Junction Pharmacology
-
-| Drug/Toxin | Site of Action | Effect | Clinical Use/Relevance |
-|------------|----------------|--------|------------------------|
-| Botulinum toxin | Presynaptic (SNARE) | Blocks ACh release | Therapeutic (spasticity, cosmetics); poisoning |
-| d-Tubocurarine | Postsynaptic (AChR) | Competitive antagonist | Muscle relaxant (historical) |
-| Atracurium, rocuronium | Postsynaptic (AChR) | Competitive antagonist | Muscle relaxants (anesthesia) |
-| Succinylcholine | Postsynaptic (AChR) | Depolarizing blocker | Short-term paralysis (intubation) |
-| Neostigmine | AChE | Reversible inhibitor | Myasthenia gravis |
-| Pyridostigmine | AChE | Reversible inhibitor | Myasthenia gravis |
-| Edrophonium | AChE | Short-acting inhibitor | Diagnostic (Tensilon test) |
-| Organophosphates | AChE | Irreversible inhibitor | Insecticides, nerve agents |
-| Pralidoxime | AChE | Reactivator | Antidote for organophosphates |
-| α-Bungarotoxin | AChR | Irreversible antagonist | Research tool |
-| 3,4-Diaminopyridine | Presynaptic K⁺ channels | Enhances ACh release | Lambert-Eaton syndrome |
-| Mg²⁺ (high dose) | Presynaptic Ca²⁺ channels | Blocks ACh release | Hypermagnesemia |
+### Viva / Short Notes
+- Excitation‑Contraction Coupling.
+- Structure and function of the sarcoplasmic reticulum.
+- The role of troponin and tropomyosin.
+- The neuromuscular junction.
+- Motor unit.
+- Action potential propagation in T‑tubules.
 
 ---
 
-### References
-
-1. Hall, J. E. (2021). *Guyton and Hall textbook of medical physiology* (14th ed.). Elsevier. (Chapters 6-8: Muscle Physiology)
-
-2. Barrett, K. E., Barman, S. M., Brooks, H. L., & Yuan, J. X. J. (2019). *Ganong's review of medical physiology* (26th ed.). McGraw-Hill Education. (Chapter 5: Excitable Tissue: Muscle)
-
-3. Costanzo, L. S. (2024). *BRS physiology* (7th ed.). Wolters Kluwer. (Chapter 2: Muscle Physiology)
-
-4. Sembulingam, K., & Sembulingam, P. (2022). *Essentials of medical physiology* (9th ed.). Jaypee Brothers Medical Publishers. (Section 3: Muscle Physiology)
-
-5. Widmaier, E. P., Raff, H., & Strang, K. T. (2023). *Vander's human physiology: The mechanisms of body function* (16th ed.). McGraw-Hill Education. (Chapter 8: Muscle)
-
-6. Kandel, E. R., Schwartz, J. H., Jessell, T. M., Siegelbaum, S. A., & Hudspeth, A. J. (2021). *Principles of neural science* (6th ed.). McGraw-Hill Education. (Chapters on Neuromuscular Junction and Motor Control)
-
-7. Engel, A. G. (2020). *Myology* (4th ed.). McGraw-Hill Education. (Comprehensive muscle reference)
-
-8. Ruff, R. L., & Kaminski, H. J. (2021). *Disorders of neuromuscular transmission*. In *Neurology in Clinical Practice* (8th ed.). Elsevier.
+## Summary Box
+- Skeletal muscle is organized hierarchically: whole muscle → fascicles → muscle fibers (cells) → myofibrils → sarcomeres. The sarcomere is the functional unit of contraction, containing interdigitating actin (thin) and myosin (thick) filaments.
+- Skeletal muscle fibers are classified into Type I (slow oxidative) for endurance, Type IIa (fast oxidative) for intermediate activities, and Type IIx (fast glycolytic) for powerful, short‑duration movements.
+- The sliding filament theory describes contraction as the sliding of actin filaments past myosin filaments, shortening the sarcomere without changing filament length.
+- The cross‑bridge cycle, driven by ATP, involves myosin heads binding to actin, performing a power stroke, detaching, and re‑cocking. This is regulated by Ca²⁺ binding to troponin, which uncovers the myosin‑binding sites on actin.
+- Excitation‑contraction coupling connects the neural signal to contraction: ACh released at the neuromuscular junction triggers a muscle action potential that travels down T‑tubules, causing the SR to release Ca²⁺.
+- The neuromuscular junction is a highly specialized chemical synapse where a motor neuron communicates with a muscle fiber via acetylcholine (ACh). The signal is terminated by acetylcholinesterase to allow relaxation.
+- The action potential of skeletal muscle consists of a rapid depolarization (Na⁺ influx) followed by repolarization (K⁺ efflux); it propagates along the sarcolemma and into T‑tubules to trigger Ca²⁺ release.
 
 ---
 
-**Recommended Textbooks for Further Reading:**
-- Hall, J. E. (2021). *Guyton and Hall textbook of medical physiology* (14th ed.). Elsevier. (Excellent for foundational muscle physiology)
-- Costanzo, L. S. (2024). *BRS physiology* (7th ed.). Wolters Kluwer. (Concise review with clinical correlations)
-- Engel, A. G. (2020). *Myology* (4th ed.). McGraw-Hill Education. (Comprehensive muscle reference for advanced study)
-
-
+## References
+1. Hall, J. E., & Hall, M. E. (2021). *Guyton and Hall Textbook of Medical Physiology* (14th ed.). Elsevier.
+2. Barrett, K. E., Barman, S. M., Boitano, S., & Brooks, H. L. (2019). *Ganong’s Review of Medical Physiology* (26th ed.). McGraw‑Hill Education.
+3. Boron, W. F., & Boulpaep, E. L. (2017). *Medical Physiology* (3rd ed.). Elsevier.
+4. Sherwood, L. (2016). *Human Physiology: From Cells to Systems* (9th ed.). Cengage Learning.
+5. Costanzo, L. S. (2018). *Physiology* (6th ed.). Elsevier.

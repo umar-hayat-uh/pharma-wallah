@@ -12,15 +12,12 @@
 // ───────────────────────────────────────────────────────────────────
 
 import type { SubjectMeta } from "./types";
-import { biochemistrySubject } from "./subjects/biochemistry";
-// import { naturalToxinsSubject } from "./subjects/natural-toxins";
-// import { organicChemistrySubject } from "./subjects/organic-chemistry";
-// ...one line per subject — each file below owns its own unit list.
+//  import { biochemistrySubject } from "./subjects/biochemistry";
+import { physiologySubject } from "./subjects/physiology";
 
 export const SUBJECTS: SubjectMeta[] = [
-    biochemistrySubject,
-    // naturalToxinsSubject,
-    // organicChemistrySubject,
+    //  biochemistrySubject,
+    physiologySubject,
 ];
 
 // ── Derived lookups (computed once, reused everywhere) ──────────────

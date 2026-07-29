@@ -1,538 +1,299 @@
-## Unit 6: Digestion and Absorption of Food
+# Unit 6: Digestion and Absorption of Food
 
-### Introduction to the Digestive System
+## Learning Objectives
+- Describe the composition, function, and regulation of gastrointestinal secretions (salivary, gastric, pancreatic, and biliary).
+- Explain the nervous and hormonal regulation of gastric secretions.
+- Describe the processes of mastication, deglutition, gastric emptying, and intestinal movements (peristalsis, segmentation, and mixing).
+- Explain the enterohepatic circulation of bile and the process of defecation.
+- Understand the overview of the enteric nervous system and its role in gastrointestinal function.
 
-The digestive system is responsible for the breakdown of food into absorbable nutrients, their absorption into the bloodstream or lymphatic system, and the elimination of indigestible wastes. It consists of the gastrointestinal tract (GIT) and accessory organs that secrete digestive juices.
+---
 
-**Functions of the Digestive System**:
+## Introduction to the Digestive System
+The digestive system breaks down food into absorbable nutrients, absorbs them into the bloodstream or lymph, and eliminates indigestible residues. It includes the gastrointestinal tract (GIT) and accessory organs (salivary glands, pancreas, liver, gallbladder).
 
+**Functions:**
 | Function | Description |
 |----------|-------------|
-| **Ingestion** | Intake of food into the mouth |
-| **Propulsion** | Movement of food through the tract (swallowing, peristalsis) |
-| **Mechanical digestion** | Physical breakdown (chewing, churning, segmentation) |
-| **Chemical digestion** | Enzymatic breakdown of macromolecules into absorbable units |
-| **Absorption** | Passage of digested nutrients into blood or lymph |
-| **Defecation** | Elimination of indigestible residues (feces) |
+| Ingestion | Intake of food into the mouth |
+| Propulsion | Movement of food through the tract (swallowing, peristalsis) |
+| Mechanical digestion | Physical breakdown (chewing, churning, segmentation) |
+| Chemical digestion | Enzymatic breakdown of macromolecules into absorbable units |
+| Absorption | Passage of digested nutrients into blood or lymph |
+| Defecation | Elimination of indigestible residues |
 
-**Layers of the Gastrointestinal Tract Wall**:
-
+**Layers of the Gastrointestinal Tract Wall:**
 | Layer | Composition | Function |
 |-------|-------------|----------|
-| **Mucosa** | Epithelium, lamina propria (connective tissue), muscularis mucosae | Secretion, absorption, protection |
-| **Submucosa** | Connective tissue with blood vessels, lymphatics, nerves (submucosal plexus) | Support, blood supply |
-| **Muscularis externa** | Inner circular smooth muscle, outer longitudinal smooth muscle; myenteric plexus between layers | Motility (peristalsis, segmentation) |
-| **Serosa (or adventitia)** | Connective tissue covered by mesothelium (visceral peritoneum) | Protection, reduces friction |
+| Mucosa | Epithelium, lamina propria, muscularis mucosae | Secretion, absorption, protection |
+| Submucosa | Connective tissue with blood vessels, lymphatics, submucosal (Meissner’s) plexus | Support, blood supply, secretion control |
+| Muscularis externa | Inner circular and outer longitudinal smooth muscle; myenteric (Auerbach’s) plexus between them | Motility (peristalsis, segmentation) |
+| Serosa / Adventitia | Connective tissue covered by mesothelium (visceral peritoneum) | Protection, reduces friction |
 
-**Enteric Nervous System**:
-- **Submucosal plexus (Meissner's)** : Regulates secretion and blood flow
-- **Myenteric plexus (Auerbach's)** : Regulates motility
-- Functions independently but modulated by autonomic nervous system
+![Labelled Diagram of the Digestive System](/previews/physio/unit6.1.webp)
 
 ---
 
-### 1. Gastro-Intestinal Secretions
+## 1. Gastrointestinal Secretions
 
-#### 1.1 Salivary Secretions
+### A. Salivary Secretions
+- **Glands:** Parotid (serous), submandibular (mixed), sublingual (mucous), and minor salivary glands.
+- **Volume:** 0.8–1.5 L/day.
+- **Composition:**
+  - Water (99.5%), electrolytes (Na⁺, K⁺, Cl⁻, HCO₃⁻)
+  - **α‑Amylase (ptyalin):** begins starch digestion (cleaves α‑1,4 bonds)
+  - **Lingual lipase:** minor fat digestion, active in stomach
+  - **Mucus (mucin):** lubrication, protection
+  - **Lysozyme:** antibacterial
+  - **Lactoferrin:** binds iron, inhibits bacteria
+  - **IgA:** immune protection
+- **Functions:** Moistens food, begins carbohydrate/lipid digestion, cleanses mouth, buffers acids.
+- **Regulation:**
+  - **Parasympathetic (CN VII, IX):** produces copious, watery, enzyme‑rich saliva (ACh via muscarinic receptors).
+  - **Sympathetic:** produces small volume of thick, mucinous saliva.
+  - Conditioned (sight, smell) and unconditioned (food in mouth) reflexes.
 
-**Glands**: Parotid (serous), Submandibular (mixed), Sublingual (mucous), and numerous minor salivary glands
+### B. Gastric Secretions
+- **Glands:** Gastric glands in fundus/body; pyloric glands in antrum.
+- **Volume:** 1.5–2.5 L/day.
 
-**Daily Volume**: 0.8-1.5 L/day
-
-**Composition of Saliva**:
-
-| Component | Concentration | Function |
-|-----------|---------------|----------|
-| **Water** | 99.5% | Solvent; moistens food |
-| **Electrolytes** | Na⁺, K⁺, Cl⁻, HCO₃⁻ | Bicarbonate buffers acid |
-| **Mucus** | Mucins | Lubrication; protects mucosa |
-| **α-Amylase (ptyalin)** | | Begins starch digestion (hydrolyzes α1-4 glycosidic bonds) |
-| **Lingual lipase** | | Minor fat digestion (in infants) |
-| **Lysozyme** | | Antibacterial (breaks bacterial cell walls) |
-| **Lactoferrin** | | Binds iron, inhibits bacterial growth |
-| **IgA** | | Immune protection |
-| **Kallikrein** | | Produces bradykinin (vasodilator) |
-
-**Regulation of Salivary Secretion**:
-- **Parasympathetic** (dominant): Via cranial nerves VII (submandibular, sublingual) and IX (parotid); acetylcholine acts on muscarinic receptors → profuse, watery saliva
-- **Sympathetic**: Via superior cervical ganglion; norepinephrine acts on α and β receptors → small volume, thick, mucus-rich saliva
-- **Stimuli**: Sight, smell, thought of food; presence of food in mouth; conditioned reflexes
-- **Integration**: Salivary nuclei in medulla oblongata
-
-**Clinical Correlation**: Xerostomia (dry mouth) – causes: drugs (anticholinergics), Sjögren's syndrome, radiation therapy
-
-#### 1.2 Gastric Secretions
-
-**Glands**: Gastric glands in fundus and body; pyloric glands in antrum
-
-**Daily Volume**: 1.5-2.5 L/day
-
-**Cell Types and Secretions**:
-
+**Cell Types and Their Secretions:**
 | Cell Type | Location | Secretion | Function |
 |-----------|----------|-----------|----------|
-| **Parietal (oxyntic) cells** | Body of stomach | Hydrochloric acid (HCl) | Activates pepsinogen; kills bacteria; denatures protein |
-| | | Intrinsic factor | Binds vitamin B₁₂ for absorption in ileum |
-| **Chief (peptic) cells** | Body of stomach | Pepsinogen (inactive) | Converted to pepsin by HCl; digests proteins |
-| **Mucous neck cells** | Neck region | Mucus | Protects gastric mucosa |
-| **Surface mucous cells** | Surface | Mucus, bicarbonate | Protection, lubrication |
-| **G cells** | Antrum | Gastrin | Hormone: stimulates acid secretion |
-| **D cells** | Body, antrum | Somatostatin | Inhibits gastrin, acid secretion |
-| **ECL cells** | Body | Histamine | Paracrine: stimulates acid secretion |
+| **Parietal (oxyntic) cells** | Body | HCl, Intrinsic Factor | Activates pepsinogen; kills bacteria; denatures proteins; IF binds B₁₂ |
+| **Chief (peptic) cells** | Body | Pepsinogen (inactive) | Converted to pepsin by HCl; digests proteins |
+| **Mucous cells** (surface, neck) | Throughout | Mucus, HCO₃⁻ | Protects mucosa; lubrication |
+| **G cells** | Antrum | Gastrin | Stimulates acid secretion (hormonal) |
+| **D cells** | Body, antrum | Somatostatin | Inhibits gastrin and acid secretion |
+| **ECL cells** | Body | Histamine | Paracrine; stimulates acid secretion (via H₂ receptors) |
 
-**Composition of Gastric Juice**:
-- **Acid (HCl)**: pH 1-2; secreted by H⁺/K⁺ ATPase (proton pump) in parietal cells
-- **Pepsinogen**: Zymogen activated to pepsin by acid (autoactivation)
-- **Mucus**: Forms protective gel layer (with bicarbonate)
-- **Intrinsic factor**: Glycoprotein essential for B₁₂ absorption
-- **Water, electrolytes**
+**Mechanism of HCl Secretion (Parietal Cell):**
+1. CO₂ + H₂O → H₂CO₃ (carbonic anhydrase).
+2. H⁺ pumped into lumen by **H⁺/K⁺ ATPase** (proton pump); K⁺ recycled.
+3. HCO₃⁻ exchanged for Cl⁻ at basolateral membrane (Cl⁻–HCO₃⁻ exchanger); Cl⁻ diffuses into lumen via channels.
+4. Net result: HCl secreted; HCO₃⁻ enters blood → *alkaline tide* after meal.
 
-**Mechanism of HCl Secretion by Parietal Cells**:
+**Phases of Gastric Secretion:**
+| Phase | % of Secretion | Stimulus | Mechanism |
+|-------|----------------|----------|-----------|
+| **Cephalic** | 30% | Sight, smell, taste, thought, chewing | Vagal stimulation → ACh → parietal cells + G cells (gastrin) |
+| **Gastric** | 60% | Distension, peptides, amino acids | Vagovagal and local reflexes; gastrin release; histamine from ECL cells |
+| **Intestinal** | 10% | Chyme in duodenum (initial excitation, then inhibition) | Amino acids/peptides → minor gastrin; fat, acid, hypertonicity → enterogastric reflex (secretin, CCK, GIP inhibit secretion and emptying) |
 
-| Step | Process |
-|------|---------|
-| 1 | CO₂ from blood combines with H₂O (carbonic anhydrase) → H₂CO₃ → H⁺ + HCO₃⁻ |
-| 2 | H⁺ pumped into canaliculus by H⁺/K⁺ ATPase (proton pump) in exchange for K⁺ |
-| 3 | HCO₃⁻ exchanged for Cl⁻ at basolateral membrane (Cl⁻-HCO₃⁻ exchanger) |
-| 4 | Cl⁻ diffuses into lumen through Cl⁻ channels |
-| 5 | Net result: HCl secreted into lumen; HCO₃⁻ enters blood (alkaline tide after meal) |
+**Inhibition:** Acid (pH <3) → somatostatin from D cells → inhibits gastrin and parietal cells. Duodenal factors (fat, acid, hypertonicity) trigger the enterogastric reflex, releasing enterogastrones (secretin, CCK, GIP) that inhibit gastric secretion and motility.
 
-**Regulation of Gastric Secretion** (Phases):
+### C. Pancreatic Secretions
+- **Source:** Exocrine pancreas (acinar cells – enzymes; duct cells – bicarbonate).
+- **Volume:** 1.0–2.0 L/day.
 
-| Phase | Stimulus | Mechanism | % of Secretion |
-|-------|----------|-----------|----------------|
-| **Cephalic phase** | Sight, smell, thought, taste of food | Vagus nerve (ACh) stimulates parietal cells directly and via gastrin release | 30% |
-| **Gastric phase** | Distension; peptides; amino acids | Vagovagal reflexes; local enteric reflexes; gastrin release (from G cells stimulated by peptides, distension, ACh) | 60% |
-| **Intestinal phase** | Chyme entering duodenum | Initial stimulation (small) followed by inhibition (enterogastric reflex; secretin, CCK, GIP) | 10% |
+**Pancreatic Enzymes (secreted as zymogens where noted):**
+| Enzyme (Zymogen) | Activator | Substrate | Products |
+|------------------|-----------|-----------|----------|
+| Trypsin (trypsinogen) | Enterokinase (duodenal brush border) | Proteins, peptides | Smaller peptides |
+| Chymotrypsin (chymotrypsinogen) | Trypsin | Proteins, peptides | Smaller peptides |
+| Elastase (proelastase) | Trypsin | Elastin | Peptides |
+| Carboxypeptidase A/B (procarboxypeptidase) | Trypsin | Peptides (C‑terminal) | Amino acids |
+| Pancreatic lipase | – | Triglycerides | Fatty acids + monoglycerides |
+| Phospholipase A₂ (prophospholipase A₂) | Trypsin | Phospholipids | Fatty acid + lysophospholipid |
+| Cholesterol esterase | – | Cholesterol esters | Cholesterol + fatty acid |
+| α‑Amylase | – | Starch, glycogen | Maltose, maltotriose, limit dextrins |
+| Ribonuclease, Deoxyribonuclease | – | RNA, DNA | Nucleotides |
 
-**Inhibition of Gastric Secretion**:
-- Acid in stomach (pH <3) inhibits gastrin release (via somatostatin)
-- Fat, acid, hypertonicity in duodenum trigger enterogastric reflex and release of enterogastrones (secretin, CCK, GIP)
+- **Protection:** Enzymes are stored as inactive precursors; trypsinogen activated only in duodenum by enterokinase; trypsin then activates other zymogens. Pancreatic trypsin inhibitor prevents premature activation.
 
-#### 1.3 Pancreatic Secretions
+- **Bicarbonate (from duct cells):** neutralises gastric acid; provides optimal pH (7.5–8.0) for enzyme action.
 
-**Exocrine Pancreas**: Acinar cells secrete digestive enzymes; ductal cells secrete bicarbonate-rich fluid
+**Regulation:**
+- **Secretin** (from duodenal S cells, stimulated by acid): increases bicarbonate‑rich, enzyme‑poor secretion.
+- **CCK** (from duodenal I cells, stimulated by fats & proteins): increases enzyme‑rich secretion.
+- **Vagal stimulation** (cephalic & gastric phases): modest enzyme secretion.
 
-**Daily Volume**: 1-2 L/day
+### D. Biliary Secretions and Enterohepatic Circulation
+- **Source:** Liver hepatocytes; stored and concentrated (up to 10‑fold) in gallbladder.
+- **Volume:** 0.6–1.2 L/day.
 
-**Composition of Pancreatic Juice**:
+**Composition:**
+- **Bile salts** (bile acids conjugated with glycine/taurine): cholic acid, chenodeoxycholic acid; secondary bile acids from bacteria. Function: emulsify fats, form micelles for lipid absorption.
+- **Bilirubin** (conjugated): waste product excreted in faeces.
+- **Cholesterol:** excreted; can form gallstones if supersaturated.
+- **Phospholipids (lecithin):** solubilise cholesterol.
+- **Bicarbonate**, electrolytes, water.
 
-| Component | Source | Function |
-|-----------|--------|----------|
-| **Bicarbonate (HCO₃⁻)** | Ductal cells | Neutralizes acidic chyme; provides optimal pH for pancreatic enzymes (pH 7-8) |
-| **Water, electrolytes** | Ductal cells | Vehicle |
-| **Digestive enzymes** | Acinar cells | |
+**Enterohepatic Circulation:**
+1. Bile salts are synthesised in liver from cholesterol and secreted into bile.
+2. Stored/concentrated in gallbladder; released into duodenum in response to CCK.
+3. ~95% of bile salts are actively reabsorbed in the terminal ileum.
+4. Returned via portal blood to liver, taken up, and re‑secreted (recycled 6–10 times/day).
+5. ~5% lost in faeces, replaced by new synthesis.
+*Disruption* (e.g., ileal resection, cholestyramine) causes bile salt deficiency, fat malabsorption, steatorrhoea, and fat‑soluble vitamin deficiencies (A, D, E, K).
 
-**Pancreatic Enzymes**:
-
-| Enzyme | Zymogen | Activator | Substrate | Products |
-|--------|---------|-----------|-----------|----------|
-| **Trypsin** | Trypsinogen | Enterokinase (duodenal brush border) | Proteins, peptides | Smaller peptides |
-| **Chymotrypsin** | Chymotrypsinogen | Trypsin | Proteins, peptides | Smaller peptides |
-| **Elastase** | Proelastase | Trypsin | Elastin | Peptides |
-| **Carboxypeptidase A** | Procarboxypeptidase A | Trypsin | Peptides (C-terminal) | Amino acids |
-| **Carboxypeptidase B** | Procarboxypeptidase B | Trypsin | Peptides with basic C-terminus | Amino acids |
-| **Pancreatic lipase** | (Active) | - | Triglycerides | Fatty acids + monoglycerides |
-| **Colipase** | (Active) | - | Facilitates lipase activity | - |
-| **Phospholipase A₂** | Prophospholipase A₂ | Trypsin | Phospholipids | Fatty acid + lysophospholipid |
-| **Cholesterol esterase** | (Active) | - | Cholesterol esters | Cholesterol + fatty acid |
-| **α-Amylase** | (Active) | - | Starch, glycogen | Maltose, maltotriose, limit dextrins |
-| **Ribonuclease** | (Active) | - | RNA | Nucleotides |
-| **Deoxyribonuclease** | (Active) | - | DNA | Nucleotides |
-
-**Protection**: Pancreatic proteases stored as inactive zymogens; trypsinogen activated only in duodenum by enterokinase; trypsin then activates other zymogens. Pancreatic trypsin inhibitor prevents premature activation.
-
-**Regulation of Pancreatic Secretion**:
-
-| Phase | Stimulus | Mechanism |
-|-------|----------|-----------|
-| **Cephalic phase** | Vagus | ACh stimulates enzyme-rich secretion (minor) |
-| **Gastric phase** | Distension | Vagovagal reflexes stimulate enzyme secretion |
-| **Intestinal phase** | Acid in duodenum | Secretin release → stimulates ductal cells → profuse bicarbonate-rich secretion |
-| | Fatty acids, amino acids in duodenum | CCK release → stimulates acinar cells → enzyme-rich secretion |
-| | | Potentiation: CCK + secretin synergistic |
-
-#### 1.4 Biliary Secretions
-
-**Source**: Liver (hepatocytes) secrete bile; stored and concentrated in gallbladder
-
-**Daily Volume**: 0.6-1.2 L/day
-
-**Composition of Bile**:
-
-| Component | Concentration | Function |
-|-----------|---------------|----------|
-| **Bile salts** | ~10-20 mmol/L | Emulsify fats; form micelles; essential for fat absorption |
-| **Bilirubin** (conjugated) | | Waste product from heme catabolism; excreted in feces |
-| **Cholesterol** | | Excreted; can form gallstones if supersaturated |
-| **Phospholipids** (lecithin) | | Solubilize cholesterol in micelles |
-| **Bicarbonate** | | Neutralizes acid |
-| **Water, electrolytes** | | Vehicle |
-
-**Bile Salts**:
-- Synthesized from cholesterol in liver (primary bile acids: cholic acid, chenodeoxycholic acid)
-- Conjugated with glycine or taurine (bile salts)
-- In colon, bacteria convert to secondary bile acids (deoxycholic acid, lithocholic acid)
-- Amphipathic: hydrophobic and hydrophilic regions → detergent action
-
-**Enterohepatic Circulation**:
-
-```
-Bile salts secreted into duodenum
-            ↓
-Assist in fat digestion and absorption
-            ↓
-Reabsorbed in ileum (active transport)
-            ↓
-Return to liver via portal blood
-            ↓
-Re-secreted into bile (efficient recycling)
-```
-
-- 95% of bile salts reabsorbed; only 5% lost in feces (replaced by new synthesis)
-- Total bile salt pool ~3-4 g; recycled 6-10 times per day
-
-**Regulation of Bile Secretion**:
-- **Bile salt-dependent**: Bile salts stimulate their own secretion (choleretic effect)
-- **Bile salt-independent**: Stimulated by secretin (bicarbonate-rich secretion)
-- **CCK**: Causes gallbladder contraction and relaxation of sphincter of Oddi
-- **Vagal stimulation**: Mild gallbladder contraction
-
-**Gallbladder Function**:
-- Concentrates bile by absorbing water and electrolytes (up to 10-fold)
-- Stores bile between meals
-- Contracts in response to CCK (after meals)
+**Regulation:**
+- **CCK:** gallbladder contraction + sphincter of Oddi relaxation.
+- **Secretin:** stimulates bicarbonate‑rich bile flow.
+- **Vagal stimulation:** mild gallbladder contraction.
 
 ---
 
-### 2. Nervous and Hormonal Regulation of Gastric Secretions
+## 2. Gastrointestinal Hormones Overview
+| Hormone | Source | Stimulus | Major Actions |
+|---------|--------|----------|---------------|
+| **Gastrin** | G cells (antrum) | Peptides, amino acids, distension, ACh | ↑ gastric acid, motility, mucosal growth |
+| **CCK** | I cells (duodenum) | Fatty acids, amino acids | ↑ pancreatic enzyme secretion, gallbladder contraction; ↓ gastric emptying |
+| **Secretin** | S cells (duodenum) | Duodenal acid | ↑ pancreatic HCO₃⁻, ↓ gastric acid & emptying |
+| **GIP** | K cells (duodenum) | Glucose, fats | ↑ insulin release (incretin effect); ↓ gastric acid |
+| **Motilin** | M cells (duodenum) | Fasting | Initiates migrating motor complex (MMC) |
+| **Somatostatin** | D cells (stomach, intestine, pancreas) | Acid | Paracrine inhibitor of gastrin, acid, pancreatic secretion, motility |
+| **Ghrelin** | Stomach (fundus) | Fasting | ↑ appetite, gastric motility |
 
-#### 2.1 Nervous Regulation
-
-| Nerve | Effect | Mediator |
-|-------|--------|----------|
-| **Vagus (parasympathetic)** | Stimulates acid and pepsinogen secretion; stimulates gastrin release | ACh (direct on parietal cells; on G cells) |
-| **Sympathetic** | Generally inhibitory (reduces blood flow, motility) | Norepinephrine |
-| **Enteric nervous system** | Local reflexes mediate responses to distension, chemical stimuli | ACh, various peptides |
-
-**Vagovagal Reflexes**: Afferent and efferent signals via vagus; coordinate gastric and intestinal function
-
-#### 2.2 Hormonal Regulation
-
-| Hormone | Source | Stimulus | Target | Effect |
-|---------|--------|----------|--------|--------|
-| **Gastrin** | G cells (antrum) | Peptides, amino acids, distension, ACh (vagal) | Parietal cells, ECL cells | ↑ Acid secretion; ↑ growth of gastric mucosa |
-| **Somatostatin** | D cells (body, antrum) | Acid (low pH) | G cells, parietal cells | ↓ Gastrin release; ↓ acid secretion |
-| **Histamine** | ECL cells (body) | Gastrin, ACh | Parietal cells (H₂ receptors) | ↑ Acid secretion (paracrine) |
-| **Secretin** | S cells (duodenum) | Acid in duodenum | Pancreas (ductal), stomach | ↑ Pancreatic HCO₃⁻; ↓ Gastric acid; ↓ Gastric emptying |
-| **CCK (cholecystokinin)** | I cells (duodenum) | Fatty acids, amino acids | Pancreas (acinar), gallbladder, stomach | ↑ Pancreatic enzymes; ↑ Gallbladder contraction; ↓ Gastric emptying |
-| **GIP (gastric inhibitory peptide)** | K cells (duodenum) | Glucose, fats | Stomach, pancreas | ↓ Gastric acid; ↑ Insulin release |
-| **Ghrelin** | Stomach (fundus) | Fasting | Hypothalamus | ↑ Appetite; ↑ Gastric motility |
-
-**Integrated Regulation**:
-- **Cephalic phase**: Vagus → ACh → parietal cells + G cells (gastrin)
-- **Gastric phase**: Distension → vagovagal and local reflexes; peptides → gastrin release; gastrin → histamine from ECL cells → parietal cells
-- **Negative feedback**: Acid (pH <3) → somatostatin release → inhibits gastrin and parietal cells
+![Gastrointestinal Hormone Actions](/previews/physio/unit6.2.webp)
 
 ---
 
-### 3. Mastication, Deglutition, and Gastric Emptying
+## 3. Motility: Mastication, Deglutition, and Gastric Emptying
 
-#### 3.1 Mastication (Chewing)
+### A. Mastication (Chewing)
+- Mechanical breakdown of food, increases surface area for enzymes, mixes with saliva.
+- Controlled by brainstem (trigeminal motor nucleus); voluntary initiation, then rhythmic reflex.
 
-**Purpose**:
-- Mechanical breakdown of food into smaller particles
-- Increases surface area for enzyme action
-- Mixes food with saliva (lubrication, beginning starch digestion)
-
-**Control**:
-- Voluntary initiation
-- Rhythmic chewing reflex coordinated by brainstem (trigeminal motor nucleus)
-- Modified by sensory feedback (pressure receptors in mouth)
-
-#### 3.2 Deglutition (Swallowing)
-
-Swallowing is a complex reflex that propels food from mouth to stomach.
-
-**Phases of Swallowing**:
-
+### B. Deglutition (Swallowing)
 | Phase | Description | Control | Duration |
 |-------|-------------|---------|----------|
-| **Oral (voluntary)** | Tongue pushes bolus against hard palate; propels into oropharynx | Cerebral cortex | ~1 second |
-| **Pharyngeal (involuntary)** | Soft palate elevates (closes nasopharynx); larynx elevates, epiglottis covers airway; pharyngeal constrictors propel bolus; upper esophageal sphincter relaxes | Swallowing center in medulla (CN V, IX, X, XII) | <1 second |
-| **Esophageal (involuntary)** | Primary peristalsis (continuation of pharyngeal wave); secondary peristalsis if needed; lower esophageal sphincter relaxes | Vagus (CN X); enteric nervous system | 5-10 seconds |
+| **Oral (voluntary)** | Tongue pushes bolus into oropharynx | Cerebral cortex | ~1 s |
+| **Pharyngeal (involuntary)** | Soft palate elevates, epiglottis covers airway, pharyngeal constrictors propel bolus; UES relaxes | Swallowing centre in medulla (CN V, IX, X, XII) | <1 s |
+| **Esophageal (involuntary)** | Primary peristalsis (continuation); secondary peristalsis if needed; LES relaxes | Vagus (CN X); enteric NS | 5–10 s |
 
-**Swallowing Center**:
-- Paired nuclei in medulla (nucleus tractus solitarius, nucleus ambiguus)
-- Coordinates motor output to pharynx and esophagus
-- Integrates sensory input from oropharynx
+- **LES:** tonically contracted to prevent reflux; relaxes upon swallowing (VIP, NO).
+- **Disorders:** Achalasia (failure of LES relaxation), GERD (incompetent LES).
 
-**Esophageal Peristalsis**:
-- **Primary peristalsis**: Wave of relaxation followed by contraction; initiated by swallowing
-- **Secondary peristalsis**: Initiated by distension (if primary wave fails)
-- **Tertiary contractions**: Non-peristaltic, segmental contractions (sometimes seen in elderly)
-
-**Lower Esophageal Sphincter (LES)** :
-- Tonically contracted (prevents reflux)
-- Relaxes with swallowing (VIP, NO)
-- Intrinsic smooth muscle tone + diaphragmatic compression
-- Competence affected by: gastrin (increases tone), secretin, CCK, progesterone (decrease tone)
-
-**Disorders**:
-- **Achalasia**: Failure of LES relaxation + absent peristalsis (loss of inhibitory neurons)
-- **GERD**: Incompetent LES → reflux of gastric contents
-
-#### 3.3 Gastric Emptying
-
-**Factors Promoting Emptying**:
-
-| Factor | Mechanism |
-|--------|-----------|
-| **Gastric distension** | Stretch reflexes (vagovagal, local) increase peristalsis; relax pylorus |
-| **Gastrin** | Enhances gastric motility and relaxes pylorus |
-| **Volume of meal** | Larger volume → faster initial emptying (exponential) |
-
-**Factors Inhibiting Emptying (Enterogastric Reflex)** :
-
-| Factor in Duodenum | Mechanism |
-|--------------------|-----------|
-| **Acid (low pH)** | Stimulates secretin release; reflex inhibition |
-| **Fat** | Stimulates CCK release; inhibits gastric motility; relaxes fundus |
-| **Hypertonicity** | Osmoreceptors trigger reflex inhibition |
-| **Distension** | Stretch receptors trigger reflex inhibition |
-
-**Pyloric Pump and Pylorus**:
-- Antral peristalsis propels chyme toward pylorus
-- Only small amounts (1-3 mL) pass with each wave
-- Liquids empty faster than solids
-- Particles >1-2 mm retained for further grinding
+### C. Gastric Emptying
+- **Factors promoting emptying:** gastric distension (stretch reflexes, gastrin), gastrin enhances motility.
+- **Factors inhibiting emptying (enterogastric reflex):** duodenal acid (secretin), fat (CCK), hypertonicity, distension → inhibit gastric motility and close pylorus.
+- Liquids empty faster than solids; carbohydrates > proteins > fats.
 
 ---
 
-### 4. Intestinal Movements
-
-#### 4.1 Types of Intestinal Motility
+## 4. Intestinal Movements
 
 | Movement | Description | Location | Function |
 |----------|-------------|----------|----------|
-| **Peristalsis** | Ring of contraction moves aborally; preceded by relaxation | Esophagus, stomach, small and large intestine | Propulsion |
-| **Segmentation** | Stationary, rhythmic contractions that divide and mix contents | Small intestine (mainly) | Mixing; increases contact with mucosa |
-| **Mass movement** | Powerful, long-distance peristaltic waves | Large intestine (3-4 times/day) | Propulsion of feces toward rectum |
-| **Haustration** | Slow segmental contractions in colon | Large intestine | Mixing; slow propulsion |
-| **Migrating motor complex (MMC)** | Cyclic pattern of motility during fasting | Stomach, small intestine | "Housekeeper" function; clears debris |
+| **Segmentation** | Stationary, rhythmic contractions mixing contents | Small intestine (8–12/min) | Mixing; exposure to mucosa for absorption |
+| **Peristalsis** | Propagating wave of contraction preceded by relaxation | Entire GI tract | Propulsion aborally |
+| **Migrating Motor Complex (MMC)** | Strong peristaltic waves during fasting, repeating every 90–120 min | Stomach, small intestine | “Housekeeper” – clears undigested debris |
+| **Haustrations** | Slow segmental contractions | Colon | Mixing; water absorption |
+| **Mass movements** | Powerful, long peristaltic contractions, 3–4 times/day (often after meals – gastrocolic reflex) | Colon | Propel faeces toward rectum |
 
-#### 4.2 Small Intestine Motility
-
-**Segmentation Contractions**:
-- Occur at frequency ~12/min (duodenum) to 8/min (ileum)
-- Controlled by interstitial cells of Cajal (pacemaker cells)
-- Mix chyme with digestive juices; expose to mucosa for absorption
-- Do not propel contents consistently (net movement slow)
-
-**Peristalsis in Small Intestine**:
-- Slow velocity (0.5-2 cm/s)
-- Travels short distances (few cm)
-- Propels chyme toward ileocecal valve
-- Initiated by distension (enteric reflex)
-
-**Ileocecal Sphincter**:
-- Tonically contracted (prevents reflux from colon)
-- Relaxes when peristaltic wave arrives
-- Gastrin, CCK increase tone
-- Distension of cecum increases tone (ileocecal reflex)
-
-#### 4.3 Large Intestine Motility
-
-**Haustrations**:
-- Circular muscle contractions that form sacculations (haustra)
-- Mix contents; expose to mucosa for water absorption
-- Move contents slowly
-
-**Mass Movements**:
-- Powerful, long-duration contractions
-- Occur 3-4 times/day, often after meals (gastrocolic reflex)
-- Propel contents from transverse colon to rectum
-- Trigger defecation reflex
-
-**Gastrocolic Reflex**:
-- Distension of stomach → increased colonic motility
-- Mediated by gastrin, CCK, neural reflexes
-- Most prominent after first meal of day
-
-#### 4.4 Regulation of Intestinal Motility
-
-| Factor | Effect |
-|--------|--------|
-| **Enteric nervous system** | Coordinates peristalsis and segmentation |
-| **Parasympathetic** | Generally increases motility (vagus to proximal colon; pelvic splanchnic to distal colon) |
-| **Sympathetic** | Decreases motility (inhibits) |
-| **Hormones** | Gastrin, CCK increase motility; secretin, glucagon decrease |
-| **Local factors** | Distension stimulates motility; intraluminal nutrients modulate |
+- **Ileocecal sphincter:** tonically contracted; relaxes with peristaltic wave; gastrin, CCK increase tone.
+- **Gastrocolic reflex:** gastric distension → increased colonic motility (gastrin, CCK, neural).
 
 ---
 
-### 5. Biliary Enterohepatic Circulation
-
-(Already covered in section 1.4 – see above)
-
-**Summary**:
-- Bile salts recycled between liver and intestine
-- Efficient reabsorption conserves cholesterol-derived molecules
-- Interrupted in ileal disease/resection → bile salt loss → fat malabsorption
+## 5. Defecation
+- **Rectal distension** by faeces → stretch receptors → parasympathetic (pelvic splanchnic, S2‑4) → contraction of sigmoid colon and rectum, relaxation of **internal anal sphincter** (involuntary).
+- **Voluntary control:** external anal sphincter (skeletal muscle, pudendal nerve) can be consciously relaxed or contracted; Valsalva manoeuvre (increased intra‑abdominal pressure) assists.
+- **Reflex centres:** spinal (sacral) and higher centres can facilitate or inhibit.
 
 ---
 
-### 6. Defecation
+## 6. Overview of the Enteric Nervous System (ENS)
 
-Defecation is the process of eliminating feces from the rectum through the anus.
+![Enteric Nervous System – Neural Control of the Gut](/previews/physio/unit6.3.webp)
 
-**Anatomy**:
-- **Internal anal sphincter**: Smooth muscle (involuntary); tonically contracted; relaxes in response to rectal distension
-- **External anal sphincter**: Skeletal muscle (voluntary); innervated by pudendal nerve (S2-4)
+Often called the “second brain,” the ENS contains ~100 million neurons and can operate independently of the CNS, though modulated by autonomic input.
 
-**Defecation Reflex**:
+**Plexuses:**
+- **Myenteric (Auerbach’s) plexus:** between longitudinal and circular muscle layers → controls motility (peristalsis, segmentation).
+- **Submucosal (Meissner’s) plexus:** in submucosa → controls secretion, absorption, and blood flow.
 
-| Step | Event |
-|------|-------|
-| 1 | Mass movement propels feces into rectum |
-| 2 | Rectal distension stimulates stretch receptors |
-| 3 | Afferent signals to spinal cord (sacral parasympathetic) |
-| 4 | Parasympathetic (pelvic splanchnic) stimulates sigmoid and rectal contraction |
-| 5 | Internal anal sphincter relaxes (reflex) |
-| 6 | If voluntary: external anal sphincter relaxed, diaphragm contracts, abdominal muscles contract (Valsalva) → increased intra-abdominal pressure |
-| 7 | Feces expelled |
-
-**Voluntary Control**:
-- External sphincter can be contracted voluntarily to delay defecation
-- Rectum accommodates (adapts) to distension if defecation postponed
-- Prolonged delay may lead to constipation
-
-**Defecation Reflex Centers**:
-- **Spinal (sacral) reflex**: Mediates basic reflex
-- **Higher centers**: Can facilitate or inhibit via pudendal nerve to external sphincter
-
----
-
-### 7. Overview of Enteric Nervous System
-
-The enteric nervous system (ENS) is the intrinsic nervous system of the gastrointestinal tract, often called the "second brain." It can function independently of the central nervous system but is modulated by autonomic input.
-
-**Components**:
-
-| Plexus | Location | Function |
-|--------|----------|----------|
-| **Myenteric plexus (Auerbach's)** | Between longitudinal and circular muscle layers | Controls motility (peristalsis, segmentation) |
-| **Submucosal plexus (Meissner's)** | In submucosa | Controls secretion, absorption, blood flow |
-
-**Neurons**:
-- **Sensory neurons**: Detect chemical, mechanical, thermal stimuli
-- **Interneurons**: Integrate information
-- **Motor neurons**: Excitatory (ACh, substance P) or inhibitory (NO, VIP) to muscle; secretomotor to glands
-
-**Neurotransmitters**:
-
+**Key Neurotransmitters:**
 | Neurotransmitter | Effect |
 |------------------|--------|
-| **Acetylcholine (ACh)** | Excitatory (increases motility, secretion) |
-| **Norepinephrine (NE)** | Inhibitory (from sympathetic postganglionic) |
-| **Nitric oxide (NO)** | Inhibitory (smooth muscle relaxation) |
-| **Vasoactive intestinal peptide (VIP)** | Inhibitory; stimulates secretion |
-| **Substance P** | Excitatory |
-| **Serotonin (5-HT)** | Modulates peristalsis; sensory transmission |
-| **Somatostatin** | Inhibitory |
-| **Enkephalins** | Inhibitory (opioid peptides) |
+| Acetylcholine (ACh) | Excitatory (↑ motility, secretion) |
+| Substance P | Excitatory |
+| Nitric oxide (NO) | Inhibitory (smooth muscle relaxation) |
+| Vasoactive intestinal peptide (VIP) | Inhibitory; stimulates secretion |
+| Norepinephrine (sympathetic) | Inhibitory (relaxation via α₂ on cholinergic neurons) |
+| Serotonin (5‑HT) | Modulates peristalsis; sensory transmission |
+| Somatostatin | Inhibitory |
+| Enkephalins | Inhibitory |
 
-**Functions**:
-- Generates and coordinates peristalsis (ascending contraction, descending relaxation)
-- Regulates secretion of water, electrolytes, enzymes
-- Modulates local blood flow
-- Integrates sensory information (pain, distension)
-- Communicates with CNS via vagal and sympathetic afferents
+**Functions:** coordinates peristaltic reflex (ascending contraction, descending relaxation), regulates secretion and local blood flow, integrates sensory information.
 
-**Peristaltic Reflex**:
-1. Distension stimulates sensory neurons
-2. Interneurons coordinate:
-   - Excitatory motor neurons proximal to stimulus → contraction
-   - Inhibitory motor neurons distal to stimulus → relaxation
-3. Wave of contraction propagates aborally
+**Peristaltic Reflex:** distension → sensory neurons → interneurons → excitatory motor neurons proximal (contraction) and inhibitory motor neurons distal (relaxation).
 
-**Clinical Relevance**:
-- **Irritable bowel syndrome (IBS)**: Altered ENS function; visceral hypersensitivity; abnormal motility
-- **Achalasia**: Loss of inhibitory neurons in esophagus
-- **Hirschsprung's disease**: Congenital absence of enteric ganglia in distal colon → functional obstruction
-- **Diabetic gastroparesis**: Autonomic neuropathy affecting ENS
+**Clinical Relevance:**
+- **Achalasia:** loss of inhibitory neurons in esophagus → failure of LES relaxation.
+- **Hirschsprung’s disease:** congenital absence of enteric ganglia in distal colon → functional obstruction.
+- **Diabetic gastroparesis:** autonomic neuropathy affecting ENS.
+- **IBS:** altered ENS function, visceral hypersensitivity.
 
 ---
 
-### 8. Summary Tables
+## Tables
 
-#### Table 1: Digestive Secretions
+### Table 1: Comparison of Digestive Secretions
+| Secretion | Daily Volume | pH | Key Components | Functions |
+|-----------|--------------|----|----------------|-----------|
+| Saliva | 0.8–1.5 L | 6.0–7.4 | α‑amylase, mucus, HCO₃⁻, lysozyme, IgA | Lubrication, starch/lipid digestion, antibacterial |
+| Gastric juice | 1.5–2.5 L | 1.5–3.5 | HCl, pepsinogen, intrinsic factor, mucus | Protein digestion, kills bacteria, B₁₂ absorption |
+| Pancreatic juice | 1.0–2.0 L | 7.5–8.0 | HCO₃⁻, proteases, lipase, amylase, nucleases | Neutralises acid, digests all macronutrients |
+| Bile | 0.6–1.2 L | 7.0–8.0 | Bile salts, bilirubin, cholesterol, lecithin | Fat emulsification, excretion |
 
-| Secretion | Daily Volume | Key Components | Functions | Regulation |
-|-----------|--------------|----------------|-----------|------------|
-| **Saliva** | 0.8-1.5 L | α-amylase, mucus, HCO₃⁻, lysozyme, IgA | Starch digestion; lubrication; protection | Parasympathetic dominant |
-| **Gastric juice** | 1.5-2.5 L | HCl, pepsinogen, mucus, intrinsic factor | Protein digestion; kills bacteria; B₁₂ absorption | Cephalic, gastric, intestinal phases |
-| **Pancreatic juice** | 1-2 L | HCO₃⁻, enzymes (proteases, lipase, amylase) | Neutralizes acid; digests all macronutrients | Secretin (HCO₃⁻), CCK (enzymes) |
-| **Bile** | 0.6-1.2 L | Bile salts, bilirubin, cholesterol, lecithin | Fat emulsification; excretion | Bile salts, CCK, secretin |
+### Table 2: Phases of Gastric Secretion
+| Phase | % | Stimulus | Mechanisms |
+|-------|----|----------|------------|
+| Cephalic | 30% | Sight, smell, taste, chewing | Vagal ACh → parietal cells + gastrin |
+| Gastric | 60% | Distension, peptides | Vagovagal reflexes, gastrin, histamine |
+| Intestinal | 10% | Duodenal chyme (initially stimulatory, then inhibitory) | Minor gastrin; enterogastric reflex (secretin, CCK, GIP) |
 
-#### Table 2: Gastrointestinal Hormones
-
-| Hormone | Source | Stimulus | Major Actions |
-|---------|--------|----------|---------------|
-| **Gastrin** | G cells (stomach) | Peptides, amino acids, distension, vagal | ↑ Acid secretion; ↑ gastric motility; ↑ mucosal growth |
-| **CCK** | I cells (duodenum) | Fatty acids, amino acids | ↑ Pancreatic enzyme secretion; ↑ gallbladder contraction; ↓ gastric emptying |
-| **Secretin** | S cells (duodenum) | Acid in duodenum | ↑ Pancreatic HCO₃⁻ secretion; ↓ gastric acid; ↓ gastric emptying |
-| **GIP** | K cells (duodenum) | Glucose, fats | ↑ Insulin release; ↓ gastric acid |
-| **Motilin** | M cells (duodenum) | Fasting | Initiates MMC (housekeeper) |
-| **Somatostatin** | D cells (stomach, intestine) | Acid | Inhibits gastrin, acid, pancreatic secretion, motility |
-| **Ghrelin** | Stomach (fundus) | Fasting | ↑ Appetite; ↑ gastric motility |
-
-#### Table 3: Intestinal Motility Patterns
-
+### Table 3: Intestinal Motility Patterns
 | Pattern | Location | Frequency | Function | Control |
 |---------|----------|-----------|----------|---------|
-| **Segmentation** | Small intestine | 8-12/min | Mixing; promotes absorption | Myenteric plexus; pacemaker cells |
-| **Peristalsis** | Small intestine | Variable | Slow propulsion | Enteric reflex |
-| **Haustrations** | Large intestine | Slow | Mixing; water absorption | Local |
-| **Mass movements** | Large intestine | 3-4/day | Propulsion to rectum | Gastrocolic reflex |
-| **MMC** | Stomach, small intestine | Every 90-120 min (fasting) | Clears debris | Motilin |
-
-#### Table 4: Enteric Nervous System Neurotransmitters
-
-| Neurotransmitter | Source | Effect on Muscle | Effect on Secretion |
-|------------------|--------|------------------|---------------------|
-| **Acetylcholine** | Excitatory motor neurons | Contraction | Stimulates |
-| **Substance P** | Excitatory motor neurons | Contraction | Stimulates |
-| **VIP** | Inhibitory motor neurons | Relaxation | Stimulates |
-| **NO** | Inhibitory motor neurons | Relaxation | - |
-| **Norepinephrine** | Sympathetic postganglionic | Relaxation (via α₂ on cholinergic neurons) | Inhibits |
-| **Somatostatin** | Enteric interneurons | Inhibits | Inhibits |
-| **Enkephalins** | Enteric neurons | Inhibits | Inhibits |
+| Segmentation | Small intestine | 8–12/min | Mixing, absorption | Myenteric plexus; interstitial cells of Cajal |
+| Peristalsis | Entire GI tract | Variable | Propulsion | Enteric reflex |
+| MMC | Stomach, small intestine | Every 90–120 min (fasting) | Clear debris | Motilin |
+| Mass movements | Large intestine | 3–4/day | Propulsion to rectum | Gastrocolic reflex (gastrin, CCK, neural) |
 
 ---
 
-### References
+## Exam Angle
 
-1. Hall, J. E. (2021). *Guyton and Hall textbook of medical physiology* (14th ed.). Elsevier. (Chapters 63-67: Gastrointestinal Physiology)
+### Short Answer Questions
+- What are the components and functions of pancreatic juice?
+- Describe the enterohepatic circulation of bile salts.
+- Differentiate between peristalsis and segmentation.
+- Summarise the three phases of gastric secretion.
+- What is the function of the enteric nervous system?
 
-2. Barrett, K. E., Barman, S. M., Brooks, H. L., & Yuan, J. X. J. (2019). *Ganong's review of medical physiology* (26th ed.). McGraw-Hill Education. (Chapters 25-27: Gastrointestinal Function)
+### Essay Questions
+- Discuss the nervous and hormonal regulation of gastric secretion in all three phases.
+- Explain the regulation of pancreatic secretion, including the roles of secretin and CCK.
+- Describe the digestion and absorption of fats, highlighting the roles of bile salts, pancreatic lipase, and micelle formation.
+- Outline the control of gastrointestinal motility, including gastric emptying, intestinal movements, and defecation.
 
-3. Costanzo, L. S. (2024). *BRS physiology* (7th ed.). Wolters Kluwer. (Chapter 7: Gastrointestinal Physiology)
-
-4. Sembulingam, K., & Sembulingam, P. (2022). *Essentials of medical physiology* (9th ed.). Jaypee Brothers Medical Publishers. (Section 6: Gastrointestinal System)
-
-5. Widmaier, E. P., Raff, H., & Strang, K. T. (2023). *Vander's human physiology: The mechanisms of body function* (16th ed.). McGraw-Hill Education. (Chapter 15: Digestion)
-
-6. Johnson, L. R. (2020). *Gastrointestinal physiology* (9th ed.). Elsevier. (Concise, clinically oriented)
-
-7. Feldman, M., Friedman, L. S., & Brandt, L. J. (2020). *Sleisenger and Fordtran's gastrointestinal and liver disease* (11th ed.). Elsevier. (Comprehensive clinical reference)
-
-8. Furness, J. B. (2021). *The enteric nervous system* (2nd ed.). Springer. (Detailed coverage of ENS)
+### Viva / Short Notes
+- Enterohepatic circulation
+- Defecation reflex
+- Functions of bile salts
+- Migrating motor complex (MMC)
+- Composition and functions of gastric juice
+- Hormonal regulation of pancreatic secretion
 
 ---
 
-**Recommended Textbooks for Further Reading:**
-- Hall, J. E. (2021). *Guyton and Hall textbook of medical physiology* (14th ed.). Elsevier. (Excellent for foundational GI physiology)
-- Costanzo, L. S. (2024). *BRS physiology* (7th ed.). Wolters Kluwer. (Concise review with clinical correlations)
-- Johnson, L. R. (2020). *Gastrointestinal physiology* (9th ed.). Elsevier. (Focused, clinically relevant)
+## Summary Box
+- **GI secretions** (saliva, gastric juice, pancreatic juice, bile) contain enzymes, electrolytes, and mucus for digestion and protection. Saliva begins carbohydrate/lipid digestion; gastric juice digests proteins and kills bacteria; pancreatic juice digests all macronutrients; bile emulsifies fats.
+- **Gastric secretion** is controlled in three overlapping phases: cephalic (vagal), gastric (distension, peptides, gastrin), and intestinal (enterogastric reflex). Somatostatin provides negative feedback when pH is low.
+- **Gastric emptying** is promoted by gastric distension and gastrin, but inhibited by duodenal fat, acid, and hypertonicity via hormonal (CCK, secretin, GIP) and neural reflexes.
+- **Intestinal motility** includes segmentation (mixing), peristalsis (propulsion), and the MMC (fasting housekeeper). Mass movements in the colon trigger defecation.
+- **Bile salts** are efficiently recycled via the enterohepatic circulation; disruption leads to fat malabsorption.
+- **Defecation** is a spinal reflex integrated with voluntary control over the external anal sphincter.
+- The **enteric nervous system** (myenteric and submucosal plexuses) acts as the “brain of the gut,” independently coordinating motility, secretion, and local reflexes.
 
+---
+
+## References
+1. Hall, J. E. (2021). *Guyton and Hall Textbook of Medical Physiology* (14th ed.). Elsevier.
+2. Barrett, K. E., et al. (2019). *Ganong’s Review of Medical Physiology* (26th ed.). McGraw‑Hill.
+3. Costanzo, L. S. (2024). *BRS Physiology* (7th ed.). Wolters Kluwer.
+4. Johnson, L. R. (2020). *Gastrointestinal Physiology* (9th ed.). Elsevier.
+5. Katzung, B. G. (2018). *Basic and Clinical Pharmacology* (14th ed.). McGraw‑Hill.
