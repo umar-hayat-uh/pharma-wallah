@@ -1,10 +1,9 @@
-// Header.tsx
 "use client";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { headerData } from "../Header/Navigation/menuData"; // Update this path if needed
+import { headerData } from "../Header/Navigation/menuData";
 import Logo from "./Logo";
 import {
   Pill,
@@ -30,6 +29,11 @@ import {
   Layers,
   Search,
   Library,
+  Scale,
+  Activity,
+  HeartPulse,
+  Syringe,
+  FlaskRound,
 } from "lucide-react";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { createClient } from "@/lib/supabase";
@@ -67,8 +71,6 @@ function useInstallPrompt() {
 }
 
 // ─── Submenu Icons, Colors & Descriptions ──────────────────────────────────
-// Every entry is matched to what the feature actually does, with its own
-// accent color so the grid doesn't read as one repeated tile.
 const SUBMENU_ICONS: Record<string, React.ReactNode> = {
   Material: <BookOpen className="w-5 h-5" />,
   "MCQ's Bank": <ListChecks className="w-5 h-5" />,
@@ -82,6 +84,16 @@ const SUBMENU_ICONS: Record<string, React.ReactNode> = {
   "Books Library": <Library className="w-5 h-5" />,
   "Antibiogram Simulator": <ShieldAlert className="w-5 h-5" />,
   "Molecule Viewer": <Atom className="w-5 h-5" />,
+  // ── Calculation Tools categories ──
+  "Pharmaceutical Chemistry": <Beaker className="w-5 h-5" />,
+  "Unit Conversion": <Scale className="w-5 h-5" />,
+  "Pharmaceutics": <Pill className="w-5 h-5" />,
+  "Biopharmaceutics & Pharmacokinetics": <Activity className="w-5 h-5" />,
+  "Pharmacology": <HeartPulse className="w-5 h-5" />,
+  "Pharmaceutical Analysis": <Microscope className="w-5 h-5" />,
+  "Microbiology": <Syringe className="w-5 h-5" />,
+  "Pharmaceutical Engineering": <FlaskRound className="w-5 h-5" />,
+  "Clinical & Hospital Pharmacy": <Stethoscope className="w-5 h-5" />,
 };
 
 const SUBMENU_COLORS: Record<string, { icon: string; bg: string; ring: string }> = {
@@ -97,6 +109,16 @@ const SUBMENU_COLORS: Record<string, { icon: string; bg: string; ring: string }>
   "Books Library": { icon: "text-emerald-500", bg: "from-emerald-50 to-emerald-100/40", ring: "group-hover:border-emerald-200" },
   "Antibiogram Simulator": { icon: "text-rose-500", bg: "from-rose-50 to-rose-100/40", ring: "group-hover:border-rose-200" },
   "Molecule Viewer": { icon: "text-indigo-500", bg: "from-indigo-50 to-indigo-100/40", ring: "group-hover:border-indigo-200" },
+  // ── Calculation Tools categories ──
+  "Pharmaceutical Chemistry": { icon: "text-violet-500", bg: "from-violet-50 to-violet-100/40", ring: "group-hover:border-violet-200" },
+  "Unit Conversion": { icon: "text-slate-500", bg: "from-slate-50 to-slate-100/40", ring: "group-hover:border-slate-200" },
+  "Pharmaceutics": { icon: "text-amber-500", bg: "from-amber-50 to-amber-100/40", ring: "group-hover:border-amber-200" },
+  "Biopharmaceutics & Pharmacokinetics": { icon: "text-teal-500", bg: "from-teal-50 to-teal-100/40", ring: "group-hover:border-teal-200" },
+  "Pharmacology": { icon: "text-rose-500", bg: "from-rose-50 to-rose-100/40", ring: "group-hover:border-rose-200" },
+  "Pharmaceutical Analysis": { icon: "text-sky-500", bg: "from-sky-50 to-sky-100/40", ring: "group-hover:border-sky-200" },
+  "Microbiology": { icon: "text-lime-500", bg: "from-lime-50 to-lime-100/40", ring: "group-hover:border-lime-200" },
+  "Pharmaceutical Engineering": { icon: "text-orange-500", bg: "from-orange-50 to-orange-100/40", ring: "group-hover:border-orange-200" },
+  "Clinical & Hospital Pharmacy": { icon: "text-emerald-500", bg: "from-emerald-50 to-emerald-100/40", ring: "group-hover:border-emerald-200" },
 };
 
 const SUBMENU_DESCRIPTIONS: Record<string, string> = {
@@ -112,6 +134,16 @@ const SUBMENU_DESCRIPTIONS: Record<string, string> = {
   "Books Library": "Comprehensive textbook collection.",
   "Antibiogram Simulator": "Analyze resistance patterns.",
   "Molecule Viewer": "Explore 3D chemical structures.",
+  // ── Calculation Tools categories ──
+  "Pharmaceutical Chemistry": "Solution prep, concentration & chemical analysis tools",
+  "Unit Conversion": "Mass, volume, temperature & unit conversions",
+  "Pharmaceutics": "Formulation, powder, dissolution & dosage calculations",
+  "Biopharmaceutics & Pharmacokinetics": "ADME parameters, half-life, clearance & kinetics",
+  "Pharmacology": "Drug-receptor interactions, dose-response & safety",
+  "Pharmaceutical Analysis": "Spectroscopy, chromatography & purity assays",
+  "Microbiology": "Microbial quantification & sterilization calculations",
+  "Pharmaceutical Engineering": "Heat transfer, fluid dynamics & scale-up",
+  "Clinical & Hospital Pharmacy": "Patient dosing, renal/hepatic adjustments & clinical tools",
 };
 
 // ─── Three‑Column Desktop Mega‑Dropdown ────────────────────────────────────
@@ -302,10 +334,6 @@ const Header: React.FC = () => {
   return (
     <>
       {/* ══ HEADER ══════════════════════════════════════════════════════════ */}
-      {/* Background is a flat, fully opaque white at all times — no
-          translucency, so nothing from the hero section shows through.
-          Only the shadow/padding shift slightly once the page is scrolled,
-          for a subtle sense of depth. */}
       <header
         ref={headerRef}
         className="fixed top-0 left-0 right-0 z-50 border-b border-gray-100/80 bg-white"
@@ -331,8 +359,11 @@ const Header: React.FC = () => {
                   {hasSubmenu ? (
                     <button
                       onClick={() => setOpenDropdown(dropOpen ? null : item.label)}
-                      className={`flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-150 ${active ? "text-blue-700 bg-blue-50" : "text-gray-600 hover:text-blue-700 hover:bg-blue-50/60"
-                        }`}
+                      className={`flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-150 ${
+                        active
+                          ? "text-blue-700 bg-blue-50"
+                          : "text-gray-600 hover:text-blue-700 hover:bg-blue-50/60"
+                      }`}
                     >
                       {item.label}
                       <ChevronDown
@@ -346,8 +377,11 @@ const Header: React.FC = () => {
                   ) : (
                     <Link
                       href={item.href}
-                      className={`relative flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-150 ${active ? "text-blue-700 bg-blue-50" : "text-gray-600 hover:text-blue-700 hover:bg-blue-50/60"
-                        }`}
+                      className={`relative flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-150 ${
+                        active
+                          ? "text-blue-700 bg-blue-50"
+                          : "text-gray-600 hover:text-blue-700 hover:bg-blue-50/60"
+                      }`}
                     >
                       {item.label}
                       {active && (
@@ -642,8 +676,11 @@ const MobileNavItem = ({
         <div className="bg-white rounded-xl overflow-hidden">
           <button
             onClick={() => setOpen((v) => !v)}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-150 ${isActive ? "bg-blue-50 text-blue-700 border border-blue-100" : "text-gray-700 hover:bg-gray-50 active:bg-gray-100"
-              }`}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-150 ${
+              isActive
+                ? "bg-blue-50 text-blue-700 border border-blue-100"
+                : "text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+            }`}
             style={{ touchAction: "manipulation" }}
           >
             <span>{item.label}</span>
@@ -701,8 +738,11 @@ const MobileNavItem = ({
         <Link
           href={item.href}
           onClick={onClose}
-          className={`flex items-center px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-150 ${isActive ? "bg-gradient-to-r from-blue-600 to-green-400 text-white" : "text-gray-700 hover:bg-gray-50 active:bg-gray-100"
-            }`}
+          className={`flex items-center px-4 py-3 rounded-xl text-sm font-semibold transition-colors duration-150 ${
+            isActive
+              ? "bg-gradient-to-r from-blue-600 to-green-400 text-white"
+              : "text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+          }`}
           style={{ touchAction: "manipulation" }}
         >
           {item.label}

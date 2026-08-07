@@ -1,26 +1,39 @@
 "use client";
 import { useState } from 'react';
 import { Target, RefreshCw, Activity, Info, AlertCircle } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 
 export default function DrugReceptorBindingAffinityTool() {
     const [kd, setKd] = useState<string>('');
     const [ki, setKi] = useState<string>('');
     const [ic50, setIc50] = useState<string>('');
+    const [radioligandKd, setRadioligandKd] = useState<string>('100'); // Km/Kd of the tracer, needed for Cheng-Prusoff
     const [ligandConcentration, setLigandConcentration] = useState<string>('10');
-    const [receptorConcentration, setReceptorConcentration] = useState<string>('1');
+    const [receptorConcentration, setReceptorConcentration] = useState<string>('1'); // Bmax
     const [result, setResult] = useState<{
         affinity: string;
         occupancy: number;
         classification: string;
         color: string;
         bindingConstant: number;
+        bmax: number;
     } | null>(null);
     const [curveData, setCurveData] = useState<any[]>([]);
+    const [scatchardData, setScatchardData] = useState<any[]>([]);
+    const [error, setErrorMsg] = useState<string>('');
 
     const calculateAffinity = () => {
+        setErrorMsg('');
         let bindingConstant = 0;
         let affinity = '';
+
+        const L = parseFloat(ligandConcentration);
+        const Bmax = parseFloat(receptorConcentration);
+
+        if (!L || L <= 0 || !Bmax || Bmax <= 0) {
+            setErrorMsg('Ligand concentration [L] and Bmax must be positive numbers.');
+            return;
+        }
 
         if (kd) {
             bindingConstant = parseFloat(kd);
@@ -29,52 +42,80 @@ export default function DrugReceptorBindingAffinityTool() {
             bindingConstant = parseFloat(ki);
             affinity = `Ki = ${bindingConstant} nM`;
         } else if (ic50) {
-            bindingConstant = parseFloat(ic50);
-            // Cheng‑Prusoff for competitive inhibition 
-            const L = parseFloat(ligandConcentration);
-            const Km = 100; // assumed radioligand Kd
-            const kiValue = bindingConstant / (1 + L / Km);
+            const ic50Value = parseFloat(ic50);
+            const Km = parseFloat(radioligandKd); // Kd of the radioligand/tracer used in the competition assay
+            if (!Km || Km <= 0) {
+                setErrorMsg('Enter a valid radioligand Kd (Km) to convert IC50 to Ki.');
+                return;
+            }
+            // Cheng-Prusoff equation for competitive inhibition:
+            // Ki = IC50 / (1 + [L*]/Km), where [L*] is the radioligand concentration and Km is its Kd
+            const kiValue = ic50Value / (1 + L / Km);
             bindingConstant = kiValue;
-            affinity = `IC50 = ${ic50} nM → Ki ≈ ${kiValue.toFixed(2)} nM (Cheng‑Prusoff)`;
+            affinity = `IC50 = ${ic50Value} nM → Ki ≈ ${kiValue.toFixed(3)} nM (Cheng-Prusoff)`;
         } else {
-            alert('Enter at least one binding parameter');
+            setErrorMsg('Enter at least one binding parameter (Kd, Ki, or IC50).');
             return;
         }
 
-        // Receptor occupancy: [LR] / R_total = [L] / (Kd + [L]) 
-        const L = parseFloat(ligandConcentration);
-        const R = parseFloat(receptorConcentration);
-        const occupancy = (L * R) / (bindingConstant + L) * 100;
+        if (!bindingConstant || bindingConstant <= 0) {
+            setErrorMsg('Please enter a valid, positive value.');
+            return;
+        }
+
+        // Fractional receptor occupancy (independent of receptor/Bmax concentration):
+        // Occupancy = [L] / (Kd + [L])  -- this is the fraction of receptors bound, a ratio, not an amount.
+        const occupancy = (L / (bindingConstant + L)) * 100;
 
         let classification = '', color = '';
-        if (bindingConstant < 0.1) { classification = 'ULTRA‑HIGH AFFINITY'; color = 'text-purple-600'; }
+        if (bindingConstant < 0.1) { classification = 'ULTRA-HIGH AFFINITY'; color = 'text-purple-600'; }
         else if (bindingConstant < 1) { classification = 'HIGH AFFINITY'; color = 'text-green-600'; }
         else if (bindingConstant < 100) { classification = 'MEDIUM AFFINITY'; color = 'text-blue-600'; }
         else if (bindingConstant < 1000) { classification = 'LOW AFFINITY'; color = 'text-yellow-600'; }
         else { classification = 'VERY LOW AFFINITY'; color = 'text-red-600'; }
 
-        setResult({ affinity, occupancy: Math.min(occupancy, 100), classification, color, bindingConstant });
+        setResult({ affinity, occupancy: Math.min(occupancy, 100), classification, color, bindingConstant, bmax: Bmax });
 
-        // Generate saturation binding curve
+        // Generate curves across a log range of [L] relative to Kd (0.001x to 1000x Kd)
         const data = [];
-        for (let logL = -2; logL <= 2; logL += 0.1) {
-            const conc = Math.pow(10, logL) * bindingConstant;
-            const bound = (conc * R) / (bindingConstant + conc);
-            data.push({ logL: parseFloat(logL.toFixed(2)), bound: parseFloat(bound.toFixed(2)) });
+        const scatchard = [];
+        for (let logL = -3; logL <= 3; logL += 0.15) {
+            const conc = Math.pow(10, logL) * bindingConstant; // [L] in nM
+            // Single-site (Langmuir) binding isotherm: Bound = Bmax * [L] / (Kd + [L])
+            const bound = (Bmax * conc) / (bindingConstant + conc);
+            // Fractional occupancy (%) = [L] / (Kd + [L]) * 100
+            const occPercent = (conc / (bindingConstant + conc)) * 100;
+            data.push({
+                logL: parseFloat(logL.toFixed(2)),
+                conc: parseFloat(conc.toFixed(4)),
+                bound: parseFloat(bound.toFixed(4)),
+                occupancy: parseFloat(occPercent.toFixed(2)),
+            });
+
+            // Scatchard transform: Bound/Free vs Bound. Assumes [Free] ≈ [L] (radioligand in excess over receptor).
+            // Slope = -1/Kd, x-intercept = Bmax. Skip the conc≈0 point to avoid a divide-by-zero blow-up.
+            if (conc > bindingConstant / 100) {
+                const boundOverFree = bound / conc;
+                scatchard.push({
+                    bound: parseFloat(bound.toFixed(4)),
+                    boundOverFree: parseFloat(boundOverFree.toFixed(4)),
+                });
+            }
         }
         setCurveData(data);
+        setScatchardData(scatchard.sort((a, b) => a.bound - b.bound));
     };
 
     const reset = () => {
-        setKd(''); setKi(''); setIc50('');
+        setKd(''); setKi(''); setIc50(''); setRadioligandKd('100');
         setLigandConcentration('10'); setReceptorConcentration('1');
-        setResult(null); setCurveData([]);
+        setResult(null); setCurveData([]); setScatchardData([]); setErrorMsg('');
     };
 
     const exampleDrugs = [
-        { drug: 'Fentanyl (μ‑opioid)', Kd: '0.1', affinity: 'Ultra‑High' },
-        { drug: 'Propranolol (β‑blocker)', Kd: '1.0', affinity: 'High' },
-        { drug: 'Aspirin (COX‑1)', Kd: '100', affinity: 'Medium' },
+        { drug: 'Fentanyl (μ-opioid)', Kd: '0.1', affinity: 'Ultra-High' },
+        { drug: 'Propranolol (β-blocker)', Kd: '1.0', affinity: 'High' },
+        { drug: 'Aspirin (COX-1)', Kd: '100', affinity: 'Medium' },
         { drug: 'Warfarin (VKOR)', Kd: '1000', affinity: 'Low' },
         { drug: 'Penicillin (PBPs)', Kd: '10000', affinity: 'Very Low' },
     ];
@@ -90,8 +131,8 @@ export default function DrugReceptorBindingAffinityTool() {
                                 <Target className="w-8 h-8 md:w-10 md:h-10 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-white">Drug‑Receptor Binding Affinity Tool</h1>
-                                <p className="text-blue-100 mt-2">Kd, Ki, IC50 & receptor occupancy</p>
+                                <h1 className="text-2xl md:text-3xl font-bold text-white">Drug-Receptor Binding Affinity Tool</h1>
+                                <p className="text-blue-100 mt-2">Kd, Ki, IC50, receptor occupancy & binding curves</p>
                             </div>
                         </div>
                     </div>
@@ -102,42 +143,61 @@ export default function DrugReceptorBindingAffinityTool() {
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white rounded-2xl shadow-lg p-6">
                             <h2 className="text-xl font-bold text-gray-800 mb-6">Binding Parameters</h2>
+                            <p className="text-xs text-gray-500 mb-4">Enter only ONE of Kd, Ki, or IC50 — whichever you know.</p>
                             <div className="grid grid-cols-3 gap-4">
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-2">Kd (nM)</label>
-                                    <input type="number" step="0.001" value={kd} onChange={(e) => setKd(e.target.value)}
+                                    <input type="number" step="0.001" min="0" value={kd} onChange={(e) => { setKd(e.target.value); setKi(''); setIc50(''); }}
                                         className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-2">Ki (nM)</label>
-                                    <input type="number" step="0.001" value={ki} onChange={(e) => setKi(e.target.value)}
+                                    <input type="number" step="0.001" min="0" value={ki} onChange={(e) => { setKi(e.target.value); setKd(''); setIc50(''); }}
                                         className="w-full px-4 py-3 border-2 border-green-200 rounded-lg" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-2">IC50 (nM)</label>
-                                    <input type="number" step="0.001" value={ic50} onChange={(e) => setIc50(e.target.value)}
+                                    <input type="number" step="0.001" min="0" value={ic50} onChange={(e) => { setIc50(e.target.value); setKd(''); setKi(''); }}
                                         className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg" />
                                 </div>
                             </div>
+
+                            {ic50 && (
+                                <div className="mt-4">
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Radioligand Kd / Km (nM) <span className="font-normal text-gray-400">— Kd of the tracer used in the competition assay</span>
+                                    </label>
+                                    <input type="number" step="0.001" min="0" value={radioligandKd} onChange={(e) => setRadioligandKd(e.target.value)}
+                                        className="w-full md:w-1/2 px-4 py-3 border-2 border-purple-200 rounded-lg" />
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-2 gap-4 mt-6">
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-2">Ligand [L] (nM)</label>
-                                    <input type="number" step="0.1" value={ligandConcentration} onChange={(e) => setLigandConcentration(e.target.value)}
+                                    <input type="number" step="0.1" min="0" value={ligandConcentration} onChange={(e) => setLigandConcentration(e.target.value)}
                                         className="w-full px-4 py-3 border-2 border-orange-200 rounded-lg" />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Receptor [R] (nM)</label>
-                                    <input type="number" step="0.1" value={receptorConcentration} onChange={(e) => setReceptorConcentration(e.target.value)}
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Bmax / Receptor Total (nM)</label>
+                                    <input type="number" step="0.1" min="0" value={receptorConcentration} onChange={(e) => setReceptorConcentration(e.target.value)}
                                         className="w-full px-4 py-3 border-2 border-red-200 rounded-lg" />
                                 </div>
                             </div>
+
+                            {error && (
+                                <div className="mt-4 flex items-center text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+                                    <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                                    {error}
+                                </div>
+                            )}
 
                             {/* Example Drugs */}
                             <div className="mt-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-4">
                                 <h3 className="font-semibold text-gray-800 mb-3">Example Drugs</h3>
                                 <div className="grid grid-cols-5 gap-2">
                                     {exampleDrugs.map((drug, idx) => (
-                                        <button key={idx} onClick={() => setKd(drug.Kd)}
+                                        <button key={idx} onClick={() => { setKd(drug.Kd); setKi(''); setIc50(''); }}
                                             className="bg-white p-2 rounded-lg text-xs hover:bg-blue-100">
                                             <div className="font-semibold">{drug.drug.split(' ')[0]}</div>
                                             <div>Kd {drug.Kd} nM</div>
@@ -162,31 +222,107 @@ export default function DrugReceptorBindingAffinityTool() {
                         {/* Saturation Binding Curve */}
                         {curveData.length > 0 && (
                             <div className="bg-white rounded-2xl shadow-lg p-6">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4">Saturation Binding</h3>
+                                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                                    <Activity className="w-5 h-5 mr-2 text-blue-600" />
+                                    Saturation Binding Curve
+                                </h3>
                                 <div className="h-64">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <LineChart data={curveData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                                             <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis 
-                                                dataKey="logL" 
-                                                label={{ value: 'log ([L] / Kd)', position: 'insideBottom', offset: -5 }} 
+                                            <XAxis
+                                                dataKey="logL"
+                                                label={{ value: 'log ([L] / Kd)', position: 'insideBottom', offset: -5 }}
                                             />
-                                            <YAxis 
-                                                label={{ value: 'Bound (nM)', angle: -90, position: 'insideLeft' }} 
+                                            <YAxis
+                                                label={{ value: 'Bound (nM)', angle: -90, position: 'insideLeft' }}
                                             />
-                                            <Tooltip />
-                                            <Line 
-                                                type="monotone" 
-                                                dataKey="bound" 
-                                                stroke="#3b82f6" 
-                                                strokeWidth={2} 
+                                            <Tooltip formatter={(v: number | undefined) => (v ?? 0).toFixed(3)} />
+                                            <ReferenceLine x={0} stroke="#94a3b8" strokeDasharray="4 4" label={{ value: 'Kd', position: 'top', fontSize: 11 }} />
+                                            <Line
+                                                type="monotone"
+                                                dataKey="bound"
+                                                stroke="#3b82f6"
+                                                strokeWidth={2}
                                                 dot={false}
                                                 name="Bound"
                                             />
                                         </LineChart>
                                     </ResponsiveContainer>
                                 </div>
-                                <p className="text-xs text-gray-500 mt-2">Theoretical saturation binding curve (Langmuir isotherm).</p>
+                                <p className="text-xs text-gray-500 mt-2">Bound = Bmax × [L] / (Kd + [L]). At log([L]/Kd) = 0, binding is at 50% of Bmax.</p>
+                            </div>
+                        )}
+
+                        {/* Fractional Occupancy Curve */}
+                        {curveData.length > 0 && (
+                            <div className="bg-white rounded-2xl shadow-lg p-6">
+                                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                                    <Activity className="w-5 h-5 mr-2 text-green-600" />
+                                    Fractional Occupancy Curve
+                                </h3>
+                                <div className="h-64">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={curveData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis
+                                                dataKey="logL"
+                                                label={{ value: 'log ([L] / Kd)', position: 'insideBottom', offset: -5 }}
+                                            />
+                                            <YAxis
+                                                domain={[0, 100]}
+                                                label={{ value: 'Receptor Occupancy (%)', angle: -90, position: 'insideLeft' }}
+                                            />
+                                            <Tooltip formatter={(v: number | undefined) => `${(v ?? 0).toFixed(1)}%`} />
+                                            <ReferenceLine y={50} stroke="#94a3b8" strokeDasharray="4 4" label={{ value: '50%', position: 'insideTopLeft', fontSize: 11 }} />
+                                            <ReferenceLine x={0} stroke="#94a3b8" strokeDasharray="4 4" />
+                                            <Line
+                                                type="monotone"
+                                                dataKey="occupancy"
+                                                stroke="#22c55e"
+                                                strokeWidth={2}
+                                                dot={false}
+                                                name="Occupancy %"
+                                            />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-2">Occupancy (%) = [L] / (Kd + [L]) × 100. Independent of Bmax — this is why Kd defines the drug's potency at the receptor.</p>
+                            </div>
+                        )}
+
+                        {/* Scatchard Plot */}
+                        {scatchardData.length > 0 && (
+                            <div className="bg-white rounded-2xl shadow-lg p-6">
+                                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                                    <Activity className="w-5 h-5 mr-2 text-purple-600" />
+                                    Scatchard Plot
+                                </h3>
+                                <div className="h-64">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={scatchardData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis
+                                                dataKey="bound"
+                                                type="number"
+                                                label={{ value: 'Bound (nM)', position: 'insideBottom', offset: -5 }}
+                                            />
+                                            <YAxis
+                                                label={{ value: 'Bound / Free', angle: -90, position: 'insideLeft' }}
+                                            />
+                                            <Tooltip formatter={(v: number | undefined) => (v ?? 0).toFixed(4)} />
+                                            <Line
+                                                type="monotone"
+                                                dataKey="boundOverFree"
+                                                stroke="#9333ea"
+                                                strokeWidth={2}
+                                                dot={false}
+                                                name="Bound/Free"
+                                            />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-2">Slope = −1/Kd, x-intercept = Bmax. Assumes [Free] ≈ [L] (radioligand in excess relative to receptor).</p>
                             </div>
                         )}
                     </div>
@@ -199,7 +335,7 @@ export default function DrugReceptorBindingAffinityTool() {
                                     <h2 className="text-2xl font-bold mb-4">Affinity Result</h2>
                                     <div className="bg-white/20 rounded-xl p-4 text-center">
                                         <div className="text-sm font-semibold text-blue-100 mb-2">Binding constant</div>
-                                        <div className="text-3xl font-bold mb-2">{result.affinity}</div>
+                                        <div className="text-2xl font-bold mb-2">{result.affinity}</div>
                                         <div className={`text-lg font-bold ${result.color}`}>{result.classification}</div>
                                     </div>
                                 </div>
@@ -207,18 +343,41 @@ export default function DrugReceptorBindingAffinityTool() {
                                 <div className="bg-white rounded-2xl shadow-lg p-6">
                                     <h3 className="text-lg font-bold text-gray-800 mb-4">Receptor Occupancy</h3>
                                     <p className="text-3xl font-bold text-purple-600">{result.occupancy.toFixed(1)}%</p>
-                                    <p className="text-sm text-gray-600 mt-2">at [L] = {ligandConcentration} nM</p>
+                                    <p className="text-sm text-gray-600 mt-2">at [L] = {ligandConcentration} nM (independent of Bmax)</p>
+                                </div>
+
+                                <div className="bg-white rounded-2xl shadow-lg p-6">
+                                    <h3 className="text-lg font-bold text-gray-800 mb-2">Bound at [L]</h3>
+                                    <p className="text-3xl font-bold text-blue-600">
+                                        {((result.bmax * parseFloat(ligandConcentration)) / (result.bindingConstant + parseFloat(ligandConcentration))).toFixed(3)} nM
+                                    </p>
+                                    <p className="text-sm text-gray-600 mt-2">out of Bmax = {result.bmax} nM</p>
                                 </div>
                             </>
                         )}
 
-                        {/* Cheng‑Prusoff */}
+                        {/* Cheng-Prusoff */}
                         <div className="bg-white rounded-2xl shadow-lg p-6">
                             <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center">
                                 <Info className="w-5 h-5 mr-2 text-blue-600" />
-                                Cheng‑Prusoff
+                                Cheng-Prusoff Equation
                             </h3>
-                            <p className="text-sm">Ki = IC₅₀ / (1 + [L]/Kd) </p>
+                            <p className="text-sm">Ki = IC₅₀ / (1 + [L*]/Km)</p>
+                            <p className="text-xs text-gray-500 mt-2">
+                                [L*] is the radioligand concentration used in the assay (here, your entered [L]); Km is that radioligand's own Kd for the receptor.
+                            </p>
+                        </div>
+
+                        <div className="bg-white rounded-2xl shadow-lg p-6">
+                            <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center">
+                                <Info className="w-5 h-5 mr-2 text-green-600" />
+                                Key Formulas
+                            </h3>
+                            <ul className="text-sm space-y-2 text-gray-700">
+                                <li><strong>Occupancy:</strong> [L]/(Kd+[L]) × 100%</li>
+                                <li><strong>Bound:</strong> Bmax × [L]/(Kd+[L])</li>
+                                <li><strong>Scatchard:</strong> Bound/Free = −Bound/Kd + Bmax/Kd</li>
+                            </ul>
                         </div>
                     </div>
                 </div>

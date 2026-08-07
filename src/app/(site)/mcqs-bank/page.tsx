@@ -1,47 +1,46 @@
 "use client";
-// src/app/(site)/mcqs-bank/page.tsx
-// MCQ Bank Hub — pulls ALL subjects from SemesterData, no duplication
 
-import { useMemo, useState } from "react";
+// src/app/(site)/mcqs-bank/page.tsx
+// MCQ Bank Hub — Modern E-Learning Design with Auto Scroll-To-Top
+
+import { useMemo, useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import {
   ClipboardList, ChevronRight, Search, X,
   BookOpen, Zap, GraduationCap, ArrowRight,
   Microscope, FlaskConical, Beaker, Stethoscope, Leaf, Pill,
-  Trophy, Layers, Filter,
+  Trophy, Layers, Filter, Sparkles, CheckCircle2, Flame, Brain
 } from "lucide-react";
 import { SemesterData } from "@/app/api/semester-data";
 import { semesterToSlug, subjectToSlug } from "@/lib/mcq-utils";
 
-const GRAD = "from-blue-600 to-green-400";
+const GRAD = "from-blue-600 via-indigo-600 to-cyan-500";
 
 const BG_ICONS = [
-  { Icon: Pill,         top: "8%",  left: "1.5%",  size: 30 },
-  { Icon: Beaker,       top: "38%", left: "1%",    size: 28 },
-  { Icon: Stethoscope,  top: "70%", left: "1.5%",  size: 30 },
-  { Icon: Microscope,   top: "8%",  left: "96.5%", size: 30 },
-  { Icon: FlaskConical, top: "38%", left: "97%",   size: 28 },
-  { Icon: Leaf,         top: "70%", left: "96.5%", size: 28 },
+  { Icon: Pill,         top: "8%",  left: "1.5%",  size: 28 },
+  { Icon: Beaker,       top: "38%", left: "1%",    size: 26 },
+  { Icon: Stethoscope,  top: "70%", left: "1.5%",  size: 28 },
+  { Icon: Microscope,   top: "8%",  left: "96.5%", size: 28 },
+  { Icon: FlaskConical, top: "38%", left: "97%",   size: 26 },
+  { Icon: Leaf,         top: "70%", left: "96.5%", size: 26 },
 ];
 
-// Gradient per semester slot
 const SEM_GRADS = [
-  "from-blue-600 to-cyan-400",
-  "from-violet-600 to-purple-400",
-  "from-emerald-600 to-teal-400",
-  "from-amber-500 to-orange-400",
-  "from-rose-600 to-pink-400",
-  "from-cyan-600 to-sky-400",
-  "from-indigo-600 to-blue-400",
-  "from-green-600 to-lime-400",
-  "from-orange-600 to-red-400",
-  "from-fuchsia-600 to-violet-400",
+  "from-blue-600 via-indigo-600 to-cyan-500",
+  "from-violet-600 via-purple-600 to-fuchsia-500",
+  "from-emerald-600 via-teal-600 to-cyan-500",
+  "from-amber-500 via-orange-600 to-yellow-500",
+  "from-rose-600 via-pink-600 to-red-400",
+  "from-cyan-600 via-sky-600 to-blue-500",
+  "from-indigo-600 via-blue-600 to-violet-500",
+  "from-green-600 via-emerald-600 to-teal-400",
+  "from-orange-600 via-red-600 to-amber-500",
+  "from-fuchsia-600 via-violet-600 to-purple-500",
 ];
 
 const AVAILABLE_SLUGS = new Set([
   "pharmaceutical-biochemistry",
   "physiology-histology-i",
-  // add more slugs here as you create question banks
 ]);
 
 export default function MCQBankHubPage() {
@@ -54,6 +53,17 @@ export default function MCQBankHubPage() {
   const availableCount = SemesterData.reduce((s, sem) =>
     s + sem.subjects.filter(sub => AVAILABLE_SLUGS.has(subjectToSlug(sub.name))).length, 0
   );
+
+  const scrollToTop = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, []);
+
+  const handleSelectSem = (s: string) => {
+    setActiveSem(s);
+    scrollToTop();
+  };
 
   const filtered = useMemo(() => {
     return SemesterData
@@ -68,141 +78,202 @@ export default function MCQBankHubPage() {
   }, [search, activeSem]);
 
   return (
-    <section className="min-h-screen bg-gray-50 relative overflow-x-hidden">
+    <section className="min-h-screen bg-gray-50/80 pt-8 relative overflow-x-hidden">
+      {/* Background Floating Decorative Icons */}
       {BG_ICONS.map(({ Icon, top, left, size }, i) => (
-        <div key={i} className="fixed pointer-events-none text-blue-100 z-0 hidden md:block" style={{ top, left }}>
+        <div key={i} className="fixed pointer-events-none text-blue-100/60 z-0 hidden md:block" style={{ top, left }}>
           <Icon size={size} strokeWidth={1.4} />
         </div>
       ))}
 
-      {/* ══ HERO ══ */}
-      <div className={`relative bg-gradient-to-r ${GRAD} overflow-hidden`}>
-        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-white/10 pointer-events-none" />
-        <div className="absolute -bottom-12 left-24 w-40 h-40 rounded-full bg-white/10 pointer-events-none" />
-        <div className="absolute right-10 bottom-6 opacity-[0.08] pointer-events-none hidden sm:block">
-          <ClipboardList size={120} className="text-white" />
+      {/* ══ HERO HEADER ══ */}
+      <div className={`relative bg-gradient-to-r ${GRAD} overflow-hidden shadow-xl`}>
+        <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+        <div className="absolute -bottom-16 left-20 w-60 h-60 rounded-full bg-white/10 blur-xl pointer-events-none" />
+        <div className="absolute right-12 bottom-6 opacity-[0.08] pointer-events-none hidden lg:block">
+          <ClipboardList size={160} className="text-white" />
         </div>
+
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20">
-          <div className="flex items-center gap-2 text-white/70 text-xs font-semibold mb-4 flex-wrap">
+          <div className="flex items-center gap-2 text-white/80 text-xs font-bold mb-4 flex-wrap">
             <Link href="/" className="hover:text-white transition flex items-center gap-1">
               <Layers className="w-3.5 h-3.5" /> Home
             </Link>
             <ChevronRight className="w-3.5 h-3.5" />
-            <span className="text-white">MCQ Bank</span>
+            <span className="text-white">MCQ Bank Hub</span>
           </div>
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-xs font-bold uppercase tracking-widest mb-5">
-            <Zap className="w-3.5 h-3.5" /> Practice · All Semesters
+
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-xs font-extrabold uppercase tracking-widest mb-4 backdrop-blur-sm shadow-sm">
+            <Zap className="w-3.5 h-3.5 text-yellow-300" /> Interactive E-Learning Bank
           </span>
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-white mb-2 tracking-tight leading-tight">
-            MCQ Bank
-            <span className="block text-green-200 mt-1">Practice Questions</span>
+
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-tight mb-3">
+            Pharmacy MCQ Bank
+            <span className="block text-cyan-200 mt-1 text-2xl sm:text-4xl md:text-5xl">Exam-Focused Question Modules</span>
           </h1>
-          <p className="text-white/80 text-sm sm:text-base max-w-2xl mb-8">
-            Exam-focused multiple choice questions across all semesters. Select your subject, answer questions, and get instant feedback with detailed explanations.
+
+          <p className="text-white/85 text-sm sm:text-base max-w-2xl mb-8 font-medium leading-relaxed">
+            Master your pharmacy coursework with timed exams, practice flashcards, instant explanations, and downloadable PDF report cards across all semesters.
           </p>
-          <div className="flex flex-wrap gap-6 sm:gap-10">
+
+          {/* Quick Stats Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl">
             {[
-              { n: String(SemesterData.length), l: "Semesters"          },
-              { n: String(totalSubjects),        l: "Subjects"           },
-              { n: String(availableCount),       l: "Available Now"      },
-              { n: "Free",                       l: "Always"             },
-            ].map(({ n, l }) => (
-              <div key={l} className="text-center">
-                <div className="text-2xl sm:text-3xl font-extrabold text-white leading-none">{n}</div>
-                <div className="text-xs text-white/70 mt-0.5">{l}</div>
+              { n: String(SemesterData.length), l: "Semesters", icon: GraduationCap },
+              { n: String(totalSubjects),        l: "Total Subjects", icon: BookOpen },
+              { n: String(availableCount),       l: "Ready Now", icon: Sparkles },
+              { n: "100%",                       l: "Free Access", icon: Trophy },
+            ].map(({ n, l, icon: Icon }) => (
+              <div key={l} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-3.5 text-left flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white shrink-0">
+                  <Icon className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-xl sm:text-2xl font-black text-white leading-none">{n}</div>
+                  <div className="text-[11px] text-white/80 font-bold mt-0.5">{l}</div>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* ══ CONTENT ══ */}
+      {/* ══ CONTENT BODY ══ */}
       <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-12">
 
-        {/* Search + semester filter */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            <input type="text" placeholder="Search subjects…" value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full pl-11 pr-10 py-3 rounded-2xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm text-gray-800 placeholder:text-gray-400 bg-white transition-all" />
-            {search && (
-              <button onClick={() => setSearch("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition">
-                <X className="w-3 h-3" />
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 shrink-0">
-            <Filter className="w-4 h-4 text-gray-400 shrink-0" />
-            {semOptions.map(s => (
-              <button key={s} onClick={() => setActiveSem(s)}
-                className={`shrink-0 px-3 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wide transition-all duration-200 whitespace-nowrap ${
-                  activeSem === s ? `bg-gradient-to-r ${GRAD} text-white shadow-md` : "bg-white border border-gray-200 text-gray-500 hover:border-blue-300"
-                }`}>{s === "All" ? "All" : s.replace("Semester ", "Sem ")}</button>
-            ))}
+        {/* Sticky Glassmorphic Filter & Search Bar */}
+        <div className="bg-white/90 backdrop-blur-md rounded-3xl p-4 sm:p-5 border-2 border-gray-100 shadow-lg mb-8 space-y-4">
+          <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
+            
+            {/* Search Box */}
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search subject (e.g. Biochemistry, Physiology)..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full pl-11 pr-10 py-3 rounded-2xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none text-sm text-gray-800 font-medium placeholder:text-gray-400 bg-gray-50/50 focus:bg-white transition-all"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300 transition"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Semester Filter Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 sm:pb-0 scrollbar-none shrink-0">
+              <Filter className="w-4 h-4 text-gray-400 shrink-0 ml-1 hidden sm:block" />
+              {semOptions.map(s => (
+                <button
+                  key={s}
+                  onClick={() => handleSelectSem(s)}
+                  className={`shrink-0 px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 ${
+                    activeSem === s
+                      ? `bg-gradient-to-r ${GRAD} text-white shadow-md`
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  {s === "All" ? "All Semesters" : s.replace("Semester ", "Sem ")}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Semester sections */}
-        <div className="space-y-8 sm:space-y-10">
-          {filtered.map((sem, semIdx) => {
+        {/* Semester Sections & Cards */}
+        <div className="space-y-10 sm:space-y-12">
+          {filtered.map((sem) => {
             const semSlug = semesterToSlug(sem.semester);
-            const semGrad = SEM_GRADS[SemesterData.findIndex(s => s.semester === sem.semester) % SEM_GRADS.length];
+            const semIdx = SemesterData.findIndex(s => s.semester === sem.semester);
+            const semGrad = SEM_GRADS[semIdx % SEM_GRADS.length];
+
             return (
-              <div key={sem.semester}>
-                {/* Semester header */}
-                <div className="flex items-center justify-between mb-4">
+              <div key={sem.semester} className="space-y-4">
+                {/* Semester Section Header */}
+                <div className="flex items-center justify-between gap-3 border-b border-gray-200 pb-3">
                   <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${semGrad} flex items-center justify-center shrink-0 shadow-sm`}>
-                      <GraduationCap className="w-5 h-5 text-white" />
+                    <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${semGrad} flex items-center justify-center shrink-0 shadow-md text-white font-black`}>
+                      <GraduationCap className="w-5 h-5" />
                     </div>
                     <div>
-                      <h2 className="text-base sm:text-lg font-extrabold text-gray-900">{sem.semester}</h2>
-                      <p className="text-xs text-gray-400">{sem.subjects.length} subject{sem.subjects.length !== 1 ? "s" : ""}</p>
+                      <h2 className="text-lg sm:text-xl font-black text-gray-900 leading-none">{sem.semester}</h2>
+                      <p className="text-xs font-bold text-gray-400 mt-1">
+                        {sem.subjects.length} Course Module{sem.subjects.length !== 1 ? "s" : ""}
+                      </p>
                     </div>
                   </div>
-                  <Link href={`/mcqs-bank/${semSlug}`}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r ${semGrad} text-white text-xs font-extrabold shadow-sm hover:-translate-y-0.5 transition-all shrink-0`}>
-                    View All <ChevronRight className="w-3.5 h-3.5" />
+
+                  <Link
+                    href={`/mcqs-bank/${semSlug}`}
+                    onClick={scrollToTop}
+                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r ${semGrad} text-white text-xs font-extrabold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all shrink-0`}
+                  >
+                    View Semester <ChevronRight className="w-4 h-4" />
                   </Link>
                 </div>
 
-                {/* Subject cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                {/* Subject Cards Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {sem.subjects.map(sub => {
-                    const subSlug  = subjectToSlug(sub.name);
-                    const isAvail  = AVAILABLE_SLUGS.has(subSlug);
-                    const href     = `/mcqs-bank/${semSlug}/${subSlug}`;
+                    const subSlug = subjectToSlug(sub.name);
+                    const isAvail = AVAILABLE_SLUGS.has(subSlug);
+                    const href = `/mcqs-bank/${semSlug}/${subSlug}`;
+
                     return (
-                      <div key={sub.name}
-                        className={`group relative rounded-2xl border-2 bg-white overflow-hidden transition-all duration-300 ${
-                          isAvail ? "border-gray-200 hover:border-blue-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer" : "border-gray-100 opacity-60 cursor-default"
-                        }`}>
-                        <div className={`h-[3px] bg-gradient-to-r ${semGrad}`} />
-                        <div className="p-4">
-                          <div className="flex items-start justify-between mb-2.5">
-                            <div className="text-xl shrink-0">{typeof sub.icon === "string" ? sub.icon : "📚"}</div>
+                      <div
+                        key={sub.name}
+                        className={`group relative rounded-3xl border-2 bg-white overflow-hidden transition-all duration-300 flex flex-col justify-between ${
+                          isAvail
+                            ? "border-gray-100 hover:border-blue-500 hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+                            : "border-gray-100 opacity-60 cursor-default"
+                        }`}
+                      >
+                        <div className={`h-1.5 bg-gradient-to-r ${semGrad}`} />
+                        
+                        <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                          <div>
+                            <div className="flex items-start justify-between gap-2 mb-3">
+                              <div className="text-3xl shrink-0 p-2 rounded-2xl bg-gray-50 border border-gray-100">
+                                {typeof sub.icon === "string" ? sub.icon : "📚"}
+                              </div>
+                              {isAvail ? (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 uppercase tracking-wider">
+                                  <Sparkles className="w-3 h-3 text-emerald-600 animate-pulse" /> Ready Now
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-gray-100 border border-gray-200 text-gray-400 uppercase tracking-wider">
+                                  Coming Soon
+                                </span>
+                              )}
+                            </div>
+
+                            <h3 className="font-black text-gray-900 text-base leading-snug mb-1.5 group-hover:text-blue-600 transition-colors">
+                              {sub.name}
+                            </h3>
+                            <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">{sub.description}</p>
+                          </div>
+
+                          {/* Action Button */}
+                          <div className="pt-2">
                             {isAvail ? (
-                              <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-green-700 uppercase tracking-wide">Available</span>
+                              <Link
+                                href={href}
+                                onClick={scrollToTop}
+                                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-gradient-to-r ${semGrad} text-white text-xs font-black shadow-md hover:shadow-lg transition-all group-hover:scale-[1.02]`}
+                              >
+                                <Trophy className="w-4 h-4" /> Start Practice
+                              </Link>
                             ) : (
-                              <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-gray-50 border border-gray-200 text-gray-400 uppercase tracking-wide">Soon</span>
+                              <div className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-gray-100 text-gray-400 text-xs font-bold">
+                                <ClipboardList className="w-4 h-4" /> Bank In Progress
+                              </div>
                             )}
                           </div>
-                          <h3 className="font-extrabold text-gray-900 text-xs sm:text-sm leading-snug mb-1.5 group-hover:text-blue-700 transition-colors line-clamp-2">
-                            {sub.name}
-                          </h3>
-                          <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2">{sub.description}</p>
-                          {isAvail ? (
-                            <Link href={href}
-                              className={`mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-gradient-to-r ${semGrad} text-white text-xs font-extrabold shadow-sm hover:-translate-y-0.5 transition-all`}>
-                              <Trophy className="w-3.5 h-3.5" /> Start Quiz
-                            </Link>
-                          ) : (
-                            <div className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-gray-100 text-gray-400 text-xs font-extrabold">
-                              <ClipboardList className="w-3.5 h-3.5" /> Coming Soon
-                            </div>
-                          )}
                         </div>
                       </div>
                     );
@@ -213,29 +284,38 @@ export default function MCQBankHubPage() {
           })}
         </div>
 
+        {/* Empty State */}
         {filtered.length === 0 && (
-          <div className="text-center py-20">
-            <Search className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 font-semibold">No subjects found</p>
-            <button onClick={() => { setSearch(""); setActiveSem("All"); }}
-              className="mt-4 px-4 py-2 rounded-xl bg-gray-100 text-gray-600 text-xs font-semibold hover:bg-gray-200 transition">Clear filters</button>
+          <div className="text-center py-16 bg-white rounded-3xl border-2 border-gray-100 shadow-sm max-w-md mx-auto">
+            <Search className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-900 font-extrabold text-lg">No subjects matched your search</p>
+            <p className="text-gray-500 text-xs mt-1 mb-6">Try searching for a different keyword or select another semester filter.</p>
+            <button
+              onClick={() => { setSearch(""); setActiveSem("All"); scrollToTop(); }}
+              className="px-5 py-2.5 rounded-2xl bg-blue-600 text-white text-xs font-black hover:bg-blue-700 transition"
+            >
+              Reset All Filters
+            </button>
           </div>
         )}
 
-        {/* Bottom CTA */}
-        <div className={`mt-12 sm:mt-16 relative rounded-2xl bg-gradient-to-r ${GRAD} overflow-hidden p-5 sm:p-8`}>
-          <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-white/10 pointer-events-none" />
-          <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-5">
+        {/* Bottom CTA Banner */}
+        <div className={`mt-14 sm:mt-16 relative rounded-3xl bg-gradient-to-r ${GRAD} overflow-hidden p-6 sm:p-10 shadow-2xl`}>
+          <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-white/10 pointer-events-none" />
+          <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6">
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <BookOpen className="w-5 h-5 text-white" />
-                <span className="text-white font-extrabold text-sm sm:text-base">Want to study first?</span>
+              <div className="flex items-center gap-2 mb-1.5">
+                <BookOpen className="w-6 h-6 text-yellow-300" />
+                <span className="text-white font-black text-lg sm:text-xl">Looking for Study Notes First?</span>
               </div>
-              <p className="text-white/80 text-xs sm:text-sm">Review course notes before tackling the MCQs.</p>
+              <p className="text-white/85 text-xs sm:text-sm font-medium">Review lecture slide notes and reference textbooks before taking the quiz.</p>
             </div>
-            <Link href="/courses"
-              className="inline-flex items-center gap-2 px-5 sm:px-6 py-3 rounded-xl bg-white text-blue-700 font-extrabold text-sm shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all shrink-0">
-              <BookOpen className="w-4 h-4" /> Browse Courses <ArrowRight className="w-4 h-4" />
+            <Link
+              href="/courses"
+              onClick={scrollToTop}
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-white text-blue-700 font-black text-sm shadow-xl hover:-translate-y-0.5 transition-all shrink-0"
+            >
+              <BookOpen className="w-4 h-4" /> Browse Course Notes <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>

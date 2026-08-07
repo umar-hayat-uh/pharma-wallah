@@ -22,7 +22,21 @@ export const headerData: HeaderItem[] = [
     ],
   },
   { label: "Pharmacopedia", href: "/encyclopedia" },
-  { label: "Calculation Tools", href: "/calculation-tools" },
-   { label: "Community", href: "/community" },
+ {
+    label: "Calculation Tools",
+    href: "/calculation-tools",   // base link
+    submenu: [
+      { label: "Pharmaceutical Chemistry",              href: "/calculation-tools#pharma-chem" },
+      { label: "Unit Conversion",                       href: "/calculation-tools#unit-conversion" },
+      { label: "Pharmaceutics",                         href: "/calculation-tools#pharmaceutics" },
+      { label: "Biopharmaceutics & Pharmacokinetics",   href: "/calculation-tools#biopharmaceutics-pharmacokinetics" },
+      { label: "Pharmacology",                          href: "/calculation-tools#pharmacology" },
+      { label: "Pharmaceutical Analysis",               href: "/calculation-tools#pharmaceutical-analysis" },
+      { label: "Microbiology",                          href: "/calculation-tools#microbiology" },
+      { label: "Pharmaceutical Engineering",            href: "/calculation-tools#pharmaceutical-engineering" },
+      { label: "Clinical & Hospital Pharmacy",          href: "/calculation-tools#clinical-hospital-pharmacy" },
+    ],
+  },
+  { label: "Community", href: "/community" },
   { label: "About Us", href: "/about-us" },
 ];

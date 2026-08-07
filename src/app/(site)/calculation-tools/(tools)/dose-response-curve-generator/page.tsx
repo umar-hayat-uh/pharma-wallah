@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Scatter } from 'recharts';
+import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Scatter } from 'recharts';
 import { Activity, RefreshCw, TrendingUp, Plus, Trash2, Settings, Target } from 'lucide-react';
 
 interface CurveParams {
@@ -21,6 +21,7 @@ export default function DoseResponseCurveGenerator() {
     const [pointsPerCurve] = useState<number>(150);
     const [linearData, setLinearData] = useState<any[]>([]);
     const [logData, setLogData] = useState<any[]>([]);
+    const [yDomainMax, setYDomainMax] = useState<number>(100);
     const [nextId, setNextId] = useState<number>(2);
     const [showSettings, setShowSettings] = useState<boolean>(false);
 
@@ -29,6 +30,8 @@ export default function DoseResponseCurveGenerator() {
     // Generate data for all curves
     const generateAllData = () => {
         if (curves.length === 0) return;
+
+        let observedMax = 0;
 
         // Linear scale points (from 0 to maxConc)
         const linearPoints: any[] = [];
@@ -39,15 +42,17 @@ export default function DoseResponseCurveGenerator() {
             curves.forEach(curve => {
                 // Safeguard against zero or negative ec50
                 const ec = curve.ec50 <= 0 ? 0.001 : curve.ec50;
+                // Hill / sigmoid Emax equation: E = E0 + (Emax * C^n) / (EC50^n + C^n)
                 const effect = curve.baseline + (curve.emax * Math.pow(conc, curve.hill)) /
                     (Math.pow(ec, curve.hill) + Math.pow(conc, curve.hill));
-                point[curve.id] = Math.min(effect, 100);
+                point[curve.id] = effect;
+                if (effect > observedMax) observedMax = effect;
             });
             linearPoints.push(point);
         }
         setLinearData(linearPoints);
 
-        // Log scale points (log concentration)
+        // Log scale points (log concentration), centered on the range of EC50s
         const minLog = Math.log10(0.01 * Math.min(...curves.map(c => c.ec50 <= 0 ? 0.001 : c.ec50)));
         const maxLog = Math.log10(100 * Math.max(...curves.map(c => c.ec50 <= 0 ? 0.001 : c.ec50)));
         const logStep = (maxLog - minLog) / pointsPerCurve;
@@ -60,15 +65,21 @@ export default function DoseResponseCurveGenerator() {
                 const ec = curve.ec50 <= 0 ? 0.001 : curve.ec50;
                 const effect = curve.baseline + (curve.emax * Math.pow(conc, curve.hill)) /
                     (Math.pow(ec, curve.hill) + Math.pow(conc, curve.hill));
-                point[curve.id] = Math.min(effect, 100);
+                point[curve.id] = effect;
+                if (effect > observedMax) observedMax = effect;
             });
             logPoints.push(point);
         }
         setLogData(logPoints);
+
+        // Auto-scale the Y axis to whatever the curves actually reach (baseline + Emax can exceed 100).
+        // A hard-coded clamp to 100 would silently flatten and misrepresent the top of the curve.
+        setYDomainMax(Math.max(100, Math.ceil(observedMax / 10) * 10));
     };
 
     useEffect(() => {
         generateAllData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [curves, maxConc]);
 
     const addCurve = () => {
@@ -121,12 +132,17 @@ export default function DoseResponseCurveGenerator() {
         }]);
     };
 
-    // EC50 points for scatter
-    const ec50Points = curves.map(curve => ({
+    // EC50 markers: by definition, EC50 is the concentration that produces HALF of that curve's
+    // own maximal effect (baseline + Emax/2) — not a fixed y = 50, unless baseline = 0 and Emax = 100.
+    const ec50PointsLinear = curves.map(curve => ({
         conc: curve.ec50,
         effect: curve.baseline + curve.emax / 2,
         name: curve.name,
-        color: curve.color
+    }));
+    const ec50PointsLog = curves.map(curve => ({
+        logConc: Math.log10(curve.ec50 <= 0 ? 0.001 : curve.ec50),
+        effect: curve.baseline + curve.emax / 2,
+        name: curve.name,
     }));
 
     return (
@@ -140,8 +156,8 @@ export default function DoseResponseCurveGenerator() {
                                 <TrendingUp className="w-8 h-8 md:w-10 md:h-10 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-white">Dose‑Response Curve Generator</h1>
-                                <p className="text-blue-100 mt-2">Advanced Hill equation with multiple curves</p>
+                                <h1 className="text-2xl md:text-3xl font-bold text-white">Dose-Response Curve Generator</h1>
+                                <p className="text-blue-100 mt-2">Sigmoid Emax (Hill) equation with multiple curves</p>
                             </div>
                         </div>
                         <button
@@ -257,6 +273,7 @@ export default function DoseResponseCurveGenerator() {
                                                 onChange={(e) => setMaxConc(parseFloat(e.target.value) || 100)}
                                                 className="w-full px-3 py-2 border rounded-lg"
                                             />
+                                            <p className="text-xs text-gray-500 mt-1">Applies to the linear-scale plot only. The log-scale plot auto-ranges around each curve's EC₅₀.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -305,16 +322,17 @@ export default function DoseResponseCurveGenerator() {
                             <div className="h-80">
                                 {linearData.length > 0 ? (
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <LineChart data={linearData} margin={{ top: 30, right: 30, left: 20, bottom: 25 }}>
+                                        <ComposedChart data={linearData} margin={{ top: 30, right: 30, left: 20, bottom: 25 }}>
                                             <CartesianGrid strokeDasharray="3 3" />
                                             <XAxis
                                                 dataKey="conc"
+                                                type="number"
                                                 label={{ value: 'Concentration (nM)', position: 'insideBottom', offset: -5 }}
                                                 domain={[0, maxConc]}
                                                 tickCount={6}
                                             />
-                                            <YAxis domain={[0, 100]} label={{ value: 'Effect (%)', angle: -90, position: 'insideLeft' }} />
-                                            <Tooltip />
+                                            <YAxis domain={[0, yDomainMax]} label={{ value: 'Effect (%)', angle: -90, position: 'insideLeft' }} />
+                                            <Tooltip formatter={(v: number | undefined) => (v ?? 0).toFixed(1)} />
                                             <Legend layout="horizontal" verticalAlign="top" align="center" wrapperStyle={{ paddingBottom: 10 }} />
                                             {curves.map(curve => (
                                                 <Line
@@ -325,6 +343,7 @@ export default function DoseResponseCurveGenerator() {
                                                     strokeWidth={2}
                                                     dot={false}
                                                     name={curve.name}
+                                                    isAnimationActive={false}
                                                 />
                                             ))}
                                             {curves.length <= 2 && curves.map(curve => (
@@ -333,17 +352,27 @@ export default function DoseResponseCurveGenerator() {
                                                     x={curve.ec50}
                                                     stroke={curve.color}
                                                     strokeDasharray="3 3"
-                                                    label={{ value: curve.name, position: 'top', fill: curve.color, fontSize: 10 }}
+                                                    label={{ value: `${curve.name} EC₅₀`, position: 'top', fill: curve.color, fontSize: 10 }}
                                                 />
                                             ))}
-                                            <ReferenceLine y={50} stroke="#666" strokeDasharray="3 3" label="50%" />
+                                            {curves.length <= 2 && curves.map(curve => (
+                                                <ReferenceLine
+                                                    key={`h-${curve.id}`}
+                                                    y={curve.baseline + curve.emax / 2}
+                                                    stroke={curve.color}
+                                                    strokeDasharray="2 2"
+                                                    strokeOpacity={0.5}
+                                                />
+                                            ))}
                                             <Scatter
-                                                data={ec50Points.map(p => ({ conc: p.conc, effect: p.effect }))}
+                                                data={ec50PointsLinear}
+                                                dataKey="effect"
                                                 fill="#000"
                                                 shape="circle"
                                                 legendType="none"
+                                                isAnimationActive={false}
                                             />
-                                        </LineChart>
+                                        </ComposedChart>
                                     </ResponsiveContainer>
                                 ) : (
                                     <div className="flex items-center justify-center h-full text-gray-500">
@@ -351,24 +380,26 @@ export default function DoseResponseCurveGenerator() {
                                     </div>
                                 )}
                             </div>
+                            <p className="text-xs text-gray-500 mt-2">Black dots mark each curve's true EC₅₀ point (baseline + Emax/2) — not a fixed y = 50, since baseline and Emax vary per drug.</p>
                         </div>
 
                         {/* Log‑Dose Scale Plot */}
                         <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">Log‑Dose Scale</h3>
+                            <h3 className="text-lg font-bold text-gray-800 mb-4">Log-Dose Scale</h3>
                             <div className="h-80">
                                 {logData.length > 0 ? (
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <LineChart data={logData} margin={{ top: 30, right: 30, left: 20, bottom: 25 }}>
+                                        <ComposedChart data={logData} margin={{ top: 30, right: 30, left: 20, bottom: 25 }}>
                                             <CartesianGrid strokeDasharray="3 3" />
                                             <XAxis
                                                 dataKey="logConc"
+                                                type="number"
                                                 label={{ value: 'log₁₀ Concentration (nM)', position: 'insideBottom', offset: -5 }}
-                                                tickFormatter={(v) => v.toFixed(1)}
+                                                tickFormatter={(v: number) => v.toFixed(1)}
                                                 tickCount={6}
                                             />
-                                            <YAxis domain={[0, 100]} label={{ value: 'Effect (%)', angle: -90, position: 'insideLeft' }} />
-                                            <Tooltip />
+                                            <YAxis domain={[0, yDomainMax]} label={{ value: 'Effect (%)', angle: -90, position: 'insideLeft' }} />
+                                            <Tooltip formatter={(v: number | undefined) => (v ?? 0).toFixed(1)} />
                                             <Legend layout="horizontal" verticalAlign="top" align="center" wrapperStyle={{ paddingBottom: 10 }} />
                                             {curves.map(curve => (
                                                 <Line
@@ -379,19 +410,36 @@ export default function DoseResponseCurveGenerator() {
                                                     strokeWidth={2}
                                                     dot={false}
                                                     name={curve.name}
+                                                    isAnimationActive={false}
                                                 />
                                             ))}
                                             {curves.length <= 2 && curves.map(curve => (
                                                 <ReferenceLine
                                                     key={`log-${curve.id}`}
-                                                    x={Math.log10(curve.ec50)}
+                                                    x={Math.log10(curve.ec50 <= 0 ? 0.001 : curve.ec50)}
                                                     stroke={curve.color}
                                                     strokeDasharray="3 3"
-                                                    label={{ value: curve.name, position: 'top', fill: curve.color, fontSize: 10 }}
+                                                    label={{ value: `${curve.name} EC₅₀`, position: 'top', fill: curve.color, fontSize: 10 }}
                                                 />
                                             ))}
-                                            <ReferenceLine y={50} stroke="#666" strokeDasharray="3 3" label="50%" />
-                                        </LineChart>
+                                            {curves.length <= 2 && curves.map(curve => (
+                                                <ReferenceLine
+                                                    key={`logh-${curve.id}`}
+                                                    y={curve.baseline + curve.emax / 2}
+                                                    stroke={curve.color}
+                                                    strokeDasharray="2 2"
+                                                    strokeOpacity={0.5}
+                                                />
+                                            ))}
+                                            <Scatter
+                                                data={ec50PointsLog}
+                                                dataKey="effect"
+                                                fill="#000"
+                                                shape="circle"
+                                                legendType="none"
+                                                isAnimationActive={false}
+                                            />
+                                        </ComposedChart>
                                     </ResponsiveContainer>
                                 ) : (
                                     <div className="flex items-center justify-center h-full text-gray-500">
@@ -399,12 +447,19 @@ export default function DoseResponseCurveGenerator() {
                                     </div>
                                 )}
                             </div>
+                            <p className="text-xs text-gray-500 mt-2">The classic symmetric sigmoid shape only appears on a log concentration axis — this is the standard way dose-response curves are presented.</p>
                         </div>
 
                         {/* Formula Card */}
                         <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-2xl shadow-lg p-6 border border-blue-200">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">Hill Equation</h3>
+                            <h3 className="text-lg font-bold text-gray-800 mb-4">Hill Equation (Sigmoid Emax Model)</h3>
                             <p className="text-sm font-mono">E = E₀ + (Emax·Cⁿ) / (EC₅₀ⁿ + Cⁿ)</p>
+                            <ul className="text-xs text-gray-600 mt-3 space-y-1">
+                                <li><strong>E₀</strong> (Baseline) — response with no drug present</li>
+                                <li><strong>Emax</strong> — maximal drug-attributable effect</li>
+                                <li><strong>EC₅₀</strong> — concentration producing half of Emax</li>
+                                <li><strong>n</strong> (Hill coefficient) — steepness of the curve</li>
+                            </ul>
                         </div>
                     </div>
                 </div>

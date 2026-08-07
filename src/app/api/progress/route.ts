@@ -1,27 +1,52 @@
 // src/app/api/progress/route.ts
 import { createServerSupabaseClient, createServiceSupabaseClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
+import { redis, progressCacheKey, PROGRESS_CACHE_TTL_SECONDS } from "@/lib/redis";
+import { progressReadLimiter, progressWriteLimiter, checkLimit } from "@/lib/rateLimit";
+import { applyProgressEvent, invalidateProgressCache, ProgressEventValidationError } from "@/lib/progress-server";
 
 export async function GET() {
-  // Auth check with regular client
   const userSupabase = await createServerSupabaseClient();
   const { data: { user }, error: authError } = await userSupabase.auth.getUser();
   if (authError || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Service‑role client for DB operations
+  const { success } = await checkLimit(progressReadLimiter, user.id);
+  if (!success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
+  const cacheKey = progressCacheKey(user.id);
+
+  if (redis) {
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return NextResponse.json(cached, { headers: { "X-Cache": "HIT" } });
+      }
+    } catch (err) {
+      console.error("[progress GET] cache read failed", err);
+    }
+  }
+
   const supabase = await createServiceSupabaseClient();
 
-  // Fetch progress row
-  const { data: progressRow } = await supabase
+  const { data: progressRow, error: progressErr } = await supabase
     .from("progress")
     .select("id, total_time_spent_min, current_streak, longest_streak")
     .eq("user_id", user.id)
     .maybeSingle();
 
+  if (progressErr) {
+    console.error("[progress GET] failed to load progress row", progressErr);
+    return NextResponse.json({ error: "Failed to load progress" }, { status: 500 });
+  }
+
+  let payload;
+
   if (!progressRow) {
-    return NextResponse.json({
+    payload = {
       units: [],
       flashcards: [],
       quizAttempts: [],
@@ -30,63 +55,66 @@ export async function GET() {
       totalTimeSpentMin: 0,
       currentStreak: 0,
       longestStreak: 0,
-    });
+    };
+  } else {
+    const progressId = progressRow.id;
+
+    const results = await Promise.allSettled([
+      supabase.from("unit_progress").select("*").eq("progress_id", progressId),
+      supabase.from("flashcard_progress").select("*").eq("progress_id", progressId),
+      supabase.from("quiz_attempts").select("*").eq("progress_id", progressId).order("attempted_at", { ascending: false }),
+      supabase.from("spotting_progress").select("*").eq("progress_id", progressId),
+      supabase.from("activity_log").select("*").eq("user_id", user.id).order("timestamp", { ascending: false }).limit(20),
+    ]);
+
+    const [unitsRes, flashcardsRes, quizRes, spottingRes, activityRes] = results;
+
+    // Partial failure handling: one failed query shouldn't 500 the whole
+    // dashboard — degrade that section to empty and log it.
+    const unwrap = <T,>(r: PromiseSettledResult<{ data: T[] | null; error: any }>, label: string): T[] => {
+      if (r.status === "rejected") {
+        console.error(`[progress GET] ${label} query rejected`, r.reason);
+        return [];
+      }
+      if (r.value.error) {
+        console.error(`[progress GET] ${label} query error`, r.value.error);
+        return [];
+      }
+      return r.value.data || [];
+    };
+
+    payload = {
+      units: unwrap(unitsRes as any, "unit_progress"),
+      flashcards: unwrap(flashcardsRes as any, "flashcard_progress"),
+      quizAttempts: unwrap(quizRes as any, "quiz_attempts"),
+      spotting: unwrap(spottingRes as any, "spotting_progress"),
+      recentActivity: unwrap(activityRes as any, "activity_log"),
+      totalTimeSpentMin: progressRow.total_time_spent_min ?? 0,
+      currentStreak: progressRow.current_streak ?? 0,
+      longestStreak: progressRow.longest_streak ?? 0,
+    };
   }
 
-  const progressId = progressRow.id;
+  if (redis) {
+    redis
+      .set(cacheKey, payload, { ex: PROGRESS_CACHE_TTL_SECONDS })
+      .catch((err) => console.error("[progress GET] cache write failed", err));
+  }
 
-  // Fetch child tables separately
-  const { data: units } = await supabase
-    .from("unit_progress")
-    .select("*")
-    .eq("progress_id", progressId);
-
-  const { data: flashcards } = await supabase
-    .from("flashcard_progress")
-    .select("*")
-    .eq("progress_id", progressId);
-
-  const { data: quizAttempts } = await supabase
-    .from("quiz_attempts")
-    .select("*")
-    .eq("progress_id", progressId)
-    .order("attempted_at", { ascending: false });
-
-  const { data: spotting } = await supabase
-    .from("spotting_progress")
-    .select("*")
-    .eq("progress_id", progressId);
-
-  // Activity log is linked by user_id, not progress_id
-  const { data: activityLog } = await supabase
-    .from("activity_log")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("timestamp", { ascending: false })
-    .limit(20);
-
-  return NextResponse.json({
-    units: units || [],
-    flashcards: flashcards || [],
-    quizAttempts: quizAttempts || [],
-    spotting: spotting || [],
-    recentActivity: activityLog || [],
-    totalTimeSpentMin: progressRow.total_time_spent_min ?? 0,
-    currentStreak: progressRow.current_streak ?? 0,
-    longestStreak: progressRow.longest_streak ?? 0,
-  });
+  return NextResponse.json(payload, { headers: { "X-Cache": "MISS" } });
 }
 
 export async function POST(req: Request) {
-  // Auth check
   const userSupabase = await createServerSupabaseClient();
   const { data: { user }, error: authError } = await userSupabase.auth.getUser();
   if (authError || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Service‑role client
-  const supabase = await createServiceSupabaseClient();
+  const { success } = await checkLimit(progressWriteLimiter, user.id);
+  if (!success) {
+    return NextResponse.json({ error: "Too many requests, slow down" }, { status: 429 });
+  }
 
   let body;
   try {
@@ -95,134 +123,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { type, ...payload } = body;
+  const supabase = await createServiceSupabaseClient();
 
   try {
-    // Ensure progress row exists
-    const { data: existing } = await supabase
-      .from("progress")
-      .select("id, total_time_spent_min")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    let progressId = existing?.id;
-
-    if (!progressId) {
-      const { data: newProgress, error: insertError } = await supabase
-        .from("progress")
-        .insert({
-          user_id: user.id,
-          email: user.email,
-          display_name: user.user_metadata?.full_name ?? user.email,
-          avatar_url: user.user_metadata?.avatar_url,
-        })
-        .select("id")
-        .single();
-
-      if (insertError) {
-        console.error("Progress insert error:", insertError);
-        return NextResponse.json({ error: insertError.message }, { status: 500 });
-      }
-      progressId = newProgress?.id;
-    }
-
-    // Handle event types
-    switch (type) {
-      case "unit":
-        await supabase.from("unit_progress").upsert(
-          {
-            progress_id: progressId,
-            unit_id: payload.unitId,
-            unit_title: payload.unitTitle || "",
-            subject: payload.subject || "",
-            semester: payload.semester || "",
-            last_visited: new Date().toISOString(),
-          },
-          { onConflict: "progress_id, unit_id" }
-        );
-        break;
-
-      case "flashcard":
-        await supabase.from("flashcard_progress").upsert(
-          {
-            progress_id: progressId,
-            category: payload.category,
-            cards_reviewed: 1,
-            cards_correct: payload.correct ? 1 : 0,
-            last_practiced: new Date().toISOString(),
-          },
-          { onConflict: "progress_id, category" }
-        );
-        break;
-
-      case "quiz":
-        await supabase.from("quiz_attempts").insert({
-          progress_id: progressId,
-          quiz_id: payload.quizId,
-          subject: payload.subject,
-          score: payload.score,
-          total: payload.total,
-          time_taken_min: payload.timeTakenMin || 0,
-          attempted_at: new Date().toISOString(),
-        });
-        break;
-
-      case "spotting":
-        await supabase.from("spotting_progress").upsert(
-          {
-            progress_id: progressId,
-            lesson_id: payload.lessonId,
-            category: payload.category,
-            last_visited: new Date().toISOString(),
-          },
-          { onConflict: "progress_id, lesson_id" }
-        );
-        break;
-
-      case "activity":
-        await supabase.from("activity_log").insert({
-          user_id: user.id,
-          type: payload.type || "generic",
-          label: payload.label || "",
-          href: payload.href || "",
-          timestamp: new Date().toISOString(),
-        });
-        break;
-
-      default:
-        return NextResponse.json({ error: "Unknown event type" }, { status: 400 });
-    }
-
-    // Also insert an activity log entry for the event (if not already an activity)
-    if (type !== "activity") {
-      const activityLabel: Record<string, string> = {
-        unit: `Visited: ${payload.unitTitle || payload.unitId}`,
-        flashcard: `Practiced flashcards: ${payload.category}`,
-        quiz: `Quiz: ${payload.subject} – ${payload.score}/${payload.total}`,
-        spotting: `Spotting: ${payload.lessonId}`,
-      };
-      await supabase.from("activity_log").insert({
-        user_id: user.id,
-        type: type,
-        label: activityLabel[type] || type,
-        href: payload.href || "",
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    // Update last active and total time
-    const timeToAdd = payload.timeSpentMin || 0;
-    await supabase
-      .from("progress")
-      .update({
-        last_active_at: new Date().toISOString(),
-        total_time_spent_min: (existing?.total_time_spent_min || 0) + timeToAdd,
-      })
-      .eq("id", progressId);
-
+    await applyProgressEvent(supabase, user, body);
+    await invalidateProgressCache(user.id);
     return NextResponse.json({ success: true });
   } catch (err: any) {
+    if (err instanceof ProgressEventValidationError) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
     console.error("POST /api/progress error:", err);
-    return NextResponse.json({ error: err.message || "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

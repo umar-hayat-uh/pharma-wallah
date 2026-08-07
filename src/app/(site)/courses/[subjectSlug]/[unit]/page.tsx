@@ -1,9 +1,3 @@
-// src/app/(site)/courses/[subjectSlug]/[unit]/page.tsx
-//
-// Replaces src/app/(site)/courses/[semesterSlug]/[subjectSlug]/[unit]/page.tsx
-// URL is now /courses/pharmaceutical-biochemistry/unit1-... instead of
-// /courses/sem-1/pharmaceutical-biochemistry/unit1-...
-
 import { notFound } from "next/navigation";
 import { SUBJECTS, getUnit } from "@/lib/courses/registry";
 import { getUnitMarkdown } from "@/lib/courses/content";
