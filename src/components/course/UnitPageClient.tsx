@@ -83,9 +83,7 @@ export default function UnitPageClient({
               <ChevronRight size={13} className="text-gray-300" />
             </span>
           ))}
-          <span className="text-blue-700 font-semibold">
-            {unit.shortTitle}
-          </span>
+          <span className="text-blue-700 font-semibold">{unit.shortTitle}</span>
         </nav>
 
         <div className="flex flex-col lg:flex-row gap-5 xl:gap-8 items-start w-full">
@@ -139,7 +137,6 @@ export default function UnitPageClient({
                       Unit Overview (click to enlarge)
                     </span>
                   </div>
-                  {/* Flex container centers the image horizontally */}
                   <div className="flex justify-center p-2 sm:p-4 bg-gray-50">
                     <ImageZoom
                       src={unit.previewImage}

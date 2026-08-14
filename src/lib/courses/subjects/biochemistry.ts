@@ -1,8 +1,4 @@
 // src/lib/courses/subjects/biochemistry.ts
-// Converted from the old app/api/biochemistry-data.ts — same content,
-// reshaped into the shared SubjectMeta contract so it plugs into the
-// generic [semesterSlug]/[subjectSlug]/[unit] route.
-
 import type { SubjectMeta } from "../types";
 
 export const biochemistrySubject: SubjectMeta = {
@@ -27,7 +23,8 @@ export const biochemistrySubject: SubjectMeta = {
       readTime: 10,
       difficulty: "Beginner",
       gradient: "from-blue-600 to-cyan-400",
-      previewImage: "/previews/biochem/unit1-intro.jpg",
+      previewImage:
+        "https://res.cloudinary.com/osevupfr/image/upload/l_My%20Brand:WhatsApp_Image_2026-02-27_at_4.44.40_PM_jtmqf8/c_scale,fl_relative,h_1.00,w_1.02/o_12/fl_layer_apply,fl_no_overflow,g_south_east/Chapter_01_Infographic.png",
       contentFile: "pharmaceutical-biochemistry/unit1-intro-pharma-biochemistry.md",
     },
     {
@@ -40,7 +37,8 @@ export const biochemistrySubject: SubjectMeta = {
       readTime: 15,
       difficulty: "Intermediate",
       gradient: "from-amber-500 to-orange-400",
-      previewImage: "/previews/biochem/unit2-carbs.jpg",
+      previewImage:
+        "https://res.cloudinary.com/osevupfr/image/upload/l_My%20Brand:WhatsApp_Image_2026-02-27_at_4.44.40_PM_jtmqf8/c_scale,fl_relative,h_1.00,w_1.02/o_12/fl_layer_apply,fl_no_overflow,g_south_east/Chapter_02_Infographic.png",
       contentFile: "pharmaceutical-biochemistry/unit2-carbohydrates.md",
     },
     {
@@ -53,7 +51,8 @@ export const biochemistrySubject: SubjectMeta = {
       readTime: 14,
       difficulty: "Advanced",
       gradient: "from-yellow-500 to-lime-400",
-      previewImage: "/previews/biochem/unit3-bioenergetics.png",
+      previewImage:
+        "https://res.cloudinary.com/osevupfr/image/upload/l_My%20Brand:WhatsApp_Image_2026-02-27_at_4.44.40_PM_jtmqf8/c_scale,fl_relative,h_1.00,w_1.02/o_12/fl_layer_apply,fl_no_overflow,g_south_east/Chapter_03_Infographic.png",
       contentFile: "pharmaceutical-biochemistry/unit3-bioenergetics.md",
     },
     {
@@ -66,7 +65,8 @@ export const biochemistrySubject: SubjectMeta = {
       readTime: 16,
       difficulty: "Advanced",
       gradient: "from-rose-500 to-pink-400",
-      previewImage: "/previews/biochem/unit4-lipids.png",
+      previewImage:
+        "https://res.cloudinary.com/osevupfr/image/upload/l_My%20Brand:WhatsApp_Image_2026-02-27_at_4.44.40_PM_jtmqf8/c_scale,fl_relative,h_1.00,w_1.02/o_12/fl_layer_apply,fl_no_overflow,g_south_east/Chapter_04_Infographic.png",
       contentFile: "pharmaceutical-biochemistry/unit4-lipids.md",
     },
     {
@@ -79,7 +79,8 @@ export const biochemistrySubject: SubjectMeta = {
       readTime: 13,
       difficulty: "Intermediate",
       gradient: "from-green-500 to-teal-400",
-      previewImage: "/previews/biochem/unit5-vitamins.png",
+      previewImage:
+        "https://res.cloudinary.com/osevupfr/image/upload/l_My%20Brand:WhatsApp_Image_2026-02-27_at_4.44.40_PM_jtmqf8/c_scale,fl_relative,h_1.00,w_1.02/o_12/fl_layer_apply,fl_no_overflow,g_south_east/Chapter_05_Infographic.png",
       contentFile: "pharmaceutical-biochemistry/unit5-vitamins.md",
     },
     {
@@ -92,7 +93,8 @@ export const biochemistrySubject: SubjectMeta = {
       readTime: 14,
       difficulty: "Advanced",
       gradient: "from-violet-600 to-purple-400",
-      previewImage: "/previews/biochem/unit6-hormones.png",
+      previewImage:
+        "https://res.cloudinary.com/osevupfr/image/upload/l_My%20Brand:WhatsApp_Image_2026-02-27_at_4.44.40_PM_jtmqf8/c_scale,fl_relative,h_1.00,w_1.02/o_12/fl_layer_apply,fl_no_overflow,g_south_east/Chapter_06_Infographic.png",
       contentFile: "pharmaceutical-biochemistry/unit6-hormones.md",
     },
   ],
