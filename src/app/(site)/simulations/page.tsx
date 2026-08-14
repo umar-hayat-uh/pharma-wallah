@@ -1,11 +1,20 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Beaker, FlaskConical, Droplet, Microscope, TestTube, Activity, Sun } from 'lucide-react';
+import {
+  Beaker,
+  FlaskConical,
+  Droplet,
+  Microscope,
+  TestTube,
+  Activity,
+  Sun,
+  Clock,
+} from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Interactive Simulations — PharmaWallah',
   description:
-    'Explore pharmacy and chemistry lab simulations. Practice disk diffusion antibiotic testing, solution dilution techniques, acid‑base titration, microbiology staining, organic compound identification, buffer preparation, and UV‑Vis spectrophotometry with real‑time feedback and downloadable reports.',
+    'Explore pharmacy and chemistry lab simulations. Practice disk diffusion antibiotic testing, solution dilution techniques, acid‑base titration, microbiology staining, organic compound identification, buffer preparation, UV‑Vis spectrophotometry, and determination of bleeding time (Duke’s method) with real‑time feedback and downloadable reports.',
 };
 
 const simulations = [
@@ -18,6 +27,17 @@ const simulations = [
     gradient: 'from-blue-600 to-green-400',
     image: '🧫',
     tags: ['Microbiology', 'CLSI', 'Antibiotics'],
+    comingSoon: false,
+  },
+  {
+    title: 'Determination of Bleeding Time',
+    description:
+      'Perform Duke’s method for bleeding time determination. Clean the site with an alcohol swab, execute a standardized lancet puncture, blot blood drops at 30‑second intervals on filter paper, and record total elapsed time.',
+    href: '/simulations/lab-guide',
+    icon: Clock,
+    gradient: 'from-rose-600 to-red-500',
+    image: '🩸',
+    tags: ['Pharmacology', 'Physiology', 'Duke’s Method'],
     comingSoon: false,
   },
   {

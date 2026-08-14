@@ -1,7 +1,7 @@
 "use client";
 
 // src/app/(site)/mcqs-bank/[semesterSlug]/[subject]/page.tsx
-// ── Interactive & Gamified E-Learning MCQ Platform (With Auto Scroll-To-Top) ──
+// ── Interactive & Gamified E-Learning MCQ Platform (Fully Responsive) ──
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
@@ -163,16 +163,64 @@ function playSound(type: "correct" | "wrong" | "click" | "complete" | "streak", 
 }
 
 function getGrade(pct: number) {
-  if (pct >= 90) return { label: "A+ Distinction", color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", emoji: "🏆", pdfLabel: "A+ Distinction", title: "Mastery Achieved!" };
-  if (pct >= 80) return { label: "A Excellent", color: "text-green-700", bg: "bg-green-50 border-green-200", emoji: "🥇", pdfLabel: "A Excellent", title: "Outstanding Work!" };
-  if (pct >= 70) return { label: "B Good", color: "text-blue-700", bg: "bg-blue-50 border-blue-200", emoji: "🎯", pdfLabel: "B Good", title: "Solid Knowledge Base!" };
-  if (pct >= 60) return { label: "C Satisfactory", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", emoji: "📖", pdfLabel: "C Satisfactory", title: "Good Effort, Keep Practicing!" };
-  if (pct >= 50) return { label: "D Pass", color: "text-orange-700", bg: "bg-orange-50 border-orange-200", emoji: "✅", pdfLabel: "D Pass", title: "Passing Score — Focus on Weak Areas." };
-  return { label: "F Needs Revision", color: "text-red-700", bg: "bg-red-50 border-red-200", emoji: "📚", pdfLabel: "F Needs Revision", title: "Revision Recommended." };
+  if (pct >= 90) return {
+    label: "Excellent Command of the Material",
+    color: "text-emerald-700",
+    bg: "bg-emerald-50 border-emerald-200",
+    emoji: "🏆",
+    pdfLabel: "Excellent Command of the Material",
+    title: "Excellent Performance",
+    remark: "You demonstrated a thorough and reliable understanding of this unit. Keep reinforcing this level with periodic review to retain long-term recall.",
+  };
+  if (pct >= 80) return {
+    label: "Strong Understanding",
+    color: "text-green-700",
+    bg: "bg-green-50 border-green-200",
+    emoji: "🥇",
+    pdfLabel: "Strong Understanding",
+    title: "Strong Performance",
+    remark: "You have a solid grasp of most concepts in this unit. Review the questions you missed to close the remaining gaps before your exam.",
+  };
+  if (pct >= 70) return {
+    label: "Good Grasp, Minor Gaps",
+    color: "text-blue-700",
+    bg: "bg-blue-50 border-blue-200",
+    emoji: "🎯",
+    pdfLabel: "Good Grasp, Minor Gaps",
+    title: "Good Performance",
+    remark: "Your foundation is good, with a few recurring gaps. Focused revision on the incorrect items below will meaningfully improve your score.",
+  };
+  if (pct >= 60) return {
+    label: "Developing — Needs Practice",
+    color: "text-amber-700",
+    bg: "bg-amber-50 border-amber-200",
+    emoji: "📖",
+    pdfLabel: "Developing — Needs Practice",
+    title: "Developing Performance",
+    remark: "You're building a working understanding, but several concepts still need reinforcement. Revisit the explanations and retake this unit after review.",
+  };
+  if (pct >= 50) return {
+    label: "Below Target — Review Recommended",
+    color: "text-orange-700",
+    bg: "bg-orange-50 border-orange-200",
+    emoji: "🔎",
+    pdfLabel: "Below Target — Review Recommended",
+    title: "Below Target",
+    remark: "This score falls below the recommended benchmark. Go through each explanation carefully and retake the unit once you've reviewed the material.",
+  };
+  return {
+    label: "Needs Focused Revision",
+    color: "text-red-700",
+    bg: "bg-red-50 border-red-200",
+    emoji: "📚",
+    pdfLabel: "Needs Focused Revision",
+    title: "Needs Focused Revision",
+    remark: "This unit needs a full review before moving on. Work through the material systematically, then retake the quiz to check your progress.",
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PDF GENERATOR
+// PDF GENERATOR (unchanged logic — output document, not UI)
 // ═══════════════════════════════════════════════════════════════════════════
 function generatePDF(params: {
   subjectName: string;
@@ -320,11 +368,16 @@ function generatePDF(params: {
   const timeMins = Math.floor(timeTaken / 60);
   const timeSecs = timeTaken % 60;
 
+  doc.setFontSize(7.3);
+  doc.setFont("helvetica", "normal");
+  const remarkLines = doc.splitTextToSize(grade.remark, CW - 39 - 4);
+  const summaryBoxH = 27 + remarkLines.length * lh(7.3) + 3;
+
   fill(accentLight);
-  doc.roundedRect(ML, y, CW, 27, 3, 3, "F");
+  doc.roundedRect(ML, y, CW, summaryBoxH, 3, 3, "F");
   draw(accent);
   doc.setLineWidth(0.5);
-  doc.roundedRect(ML, y, CW, 27, 3, 3, "S");
+  doc.roundedRect(ML, y, CW, summaryBoxH, 3, 3, "S");
 
   text(accent);
   doc.setFontSize(24);
@@ -336,16 +389,22 @@ function generatePDF(params: {
   doc.line(ML + 34, y + 5, ML + 34, y + 22);
 
   text(C.dark);
-  doc.setFontSize(13);
+  doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
-  doc.text(grade.pdfLabel, ML + 39, y + 12);
+  const pdfLabelLines = doc.splitTextToSize(grade.pdfLabel, CW - 39 - 4);
+  doc.text(pdfLabelLines, ML + 39, y + 11);
 
   text(C.muted);
-  doc.setFontSize(7.5);
+  doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
-  doc.text(`Time: ${timeMins}m ${timeSecs}s  ·  Questions: ${stats.total}  ·  Date: ${dateStr}`, ML + 39, y + 21);
+  doc.text(`Time: ${timeMins}m ${timeSecs}s  ·  Questions: ${stats.total}  ·  Date: ${dateStr}`, ML + 39, y + 11 + pdfLabelLines.length * lh(12) + 2);
 
-  y += 33;
+  text(C.mid);
+  doc.setFontSize(7.3);
+  doc.setFont("helvetica", "italic");
+  doc.text(remarkLines, ML + 39, y + 11 + pdfLabelLines.length * lh(12) + 2 + lh(7) + 3);
+
+  y += summaryBoxH + 6;
 
   const GAP = 3;
   const BW = (CW - GAP * 3) / 4;
@@ -536,7 +595,7 @@ function generatePDF(params: {
 }
 
 // ════════════════════════════════════════════════════════════════════════
-// STICKY GLASSMORPHIC TOP CONTROL BAR
+// STICKY GLASSMORPHIC TOP CONTROL BAR — responsive rework
 // ════════════════════════════════════════════════════════════════════════
 function TopQuizBar({
   secondsLeft,
@@ -567,89 +626,108 @@ function TopQuizBar({
   const ss = (secondsLeft % 60).toString().padStart(2, "0");
   const isUrgent = secondsLeft <= 60;
   const isWarn = secondsLeft <= 180 && !isUrgent;
+  const pct = totalCount ? Math.round((answeredCount / totalCount) * 100) : 0;
 
   return (
     <div
       className="sticky z-40 backdrop-blur-md bg-white/95 border-b border-gray-200/80 shadow-sm transition-all"
       style={{ top: "var(--navbar-height, 64px)" }}
     >
-      <div className="max-w-5xl mx-auto px-3 sm:px-6 py-2 flex items-center justify-between gap-2 sm:gap-4">
-        {/* Left: Timer or Mode badge */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
+      {/* Row 1 (all breakpoints): timer/mode, streak, xp, controls */}
+      <div className="max-w-5xl mx-auto px-2.5 xs:px-3 sm:px-6 py-2 flex items-center justify-between gap-1.5 sm:gap-4">
+        <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2 min-w-0">
           {quizMode === "exam" ? (
-            <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl font-mono font-extrabold text-xs shrink-0 shadow-sm ${isUrgent
+            <div className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg sm:rounded-xl font-mono font-extrabold text-[11px] sm:text-xs shrink-0 shadow-sm ${isUrgent
                 ? "bg-red-500 text-white animate-pulse"
                 : isWarn
                   ? "bg-amber-500 text-white"
                   : `bg-gradient-to-r ${semGrad} text-white`
               }`}>
-              <Timer className="w-3.5 h-3.5" />
+              <Timer className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
               {mm}:{ss}
             </div>
           ) : (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 font-extrabold text-xs">
-              <Brain className="w-3.5 h-3.5 text-indigo-600" /> Practice
+            <span className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg sm:rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 font-extrabold text-[11px] sm:text-xs shrink-0">
+              <Brain className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-600 shrink-0" />
+              <span className="hidden xs:inline">Practice</span>
             </span>
           )}
 
           {streak > 1 && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xl bg-orange-500 text-white font-extrabold text-[11px] shadow-sm animate-pulse">
-              <Flame className="w-3 h-3 fill-white" /> {streak}🔥
+            <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg sm:rounded-xl bg-orange-500 text-white font-extrabold text-[10px] sm:text-[11px] shadow-sm animate-pulse shrink-0">
+              <Flame className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-white" /> {streak}
             </span>
           )}
 
-          <span className="hidden xs:inline-flex items-center gap-1 px-2 py-0.5 rounded-xl bg-amber-100 text-amber-800 font-extrabold text-[11px] border border-amber-200">
-            <Zap className="w-3 h-3 text-amber-600 fill-amber-500" /> {xp} XP
+          <span className="hidden xs:inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg sm:rounded-xl bg-amber-100 text-amber-800 font-extrabold text-[10px] sm:text-[11px] border border-amber-200 shrink-0">
+            <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-600 fill-amber-500" /> {xp} XP
           </span>
         </div>
 
-        {/* Center Progress Bar */}
-        <div className="flex-1 max-w-xs mx-1">
-          <div className="flex items-center justify-between text-[10px] sm:text-xs font-black text-gray-500 mb-0.5">
+        {/* Center Progress Bar — hidden on very small screens, shown in row 2 instead */}
+        <div className="hidden sm:block flex-1 max-w-xs mx-1">
+          <div className="flex items-center justify-between text-xs font-black text-gray-500 mb-0.5">
             <span>Progress</span>
-            <span>{answeredCount} / {totalCount} ({totalCount ? Math.round((answeredCount / totalCount) * 100) : 0}%)</span>
+            <span>{answeredCount} / {totalCount} ({pct}%)</span>
           </div>
           <div className="h-2 bg-gray-100 rounded-full overflow-hidden border border-gray-200/60">
             <div
               className={`h-full rounded-full transition-all duration-300 bg-gradient-to-r ${semGrad}`}
-              style={{ width: `${totalCount ? (answeredCount / totalCount) * 100 : 0}%` }}
+              style={{ width: `${pct}%` }}
             />
           </div>
         </div>
 
         {/* Right Controls */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
-            className={`p-1.5 sm:p-2 rounded-xl border transition-all ${soundEnabled
+            className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl border transition-all ${soundEnabled
                 ? "bg-blue-50 border-blue-200 text-blue-600"
                 : "bg-gray-100 border-gray-200 text-gray-400"
               }`}
             title={soundEnabled ? "Mute sound FX" : "Enable sound FX"}
+            aria-label={soundEnabled ? "Mute sound effects" : "Enable sound effects"}
           >
             {soundEnabled ? <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <VolumeX className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
           </button>
 
-          <div className="flex items-center bg-gray-100 p-0.5 sm:p-1 rounded-xl border border-gray-200">
+          <div className="flex items-center bg-gray-100 p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-gray-200">
             <button
               onClick={() => setViewMode("focus")}
-              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-extrabold transition-all ${viewMode === "focus"
+              className={`flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-extrabold transition-all ${viewMode === "focus"
                   ? "bg-white text-gray-900 shadow-sm"
                   : "text-gray-500 hover:text-gray-900"
                 }`}
+              aria-label="Focus card view"
             >
-              <Maximize2 className="w-3 h-3" /> Focus
+              <Maximize2 className="w-3 h-3" /> <span className="hidden xs:inline">Focus</span>
             </button>
             <button
               onClick={() => setViewMode("list")}
-              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-extrabold transition-all ${viewMode === "list"
+              className={`flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-extrabold transition-all ${viewMode === "list"
                   ? "bg-white text-gray-900 shadow-sm"
                   : "text-gray-500 hover:text-gray-900"
                 }`}
+              aria-label="List view"
             >
-              <Grid className="w-3 h-3" /> List
+              <Grid className="w-3 h-3" /> <span className="hidden xs:inline">List</span>
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Row 2: progress bar, mobile-only */}
+      <div className="sm:hidden max-w-5xl mx-auto px-2.5 xs:px-3 pb-2 -mt-0.5">
+        <div className="flex items-center justify-between text-[10px] font-black text-gray-500 mb-0.5">
+          <span>Progress</span>
+          <span>{answeredCount}/{totalCount} ({pct}%)</span>
+        </div>
+        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden border border-gray-200/60">
+          <div
+            className={`h-full rounded-full transition-all duration-300 bg-gradient-to-r ${semGrad}`}
+            style={{ width: `${pct}%` }}
+          />
         </div>
       </div>
     </div>
@@ -690,6 +768,9 @@ export default function MCQBankQuizPage({ params }: PageProps) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const answersRef = useRef(answers);
   answersRef.current = answers;
+  const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const AUTO_ADVANCE_DELAY_MS = 1400;
 
   const { trackQuiz } = useTracker();
 
@@ -851,6 +932,48 @@ export default function MCQBankQuizPage({ params }: PageProps) {
   const handleSubmit = useCallback(() => doSubmit(answers), [answers, doSubmit]);
   const handleAutoSubmit = useCallback(() => doSubmit(answersRef.current), [doSubmit]);
 
+  // AUTO-ADVANCE: in Practice mode + Focus view, once the current question is
+  // answered, briefly show correct/incorrect feedback then move on automatically.
+  // On the final question, auto-submit instead of advancing.
+  useEffect(() => {
+    if (autoAdvanceRef.current) {
+      clearTimeout(autoAdvanceRef.current);
+      autoAdvanceRef.current = null;
+    }
+
+    if (
+      screen !== "quiz" ||
+      viewMode !== "focus" ||
+      quizMode !== "practice" ||
+      submitted ||
+      !currentQ
+    ) {
+      return;
+    }
+
+    const isAnswered = answers[currentQ.id] !== undefined;
+    if (!isAnswered) return;
+
+    const isLastQuestion = currentIdx === questions.length - 1;
+
+    autoAdvanceRef.current = setTimeout(() => {
+      if (isLastQuestion) {
+        handleSubmit();
+      } else {
+        setCurrentIdx(prev => Math.min(questions.length - 1, prev + 1));
+        scrollToTop();
+      }
+    }, AUTO_ADVANCE_DELAY_MS);
+
+    return () => {
+      if (autoAdvanceRef.current) {
+        clearTimeout(autoAdvanceRef.current);
+        autoAdvanceRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [answers, currentQ, currentIdx, questions.length, screen, viewMode, quizMode, submitted]);
+
   const handleReset = useCallback(() => {
     setScreen("unit-select");
     setActiveUnit(null);
@@ -899,8 +1022,8 @@ export default function MCQBankQuizPage({ params }: PageProps) {
 
   if (!semData || !subData) return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-gray-50">
-      <div className="text-center bg-white p-8 rounded-3xl border border-gray-200 shadow-xl max-w-sm">
-        <p className="text-xl font-extrabold text-gray-900 mb-2">Subject not found</p>
+      <div className="text-center bg-white p-6 sm:p-8 rounded-3xl border border-gray-200 shadow-xl max-w-sm w-full">
+        <p className="text-lg sm:text-xl font-extrabold text-gray-900 mb-2">Subject not found</p>
         <Link href="/mcqs-bank" className="text-blue-600 text-sm font-bold hover:underline inline-flex items-center gap-1">
           ← Return to MCQ Bank
         </Link>
@@ -910,11 +1033,11 @@ export default function MCQBankQuizPage({ params }: PageProps) {
 
   if (!bank) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="text-center max-w-sm bg-white p-8 rounded-3xl border border-gray-200 shadow-xl">
-        <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${semGrad} flex items-center justify-center mx-auto mb-4 shadow-lg`}>
-          <ClipboardList className="w-8 h-8 text-white" />
+      <div className="text-center max-w-sm w-full bg-white p-6 sm:p-8 rounded-3xl border border-gray-200 shadow-xl">
+        <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${semGrad} flex items-center justify-center mx-auto mb-4 shadow-lg`}>
+          <ClipboardList className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
         </div>
-        <h2 className="text-xl font-extrabold text-gray-900 mb-2">MCQs Coming Soon</h2>
+        <h2 className="text-lg sm:text-xl font-extrabold text-gray-900 mb-2">MCQs Coming Soon</h2>
         <p className="text-gray-500 text-sm mb-6">Questions for <strong>{subData.name}</strong> are currently in production.</p>
         <Link href={`/mcqs-bank/${semesterSlug}`} className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r ${semGrad} text-white font-extrabold text-sm shadow-md hover:-translate-y-0.5 transition-all`}>
           <ChevronLeft className="w-4 h-4" /> Back to {semData.semester}
@@ -927,89 +1050,89 @@ export default function MCQBankQuizPage({ params }: PageProps) {
   // SCREEN 1 — UNIT SELECTION
   // ════════════════════════════════════════════════════════════════════
   if (screen === "unit-select") return (
-    <section className="min-h-screen bg-gray-50 pt-8 relative overflow-x-hidden">
+    <section className="min-h-screen bg-gray-50 pt-6 sm:pt-8 relative overflow-x-hidden">
       {BG_ICONS.map(({ Icon, top, left, size }, i) => (
-        <div key={i} className="fixed pointer-events-none text-blue-100/60 z-0 hidden md:block" style={{ top, left }}>
+        <div key={i} className="fixed pointer-events-none text-blue-100/60 z-0 hidden lg:block" style={{ top, left }}>
           <Icon size={size} strokeWidth={1.4} />
         </div>
       ))}
       <div className={`relative bg-gradient-to-r ${semGrad} overflow-hidden shadow-lg`}>
-        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/10 blur-xl pointer-events-none" />
-        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-          <div className="flex items-center gap-1.5 text-white/80 text-xs font-bold mb-3 flex-wrap">
+        <div className="absolute -top-16 -right-16 w-48 h-48 sm:w-64 sm:h-64 rounded-full bg-white/10 blur-xl pointer-events-none" />
+        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 lg:py-12">
+          <div className="flex items-center gap-1 sm:gap-1.5 text-white/80 text-[11px] sm:text-xs font-bold mb-3 flex-wrap">
             <Link href="/mcqs-bank" className="hover:text-white transition flex items-center gap-1"><ClipboardList className="w-3.5 h-3.5" /> MCQ Bank</Link>
             <ChevronRight className="w-3 h-3" />
             <Link href={`/mcqs-bank/${semesterSlug}`} className="hover:text-white transition">{semData.semester}</Link>
             <ChevronRight className="w-3 h-3" />
-            <span className="text-white truncate max-w-[180px] sm:max-w-none">{subData.name}</span>
+            <span className="text-white truncate max-w-[140px] xs:max-w-[180px] sm:max-w-none">{subData.name}</span>
           </div>
-          <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-extrabold uppercase tracking-widest mb-3 backdrop-blur-sm">
-            <Zap className="w-3.5 h-3.5 text-yellow-300" /> Interactive E-Learning Module
+          <span className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-[10px] sm:text-xs font-extrabold uppercase tracking-widest mb-3 backdrop-blur-sm">
+            <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-yellow-300" /> Interactive E-Learning Module
           </span>
-          <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight mb-2">{subData.name}</h1>
+          <h1 className="text-xl xs:text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight mb-2 break-words">{subData.name}</h1>
           <p className="text-white/85 text-xs sm:text-base max-w-2xl font-medium">Select a target unit or launch complete syllabus practice with real-time feedback & explanations.</p>
         </div>
       </div>
 
-      <div className="relative z-10 max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <p className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-indigo-500" /> Full Syllabus Challenge
+      <div className="relative z-10 max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8">
+        <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5 text-indigo-500 shrink-0" /> Full Syllabus Challenge
         </p>
 
         <button onClick={() => handleSelectUnit(null)}
-          className={`w-full group relative overflow-hidden rounded-3xl bg-gradient-to-r ${semGrad} p-5 sm:p-7 text-left shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all duration-300 mb-6 border border-white/20`}>
-          <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-15 pointer-events-none transition-transform group-hover:scale-110 duration-500">
-            <Layers size={100} className="text-white" />
+          className={`w-full group relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r ${semGrad} p-4 xs:p-5 sm:p-7 text-left shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all duration-300 mb-5 sm:mb-6 border border-white/20`}>
+          <div className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 opacity-10 sm:opacity-15 pointer-events-none transition-transform group-hover:scale-110 duration-500">
+            <Layers size={72} className="text-white sm:w-[100px] sm:h-[100px]" />
           </div>
-          <div className="flex items-center gap-4 sm:gap-5">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/20 border border-white/30 backdrop-blur-sm flex items-center justify-center shrink-0 shadow-inner">
-              <Sparkles className="w-7 h-7 sm:w-8 sm:h-8 text-yellow-300 animate-pulse" />
+          <div className="flex items-center gap-3 xs:gap-4 sm:gap-5">
+            <div className="w-11 h-11 xs:w-14 xs:h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white/20 border border-white/30 backdrop-blur-sm flex items-center justify-center shrink-0 shadow-inner">
+              <Sparkles className="w-5 h-5 xs:w-7 xs:h-7 sm:w-8 sm:h-8 text-yellow-300 animate-pulse" />
             </div>
             <div className="flex-1 min-w-0">
-              <span className="inline-block px-2.5 py-0.5 rounded-md bg-white/20 text-white font-extrabold text-[10px] uppercase tracking-wider mb-1">Recommended</span>
-              <p className="text-white font-black text-lg sm:text-2xl leading-tight">All Units — Complete Mastery Practice</p>
-              <p className="text-white/80 text-xs sm:text-sm mt-1 font-medium">{bank.questions.length} Questions · Timed/Practice Options · Dynamic Analytics</p>
+              <span className="inline-block px-2 sm:px-2.5 py-0.5 rounded-md bg-white/20 text-white font-extrabold text-[9px] sm:text-[10px] uppercase tracking-wider mb-1">Recommended</span>
+              <p className="text-white font-black text-base xs:text-lg sm:text-2xl leading-tight">All Units — Complete Mastery Practice</p>
+              <p className="text-white/80 text-[11px] xs:text-xs sm:text-sm mt-1 font-medium">{bank.questions.length} Questions · Timed/Practice Options · Dynamic Analytics</p>
             </div>
-            <div className="shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center group-hover:bg-white text-white group-hover:text-blue-600 transition-all shadow-md">
-              <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+            <div className="shrink-0 w-8 h-8 xs:w-10 xs:h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center group-hover:bg-white text-white group-hover:text-blue-600 transition-all shadow-md">
+              <ChevronRight className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6" />
             </div>
           </div>
         </button>
 
         {units.length > 0 && (
           <>
-            <p className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-1.5">
-              <BookOpen className="w-3.5 h-3.5 text-blue-500" /> Unit Wise Modules
+            <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-gray-400 mb-3 sm:mb-4 flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5 text-blue-500 shrink-0" /> Unit Wise Modules
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {units.map((unit: string, i: number) => {
                 const unitQCount = bank.questions.filter((q: any) => q.unit === unit).length;
                 const label = getUnitLabel(unit);
                 const detail = getUnitDetail(unit);
                 return (
                   <button key={unit} onClick={() => handleSelectUnit(unit)}
-                    className="group relative text-left bg-white rounded-3xl border-2 border-gray-100 hover:border-blue-500 hover:shadow-xl transition-all duration-200 overflow-hidden p-4 sm:p-5 flex flex-col justify-between">
+                    className="group relative text-left bg-white rounded-2xl sm:rounded-3xl border-2 border-gray-100 hover:border-blue-500 active:border-blue-500 hover:shadow-xl transition-all duration-200 overflow-hidden p-3.5 xs:p-4 sm:p-5 flex flex-col justify-between">
                     <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${semGrad} opacity-0 group-hover:opacity-100 transition-opacity duration-200`} />
-                    <div className="flex items-start gap-3.5 mb-2.5">
-                      <div className={`shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br ${semGrad} flex items-center justify-center text-white font-black text-base shadow-md group-hover:scale-105 transition-transform`}>
+                    <div className="flex items-start gap-3 xs:gap-3.5 mb-2.5">
+                      <div className={`shrink-0 w-9 h-9 xs:w-10 xs:h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-br ${semGrad} flex items-center justify-center text-white font-black text-sm sm:text-base shadow-md group-hover:scale-105 transition-transform`}>
                         {i + 1}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-gray-900 font-extrabold text-sm sm:text-base leading-snug group-hover:text-blue-600 transition-colors">{label}</p>
-                        {detail && <p className="text-gray-500 text-xs mt-0.5 leading-relaxed line-clamp-2">{detail}</p>}
+                        {detail && <p className="text-gray-500 text-[11px] sm:text-xs mt-0.5 leading-relaxed line-clamp-2">{detail}</p>}
                       </div>
                     </div>
-                    <div className="flex items-center justify-between pt-2.5 border-t border-gray-100 mt-2">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-xl bg-gray-100 text-gray-700">
+                    <div className="flex items-center justify-between pt-2.5 border-t border-gray-100 mt-2 gap-2">
+                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                        <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold px-1.5 sm:px-2 py-0.5 rounded-lg sm:rounded-xl bg-gray-100 text-gray-700">
                           <Hash className="w-3 h-3 text-gray-400" /> {unitQCount} MCQs
                         </span>
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-xl bg-blue-50 text-blue-600">
+                        <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold px-1.5 sm:px-2 py-0.5 rounded-lg sm:rounded-xl bg-blue-50 text-blue-600">
                           <Clock className="w-3 h-3 text-blue-500" /> 15 min
                         </span>
                       </div>
-                      <span className="text-xs font-extrabold text-blue-600 group-hover:translate-x-1 transition-transform flex items-center gap-1">
-                        Start <ChevronRight className="w-4 h-4" />
+                      <span className="text-[11px] sm:text-xs font-extrabold text-blue-600 group-hover:translate-x-1 transition-transform flex items-center gap-1 shrink-0">
+                        Start <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </span>
                     </div>
                   </button>
@@ -1028,27 +1151,27 @@ export default function MCQBankQuizPage({ params }: PageProps) {
   if (screen === "lobby") {
     const label = getUnitLabel(activeUnit);
     return (
-      <section className="min-h-screen bg-gray-50 pt-8">
-        <div className={`relative bg-gradient-to-r ${semGrad} overflow-hidden shadow-lg py-8 sm:py-10`}>
+      <section className="min-h-screen bg-gray-50 pt-6 sm:pt-8">
+        <div className={`relative bg-gradient-to-r ${semGrad} overflow-hidden shadow-lg py-6 sm:py-10`}>
           <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6">
-            <button onClick={() => { setScreen("unit-select"); scrollToTop(); }} className="flex items-center gap-1 text-white/80 hover:text-white text-xs font-bold mb-4 transition-colors">
+            <button onClick={() => { setScreen("unit-select"); scrollToTop(); }} className="flex items-center gap-1 text-white/80 hover:text-white text-xs font-bold mb-3 sm:mb-4 transition-colors">
               <ChevronLeft className="w-4 h-4" /> Change Unit
             </button>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-extrabold uppercase tracking-widest mb-2 backdrop-blur-sm">
-              <Target className="w-3.5 h-3.5 text-yellow-300" /> Quiz Lobby
+            <span className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-white/20 text-white text-[10px] sm:text-xs font-extrabold uppercase tracking-widest mb-2 backdrop-blur-sm">
+              <Target className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-yellow-300" /> Quiz Lobby
             </span>
-            <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight mb-1">{subData.name}</h1>
+            <h1 className="text-xl xs:text-2xl sm:text-4xl font-black text-white tracking-tight mb-1 break-words">{subData.name}</h1>
             <p className="text-white/85 text-xs sm:text-base font-medium">{label}</p>
           </div>
         </div>
 
-        <div className="max-w-3xl mx-auto px-3 sm:px-6 py-6 sm:py-8">
-          <div className="bg-white rounded-3xl border-2 border-gray-100 overflow-hidden shadow-xl p-5 sm:p-8">
-            <div className="mb-6">
-              <p className="text-xs font-black uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-1.5">
-                <Compass className="w-3.5 h-3.5 text-blue-500" /> Select Practice Mode
+        <div className="max-w-3xl mx-auto px-3 sm:px-6 py-5 sm:py-8">
+          <div className="bg-white rounded-2xl sm:rounded-3xl border-2 border-gray-100 overflow-hidden shadow-xl p-4 xs:p-5 sm:p-8">
+            <div className="mb-5 sm:mb-6">
+              <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-1.5">
+                <Compass className="w-3.5 h-3.5 text-blue-500 shrink-0" /> Select Practice Mode
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
                 <button
                   onClick={() => setQuizMode("practice")}
                   className={`p-4 sm:p-5 rounded-2xl border-2 text-left transition-all relative overflow-hidden ${quizMode === "practice"
@@ -1056,11 +1179,11 @@ export default function MCQBankQuizPage({ params }: PageProps) {
                       : "border-gray-200 bg-white hover:border-gray-300"
                     }`}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-xl bg-blue-100 text-blue-800 font-extrabold text-xs">
-                      <Brain className="w-3.5 h-3.5 text-blue-600" /> Practice Mode
+                  <div className="flex items-center justify-between mb-2 gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-0.5 rounded-lg sm:rounded-xl bg-blue-100 text-blue-800 font-extrabold text-[11px] sm:text-xs">
+                      <Brain className="w-3.5 h-3.5 text-blue-600 shrink-0" /> Practice Mode
                     </span>
-                    {quizMode === "practice" && <CheckCircle className="w-5 h-5 text-blue-600" />}
+                    {quizMode === "practice" && <CheckCircle className="w-5 h-5 text-blue-600 shrink-0" />}
                   </div>
                   <p className="text-gray-900 font-extrabold text-sm mb-1">Instant Feedback & Explanations</p>
                   <p className="text-gray-500 text-xs leading-relaxed">
@@ -1075,11 +1198,11 @@ export default function MCQBankQuizPage({ params }: PageProps) {
                       : "border-gray-200 bg-white hover:border-gray-300"
                     }`}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-xl bg-violet-100 text-violet-800 font-extrabold text-xs">
-                      <Timer className="w-3.5 h-3.5 text-violet-600" /> Exam Simulation
+                  <div className="flex items-center justify-between mb-2 gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-0.5 rounded-lg sm:rounded-xl bg-violet-100 text-violet-800 font-extrabold text-[11px] sm:text-xs">
+                      <Timer className="w-3.5 h-3.5 text-violet-600 shrink-0" /> Exam Simulation
                     </span>
-                    {quizMode === "exam" && <CheckCircle className="w-5 h-5 text-violet-600" />}
+                    {quizMode === "exam" && <CheckCircle className="w-5 h-5 text-violet-600 shrink-0" />}
                   </div>
                   <p className="text-gray-900 font-extrabold text-sm mb-1">Timed & Distraction-Free</p>
                   <p className="text-gray-500 text-xs leading-relaxed">
@@ -1089,21 +1212,22 @@ export default function MCQBankQuizPage({ params }: PageProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2.5 sm:gap-3 mb-6">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-5 sm:mb-6">
               {[{ Icon: Hash, label: "Total MCQs", val: questions.length }, { Icon: Timer, label: "Time Limit", val: quizMode === "exam" ? "15 min" : "Untimed" }, { Icon: Zap, label: "XP Multiplier", val: "Up to 3x" }].map(({ Icon, label: l, val }) => (
-                <div key={l} className="flex flex-col items-center justify-center bg-gray-50 rounded-2xl border border-gray-100 py-3 px-2 text-center gap-1">
-                  <Icon className="w-4 h-4 text-blue-500" />
-                  <p className="text-gray-900 font-black text-lg sm:text-xl leading-none">{val}</p>
-                  <p className="text-gray-400 text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider">{l}</p>
+                <div key={l} className="flex flex-col items-center justify-center bg-gray-50 rounded-xl sm:rounded-2xl border border-gray-100 py-2.5 sm:py-3 px-1.5 sm:px-2 text-center gap-1">
+                  <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" />
+                  <p className="text-gray-900 font-black text-base sm:text-xl leading-none">{val}</p>
+                  <p className="text-gray-400 text-[8px] sm:text-[10px] font-extrabold uppercase tracking-wider leading-tight">{l}</p>
                 </div>
               ))}
             </div>
 
             <button
               onClick={handleStartQuiz}
-              className={`w-full inline-flex items-center justify-center gap-3 py-3.5 rounded-2xl bg-gradient-to-r ${semGrad} text-white font-black text-sm sm:text-base shadow-xl hover:-translate-y-0.5 transition-all duration-200`}
+              className={`w-full inline-flex items-center justify-center gap-2 sm:gap-3 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r ${semGrad} text-white font-black text-xs xs:text-sm sm:text-base shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 text-center px-2`}
             >
-              <Play className="w-5 h-5 fill-white" /> Launch {quizMode === "exam" ? "Exam" : "Practice"} — {questions.length} Questions
+              <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-white shrink-0" />
+              <span>Launch {quizMode === "exam" ? "Exam" : "Practice"} — {questions.length} Questions</span>
             </button>
           </div>
         </div>
@@ -1112,7 +1236,7 @@ export default function MCQBankQuizPage({ params }: PageProps) {
   }
 
   // ════════════════════════════════════════════════════════════════════
-  // SCREEN 3 — ACTIVE QUIZ (With Auto Scroll-To-Top)
+  // SCREEN 3 — ACTIVE QUIZ (Fully responsive Focus + List views)
   // ════════════════════════════════════════════════════════════════════
   if (screen === "quiz") {
     const userAnswer = currentQ ? answers[currentQ.id] : undefined;
@@ -1122,7 +1246,13 @@ export default function MCQBankQuizPage({ params }: PageProps) {
     const isRightAnswer = currentQ && userAnswer === currentQ.correctAnswer;
 
     return (
-      <section className="min-h-screen bg-gray-50/80 pt-8 relative flex flex-col justify-between">
+      <section className="min-h-screen bg-gray-50/80 pt-6 sm:pt-8 relative flex flex-col justify-between">
+        <style>{`
+          @keyframes autoAdvanceDrain {
+            from { width: 100%; }
+            to { width: 0%; }
+          }
+        `}</style>
         {/* Sticky Glassmorphic Header */}
         <TopQuizBar
           secondsLeft={timeLeft}
@@ -1140,21 +1270,21 @@ export default function MCQBankQuizPage({ params }: PageProps) {
 
         {/* FOCUS VIEW MODE */}
         {viewMode === "focus" && currentQ && (
-          <div className="flex-1 flex flex-col justify-center max-w-4xl w-full mx-auto px-3 sm:px-6 py-4">
-            <div className="bg-white rounded-3xl border-2 border-gray-100 shadow-xl overflow-hidden flex flex-col max-h-[calc(100vh-140px)] transition-all">
+          <div className="flex-1 flex flex-col justify-center max-w-4xl w-full mx-auto px-2.5 xs:px-3 sm:px-6 py-3 sm:py-4">
+            <div className="bg-white rounded-2xl sm:rounded-3xl border-2 border-gray-100 shadow-xl overflow-hidden flex flex-col max-h-[calc(100vh-120px)] sm:max-h-[calc(100vh-140px)] transition-all">
               <div className={`h-1.5 bg-gradient-to-r ${semGrad} shrink-0`} />
 
               {/* Scrollable Card Body */}
-              <div className="p-4 sm:p-6 md:p-8 overflow-y-auto flex-1 space-y-4">
+              <div className="p-3.5 xs:p-4 sm:p-6 md:p-8 overflow-y-auto flex-1 space-y-3.5 sm:space-y-4">
 
                 {/* Badge & Flag Row */}
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[11px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-2.5 py-1 rounded-xl">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
+                    <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-2 sm:px-2.5 py-1 rounded-lg sm:rounded-xl shrink-0">
                       Q{currentIdx + 1} of {questions.length}
                     </span>
                     {currentQ.unit && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-gray-100 text-gray-500">
+                      <span className="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-md sm:rounded-lg bg-gray-100 text-gray-500 truncate max-w-[100px] xs:max-w-[140px] sm:max-w-none">
                         {currentQ.unit.split(":")[0]}
                       </span>
                     )}
@@ -1162,24 +1292,24 @@ export default function MCQBankQuizPage({ params }: PageProps) {
 
                   <button
                     onClick={() => toggleFlag(currentQ.id)}
-                    className={`flex items-center gap-1 px-2.5 py-1 rounded-xl border text-xs font-extrabold transition-all ${isCurrentFlagged
+                    className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg sm:rounded-xl border text-[11px] sm:text-xs font-extrabold transition-all shrink-0 ${isCurrentFlagged
                         ? "bg-amber-500 text-white border-amber-500 shadow-sm"
                         : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
                       }`}
                   >
-                    <Flag className={`w-3.5 h-3.5 ${isCurrentFlagged ? "fill-white" : ""}`} />
-                    <span className="hidden sm:inline">{isCurrentFlagged ? "Flagged" : "Flag"}</span>
+                    <Flag className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isCurrentFlagged ? "fill-white" : ""}`} />
+                    <span className="hidden xs:inline">{isCurrentFlagged ? "Flagged" : "Flag"}</span>
                   </button>
                 </div>
 
                 {/* Question Stem */}
                 <h3
-                  className="text-base sm:text-lg md:text-xl font-extrabold text-gray-900 leading-relaxed"
+                  className="text-sm xs:text-base sm:text-lg md:text-xl font-extrabold text-gray-900 leading-relaxed break-words"
                   dangerouslySetInnerHTML={{ __html: currentQ.question }}
                 />
 
                 {/* Options Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                   {currentQ.options.map((opt: any) => {
                     const sel = userAnswer === opt.id;
                     const isRight = opt.id === currentQ.correctAnswer;
@@ -1207,12 +1337,12 @@ export default function MCQBankQuizPage({ params }: PageProps) {
                       <button
                         key={opt.id}
                         onClick={() => handleSelectAnswer(currentQ.id, opt.id)}
-                        className={`flex items-start gap-3 w-full text-left p-3 sm:p-4 rounded-2xl border-2 transition-all duration-150 relative ${cardStyle}`}
+                        className={`flex items-start gap-2.5 sm:gap-3 w-full text-left p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all duration-150 relative active:scale-[0.99] ${cardStyle}`}
                       >
-                        <span className={`shrink-0 w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black border-2 transition-all mt-0.5 ${badgeStyle}`}>
+                        <span className={`shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl flex items-center justify-center text-[11px] sm:text-xs font-black border-2 transition-all mt-0.5 ${badgeStyle}`}>
                           {opt.id}
                         </span>
-                        <span className="text-xs sm:text-sm font-medium leading-normal flex-1" dangerouslySetInnerHTML={{ __html: opt.text }} />
+                        <span className="text-xs sm:text-sm font-medium leading-normal flex-1 break-words" dangerouslySetInnerHTML={{ __html: opt.text }} />
                         <div className="shrink-0 pt-0.5">
                           {showFeedback && isRight && <CheckCircle className="w-4 h-4 text-emerald-600" />}
                           {showFeedback && sel && !isRight && <XCircle className="w-4 h-4 text-rose-600" />}
@@ -1225,42 +1355,58 @@ export default function MCQBankQuizPage({ params }: PageProps) {
 
                 {/* Feedback Box */}
                 {quizMode === "practice" && isAnswered && (
-                  <div className={`rounded-2xl border-2 p-4 sm:p-5 transition-all space-y-2 animate-fadeIn ${isRightAnswer
+                  <div className={`rounded-xl sm:rounded-2xl border-2 p-3.5 sm:p-5 transition-all space-y-2 animate-fadeIn ${isRightAnswer
                       ? "bg-emerald-50/80 border-emerald-300 text-emerald-950"
                       : "bg-rose-50/80 border-rose-300 text-rose-950"
                     }`}>
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
                       <div className="flex items-center gap-2">
                         {isRightAnswer ? (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-600 text-white text-xs font-black uppercase tracking-wider">
-                            <ThumbsUp className="w-3.5 h-3.5" /> Spot On! Correct
+                          <span className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg sm:rounded-xl bg-emerald-600 text-white text-[10px] sm:text-xs font-black uppercase tracking-wider">
+                            <ThumbsUp className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Spot On! Correct
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-600 text-white text-xs font-black uppercase tracking-wider">
-                            <Frown className="w-3.5 h-3.5" /> Incorrect
+                          <span className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg sm:rounded-xl bg-rose-600 text-white text-[10px] sm:text-xs font-black uppercase tracking-wider">
+                            <Frown className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Incorrect
                           </span>
                         )}
                       </div>
-                      <span className="text-xs font-extrabold text-gray-500">
+                      <span className="text-[10px] sm:text-xs font-extrabold text-gray-500">
                         {isRightAnswer ? "+10 XP Earned" : "Learn & Retry"}
                       </span>
                     </div>
 
                     {currentQ.explanation && (
                       <div className="pt-1">
-                        <p className="text-xs sm:text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: currentQ.explanation }} />
+                        <p className="text-xs sm:text-sm leading-relaxed break-words" dangerouslySetInnerHTML={{ __html: currentQ.explanation }} />
                       </div>
                     )}
+
+                    {/* Auto-advance progress cue */}
+                    <div className="pt-1.5 flex items-center gap-2">
+                      <div className={`h-1 flex-1 rounded-full overflow-hidden ${isRightAnswer ? "bg-emerald-200/70" : "bg-rose-200/70"}`}>
+                        <div
+                          key={currentQ.id}
+                          className={`h-full rounded-full ${isRightAnswer ? "bg-emerald-600" : "bg-rose-600"}`}
+                          style={{
+                            animation: `autoAdvanceDrain ${AUTO_ADVANCE_DELAY_MS}ms linear forwards`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-[9px] sm:text-[10px] font-bold text-gray-400 shrink-0">
+                        {currentIdx === questions.length - 1 ? "Submitting…" : "Next question…"}
+                      </span>
+                    </div>
                   </div>
                 )}
 
                 {/* Confidence Metacognition Selector */}
                 {isAnswered && (
-                  <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 text-xs">
+                  <div className="pt-2 flex flex-col xs:flex-row xs:items-center xs:justify-between gap-2 border-t border-gray-100 text-xs">
                     <span className="font-bold text-gray-500 flex items-center gap-1">
-                      <Brain className="w-3.5 h-3.5 text-indigo-500" /> Metacognition rating:
+                      <Brain className="w-3.5 h-3.5 text-indigo-500 shrink-0" /> Metacognition rating:
                     </span>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       {[
                         { level: "low" as ConfidenceLevel, label: "Unsure 😬" },
                         { level: "medium" as ConfidenceLevel, label: "Fair 🙂" },
@@ -1269,7 +1415,7 @@ export default function MCQBankQuizPage({ params }: PageProps) {
                         <button
                           key={level}
                           onClick={() => setConfidenceForQ(currentQ.id, level)}
-                          className={`px-2.5 py-1 rounded-xl text-[11px] font-extrabold border transition-all ${currentConf === level
+                          className={`px-2 sm:px-2.5 py-1 rounded-lg sm:rounded-xl text-[10px] sm:text-[11px] font-extrabold border transition-all ${currentConf === level
                               ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
                               : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
                             }`}
@@ -1283,16 +1429,16 @@ export default function MCQBankQuizPage({ params }: PageProps) {
               </div>
 
               {/* Card Footer Navigation */}
-              <div className="bg-gray-50 px-4 sm:px-6 py-3 border-t border-gray-100 flex items-center justify-between gap-3 shrink-0">
+              <div className="bg-gray-50 px-3 xs:px-4 sm:px-6 py-2.5 sm:py-3 border-t border-gray-100 flex items-center justify-between gap-2 sm:gap-3 shrink-0">
                 <button
                   onClick={() => {
                     setCurrentIdx(prev => Math.max(0, prev - 1));
                     scrollToTop();
                   }}
                   disabled={currentIdx === 0}
-                  className="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl border border-gray-200 text-gray-700 font-extrabold text-xs bg-white hover:bg-gray-100 disabled:opacity-30 transition-all"
+                  className="inline-flex items-center gap-1 px-2.5 xs:px-3.5 py-2 rounded-lg sm:rounded-xl border border-gray-200 text-gray-700 font-extrabold text-[11px] sm:text-xs bg-white hover:bg-gray-100 disabled:opacity-30 transition-all shrink-0"
                 >
-                  <ChevronLeft className="w-4 h-4" /> Prev
+                  <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden xs:inline">Prev</span>
                 </button>
 
                 <div className="flex items-center gap-2">
@@ -1300,9 +1446,9 @@ export default function MCQBankQuizPage({ params }: PageProps) {
                     <button
                       onClick={handleSubmit}
                       disabled={answeredCount.length === 0}
-                      className={`inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r ${semGrad} text-white font-black text-xs shadow-md transition-all disabled:opacity-40`}
+                      className={`inline-flex items-center gap-1.5 sm:gap-2 px-3.5 xs:px-5 py-2 rounded-lg sm:rounded-xl bg-gradient-to-r ${semGrad} text-white font-black text-[11px] sm:text-xs shadow-md transition-all disabled:opacity-40`}
                     >
-                      <Trophy className="w-4 h-4" /> Submit Quiz
+                      <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span>Submit Quiz</span>
                     </button>
                   ) : (
                     <button
@@ -1310,9 +1456,9 @@ export default function MCQBankQuizPage({ params }: PageProps) {
                         setCurrentIdx(prev => Math.min(questions.length - 1, prev + 1));
                         scrollToTop();
                       }}
-                      className={`inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-gradient-to-r ${semGrad} text-white font-black text-xs shadow-md transition-all`}
+                      className={`inline-flex items-center gap-1 sm:gap-1.5 px-3.5 xs:px-5 py-2 rounded-lg sm:rounded-xl bg-gradient-to-r ${semGrad} text-white font-black text-[11px] sm:text-xs shadow-md transition-all`}
                     >
-                      Next <ChevronRight className="w-4 h-4" />
+                      <span className="hidden xs:inline">Next</span><span className="xs:hidden">Next</span> <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
                   )}
                 </div>
@@ -1323,7 +1469,7 @@ export default function MCQBankQuizPage({ params }: PageProps) {
 
         {/* LIST VIEW MODE */}
         {viewMode === "list" && (
-          <div className="max-w-4xl mx-auto px-3 sm:px-6 py-6 space-y-6 flex-1">
+          <div className="max-w-4xl mx-auto px-2.5 xs:px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 flex-1">
             {questions.map((q: any, qIdx: number) => {
               const userAnswer = answers[q.id];
               const isFlagged = flagged.has(q.id);
@@ -1332,35 +1478,35 @@ export default function MCQBankQuizPage({ params }: PageProps) {
               const showFeedback = quizMode === "practice" && isAnswered;
 
               return (
-                <div key={q.id} className="bg-white rounded-3xl border-2 border-gray-100 overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+                <div key={q.id} className="bg-white rounded-2xl sm:rounded-3xl border-2 border-gray-100 overflow-hidden shadow-md hover:shadow-lg transition-shadow">
                   <div className={`h-1.5 bg-gradient-to-r ${semGrad}`} />
 
-                  <div className="p-5 sm:p-7">
+                  <div className="p-3.5 xs:p-5 sm:p-7">
                     {/* Header */}
-                    <div className="flex items-center justify-between gap-3 mb-4">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black ${userAnswer ? `bg-gradient-to-br ${semGrad} text-white shadow-sm` : "bg-gray-100 text-gray-600 border border-gray-200"
+                    <div className="flex items-center justify-between gap-2 sm:gap-3 mb-3.5 sm:mb-4">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl flex items-center justify-center text-[11px] sm:text-xs font-black shrink-0 ${userAnswer ? `bg-gradient-to-br ${semGrad} text-white shadow-sm` : "bg-gray-100 text-gray-600 border border-gray-200"
                           }`}>
                           {qIdx + 1}
                         </span>
-                        <span className="text-xs font-black text-gray-400 uppercase tracking-wider">Question {qIdx + 1} of {questions.length}</span>
+                        <span className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-wider truncate">Question {qIdx + 1} of {questions.length}</span>
                       </div>
 
                       <button
                         onClick={() => toggleFlag(q.id)}
-                        className={`p-1.5 rounded-xl border text-xs flex items-center gap-1 ${isFlagged ? "bg-amber-500 text-white border-amber-500" : "bg-gray-50 text-gray-400 border-gray-200"
+                        className={`p-1.5 rounded-lg sm:rounded-xl border text-xs flex items-center gap-1 shrink-0 ${isFlagged ? "bg-amber-500 text-white border-amber-500" : "bg-gray-50 text-gray-400 border-gray-200"
                           }`}
                       >
-                        <Flag className="w-3.5 h-3.5" />
+                        <Flag className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                         <span className="hidden sm:inline text-[11px] font-bold">{isFlagged ? "Flagged" : "Flag"}</span>
                       </button>
                     </div>
 
                     {/* Stem */}
-                    <h3 className="text-base sm:text-lg font-extrabold text-gray-900 leading-relaxed mb-5" dangerouslySetInnerHTML={{ __html: q.question }} />
+                    <h3 className="text-sm xs:text-base sm:text-lg font-extrabold text-gray-900 leading-relaxed mb-4 sm:mb-5 break-words" dangerouslySetInnerHTML={{ __html: q.question }} />
 
                     {/* Options */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mb-4">
                       {q.options.map((opt: any) => {
                         const sel = userAnswer === opt.id;
                         const isRight = opt.id === q.correctAnswer;
@@ -1387,12 +1533,12 @@ export default function MCQBankQuizPage({ params }: PageProps) {
                           <button
                             key={opt.id}
                             onClick={() => handleSelectAnswer(q.id, opt.id)}
-                            className={`flex items-start gap-3 w-full text-left p-3.5 rounded-2xl border-2 transition-all ${style}`}
+                            className={`flex items-start gap-2.5 sm:gap-3 w-full text-left p-3 sm:p-3.5 rounded-xl sm:rounded-2xl border-2 transition-all active:scale-[0.99] ${style}`}
                           >
-                            <span className={`shrink-0 w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black border-2 mt-0.5 ${badgeStyle}`}>
+                            <span className={`shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl flex items-center justify-center text-[11px] sm:text-xs font-black border-2 mt-0.5 ${badgeStyle}`}>
                               {opt.id}
                             </span>
-                            <span className="text-xs sm:text-sm font-medium flex-1 pt-0.5" dangerouslySetInnerHTML={{ __html: opt.text }} />
+                            <span className="text-xs sm:text-sm font-medium flex-1 pt-0.5 break-words" dangerouslySetInnerHTML={{ __html: opt.text }} />
                             {showFeedback && isRight && <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />}
                             {showFeedback && sel && !isRight && <XCircle className="w-4 h-4 text-rose-600 shrink-0" />}
                           </button>
@@ -1401,7 +1547,7 @@ export default function MCQBankQuizPage({ params }: PageProps) {
                     </div>
 
                     {showFeedback && q.explanation && (
-                      <div className={`rounded-2xl p-4 border-2 text-xs leading-relaxed ${isRightAnswer ? "bg-emerald-50 border-emerald-200 text-emerald-900" : "bg-rose-50 border-rose-200 text-rose-900"
+                      <div className={`rounded-xl sm:rounded-2xl p-3.5 sm:p-4 border-2 text-xs leading-relaxed break-words ${isRightAnswer ? "bg-emerald-50 border-emerald-200 text-emerald-900" : "bg-rose-50 border-rose-200 text-rose-900"
                         }`}>
                         <span className="font-black uppercase tracking-wider block mb-1">
                           {isRightAnswer ? "🎉 Correct Rationale" : "💡 Learning Point"}
@@ -1414,13 +1560,13 @@ export default function MCQBankQuizPage({ params }: PageProps) {
               );
             })}
 
-            <div className="pt-4 text-center">
+            <div className="pt-2 sm:pt-4 text-center">
               <button
                 onClick={handleSubmit}
                 disabled={answeredCount.length === 0}
-                className={`inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r ${semGrad} text-white font-black text-sm shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-40`}
+                className={`w-full xs:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl sm:rounded-2xl bg-gradient-to-r ${semGrad} text-white font-black text-xs sm:text-sm shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-40`}
               >
-                <Trophy className="w-5 h-5" /> Submit Quiz & See Final Results
+                <Trophy className="w-4 h-4 sm:w-5 sm:h-5" /> Submit Quiz & See Final Results
               </button>
             </div>
           </div>
@@ -1447,26 +1593,26 @@ export default function MCQBankQuizPage({ params }: PageProps) {
     });
 
     return (
-      <section className="min-h-screen bg-gray-50/80 relative pt-8 pb-16">
-        <div className={`relative bg-gradient-to-r ${semGrad} overflow-hidden shadow-lg py-8 sm:py-12 text-white`}>
+      <section className="min-h-screen bg-gray-50/80 relative pt-6 sm:pt-8 pb-12 sm:pb-16">
+        <div className={`relative bg-gradient-to-r ${semGrad} overflow-hidden shadow-lg py-6 sm:py-12 text-white`}>
           <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 text-white text-xs font-extrabold uppercase tracking-widest mb-3 backdrop-blur-sm">
-              <Trophy className="w-3.5 h-3.5 text-yellow-300" /> {grade.title}
+            <span className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-white/20 text-white text-[10px] sm:text-xs font-extrabold uppercase tracking-widest mb-3 backdrop-blur-sm">
+              <Trophy className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-yellow-300" /> {grade.title}
             </span>
-            <h1 className="text-2xl sm:text-4xl font-black tracking-tight mb-1">{subData.name}</h1>
-            <p className="text-white/80 text-xs sm:text-sm font-medium">{unitLabel} · Completed in {timeMins}m {timeSecs}s</p>
+            <h1 className="text-xl xs:text-2xl sm:text-4xl font-black tracking-tight mb-1 break-words">{subData.name}</h1>
+            <p className="text-white/80 text-[11px] sm:text-sm font-medium">{unitLabel} · Completed in {timeMins}m {timeSecs}s</p>
           </div>
         </div>
 
-        <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+        <div className="max-w-5xl mx-auto px-2.5 xs:px-3 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-5 sm:space-y-6">
 
           {/* Performance Summary Banner */}
-          <div className={`rounded-3xl border-2 ${grade.bg} p-5 sm:p-8 shadow-xl relative overflow-hidden`}>
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className={`rounded-2xl sm:rounded-3xl border-2 ${grade.bg} p-4 xs:p-5 sm:p-8 shadow-xl relative overflow-hidden`}>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-5 sm:gap-6">
 
               {/* Circular Gauge SVG */}
-              <div className="flex items-center gap-5">
-                <div className="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0 flex items-center justify-center">
+              <div className="flex items-center gap-4 sm:gap-5 w-full md:w-auto">
+                <div className="relative w-20 h-20 xs:w-24 xs:h-24 sm:w-28 sm:h-28 shrink-0 flex items-center justify-center">
                   <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                     <path
                       className="text-gray-200 stroke-current"
@@ -1484,31 +1630,41 @@ export default function MCQBankQuizPage({ params }: PageProps) {
                     />
                   </svg>
                   <div className="absolute text-center">
-                    <span className="text-xl sm:text-2xl font-black text-gray-900">{stats.pct}%</span>
-                    <span className="block text-[9px] font-extrabold uppercase text-gray-400">Score</span>
+                    <span className="text-lg xs:text-xl sm:text-2xl font-black text-gray-900">{stats.pct}%</span>
+                    <span className="block text-[8px] sm:text-[9px] font-extrabold uppercase text-gray-400">Score</span>
                   </div>
                 </div>
 
-                <div>
-                  <span className="text-2xl sm:text-3xl">{grade.emoji}</span>
-                  <h2 className={`text-xl sm:text-2xl font-black ${grade.color}`}>{grade.label}</h2>
-                  <p className="text-gray-600 text-xs sm:text-sm font-medium mt-1">
+                <div className="min-w-0">
+                  <span className="text-xl xs:text-2xl sm:text-3xl">{grade.emoji}</span>
+                  <h2 className={`text-lg xs:text-xl sm:text-2xl font-black ${grade.color} break-words`}>{grade.label}</h2>
+                  <p className="text-gray-600 text-[11px] xs:text-xs sm:text-sm font-medium mt-1">
                     You answered <strong>{stats.correct}</strong> out of <strong>{stats.total}</strong> correctly.
                   </p>
                 </div>
               </div>
 
+              {/* Professional Examiner's Remark */}
+              <div className="mt-5 sm:mt-6 pt-4 sm:pt-5 border-t border-black/5">
+                <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 flex items-center gap-1.5">
+                  <ClipboardList className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> Examiner's Remark
+                </p>
+                <p className="text-xs sm:text-sm text-gray-700 leading-relaxed font-medium">
+                  {grade.remark}
+                </p>
+              </div>
+
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-2.5 w-full md:w-auto">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-2.5 w-full md:w-auto">
                 <button
                   onClick={handleDownloadPDF}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-white border-2 border-blue-200 text-blue-700 font-extrabold text-xs hover:bg-blue-50 transition-all shadow-sm"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-white border-2 border-blue-200 text-blue-700 font-extrabold text-[11px] sm:text-xs hover:bg-blue-50 active:bg-blue-100 transition-all shadow-sm"
                 >
                   <FileText className="w-4 h-4" /> Download PDF Report
                 </button>
                 <button
                   onClick={handleReset}
-                  className={`inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r ${semGrad} text-white font-extrabold text-xs shadow-md hover:shadow-lg transition-all`}
+                  className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-gradient-to-r ${semGrad} text-white font-extrabold text-[11px] sm:text-xs shadow-md hover:shadow-lg transition-all`}
                 >
                   <RotateCcw className="w-4 h-4" /> Retake Practice
                 </button>
@@ -1518,11 +1674,11 @@ export default function MCQBankQuizPage({ params }: PageProps) {
 
           {/* Filter Bar for Question Breakdown */}
           <div>
-            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-              <h3 className="text-base sm:text-lg font-black text-gray-900 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-blue-600" /> Review Questions
+            <div className="flex items-center justify-between mb-3 sm:mb-4 flex-wrap gap-2">
+              <h3 className="text-sm xs:text-base sm:text-lg font-black text-gray-900 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 shrink-0" /> Review Questions
               </h3>
-              <div className="flex items-center gap-1 bg-white p-1 rounded-2xl border border-gray-200 shadow-sm text-xs font-bold flex-wrap">
+              <div className="flex items-center gap-1 bg-white p-1 rounded-xl sm:rounded-2xl border border-gray-200 shadow-sm text-[10px] sm:text-xs font-bold flex-wrap w-full sm:w-auto overflow-x-auto">
                 {[
                   { key: "all", label: `All (${questions.length})` },
                   { key: "wrong", label: `Incorrect (${stats.wrong})` },
@@ -1532,7 +1688,7 @@ export default function MCQBankQuizPage({ params }: PageProps) {
                   <button
                     key={key}
                     onClick={() => setResultFilter(key as any)}
-                    className={`px-3 py-1.5 rounded-xl transition-all ${resultFilter === key ? "bg-blue-600 text-white font-extrabold shadow" : "text-gray-600 hover:text-gray-900"
+                    className={`px-2.5 sm:px-3 py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap shrink-0 ${resultFilter === key ? "bg-blue-600 text-white font-extrabold shadow" : "text-gray-600 hover:text-gray-900"
                       }`}
                   >
                     {label}
@@ -1542,7 +1698,7 @@ export default function MCQBankQuizPage({ params }: PageProps) {
             </div>
 
             {/* Filtered Question Cards */}
-            <div className="space-y-4">
+            <div className="space-y-3.5 sm:space-y-4">
               {filteredQuestions.map((q: any, qIdx: number) => {
                 const userAnswer = answers[q.id];
                 const isCorrect = userAnswer === q.correctAnswer;
@@ -1550,20 +1706,20 @@ export default function MCQBankQuizPage({ params }: PageProps) {
                 const isSkipped = userAnswer === undefined;
 
                 return (
-                  <div key={q.id} className={`rounded-3xl border-2 overflow-hidden shadow-sm ${isCorrect ? "bg-emerald-50/20 border-emerald-200" : isWrong ? "bg-rose-50/20 border-rose-200" : "bg-amber-50/20 border-amber-200"
+                  <div key={q.id} className={`rounded-2xl sm:rounded-3xl border-2 overflow-hidden shadow-sm ${isCorrect ? "bg-emerald-50/20 border-emerald-200" : isWrong ? "bg-rose-50/20 border-rose-200" : "bg-amber-50/20 border-amber-200"
                     }`}>
-                    <div className="p-5 sm:p-6">
-                      <div className="flex items-start gap-3.5 mb-4">
-                        <div className={`shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center text-xs font-black ${isCorrect ? "bg-emerald-100 text-emerald-700" : isWrong ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"
+                    <div className="p-3.5 xs:p-5 sm:p-6">
+                      <div className="flex items-start gap-2.5 xs:gap-3.5 mb-3.5 sm:mb-4">
+                        <div className={`shrink-0 w-8 h-8 xs:w-9 xs:h-9 rounded-xl sm:rounded-2xl flex items-center justify-center text-xs font-black ${isCorrect ? "bg-emerald-100 text-emerald-700" : isWrong ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"
                           }`}>
-                          {isCorrect ? <CheckCircle className="w-5 h-5" /> : isWrong ? <XCircle className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+                          {isCorrect ? <CheckCircle className="w-4 h-4 xs:w-5 xs:h-5" /> : isWrong ? <XCircle className="w-4 h-4 xs:w-5 xs:h-5" /> : <AlertTriangle className="w-4 h-4 xs:w-5 xs:h-5" />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-gray-900 font-extrabold text-sm sm:text-base leading-relaxed" dangerouslySetInnerHTML={{ __html: q.question }} />
+                          <p className="text-gray-900 font-extrabold text-sm sm:text-base leading-relaxed break-words" dangerouslySetInnerHTML={{ __html: q.question }} />
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 mb-3.5 sm:mb-4">
                         {q.options.map((opt: any) => {
                           const isSel = userAnswer === opt.id;
                           const isRight = opt.id === q.correctAnswer;
@@ -1572,17 +1728,17 @@ export default function MCQBankQuizPage({ params }: PageProps) {
                           else if (isSel) style = "border-rose-500 bg-rose-50 text-rose-950 font-bold";
 
                           return (
-                            <div key={opt.id} className={`flex items-center gap-3 p-3 rounded-2xl border-2 text-xs ${style}`}>
-                              <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-black ${isRight ? "bg-emerald-600 text-white" : isSel ? "bg-rose-600 text-white" : "bg-gray-100 text-gray-500"
+                            <div key={opt.id} className={`flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border-2 text-xs ${style}`}>
+                              <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-md sm:rounded-lg flex items-center justify-center font-black shrink-0 ${isRight ? "bg-emerald-600 text-white" : isSel ? "bg-rose-600 text-white" : "bg-gray-100 text-gray-500"
                                 }`}>{opt.id}</span>
-                              <span className="flex-1 font-medium" dangerouslySetInnerHTML={{ __html: opt.text }} />
+                              <span className="flex-1 font-medium break-words" dangerouslySetInnerHTML={{ __html: opt.text }} />
                             </div>
                           );
                         })}
                       </div>
 
                       {q.explanation && (
-                        <div className="rounded-2xl bg-indigo-50/70 border border-indigo-100 p-4 text-xs text-gray-700">
+                        <div className="rounded-xl sm:rounded-2xl bg-indigo-50/70 border border-indigo-100 p-3.5 sm:p-4 text-xs text-gray-700 break-words">
                           <span className="font-extrabold text-indigo-700 uppercase tracking-widest block mb-1">Rationale</span>
                           <span dangerouslySetInnerHTML={{ __html: q.explanation }} />
                         </div>
@@ -1595,6 +1751,17 @@ export default function MCQBankQuizPage({ params }: PageProps) {
           </div>
 
         </div>
+
+        {/* Back-to-top button */}
+        {showTop && (
+          <button
+            onClick={scrollToTop}
+            className={`fixed bottom-5 right-4 sm:bottom-6 sm:right-6 z-50 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r ${semGrad} text-white shadow-xl flex items-center justify-center hover:-translate-y-0.5 active:translate-y-0 transition-all`}
+            aria-label="Scroll to top"
+          >
+            <ArrowUp className="w-5 h-5" />
+          </button>
+        )}
       </section>
     );
   }
