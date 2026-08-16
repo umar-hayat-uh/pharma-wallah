@@ -60,8 +60,8 @@ export async function createServiceSupabaseClient() {
   return createServerClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     cookies: {
       get() { return undefined; },
-      set() {},
-      remove() {},
+      set() { },
+      remove() { },
     },
   });
 }

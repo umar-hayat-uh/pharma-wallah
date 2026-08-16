@@ -1,12 +1,18 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+/**
+ * FIX: the original list included '/leaderboard', which redirected every
+ * anonymous spectator to /signin — a public science fair leaderboard
+ * cannot require login. Only truly admin/user-account routes stay gated.
+ * Tournament play/games pages are intentionally public: participants use
+ * an entry code, not an account.
+ */
 const PROTECTED_PATHS = [
   '/dashboard',
   '/api/progress',
   '/admin',
   '/api/reviews',
-  '/leaderboard',
 ];
 
 export async function middleware(request: NextRequest) {
@@ -50,19 +56,21 @@ export async function middleware(request: NextRequest) {
   );
 
   try {
-    const { data: { user }, error } = await supabase.auth.getUser();
-
     const pathname = request.nextUrl.pathname;
     const isProtected = PROTECTED_PATHS.some(path => pathname.startsWith(path));
 
-    if (isProtected && (error || !user)) {
-      const redirectUrl = new URL('/signin', request.url);
-      redirectUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(redirectUrl);
+    // Only bother calling Supabase auth at all if the path is protected —
+    // saves a network round trip on every public tournament page request.
+    if (isProtected) {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) {
+        const redirectUrl = new URL('/signin', request.url);
+        redirectUrl.searchParams.set('redirect', pathname);
+        return NextResponse.redirect(redirectUrl);
+      }
     }
   } catch (err) {
     console.error('Middleware auth error:', err);
-    // If session refresh fails, redirect to signin
     const redirectUrl = new URL('/signin', request.url);
     redirectUrl.searchParams.set('redirect', request.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);

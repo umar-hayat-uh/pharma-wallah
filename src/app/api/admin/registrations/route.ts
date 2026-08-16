@@ -1,10 +1,12 @@
 import { createServerSupabaseClient, createServiceSupabaseClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 
+const ADMIN_EMAILS = ["shayanhusein@gmail.com"];
+
 export async function GET() {
   const userSupabase = await createServerSupabaseClient();
   const { data: { user }, error: authError } = await userSupabase.auth.getUser();
-  if (authError || !user || user.email !== "shayanhusein@gmail.com") {
+  if (authError || !user || !ADMIN_EMAILS.includes(user.email ?? "")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

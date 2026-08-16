@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import {
-    Trophy, HelpCircle, Play, UserPlus, Key, ArrowRight, X, ArrowUp,
+    Trophy, HelpCircle, Play, UserPlus, Key, ArrowRight, X,
 } from "lucide-react";
 
 type Question = {
@@ -26,27 +26,12 @@ export default function TournamentPlayPage() {
     const [regYear, setRegYear] = useState("");
     const [regSemester, setRegSemester] = useState("");
     const [regStatus, setRegStatus] = useState("");
+    const [regSubmitting, setRegSubmitting] = useState(false);
 
     const [codeInput, setCodeInput] = useState("");
     const [codeError, setCodeError] = useState("");
+    const [codeSubmitting, setCodeSubmitting] = useState(false);
 
-    // Scroll to top visibility state
-    const [showScrollTop, setShowScrollTop] = useState(false);
-
-    // ── Scroll to top logic ─────────────────────────────────────
-    useEffect(() => {
-        const handleScroll = () => {
-            setShowScrollTop(window.scrollY > 300);
-        };
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
-
-    const scrollToTop = () => {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-    };
-
-    // ── Free Trial Logic ────────────────────────────────────────
     const startFreeTrial = async () => {
         setView("freeTrial");
         setScore(0);
@@ -71,46 +56,58 @@ export default function TournamentPlayPage() {
 
     const endFreeTrial = () => setShowUpgradePopup(true);
 
-    // ── Registration Form ───────────────────────────────────────
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
-        const res = await fetch("/api/tournament/register", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                name: regName,
-                email: regEmail,
-                year: regYear,
-                semester: regSemester,
-            }),
-        });
-        const data = await res.json();
-        if (data.success) {
-            setRegStatus("success");
-        } else {
-            setRegStatus(data.error || "Registration failed.");
+        setRegSubmitting(true);
+        setRegStatus("");
+        try {
+            const res = await fetch("/api/tournament/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: regName,
+                    email: regEmail,
+                    year: regYear,
+                    semester: regSemester,
+                }),
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                setRegStatus("success");
+            } else {
+                setRegStatus(data.error || "Registration failed.");
+            }
+        } catch {
+            setRegStatus("Network error. Please try again.");
+        } finally {
+            setRegSubmitting(false);
         }
     };
 
-    // ── Code Entry ──────────────────────────────────────────────
     const handleCodeSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setCodeError("");
-        const res = await fetch(
-            `/api/tournament/validate-code?code=${encodeURIComponent(codeInput)}`
-        );
-        const data = await res.json();
-        if (data.valid) {
-            sessionStorage.setItem("tournament_code", data.code);
-            window.location.href = `/tournament/games?code=${data.code}`;
-        } else {
-            setCodeError(data.message || "Invalid code");
+        setCodeSubmitting(true);
+        try {
+            const normalizedCode = codeInput.trim().toUpperCase();
+            const res = await fetch(
+                `/api/tournament/validate-code?code=${encodeURIComponent(normalizedCode)}`
+            );
+            const data = await res.json();
+            if (data.valid) {
+                window.location.href = `/tournament/games?code=${data.code}`;
+            } else {
+                setCodeError(data.message || "Invalid code");
+            }
+        } catch {
+            setCodeError("Network error. Please try again.");
+        } finally {
+            setCodeSubmitting(false);
         }
     };
 
     return (
-        <div className="min-h-screen  flex flex-col items-center pt-10 p-4 sm:p-6 lg:p-8">
-            {/* ── Header ── */}
+        <div className="min-h-screen flex flex-col items-center pt-10 p-4 sm:p-6 lg:p-8">
             <div className="text-center mb-10 max-w-2xl">
                 <div className="inline-block p-1 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 mb-6">
                     <div className="bg-white rounded-2xl px-8 py-4">
@@ -122,74 +119,49 @@ export default function TournamentPlayPage() {
                 </div>
             </div>
 
-            {/* ========= Instructions ========= */}
             {view === "instructions" && (
                 <div className="max-w-3xl w-full space-y-6">
-                    {/* Prize Card */}
                     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-green-400 flex items-center justify-center">
                                 <Trophy className="w-5 h-5 text-white" />
                             </div>
-                            <h2 className="text-2xl font-bold text-gray-900">
-                                Prizes & Rewards
-                            </h2>
+                            <h2 className="text-2xl font-bold text-gray-900">Prizes & Rewards</h2>
                         </div>
                         <ul className="space-y-3 text-gray-600">
                             <li className="flex items-start gap-2">
                                 <span className="text-green-500 mt-1">✓</span>
-                                <span>
-                                    <strong className="text-gray-800">Participation:</strong>{" "}
-                                    Sticker for every player
-                                </span>
+                                <span><strong className="text-gray-800">Participation:</strong> Sticker for every player</span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="text-green-500 mt-1">✓</span>
-                                <span>
-                                    <strong className="text-gray-800">
-                                        Per‑game Top 10:
-                                    </strong>{" "}
-                                    Medals, certificates & premium access
-                                </span>
+                                <span><strong className="text-gray-800">Per‑game Top 10:</strong> Medals, certificates & premium access</span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="text-green-500 mt-1">✓</span>
-                                <span>
-                                    <strong className="text-gray-800">Grand Champion:</strong>{" "}
-                                    Trophy, goodie bag & 1‑year premium
-                                </span>
+                                <span><strong className="text-gray-800">Grand Champion:</strong> Trophy, goodie bag & 1‑year premium</span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="text-green-500 mt-1">✓</span>
-                                <span>
-                                    <strong className="text-gray-800">Lucky Draw:</strong>{" "}
-                                    Special prizes for random participants
-                                </span>
+                                <span><strong className="text-gray-800">Lucky Draw:</strong> Special prizes for random participants</span>
                             </li>
                         </ul>
                     </div>
 
-                    {/* How to Participate */}
                     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-green-400 flex items-center justify-center">
                                 <HelpCircle className="w-5 h-5 text-white" />
                             </div>
-                            <h2 className="text-2xl font-bold text-gray-900">
-                                How to Participate
-                            </h2>
+                            <h2 className="text-2xl font-bold text-gray-900">How to Participate</h2>
                         </div>
                         <ol className="space-y-3 list-decimal list-inside text-gray-600">
                             <li>Register with your details below.</li>
-                            <li>
-                                Visit the cashier counter, pay the fee, and collect your{" "}
-                                <strong className="text-gray-800">entry code</strong>.
-                            </li>
+                            <li>Visit the cashier counter, pay the fee, and collect your <strong className="text-gray-800">entry code</strong>.</li>
                             <li>Return here, enter your code, and play the games!</li>
                         </ol>
                     </div>
 
-                    {/* Action Buttons */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <button
                             onClick={startFreeTrial}
@@ -213,7 +185,6 @@ export default function TournamentPlayPage() {
                 </div>
             )}
 
-            {/* ========= Free Trial ========= */}
             {view === "freeTrial" && !showUpgradePopup && (
                 <div className="max-w-2xl w-full bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
                     {!trialFinished ? (
@@ -222,9 +193,7 @@ export default function TournamentPlayPage() {
                                 <span className="text-sm font-medium text-gray-500">
                                     Question {currentQ + 1} of {questions.length}
                                 </span>
-                                <span className="text-sm font-medium text-blue-600">
-                                    Score: {score}
-                                </span>
+                                <span className="text-sm font-medium text-blue-600">Score: {score}</span>
                             </div>
                             <h3 className="text-xl font-semibold text-gray-900 mb-4">
                                 {questions[currentQ]?.question}
@@ -247,13 +216,9 @@ export default function TournamentPlayPage() {
                                 <Trophy className="w-8 h-8 text-white" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold text-gray-900">
-                                    Trial Complete!
-                                </h3>
+                                <h3 className="text-2xl font-bold text-gray-900">Trial Complete!</h3>
                                 <p className="text-gray-600 mt-2">
-                                    You got{" "}
-                                    <span className="font-bold text-blue-600">{score}</span> out
-                                    of {questions.length} correct.
+                                    You got <span className="font-bold text-blue-600">{score}</span> out of {questions.length} correct.
                                 </p>
                             </div>
                             <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -275,7 +240,6 @@ export default function TournamentPlayPage() {
                 </div>
             )}
 
-            {/* ========= Upgrade Popup ========= */}
             {showUpgradePopup && (
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl relative">
@@ -291,8 +255,7 @@ export default function TournamentPlayPage() {
                             </div>
                             <h3 className="text-2xl font-bold text-gray-900">Great Job!</h3>
                             <p className="text-gray-600">
-                                Unlock the full tournament with more questions, leaderboard, and
-                                exciting prizes.
+                                Unlock the full tournament with more questions, leaderboard, and exciting prizes.
                             </p>
                             <button
                                 onClick={() => {
@@ -317,7 +280,6 @@ export default function TournamentPlayPage() {
                 </div>
             )}
 
-            {/* ========= Registration Form ========= */}
             {view === "register" && (
                 <div className="max-w-md w-full bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
                     <div className="flex items-center gap-3 mb-6">
@@ -332,12 +294,9 @@ export default function TournamentPlayPage() {
                             <div className="w-14 h-14 mx-auto rounded-full bg-green-100 flex items-center justify-center">
                                 <span className="text-2xl">✅</span>
                             </div>
-                            <p className="text-green-700 font-medium">
-                                Registration submitted!
-                            </p>
+                            <p className="text-green-700 font-medium">Registration submitted!</p>
                             <p className="text-gray-600">
-                                Please visit the cashier counter to complete your payment and
-                                receive your <strong>entry code</strong>.
+                                Please visit the cashier counter to complete your payment and receive your <strong>entry code</strong>.
                             </p>
                             <button
                                 onClick={() => {
@@ -352,9 +311,7 @@ export default function TournamentPlayPage() {
                     ) : (
                         <form onSubmit={handleRegister} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Full Name
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                                 <input
                                     type="text"
                                     value={regName}
@@ -365,9 +322,7 @@ export default function TournamentPlayPage() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Email
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                                 <input
                                     type="email"
                                     value={regEmail}
@@ -378,9 +333,7 @@ export default function TournamentPlayPage() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Year
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
                                 <input
                                     type="text"
                                     value={regYear}
@@ -391,9 +344,7 @@ export default function TournamentPlayPage() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Semester
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Semester</label>
                                 <input
                                     type="text"
                                     value={regSemester}
@@ -405,9 +356,10 @@ export default function TournamentPlayPage() {
                             </div>
                             <button
                                 type="submit"
-                                className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition"
+                                disabled={regSubmitting}
+                                className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition disabled:opacity-60"
                             >
-                                Submit Registration
+                                {regSubmitting ? "Submitting..." : "Submit Registration"}
                             </button>
                             {regStatus && <p className="text-red-500 text-sm">{regStatus}</p>}
                             <button
@@ -422,16 +374,13 @@ export default function TournamentPlayPage() {
                 </div>
             )}
 
-            {/* ========= Code Entry ========= */}
             {view === "codeEntry" && (
                 <div className="max-w-md w-full bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-green-400 flex items-center justify-center">
                             <Key className="w-5 h-5 text-white" />
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-900">
-                            Enter Your Code
-                        </h2>
+                        <h2 className="text-2xl font-bold text-gray-900">Enter Your Code</h2>
                     </div>
                     <form onSubmit={handleCodeSubmit} className="space-y-4">
                         <div>
@@ -447,13 +396,12 @@ export default function TournamentPlayPage() {
                         </div>
                         <button
                             type="submit"
-                            className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2"
+                            disabled={codeSubmitting}
+                            className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-60"
                         >
-                            <ArrowRight className="w-5 h-5" /> Start Playing
+                            <ArrowRight className="w-5 h-5" /> {codeSubmitting ? "Checking..." : "Start Playing"}
                         </button>
-                        {codeError && (
-                            <p className="text-red-500 text-sm text-center">{codeError}</p>
-                        )}
+                        {codeError && <p className="text-red-500 text-sm text-center">{codeError}</p>}
                         <button
                             type="button"
                             onClick={() => setView("instructions")}
@@ -463,17 +411,6 @@ export default function TournamentPlayPage() {
                         </button>
                     </form>
                 </div>
-            )}
-
-            {/* ── Scroll to Top Button ── */}
-            {showScrollTop && (
-                <button
-                    onClick={scrollToTop}
-                    className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-lg hover:shadow-xl transition flex items-center justify-center"
-                    aria-label="Scroll to top"
-                >
-                    <ArrowUp className="w-5 h-5" />
-                </button>
             )}
         </div>
     );

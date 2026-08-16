@@ -3,43 +3,47 @@
 import { Suspense, useEffect, useState, useCallback, useRef } from "react";
 import { useSearchParams, useParams } from "next/navigation";
 import {
-    Loader2, Clock, Zap, ArrowLeft, CheckCircle, XCircle, Trophy, ArrowUp,
+    Loader2, Clock, Zap, ArrowLeft, CheckCircle, XCircle, Trophy, Flame,
 } from "lucide-react";
 
-type Question = {
+type GameType = "mcq" | "flashcard";
+
+interface MCQClientQuestion {
+    id: string;
     question: string;
     options: string[];
-    answer: number;
-};
+}
+interface FlashcardClientQuestion {
+    id: string;
+    term: string;
+}
 
-/* ── Inner component that uses useSearchParams & useParams ─ */
+const TIME_PER_QUESTION = 15;
+
 function GamePlayInner() {
     const params = useParams();
     const searchParams = useSearchParams();
-    const game = params?.game as string;
-    const code = searchParams.get("code") || "";
+    const game = params?.game as GameType;
+    const code = (searchParams.get("code") || "").toUpperCase();
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [questions, setQuestions] = useState<Question[]>([]);
+    const [questions, setQuestions] = useState<(MCQClientQuestion | FlashcardClientQuestion)[]>([]);
+    const [attemptNumber, setAttemptNumber] = useState<number | null>(null);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [score, setScore] = useState(0);
     const [streak, setStreak] = useState(0);
+    const [bestStreak, setBestStreak] = useState(0);
     const [selectedOption, setSelectedOption] = useState<number | null>(null);
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+    const [correctAnswerDisplay, setCorrectAnswerDisplay] = useState<string | number | null>(null);
     const [showFeedback, setShowFeedback] = useState(false);
     const [gameOver, setGameOver] = useState(false);
-    const [timeLeft, setTimeLeft] = useState(10);
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
-    const [showScrollTop, setShowScrollTop] = useState(false);
-
-    useEffect(() => {
-        const handleScroll = () => setShowScrollTop(window.scrollY > 300);
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
-
-    const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+    const [finalScore, setFinalScore] = useState<{ score: number; timeTaken: number } | null>(null);
+    const [timeLeft, setTimeLeft] = useState(TIME_PER_QUESTION);
+    const [submitting, setSubmitting] = useState(false);
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const [typedAnswer, setTypedAnswer] = useState("");
 
     const fetchQuestions = useCallback(async () => {
         if (!code || !game) {
@@ -51,82 +55,131 @@ function GamePlayInner() {
             const res = await fetch(`/api/tournament/game-questions?code=${code}&game=${game}`);
             const data = await res.json();
             if (res.ok) {
-                const sanitized = data.questions.map((q: any) => ({
-                    question: q.question,
-                    options: q.options.map((opt: any) => (typeof opt === 'string' ? opt : opt.text)),
-                    answer: typeof q.answer === 'number' ? q.answer : q.answer.id,
-                }));
-                setQuestions(sanitized);
+                setQuestions(data.questions);
+                setAttemptNumber(data.attemptNumber);
             } else {
                 setError(data.error || "Failed to load questions.");
             }
         } catch {
-            setError("Network error.");
+            setError("Network error. Please check your connection.");
         } finally {
             setLoading(false);
         }
     }, [code, game]);
 
-    useEffect(() => { fetchQuestions(); }, [fetchQuestions]);
+    useEffect(() => {
+        fetchQuestions();
+    }, [fetchQuestions]);
+
+    const finishGame = useCallback(async () => {
+        if (attemptNumber == null) return;
+        setSubmitting(true);
+        try {
+            const res = await fetch("/api/tournament/submit-score", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code, gameType: game, attemptNumber }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setFinalScore({ score: data.score, timeTaken: data.timeTaken });
+            } else {
+                setError(data.error || "Failed to submit your score.");
+            }
+        } catch {
+            setError("Network error while submitting your score.");
+        } finally {
+            setSubmitting(false);
+            setGameOver(true);
+        }
+    }, [code, game, attemptNumber]);
+
+    const handleAnswer = useCallback(
+        async (optionIdxOrAnswer: number | string) => {
+            if (showFeedback || gameOver || questions.length === 0 || attemptNumber == null) return;
+            if (timerRef.current) clearInterval(timerRef.current);
+
+            const q = questions[currentIndex];
+            const payload: Record<string, unknown> = {
+                code,
+                game,
+                attemptNumber,
+                questionId: q.id,
+            };
+            if (game === "mcq") {
+                payload.selectedOption = optionIdxOrAnswer;
+                setSelectedOption(optionIdxOrAnswer as number);
+            } else {
+                payload.typedAnswer = optionIdxOrAnswer;
+            }
+
+            try {
+                const res = await fetch("/api/tournament/check-answer", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    setIsCorrect(data.correct);
+                    setCorrectAnswerDisplay(data.correctAnswer);
+                    setScore(data.runningScore);
+                    if (data.correct) {
+                        setStreak((s) => {
+                            const next = s + 1;
+                            setBestStreak((b) => Math.max(b, next));
+                            return next;
+                        });
+                    } else {
+                        setStreak(0);
+                    }
+                } else {
+                    // Question already answered / session issue — just move on gracefully
+                    setIsCorrect(false);
+                }
+            } catch {
+                setIsCorrect(false);
+            }
+
+            setShowFeedback(true);
+
+            setTimeout(() => {
+                setShowFeedback(false);
+                setIsCorrect(null);
+                setSelectedOption(null);
+                setCorrectAnswerDisplay(null);
+                setTypedAnswer("");
+                if (currentIndex + 1 < questions.length) {
+                    setCurrentIndex((prev) => prev + 1);
+                    setTimeLeft(TIME_PER_QUESTION);
+                } else {
+                    finishGame();
+                }
+            }, 1400);
+        },
+        [showFeedback, gameOver, questions, currentIndex, code, game, attemptNumber, finishGame]
+    );
 
     useEffect(() => {
         if (loading || gameOver || questions.length === 0 || showFeedback) return;
         if (timerRef.current) clearInterval(timerRef.current);
 
         timerRef.current = setInterval(() => {
-            setTimeLeft(prev => {
+            setTimeLeft((prev) => {
                 if (prev <= 1) {
                     clearInterval(timerRef.current!);
-                    handleAnswer(-1);
+                    handleAnswer(game === "flashcard" ? "" : -1);
                     return 0;
                 }
                 return prev - 1;
             });
         }, 1000);
 
-        return () => { if (timerRef.current) clearInterval(timerRef.current); };
-    }, [currentIndex, loading, gameOver, questions.length, showFeedback]);
-
-    const handleAnswer = (optionIdx: number) => {
-        if (showFeedback || gameOver || questions.length === 0) return;
-        if (timerRef.current) clearInterval(timerRef.current);
-
-        const q = questions[currentIndex];
-        const correct = optionIdx === q.answer;
-        setSelectedOption(optionIdx === -1 ? null : optionIdx);
-        setIsCorrect(correct);
-        setShowFeedback(true);
-
-        if (correct) {
-            setScore(s => s + 1);
-            setStreak(s => s + 1);
-        } else {
-            setStreak(0);
-        }
-
-        setTimeout(() => {
-            setShowFeedback(false);
-            setIsCorrect(null);
-            setSelectedOption(null);
-            if (currentIndex + 1 < questions.length) {
-                setCurrentIndex(prev => prev + 1);
-                setTimeLeft(10);
-            } else {
-                setGameOver(true);
-                submitScore();
-            }
-        }, 1500);
-    };
-
-    const submitScore = async () => {
-        try {
-            await fetch("/api/tournament/submit-score", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ code, gameType: game, score }),
-            });
-        } catch { }
-    };
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentIndex, loading, gameOver, questions.length, showFeedback, game]);
 
     if (loading) {
         return (
@@ -154,22 +207,41 @@ function GamePlayInner() {
     }
 
     if (gameOver) {
+        const displayScore = finalScore?.score ?? score;
+        const pct = questions.length > 0 ? Math.round((displayScore / questions.length) * 100) : 0;
         return (
             <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex flex-col items-center justify-center p-4">
                 <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center shadow-sm max-w-md w-full">
-                    <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-blue-600 to-green-400 flex items-center justify-center mb-6">
+                    <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-blue-600 to-green-400 flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20">
                         <Trophy className="w-8 h-8 text-white" />
                     </div>
-                    <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Game Over!</h2>
-                    <p className="text-gray-600 mb-6">
-                        Your final score: <span className="text-2xl font-bold text-blue-600">{score} / {questions.length}</span>
+                    <h2 className="text-3xl font-extrabold text-gray-900 mb-1">
+                        {pct >= 80 ? "Outstanding!" : pct >= 50 ? "Nice work!" : "Game Over!"}
+                    </h2>
+                    <p className="text-gray-600 mb-4">Your final score</p>
+                    <p className="text-5xl font-extrabold bg-gradient-to-r from-blue-600 to-green-400 bg-clip-text text-transparent mb-1">
+                        {displayScore}
+                        <span className="text-2xl text-gray-300"> / {questions.length}</span>
                     </p>
-                    <button
-                        onClick={() => (window.location.href = `/tournament/games?code=${code}`)}
-                        className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition"
-                    >
-                        Back to Games
-                    </button>
+                    {bestStreak >= 3 && (
+                        <p className="flex items-center justify-center gap-1 text-amber-500 font-bold text-sm mb-4">
+                            <Flame className="w-4 h-4" /> Best streak: {bestStreak} in a row
+                        </p>
+                    )}
+                    <div className="flex flex-col gap-3 mt-6">
+                        <button
+                            onClick={() => (window.location.href = `/tournament/games?code=${code}`)}
+                            className="w-full py-3 bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition"
+                        >
+                            Back to Games
+                        </button>
+                        <button
+                            onClick={() => (window.location.href = "/leaderboard")}
+                            className="w-full py-3 border-2 border-blue-600 text-blue-700 font-bold rounded-xl hover:bg-blue-50 transition"
+                        >
+                            View Leaderboard
+                        </button>
+                    </div>
                 </div>
             </div>
         );
@@ -186,94 +258,152 @@ function GamePlayInner() {
                 >
                     <ArrowLeft className="w-4 h-4" /> Quit
                 </button>
-                <div className="flex items-center gap-5">
-                    <div className="flex items-center gap-1 text-lg font-semibold">
-                        <Clock className={`w-5 h-5 ${timeLeft <= 3 ? "text-red-500" : "text-blue-600"}`} />
-                        <span className={`${timeLeft <= 3 ? "text-red-500 font-bold" : "text-gray-700"}`}>{timeLeft}s</span>
+                <div className="flex items-center gap-4 sm:gap-5">
+                    <div className="flex items-center gap-1 text-lg font-semibold tabular-nums">
+                        <Clock className={`w-5 h-5 ${timeLeft <= 5 ? "text-red-500" : "text-blue-600"}`} />
+                        <span className={timeLeft <= 5 ? "text-red-500 font-bold" : "text-gray-700"}>{timeLeft}s</span>
                     </div>
-                    <div className="flex items-center gap-1 text-lg font-semibold text-gray-700">
+                    <div className="flex items-center gap-1 text-lg font-semibold text-gray-700 tabular-nums">
                         <Trophy className="w-5 h-5 text-yellow-500" /> {score}
                     </div>
                     {streak >= 2 && (
-                        <div className="flex items-center gap-1 text-lg font-semibold text-amber-500">
-                            <Zap className="w-5 h-5" /> {streak}
+                        <div className="flex items-center gap-1 text-lg font-bold text-amber-500 animate-pulse">
+                            <Flame className="w-5 h-5" /> {streak}
                         </div>
                     )}
                 </div>
             </div>
 
-            <div className="w-full max-w-2xl bg-gray-200 rounded-full h-2 mb-8">
+            <div className="w-full max-w-2xl bg-gray-200 rounded-full h-2 mb-8 overflow-hidden">
                 <div
                     className="bg-gradient-to-r from-blue-600 to-green-400 h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${((currentIndex) / questions.length) * 100}%` }}
+                    style={{ width: `${(currentIndex / questions.length) * 100}%` }}
                 />
             </div>
 
             <div className="w-full max-w-2xl bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8 mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-6">{q.question}</h3>
-                <div className="grid grid-cols-1 gap-3">
-                    {q.options.map((opt, idx) => {
-                        let buttonClasses = "text-left p-4 bg-gray-50 border border-gray-200 rounded-xl transition font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300";
-                        if (showFeedback && selectedOption !== null) {
-                            if (idx === q.answer) {
-                                buttonClasses = "text-left p-4 bg-green-50 border border-green-400 rounded-xl font-medium text-green-700";
-                            } else if (idx === selectedOption) {
-                                buttonClasses = "text-left p-4 bg-red-50 border border-red-400 rounded-xl font-medium text-red-700";
-                            }
-                        }
-                        return (
-                            <button
-                                key={idx}
-                                onClick={() => handleAnswer(idx)}
-                                disabled={showFeedback}
-                                className={buttonClasses}
+                {game === "mcq" && "options" in q && (
+                    <>
+                        <h3 className="text-xl font-semibold text-gray-900 mb-6">{q.question}</h3>
+                        <div className="grid grid-cols-1 gap-3">
+                            {q.options.map((opt, idx) => {
+                                let btnClass =
+                                    "text-left p-4 bg-gray-50 border border-gray-200 rounded-xl transition font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300";
+                                if (showFeedback) {
+                                    if (typeof correctAnswerDisplay === "number" && idx === correctAnswerDisplay) {
+                                        btnClass = "text-left p-4 bg-green-50 border border-green-400 rounded-xl font-medium text-green-700";
+                                    } else if (idx === selectedOption) {
+                                        btnClass = "text-left p-4 bg-red-50 border border-red-400 rounded-xl font-medium text-red-700";
+                                    }
+                                }
+                                return (
+                                    <button
+                                        key={opt + idx}
+                                        onClick={() => handleAnswer(idx)}
+                                        disabled={showFeedback}
+                                        className={btnClass}
+                                    >
+                                        <span className="flex items-center justify-between">
+                                            {opt}
+                                            {showFeedback && typeof correctAnswerDisplay === "number" && idx === correctAnswerDisplay && (
+                                                <CheckCircle className="w-5 h-5 text-green-500 ml-2" />
+                                            )}
+                                            {showFeedback && idx === selectedOption && idx !== correctAnswerDisplay && (
+                                                <XCircle className="w-5 h-5 text-red-500 ml-2" />
+                                            )}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </>
+                )}
+
+                {game === "flashcard" && "term" in q && (
+                    <>
+                        <div className="text-center mb-6">
+                            <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-blue-600 to-green-400 flex items-center justify-center text-white text-3xl font-bold mb-3">
+                                ?
+                            </div>
+                            <h3 className="text-xl font-semibold text-gray-900">{q.term}</h3>
+                            <p className="text-sm text-gray-500 mt-1">Type the answer below</p>
+                        </div>
+                        {!showFeedback ? (
+                            <form
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    handleAnswer(typedAnswer);
+                                }}
+                                className="flex gap-3"
                             >
-                                <span className="flex items-center justify-between">
-                                    {opt}
-                                    {showFeedback && idx === q.answer && <CheckCircle className="w-5 h-5 text-green-500 ml-2" />}
-                                    {showFeedback && idx === selectedOption && idx !== q.answer && <XCircle className="w-5 h-5 text-red-500 ml-2" />}
-                                </span>
-                            </button>
-                        );
-                    })}
-                </div>
+                                <input
+                                    type="text"
+                                    value={typedAnswer}
+                                    onChange={(e) => setTypedAnswer(e.target.value)}
+                                    className="flex-1 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-200 outline-none"
+                                    placeholder="Your answer..."
+                                    autoFocus
+                                />
+                                <button
+                                    type="submit"
+                                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold rounded-xl"
+                                >
+                                    Submit
+                                </button>
+                            </form>
+                        ) : (
+                            <div className="text-center">
+                                <p className="text-lg font-bold text-gray-900">
+                                    Correct answer: {correctAnswerDisplay}
+                                </p>
+                                {isCorrect ? (
+                                    <p className="text-green-600 font-medium mt-2">You got it right!</p>
+                                ) : (
+                                    <p className="text-red-600 font-medium mt-2">
+                                        Your answer: {typedAnswer || "(empty)"}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+                    </>
+                )}
             </div>
 
             {showFeedback && (
-                <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 z-50">
+                <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50">
                     {isCorrect ? (
                         <div className="bg-green-500 text-white px-6 py-3 rounded-full shadow-lg text-lg font-bold animate-bounce">
-                            ✅ Correct! +1
+                            Correct! +1
                         </div>
                     ) : (
                         <div className="bg-red-500 text-white px-6 py-3 rounded-full shadow-lg text-lg font-bold">
-                            ❌ Wrong!
+                            Not quite
                         </div>
                     )}
                 </div>
             )}
 
-            {showScrollTop && (
-                <button
-                    onClick={scrollToTop}
-                    className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-lg hover:shadow-xl transition flex items-center justify-center"
-                    aria-label="Scroll to top"
-                >
-                    <ArrowUp className="w-5 h-5" />
-                </button>
+            {submitting && (
+                <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-2xl p-6 flex items-center gap-3 shadow-xl">
+                        <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                        <span className="font-medium text-gray-700">Saving your score...</span>
+                    </div>
+                </div>
             )}
         </div>
     );
 }
 
-/* ── Exported page component with Suspense ───────────────── */
 export default function GamePlayPage() {
     return (
-        <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-                <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
-            </div>
-        }>
+        <Suspense
+            fallback={
+                <div className="min-h-screen flex items-center justify-center">
+                    <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+                </div>
+            }
+        >
             <GamePlayInner />
         </Suspense>
     );

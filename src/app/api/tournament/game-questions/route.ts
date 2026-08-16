@@ -1,70 +1,91 @@
 import { createServiceSupabaseClient } from "@/lib/supabase-server";
+import { gameQuestionsLimiter, getClientIp, checkRateLimit } from "@/lib/tournament-redis";
+import { MCQ_BANK } from "@/lib/tournament-data/mcq-bank";
+import { FLASHCARD_BANK } from "@/lib/tournament-data/flashcard-bank";
 import { NextResponse } from "next/server";
 
-// Temporary built‑in question bank – you can replace this with your own later
-const BUILT_IN_MCQS = [
-    { question: "What is the chemical symbol for water?", options: ["H2O", "CO2", "NaCl", "O2"], answer: 0 },
-    { question: "Which planet is known as the Red Planet?", options: ["Venus", "Mars", "Jupiter", "Saturn"], answer: 1 },
-    { question: "What is the powerhouse of the cell?", options: ["Nucleus", "Ribosome", "Mitochondria", "Golgi apparatus"], answer: 2 },
-    { question: "What does DNA stand for?", options: ["Deoxyribonucleic Acid", "Ribonucleic Acid", "Deoxyribose Nucleic Acid", "Dinitrogen Acid"], answer: 0 },
-    { question: "Which organ produces insulin?", options: ["Liver", "Pancreas", "Kidney", "Heart"], answer: 1 },
-    { question: "What is the normal pH of blood?", options: ["7.0", "7.2", "7.4", "7.6"], answer: 2 },
-    { question: "Which vitamin is produced when skin is exposed to sunlight?", options: ["Vitamin A", "Vitamin B", "Vitamin C", "Vitamin D"], answer: 3 },
-    { question: "What is the main function of hemoglobin?", options: ["Fight infection", "Carry oxygen", "Digest food", "Regulate temperature"], answer: 1 },
-    { question: "Which of the following is an antibiotic?", options: ["Aspirin", "Penicillin", "Paracetamol", "Ibuprofen"], answer: 1 },
-    { question: "What is the largest organ in the human body?", options: ["Heart", "Liver", "Skin", "Brain"], answer: 2 },
-];
+type GameType = "mcq" | "flashcard" | "spotting";
+
+function shuffle<T>(arr: T[]): T[] {
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+}
+
+/** Strip the answer key before sending MCQ/flashcard questions to the client. */
+function toPublicMCQ(q: (typeof MCQ_BANK)[number]) {
+    return { id: q.id, question: q.question, options: q.options };
+}
+function toPublicFlashcard(q: (typeof FLASHCARD_BANK)[number]) {
+    return { id: q.id, term: q.term };
+}
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
-    const code = searchParams.get("code");
-    const game = searchParams.get("game");
+    const code = searchParams.get("code")?.trim().toUpperCase();
+    const game = searchParams.get("game") as GameType | null;
 
     if (!code || !game) {
         return NextResponse.json({ error: "Missing code or game type" }, { status: 400 });
     }
 
-    const supabase = await createServiceSupabaseClient();
-
-    // Validate code and check attempts
-    const { data: entry, error: entryError } = await supabase
-        .from("entry_codes")
-        .select("*")
-        .eq("code", code)
-        .single();
-
-    if (entryError || !entry) {
-        return NextResponse.json({ error: "Invalid entry code" }, { status: 401 });
+    const ip = getClientIp(request);
+    const rl = await checkRateLimit(gameQuestionsLimiter, `${ip}:${code}`);
+    if (rl.blocked) {
+        return NextResponse.json(
+            { error: "Too many requests. Please wait a moment." },
+            { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } }
+        );
     }
 
-    const { count, error: countError } = await supabase
-        .from("tournament_scores")
-        .select("*", { count: "exact", head: true })
-        .eq("entry_code", code);
+    const supabase = await createServiceSupabaseClient();
 
-    if (countError) {
+    // Atomically claim the next attempt number. This single RPC call replaces
+    // the old "count scores, compare to max_retries" pattern that had a race
+    // condition under concurrent requests — see migration.sql for details.
+    const { data: attemptNumber, error: claimError } = await supabase.rpc(
+        "claim_tournament_attempt",
+        { p_code: code, p_game_type: game }
+    );
+
+    if (claimError) {
+        const msg = claimError.message || "";
+        if (msg.includes("INVALID_CODE")) {
+            return NextResponse.json({ error: "Invalid entry code" }, { status: 401 });
+        }
+        if (msg.includes("CODE_USED") || msg.includes("NO_ATTEMPTS_LEFT")) {
+            return NextResponse.json({ error: "No attempts left for this code" }, { status: 403 });
+        }
+        console.error("claim_tournament_attempt error:", claimError);
         return NextResponse.json({ error: "Failed to verify attempts" }, { status: 500 });
     }
 
-    const allowedAttempts = (entry.max_retries || 0) + 1;
-    if (count !== null && count >= allowedAttempts) {
-        return NextResponse.json({ error: "No attempts left for this code" }, { status: 403 });
+    // Verify the code actually includes this game (claim succeeding just means
+    // attempts are available, not that this specific game is unlocked for it).
+    const { data: entry } = await supabase
+        .from("entry_codes")
+        .select("games_included")
+        .eq("code", code)
+        .single();
+
+    if (!entry || !entry.games_included?.includes(game)) {
+        return NextResponse.json({ error: "This game is not included in your code" }, { status: 403 });
     }
 
     let questions: any[] = [];
 
     if (game === "mcq") {
-        // Pick 10 random questions from the built‑in bank
-        const shuffled = [...BUILT_IN_MCQS].sort(() => Math.random() - 0.5);
-        questions = shuffled.slice(0, 10);
+        questions = shuffle(MCQ_BANK).slice(0, 10).map(toPublicMCQ);
+    } else if (game === "flashcard") {
+        questions = shuffle(FLASHCARD_BANK).slice(0, 8).map(toPublicFlashcard);
+    } else if (game === "spotting") {
+        return NextResponse.json({ error: "Spotting is not yet available" }, { status: 501 });
     } else {
-        return NextResponse.json({ error: `${game} is not yet implemented` }, { status: 501 });
+        return NextResponse.json({ error: "Unknown game type" }, { status: 400 });
     }
 
-    return NextResponse.json({
-        questions,
-        code,
-        game,
-        attemptNumber: (count || 0) + 1,
-    });
+    return NextResponse.json({ questions, code, game, attemptNumber });
 }
