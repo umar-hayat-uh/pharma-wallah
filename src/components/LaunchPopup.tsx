@@ -1,188 +1,105 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase";
-import { X, Mail, User, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-
-const POPUP_STORAGE_KEY = "pharmawallah_july_popup_closed";
+import { X, Trophy, Sparkles, ArrowRight, Award, Zap } from "lucide-react";
 
 export default function LaunchPopup() {
   const [isOpen, setIsOpen] = useState(false);
-  const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [imgError, setImgError] = useState(false);
 
-  // No router needed – we don't redirect
-  const supabase = createClient();
-
-  // Show popup after 2 seconds if not closed before
   useEffect(() => {
-    const closed = localStorage.getItem(POPUP_STORAGE_KEY);
-    if (!closed) {
-      const timer = setTimeout(() => setIsOpen(true), 2000);
-      return () => clearTimeout(timer);
-    }
+    const timer = setTimeout(() => setIsOpen(true), 1500);
+    return () => clearTimeout(timer);
   }, []);
-
-  const handleClose = () => {
-    setIsOpen(false);
-    localStorage.setItem(POPUP_STORAGE_KEY, "true");
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    try {
-      // Insert into the early_access table
-      const { error: insertError } = await supabase
-        .from("early_access")
-        .insert({ name: name || null, email });
-
-      if (insertError) {
-        // 23505 is the Postgres error code for unique violation (email already exists)
-        if (insertError.code === "23505") {
-          setError("This email is already on the list.");
-        } else {
-          setError(insertError.message);
-        }
-        setLoading(false);
-        return;
-      }
-
-      // Show success state
-      setSuccess(true);
-      localStorage.setItem(POPUP_STORAGE_KEY, "true");
-      // Auto‑close after 3 seconds
-      setTimeout(() => setIsOpen(false), 3000);
-    } catch (err: any) {
-      setError(err.message || "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
-      <div className="relative bg-white rounded-2xl max-w-md w-full shadow-2xl animate-fadeInUp overflow-hidden">
-        {/* Close button */}
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+      <div className="relative bg-white rounded-3xl max-w-md w-full shadow-[0_20px_50px_rgba(8,_112,_184,_0.12)] border border-slate-100 overflow-hidden transition-all">
+
+        {/* Subtle Decorative Background Gradients */}
+        <div className="absolute -top-16 -right-16 w-36 h-36 bg-blue-100 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-indigo-100 rounded-full blur-2xl pointer-events-none" />
+
+        {/* Close Button */}
         <button
-          onClick={handleClose}
-          className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 z-10 bg-white/80 rounded-full p-1"
+          onClick={() => setIsOpen(false)}
+          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-full transition-all z-20"
           aria-label="Close"
         >
-          <X size={20} />
+          <X size={18} />
         </button>
 
-        {/* Image Section */}
-        {!imgError ? (
-          <img
-            src="/images/banner/popup.webp"
-            alt="Launching in July – PharmaWallah"
-            className="w-full h-auto object-cover"
-            onError={() => setImgError(true)}
-          />
-        ) : (
-          /* Fallback gradient banner if image not found */
-          <div className="bg-gradient-to-r from-blue-600 to-green-500 p-6 text-center">
-            <div className="bg-white/20 inline-flex rounded-full p-3 mb-3">
-              <Mail className="w-8 h-8 text-white" />
+        <div className="p-6 sm:p-8 relative z-10">
+
+          {/* Top Badge & Trophy Icon */}
+          <div className="flex items-center justify-between mb-4">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/60">
+              <Sparkles size={12} className="text-amber-500 fill-amber-500" /> Live Event
+            </span>
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/25">
+              <Trophy className="w-6 h-6 text-white" />
             </div>
-            <h3 className="text-white text-2xl font-bold">🚀 Launching in July</h3>
-            <p className="text-white/90 text-sm mt-1">
-              Be the first to experience our new features
+          </div>
+
+          {/* Heading Section */}
+          <div className="mb-5">
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+              Science Fair <br />
+              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                Tournament 2026
+              </span>
+            </h2>
+            <p className="text-slate-500 text-sm mt-1.5 leading-relaxed">
+              Compete with students nationwide and showcase your knowledge.
             </p>
           </div>
-        )}
 
-        {/* Form / Success Section */}
-        <div className="p-6">
-          {success ? (
-            <div className="text-center py-4">
-              <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-3" />
-              <h2 className="text-xl font-bold text-gray-800 mb-2">You're on the list!</h2>
-              <p className="text-gray-500 text-sm">
-                We'll notify you when we launch. Stay tuned!
-              </p>
-            </div>
-          ) : (
-            <>
-              <h2 className="text-xl font-bold text-gray-800 text-center mb-2">
-                Get Early Access
-              </h2>
-              <p className="text-gray-500 text-sm text-center mb-6">
-                Sign up now and we’ll notify you when we launch. No spam, ever.
-              </p>
+          {/* Game Modes Chips */}
+          <div className="flex flex-wrap gap-1.5 mb-6">
+            <span className="text-[11px] font-medium px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200/50">
+              ⚡ MCQ Battle
+            </span>
+            <span className="text-[11px] font-medium px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200/50">
+              🔥 Flashcard Rush
+            </span>
+            <span className="text-[11px] font-medium px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200/50">
+              🎯 Spotting Challenge
+            </span>
+          </div>
 
-              {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                  <span>{error}</span>
-                </div>
-              )}
+          {/* Perks Banner */}
+          <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-3.5 mb-6 flex items-center gap-3">
+            <Award className="w-5 h-5 text-blue-600 shrink-0" />
+            <p className="text-xs text-blue-900 font-medium leading-snug">
+              Win medals, certificates, trophies & premium platform access.
+            </p>
+          </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name (optional)
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      placeholder="Your name"
-                    />
-                  </div>
-                </div>
+          {/* Action Buttons */}
+          <div className="flex flex-col gap-2.5">
+            <a
+              href="/tournament/play"
+              className="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-md shadow-blue-500/15 transition-all flex items-center justify-center gap-2 group"
+            >
+              <span>Register / Enter Code</span>
+              <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+            </a>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email Address *
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      placeholder="you@example.com"
-                    />
-                  </div>
-                </div>
+            <a
+              href="/leaderboard"
+              className="w-full py-3 px-4 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold rounded-xl transition text-center border border-slate-200/80 text-sm"
+            >
+              View Live Leaderboard
+            </a>
+          </div>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-white font-semibold rounded-lg transition-all disabled:opacity-70"
-                >
-                  {loading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    "Notify Me"
-                  )}
-                </button>
-              </form>
+          {/* Footer Note */}
+          <div className="flex items-center justify-center gap-1.5 mt-5 text-[11px] text-slate-400">
+            <Zap size={12} className="text-amber-500" />
+            <span>PharmaWallah Science Fair Tournament · 2026</span>
+          </div>
 
-              <p className="text-xs text-gray-400 text-center mt-4">
-                By signing up, you agree to our{" "}
-                <a href="/terms" className="underline hover:text-gray-600">
-                  Terms
-                </a>
-                .
-              </p>
-            </>
-          )}
         </div>
       </div>
     </div>
