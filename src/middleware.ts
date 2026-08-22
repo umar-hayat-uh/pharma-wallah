@@ -20,6 +20,25 @@ export async function middleware(request: NextRequest) {
     request: { headers: request.headers },
   });
 
+  /* ── Hostname-based subdomain detection ─────────────────────────── */
+  const host = request.headers.get('host') || request.headers.get('x-forwarded-host') || '';
+  const isClinical = host.startsWith('clinical.');
+
+  if (isClinical) {
+    // Set a request header so layout.tsx / page.tsx can read it server-side
+    response.headers.set('x-subdomain', 'clinical');
+
+    // Also forward via request headers for server components
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-subdomain', 'clinical');
+
+    response = NextResponse.next({
+      request: { headers: requestHeaders },
+    });
+    response.headers.set('x-subdomain', 'clinical');
+  }
+  /* ── End subdomain detection ────────────────────────────────────── */
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
