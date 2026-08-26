@@ -75,19 +75,22 @@ const fmt = (d?: string) =>
   d ? new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "N/A";
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; border: string }> = {
-  approved:        { bg: "#F0FDF4", color: "#15803D", border: "#86EFAC" },
+  approved: { bg: "#F0FDF4", color: "#15803D", border: "#86EFAC" },
   investigational: { bg: "#FFFBEB", color: "#B45309", border: "#FCD34D" },
-  withdrawn:       { bg: "#FEF2F2", color: "#B91C1C", border: "#FECACA" },
-  experimental:    { bg: "#FAF5FF", color: "#7E22CE", border: "#D8B4FE" },
-  nutraceutical:   { bg: "#F0F9FF", color: "#0369A1", border: "#BAE6FD" },
-  illicit:         { bg: "#F8FAFC", color: "#475569", border: "#CBD5E1" },
-  biotech:         { bg: "#EEF2FF", color: "#4338CA", border: "#A5B4FC" },
+  withdrawn: { bg: "#FEF2F2", color: "#B91C1C", border: "#FECACA" },
+  experimental: { bg: "#FAF5FF", color: "#7E22CE", border: "#D8B4FE" },
+  nutraceutical: { bg: "#F0F9FF", color: "#0369A1", border: "#BAE6FD" },
+  illicit: { bg: "#F8FAFC", color: "#475569", border: "#CBD5E1" },
+  biotech: { bg: "#EEF2FF", color: "#4338CA", border: "#A5B4FC" },
 };
 const getStatusStyle = (s?: string) =>
   STATUS_STYLES[(s ?? "").toLowerCase()] ?? { bg: "#F8FAFC", color: "#475569", border: "#CBD5E1" };
 
 const smilesImageUrl = (smiles: string, size = 300) =>
   `https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(smiles)}/image?format=png&width=${size}&height=${size}&bgcolor=white`;
+
+const smiles3DUrl = (smiles: string) =>
+  `https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(smiles)}/file?format=sdf&get3d=True`;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // All CSS — responsive breakpoints injected via <style>
@@ -115,6 +118,10 @@ const CSS = `
 
   /* Section button hover (desktop) */
   .dc-sbtn:hover { background: #F8FAFC !important; }
+
+  /* Structure view toggle */
+  .dc-viewtoggle { display: inline-flex; border-radius: 8px; border: 1px solid #E2E8F0; background: #F1F5F9; padding: 2px; gap: 2px; }
+  .dc-viewtoggle button { border: none; background: transparent; cursor: pointer; touch-action: manipulation; }
 
   /* ── Tablet ≤ 768px ── */
   @media (max-width: 768px) {
@@ -156,95 +163,244 @@ const CSS = `
 `;
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Structure3DViewer — renders an interactive 3D molecule using 3Dmol.js
+// ─────────────────────────────────────────────────────────────────────────────
+function Structure3DViewer({ smiles, name }: { smiles: string; name: string }) {
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+  const [style, setStyle] = useState<"stick" | "sphere" | "cartoon">("stick");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const viewerRef = useRef<any>(null);
+  const sdfCacheRef = useRef<string | null>(null);
+
+  const buildViewer = async (sdf: string) => {
+    if (!containerRef.current) return;
+    // 3Dmol.js touches `window`/`document`, so it must only ever be imported client-side.
+    const $3Dmol = (await import("3dmol")).default ?? (await import("3dmol"));
+
+    containerRef.current.innerHTML = "";
+    const viewer = $3Dmol.createViewer(containerRef.current, {
+      backgroundColor: "0xF8FAFC",
+    });
+    viewer.addModel(sdf, "sdf");
+    applyStyle(viewer, style);
+    viewer.zoomTo();
+    viewer.render();
+    viewerRef.current = viewer;
+  };
+
+  const applyStyle = (viewer: any, s: "stick" | "sphere" | "cartoon") => {
+    viewer.setStyle({}, {});
+    if (s === "stick") viewer.setStyle({}, { stick: { radius: 0.15 }, sphere: { scale: 0.25 } });
+    if (s === "sphere") viewer.setStyle({}, { sphere: { scale: 0.4 } });
+    if (s === "cartoon") viewer.setStyle({}, { line: {} });
+    viewer.render();
+  };
+
+  useState(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setStatus("loading");
+        const res = await fetch(smiles3DUrl(smiles));
+        if (!res.ok) throw new Error("3D structure fetch failed");
+        const sdf = await res.text();
+        if (cancelled) return;
+        sdfCacheRef.current = sdf;
+        await buildViewer(sdf);
+        if (!cancelled) setStatus("loaded");
+      } catch {
+        if (!cancelled) setStatus("error");
+      }
+    })();
+    return () => { cancelled = true; };
+  });
+
+  const handleStyleChange = (s: "stick" | "sphere" | "cartoon") => {
+    setStyle(s);
+    if (viewerRef.current) applyStyle(viewerRef.current, s);
+  };
+
+  const handleRetry = async () => {
+    setStatus("loading");
+    try {
+      const res = await fetch(smiles3DUrl(smiles));
+      if (!res.ok) throw new Error("3D structure fetch failed");
+      const sdf = await res.text();
+      sdfCacheRef.current = sdf;
+      await buildViewer(sdf);
+      setStatus("loaded");
+    } catch {
+      setStatus("error");
+    }
+  };
+
+  return (
+    <div style={{ borderRadius: 18, border: "1px solid #E2E8F0", background: "white", overflow: "hidden" }}>
+      {/* toolbar */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 13px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFD" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <div style={{ width: 29, height: 29, borderRadius: 8, background: "linear-gradient(135deg,#1565C0,#0097A7)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Atom size={13} color="white" />
+          </div>
+          <div>
+            <p style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>3D Structure</p>
+            <p style={{ fontSize: 9, color: "#94A3B8", marginTop: 1 }}>3Dmol.js · NIH CACTUS</p>
+          </div>
+        </div>
+        <div className="dc-viewtoggle">
+          {(["stick", "sphere", "cartoon"] as const).map((s) => (
+            <button key={s} onClick={() => handleStyleChange(s)} title={s}
+              style={{ padding: "4px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700, textTransform: "capitalize", color: style === s ? "white" : "#64748B", background: style === s ? "linear-gradient(135deg,#1565C0,#0097A7)" : "transparent" }}>
+              {s}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* viewer canvas */}
+      <div style={{ position: "relative", background: "linear-gradient(135deg,#F8FAFC,#EFF6FF)", minHeight: 230, height: 260 }}>
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle,#CBD5E1 1px,transparent 1px)", backgroundSize: "20px 20px", opacity: 0.22, pointerEvents: "none" }} />
+
+        <div ref={containerRef} style={{ position: "relative", width: "100%", height: "100%", zIndex: 1, opacity: status === "loaded" ? 1 : 0, transition: "opacity 0.4s ease" }} />
+
+        {status === "loading" && (
+          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, zIndex: 2 }}>
+            <div style={{ width: 34, height: 34, borderRadius: "50%", border: "3px solid #E2E8F0", borderTopColor: "#1565C0", animation: "dc-spin 0.8s linear infinite" }} />
+            <p style={{ fontSize: 11, color: "#94A3B8", fontWeight: 600 }}>Building 3D model…</p>
+          </div>
+        )}
+
+        {status === "error" && (
+          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, zIndex: 2, padding: 20, textAlign: "center" }}>
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: "#FEF2F2", border: "1px solid #FECACA", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <FlaskConical size={18} color="#EF4444" />
+            </div>
+            <p style={{ fontSize: 12, fontWeight: 700, color: "#DC2626" }}>3D structure unavailable</p>
+            <p style={{ fontSize: 11, color: "#94A3B8", lineHeight: 1.5, maxWidth: 190 }}>Could not generate a 3D conformer via NIH CACTUS.</p>
+            <button onClick={handleRetry}
+              style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", borderRadius: 8, border: "1px solid #E2E8F0", background: "white", fontSize: 11, fontWeight: 600, color: "#64748B", cursor: "pointer" }}>
+              <RefreshCw size={11} /> Retry
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div style={{ padding: "9px 13px", borderTop: "1px solid #F1F5F9", background: "#FAFBFD" }}>
+        <p style={{ fontSize: 9, color: "#94A3B8", lineHeight: 1.5 }}>Drag to rotate · Scroll to zoom · Right-drag to pan</p>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // StructureViewer
 // ─────────────────────────────────────────────────────────────────────────────
 function StructureViewer({ smiles, name }: { smiles: string; name: string }) {
-  const [status, setStatus]     = useState<"loading" | "loaded" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
   const [expanded, setExpanded] = useState(false);
-  const [copied, setCopied]     = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [mode, setMode] = useState<"2d" | "3d">("2d");
   const imgRef = useRef<HTMLImageElement>(null);
   const src = smilesImageUrl(smiles, 300);
 
   const handleCopy = async () => {
-    try { await navigator.clipboard.writeText(smiles); } catch {}
+    try { await navigator.clipboard.writeText(smiles); } catch { }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   return (
     <>
-      <div style={{ borderRadius: 18, border: "1px solid #E2E8F0", background: "white", overflow: "hidden" }}>
-
-        {/* toolbar */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 13px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFD" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-            <div style={{ width: 29, height: 29, borderRadius: 8, background: "linear-gradient(135deg,#1565C0,#0097A7)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <Atom size={13} color="white" />
-            </div>
-            <div>
-              <p style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>2D Structure</p>
-              <p style={{ fontSize: 9, color: "#94A3B8", marginTop: 1 }}>NIH CACTUS</p>
-            </div>
-          </div>
-          <div className="dc-vtoolbar" style={{ display: "flex", gap: 5 }}>
-            {[
-              { node: copied ? <CheckCheck size={11} color="#059669" /> : <Copy size={11} color="#64748B" />, fn: handleCopy,                       title: "Copy SMILES"    },
-              { node: <Download  size={11} color="#64748B" />,                                                fn: () => window.open(smilesImageUrl(smiles,600), "_blank"), title: "Open full image" },
-              { node: <Maximize2 size={11} color="#64748B" />,                                                fn: () => setExpanded(true),            title: "Expand"         },
-            ].map(({ node, fn, title }, i) => (
-              <button key={i} onClick={fn} title={title}
-                style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #E2E8F0", background: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", touchAction: "manipulation" }}>
-                {node}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* image */}
-        <div style={{ position: "relative", background: "linear-gradient(135deg,#F8FAFC,#EFF6FF)", minHeight: 230, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle,#CBD5E1 1px,transparent 1px)", backgroundSize: "20px 20px", opacity: 0.22, pointerEvents: "none" }} />
-
-          {status === "loading" && (
-            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, zIndex: 1 }}>
-              <div style={{ width: 34, height: 34, borderRadius: "50%", border: "3px solid #E2E8F0", borderTopColor: "#1565C0", animation: "dc-spin 0.8s linear infinite" }} />
-              <p style={{ fontSize: 11, color: "#94A3B8", fontWeight: 600 }}>Rendering…</p>
-            </div>
-          )}
-
-          {status === "error" && (
-            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, zIndex: 1, padding: 20, textAlign: "center" }}>
-              <div style={{ width: 42, height: 42, borderRadius: 12, background: "#FEF2F2", border: "1px solid #FECACA", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <FlaskConical size={18} color="#EF4444" />
-              </div>
-              <p style={{ fontSize: 12, fontWeight: 700, color: "#DC2626" }}>Structure unavailable</p>
-              <p style={{ fontSize: 11, color: "#94A3B8", lineHeight: 1.5, maxWidth: 190 }}>Could not render via NIH CACTUS.</p>
-              <button onClick={() => { setStatus("loading"); if (imgRef.current) { imgRef.current.src = ""; imgRef.current.src = src; } }}
-                style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", borderRadius: 8, border: "1px solid #E2E8F0", background: "white", fontSize: 11, fontWeight: 600, color: "#64748B", cursor: "pointer" }}>
-                <RefreshCw size={11} /> Retry
-              </button>
-            </div>
-          )}
-
-          <img ref={imgRef} src={src} alt={`2D chemical structure of ${name}`}
-            onLoad={() => setStatus("loaded")} onError={() => setStatus("error")}
-            style={{ maxWidth: "100%", maxHeight: 250, objectFit: "contain", padding: 12, opacity: status === "loaded" ? 1 : 0, transition: "opacity 0.4s ease", position: "relative", zIndex: 1, filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.08))" }} />
-        </div>
-
-        {/* SMILES */}
-        <div style={{ padding: "9px 13px", borderTop: "1px solid #F1F5F9", background: "#FAFBFD" }}>
-          <p style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#94A3B8", marginBottom: 5 }}>SMILES</p>
-          <div style={{ position: "relative", background: "#F1F5F9", borderRadius: 9, padding: "7px 32px 7px 9px", border: "1px solid #E2E8F0" }}>
-            <p style={{ fontSize: 9, fontFamily: "monospace", color: "#475569", wordBreak: "break-all", lineHeight: 1.6 }}>{smiles}</p>
-            <button onClick={handleCopy}
-              style={{ position: "absolute", top: 5, right: 5, width: 22, height: 22, borderRadius: 5, border: "none", background: copied ? "#DCFCE7" : "#E2E8F0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s" }}>
-              {copied ? <CheckCheck size={10} color="#059669" /> : <Copy size={10} color="#64748B" />}
-            </button>
-          </div>
-          <p style={{ marginTop: 4, fontSize: 9, color: "#CBD5E1", textAlign: "right" }}>
-            via <a href="https://cactus.nci.nih.gov" target="_blank" rel="noopener noreferrer" style={{ color: "#93C5FD", textDecoration: "none" }}>NIH CACTUS</a>
-          </p>
+      {/* 2D / 3D toggle */}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+        <div className="dc-viewtoggle">
+          <button onClick={() => setMode("2d")}
+            style={{ padding: "5px 12px", borderRadius: 6, fontSize: 11, fontWeight: 700, color: mode === "2d" ? "white" : "#64748B", background: mode === "2d" ? "linear-gradient(135deg,#1565C0,#0097A7)" : "transparent" }}>
+            2D
+          </button>
+          <button onClick={() => setMode("3d")}
+            style={{ padding: "5px 12px", borderRadius: 6, fontSize: 11, fontWeight: 700, color: mode === "3d" ? "white" : "#64748B", background: mode === "3d" ? "linear-gradient(135deg,#1565C0,#0097A7)" : "transparent" }}>
+            3D
+          </button>
         </div>
       </div>
+
+      {mode === "3d" ? (
+        <Structure3DViewer smiles={smiles} name={name} />
+      ) : (
+        <div style={{ borderRadius: 18, border: "1px solid #E2E8F0", background: "white", overflow: "hidden" }}>
+
+          {/* toolbar */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 13px", borderBottom: "1px solid #F1F5F9", background: "#FAFBFD" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+              <div style={{ width: 29, height: 29, borderRadius: 8, background: "linear-gradient(135deg,#1565C0,#0097A7)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Atom size={13} color="white" />
+              </div>
+              <div>
+                <p style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>2D Structure</p>
+                <p style={{ fontSize: 9, color: "#94A3B8", marginTop: 1 }}>NIH CACTUS</p>
+              </div>
+            </div>
+            <div className="dc-vtoolbar" style={{ display: "flex", gap: 5 }}>
+              {[
+                { node: copied ? <CheckCheck size={11} color="#059669" /> : <Copy size={11} color="#64748B" />, fn: handleCopy, title: "Copy SMILES" },
+                { node: <Download size={11} color="#64748B" />, fn: () => window.open(smilesImageUrl(smiles, 600), "_blank"), title: "Open full image" },
+                { node: <Maximize2 size={11} color="#64748B" />, fn: () => setExpanded(true), title: "Expand" },
+              ].map(({ node, fn, title }, i) => (
+                <button key={i} onClick={fn} title={title}
+                  style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #E2E8F0", background: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", touchAction: "manipulation" }}>
+                  {node}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* image */}
+          <div style={{ position: "relative", background: "linear-gradient(135deg,#F8FAFC,#EFF6FF)", minHeight: 230, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle,#CBD5E1 1px,transparent 1px)", backgroundSize: "20px 20px", opacity: 0.22, pointerEvents: "none" }} />
+
+            {status === "loading" && (
+              <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, zIndex: 1 }}>
+                <div style={{ width: 34, height: 34, borderRadius: "50%", border: "3px solid #E2E8F0", borderTopColor: "#1565C0", animation: "dc-spin 0.8s linear infinite" }} />
+                <p style={{ fontSize: 11, color: "#94A3B8", fontWeight: 600 }}>Rendering…</p>
+              </div>
+            )}
+
+            {status === "error" && (
+              <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, zIndex: 1, padding: 20, textAlign: "center" }}>
+                <div style={{ width: 42, height: 42, borderRadius: 12, background: "#FEF2F2", border: "1px solid #FECACA", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <FlaskConical size={18} color="#EF4444" />
+                </div>
+                <p style={{ fontSize: 12, fontWeight: 700, color: "#DC2626" }}>Structure unavailable</p>
+                <p style={{ fontSize: 11, color: "#94A3B8", lineHeight: 1.5, maxWidth: 190 }}>Could not render via NIH CACTUS.</p>
+                <button onClick={() => { setStatus("loading"); if (imgRef.current) { imgRef.current.src = ""; imgRef.current.src = src; } }}
+                  style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", borderRadius: 8, border: "1px solid #E2E8F0", background: "white", fontSize: 11, fontWeight: 600, color: "#64748B", cursor: "pointer" }}>
+                  <RefreshCw size={11} /> Retry
+                </button>
+              </div>
+            )}
+
+            <img ref={imgRef} src={src} alt={`2D chemical structure of ${name}`}
+              onLoad={() => setStatus("loaded")} onError={() => setStatus("error")}
+              style={{ maxWidth: "100%", maxHeight: 250, objectFit: "contain", padding: 12, opacity: status === "loaded" ? 1 : 0, transition: "opacity 0.4s ease", position: "relative", zIndex: 1, filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.08))" }} />
+          </div>
+
+          {/* SMILES */}
+          <div style={{ padding: "9px 13px", borderTop: "1px solid #F1F5F9", background: "#FAFBFD" }}>
+            <p style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#94A3B8", marginBottom: 5 }}>SMILES</p>
+            <div style={{ position: "relative", background: "#F1F5F9", borderRadius: 9, padding: "7px 32px 7px 9px", border: "1px solid #E2E8F0" }}>
+              <p style={{ fontSize: 9, fontFamily: "monospace", color: "#475569", wordBreak: "break-all", lineHeight: 1.6 }}>{smiles}</p>
+              <button onClick={handleCopy}
+                style={{ position: "absolute", top: 5, right: 5, width: 22, height: 22, borderRadius: 5, border: "none", background: copied ? "#DCFCE7" : "#E2E8F0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s" }}>
+                {copied ? <CheckCheck size={10} color="#059669" /> : <Copy size={10} color="#64748B" />}
+              </button>
+            </div>
+            <p style={{ marginTop: 4, fontSize: 9, color: "#CBD5E1", textAlign: "right" }}>
+              via <a href="https://cactus.nci.nih.gov" target="_blank" rel="noopener noreferrer" style={{ color: "#93C5FD", textDecoration: "none" }}>NIH CACTUS</a>
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* modal */}
       <AnimatePresence>
@@ -362,7 +518,7 @@ function Badge({ label, style }: { label: string; style: { bg: string; color: st
 // ─────────────────────────────────────────────────────────────────────────────
 export default function DrugCard({ drug }: DrugCardProps) {
   type SKey = "properties" | "pharmacokinetics" | "pharmacodynamics" | "classification"
-            | "references" | "synonyms" | "drugInteractions" | "foodInteractions" | "products";
+    | "references" | "synonyms" | "drugInteractions" | "foodInteractions" | "products";
 
   const [open, setOpen] = useState<Record<SKey, boolean>>({
     properties: false, pharmacokinetics: false, pharmacodynamics: false,
@@ -372,13 +528,13 @@ export default function DrugCard({ drug }: DrugCardProps) {
   const [showAllDDI, setShowAllDDI] = useState(false);
   const toggle = (k: SKey) => setOpen(p => ({ ...p, [k]: !p[k] }));
 
-  const ddi        = drug.interactions?.drug_interactions ?? [];
-  const shownDDI   = showAllDDI ? ddi : ddi.slice(0, 6);
-  const primaryId  = drug.drugbank_ids?.find(d => d.primary)?.id ?? drug.drugbank_ids?.[0]?.id ?? "N/A";
-  const calcProps  = drug.properties?.calculated_properties ?? [];
-  const formula    = calcProps.find(p => p.kind === "Molecular Formula");
-  const logP       = calcProps.find(p => p.kind === "logP" && p.source === "ALOGPS");
-  const psa        = calcProps.find(p => p.kind === "Polar Surface Area (PSA)");
+  const ddi = drug.interactions?.drug_interactions ?? [];
+  const shownDDI = showAllDDI ? ddi : ddi.slice(0, 6);
+  const primaryId = drug.drugbank_ids?.find(d => d.primary)?.id ?? drug.drugbank_ids?.[0]?.id ?? "N/A";
+  const calcProps = drug.properties?.calculated_properties ?? [];
+  const formula = calcProps.find(p => p.kind === "Molecular Formula");
+  const logP = calcProps.find(p => p.kind === "logP" && p.source === "ALOGPS");
+  const psa = calcProps.find(p => p.kind === "Polar Surface Area (PSA)");
 
   return (
     <motion.div className="dc"
@@ -421,10 +577,10 @@ export default function DrugCard({ drug }: DrugCardProps) {
         {/* info strip */}
         <div className="dc-info-grid" style={{ marginTop: 14, paddingBottom: 14, borderBottom: "1px solid #F1F5F9" }}>
           {[
-            { icon: <Tag size={9} />,         label: "DrugBank ID", val: primaryId },
-            { icon: <FlaskConical size={9} />, label: "CAS Number",  val: drug.cas_number ?? "N/A" },
-            { icon: <History size={9} />,      label: "Created",     val: fmt(drug.created) },
-            { icon: <Calendar size={9} />,     label: "Updated",     val: fmt(drug.updated) },
+            { icon: <Tag size={9} />, label: "DrugBank ID", val: primaryId },
+            { icon: <FlaskConical size={9} />, label: "CAS Number", val: drug.cas_number ?? "N/A" },
+            { icon: <History size={9} />, label: "Created", val: fmt(drug.created) },
+            { icon: <Calendar size={9} />, label: "Updated", val: fmt(drug.updated) },
           ].map(({ icon, label, val }) => (
             <div key={label} style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 8, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "#94A3B8" }}>
@@ -441,7 +597,7 @@ export default function DrugCard({ drug }: DrugCardProps) {
       {/* ══ STRUCTURE + DESCRIPTION ══ */}
       <div className="dc-two-col dc-ps">
 
-        {/* 2D viewer */}
+        {/* 2D/3D viewer */}
         {drug.smiles && (
           <div>
             <StructureViewer smiles={drug.smiles} name={drug.name} />
@@ -535,10 +691,10 @@ export default function DrugCard({ drug }: DrugCardProps) {
           <Section id="pd" icon={AlertCircle} label="Pharmacodynamics" open={open.pharmacodynamics} onToggle={() => toggle("pharmacodynamics")} accent="#059669">
             <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
               {([
-                { key: "indication",          label: "Indication",          color: "#1565C0", bg: "#EFF6FF" },
-                { key: "mechanism_of_action",  label: "Mechanism of Action", color: "#059669", bg: "#F0FDF4" },
-                { key: "pharmacodynamics",     label: "Pharmacodynamics",    color: "#7C3AED", bg: "#FAF5FF" },
-                { key: "toxicity",             label: "Toxicity",            color: "#DC2626", bg: "#FEF2F2" },
+                { key: "indication", label: "Indication", color: "#1565C0", bg: "#EFF6FF" },
+                { key: "mechanism_of_action", label: "Mechanism of Action", color: "#059669", bg: "#F0FDF4" },
+                { key: "pharmacodynamics", label: "Pharmacodynamics", color: "#7C3AED", bg: "#FAF5FF" },
+                { key: "toxicity", label: "Toxicity", color: "#DC2626", bg: "#FEF2F2" },
               ] as const).map(({ key, label, color, bg }) => {
                 const val = (drug.pharmacodynamics as any)[key];
                 if (!val) return null;
@@ -558,7 +714,7 @@ export default function DrugCard({ drug }: DrugCardProps) {
           <Section id="cp" icon={Beaker} label="Physicochemical Properties" open={open.properties} onToggle={() => toggle("properties")} accent="#7C3AED">
             <div className="dc-calc-grid">
               {calcProps
-                .filter(p => !["SMILES","InChI","InChIKey","IUPAC Name","Traditional IUPAC Name"].includes(p.kind))
+                .filter(p => !["SMILES", "InChI", "InChIKey", "IUPAC Name", "Traditional IUPAC Name"].includes(p.kind))
                 .map((p, i) => (
                   <div key={i} style={{ borderRadius: 10, border: "1px solid #E2E8F0", padding: "9px 11px", background: "#FAFBFD" }}>
                     <p style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#94A3B8", marginBottom: 3 }}>{p.kind}</p>
@@ -584,8 +740,10 @@ export default function DrugCard({ drug }: DrugCardProps) {
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.labeller}</span>
                       </p>
                     </div>
-                    <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 5, border: "1px solid", display: "flex", alignItems: "center", gap: 2, flexShrink: 0,
-                      ...(p.approved ? { background: "#F0FDF4", color: "#15803D", borderColor: "#86EFAC" } : { background: "#F8FAFC", color: "#64748B", borderColor: "#CBD5E1" }) }}>
+                    <span style={{
+                      fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 5, border: "1px solid", display: "flex", alignItems: "center", gap: 2, flexShrink: 0,
+                      ...(p.approved ? { background: "#F0FDF4", color: "#15803D", borderColor: "#86EFAC" } : { background: "#F8FAFC", color: "#64748B", borderColor: "#CBD5E1" })
+                    }}>
                       {p.approved ? <CheckCircle2 size={8} /> : <XCircle size={8} />}
                       {p.approved ? "Approved" : "—"}
                     </span>
@@ -665,7 +823,7 @@ export default function DrugCard({ drug }: DrugCardProps) {
                 </div>
               )}
               <div className="dc-class-grid">
-                {(["kingdom","superclass","class","subclass","direct_parent"] as const).map(k => {
+                {(["kingdom", "superclass", "class", "subclass", "direct_parent"] as const).map(k => {
                   const v = drug.classification![k];
                   if (!v) return null;
                   return (

@@ -8,25 +8,25 @@ import {
 } from "lucide-react";
 
 const stats = [
-  { value: "500+", label: "Resources"  },
-  { value: "10k+", label: "Students"   },
-  { value: "50+",  label: "Mentors"    },
-  { value: "4.9★", label: "Rating"     },
+  { value: "500+", label: "Resources" },
+  { value: "10k+", label: "Students" },
+  { value: "50+", label: "Mentors" },
+  { value: "4.9★", label: "Rating" },
 ];
 
 const tags = ["Pharmacology", "GPAT Prep", "MCQ Bank", "Drug Database", "Clinical Pharmacy"];
 
 const bgIcons = [
-  { Icon: Pill,         top: "10%", left: "2%",   size: 30, color: "text-blue-400/20"   },
-  { Icon: HeartPulse,  top: "34%", left: "1.5%", size: 28, color: "text-red-400/20"     },
-  { Icon: Stethoscope, top: "60%", left: "2%",   size: 32, color: "text-purple-400/20"  },
-  { Icon: Leaf,        top: "84%", left: "1.5%", size: 26, color: "text-green-400/20"   },
-  { Icon: FlaskConical,top: "10%", left: "93%",  size: 32, color: "text-amber-400/20"   },
-  { Icon: Dna,         top: "34%", left: "93.5%",size: 28, color: "text-teal-400/20"    },
-  { Icon: Microscope,  top: "60%", left: "93%",  size: 34, color: "text-indigo-400/20"  },
-  { Icon: Beaker,      top: "84%", left: "93.5%",size: 26, color: "text-cyan-400/20"    },
-  { Icon: Syringe,     top: "90%", left: "48%",  size: 24, color: "text-pink-400/20"    },
-  { Icon: Activity,    top: "4%",  left: "48%",  size: 22, color: "text-orange-400/20"  },
+  { Icon: Pill, top: "10%", left: "2%", size: 30, color: "text-blue-400/20" },
+  { Icon: HeartPulse, top: "34%", left: "1.5%", size: 28, color: "text-red-400/20" },
+  { Icon: Stethoscope, top: "60%", left: "2%", size: 32, color: "text-purple-400/20" },
+  { Icon: Leaf, top: "84%", left: "1.5%", size: 26, color: "text-green-400/20" },
+  { Icon: FlaskConical, top: "10%", left: "93%", size: 32, color: "text-amber-400/20" },
+  { Icon: Dna, top: "34%", left: "93.5%", size: 28, color: "text-teal-400/20" },
+  { Icon: Microscope, top: "60%", left: "93%", size: 34, color: "text-indigo-400/20" },
+  { Icon: Beaker, top: "84%", left: "93.5%", size: 26, color: "text-cyan-400/20" },
+  { Icon: Syringe, top: "90%", left: "48%", size: 24, color: "text-pink-400/20" },
+  { Icon: Activity, top: "4%", left: "48%", size: 22, color: "text-orange-400/20" },
 ];
 
 export default function Hero() {
@@ -56,7 +56,7 @@ export default function Hero() {
 
           {/* Left column - Center aligned on mobile, Left aligned on lg */}
           <div className="flex flex-col items-center text-center lg:items-start lg:text-left gap-6 sm:gap-7">
-            
+
             {/* Badge */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -123,7 +123,7 @@ export default function Hero() {
                   className="w-full pl-9 sm:pl-11 pr-24 sm:pr-28 py-3 sm:py-4 text-xs sm:text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none bg-transparent"
                 />
                 <button className="absolute right-1.5 sm:right-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-green-400 hover:opacity-90 transition">
-                  Search 
+                  Search
                 </button>
               </div>
             </div>
@@ -185,7 +185,7 @@ export default function Hero() {
             {/* Hero image */}
             <div className="relative w-[260px] sm:w-[320px] h-[330px] sm:h-[400px] rounded-3xl overflow-hidden z-10">
               <div className="absolute inset-0 bg-gradient-to-t from-blue-900/20 via-transparent to-transparent z-10" />
-              <Image  
+              <Image
                 quality={75}
                 src="/images/banner/signup.webp"
                 alt="Pharmacy student"

@@ -1,17 +1,12 @@
 import { Poppins } from "next/font/google";
 import { headers } from "next/headers";
 import type { Metadata } from "next";
-// @ts-ignore: CSS import type declarations are handled by Next.js
+// @ts-expect-error Next.js handles this global CSS side-effect import at build time.
 import "./globals.css";
-import Header from "@/components/Layout/Header";
-import Footer from "@/components/Layout/Footer";
-import ClinicalNavbar from "@/components/Clinical/ClinicalNavbar";
-import ClinicalFooter from "@/components/Clinical/ClinicalFooter";
 import { ThemeProvider } from "next-themes";
-import ScrollToTop from "@/components/ScrollToTop";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import LaunchPopup from "@/components/LaunchPopup";
+import AppShell from "@/components/AppShell";
 
 const font = Poppins({
   subsets: ["latin"],
@@ -20,7 +15,7 @@ const font = Poppins({
 
 /* ── Dynamic metadata based on subdomain ─────────────────────────────────── */
 export async function generateMetadata(): Promise<Metadata> {
-  const headersList = headers();
+  const headersList = await headers();
   const subdomain = headersList.get("x-subdomain");
 
   if (subdomain === "clinical") {
@@ -50,24 +45,22 @@ export const viewport = {
   themeColor: "#2563eb",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const headersList = headers();
+  const headersList = await headers();
   const subdomain = headersList.get("x-subdomain");
-  const isClinical = subdomain === "clinical";
+  const isClinicalSubdomain = subdomain === "clinical";
 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={font.className}>
         <ThemeProvider attribute="class" enableSystem defaultTheme="light">
-          {isClinical ? <ClinicalNavbar /> : <Header />}
-          <main>{children}</main>
-          {isClinical ? <ClinicalFooter /> : <Footer />}
-          {!isClinical && <ScrollToTop />}
-          {!isClinical && <LaunchPopup />}
+          <AppShell isClinicalSubdomain={isClinicalSubdomain}>
+            {children}
+          </AppShell>
         </ThemeProvider>
         <Analytics />
         <SpeedInsights />

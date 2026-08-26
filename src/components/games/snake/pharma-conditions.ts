@@ -89,4 +89,4 @@ export function isPillCorrectForCondition(
   const data = PILL_DATABASE[conditionId];
   if (!data) return false;
   return data.correct.includes(pill.name);
-}
+} 

@@ -321,11 +321,10 @@ export default function PharmaSnakeGame({
                     {Array.from({ length: STARTING_LIVES }).map((_, i) => (
                         <Heart
                             key={i}
-                            className={`w-5 h-5 ${
-                                i < gameState.lives
+                            className={`w-5 h-5 ${i < gameState.lives
                                     ? "text-red-500 fill-red-500"
                                     : "text-gray-700 fill-gray-800"
-                            }`}
+                                }`}
                         />
                     ))}
                 </div>
@@ -338,11 +337,10 @@ export default function PharmaSnakeGame({
             {/* Toast */}
             {toast && (
                 <div
-                    className={`w-full py-2 px-3 rounded-lg text-xs font-semibold text-center border ${
-                        toast.type === "success"
+                    className={`w-full py-2 px-3 rounded-lg text-xs font-semibold text-center border ${toast.type === "success"
                             ? "bg-emerald-950/80 border-emerald-700 text-emerald-300"
                             : "bg-red-950/80 border-red-700 text-red-300"
-                    }`}
+                        }`}
                 >
                     {toast.text}
                 </div>

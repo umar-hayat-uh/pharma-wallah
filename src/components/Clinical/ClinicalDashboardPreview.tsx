@@ -154,7 +154,7 @@ export default function ClinicalDashboardPreview() {
                                         Metformin 500mg BID
                                     </div>
                                     <div className="text-sm text-slate-500 mt-1">
-                    Appropriate for current renal function (eGFR `{'>'}` 30 mL/min required).
+                                        Appropriate for current renal function (eGFR `{'>'}` 30 mL/min required).
                                     </div>
                                 </div>
 

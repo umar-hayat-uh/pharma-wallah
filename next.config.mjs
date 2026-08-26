@@ -1,11 +1,25 @@
 // next.config.mjs
+
 import withPWAInit from "next-pwa";
 
 /** @type {import('next').NextConfig} */
+
 const nextConfig = {
   reactStrictMode: true,
+
   images: {
     unoptimized: true,
+
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "upload.wikimedia.org",
+      },
+      {
+        protocol: "https",
+        hostname: "princetonlibrary.org",
+      },
+    ],
   },
 };
 
@@ -13,16 +27,15 @@ const withPWA = withPWAInit({
   dest: "public",
   register: true,
   skipWaiting: true,
-  clientsClaim: true, 
+  clientsClaim: true,
+
   disable: process.env.NODE_ENV === "development",
-  // Optional: customize runtime caching
-  runtimeCaching: [
-    // add custom strategies if needed
-  ],
-  // Exclude large files from precaching if necessary
+
+  runtimeCaching: [],
+
   exclude: [
-    ({ asset }) => asset.name.startsWith('server/'),
-    ({ size }) => size > 500000, // skip files > 500KB
+    ({ asset }) => asset.name.startsWith("server/"),
+    ({ size }) => size > 500000,
   ],
 });
 
