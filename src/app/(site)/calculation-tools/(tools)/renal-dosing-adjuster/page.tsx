@@ -29,7 +29,8 @@ import {
 
 // ─── TYPES & INTERFACES ─────────────────────────────────────────────
 
-export type DrugCategory =
+// Removed "export" from type
+type DrugCategory =
     | "All"
     | "Antibiotics"
     | "Antivirals & Antifungals"
@@ -39,7 +40,8 @@ export type DrugCategory =
     | "Neurology & Analgesics"
     | "Rheumatology & Gout";
 
-export interface DoseAdjustmentTier {
+// Removed "export" from interface
+interface DoseAdjustmentTier {
     crclRangeLabel: string;
     minCrCl: number;
     maxCrCl: number;
@@ -49,7 +51,8 @@ export interface DoseAdjustmentTier {
     status: "safe" | "caution" | "contraindicated" | "monitored";
 }
 
-export interface RenalDrug {
+// Removed "export" from interface
+interface RenalDrug {
     id: string;
     name: string;
     genericName?: string;
@@ -73,7 +76,8 @@ export interface RenalDrug {
 
 // ─── COMPREHENSIVE CLINICAL DRUG DATABASE (2024–2026 EVIDENCE) ──────
 
-export const renalDrugsDatabase: RenalDrug[] = [
+// Removed "export" from const
+const renalDrugsDatabase: RenalDrug[] = [
     {
         id: "vancomycin",
         name: "Vancomycin",
@@ -1148,24 +1152,25 @@ export const renalDrugsDatabase: RenalDrug[] = [
 
 // ─── ANTHROPOMETRICS & RENAL CLEARANCE CALCULATORS ──────────────────
 
-export function calculateIBW(heightInches: number, sex: "male" | "female"): number {
+// Removed "export" from all functions below
+function calculateIBW(heightInches: number, sex: "male" | "female"): number {
     const base = sex === "male" ? 50.0 : 45.5;
     const diff = heightInches - 60;
     const ibw = base + 2.3 * diff;
     return Math.max(ibw, sex === "male" ? 50 : 45.5);
 }
 
-export function calculateAdjBW(actualKg: number, ibwKg: number): number {
+function calculateAdjBW(actualKg: number, ibwKg: number): number {
     return ibwKg + 0.4 * (actualKg - ibwKg);
 }
 
-export function calculateBMI(weightKg: number, heightCm: number): number {
+function calculateBMI(weightKg: number, heightCm: number): number {
     if (heightCm <= 0) return 0;
     const heightM = heightCm / 100;
     return Math.round((weightKg / (heightM * heightM)) * 10) / 10;
 }
 
-export function calculateCrCl(
+function calculateCrCl(
     age: number,
     weightKg: number,
     scrMgDl: number,
@@ -1177,7 +1182,7 @@ export function calculateCrCl(
     return Math.round(crcl * 10) / 10;
 }
 
-export function calculateCKDEPI2021(
+function calculateCKDEPI2021(
     age: number,
     scrMgDl: number,
     sex: "male" | "female"
@@ -1199,7 +1204,7 @@ export function calculateCKDEPI2021(
     return Math.round(egfr * 10) / 10;
 }
 
-export function getKDIGOStage(egfr: number): {
+function getKDIGOStage(egfr: number): {
     stage: string;
     description: string;
     badgeStyle: string;

@@ -37,7 +37,8 @@ import {
 
 // ─── TYPES & CREDIBLEMEDS DRUG DATABASE ─────────────────────────────
 
-export interface QTDrug {
+// Removed "export" from interface – local to this file only
+interface QTDrug {
     name: string;
     brand: string;
     class: string;
@@ -47,7 +48,8 @@ export interface QTDrug {
     link?: string;
 }
 
-export const commonQTDrugs: QTDrug[] = [
+// Removed "export" from const – local to this file only
+const commonQTDrugs: QTDrug[] = [
     {
         name: "Amiodarone",
         brand: "Cordarone / Pacerone",

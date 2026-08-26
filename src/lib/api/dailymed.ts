@@ -168,7 +168,7 @@ export async function suggestDrugNames(rawQuery: string): Promise<DrugNameSugges
 
     console.log(
         `[dailymed] suggest "${query}" -> upstream returned ${rows.length} raw rows` +
-            (rows[0] ? `, first: ${JSON.stringify(rows[0])}` : "")
+        (rows[0] ? `, first: ${JSON.stringify(rows[0])}` : "")
     );
 
     const seen = new Set<string>();

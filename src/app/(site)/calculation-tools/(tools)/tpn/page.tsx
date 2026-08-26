@@ -28,9 +28,11 @@ import {
 
 // ─── TYPES & INTERFACES ─────────────────────────────────────────────
 
-export type PatientPopulation = "adult" | "pediatric";
+// Removed "export" from type
+type PatientPopulation = "adult" | "pediatric";
 
-export interface MacroSource {
+// Removed "export" from interface
+interface MacroSource {
     id: string;
     label: string;
     concentrationPct: number; // e.g. 10 for "10%"
@@ -38,7 +40,8 @@ export interface MacroSource {
     proteinFraction?: number; // for amino acids, g N per g AA (used for nitrogen calc)
 }
 
-export interface ElectrolyteAdditive {
+// Removed "export" from interface
+interface ElectrolyteAdditive {
     id: string;
     label: string;
     unit: "mEq" | "mmol" | "units";
@@ -48,26 +51,30 @@ export interface ElectrolyteAdditive {
 
 // ─── MACRONUTRIENT SOURCE DATABASE ──────────────────────────────────
 
-export const AMINO_ACID_SOURCES: MacroSource[] = [
+// Removed "export" from const
+const AMINO_ACID_SOURCES: MacroSource[] = [
     { id: "aa-10", label: "Amino Acids 10%", concentrationPct: 10, kcalPerGram: 4, proteinFraction: 0.16 },
     { id: "aa-15", label: "Amino Acids 15%", concentrationPct: 15, kcalPerGram: 4, proteinFraction: 0.16 },
     { id: "aa-8.5", label: "Amino Acids 8.5%", concentrationPct: 8.5, kcalPerGram: 4, proteinFraction: 0.16 },
 ];
 
-export const DEXTROSE_SOURCES: MacroSource[] = [
+// Removed "export" from const
+const DEXTROSE_SOURCES: MacroSource[] = [
     { id: "dex-50", label: "Dextrose 50%", concentrationPct: 50, kcalPerGram: 3.4 },
     { id: "dex-70", label: "Dextrose 70%", concentrationPct: 70, kcalPerGram: 3.4 },
     { id: "dex-20", label: "Dextrose 20%", concentrationPct: 20, kcalPerGram: 3.4 },
 ];
 
-export const LIPID_SOURCES: MacroSource[] = [
+// Removed "export" from const
+const LIPID_SOURCES: MacroSource[] = [
     { id: "lip-20", label: "Lipid Emulsion 20%", concentrationPct: 20, kcalPerGram: 10 },
     { id: "lip-30", label: "Lipid Emulsion 30%", concentrationPct: 30, kcalPerGram: 10 },
     { id: "lip-10", label: "Lipid Emulsion 10%", concentrationPct: 10, kcalPerGram: 9 },
 ];
 
 // ─── ELECTROLYTE DEFAULT RANGES (ASPEN-referenced, adult maintenance) ─
-export interface ElectrolyteDef {
+// Removed "export" from interface
+interface ElectrolyteDef {
     id: string;
     label: string;
     unit: "mEq" | "mmol";
@@ -76,7 +83,8 @@ export interface ElectrolyteDef {
     mOsmPerUnit: number; // approximate osmotic contribution per mEq or mmol added to solution
 }
 
-export const ELECTROLYTE_DEFS: ElectrolyteDef[] = [
+// Removed "export" from const
+const ELECTROLYTE_DEFS: ElectrolyteDef[] = [
     { id: "sodium", label: "Sodium (as NaCl/NaAc)", unit: "mEq", adultRangePerDay: "1–2 mEq/kg/day", pedRangePerKgDay: "2–5 mEq/kg/day", mOsmPerUnit: 2 },
     { id: "potassium", label: "Potassium (as KCl/KPhos)", unit: "mEq", adultRangePerDay: "1–2 mEq/kg/day", pedRangePerKgDay: "2–4 mEq/kg/day", mOsmPerUnit: 2 },
     { id: "calcium", label: "Calcium Gluconate", unit: "mEq", adultRangePerDay: "10–15 mEq/day", pedRangePerKgDay: "0.5–4 mEq/kg/day", mOsmPerUnit: 1.4 },
@@ -1157,7 +1165,7 @@ Generated at: ${new Date().toLocaleString()}
                         </div>
                     </div>
                     <div className="text-[11px] text-slate-400 border-t border-slate-100 pt-2 flex flex-wrap justify-between items-center gap-2">
-                        <span>PharmaWallah Clinical Engineering • Updated for 2026 Parenteral Standards</span>
+                        <span>PharmaWallah Clinical• Updated for 2026 Parenteral Standards</span>
                         <span>Referenced against ASPEN Clinical Guidelines & Institutional TPN Standards</span>
                     </div>
                 </footer>

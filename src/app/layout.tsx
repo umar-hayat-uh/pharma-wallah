@@ -1,7 +1,8 @@
 import { Poppins } from "next/font/google";
 import { headers } from "next/headers";
 import type { Metadata } from "next";
-// @ts-expect-error Next.js handles this global CSS side-effect import at build time.
+// TypeScript may not have a declaration for this Next.js side-effect stylesheet import.
+// @ts-ignore -- the stylesheet is handled by Next.js at build time.
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import { Analytics } from "@vercel/analytics/react";
@@ -62,6 +63,7 @@ export default async function RootLayout({
             {children}
           </AppShell>
         </ThemeProvider>
+
         <Analytics />
         <SpeedInsights />
       </body>

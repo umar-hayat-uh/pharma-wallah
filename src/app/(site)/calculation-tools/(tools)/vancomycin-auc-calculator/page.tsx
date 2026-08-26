@@ -28,24 +28,25 @@ import {
 
 // ─── PHARMACOKINETIC FORMULA HELPERS ─────────────────────────────────
 
-export function calculateIBW(heightInches: number, sex: "male" | "female"): number {
+// Removed "export" from all helper functions below
+function calculateIBW(heightInches: number, sex: "male" | "female"): number {
     const base = sex === "male" ? 50.0 : 45.5;
     const diff = heightInches - 60;
     const ibw = base + 2.3 * diff;
     return Math.max(ibw, sex === "male" ? 50 : 45.5);
 }
 
-export function calculateAdjBW(actualKg: number, ibwKg: number): number {
+function calculateAdjBW(actualKg: number, ibwKg: number): number {
     return ibwKg + 0.4 * (actualKg - ibwKg);
 }
 
-export function calculateBMI(weightKg: number, heightCm: number): number {
+function calculateBMI(weightKg: number, heightCm: number): number {
     if (heightCm <= 0) return 0;
     const heightM = heightCm / 100;
     return Math.round((weightKg / (heightM * heightM)) * 10) / 10;
 }
 
-export function calculateCrCl(
+function calculateCrCl(
     age: number,
     weightKg: number,
     scrMgDl: number,
@@ -58,7 +59,7 @@ export function calculateCrCl(
 }
 
 // Matzke Elimination Rate Constant (hr^-1)
-export function calculateKe(crcl: number): number {
+function calculateKe(crcl: number): number {
     return Math.max(0.00083 * crcl + 0.0044, 0.005);
 }
 

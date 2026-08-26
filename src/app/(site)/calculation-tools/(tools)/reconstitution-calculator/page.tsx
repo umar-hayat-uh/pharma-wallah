@@ -30,7 +30,8 @@ import {
 
 // ─── TYPES & INTERFACES ─────────────────────────────────────────────
 
-export interface ReconstitutionPreset {
+// Removed "export" from interface
+interface ReconstitutionPreset {
     id: string;
     drugName: string;
     brandName: string;
@@ -50,11 +51,13 @@ export interface ReconstitutionPreset {
     fdaLink: string;
 }
 
-export type CalcMode = "doseToVol" | "volToDose" | "targetConc";
+// Removed "export" from type
+type CalcMode = "doseToVol" | "volToDose" | "targetConc";
 
 // ─── BUILT-IN CLINICAL PARENTERAL DATABASE ──────────────────────────
 
-export const RECONSTITUTION_DATABASE: ReconstitutionPreset[] = [
+// Removed "export" from const
+const RECONSTITUTION_DATABASE: ReconstitutionPreset[] = [
     {
         id: "ceftriaxone-1g-iv",
         drugName: "Ceftriaxone",
@@ -521,8 +524,8 @@ Generated at: ${new Date().toLocaleString()}
                                     key={preset.id}
                                     onClick={() => handleSelectPreset(preset.id)}
                                     className={`p-3 rounded-xl text-left transition-all border ${isSelected
-                                            ? "bg-gradient-to-br from-blue-50 to-emerald-50 border-blue-500 shadow-sm ring-2 ring-blue-500/20"
-                                            : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                                        ? "bg-gradient-to-br from-blue-50 to-emerald-50 border-blue-500 shadow-sm ring-2 ring-blue-500/20"
+                                        : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                                         }`}
                                 >
                                     <div className="font-semibold text-xs text-slate-900 truncate">
@@ -543,8 +546,8 @@ Generated at: ${new Date().toLocaleString()}
                                 setSelectedPresetId("custom");
                             }}
                             className={`p-3 rounded-xl text-left transition-all border ${selectedPresetId === "custom"
-                                    ? "bg-gradient-to-br from-blue-50 to-emerald-50 border-blue-500 shadow-sm ring-2 ring-blue-500/20"
-                                    : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                                ? "bg-gradient-to-br from-blue-50 to-emerald-50 border-blue-500 shadow-sm ring-2 ring-blue-500/20"
+                                : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                                 }`}
                         >
                             <div className="font-semibold text-xs text-slate-900">Custom Drug</div>
@@ -571,8 +574,8 @@ Generated at: ${new Date().toLocaleString()}
                                 <button
                                     onClick={() => setCalcMode("doseToVol")}
                                     className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${calcMode === "doseToVol"
-                                            ? "bg-gradient-to-r from-blue-600 to-emerald-500 text-white shadow-md shadow-blue-500/20"
-                                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                                        ? "bg-gradient-to-r from-blue-600 to-emerald-500 text-white shadow-md shadow-blue-500/20"
+                                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                                         }`}
                                 >
                                     <Syringe className="w-3.5 h-3.5" />
@@ -582,8 +585,8 @@ Generated at: ${new Date().toLocaleString()}
                                 <button
                                     onClick={() => setCalcMode("volToDose")}
                                     className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${calcMode === "volToDose"
-                                            ? "bg-gradient-to-r from-blue-600 to-emerald-500 text-white shadow-md shadow-blue-500/20"
-                                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                                        ? "bg-gradient-to-r from-blue-600 to-emerald-500 text-white shadow-md shadow-blue-500/20"
+                                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                                         }`}
                                 >
                                     <Calculator className="w-3.5 h-3.5" />
@@ -593,8 +596,8 @@ Generated at: ${new Date().toLocaleString()}
                                 <button
                                     onClick={() => setCalcMode("targetConc")}
                                     className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${calcMode === "targetConc"
-                                            ? "bg-gradient-to-r from-blue-600 to-emerald-500 text-white shadow-md shadow-blue-500/20"
-                                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                                        ? "bg-gradient-to-r from-blue-600 to-emerald-500 text-white shadow-md shadow-blue-500/20"
+                                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                                         }`}
                                 >
                                     <Droplet className="w-3.5 h-3.5" />

@@ -43,7 +43,7 @@ const BG_ICONS = [
 
 const PO_BASE = "https://www.pathologyoutlines.com";
 
-export interface SlideHotspot {
+interface SlideHotspot {
   id: string;
   tag: string;
   label: string;
@@ -53,7 +53,7 @@ export interface SlideHotspot {
   radius: number; // percentage radius tolerance
 }
 
-export interface UserPin {
+interface UserPin {
   id: string;
   x: number;
   y: number;
@@ -62,7 +62,7 @@ export interface UserPin {
   matchedHotspot?: SlideHotspot;
 }
 
-export interface AiEvaluationResult {
+interface AiEvaluationResult {
   semanticScore: number;
   feedback: string;
   matchedConcepts: string[];
@@ -70,7 +70,7 @@ export interface AiEvaluationResult {
   examinerNote: string;
 }
 
-export interface SlideAnswer {
+interface SlideAnswer {
   selectedOption: number | null;
   points: string;
   pins: UserPin[];
