@@ -62,7 +62,7 @@ export async function suggestDrugNames(
     if (candidates.length === 0) return [];
 
     // approximateTerm returns rxcui/rxaui but not names directly — resolve names
-    const uniqueRxcuis = [...new Set(candidates.map((c) => c.rxcui))].slice(0, limit);
+    const uniqueRxcuis = Array.from(new Set(candidates.map((c) => c.rxcui))).slice(0, limit);
     const names = await Promise.all(
         uniqueRxcuis.map(async (rxcui) => {
             type PropsResponse = { properties?: { name?: string } };
@@ -214,9 +214,9 @@ export async function getAllRelatedConcepts(
     }
 
     return {
-        brands: [...brands],
-        generics: [...generics],
-        doseForms: [...doseForms],
+        brands: Array.from(brands),
+        generics: Array.from(generics),
+        doseForms: Array.from(doseForms),
     };
 }
 
