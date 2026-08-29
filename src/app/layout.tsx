@@ -1,7 +1,6 @@
 import { Poppins } from "next/font/google";
 import { headers } from "next/headers";
 import type { Metadata } from "next";
-// TypeScript may not have a declaration for this Next.js side-effect stylesheet import.
 // @ts-ignore -- the stylesheet is handled by Next.js at build time.
 import "./globals.css";
 import { ThemeProvider } from "next-themes";

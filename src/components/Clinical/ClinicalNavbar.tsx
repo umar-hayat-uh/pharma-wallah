@@ -12,7 +12,12 @@ import {
     Calculator,
     Pill,
     Activity,
-    FileText
+    Utensils,
+    GitCompareArrows,
+    ShieldAlert,
+    Bug,
+    Syringe,
+    BookOpen
 } from 'lucide-react';
 
 interface ToolSubItem {
@@ -37,21 +42,33 @@ const CLINICAL_TOOLS: ToolSubItem[] = [
     },
     {
         label: 'Drug Interaction Checker',
-        href: '/tools/interactions',
+        href: '/clinical/drug-drug-interaction',
         description: 'Check potential contraindications between meds.',
-        icon: Pill,
+        icon: GitCompareArrows,
     },
     {
-        label: 'Lab Values Reference',
-        href: '/tools/lab-values',
-        description: 'Standard reference ranges for clinical lab tests.',
-        icon: Activity,
+        label: 'Drug–Food Interactions',
+        href: '/clinical/drug-food-interaction',
+        description: 'Check interactions with foods, herbs, and supplements.',
+        icon: Utensils,
     },
     {
-        label: 'Clinical Guidelines',
-        href: '/tools/guidelines',
-        description: 'Evidence-based clinical protocols and pathways.',
-        icon: FileText,
+        label: 'Adverse Effect Detector',
+        href: '/clinical/adr',
+        description: 'Identify medication-related adverse effects.',
+        icon: ShieldAlert,
+    },
+    {
+        label: 'Antibiotic Resistance Explorer',
+        href: '/clinical/amr',
+        description: 'Explore antimicrobial susceptibility patterns.',
+        icon: Bug,
+    },
+    {
+        label: 'Clinical Calculators',
+        href: '/clinical/calculators',
+        description: 'Pharmacy calculations for clinical scenarios.',
+        icon: Syringe,
     },
 ];
 
@@ -171,7 +188,7 @@ export default function ClinicalNavbar() {
                                                 />
                                             </button>
 
-                                            {/* Desktop Dropdown Menu */}
+                                            {/* Desktop Grid Dropdown Menu */}
                                             <AnimatePresence>
                                                 {dropdownOpen && (
                                                     <motion.div
@@ -179,9 +196,9 @@ export default function ClinicalNavbar() {
                                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                                         exit={{ opacity: 0, y: 8, scale: 0.98 }}
                                                         transition={{ duration: 0.15, ease: 'easeOut' }}
-                                                        className="absolute left-0 top-full pt-2 w-80 z-50"
+                                                        className="absolute -left-12 top-full pt-2 w-[560px] z-50"
                                                     >
-                                                        <div className="p-2 bg-white rounded-2xl shadow-xl border border-slate-100 ring-1 ring-slate-900/5">
+                                                        <div className="p-3 bg-white rounded-2xl shadow-xl border border-slate-100 ring-1 ring-slate-900/5 grid grid-cols-2 gap-1.5">
                                                             {item.children.map((child) => {
                                                                 const Icon = child.icon;
                                                                 const childActive = isActive(child.href);
@@ -189,13 +206,13 @@ export default function ClinicalNavbar() {
                                                                     <Link
                                                                         key={child.href}
                                                                         href={child.href}
-                                                                        className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${childActive
+                                                                        className={`flex items-start gap-3 p-2.5 rounded-xl transition-colors ${childActive
                                                                             ? 'bg-blue-50/80 text-[#1C7BD9]'
                                                                             : 'hover:bg-slate-50 text-slate-700'
                                                                             }`}
                                                                     >
                                                                         <div
-                                                                            className={`p-2 rounded-lg mt-0.5 ${childActive
+                                                                            className={`p-2 rounded-lg shrink-0 mt-0.5 ${childActive
                                                                                 ? 'bg-[#1C7BD9] text-white'
                                                                                 : 'bg-slate-100 text-slate-600'
                                                                                 }`}
@@ -203,10 +220,10 @@ export default function ClinicalNavbar() {
                                                                             <Icon className="w-4 h-4" />
                                                                         </div>
                                                                         <div>
-                                                                            <div className="text-sm font-semibold text-slate-900">
+                                                                            <div className="text-sm font-semibold text-slate-900 leading-tight">
                                                                                 {child.label}
                                                                             </div>
-                                                                            <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">
+                                                                            <p className="text-xs text-slate-500 line-clamp-2 mt-1 leading-snug">
                                                                                 {child.description}
                                                                             </p>
                                                                         </div>
@@ -363,8 +380,8 @@ export default function ClinicalNavbar() {
                                                                                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                                                                                 }`}
                                                                         >
-                                                                            <Icon className="w-4 h-4 text-[#1C7BD9]" />
-                                                                            {child.label}
+                                                                            <Icon className="w-4 h-4 text-[#1C7BD9] shrink-0" />
+                                                                            <span className="truncate">{child.label}</span>
                                                                         </Link>
                                                                     );
                                                                 })}

@@ -15,6 +15,7 @@ import {
   Sparkles,
   ArrowRight,
   X,
+  Utensils,
 } from "lucide-react";
 
 import ClinicalToolCard from "./ClinicalToolCard";
@@ -41,7 +42,7 @@ const tools: Tool[] = [
     title: "Drug-Drug Interaction Checker",
     icon: <GitCompareArrows className="w-6 h-6" />,
     color: "blue",
-    href: "/adr-detective",
+    href: "/clinical/drug-drug-interaction",
     category: "clinical",
     featured: true,
     description:
@@ -52,7 +53,7 @@ const tools: Tool[] = [
     title: "Adverse Effect Detector",
     icon: <ShieldAlert className="w-6 h-6" />,
     color: "rose",
-    href: "/adr-detective",
+    href: "/clinical/adr",
     category: "clinical",
     featured: true,
     description:
@@ -63,7 +64,7 @@ const tools: Tool[] = [
     title: "Antibiogram",
     icon: <Bug className="w-6 h-6" />,
     color: "amber",
-    href: "/antibiogram-simulator",
+    href: "/clinical/amr",
     category: "clinical",
     featured: true,
     description:
@@ -104,10 +105,10 @@ const tools: Tool[] = [
   },
 
   {
-    title: "LOINC Laboratory Reference",
-    icon: <Database className="w-6 h-6" />,
+    title: "Drug Food Interaction Checker",
+    icon: <Utensils className="w-6 h-6" />,
     color: "cyan",
-    href: "/clinical/loinc",
+    href: "/clinical/drug-food-interaction",
     category: "laboratory",
     featured: true,
     description:
