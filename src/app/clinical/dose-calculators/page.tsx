@@ -19,77 +19,72 @@ import {
     Syringe,
 } from "lucide-react";
 
-// Clinical (non‑dose) calculators list
-const clinicalCalculators = [
+// Dose calculators list
+const doseCalculators = [
     {
-        title: "BSA Calculator",
-        href: "/calculation-tools/bsa-calculator",
-        description: "Body Surface Area (Mosteller, DuBois, etc.)",
-        icon: "scale",
-        color: "blue",
+        title: "Pediatric Dose Calculator",
+        href: "/calculation-tools/pedriatic-calculator",
+        description: "Weight‑based dosing for children",
+        icon: "stethoscope",
+        color: "teal",
     },
     {
-        title: "BMI Calculator",
-        href: "/calculation-tools/bmi-calculator",
-        description: "Body Mass Index & weight classification",
-        icon: "scale",
-        color: "blue",
+        title: "Geriatric Dose Calculator",
+        href: "/calculation-tools/GeriatricDosingCalculator",
+        description: "Weight‑based dosing for elderly patients",
+        icon: "stethoscope",
+        color: "teal",
     },
     {
-        title: "Creatinine Calculator",
-        href: "/calculation-tools/creatinine-calculator",
-        description: "Cockcroft‑Gault equation for CrCl",
-        icon: "gauge",
-        color: "rose",
-    },
-    {
-        title: "GFR Calculator",
-        href: "/calculation-tools/gfr-calculator",
-        description: "eGFR using MDRD, CKD‑EPI, etc.",
-        icon: "activity",
-        color: "emerald",
-    },
-    {
-        title: "Child‑Pugh Calculator",
-        href: "/calculation-tools/child-pugh-calculator",
-        description: "Liver disease severity score",
-        icon: "file-text",
-        color: "amber",
-    },
-    {
-        title: "QT Interval Calculator",
-        href: "/calculation-tools/qt-interval-calculator",
-        description: "Corrected QT (Bazett, Fridericia, etc.)",
-        icon: "heart-pulse",
-        color: "rose",
-    },
-    {
-        title: "Anticoagulation Risk Calculator",
-        href: "/calculation-tools/anti-coagulation-risk-calculator",
-        description: "CHA₂DS₂‑VASc, HAS‑BLED, etc.",
-        icon: "shield-alert",
-        color: "blue",
-    },
-    {
-        title: "Corrected Calcium Calculator",
-        href: "/calculation-tools/CorrectedCalciumCalculator",
-        description: "Calcium adjusted for albumin",
-        icon: "flask-conical",
+        title: "IV Drip Rate Calculator",
+        href: "/calculation-tools/iv-drip-rate-calculator",
+        description: "Infusion rate and drop/minute calculations",
+        icon: "droplet",
         color: "violet",
     },
     {
-        title: "Sodium Correction Calculator",
-        href: "/calculation-tools/SodiumCorrectionCalculator",
-        description: "Hyponatremia correction formulas",
+        title: "Renal Dose Adjustment Calculator",
+        href: "/calculation-tools/renal-dosing-adjuster",
+        description: "Dose adjustments for renal impairment",
+        icon: "droplet",
+        color: "teal",
+    },
+     {
+        title: "Opioid MME Calculator",
+        href: "/calculation-tools/OpioidMMECalculator",
+        description: "Convert opioid doses to Morphine Milligram Equivalents",
         icon: "droplet",
         color: "teal",
     },
     {
-        title: "Anion Gap Calculator",
-        href: "/calculation-tools/AnionGapCalculator",
-        description: "Serum anion gap with/without potassium",
-        icon: "calculator",
-        color: "amber",
+        title: "Reconstitution Calculator",
+        href: "/calculation-tools/reconstitution-calculator",
+        description:
+            "Calculate diluent volume, final concentration, and syringe withdrawal for injectable medications",
+        icon: "flask-conical",
+        color: "teal",
+    },
+    {
+        title: "TPN Calculator",
+        href: "/calculation-tools/tpn",
+        description:
+            "Compute macronutrient, electrolyte, and total volume for parenteral nutrition orders",
+        icon: "syringe",
+        color: "emerald",
+    },
+    {
+        title: "Vancomycin AUC/MIC",
+        href: "/calculation-tools/vancomycin-auc-calculator",
+        description: "Estimate AUC/MIC ratio using pharmacokinetic parameters",
+        icon: "syringe",
+        color: "blue",
+    },
+    {
+        title: "Insulin Sensitivity Calculator",
+        href: "/calculation-tools/InsulinSensitivityCalculator",
+        description: "Insulin dosing adjustments",
+        icon: "syringe",
+        color: "emerald",
     },
 ];
 
@@ -107,7 +102,7 @@ const iconMap: Record<string, React.ReactNode> = {
     syringe: <Syringe className="w-5 h-5" />,
 };
 
-export default function ClinicalCalculatorsPage() {
+export default function DoseCalculatorsPage() {
     return (
         <div className="min-h-screen bg-slate-50 pt-10">
             {/* Navigation bar */}
@@ -121,10 +116,10 @@ export default function ClinicalCalculatorsPage() {
                         Back to Clinical Hub
                     </Link>
                     <Link
-                        href="/dose-calculators"
+                        href="/clinical-calculators"
                         className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 transition"
                     >
-                        Go to Dose Calculators
+                        Go to Clinical Calculators
                         <ArrowRight className="w-4 h-4" />
                     </Link>
                 </div>
@@ -138,16 +133,16 @@ export default function ClinicalCalculatorsPage() {
                     className="text-center mb-12"
                 >
                     <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900">
-                        Clinical Calculators
+                        Dose Calculators
                     </h1>
                     <p className="text-slate-500 mt-3 max-w-2xl mx-auto">
-                        Patient assessment, laboratory values, and disease‑severity tools
-                        for clinical decision‑making.
+                        Medication dosing, infusion rates, and patient‑specific adjustments
+                        for safe and effective therapy.
                     </p>
                 </motion.div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {clinicalCalculators.map((calc, index) => (
+                    {doseCalculators.map((calc, index) => (
                         <ClinicalToolCard
                             key={calc.title}
                             title={calc.title}

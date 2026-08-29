@@ -36,7 +36,7 @@ interface NavItem {
 const CLINICAL_TOOLS: ToolSubItem[] = [
     {
         label: 'Dose Calculator',
-        href: '/tools/dose-calculator',
+        href: '/clinical/dose-calculators',
         description: 'Calculate precise pediatric and adult drug dosages.',
         icon: Calculator,
     },

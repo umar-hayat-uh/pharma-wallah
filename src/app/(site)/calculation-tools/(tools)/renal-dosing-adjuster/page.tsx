@@ -7,11 +7,9 @@ import {
     Calculator,
     Droplet,
     User,
-    FileText,
     ExternalLink,
     Info,
     AlertTriangle,
-    CheckCircle2,
     Copy,
     Check,
     BookOpen,
@@ -25,11 +23,14 @@ import {
     Stethoscope,
     RefreshCw,
     Sparkles,
+    HelpCircle,
+    ShieldCheck,
+    Scale,
+    Zap,
 } from "lucide-react";
 
 // ─── TYPES & INTERFACES ─────────────────────────────────────────────
 
-// Removed "export" from type
 type DrugCategory =
     | "All"
     | "Antibiotics"
@@ -40,7 +41,6 @@ type DrugCategory =
     | "Neurology & Analgesics"
     | "Rheumatology & Gout";
 
-// Removed "export" from interface
 interface DoseAdjustmentTier {
     crclRangeLabel: string;
     minCrCl: number;
@@ -51,7 +51,6 @@ interface DoseAdjustmentTier {
     status: "safe" | "caution" | "contraindicated" | "monitored";
 }
 
-// Removed "export" from interface
 interface RenalDrug {
     id: string;
     name: string;
@@ -74,9 +73,21 @@ interface RenalDrug {
     lastReviewed: string;
 }
 
+interface PatientScenario {
+    label: string;
+    desc: string;
+    age: string;
+    sex: "male" | "female";
+    weight: string;
+    weightUnit: "kg" | "lbs";
+    height: string;
+    heightUnit: "cm" | "in";
+    scr: string;
+    scrUnit: "mg/dL" | "umol/L";
+}
+
 // ─── COMPREHENSIVE CLINICAL DRUG DATABASE (2024–2026 EVIDENCE) ──────
 
-// Removed "export" from const
 const renalDrugsDatabase: RenalDrug[] = [
     {
         id: "vancomycin",
@@ -1150,9 +1161,8 @@ const renalDrugsDatabase: RenalDrug[] = [
     },
 ];
 
-// ─── ANTHROPOMETRICS & RENAL CLEARANCE CALCULATORS ──────────────────
+// ─── ANTHROPOMETRIC & RENAL CLEARANCE EQUATIONS ─────────────────────
 
-// Removed "export" from all functions below
 function calculateIBW(heightInches: number, sex: "male" | "female"): number {
     const base = sex === "male" ? 50.0 : 45.5;
     const diff = heightInches - 60;
@@ -1239,6 +1249,16 @@ export default function RenalDosingAdjuster() {
     const [selectedCategory, setSelectedCategory] = useState<DrugCategory>("All");
     const [copiedNote, setCopiedNote] = useState<boolean>(false);
     const [showFormulas, setShowFormulas] = useState<boolean>(false);
+    const [showInstructions, setShowInstructions] = useState<boolean>(true);
+
+    // Pre-configured Patient Profiles
+    const patientScenarios: PatientScenario[] = [
+        { label: "Normal CrCl", desc: "CrCl ~105", age: "35", sex: "male", weight: "75", weightUnit: "kg", height: "178", heightUnit: "cm", scr: "0.9", scrUnit: "mg/dL" },
+        { label: "Moderate CKD", desc: "CrCl ~42", age: "68", sex: "male", weight: "84", weightUnit: "kg", height: "176", heightUnit: "cm", scr: "1.6", scrUnit: "mg/dL" },
+        { label: "Severe CKD G4", desc: "CrCl ~22", age: "74", sex: "female", weight: "62", weightUnit: "kg", height: "160", heightUnit: "cm", scr: "2.1", scrUnit: "mg/dL" },
+        { label: "ESRD / Dialysis", desc: "CrCl ~8", age: "60", sex: "male", weight: "70", weightUnit: "kg", height: "172", heightUnit: "cm", scr: "6.5", scrUnit: "mg/dL" },
+        { label: "Elderly Sarcopenic", desc: "CrCl ~28", age: "84", sex: "female", weight: "48", weightUnit: "kg", height: "155", heightUnit: "cm", scr: "1.1", scrUnit: "mg/dL" },
+    ];
 
     // Standardized Unit Normalizations
     const numAge = parseFloat(age) || 0;
@@ -1281,7 +1301,7 @@ export default function RenalDosingAdjuster() {
 
     // Auto Weight Heuristic
     const { autoRecommendedMethod, autoReason } = useMemo(() => {
-        if (!weightKg || !ibwKg) return { autoRecommendedMethod: "actual", autoReason: "Standard weight" };
+        if (!weightKg || !ibwKg) return { autoRecommendedMethod: "actual" as const, autoReason: "Standard weight" };
         if (weightKg < ibwKg) {
             return {
                 autoRecommendedMethod: "actual" as const,
@@ -1374,6 +1394,18 @@ export default function RenalDosingAdjuster() {
         return selectedDrug.adjustments[0];
     }, [selectedDrug, calculatedCrCl]);
 
+    // Load Scenario
+    const handleLoadScenario = (sc: PatientScenario) => {
+        setAge(sc.age);
+        setSex(sc.sex);
+        setWeightInput(sc.weight);
+        setWeightUnit(sc.weightUnit);
+        setHeightInput(sc.height);
+        setHeightUnit(sc.heightUnit);
+        setScrInput(sc.scr);
+        setScrUnit(sc.scrUnit);
+    };
+
     // Copy Chart Note Handler
     const handleCopyChartNote = useCallback(() => {
         if (!selectedDrug || calculatedCrCl === null || !currentRecommendation) return;
@@ -1405,7 +1437,7 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
 
         navigator.clipboard.writeText(noteText);
         setCopiedNote(true);
-        setTimeout(() => setCopiedNote(false), 3000);
+        setTimeout(() => setCopiedNote(false), 2600);
     }, [
         selectedDrug,
         calculatedCrCl,
@@ -1425,66 +1457,137 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
     ]);
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900 py-10 px-4 sm:px-6 lg:px-8 font-sans selection:bg-teal-500 selection:text-white">
-            <div className="max-w-7xl mx-auto space-y-8">
-                {/* ─── OFFICIAL HEADER WITH PHARMAWALLAH GRADIENT ─────────────── */}
-                <header className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm relative overflow-hidden">
-                    {/* Top gradient accent line */}
-                    <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-600 via-teal-500 to-emerald-400" />
+        <section className="min-h-screen bg-gradient-to-br from-blue-50/70 via-white to-green-50/70 p-3 sm:p-5 md:p-8 font-sans selection:bg-teal-500 selection:text-white">
+            <div className="max-w-7xl mx-auto space-y-6">
 
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div className="space-y-2">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold tracking-wide uppercase">
-                                <Stethoscope className="w-3.5 h-3.5 text-blue-600" />
-                                Advanced Clinical Pharmacopeia • 2024–2026 Guidelines
+                {/* ─── HEADER ──────────────────────────────────────────────────────── */}
+                <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-blue-700 to-green-500 p-6 md:p-8 text-white shadow-xl">
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div className="flex items-start sm:items-center gap-4">
+                            <div className="rounded-2xl bg-white/20 p-3.5 backdrop-blur-md ring-1 ring-white/30 shadow-inner">
+                                <Stethoscope className="h-8 w-8 md:h-10 md:w-10 text-white" />
                             </div>
-                            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
-                                Renal Dosing Adjuster
-                            </h1>
-                            <p className="text-slate-600 text-sm sm:text-base max-w-3xl leading-relaxed">
-                                Accurate renal clearance calculations (Cockcroft-Gault CrCl & CKD-EPI 2021 eGFR) paired with
-                                tier-matched drug adjustments from FDA package inserts, ASHP/IDSA, and KDIGO guidelines.
-                            </p>
-                        </div>
-
-                        {/* Top quick badges */}
-                        <div className="flex flex-wrap md:flex-col gap-2 shrink-0">
-                            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700">
-                                <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
-                                <span>FDA / KDIGO 2024 Aligned</span>
-                            </div>
-                            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700">
-                                <HeartPulse className="w-4 h-4 text-emerald-600 shrink-0" />
-                                <span>IBW & AdjBW Auto-Selection</span>
+                            <div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                                        Renal Dosing Adjuster
+                                    </h1>
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur-md">
+                                        <Sparkles className="h-3 w-3 text-yellow-300" /> FDA / KDIGO Aligned
+                                    </span>
+                                </div>
+                                <p className="mt-1 text-sm md:text-base text-blue-100 font-medium">
+                                    Cockcroft-Gault CrCl & CKD-EPI 2021 eGFR paired with evidence-based dose tier adjustments
+                                </p>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Prominent Clinical Disclaimer Banner */}
-                    <div className="mt-6 bg-amber-50/80 border border-amber-200 rounded-2xl p-4 flex items-start gap-3.5 text-amber-900 text-xs sm:text-sm">
-                        <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                        <div>
-                            <strong className="font-bold text-amber-950 block sm:inline mr-1">
-                                Mandatory Clinical Notice & Disclaimer:
-                            </strong>
-                            This system is designed for healthcare professionals, clinical pharmacists, and medical education.
-                            Dosing recommendations must always be verified against institutional antibiograms, current FDA/EMA package inserts,
-                            and specialist clinical judgment prior to dispensing or patient administration.
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setShowInstructions((prev) => !prev)}
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-3.5 py-2 text-xs md:text-sm font-medium text-white backdrop-blur-md transition hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/40"
+                            >
+                                <HelpCircle className="h-4 w-4" />
+                                {showInstructions ? "Hide Instructions" : "Clinical Guide"}
+                            </button>
                         </div>
                     </div>
+
+                    {/* Background decorative glow */}
+                    <div className="pointer-events-none absolute -right-12 -top-12 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
                 </header>
 
-                {/* ─── MAIN WORKSPACE GRID ───────────────────────────────────── */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    {/* LEFT COLUMN: PATIENT BIOMETRICS & RENAL ENGINE (5 COLS) */}
+                {/* ─── STEP-BY-STEP DIRECTIONS / CLINICAL GUIDE ─────────────────────── */}
+                {showInstructions && (
+                    <div className="rounded-2xl border border-blue-100 bg-white/90 p-4 sm:p-6 shadow-sm backdrop-blur-sm transition-all animate-in fade-in duration-300">
+                        <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+                            <div className="flex items-center gap-2 text-blue-900 font-bold text-sm sm:text-base">
+                                <BookOpen className="h-5 w-5 text-blue-600" />
+                                <span>Directions of Use & Renal Dosing Protocol</span>
+                            </div>
+                            <span className="text-xs text-gray-500 font-medium">3-Step Workflow</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="flex items-start gap-3 rounded-xl bg-blue-50/60 p-3.5 border border-blue-100/70">
+                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                                    1
+                                </div>
+                                <div className="text-xs sm:text-sm text-gray-700">
+                                    <strong className="block text-gray-900 font-semibold mb-0.5">Input Patient Vitals</strong>
+                                    Enter age, sex, weight, height, and SCr. The engine auto-computes IBW, AdjBW, and Cockcroft-Gault CrCl.
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-3 rounded-xl bg-green-50/60 p-3.5 border border-green-100/70">
+                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white">
+                                    2
+                                </div>
+                                <div className="text-xs sm:text-sm text-gray-700">
+                                    <strong className="block text-gray-900 font-semibold mb-0.5">Select Drug or Category</strong>
+                                    Search 20+ major renal drugs (Vancomycin, Zosyn, DOACs, Meropenem, Metformin, etc.) or filter by category.
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-3 rounded-xl bg-emerald-50/60 p-3.5 border border-emerald-100/70">
+                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">
+                                    3
+                                </div>
+                                <div className="text-xs sm:text-sm text-gray-700">
+                                    <strong className="block text-gray-900 font-semibold mb-0.5">Review Tier & Copy Note</strong>
+                                    Examine adjusted dose, interval, HD/CRRT recommendations, and copy EHR-ready consultation note.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ─── QUICK CLINICAL SCENARIOS BAR ─────────────────────────────────── */}
+                <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-md shadow-gray-200/50">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                            <Zap className="h-4 w-4 text-blue-600" />
+                            <span className="text-xs font-bold text-gray-800 uppercase tracking-wider">
+                                Quick Patient Profiles (1-Click Test Scenarios)
+                            </span>
+                        </div>
+                        <span className="text-[11px] text-gray-400">Clinical Archetypes</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                        {patientScenarios.map((sc) => (
+                            <button
+                                key={sc.label}
+                                type="button"
+                                onClick={() => handleLoadScenario(sc)}
+                                className="group p-2.5 rounded-xl border border-gray-200 bg-gray-50/70 hover:bg-blue-50 hover:border-blue-300 text-left transition flex flex-col justify-between"
+                            >
+                                <div className="font-bold text-xs text-gray-900 group-hover:text-blue-700">
+                                    {sc.label}
+                                </div>
+                                <span className="text-[10px] text-gray-500 mt-0.5 font-medium">
+                                    {sc.desc} ({sc.sex}, {sc.age}y)
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* ─── MAIN WORKSPACE GRID: 12 COLS ─────────────────────────────────── */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+                    {/* LEFT: PATIENT BIOMETRICS & RENAL CALCULATOR (5 COLS) */}
                     <div className="lg:col-span-5 space-y-6">
-                        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-5">
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                                <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                                    <User className="w-4 h-4 text-blue-600" />
+
+                        <div className="rounded-2xl border border-gray-100 bg-white p-5 sm:p-6 shadow-md shadow-gray-200/50 space-y-5">
+                            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                                <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                                    <User className="h-5 w-5 text-blue-600" />
                                     Patient Biometrics
                                 </h2>
                                 <button
+                                    type="button"
                                     onClick={() => {
                                         setAge("65");
                                         setSex("male");
@@ -1492,39 +1595,43 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
                                         setHeightInput("175");
                                         setScrInput("1.2");
                                     }}
-                                    className="text-xs text-slate-500 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                                    className="text-xs text-gray-500 hover:text-blue-600 flex items-center gap-1 font-medium transition"
                                 >
-                                    <RefreshCw className="w-3.5 h-3.5" /> Reset Defaults
+                                    <RefreshCw className="h-3.5 w-3.5" /> Reset Defaults
                                 </button>
                             </div>
 
-                            {/* Biometric Fields */}
+                            {/* Form Fields */}
                             <div className="space-y-4">
+
                                 {/* Age & Sex */}
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="rounded-xl border border-blue-200/70 bg-blue-50/30 p-3">
+                                        <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">
                                             Age (Years)
                                         </label>
                                         <input
                                             type="number"
+                                            min="18"
+                                            max="120"
                                             value={age}
                                             onChange={(e) => setAge(e.target.value)}
                                             placeholder="e.g. 68"
-                                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                            className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-900 focus:outline-none focus:border-blue-500"
                                         />
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+
+                                    <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-3">
+                                        <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">
                                             Biological Sex
                                         </label>
-                                        <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                                        <div className="grid grid-cols-2 gap-1 bg-gray-200/70 p-0.5 rounded-lg">
                                             <button
                                                 type="button"
                                                 onClick={() => setSex("male")}
-                                                className={`py-1.5 text-xs font-bold rounded-lg transition ${sex === "male"
-                                                    ? "bg-white text-blue-700 shadow-sm"
-                                                    : "text-slate-600 hover:text-slate-900"
+                                                className={`py-1 text-xs font-bold rounded-md transition ${sex === "male"
+                                                        ? "bg-white text-blue-700 shadow-xs"
+                                                        : "text-gray-600 hover:text-gray-900"
                                                     }`}
                                             >
                                                 Male
@@ -1532,9 +1639,9 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
                                             <button
                                                 type="button"
                                                 onClick={() => setSex("female")}
-                                                className={`py-1.5 text-xs font-bold rounded-lg transition ${sex === "female"
-                                                    ? "bg-white text-blue-700 shadow-sm"
-                                                    : "text-slate-600 hover:text-slate-900"
+                                                className={`py-1 text-xs font-bold rounded-md transition ${sex === "female"
+                                                        ? "bg-white text-blue-700 shadow-xs"
+                                                        : "text-gray-600 hover:text-gray-900"
                                                     }`}
                                             >
                                                 Female
@@ -1544,29 +1651,23 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
                                 </div>
 
                                 {/* Weight */}
-                                <div>
+                                <div className="rounded-xl border border-blue-200/70 bg-blue-50/30 p-3">
                                     <div className="flex items-center justify-between mb-1">
-                                        <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                                            Total Body Weight (TBW)
+                                        <label className="text-[11px] font-bold text-gray-700 uppercase flex items-center gap-1">
+                                            <Scale className="h-3 w-3 text-blue-600" /> Total Body Weight (TBW)
                                         </label>
-                                        <div className="flex items-center gap-1 text-[11px]">
+                                        <div className="inline-flex rounded-md bg-blue-100/80 p-0.5 text-[10px] font-bold">
                                             <button
                                                 type="button"
                                                 onClick={() => setWeightUnit("kg")}
-                                                className={`px-2 py-0.5 rounded font-bold ${weightUnit === "kg"
-                                                    ? "bg-blue-100 text-blue-700 border border-blue-300"
-                                                    : "text-slate-500 hover:text-slate-800"
-                                                    }`}
+                                                className={`px-1.5 py-0.5 rounded ${weightUnit === "kg" ? "bg-white text-blue-700 shadow-xs" : "text-blue-600"}`}
                                             >
                                                 kg
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() => setWeightUnit("lbs")}
-                                                className={`px-2 py-0.5 rounded font-bold ${weightUnit === "lbs"
-                                                    ? "bg-blue-100 text-blue-700 border border-blue-300"
-                                                    : "text-slate-500 hover:text-slate-800"
-                                                    }`}
+                                                className={`px-1.5 py-0.5 rounded ${weightUnit === "lbs" ? "bg-white text-blue-700 shadow-xs" : "text-blue-600"}`}
                                             >
                                                 lbs
                                             </button>
@@ -1578,135 +1679,110 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
                                             step="0.1"
                                             value={weightInput}
                                             onChange={(e) => setWeightInput(e.target.value)}
-                                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                            className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-900 focus:outline-none focus:border-blue-500"
                                         />
-                                        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                                        <span className="absolute right-3 top-2 text-xs font-bold text-gray-400">
                                             {weightUnit}
                                         </span>
                                     </div>
                                 </div>
 
-                                {/* Height */}
-                                <div>
-                                    <div className="flex items-center justify-between mb-1">
-                                        <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                                            Height
-                                        </label>
-                                        <div className="flex items-center gap-1 text-[11px]">
-                                            <button
-                                                type="button"
-                                                onClick={() => setHeightUnit("cm")}
-                                                className={`px-2 py-0.5 rounded font-bold ${heightUnit === "cm"
-                                                    ? "bg-blue-100 text-blue-700 border border-blue-300"
-                                                    : "text-slate-500 hover:text-slate-800"
-                                                    }`}
-                                            >
-                                                cm
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setHeightUnit("in")}
-                                                className={`px-2 py-0.5 rounded font-bold ${heightUnit === "in"
-                                                    ? "bg-blue-100 text-blue-700 border border-blue-300"
-                                                    : "text-slate-500 hover:text-slate-800"
-                                                    }`}
-                                            >
-                                                in
-                                            </button>
+                                {/* Height & Serum Creatinine */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    {/* Height */}
+                                    <div className="rounded-xl border border-gray-200 bg-gray-50/40 p-3">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <label className="text-[11px] font-bold text-gray-700 uppercase">Height</label>
+                                            <div className="inline-flex rounded bg-gray-200 p-0.5 text-[10px] font-bold">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setHeightUnit("cm")}
+                                                    className={`px-1.5 py-0.5 rounded ${heightUnit === "cm" ? "bg-white text-gray-900 shadow-xs" : "text-gray-600"}`}
+                                                >
+                                                    cm
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setHeightUnit("in")}
+                                                    className={`px-1.5 py-0.5 rounded ${heightUnit === "in" ? "bg-white text-gray-900 shadow-xs" : "text-gray-600"}`}
+                                                >
+                                                    in
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                step="0.5"
+                                                value={heightInput}
+                                                onChange={(e) => setHeightInput(e.target.value)}
+                                                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-900 focus:outline-none focus:border-blue-500"
+                                            />
+                                            <span className="absolute right-3 top-2 text-xs font-bold text-gray-400">
+                                                {heightUnit}
+                                            </span>
                                         </div>
                                     </div>
-                                    <div className="relative">
-                                        <input
-                                            type="number"
-                                            step="0.5"
-                                            value={heightInput}
-                                            onChange={(e) => setHeightInput(e.target.value)}
-                                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                                        />
-                                        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
-                                            {heightUnit}
-                                        </span>
-                                    </div>
-                                </div>
 
-                                {/* Serum Creatinine */}
-                                <div>
-                                    <div className="flex items-center justify-between mb-1">
-                                        <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                                            Serum Creatinine (SCr)
-                                        </label>
-                                        <div className="flex items-center gap-1 text-[11px]">
-                                            <button
-                                                type="button"
-                                                onClick={() => setScrUnit("mg/dL")}
-                                                className={`px-2 py-0.5 rounded font-bold ${scrUnit === "mg/dL"
-                                                    ? "bg-blue-100 text-blue-700 border border-blue-300"
-                                                    : "text-slate-500 hover:text-slate-800"
-                                                    }`}
-                                            >
-                                                mg/dL
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setScrUnit("umol/L")}
-                                                className={`px-2 py-0.5 rounded font-bold ${scrUnit === "umol/L"
-                                                    ? "bg-blue-100 text-blue-700 border border-blue-300"
-                                                    : "text-slate-500 hover:text-slate-800"
-                                                    }`}
-                                            >
-                                                µmol/L
-                                            </button>
+                                    {/* Serum Creatinine */}
+                                    <div className="rounded-xl border border-teal-200/70 bg-teal-50/30 p-3">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <label className="text-[11px] font-bold text-teal-950 uppercase">SCr</label>
+                                            <div className="inline-flex rounded bg-teal-100 p-0.5 text-[10px] font-bold">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setScrUnit("mg/dL")}
+                                                    className={`px-1 py-0.5 rounded ${scrUnit === "mg/dL" ? "bg-white text-teal-800 shadow-xs" : "text-teal-700"}`}
+                                                >
+                                                    mg/dL
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setScrUnit("umol/L")}
+                                                    className={`px-1 py-0.5 rounded ${scrUnit === "umol/L" ? "bg-white text-teal-800 shadow-xs" : "text-teal-700"}`}
+                                                >
+                                                    µmol/L
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                step="0.05"
+                                                value={scrInput}
+                                                onChange={(e) => setScrInput(e.target.value)}
+                                                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-900 focus:outline-none focus:border-teal-500"
+                                            />
+                                            <span className="absolute right-3 top-2 text-xs font-bold text-gray-400">
+                                                {scrUnit}
+                                            </span>
                                         </div>
                                     </div>
-                                    <div className="relative">
-                                        <input
-                                            type="number"
-                                            step="0.05"
-                                            value={scrInput}
-                                            onChange={(e) => setScrInput(e.target.value)}
-                                            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                                        />
-                                        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
-                                            {scrUnit}
-                                        </span>
+                                </div>
+
+                                {/* Derived Anthropometrics Bar */}
+                                <div className="grid grid-cols-3 gap-2 pt-1 text-center text-xs">
+                                    <div className="bg-blue-50/70 p-2 rounded-xl border border-blue-100">
+                                        <span className="text-gray-500 block text-[10px] uppercase font-bold">IBW (Devine)</span>
+                                        <span className="text-sm font-extrabold text-blue-700">{ibwKg ? `${ibwKg} kg` : "--"}</span>
+                                    </div>
+                                    <div className="bg-emerald-50/70 p-2 rounded-xl border border-emerald-100">
+                                        <span className="text-gray-500 block text-[10px] uppercase font-bold">AdjBW (40%)</span>
+                                        <span className="text-sm font-extrabold text-emerald-700">{adjBwKg ? `${adjBwKg} kg` : "--"}</span>
+                                    </div>
+                                    <div className="bg-gray-100/80 p-2 rounded-xl border border-gray-200">
+                                        <span className="text-gray-500 block text-[10px] uppercase font-bold">BMI</span>
+                                        <span className="text-sm font-extrabold text-gray-800">{bmi ? `${bmi} kg/m²` : "--"}</span>
                                     </div>
                                 </div>
 
-                                {/* Body Weight Metrics Readout */}
-                                <div className="grid grid-cols-3 gap-2 pt-2 text-center text-xs">
-                                    <div className="bg-blue-50/60 p-2.5 rounded-xl border border-blue-100">
-                                        <span className="text-slate-500 block text-[10px] uppercase font-bold">
-                                            IBW (Devine)
-                                        </span>
-                                        <span className="text-sm font-black text-blue-700">
-                                            {ibwKg ? `${ibwKg} kg` : "--"}
-                                        </span>
+                                {/* Weight Basis Selector for Cockcroft-Gault */}
+                                <div className="space-y-1.5 pt-2 border-t border-gray-100">
+                                    <div className="flex items-center justify-between text-[11px] font-bold text-gray-700">
+                                        <span>CrCl Weight Basis:</span>
+                                        <span className="text-blue-700">{effectiveWeightLabel}</span>
                                     </div>
-                                    <div className="bg-emerald-50/60 p-2.5 rounded-xl border border-emerald-100">
-                                        <span className="text-slate-500 block text-[10px] uppercase font-bold">
-                                            AdjBW (0.4)
-                                        </span>
-                                        <span className="text-sm font-black text-emerald-700">
-                                            {adjBwKg ? `${adjBwKg} kg` : "--"}
-                                        </span>
-                                    </div>
-                                    <div className="bg-slate-100 p-2.5 rounded-xl border border-slate-200">
-                                        <span className="text-slate-500 block text-[10px] uppercase font-bold">
-                                            BMI
-                                        </span>
-                                        <span className="text-sm font-black text-slate-800">
-                                            {bmi ? `${bmi} kg/m²` : "--"}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* Weight Selector for CrCl */}
-                                <div className="space-y-1 pt-1">
-                                    <label className="text-[11px] font-bold text-slate-600 uppercase flex items-center justify-between">
-                                        <span>Cockcroft-Gault Weight Basis:</span>
-                                        <span className="text-blue-600 font-bold">{effectiveWeightLabel}</span>
-                                    </label>
-                                    <div className="grid grid-cols-4 gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
+                                    <div className="grid grid-cols-4 gap-1 bg-gray-100 p-1 rounded-xl text-xs font-bold">
                                         {(
                                             [
                                                 { key: "auto", label: "Auto" },
@@ -1719,9 +1795,9 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
                                                 key={tab.key}
                                                 type="button"
                                                 onClick={() => setWeightMethod(tab.key)}
-                                                className={`py-1.5 rounded-lg font-bold transition ${weightMethod === tab.key
-                                                    ? "bg-white text-blue-700 shadow-sm"
-                                                    : "text-slate-500 hover:text-slate-800"
+                                                className={`py-1 rounded-lg transition ${weightMethod === tab.key
+                                                        ? "bg-white text-blue-700 shadow-xs"
+                                                        : "text-gray-500 hover:text-gray-800"
                                                     }`}
                                             >
                                                 {tab.label}
@@ -1729,81 +1805,74 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
                                         ))}
                                     </div>
                                     {weightMethod === "auto" && (
-                                        <p className="text-[11px] text-blue-800 bg-blue-50/80 border border-blue-200 p-2.5 rounded-xl leading-snug">
-                                            💡 <strong>Auto Weight Guidance:</strong> {autoReason}
+                                        <p className="text-[11px] text-blue-900 bg-blue-50/80 border border-blue-200 p-2.5 rounded-xl leading-relaxed">
+                                            💡 <strong>Weight Heuristic:</strong> {autoReason}
                                         </p>
                                     )}
                                 </div>
+
                             </div>
 
-                            {/* Calculated Clearance Cards */}
-                            <div className="pt-3 border-t border-slate-100 space-y-3">
-                                {/* Cockcroft-Gault CrCl Card */}
-                                <div className="bg-gradient-to-r from-blue-50 via-teal-50/40 to-emerald-50 border border-blue-200/80 rounded-2xl p-4 shadow-sm">
+                            {/* Clearance Readouts */}
+                            <div className="pt-2 border-t border-gray-100 space-y-3">
+                                {/* Cockcroft-Gault Card */}
+                                <div className="bg-gradient-to-r from-blue-600 to-green-500 text-white rounded-2xl p-4 shadow-md">
                                     <div className="flex items-center justify-between mb-1">
-                                        <span className="text-xs font-bold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
-                                            <Activity className="w-4 h-4 text-blue-600" /> Estimated CrCl (Cockcroft-Gault)
+                                        <span className="text-xs font-bold uppercase tracking-wider text-blue-100 flex items-center gap-1.5">
+                                            <Activity className="h-4 w-4 text-green-300" /> Cockcroft-Gault CrCl
                                         </span>
-                                        <span className="text-[11px] px-2 py-0.5 rounded-md bg-blue-100 text-blue-700 font-bold">
-                                            FDA Standard
+                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20 font-bold backdrop-blur-md">
+                                            Dosing Standard
                                         </span>
                                     </div>
                                     <div className="flex items-baseline gap-2 mt-1">
-                                        <span className="text-3xl font-black text-slate-900 tracking-tight">
+                                        <span className="text-3xl sm:text-4xl font-black tracking-tight text-white">
                                             {calculatedCrCl !== null ? calculatedCrCl : "--"}
                                         </span>
-                                        <span className="text-sm font-bold text-slate-500">mL/min</span>
+                                        <span className="text-sm font-bold text-green-100">mL / min</span>
                                     </div>
-                                    <p className="text-[11px] text-slate-600 mt-1">
-                                        Calculated using {effectiveWeightLabel}. Standard for dosing tables.
+                                    <p className="text-[11px] text-blue-100/90 mt-1">
+                                        Calculated using {effectiveWeightLabel}. Matches FDA labeling.
                                     </p>
                                 </div>
 
-                                {/* CKD-EPI eGFR Card */}
-                                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                                {/* CKD-EPI Card */}
+                                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-3.5">
                                     <div className="flex items-center justify-between mb-1">
-                                        <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                                            eGFR (CKD-EPI 2021 Race-Free)
+                                        <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                            CKD-EPI (2021 Race-Free) eGFR
                                         </span>
                                         {kdigoStage && (
-                                            <span
-                                                className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${kdigoStage.badgeStyle}`}
-                                            >
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${kdigoStage.badgeStyle}`}>
                                                 Stage {kdigoStage.stage}
                                             </span>
                                         )}
                                     </div>
-                                    <div className="flex items-baseline gap-2 mt-1">
-                                        <span className="text-2xl font-black text-slate-800">
+                                    <div className="flex items-baseline gap-2 mt-0.5">
+                                        <span className="text-2xl font-black text-gray-800">
                                             {calculatedEGFR !== null ? calculatedEGFR : "--"}
                                         </span>
-                                        <span className="text-xs font-bold text-slate-500">
-                                            mL/min/1.73 m²
-                                        </span>
+                                        <span className="text-xs font-bold text-gray-500">mL/min/1.73 m²</span>
                                     </div>
                                     {kdigoStage && (
-                                        <p className="text-[11px] text-slate-500 mt-1">
-                                            KDIGO: <strong className="text-slate-700">{kdigoStage.description}</strong>
+                                        <p className="text-[11px] text-gray-600 mt-1">
+                                            KDIGO: <strong className="text-gray-800">{kdigoStage.description}</strong>
                                         </p>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Expandable Formulas Accordion */}
-                            <div className="border-t border-slate-100 pt-2">
+                            {/* Expandable Formulas Reference */}
+                            <div className="border-t border-gray-100 pt-2">
                                 <button
                                     type="button"
                                     onClick={() => setShowFormulas(!showFormulas)}
                                     className="w-full flex items-center justify-between text-xs font-bold text-blue-600 hover:text-blue-800 py-1 transition"
                                 >
                                     <span className="flex items-center gap-1.5">
-                                        <BookOpen className="w-3.5 h-3.5" /> Formula Details & CrCl vs eGFR
+                                        <BookOpen className="h-3.5 w-3.5" /> Formula Details & Conversions
                                     </span>
-                                    {showFormulas ? (
-                                        <ChevronUp className="w-4 h-4" />
-                                    ) : (
-                                        <ChevronDown className="w-4 h-4" />
-                                    )}
+                                    {showFormulas ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                                 </button>
 
                                 <AnimatePresence>
@@ -1812,29 +1881,23 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
                                             initial={{ opacity: 0, height: 0 }}
                                             animate={{ opacity: 1, height: "auto" }}
                                             exit={{ opacity: 0, height: 0 }}
-                                            className="mt-3 space-y-2.5 text-xs text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-200 overflow-hidden leading-relaxed"
+                                            className="mt-3 space-y-2 text-xs text-gray-600 bg-gray-50 p-3.5 rounded-xl border border-gray-200 overflow-hidden leading-relaxed"
                                         >
                                             <div>
-                                                <strong className="text-slate-800 block font-bold mb-0.5">
-                                                    Cockcroft-Gault Equation (1976):
-                                                </strong>
-                                                <code className="text-blue-700 bg-white px-2 py-1 rounded border border-slate-200 block text-[11px] font-mono">
-                                                    CrCl = [(140 - Age) × Weight (kg)] / [72 × SCr (mg/dL)] × (0.85 if Female)
+                                                <strong className="text-gray-900 block mb-0.5">Cockcroft-Gault Equation (1976):</strong>
+                                                <code className="text-blue-700 bg-white p-1.5 rounded border border-gray-200 block text-[10px] font-mono">
+                                                    CrCl = [(140 - Age) × Wt (kg)] / [72 × SCr] (× 0.85 if Female)
                                                 </code>
                                             </div>
                                             <div>
-                                                <strong className="text-slate-800 block font-bold mb-0.5">
-                                                    Devine Formula (IBW):
-                                                </strong>
-                                                <p className="text-slate-500 text-[11px]">
-                                                    Male: 50.0 kg + 2.3 kg/inch &gt; 60 inches | Female: 45.5 kg + 2.3 kg/inch &gt; 60 inches
+                                                <strong className="text-gray-900 block mb-0.5">Devine Formula (IBW):</strong>
+                                                <p className="text-[11px] text-gray-500">
+                                                    M: 50 kg + 2.3 kg/in &gt; 60&quot; | F: 45.5 kg + 2.3 kg/in &gt; 60&quot;
                                                 </p>
                                             </div>
                                             <div>
-                                                <strong className="text-slate-800 block font-bold mb-0.5">
-                                                    Adjusted Body Weight (AdjBW 40%):
-                                                </strong>
-                                                <code className="text-blue-700 bg-white px-2 py-1 rounded border border-slate-200 block text-[11px] font-mono">
+                                                <strong className="text-gray-900 block mb-0.5">Adjusted Body Weight (AdjBW 40%):</strong>
+                                                <code className="text-blue-700 bg-white p-1.5 rounded border border-gray-200 block text-[10px] font-mono">
                                                     AdjBW = IBW + 0.4 × (Actual TBW - IBW)
                                                 </code>
                                             </div>
@@ -1842,44 +1905,48 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
                                     )}
                                 </AnimatePresence>
                             </div>
+
                         </div>
+
                     </div>
 
-                    {/* RIGHT COLUMN: DRUG SELECTION & CLINICAL RECOMMENDATION PANEL (7 COLS) */}
+                    {/* RIGHT: PHARMACOPEIA & ACTIVE DOSING MATRIX (7 COLS) */}
                     <div className="lg:col-span-7 space-y-6">
-                        {/* Drug Search & Filter Card */}
-                        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+
+                        {/* SEARCH & CATEGORY FILTER CARD */}
+                        <div className="rounded-2xl border border-gray-100 bg-white p-5 sm:p-6 shadow-md shadow-gray-200/50 space-y-4">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                                    <Pill className="w-4 h-4 text-emerald-600" />
+                                <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                                    <Pill className="h-5 w-5 text-emerald-600" />
                                     Renal Pharmacopeia
                                 </h2>
-                                <span className="text-xs text-slate-500">
+                                <span className="text-xs text-gray-500">
                                     {filteredDrugs.length} of {renalDrugsDatabase.length} medications available
                                 </span>
                             </div>
 
-                            {/* Search Input */}
+                            {/* Search Bar */}
                             <div className="relative">
-                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                                 <input
                                     type="text"
                                     placeholder="Search drugs (e.g. Vancomycin, Zosyn, Apixaban, Metformin, Cefepime)..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                    className="w-full bg-gray-50 border border-gray-300 rounded-xl pl-10 pr-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:outline-none focus:border-blue-500"
                                 />
                                 {searchTerm && (
                                     <button
+                                        type="button"
                                         onClick={() => setSearchTerm("")}
-                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 hover:text-slate-700"
+                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 hover:text-gray-700"
                                     >
                                         Clear
                                     </button>
                                 )}
                             </div>
 
-                            {/* Category Filter Pills */}
+                            {/* Category Pills */}
                             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
                                 {categories.map((cat) => (
                                     <button
@@ -1887,8 +1954,8 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
                                         type="button"
                                         onClick={() => setSelectedCategory(cat)}
                                         className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition ${selectedCategory === cat
-                                            ? "bg-gradient-to-r from-blue-600 to-emerald-500 text-white shadow-sm"
-                                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                                ? "bg-gradient-to-r from-blue-600 to-green-500 text-white shadow-xs"
+                                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                                             }`}
                                     >
                                         {cat}
@@ -1896,8 +1963,8 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
                                 ))}
                             </div>
 
-                            {/* Medication Horizontal Selector Grid */}
-                            <div className="max-h-48 overflow-y-auto pr-1 grid grid-cols-1 sm:grid-cols-2 gap-2 border border-slate-200 p-2 rounded-2xl bg-slate-50/50">
+                            {/* Drug Selector Grid */}
+                            <div className="max-h-48 overflow-y-auto pr-1 grid grid-cols-1 sm:grid-cols-2 gap-2 border border-gray-200 p-2 rounded-2xl bg-gray-50/50">
                                 {filteredDrugs.map((drug) => {
                                     const isSelected = selectedDrug.id === drug.id;
                                     return (
@@ -1906,19 +1973,19 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
                                             type="button"
                                             onClick={() => setSelectedDrugId(drug.id)}
                                             className={`text-left p-3 rounded-xl transition flex flex-col justify-between border ${isSelected
-                                                ? "bg-blue-50/90 border-blue-400 text-blue-950 shadow-sm ring-1 ring-blue-400"
-                                                : "bg-white border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300"
+                                                    ? "bg-blue-50/90 border-blue-400 text-blue-950 shadow-xs ring-1 ring-blue-400"
+                                                    : "bg-white border-gray-200 text-gray-700 hover:bg-gray-100 hover:border-gray-300"
                                                 }`}
                                         >
                                             <div className="flex items-start justify-between gap-1">
-                                                <p className="font-bold text-sm text-slate-900">{drug.name}</p>
+                                                <p className="font-bold text-sm text-gray-900">{drug.name}</p>
                                                 {drug.brandName && (
                                                     <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded">
                                                         {drug.brandName}
                                                     </span>
                                                 )}
                                             </div>
-                                            <p className="text-[11px] text-slate-500 truncate mt-1">
+                                            <p className="text-[11px] text-gray-500 truncate mt-1">
                                                 {drug.category}
                                             </p>
                                         </button>
@@ -1927,42 +1994,44 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
                             </div>
                         </div>
 
-                        {/* ─── ACTIVE RECOMMENDATION & DOSING MATRIX ───────────────── */}
-                        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+                        {/* ACTIVE RECOMMENDATION & DOSING MATRIX CARD */}
+                        <div className="rounded-2xl border border-gray-100 bg-white p-5 sm:p-7 shadow-md shadow-gray-200/50 space-y-6">
+
                             {/* Drug Header & Action Bar */}
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <span className="px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold">
                                             {selectedDrug.category}
                                         </span>
                                         {selectedDrug.brandName && (
-                                            <span className="text-xs text-slate-500">
-                                                Brand: <strong className="text-slate-800">{selectedDrug.brandName}</strong>
+                                            <span className="text-xs text-gray-500">
+                                                Brand: <strong className="text-gray-800">{selectedDrug.brandName}</strong>
                                             </span>
                                         )}
                                     </div>
-                                    <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">
+                                    <h3 className="text-2xl sm:text-3xl font-black text-gray-900 mt-1">
                                         {selectedDrug.name}
                                     </h3>
-                                    <p className="text-xs text-slate-500 mt-0.5">
+                                    <p className="text-xs text-gray-500 mt-0.5">
                                         Indication: {selectedDrug.indication}
                                     </p>
                                 </div>
 
                                 <button
+                                    type="button"
                                     onClick={handleCopyChartNote}
-                                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-emerald-500 hover:from-blue-700 hover:to-emerald-600 text-white text-xs font-bold transition shadow-sm shrink-0 self-start sm:self-center"
+                                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-white text-xs font-bold transition shadow-md shrink-0 self-start sm:self-center"
                                 >
                                     {copiedNote ? (
                                         <>
-                                            <Check className="w-4 h-4" />
-                                            <span>Note Copied!</span>
+                                            <Check className="h-4 w-4" />
+                                            <span>Note Copied to EHR!</span>
                                         </>
                                     ) : (
                                         <>
-                                            <Copy className="w-4 h-4" />
-                                            <span>Copy Chart Note</span>
+                                            <Copy className="h-4 w-4" />
+                                            <span>Copy Chart Consultation</span>
                                         </>
                                     )}
                                 </button>
@@ -1975,32 +2044,32 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     className={`rounded-2xl p-5 sm:p-6 border shadow-sm relative overflow-hidden ${currentRecommendation.status === "contraindicated"
-                                        ? "bg-rose-50 border-rose-300"
-                                        : currentRecommendation.status === "caution"
-                                            ? "bg-amber-50/80 border-amber-300"
-                                            : "bg-gradient-to-br from-blue-50/80 via-teal-50/40 to-white border-blue-300"
+                                            ? "bg-rose-50 border-rose-300"
+                                            : currentRecommendation.status === "caution"
+                                                ? "bg-amber-50/90 border-amber-300"
+                                                : "bg-gradient-to-br from-blue-50/90 via-teal-50/40 to-white border-blue-300"
                                         }`}
                                 >
                                     <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
                                         <div className="flex items-center gap-2">
                                             <div
-                                                className={`w-3 h-3 rounded-full animate-pulse ${currentRecommendation.status === "contraindicated"
-                                                    ? "bg-rose-500"
-                                                    : currentRecommendation.status === "caution"
-                                                        ? "bg-amber-500"
-                                                        : "bg-emerald-500"
+                                                className={`h-3 w-3 rounded-full animate-pulse ${currentRecommendation.status === "contraindicated"
+                                                        ? "bg-rose-500"
+                                                        : currentRecommendation.status === "caution"
+                                                            ? "bg-amber-500"
+                                                            : "bg-emerald-500"
                                                     }`}
                                             />
-                                            <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                                            <span className="text-xs font-bold uppercase tracking-wider text-gray-800">
                                                 Active Recommendation (Patient CrCl: {calculatedCrCl} mL/min)
                                             </span>
                                         </div>
                                         <span
                                             className={`text-xs font-extrabold px-3 py-1 rounded-full uppercase border ${currentRecommendation.status === "contraindicated"
-                                                ? "bg-rose-100 text-rose-800 border-rose-300"
-                                                : currentRecommendation.status === "caution"
-                                                    ? "bg-amber-100 text-amber-800 border-amber-300"
-                                                    : "bg-emerald-100 text-emerald-800 border-emerald-300"
+                                                    ? "bg-rose-100 text-rose-800 border-rose-300"
+                                                    : currentRecommendation.status === "caution"
+                                                        ? "bg-amber-100 text-amber-800 border-amber-300"
+                                                        : "bg-emerald-100 text-emerald-800 border-emerald-300"
                                                 }`}
                                         >
                                             {currentRecommendation.crclRangeLabel}
@@ -2008,33 +2077,33 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
                                     </div>
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+                                        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
                                             <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700">
                                                 Adjusted Dose
                                             </span>
-                                            <p className="text-lg sm:text-xl font-black text-slate-900 mt-1">
+                                            <p className="text-lg sm:text-xl font-black text-gray-900 mt-1">
                                                 {currentRecommendation.dose}
                                             </p>
                                         </div>
-                                        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+                                        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
                                             <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">
                                                 Dosing Interval
                                             </span>
-                                            <p className="text-lg sm:text-xl font-black text-slate-900 mt-1">
+                                            <p className="text-lg sm:text-xl font-black text-gray-900 mt-1">
                                                 {currentRecommendation.interval}
                                             </p>
                                         </div>
                                     </div>
 
                                     {currentRecommendation.notes && (
-                                        <div className="mt-4 flex items-start gap-2.5 text-xs text-slate-800 bg-white/90 p-3.5 rounded-xl border border-slate-200">
-                                            <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                                        <div className="mt-4 flex items-start gap-2.5 text-xs text-gray-800 bg-white/90 p-3.5 rounded-xl border border-gray-200">
+                                            <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
                                             <p>{currentRecommendation.notes}</p>
                                         </div>
                                     )}
                                 </motion.div>
                             ) : (
-                                <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl text-center text-slate-500 text-sm">
+                                <div className="p-6 bg-gray-50 border border-gray-200 rounded-2xl text-center text-gray-500 text-sm">
                                     Enter patient parameters on the left to activate real-time renal adjustment.
                                 </div>
                             )}
@@ -2042,7 +2111,7 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
                             {/* Critical Clinical Warning */}
                             {selectedDrug.criticalWarning && (
                                 <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-start gap-3 text-rose-950 text-xs sm:text-sm">
-                                    <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                                    <AlertTriangle className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
                                     <div>
                                         <strong className="text-rose-900 font-bold block mb-0.5">
                                             Critical Clinical Warning:
@@ -2054,13 +2123,13 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
 
                             {/* Complete Dosing Adjustment Matrix Table */}
                             <div className="space-y-2">
-                                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
-                                    <SlidersHorizontal className="w-4 h-4 text-blue-600" />
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-2">
+                                    <SlidersHorizontal className="h-4 w-4 text-blue-600" />
                                     Complete Renal Adjustment Matrix
                                 </h4>
-                                <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+                                <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white">
                                     <table className="w-full text-left text-xs">
-                                        <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase tracking-wider text-[10px]">
+                                        <thead className="bg-gray-50 text-gray-700 font-bold border-b border-gray-200 uppercase tracking-wider text-[10px]">
                                             <tr>
                                                 <th className="py-3 px-4">CrCl Range</th>
                                                 <th className="py-3 px-4">Recommended Dose</th>
@@ -2068,7 +2137,7 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
                                                 <th className="py-3 px-4">Specific Guidance</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100">
+                                        <tbody className="divide-y divide-gray-100">
                                             {selectedDrug.adjustments.map((adj, idx) => {
                                                 const isActive =
                                                     calculatedCrCl !== null &&
@@ -2078,21 +2147,19 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
                                                     <tr
                                                         key={idx}
                                                         className={`transition ${isActive
-                                                            ? "bg-blue-50/80 font-bold text-blue-950 border-l-4 border-l-blue-600"
-                                                            : "text-slate-700 hover:bg-slate-50"
+                                                                ? "bg-blue-50/80 font-bold text-blue-950 border-l-4 border-l-blue-600"
+                                                                : "text-gray-700 hover:bg-gray-50"
                                                             }`}
                                                     >
                                                         <td className="py-3 px-4 font-bold whitespace-nowrap">
                                                             <div className="flex items-center gap-1.5">
-                                                                {isActive && (
-                                                                    <span className="w-2 h-2 rounded-full bg-blue-600 inline-block" />
-                                                                )}
+                                                                {isActive && <span className="h-2 w-2 rounded-full bg-blue-600 inline-block" />}
                                                                 {adj.crclRangeLabel}
                                                             </div>
                                                         </td>
                                                         <td className="py-3 px-4 font-semibold">{adj.dose}</td>
                                                         <td className="py-3 px-4">{adj.interval}</td>
-                                                        <td className="py-3 px-4 text-slate-500 text-[11px] leading-relaxed">
+                                                        <td className="py-3 px-4 text-gray-500 text-[11px] leading-relaxed">
                                                             {adj.notes ?? "Standard administration"}
                                                         </td>
                                                     </tr>
@@ -2105,28 +2172,28 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
 
                             {/* Dialysis (HD & CRRT) Guidance */}
                             {selectedDrug.dialysisGuidance && (
-                                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2.5">
-                                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
-                                        <Droplet className="w-4 h-4 text-blue-600" />
+                                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-2.5">
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-2">
+                                        <Droplet className="h-4 w-4 text-blue-600" />
                                         Renal Replacement Therapy (HD & CRRT)
                                     </h4>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                                         {selectedDrug.dialysisGuidance.hemodialysis && (
-                                            <div className="bg-white p-3 rounded-xl border border-slate-200">
+                                            <div className="bg-white p-3 rounded-xl border border-gray-200">
                                                 <strong className="text-blue-700 block mb-1">
                                                     Intermittent Hemodialysis (HD):
                                                 </strong>
-                                                <p className="text-slate-600 leading-relaxed">
+                                                <p className="text-gray-600 leading-relaxed">
                                                     {selectedDrug.dialysisGuidance.hemodialysis}
                                                 </p>
                                             </div>
                                         )}
                                         {selectedDrug.dialysisGuidance.crrt && (
-                                            <div className="bg-white p-3 rounded-xl border border-slate-200">
+                                            <div className="bg-white p-3 rounded-xl border border-gray-200">
                                                 <strong className="text-emerald-700 block mb-1">
                                                     Continuous Renal Replacement (CRRT):
                                                 </strong>
-                                                <p className="text-slate-600 leading-relaxed">
+                                                <p className="text-gray-600 leading-relaxed">
                                                     {selectedDrug.dialysisGuidance.crrt}
                                                 </p>
                                             </div>
@@ -2136,15 +2203,13 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
                             )}
 
                             {/* Guideline Citation & Official External Links */}
-                            <div className="border-t border-slate-100 pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                            <div className="border-t border-gray-100 pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                                 <div>
-                                    <p className="text-slate-500 font-bold">
-                                        Primary Guideline / Label Reference:
-                                    </p>
-                                    <p className="text-slate-800 font-semibold">{selectedDrug.reference}</p>
+                                    <p className="text-gray-500 font-bold">Primary Guideline / Label Reference:</p>
+                                    <p className="text-gray-800 font-semibold">{selectedDrug.reference}</p>
                                 </div>
                                 <div className="flex items-center gap-3 shrink-0">
-                                    <span className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-[11px] font-bold border border-slate-200">
+                                    <span className="px-2.5 py-1 rounded-md bg-gray-100 text-gray-700 text-[11px] font-bold border border-gray-200">
                                         {selectedDrug.source}
                                     </span>
                                     {selectedDrug.link && (
@@ -2154,28 +2219,32 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
                                             rel="noopener noreferrer"
                                             className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-bold transition"
                                         >
-                                            Official Source <ExternalLink className="w-3.5 h-3.5" />
+                                            Official Source <ExternalLink className="h-3.5 w-3.5" />
                                         </a>
                                     )}
                                 </div>
                             </div>
+
                         </div>
+
                     </div>
+
                 </div>
 
-                {/* ─── FOOTER & REGULATORY DISCLOSURES ───────────────────────── */}
-                <footer className="border-t border-slate-200 pt-6 pb-10 text-center text-xs text-slate-500 space-y-2">
+                {/* ─── FOOTER & REGULATORY DISCLOSURES ─────────────────────────────── */}
+                <footer className="border-t border-gray-200 pt-6 pb-10 text-center text-xs text-gray-500 space-y-2">
                     <p className="max-w-4xl mx-auto leading-relaxed">
                         <strong>Clinical Evidence Summary:</strong> Dosing matrices incorporate criteria from the
                         2024 KDIGO Clinical Practice Guidelines, ASHP/IDSA Consensus Guidelines, and FDA-approved labeling.
                         For pregnant patients, amputees, cirrhotic patients, or those with unstable fluctuating renal function (AKI),
                         standard serum creatinine equations may be inaccurate; direct 24-hour urine collection or cystatin C measurement is advised.
                     </p>
-                    <p className="text-slate-400">
-                        © 2024–2026 Advanced Renal Decision Support. PharmaWallah Gradient Edition.
+                    <p className="text-gray-400">
+                        © 2024–2026 Advanced Renal Decision Support. Clinical Edition.
                     </p>
                 </footer>
+
             </div>
-        </div>
+        </section>
     );
 }
