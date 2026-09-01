@@ -263,7 +263,7 @@ export default function ClinicalNavbar() {
                                 Academia
                             </a>
                             <Link
-                                href="/tools"
+                                href="#tools"
                                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#1C7BD9] to-teal-500 text-white font-bold text-sm shadow-md shadow-[#1C7BD9]/20 hover:shadow-lg hover:shadow-[#1C7BD9]/30 transition-all duration-300 active:scale-95"
                             >
                                 Explore Tools

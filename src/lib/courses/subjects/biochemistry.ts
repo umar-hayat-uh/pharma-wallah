@@ -9,7 +9,7 @@ export const biochemistrySubject: SubjectMeta = {
   subjectCode: "PHARM-BIOC-101",
   icon: "🧬",
   description:
-    "Explore the molecular basis of life — from energy metabolism and carbohydrate chemistry to lipid structure, vitamins, and hormonal signalling.",
+    "Explore the molecular basis of life — from biomolecule chemistry and enzyme kinetics to metabolic pathways and hormonal signalling.",
   gradient: "from-blue-600 to-cyan-400",
   hasMcq: true,
   units: [
@@ -29,11 +29,11 @@ export const biochemistrySubject: SubjectMeta = {
     },
     {
       id: "unit2-carbohydrates",
-      title: "Unit 2: Biochemistry of Carbohydrates",
-      shortTitle: "Biochemistry of Carbohydrates",
-      emoji: "🍬",
+      title: "Unit 2: Basic Chemistry of Biomolecules: Carbohydrates, Lipids, Proteins & Amino Acids",
+      shortTitle: "Biomolecule Chemistry",
+      emoji: "🧬",
       description:
-        "Structure, classification and metabolism of sugars — glycolysis, TCA cycle, glycogenesis, glycogenolysis and gluconeogenesis.",
+        "Chemical nature, classification, optical activity, reactions, and pharmaceutical importance of carbohydrates, lipids, proteins, and amino acids.",
       readTime: 15,
       difficulty: "Intermediate",
       gradient: "from-amber-500 to-orange-400",
@@ -57,11 +57,11 @@ export const biochemistrySubject: SubjectMeta = {
     },
     {
       id: "unit4-lipids",
-      title: "Unit 4: Biochemistry of Lipids",
-      shortTitle: "Biochemistry of Lipids",
-      emoji: "🧈",
+      title: "Unit 4: Enzymes: Chemistry, Classification, Kinetics, Inhibition, and Mechanism of Action",
+      shortTitle: "Enzymes",
+      emoji: "🧪",
       description:
-        "Classification of lipids, fatty acid oxidation (β-oxidation), lipogenesis, ketone bodies, phospholipids, cholesterol and lipoproteins.",
+        "Enzyme structure, classification, kinetics (Michaelis-Menten), inhibition types, allosteric regulation, and mechanisms of chymotrypsin and ribonuclease.",
       readTime: 16,
       difficulty: "Advanced",
       gradient: "from-rose-500 to-pink-400",
@@ -71,31 +71,17 @@ export const biochemistrySubject: SubjectMeta = {
     },
     {
       id: "unit5-vitamins",
-      title: "Unit 5: Biochemistry of Vitamins",
-      shortTitle: "Biochemistry of Vitamins",
-      emoji: "💊",
+      title: "Unit 5: Metabolic Fate of Biomolecules: Carbohydrates, Lipids, Proteins & Amino Acids",
+      shortTitle: "Metabolism of Biomolecules",
+      emoji: "⚙️",
       description:
-        "Fat-soluble (A, D, E, K) and water-soluble (B-complex, C) vitamins — coenzyme roles, deficiency diseases, daily requirements.",
-      readTime: 13,
-      difficulty: "Intermediate",
+        "Digestion, absorption, and metabolic pathways of carbohydrates, lipids, and proteins — including glycolysis, TCA cycle, β‑oxidation, urea cycle, and heme synthesis.",
+      readTime: 14,
+      difficulty: "Advanced",
       gradient: "from-green-500 to-teal-400",
       previewImage:
         "https://res.cloudinary.com/osevupfr/image/upload/l_My%20Brand:WhatsApp_Image_2026-02-27_at_4.44.40_PM_jtmqf8/c_scale,fl_relative,h_1.00,w_1.02/o_12/fl_layer_apply,fl_no_overflow,g_south_east/Chapter_05_Infographic.png",
       contentFile: "pharmaceutical-biochemistry/unit5-vitamins.md",
-    },
-    {
-      id: "unit6-hormones",
-      title: "Unit 6: Biochemistry of Hormones",
-      shortTitle: "Biochemistry of Hormones",
-      emoji: "🧬",
-      description:
-        "Hormone classification, mechanisms of action, second messengers (cAMP, IP3/DAG), steroid hormones, thyroid hormones and insulin signalling.",
-      readTime: 14,
-      difficulty: "Advanced",
-      gradient: "from-violet-600 to-purple-400",
-      previewImage:
-        "https://res.cloudinary.com/osevupfr/image/upload/l_My%20Brand:WhatsApp_Image_2026-02-27_at_4.44.40_PM_jtmqf8/c_scale,fl_relative,h_1.00,w_1.02/o_12/fl_layer_apply,fl_no_overflow,g_south_east/Chapter_06_Infographic.png",
-      contentFile: "pharmaceutical-biochemistry/unit6-hormones.md",
     },
   ],
 };

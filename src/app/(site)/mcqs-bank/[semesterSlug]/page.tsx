@@ -27,8 +27,8 @@ const BG_ICONS = [
 const AVAILABLE_SLUGS = new Set([
   "pharmaceutical-biochemistry",
   "physiology-histology-i",
-  "organic-chemistry",
   "physical-pharmacy",
+  "pharmaceutical-organic-chemistry"
 ]);
 
 const SEM_GRADS = [

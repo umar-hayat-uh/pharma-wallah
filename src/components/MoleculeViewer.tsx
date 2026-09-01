@@ -96,7 +96,11 @@ function extractInfo(viewer: any, name: string): MolInfo {
         const model = viewer.getModel();
         if (!model) return emptyInfo(name);
         const atoms: AtomData[] = model.selectedAtoms({});
-        const chains = [...new Set(atoms.map((a) => a.chain).filter(Boolean))];
+
+        // Fix: use Array.from instead of spread to avoid downlevelIteration error
+        const chains = Array.from(
+            new Set(atoms.map((a) => a.chain).filter((c): c is string => Boolean(c)))
+        );
         const residues = new Set(atoms.map((a) => `${a.chain}:${a.resn}:${a.resi}`));
         let bc = 0;
         atoms.forEach((a) => (bc += (a.bonds || []).length));
@@ -104,7 +108,7 @@ function extractInfo(viewer: any, name: string): MolInfo {
             name,
             atoms: atoms.length,
             bonds: Math.floor(bc / 2),
-            chains: chains as string[],
+            chains,
             residues: residues.size,
             formula: computeFormula(atoms),
             mw: computeMW(atoms),

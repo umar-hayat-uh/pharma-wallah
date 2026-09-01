@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { CheckCircle, ExternalLink, Instagram } from "lucide-react";
 
 /* =========================================================
    PHARMAWALLAH — RAPID PHARMACY QUIZ
@@ -665,51 +666,105 @@ type PrizeScreenProps = {
 };
 
 function PrizeScreen({ score, onPlayAgain }: PrizeScreenProps) {
+    const [followConfirmed, setFollowConfirmed] = useState(false);
+
+    const handleFollowConfirm = () => {
+        setFollowConfirmed(true);
+        window.open("https://www.instagram.com/pharmawallah_com/", "_blank", "noopener,noreferrer");
+    };
+
     return (
-        <div className="flex flex-col h-full min-h-[720px]">
+        <div className="flex flex-col h-full min-h-[720px] bg-gradient-to-br from-slate-50 to-blue-50/30">
             <div className="px-5 pt-5">
                 <Logo />
             </div>
-            <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-4">
-                <div className="text-base font-extrabold text-blue-600 tracking-wider">
+
+            <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-6">
+                {/* PRIZE BADGE */}
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-100 border border-amber-200 text-amber-800 text-xs font-black uppercase tracking-widest">
                     🏆 PRIZE UNLOCKED
                 </div>
 
-                <div className="w-full max-w-xs bg-white border border-gray-200 rounded-2xl p-6 shadow-lg">
-                    <div className="text-xs font-bold tracking-widest text-green-600">
-                        PHARMAWALLAH
+                {/* PRIZE CARD */}
+                <div className="w-full max-w-sm bg-white border border-gray-200 rounded-2xl p-6 shadow-lg relative overflow-hidden">
+                    <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 to-green-400" />
+
+                    <div className="text-[10px] font-black tracking-widest text-blue-600 uppercase">
+                        PharmaWallah
                     </div>
                     <div className="text-lg font-extrabold text-gray-900 mt-1">
                         Rapid Pharmacy Quiz Winner
                     </div>
+
                     <div className="flex justify-between items-center mt-4 text-sm font-medium text-gray-600">
                         <span>Score</span>
-                        <span className="text-xl font-extrabold text-gray-900">{score}/10</span>
+                        <span className="text-xl font-extrabold text-gray-900">{score}/{WIN_THRESHOLD}</span>
                     </div>
+
                     <hr className="my-4 border-gray-200" />
-                    <div className="text-xs font-bold tracking-widest text-green-600 mb-2">
-                        CLAIM YOUR PRIZE
+
+                    <div className="text-[10px] font-black tracking-widest text-green-600 uppercase mb-3">
+                        Claim Your Prize
                     </div>
-                    <div className="text-sm font-semibold text-gray-700">
-                        ✓ 1× PharmaWallah Pen
+
+                    {/* Sticker – always unlocked */}
+                    <div className="flex items-center gap-3 text-sm font-semibold text-gray-700">
+                        <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
+                        <span>1× PharmaWallah Sticker</span>
                     </div>
-                    <div className="text-sm font-semibold text-gray-700 mt-1">
-                        ✓ 1× PharmaWallah Sticker
+
+                    {/* Pen – only if follow confirmed */}
+                    <div className="flex items-center gap-3 text-sm font-semibold text-gray-700 mt-2">
+                        <CheckCircle className={`w-5 h-5 shrink-0 ${followConfirmed ? "text-green-500" : "text-gray-300"}`} />
+                        <span>{followConfirmed ? "1× PharmaWallah Pen unlocked" : "1× PharmaWallah Pen"}</span>
                     </div>
+
                     <div className="inline-block mt-4 bg-green-100 text-green-800 text-xs font-bold px-4 py-1.5 rounded-full">
                         ✓ QUALIFIED
                     </div>
                 </div>
 
-                <div className="text-sm text-gray-500 font-medium max-w-xs">
-                    Show this screen to the PharmaWallah team at the booth.
+                {/* FOLLOW SECTION – only Instagram */}
+                <div className="w-full max-w-sm bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                    <div className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">
+                        Unlock the super prize
+                    </div>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                        Follow PharmaWallah on Instagram and claim your exclusive pen!
+                    </p>
+
+                    {/* Instagram only */}
+                    <div className="flex justify-center mt-4">
+                        <a
+                            href="https://www.instagram.com/pharmawallah_com/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2.5 rounded-xl bg-pink-50 border border-pink-200 text-pink-600 hover:bg-pink-100 transition-colors"
+                            aria-label="Follow us on Instagram"
+                        >
+                            <Instagram size={20} />
+                        </a>
+                    </div>
+
+                    <button
+                        onClick={handleFollowConfirm}
+                        className="mt-4 w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold text-sm shadow-md shadow-blue-200/50 hover:shadow-lg hover:shadow-blue-300/60 transition-all active:scale-95 flex items-center justify-center gap-2"
+                    >
+                        <span>{followConfirmed ? "Pen unlocked" : "I've followed – unlock pen"}</span>
+                        <ExternalLink size={14} />
+                    </button>
+                    <p className="text-[10px] text-gray-400 mt-3">
+                        Confirm only after you've followed us. One pen per winner.
+                    </p>
                 </div>
+
             </div>
 
+            {/* FOOTER BUTTON */}
             <div className="px-5 pb-7">
                 <button
                     onClick={onPlayAgain}
-                    className="w-full py-3.5 rounded-2xl border-2 border-blue-600 text-blue-600 font-bold text-base hover:bg-blue-50 transition-colors"
+                    className="w-full py-3.5 rounded-2xl border-2 border-blue-600 text-blue-600 font-bold text-base hover:bg-blue-50 transition-colors active:scale-95"
                 >
                     PLAY AGAIN
                 </button>

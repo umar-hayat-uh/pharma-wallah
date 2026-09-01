@@ -24,16 +24,16 @@ import { useTracker } from "@/hooks/useTracker";
 
 import biochemBank from "@/app/api/mcq-data/pharmaceutical-biochemistry";
 import physioBank from "@/app/api/mcq-data/physiology-histology-i";
-import organicChemBank from "@/app/api/mcq-data/organic-chemistry";
+import pharmaceuticalOrganicChemBank from "@/app/api/mcq-data/pharmaceutical-organic-chemistry";
 import physicalPharmacyBank from "@/app/api/mcq-data/physical-pharmacy";
 
+// The master registry. Add new banks here as they are created.
 const BANK_REGISTRY: Record<string, MCQBank> = {
   "pharmaceutical-biochemistry": biochemBank,
   "physiology-histology-i": physioBank,
-  "organic-chemistry": organicChemBank,
+  "pharmaceutical-organic-chemistry": pharmaceuticalOrganicChemBank,
   "physical-pharmacy": physicalPharmacyBank,
 };
-
 
 interface PageProps {
   params: { semesterSlug: string; subject: string };

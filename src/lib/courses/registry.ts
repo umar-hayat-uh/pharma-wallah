@@ -1,12 +1,18 @@
+// src/lib/courses/registry.ts
 import type { SubjectMeta } from "./types";
-import { semesterToSlug } from "@/lib/mcq-utils"; 
+import { semesterToSlug } from "@/lib/mcq-utils";
 import { biochemistrySubject } from "./subjects/biochemistry";
 import { physiologySubject } from "./subjects/physiology";
+import { physicalPharmacySubject } from "./subjects/physical-pharmacy";
+import { pharmaceuticalOrganicChemistrySubject } from "./subjects/pharmaceutical-organic-chemistry";
 
 export const SUBJECTS: SubjectMeta[] = [
     biochemistrySubject,
     physiologySubject,
+    physicalPharmacySubject,
+    pharmaceuticalOrganicChemistrySubject,
 ];
+
 
 export const SUBJECTS_BY_SLUG = new Map(SUBJECTS.map((s) => [s.slug, s]));
 

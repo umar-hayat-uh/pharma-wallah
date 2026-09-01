@@ -1,526 +1,432 @@
-## Unit 2: Biochemistry of Carbohydrates
+# Unit 2: Basic Chemistry of Biomolecules: Carbohydrates, Lipids, Proteins & Amino Acids
 
-### 1. Introduction to Carbohydrates
-
-Carbohydrates are polyhydroxy aldehydes or ketones, or substances that yield such compounds on hydrolysis. They are the most abundant organic molecules in nature and serve as:
-- Primary energy source for cells
-- Structural components (cellulose in plants, glycoproteins)
-- Recognition molecules (cell surface antigens)
-- Metabolic intermediates
-
----
-
-### 2. Definition and Classification
-
-#### 2.1 Definition
-Chemically, carbohydrates are defined as optically active polyhydroxy aldehydes (aldoses) or polyhydroxy ketones (ketoses) and their derivatives.
-
-#### 2.2 Classification
-Carbohydrates are classified based on their complexity:
-
-| Class | Subclass | Description | Examples |
-|-------|----------|-------------|----------|
-| **Monosaccharides** | Simple sugars, cannot be hydrolyzed further | | |
-| | Trioses (C3H6O3) | 3 carbons | Glyceraldehyde, dihydroxyacetone |
-| | Tetroses (C4H8O4) | 4 carbons | Erythrose, threose |
-| | Pentoses (C5H10O5) | 5 carbons | Ribose, xylose, arabinose |
-| | Hexoses (C6H12O6) | 6 carbons | Glucose, fructose, galactose |
-| | Heptoses (C7H14O7) | 7 carbons | Sedoheptulose |
-| **Disaccharides** | Two monosaccharides linked by glycosidic bond | | |
-| | Reducing disaccharides | Free anomeric carbon | Maltose (glcα1-4glc), lactose (galβ1-4glc) |
-| | Non-reducing disaccharides | No free anomeric carbon | Sucrose (glcα1-2βfru) |
-| **Oligosaccharides** | 3-10 monosaccharide units | | Raffinose (trisaccharide), stachyose (tetrasaccharide) |
-| **Polysaccharides** | >10 monosaccharide units | | |
-| | Homopolysaccharides | Same monosaccharide type | Starch (amylose, amylopectin), glycogen, cellulose |
-| | Heteropolysaccharides | Different monosaccharides | Glycosaminoglycans (hyaluronic acid, heparin) |
+## Learning Objectives
+- Classify carbohydrates, lipids, proteins, and amino acids based on their chemical structure and properties.
+- Describe the chemical reactions and optical activity of carbohydrates.
+- Differentiate between saponifiable and non-saponifiable lipids, and identify essential fatty acids.
+- Explain the organizational levels of protein structure and the macromolecular nature of proteins.
+- Discuss the biological and pharmaceutical importance of each class of biomolecules.
 
 ---
 
-### 3. Isomerism and Optical Activity
+## Core Content
 
-#### 3.1 Stereoisomerism
-Carbohydrates exhibit multiple types of isomerism:
+### PART A: CARBOHYDRATES
 
-| Type | Description | Example |
-|------|-------------|---------|
-| **D/L isomerism** | Based on configuration at the highest-numbered chiral center relative to glyceraldehyde | D-glucose, L-glucose |
-| **Enantiomers** | Mirror-image isomers | D- and L-glucose |
-| **Diastereomers** | Non-mirror image stereoisomers | D-glucose and D-mannose |
-| **Epimers** | Diastereomers differing at one chiral center | D-glucose and D-mannose (C2 epimers); D-glucose and D-galactose (C4 epimers) |
-| **Anomers** | Isomers resulting from ring formation (α and β) at the anomeric carbon | α-D-glucose, β-D-glucose |
+#### 2.1 Chemistry & Definition
 
-#### 3.2 Optical Activity
-- Carbohydrates are optically active due to presence of chiral centers.
-- **Specific rotation [α]** = α / (l × c) where α = observed rotation, l = path length (dm), c = concentration (g/mL).
-- The optical activity is used in quality control of sugar-based pharmaceuticals.
+**Definition:** Carbohydrates are polyhydroxy aldehydes or ketones, or substances that yield such compounds upon hydrolysis. They have the general formula Cₙ(H₂O)ₙ (hydrates of carbon).
 
----
+**Chemical Nature:**
+- Contain carbon, hydrogen, and oxygen.
+- Functional groups: Aldehyde (-CHO) or Ketone (-C=O) groups with multiple hydroxyl (-OH) groups.
+- The simplest carbohydrates are monosaccharides (e.g., glucose, fructose).
 
-### 4. Structural Representation of Sugar Molecules
+#### 2.2 Classification of Carbohydrates
 
-#### 4.1 Fischer Projections
-- Open-chain form
-- Carbon chain vertical, most oxidized group (aldehyde or ketone) at or near top
-- Horizontal bonds project out of plane
+| Class | Subtype | Description | Examples |
+|-------|---------|-------------|----------|
+| **Monosaccharides** | Aldoses | Contain aldehyde group | Glucose, Galactose, Mannose |
+| | Ketoses | Contain ketone group | Fructose, Ribulose |
+| **Oligosaccharides** | Disaccharides | 2 monosaccharide units | Sucrose, Maltose, Lactose |
+| | Trisaccharides | 3 monosaccharide units | Raffinose |
+| **Polysaccharides** | Homopolysaccharides | Same repeating units | Starch, Glycogen, Cellulose |
+| | Heteropolysaccharides | Different repeating units | Hyaluronic acid, Heparin |
 
-#### 4.2 Haworth Projections
-- Cyclic (furanose or pyranose) form
-- Ring lies perpendicular to plane, thicker bonds indicate front
-- For D-sugars, the terminal CH₂OH is above the ring; for L-sugars, below.
+**Based on Carbon Chain Length:**
+- Trioses (3C): Glyceraldehyde, Dihydroxyacetone
+- Tetroses (4C): Erythrose
+- Pentoses (5C): Ribose, Deoxyribose
+- Hexoses (6C): Glucose, Fructose, Galactose
+- Heptoses (7C): Sedoheptulose
 
-#### 4.3 Chair Conformations
-- Six-membered pyranose rings adopt chair conformations
-- Substituents can be axial or equatorial
-- Most stable conformation has bulky groups equatorial
+#### 2.3 Optical Activity of Carbohydrates
 
----
+- **Definition:** The ability of a compound to rotate plane-polarized light.
+- **Chiral Centers:** Carbohydrates contain asymmetric carbon atoms (chiral centers) that give rise to optical isomers.
+- **D and L Isomers:** Based on the configuration of the asymmetric carbon farthest from the carbonyl group:
+  - D-isomer: OH group on the right (most naturally occurring sugars).
+  - L-isomer: OH group on the left.
+- **Enantiomers:** Mirror-image isomers (e.g., D-glucose and L-glucose).
+- **Diastereomers:** Non-mirror image isomers (e.g., D-glucose and D-mannose).
+- **Epimers:** Differ at only one chiral carbon (e.g., D-glucose and D-galactose at C-4).
+- **Anomers:** Cyclic forms differing at the anomeric carbon (C-1 for aldoses):
+  - α-anomer: OH at C-1 is below the ring plane.
+  - β-anomer: OH at C-1 is above the ring plane.
+- **Mutarotation:** The change in optical rotation observed when an α or β anomer is dissolved in water and reaches equilibrium (a mixture of both anomers).
 
-### 5. Chemical Properties of Carbohydrates
+#### 2.4 Important Reactions of Carbohydrates
 
-#### 5.1 Reactions Due to Carbonyl Group
+| Reaction Type | Description | Example/Application |
+|---------------|-------------|---------------------|
+| Oxidation | Aldehyde group oxidized to carboxylic acid | Glucose → Gluconic acid (mild oxidizing agents) |
+| Strong oxidation | Both ends oxidized | Glucose → Glucaric acid |
+| Reduction | Carbonyl group reduced to alcohol | Glucose → Sorbitol (used in sugar-free products) |
+| Esterification | Hydroxyl groups react with acids | Formation of phosphate esters (e.g., glucose-6-phosphate) |
+| Glycosidic Bond Formation | Anomeric carbon reacts with alcohol | Formation of disaccharides and polysaccharides |
+| Osazone Formation | Reaction with phenylhydrazine | Characteristic crystalline derivatives for identification |
+| Fermentation | Anaerobic breakdown by enzymes | Glucose → Ethanol + CO₂ (yeast) |
+| Molisch Test | General test for carbohydrates | Purple ring at interface (positive for all carbs) |
+| Benedict's Test | Reducing sugars | Brick-red precipitate (glucose, fructose, lactose) |
 
-| Reaction | Description | Pharmaceutical Application |
-|----------|-------------|---------------------------|
-| **Oxidation** | Aldoses oxidized to aldonic acids (by mild oxidants like Br₂ water); both aldoses and ketoses oxidized to dicarboxylic acids (by strong oxidants like HNO₃) | Detection and quantification of reducing sugars (e.g., glucose oxidase test) |
-| **Reduction** | Carbonyl reduced to alcohol, producing sugar alcohols (alditols) | Sorbitol, mannitol, xylitol used as sweeteners, excipients, and osmotic diuretics |
-| **Glycoside formation** | Reaction with alcohols in presence of acid yields glycosides | Cardiac glycosides (digoxin) contain sugar moieties |
-| **Osazone formation** | Reaction with phenylhydrazine yields characteristic crystalline osazones | Identification of sugars |
+#### 2.5 Biological Importance of Carbohydrates
 
-#### 5.2 Reactions Due to Hydroxyl Groups
+- **Primary Energy Source:** Glucose is the main fuel for cellular respiration (ATP production).
+- **Energy Storage:** Glycogen (in animals) and starch (in plants) store glucose.
+- **Structural Role:** Cellulose (plants), Chitin (exoskeleton), and Peptidoglycan (bacterial cell walls).
+- **Cell Recognition:** Glycoproteins and glycolipids on cell surfaces mediate cell-cell interactions and immune responses.
+- **Nucleic Acid Backbone:** Ribose and deoxyribose form the structural framework of RNA and DNA.
+- **Metabolic Intermediates:** Important in the synthesis of other biomolecules.
 
-| Reaction | Description | Pharmaceutical Application |
-|----------|-------------|---------------------------|
-| **Esterification** | Formation of esters with acids | Sugar esters as emulsifiers (e.g., sucrose esters) |
-| **Etherification** | Formation of ethers (e.g., methylation) | Used in structural analysis |
-| **Acetal formation** | Cyclic acetals with aldehydes/ketones | Protecting groups in carbohydrate synthesis |
+#### 2.6 Pharmaceutical Importance of Carbohydrates
 
-#### 5.3 Mutarotation
-- Change in optical rotation due to interconversion between α and β anomers in solution.
-- Important for understanding stability of sugar-containing formulations.
-
----
-
-### 6. Pharmaceutical Importance of Carbohydrates
-
-| Carbohydrate | Pharmaceutical Application |
-|--------------|----------------------------|
-| Glucose | IV fluids (dextrose), energy source in parenteral nutrition |
-| Fructose | Sweetener, IV solutions (fructose infusion) |
-| Sucrose | Sweetener, tablet coating, syrup base |
-| Lactose | Tablet diluent/filler (especially in direct compression) |
-| Starch | Tablet disintegrant, binder, diluent |
-| Cellulose (microcrystalline) | Tablet binder, disintegrant, filler |
-| Carboxymethylcellulose (CMC) | Suspending agent, viscosity enhancer |
-| Dextrans | Plasma volume expander, chromatography media |
-| Heparin | Anticoagulant (glycosaminoglycan) |
-| Hyaluronic acid | Viscoelastic in ophthalmic surgery, osteoarthritis treatment |
-| Chitosan | Wound dressing, drug delivery (from chitin) |
-| Sugar alcohols (sorbitol, mannitol, xylitol) | Sweeteners, humectants, osmotic diuretics, excipients |
-| Glycoconjugates (glycoproteins, glycolipids) | Drug targets, vaccines (e.g., polysaccharide vaccines) |
-
----
-
-### 7. Digestion, Absorption, Metabolism, and Excretion of Carbohydrates
-
-#### 7.1 Digestion
-- **Mouth**: Salivary α-amylase (ptyalin) hydrolyzes α1-4 glycosidic bonds of starch, producing maltose, maltotriose, and dextrins.
-- **Stomach**: Acid inactivates salivary amylase; no significant carbohydrate digestion.
-- **Small intestine**:
-  - Pancreatic α-amylase continues starch digestion.
-  - Brush border enzymes (maltase, isomaltase, sucrase, lactase) hydrolyze disaccharides and oligosaccharides to monosaccharides.
-  - Specific enzymes:
-    - Maltase: maltose → glucose + glucose
-    - Sucrase: sucrose → glucose + fructose
-    - Lactase: lactose → glucose + galactose
-    - Isomaltase: α1-6 linkages in branched dextrins
-
-#### 7.2 Absorption
-- Monosaccharides (glucose, galactose, fructose) are absorbed by intestinal epithelial cells.
-- **Transport mechanisms**:
-  - **SGLT1** (sodium-glucose linked transporter): Active transport for glucose and galactose (co-transport with Na⁺).
-  - **GLUT5**: Facilitated diffusion for fructose.
-  - **GLUT2**: Facilitated diffusion across basolateral membrane into blood.
-
-#### 7.3 Metabolism Overview
-Carbohydrate metabolism involves pathways that maintain blood glucose homeostasis and provide energy.
-
-**Major Pathways**:
-- **Glycolysis**: Breakdown of glucose to pyruvate (anaerobic) or further to acetyl-CoA (aerobic).
-- **Citric Acid Cycle (TCA/Krebs cycle)** : Oxidation of acetyl-CoA to CO₂ with production of NADH, FADH₂, and GTP.
-- **Electron Transport Chain (ETC) and Oxidative Phosphorylation**: NADH/FADH₂ donate electrons to generate ATP.
-- **Glycogenesis**: Synthesis of glycogen from glucose (storage).
-- **Glycogenolysis**: Breakdown of glycogen to glucose-6-phosphate.
-- **Gluconeogenesis**: Synthesis of glucose from non-carbohydrate precursors (lactate, glycerol, amino acids).
-- **Pentose Phosphate Pathway (PPP)** : Generates NADPH and ribose-5-phosphate.
-- **Glucuronate Pathway**: Produces glucuronic acid for conjugation reactions.
-
-#### 7.4 Excretion
-- Normally, glucose is completely reabsorbed in the renal tubules via SGLT2.
-- **Glucosuria** occurs when blood glucose exceeds renal threshold (~180 mg/dL) or due to tubular dysfunction.
-- Excess carbohydrates are converted to fat (lipogenesis) or glycogen.
+| Pharmaceutical Application | Example |
+|----------------------------|---------|
+| Excipients and Fillers | Lactose, starch, dextrose used in tablet formulations |
+| Drug Delivery Systems | Chitosan and hyaluronic acid for targeted delivery |
+| Diagnostic Agents | Glucose tolerance test for diabetes mellitus |
+| Antibiotics | Aminoglycosides (e.g., streptomycin) contain sugar moieties |
+| Vaccine Development | Polysaccharide-based vaccines (e.g., Pneumococcal vaccine) |
+| Anticoagulants | Heparin (a heteropolysaccharide) prevents blood clotting |
+| Suspending Agents | Acacia, tragacanth in liquid formulations |
+| Dietary Supplements | Glucose, fructose used in parenteral nutrition |
 
 ---
 
-### 8. Glycolysis
+### PART B: LIPIDS
 
-#### 8.1 Overview
-Glycolysis is the metabolic pathway that converts glucose (6C) into two molecules of pyruvate (3C) with net production of ATP and NADH. Occurs in cytoplasm of all cells.
+#### 2.7 Chemistry & Definition
 
-#### 8.2 Phases of Glycolysis
+**Definition:** Lipids are a heterogeneous group of organic compounds that are relatively insoluble in water (hydrophobic) but soluble in non-polar organic solvents like chloroform, ether, and benzene.
 
-| Phase | Steps | Energy Investment/Generation |
-|-------|-------|------------------------------|
-| **Energy investment phase** | Steps 1-5: Glucose → 2 glyceraldehyde-3-phosphate | Uses 2 ATP |
-| **Energy payoff phase** | Steps 6-10: 2 glyceraldehyde-3-phosphate → 2 pyruvate | Produces 4 ATP and 2 NADH |
+**Chemical Nature:**
+- Primarily composed of carbon, hydrogen, and oxygen, with occasional phosphorus and nitrogen.
+- They are esters of fatty acids with alcohols (e.g., glycerol, cholesterol).
 
-**Net reaction**:
-Glucose + 2 NAD⁺ + 2 ADP + 2 Pi → 2 Pyruvate + 2 NADH + 2 H⁺ + 2 ATP + 2 H₂O
+#### 2.8 Classification of Lipids
 
-#### 8.3 Key Enzymes and Regulation
+**A. Based on Saponification (Hydrolysis by Alkali)**
 
-| Enzyme | Reaction | Regulation |
-|--------|----------|------------|
-| **Hexokinase** | Glucose → Glucose-6-phosphate | Inhibited by G6P; low Km (high affinity) |
-| **Glucokinase** (liver, pancreas) | Glucose → G6P | Not inhibited by G6P; high Km, induced by insulin |
-| **Phosphofructokinase-1 (PFK-1)** | Fructose-6-P → Fructose-1,6-bisP | **Rate-limiting**; activated by AMP, fructose-2,6-bisP; inhibited by ATP, citrate |
-| **Pyruvate kinase** | Phosphoenolpyruvate → Pyruvate | Activated by fructose-1,6-bisP; inhibited by ATP, alanine (liver) |
+| Type | Definition | Examples |
+|------|------------|----------|
+| Saponifiable Lipids | Contain ester bonds that can be hydrolyzed by alkali to yield fatty acids and alcohols. | Triglycerides, Phospholipids, Sphingolipids, Waxes |
+| Non-Saponifiable Lipids | Do not contain ester bonds and cannot be hydrolyzed by alkali. | Cholesterol, Steroids, Terpenes, Fat-soluble vitamins (A, D, E, K) |
 
-#### 8.4 Energetics
-- Substrate-level phosphorylation: 2 ATP (net)
-- NADH from glycolysis can enter mitochondria and generate additional ATP via ETC (approximately 1.5-2.5 ATP per NADH depending on shuttle).
+**B. Based on Chemical Composition**
 
-#### 8.5 Fates of Pyruvate
-- **Aerobic conditions**: Pyruvate converted to acetyl-CoA by pyruvate dehydrogenase complex → enters TCA cycle.
-- **Anaerobic conditions**: Pyruvate reduced to lactate by lactate dehydrogenase (regenerates NAD⁺).
-- **In yeast**: Pyruvate decarboxylated to acetaldehyde, then reduced to ethanol.
+| Class | Subtype | Components | Examples |
+|-------|---------|------------|----------|
+| **Simple Lipids** | Fats & Oils (Triglycerides) | Glycerol + 3 Fatty acids (esters) | Animal fats, vegetable oils |
+| | Waxes | Fatty acid + Long-chain alcohol | Beeswax, Lanolin |
+| **Complex Lipids** | Phospholipids | Glycerol + 2 Fatty acids + Phosphate + Nitrogen base | Lecithin, Cephalin |
+| | Glycolipids | Glycerol/Sphingosine + Fatty acid + Carbohydrate | Cerebrosides, Gangliosides |
+| | Lipoproteins | Lipid + Protein | HDL, LDL, VLDL |
+| **Derived Lipids** | Steroids, Terpenes | Hydrocarbon rings and side chains | Cholesterol, Bile acids, Vitamin D, Steroid hormones |
 
-#### 8.6 Dysregulation of Glycolysis
+#### 2.9 Chemistry of Fatty Acids
 
-| Condition | Biochemical Defect | Consequence |
-|-----------|-------------------|-------------|
-| **Pyruvate kinase deficiency** | Genetic defect in pyruvate kinase (RBCs) | Hemolytic anemia (RBCs rely solely on glycolysis for ATP) |
-| **Hexokinase deficiency** | Rare; similar to PK deficiency | Hemolytic anemia |
-| **Lactic acidosis** | Excess lactate production due to hypoxia, mitochondrial defects, or某些 drugs (metformin, nucleoside analogs) | Metabolic acidosis, organ dysfunction |
-| **Warburg effect** (cancer) | Cancer cells upregulate glycolysis even under aerobic conditions (aerobic glycolysis) | Provides metabolic intermediates for biosynthesis; target for anticancer drugs |
-| **Arsenic poisoning** | Arsenate replaces phosphate in glyceraldehyde-3-P dehydrogenase step, uncoupling substrate-level phosphorylation | Depletion of ATP |
+**Definition:** Fatty acids are carboxylic acids with long hydrocarbon chains (usually 4–36 carbons). They are the building blocks of many lipids.
 
----
+**Classification of Fatty Acids:**
 
-### 9. Feeder Pathways of Glycolysis
+| Basis | Type | Description | Examples |
+|-------|------|-------------|----------|
+| **Chain Length** | Short-chain (SCFA) | 4–10 carbons | Butyric acid (4:0) |
+| | Medium-chain (MCFA) | 10–14 carbons | Lauric acid (12:0) |
+| | Long-chain (LCFA) | 14–24 carbons | Palmitic acid (16:0), Stearic acid (18:0) |
+| **Degree of Saturation** | Saturated Fatty Acids (SFA) | No double bonds (single bonds only) | Palmitic acid, Stearic acid |
+| | Unsaturated Fatty Acids (USFA) | Contain one or more double bonds | Oleic acid, Linoleic acid |
+| | Monounsaturated (MUFA) | One double bond | Oleic acid (18:1) |
+| | Polyunsaturated (PUFA) | ≥2 double bonds | Linoleic acid (18:2), Arachidonic acid (20:4) |
+| **Essential vs Non-essential** | Essential Fatty Acids (EFA) | Cannot be synthesized by the body; must be obtained from diet | α-Linolenic acid (Omega-3), Linoleic acid (Omega-6) |
+| | Non-essential Fatty Acids | Can be synthesized by the body | Palmitic acid, Stearic acid |
+| **Configuration** | Cis-fatty acids | H atoms on same side of double bond | Naturally occurring (e.g., Oleic acid) |
+| | Trans-fatty acids | H atoms on opposite sides of double bond | Industrially produced (hydrogenation) |
 
-Other carbohydrates and metabolites can enter glycolysis at various points:
+**Essential Fatty Acids (EFA):**
+- α-Linolenic acid (ALA) – Omega-3 family (18:3)
+- Linoleic acid (LA) – Omega-6 family (18:2)
+- Arachidonic acid – Conditionally essential (20:4) (can be synthesized from LA)
+- Eicosapentaenoic acid (EPA) and Docosahexaenoic acid (DHA) – Long-chain Omega-3s (found in fish oil)
 
-| Substrate | Entry Point | Pathway/Conversion |
-|-----------|-------------|-------------------|
-| **Glycogen** | Glucose-1-phosphate → Glucose-6-phosphate | Glycogenolysis |
-| **Starch (dietary)** | Glucose (after digestion) | Digestion |
-| **Mannose** | Mannose-6-phosphate → Fructose-6-phosphate | Phosphomannose isomerase |
-| **Fructose** (in muscle, kidney) | Fructose → Fructose-6-phosphate (via hexokinase, but low affinity) | Direct phosphorylation |
-| **Fructose** (in liver) | Fructose → Fructose-1-phosphate (fructokinase) → cleavage by aldolase B to glyceraldehyde + dihydroxyacetone phosphate | Enters glycolysis at triose level |
-| **Galactose** | Galactose → Glucose-1-phosphate (via Leloir pathway) → converted to G6P | Enters glycolysis |
-| **Glycerol** | Glycerol → Glycerol-3-phosphate → Dihydroxyacetone phosphate | From lipolysis |
-| **Lactate** | Lactate → Pyruvate (via LDH) | Cori cycle |
-| **Amino acids** (certain) | Various intermediates (e.g., alanine → pyruvate) | Gluconeogenesis/glycolysis |
+#### 2.10 Important Reactions of Lipids and Fatty Acids
 
----
+| Reaction Type | Description | Significance |
+|---------------|-------------|--------------|
+| Saponification | Alkaline hydrolysis of ester bonds | Formation of soap (salts of fatty acids) and glycerol |
+| Hydrogenation | Addition of H₂ across double bonds (unsaturated → saturated) | Solidification of vegetable oils (margarine production) |
+| Halogenation | Addition of halogens at double bonds | Used to determine the degree of unsaturation (Iodine number) |
+| Hydrolysis | Breakdown by water (enzymatic) | Digestion of dietary fats by lipases |
+| Oxidation (Rancidity) | Auto-oxidation of unsaturated fatty acids | Development of unpleasant odor and taste (spoilage) |
+| Esterification | Reaction with alcohols to form esters | Formation of triglycerides, phospholipids |
+| Acrolein Test | Dehydration of glycerol | Test for glycerol-containing lipids |
+| Liebermann-Burchard Test | Reaction with acetic anhydride and sulfuric acid | Test for cholesterol (green color) |
 
-### 10. Pentose Phosphate Pathway (PPP)
+#### 2.11 Biological Importance of Lipids
 
-#### 10.1 Overview
-The pentose phosphate pathway (also called hexose monophosphate shunt) is an alternative route for glucose oxidation. It occurs in cytoplasm and has two main functions:
-1. **Generation of NADPH** for reductive biosynthesis (fatty acids, cholesterol, steroids) and antioxidant defense (glutathione reduction).
-2. **Production of ribose-5-phosphate** for nucleotide synthesis.
+- **Energy Source:** Most concentrated source of energy (9 kcal/g vs. 4 kcal/g for carbohydrates).
+- **Energy Storage:** Fats stored in adipose tissue are a major reserve fuel.
+- **Structural Role:** Phospholipids and cholesterol form the lipid bilayer of cell membranes.
+- **Insulation:** Subcutaneous fat provides thermal insulation and mechanical cushioning.
+- **Hormone Precursors:** Cholesterol is the precursor for steroid hormones (estrogen, testosterone, cortisol).
+- **Bile Acid Synthesis:** Cholesterol forms bile acids necessary for fat digestion and absorption.
+- **Fat-soluble Vitamin Carriers:** Vitamins A, D, E, K are lipid-soluble and absorbed with dietary fats.
+- **Eicosanoid Synthesis:** Essential fatty acids are precursors to prostaglandins, thromboxanes, and leukotrienes (mediators of inflammation and immunity).
 
-#### 10.2 Phases
+#### 2.12 Pharmaceutical Importance of Lipids
 
-| Phase | Description | Key Enzymes |
-|-------|-------------|-------------|
-| **Oxidative phase** (irreversible) | Glucose-6-phosphate → Ribulose-5-phosphate + CO₂; generates 2 NADPH | Glucose-6-phosphate dehydrogenase (G6PD), 6-phosphogluconolactonase, 6-phosphogluconate dehydrogenase |
-| **Non-oxidative phase** (reversible) | Interconversion of sugars (ribulose-5-P, ribose-5-P, xylulose-5-P) and formation of fructose-6-P and glyceraldehyde-3-P that can re-enter glycolysis | Transketolase (requires thiamine pyrophosphate), transaldolase |
-
-#### 10.3 Tissue Distribution
-- High activity in tissues requiring NADPH: liver, adipose tissue, adrenal cortex, lactating mammary gland, erythrocytes.
-- Also active in tissues requiring ribose-5-P: rapidly dividing cells (bone marrow, tumors).
-
-#### 10.4 Regulation
-- **G6PD** is the rate-limiting enzyme.
-- Inhibited by NADPH (high NADPH/NADP⁺ ratio).
-- Induced by insulin and dietary carbohydrates.
-
-#### 10.5 Dysregulation of PPP
-
-| Condition | Biochemical Defect | Consequence |
-|-----------|-------------------|-------------|
-| **Glucose-6-phosphate dehydrogenase (G6PD) deficiency** | X-linked genetic defect; most common enzyme deficiency worldwide | Impaired NADPH production in RBCs → hemolytic anemia upon oxidative stress (certain drugs, fava beans, infections) |
-| | Drugs triggering hemolysis in G6PD deficiency: primaquine, sulfonamides, dapsone, aspirin (high doses), nitrofurantoin | |
-| **Transketolase deficiency** | Thiamine deficiency (beriberi) or rare genetic defect | Neurological symptoms (Wernicke-Korsakoff syndrome) |
-| **Cancer** | PPP upregulated to support nucleotide synthesis and antioxidant defense | Potential therapeutic target |
+| Pharmaceutical Application | Example |
+|----------------------------|---------|
+| Drug Formulation | Oils and fats used as vehicles for hydrophobic drugs in ointments, creams, and emulsions |
+| Liposomal Drug Delivery | Liposomes (phospholipid vesicles) used for targeted drug delivery |
+| Parenteral Nutrition | Lipid emulsions (Intralipid) provide essential fatty acids in IV nutrition |
+| Cholesterol-Lowering Drugs | Statins (HMG-CoA reductase inhibitors) target cholesterol biosynthesis |
+| Bile Acid Sequestrants | Drugs like cholestyramine bind bile acids to lower cholesterol |
+| Diagnostic Agents | Lipid profile tests measure total cholesterol, HDL, LDL, triglycerides for cardiovascular risk assessment |
+| Drug Absorption Enhancement | Lipid-based formulations improve bioavailability of poorly soluble drugs |
+| Emulsifying Agents | Lecithin used as an emulsifier in pharmaceuticals and cosmetics |
 
 ---
 
-### 11. Glucuronate Pathway
+### PART C: PROTEINS AND AMINO ACIDS
 
-#### 11.1 Overview
-Also called the uronic acid pathway, this pathway converts glucose to glucuronic acid, ascorbic acid (in animals that can synthesize it), and pentoses. It is active in liver.
+#### 2.13 Chemistry & Definition
 
-#### 11.2 Key Steps
-1. Glucose-6-phosphate → Glucose-1-phosphate (phosphoglucomutase)
-2. Glucose-1-phosphate + UTP → UDP-glucose (UDP-glucose pyrophosphorylase)
-3. UDP-glucose → UDP-glucuronate (UDP-glucose dehydrogenase)
-4. UDP-glucuronate can be used for conjugation reactions (phase II metabolism) or converted to D-glucuronate → L-gulonate → ascorbic acid (in some animals; humans lack L-gulonolactone oxidase, cannot synthesize vitamin C)
+**Definition:** Proteins are large, complex macromolecules composed of amino acids linked by peptide bonds. They are the most abundant organic molecules in the human body, constituting about 50% of cellular dry weight.
 
-#### 11.3 Pharmaceutical Importance
-- **Glucuronidation**: UDP-glucuronate is the donor for glucuronidation of drugs, bilirubin, hormones, and xenobiotics (UGT enzymes).
-- **Detoxification**: Increases water solubility for excretion.
-- **Bilirubin metabolism**: Conjugation with glucuronic acid is essential for bilirubin excretion.
-- **Drug interactions**: Induction or inhibition of UGT enzymes affects drug clearance.
+**Chemical Nature:**
+- Contain carbon, hydrogen, oxygen, nitrogen, and often sulfur (in cysteine and methionine).
+- Protein molecules are polymers of amino acids joined by peptide bonds (-CO-NH-).
+- The diversity of proteins arises from the sequence and arrangement of 20 standard amino acids.
 
-#### 11.4 Dysregulation
+#### 2.14 Classification of Amino Acids
 
-| Condition | Biochemical Defect | Consequence |
-|-----------|-------------------|-------------|
-| **Crigler-Najjar syndrome** | Deficiency of UGT1A1 (bilirubin conjugation) | Unconjugated hyperbilirubinemia, kernicterus |
-| **Gilbert's syndrome** | Mild reduction in UGT1A1 activity | Mild intermittent jaundice, reduced drug metabolism capacity |
-| **Scurvy** (humans) | Inability to synthesize ascorbic acid due to lack of L-gulonolactone oxidase | Vitamin C deficiency |
+**A. Based on R-group Properties (Chemical Nature)**
 
----
+| Class | Characteristics | Amino Acids |
+|-------|-----------------|-------------|
+| Non-polar (Hydrophobic) | Aliphatic or aromatic R-groups; insoluble in water | Glycine (Gly), Alanine (Ala), Valine (Val), Leucine (Leu), Isoleucine (Ile), Methionine (Met), Proline (Pro), Phenylalanine (Phe), Tryptophan (Trp) |
+| Polar (Hydrophilic) | Neutral but have polar groups; soluble in water | Serine (Ser), Threonine (Thr), Asparagine (Asn), Glutamine (Gln), Tyrosine (Tyr), Cysteine (Cys) |
+| Acidic (Negatively Charged) | Side chain contains carboxyl group | Aspartic acid (Asp), Glutamic acid (Glu) |
+| Basic (Positively Charged) | Side chain contains amino group | Lysine (Lys), Arginine (Arg), Histidine (His) |
 
-### 12. Glycogen Metabolism
+**B. Based on Nutritional Requirements (Biosynthetic Capacity)**
 
-#### 12.1 Glycogenesis (Synthesis of Glycogen)
+| Type | Definition | Amino Acids |
+|------|------------|-------------|
+| Essential | Cannot be synthesized by the body; must be obtained from diet | Valine, Leucine, Isoleucine, Methionine, Phenylalanine, Threonine, Tryptophan, Lysine, Histidine* (*essential in children) |
+| Non-Essential | Can be synthesized by the body | Glycine, Alanine, Serine, Aspartic acid, Glutamic acid, Asparagine, Glutamine, Proline, Cysteine, Tyrosine |
+| Conditionally Essential | Essential in certain disease states or in children | Arginine, Histidine, Tyrosine, Cysteine |
 
-**Location**: Liver and muscle (cytoplasm)
+**C. Based on Metabolic Fate (Ketogenic vs Glucogenic)**
 
-**Steps**:
-1. Glucose → Glucose-6-phosphate (hexokinase/glucokinase)
-2. Glucose-6-phosphate → Glucose-1-phosphate (phosphoglucomutase)
-3. Glucose-1-phosphate + UTP → UDP-glucose (UDP-glucose pyrophosphorylase)
-4. **Glycogen synthase** transfers glucose from UDP-glucose to non-reducing end of glycogen (α1-4 linkage)
-5. **Branching enzyme (amylo-1,4→1,6-transglucosidase)** creates α1-6 branches every 8-12 residues
+| Type | Fate | Amino Acids |
+|------|------|-------------|
+| Glucogenic | Can be converted to glucose (via gluconeogenesis) | Alanine, Glycine, Serine, Aspartate, Glutamate (most amino acids) |
+| Ketogenic | Can be converted to ketone bodies/fatty acids | Leucine, Lysine |
+| Both (Glucogenic & Ketogenic) | Can be converted to both glucose and ketones | Isoleucine, Phenylalanine, Tryptophan, Threonine, Tyrosine |
 
-**Regulation**:
-- Glycogen synthase activated by insulin (dephosphorylation) and glucose-6-phosphate
-- Inhibited by glucagon (liver) and epinephrine (muscle) via cAMP-dependent phosphorylation
+#### 2.15 Classification of Proteins
 
-#### 12.2 Glycogenolysis (Breakdown of Glycogen)
+**A. Based on Shape and Solubility**
 
-**Steps**:
-1. **Glycogen phosphorylase** cleaves α1-4 linkages, releasing glucose-1-phosphate
-2. **Debranching enzyme** has two activities:
-   - 4:4 transferase (transfers three glucose residues from branch to nearby chain)
-   - α1-6 glucosidase (hydrolyzes α1-6 linkage to release free glucose)
-3. Glucose-1-phosphate → Glucose-6-phosphate (phosphoglucomutase)
-4. In liver, glucose-6-phosphatase converts G6P to free glucose (released into blood); muscle lacks this enzyme (G6P used locally)
+| Type | Description | Examples |
+|------|-------------|----------|
+| Fibrous Proteins (Scleroproteins) | Long, thread-like molecules; insoluble in water; structural role | Collagen (bone, tendons), Keratin (hair, nails, skin), Elastin (ligaments), Myosin (muscle) |
+| Globular Proteins (Albumins) | Spherical, compact molecules; water-soluble; functional role | Hemoglobin (oxygen transport), Immunoglobulins (immune function), Enzymes, Albumin (osmotic balance) |
 
-**Regulation**:
-- Glycogen phosphorylase activated by glucagon (liver), epinephrine (muscle), AMP, and calcium
-- Inhibited by ATP and glucose-6-phosphate
+**B. Based on Chemical Composition**
 
-#### 12.3 Glycogen Storage Diseases (Glycogenoses)
+| Type | Definition | Examples |
+|------|------------|----------|
+| Simple Proteins | Composed only of amino acids | Albumin, Globulins, Histones, Protamines |
+| Conjugated Proteins | Contain amino acids + a non-protein prosthetic group | Glycoproteins (protein + carbohydrate), Lipoproteins (protein + lipid), Hemoproteins (protein + heme), Metalloproteins (protein + metal ion) |
+| Derived Proteins | Degradation products of simple/conjugated proteins | Proteoses, Peptones, Peptides |
 
-| Type | Disease | Enzyme Defect | Clinical Features |
-|------|---------|---------------|-------------------|
-| **Type I** | Von Gierke's disease | Glucose-6-phosphatase | Severe fasting hypoglycemia, hepatomegaly, lactic acidosis, hyperuricemia |
-| **Type II** | Pompe disease | Lysosomal α-1,4-glucosidase (acid maltase) | Cardiomegaly, muscle weakness (infantile form fatal); glycogen accumulation in lysosomes |
-| **Type III** | Cori disease | Debranching enzyme | Similar to type I but milder; fasting hypoglycemia, myopathy |
-| **Type IV** | Andersen disease | Branching enzyme | Progressive liver cirrhosis, death in early childhood; abnormal glycogen structure |
-| **Type V** | McArdle disease | Muscle phosphorylase | Exercise intolerance, muscle cramps, myoglobinuria; glycogen accumulates in muscle |
-| **Type VI** | Hers disease | Liver phosphorylase | Mild hypoglycemia, hepatomegaly |
-| **Type VII** | Tarui disease | Phosphofructokinase (muscle) | Similar to type V, but also hemolytic anemia |
+#### 2.16 Organizational Levels of Protein Structure
 
----
+| Level | Description | Bonds/Forces Involved | Example |
+|-------|-------------|----------------------|---------|
+| Primary Structure | Linear sequence of amino acids in a polypeptide chain | Peptide bonds | Insulin: A-chain (21 aa), B-chain (30 aa) |
+| Secondary Structure | Folding of the polypeptide chain into local regular structures | Hydrogen bonds (between backbone groups) | α-helix (hair-like spiral), β-pleated sheet (zigzag) |
+| Tertiary Structure | Overall three-dimensional shape of a single polypeptide chain | Hydrophobic interactions, Hydrogen bonds, Disulfide bonds, Ionic bonds, Van der Waals forces | Myoglobin, Immunoglobulins |
+| Quaternary Structure | Spatial arrangement of two or more polypeptide subunits | Same as tertiary (inter-subunit interactions) | Hemoglobin (α₂β₂ tetramer), DNA polymerase |
 
-### 13. Gluconeogenesis
+#### 2.17 Macromolecular Nature of Proteins
 
-#### 13.1 Overview
-Gluconeogenesis is the synthesis of glucose from non-carbohydrate precursors (lactate, glycerol, glucogenic amino acids). It occurs mainly in liver (90%) and kidney (10%).
+- **Molecular Weight:** Proteins range from 5,000 Da (small peptides) to over 1,000,000 Da (large complexes).
+- **Polymerization:** Composed of 50 to several thousand amino acid residues.
+- **Conformation:** Proteins exist in native (functional) and denatured (non-functional) states.
+- **Biological Activity Depends on Conformation:** The specific 3D structure determines function; loss of native conformation (denaturation) leads to loss of biological activity.
 
-#### 13.2 Precursors
-- **Lactate** (from muscle/RBCs via Cori cycle)
-- **Glycerol** (from lipolysis)
-- **Glucogenic amino acids** (e.g., alanine, glutamine) – all except leucine and lysine
-- **Propionate** (from odd-chain fatty acids, some amino acids)
+**Denaturation of Proteins:**
+- **Definition:** Disruption of higher-order (secondary, tertiary, quaternary) structure without breaking peptide bonds.
+- **Agents:** Heat, pH extremes, organic solvents, heavy metal ions, detergents.
+- **Examples:** Egg white coagulation on heating; irreversible in most cases.
 
-#### 13.3 Key Enzymes Bypassing Glycolysis Irreversible Steps
-Gluconeogenesis uses most glycolytic enzymes in reverse, but three irreversible steps of glycolysis must be bypassed:
+#### 2.18 Important Reactions of Amino Acids and Proteins
 
-| Glycolysis Step | Gluconeogenesis Bypass Enzyme(s) | Notes |
-|-----------------|-----------------------------------|-------|
-| Hexokinase/glucokinase | **Glucose-6-phosphatase** (liver, kidney only) | Converts G6P to free glucose |
-| Phosphofructokinase-1 | **Fructose-1,6-bisphosphatase** | Converts F1,6BP to F6P |
-| Pyruvate kinase | **Pyruvate carboxylase** + **PEP carboxykinase (PEPCK)** | Pyruvate → oxaloacetate → phosphoenolpyruvate |
+| Reaction/Test | Reagent | Positive Result | Amino Acid/Group Detected |
+|---------------|---------|-----------------|---------------------------|
+| Ninhydrin Reaction | Ninhydrin | Purple/Blue color | All amino acids (α-amino group) |
+| Biuret Test | Biuret reagent (Cu²⁺ in alkaline solution) | Violet color | Proteins and peptides (≥2 peptide bonds) |
+| Millon's Reaction | Millon's reagent (Hg(NO₃)₂) | Red color | Tyrosine (phenolic group) |
+| Xanthoproteic Reaction | Concentrated HNO₃ (heat) followed by NaOH | Yellow → Orange color | Aromatic amino acids (Phenylalanine, Tyrosine, Tryptophan) |
+| Sakaguchi Reaction | α-Naphthol + Sodium hypochlorite | Red color | Arginine (guanidinium group) |
+| Nitroprusside Test | Sodium nitroprusside | Purple/Violet color | Cysteine (sulfhydryl -SH group) |
+| Hopkins-Cole Reaction | Glyoxylic acid + H₂SO₄ | Purple ring | Tryptophan (indole ring) |
+| Ehrlich's Reaction | p-Dimethylaminobenzaldehyde (p-DMAB) | Blue color | Tryptophan (indole ring) |
+| Sorenson's Formol Titration | Formaldehyde + NaOH | Quantification of amino acids | Amino groups (used for titration) |
 
-**Pyruvate carboxylase** requires biotin; converts pyruvate to oxaloacetate in mitochondria. Oxaloacetate is reduced to malate (to exit mitochondria) or transaminated to aspartate, then reconverted to OAA in cytoplasm.
+#### 2.19 Biological Importance of Proteins
 
-**PEPCK** converts OAA to PEP (using GTP).
+- **Enzymes:** Catalyze virtually all biochemical reactions (e.g., DNA polymerase, digestive enzymes).
+- **Structural Support:** Collagen (bone, skin), Keratin (hair, nails), Elastin (elastic tissues).
+- **Transport:** Hemoglobin (O₂ transport), Albumin (fatty acid transport), Transferrin (iron transport).
+- **Immunological Defense:** Immunoglobulins (antibodies) protect against pathogens.
+- **Hormones and Signaling:** Insulin, Glucagon, Growth hormone, Cytokines.
+- **Movement and Contraction:** Actin, Myosin (muscle contraction).
+- **Gene Regulation:** Histones (DNA packaging), Transcription factors.
+- **Blood Clotting:** Fibrinogen, Thrombin.
+- **Osmotic Balance:** Albumin maintains oncotic pressure in blood.
+- **Buffering:** Proteins (e.g., Hemoglobin) act as biological buffers.
 
-#### 13.4 Regulation
-- Hormonal control: Glucagon and cortisol stimulate gluconeogenesis; insulin inhibits.
-- Substrate availability: Increased precursors (alanine, lactate) stimulate.
-- Allosteric regulation: Acetyl-CoA activates pyruvate carboxylase; AMP inhibits fructose-1,6-bisphosphatase.
+#### 2.20 Pharmaceutical Importance of Proteins and Amino Acids
 
-#### 13.5 Energetics
-Synthesis of one glucose from two pyruvate requires 6 ATP equivalents (4 ATP + 2 GTP) and 2 NADH.
-
-#### 13.6 Dysregulation
-
-| Condition | Biochemical Feature | Consequence |
-|-----------|---------------------|-------------|
-| **Diabetes mellitus** | Increased gluconeogenesis (lack of insulin, excess glucagon) | Hyperglycemia |
-| **Fasting/starvation** | Increased gluconeogenesis to maintain blood glucose | Mobilization of amino acids and glycerol |
-| **Lactic acidosis** | Excess lactate may be used for gluconeogenesis (Cori cycle), but in hypoxia gluconeogenesis impaired | Accumulation of lactate |
-| **Hereditary fructose intolerance** | Aldolase B deficiency; accumulation of fructose-1-phosphate inhibits gluconeogenesis and glycogenolysis | Hypoglycemia after fructose ingestion |
-
----
-
-### 14. Citric Acid Cycle (TCA Cycle, Krebs Cycle)
-
-#### 14.1 Overview
-The citric acid cycle is the final common pathway for oxidation of carbohydrates, fatty acids, and amino acids. It occurs in the mitochondrial matrix and produces:
-- **Energy**: GTP (ATP equivalent)
-- **Reducing equivalents**: NADH, FADH₂ (enter ETC for ATP production)
-- **Intermediates** for biosynthesis (anaplerotic reactions)
-
-#### 14.2 Reactions of TCA Cycle
-
-| Step | Reaction | Enzyme | Cofactors | Notes |
-|------|----------|--------|-----------|-------|
-| 1 | Acetyl-CoA + Oxaloacetate → Citrate | Citrate synthase | | Condensation; highly exergonic |
-| 2 | Citrate → Isocitrate (via cis-aconitate) | Aconitase | Fe-S cluster | Isomerization |
-| 3 | Isocitrate → α-Ketoglutarate + CO₂ | Isocitrate dehydrogenase | NAD⁺ → NADH | First oxidative decarboxylation; rate-limiting |
-| 4 | α-Ketoglutarate → Succinyl-CoA + CO₂ | α-Ketoglutarate dehydrogenase complex | NAD⁺ → NADH, TPP, lipoate, FAD, CoA | Similar to pyruvate dehydrogenase |
-| 5 | Succinyl-CoA → Succinate | Succinyl-CoA synthetase | GDP → GTP (or ADP → ATP) | Substrate-level phosphorylation |
-| 6 | Succinate → Fumarate | Succinate dehydrogenase | FAD → FADH₂ | Also complex II of ETC; bound to inner membrane |
-| 7 | Fumarate → Malate | Fumarase | H₂O | Hydration |
-| 8 | Malate → Oxaloacetate | Malate dehydrogenase | NAD⁺ → NADH | Regenerates OAA |
-
-#### 14.3 Regulation
-- **Citrate synthase**: Inhibited by ATP, NADH, succinyl-CoA; activated by ADP.
-- **Isocitrate dehydrogenase**: Activated by ADP, Ca²⁺; inhibited by ATP, NADH.
-- **α-Ketoglutarate dehydrogenase**: Inhibited by succinyl-CoA, NADH; activated by Ca²⁺.
-
-#### 14.4 Energetics per Acetyl-CoA
-- 3 NADH → 7.5 ATP (assuming 2.5 ATP/NADH)
-- 1 FADH₂ → 1.5 ATP
-- 1 GTP → 1 ATP
-**Total**: ~10 ATP per acetyl-CoA
-
-#### 14.5 Anaplerotic Reactions
-Replenish TCA intermediates:
-- Pyruvate → Oxaloacetate (pyruvate carboxylase)
-- Pyruvate → Malate (malic enzyme)
-- Transamination of aspartate → oxaloacetate
-- Glutamate → α-ketoglutarate
-
-#### 14.6 Dysregulation of TCA Cycle
-
-| Condition | Biochemical Defect | Consequence |
-|-----------|-------------------|-------------|
-| **Genetic defects in TCA enzymes** | Rare; e.g., fumarase deficiency, succinate dehydrogenase deficiency | Severe neurological symptoms, encephalopathy, tumors (SDH mutations linked to paraganglioma) |
-| **Arsenic poisoning** | Inhibits α-ketoglutarate dehydrogenase and pyruvate dehydrogenase (binds lipoic acid) | Impaired energy production, multi-organ failure |
-| **Fluoroacetate poisoning** | Fluoroacetate converted to fluorocitrate, inhibits aconitase | Blocks TCA cycle, fatal |
-| **Thiamine deficiency** | Impairs pyruvate dehydrogenase and α-ketoglutarate dehydrogenase (TPP-dependent) | Lactic acidosis, neurological symptoms (beriberi, Wernicke-Korsakoff) |
-| **Hypoxia** | Reduced NAD⁺ regeneration inhibits TCA cycle (electron transport chain slows) | Shift to anaerobic glycolysis, lactic acidosis |
+| Pharmaceutical Application | Example |
+|----------------------------|---------|
+| Therapeutic Proteins | Insulin (diabetes), Erythropoietin (anemia), Monoclonal antibodies (cancer, autoimmune disease), Interferons (viral infections) |
+| Enzyme Replacement Therapy | Alpha-1 antitrypsin (emphysema), Laronidase (Mucopolysaccharidosis) |
+| Vaccines | Protein-based vaccines (e.g., Hepatitis B surface antigen) |
+| Drug Targets | Many drugs target proteins: Receptors, Enzymes (e.g., ACE inhibitors for hypertension), Ion channels |
+| Amino Acid Supplements | Glutamine (gut health), Arginine (wound healing), Branched-chain amino acids (muscle recovery) |
+| Diagnostic Markers | Serum albumin (liver/kidney disease), Myoglobin (muscle injury), Troponin (heart attack), HbA1c (diabetes monitoring) |
+| Parenteral Nutrition | Amino acid infusions for patients unable to eat (TPN) |
+| Drug Design | Understanding protein structure enables rational drug design (e.g., HIV protease inhibitors) |
+| Gene Therapy | Proteins as delivery vectors or therapeutic gene products |
+| Biopharmaceuticals | Insulin, growth hormones, clotting factors (recombinant DNA technology) |
 
 ---
 
-### 15. Energetics of Various Metabolic Processes of Carbohydrates
+## 4. Diagrams/Tables
 
-| Pathway | ATP Production (per glucose) | Location | Notes |
-|---------|------------------------------|----------|-------|
-| **Glycolysis (aerobic)** | 2 ATP (net) + 2 NADH | Cytoplasm | NADH yields additional ~3-5 ATP depending on shuttle |
-| **Glycolysis (anaerobic)** | 2 ATP (net) | Cytoplasm | Lactate produced; no additional ATP |
-| **Pyruvate → Acetyl-CoA** | 2 NADH (per glucose) | Mitochondrial matrix | 2 pyruvate per glucose |
-| **TCA cycle** | 2 GTP + 6 NADH + 2 FADH₂ (per glucose) | Mitochondrial matrix | Per 2 acetyl-CoA |
-| **Complete oxidation** | ~30-32 ATP | | Theoretical maximum |
-| **Glycogenesis** | Uses 2 ATP equivalents per glucose added | Cytoplasm | Cost of storage |
-| **Glycogenolysis** | 1 ATP saved per glucose (from glycogen phosphorylase releases G1P, not requiring ATP) | Cytoplasm | Net gain 3 ATP if G1P goes to glycolysis? Actually G1P converted to G6P without ATP cost, so glycolysis from glycogen yields 3 ATP (instead of 2) per glucose unit. |
-| **Gluconeogenesis** | Consumes 6 ATP equivalents per glucose synthesized | Liver, kidney | Energy cost for maintaining blood glucose |
-| **Pentose phosphate pathway (oxidative phase)** | No ATP; produces NADPH and pentoses | Cytoplasm | Important for biosynthesis and antioxidant defense |
+### Table 1: Summary of Carbohydrates Classification
 
----
+```text
+                              CARBOHYDRATES
+                                    │
+            ┌───────────────────────┼───────────────────────┐
+            │                       │                       │
+     MONOSACCHARIDES          OLIGOSACCHARIDES       POLYSACCHARIDES
+        (1 unit)                (2–10 units)            (>10 units)
+            │                       │                       │
+       - Aldoses              - Disaccharides      - Homopolysaccharides
+       - Ketoses              - Trisaccharides     - Heteropolysaccharides
+            │                       │                       │
+        Glucose                  Sucrose                Starch
+        Fructose                 Maltose                Glycogen
+        Galactose                Lactose                Cellulose
+        Ribose                                          Hyaluronic acid
+```
 
-### 16. Brief Overview of Carbohydrate Metabolic Disorders
+| Classification                    | Subtypes                                   | Examples                                     |
+| --------------------------------- | ------------------------------------------ | -------------------------------------------- |
+| **Monosaccharides (1 unit)**      | Aldoses, Ketoses                           | Glucose, Fructose, Galactose, Ribose         |
+| **Oligosaccharides (2–10 units)** | Disaccharides, Trisaccharides              | Sucrose, Maltose, Lactose                    |
+| **Polysaccharides (>10 units)**   | Homopolysaccharides, Heteropolysaccharides | Starch, Glycogen, Cellulose, Hyaluronic acid |
 
-| Disorder | Biochemical Defect | Clinical Features |
-|----------|-------------------|-------------------|
-| **Diabetes mellitus** | Insulin deficiency (Type 1) or insulin resistance (Type 2) | Hyperglycemia, glycosuria, ketoacidosis (Type 1), long-term complications |
-| **Lactose intolerance** | Deficiency of lactase (brush border) | Diarrhea, bloating after milk ingestion |
-| **Galactosemia** | Deficiency of galactokinase, galactose-1-phosphate uridylyltransferase, or UDP-galactose epimerase | Failure to thrive, jaundice, cataracts, intellectual disability (if untreated) |
-| **Essential fructosuria** | Fructokinase deficiency | Benign; fructose excreted in urine |
-| **Hereditary fructose intolerance** | Aldolase B deficiency | Hypoglycemia, vomiting, liver failure after fructose ingestion |
-| **Glycogen storage diseases** (see above) | Various enzyme defects in glycogen metabolism | Hepatomegaly, hypoglycemia, muscle weakness, etc. |
-| **Pyruvate dehydrogenase deficiency** | Defect in PDH complex (E1 most common) | Lactic acidosis, neurological deterioration |
-| **Pyruvate carboxylase deficiency** | Defect in gluconeogenesis | Lactic acidosis, hypoglycemia, hyperammonemia |
-| **Mitochondrial diseases** (e.g., MELAS) | Defects in ETC or TCA enzymes | Multisystem involvement, lactic acidosis |
-| **G6PD deficiency** | Impaired pentose phosphate pathway in RBCs | Hemolytic anemia triggered by oxidative stress |
 
----
 
-### Summary Tables
+### Table 2: Protein Structure Hierarchy
 
-#### Table 1: Major Pathways of Carbohydrate Metabolism
+| Level | Structure | Key Features | Stabilizing Forces |
+|-------|-----------|--------------|-------------------|
+| Primary | Linear chain of amino acids | Sequence determines all higher levels | Peptide bonds (covalent) |
+| Secondary | Local folding (α-helix, β-sheet) | Regular repeating patterns | Hydrogen bonds (backbone) |
+| Tertiary | 3D folding of one chain | Globular or fibrous shape | Hydrophobic, H-bonds, S-S, Ionic |
+| Quaternary | Assembly of multiple chains | Subunit interactions | Same as tertiary |
 
-| Pathway | Function | Key Substrates | Key Products | Key Enzymes |
-|---------|----------|----------------|--------------|-------------|
-| Glycolysis | Energy production | Glucose | Pyruvate, ATP, NADH | PFK-1, pyruvate kinase |
-| Gluconeogenesis | Glucose synthesis | Lactate, glycerol, amino acids | Glucose | PEPCK, fructose-1,6-bisphosphatase, G6Pase |
-| Glycogenesis | Glucose storage | Glucose | Glycogen | Glycogen synthase |
-| Glycogenolysis | Glucose mobilization | Glycogen | Glucose-1-phosphate | Glycogen phosphorylase |
-| Pentose phosphate pathway | NADPH, ribose production | Glucose-6-phosphate | NADPH, ribose-5-phosphate | G6PD |
-| TCA cycle | Complete oxidation | Acetyl-CoA | NADH, FADH₂, GTP, CO₂ | Isocitrate dehydrogenase, α-KG dehydrogenase |
-| Glucuronate pathway | Glucuronic acid synthesis | UDP-glucose | UDP-glucuronate | UDP-glucose dehydrogenase |
+### Diagram 1: Structure of an Amino Acid
 
-#### Table 2: Hormonal Regulation of Carbohydrate Metabolism
+```text
+        H
+        │
+H₂N ─── C ─── COOH
+        │
+        R
+```
 
-| Hormone | Effect on Blood Glucose | Mechanism |
-|---------|-------------------------|-----------|
-| **Insulin** | Decreases | ↑ Glycolysis, glycogenesis, PPP; ↓ Gluconeogenesis, glycogenolysis |
-| **Glucagon** | Increases | ↑ Gluconeogenesis, glycogenolysis (liver); ↓ Glycolysis |
-| **Epinephrine** | Increases | ↑ Glycogenolysis (muscle, liver); mobilizes glucose during stress |
-| **Cortisol** | Increases | ↑ Gluconeogenesis; ↓ glucose uptake in peripheral tissues |
-| **Growth hormone** | Increases (initially insulin-like, then anti-insulin) | ↑ Gluconeogenesis; ↓ glucose uptake |
+**R = Variable side chain**
 
-#### Table 3: Important Enzyme Deficiencies in Carbohydrate Metabolism
+#### Key Groups
 
-| Enzyme Deficiency | Pathway Affected | Disorder |
-|-------------------|------------------|----------|
-| Glucose-6-phosphatase | Gluconeogenesis, glycogenolysis | Von Gierke's disease (GSD I) |
-| Lysosomal α-glucosidase | Glycogen degradation | Pompe disease (GSD II) |
-| Glycogen debranching enzyme | Glycogenolysis | Cori disease (GSD III) |
-| Glycogen branching enzyme | Glycogenesis | Andersen disease (GSD IV) |
-| Muscle phosphorylase | Glycogenolysis | McArdle disease (GSD V) |
-| Liver phosphorylase | Glycogenolysis | Hers disease (GSD VI) |
-| Phosphofructokinase (muscle) | Glycolysis | Tarui disease (GSD VII) |
-| Pyruvate kinase (RBCs) | Glycolysis | Hemolytic anemia |
-| Pyruvate dehydrogenase | Pyruvate → acetyl-CoA | Lactic acidosis, neurological defects |
-| Glucose-6-phosphate dehydrogenase | Pentose phosphate pathway | Hemolytic anemia (drug-induced) |
-| Galactose-1-phosphate uridylyltransferase | Galactose metabolism | Classic galactosemia |
-| Aldolase B | Fructose metabolism | Hereditary fructose intolerance |
+* **Amino group:** `-NH₂`
+* **Carboxyl group:** `-COOH`
+* **α-carbon:** Central carbon atom
+* **R-group:** Variable side chain that distinguishes each amino acid
 
 ---
 
-### References
+### Diagram 2: Peptide Bond Formation
 
-1. Lippincott Williams & Wilkins. (2020). *Lippincott's illustrated reviews: Biochemistry*. (Chapters on Carbohydrate Metabolism)
+```text
+      H₂N ── CH ── COOH   +   H₂N ── CH ── COOH
+              │                       │
+              R₁                      R₂
 
-2. Berg, J. M., Tymoczko, J. L., & Gatto, G. J. (2019). *Stryer's biochemistry* (8th ed.). W. H. Freeman and Company. (Chapters on Carbohydrates and Metabolism)
+                    ↓ Condensation
 
-3. Nelson, D. L., & Cox, M. M. (2017). *Lehninger principles of biochemistry* (7th ed.). W. H. Freeman and Company. (Chapters on Carbohydrates, Glycolysis, TCA, and related pathways)
+      H₂N ── CH ── CO ── NH ── CH ── COOH   +   H₂O
+              │               │
+              R₁              R₂
+```
 
-4. Rodwell, V. W., Bender, D. A., Botham, K. M., Kennelly, P. J., & Weil, P. A. (2017). *Harper's illustrated biochemistry* (31st ed.). McGraw-Hill Education. (Chapters on Carbohydrate Metabolism and Disorders)
+**Peptide bond:** `-CO-NH-`
 
-5. Devlin, T. M. (2016). *Textbook of biochemistry with clinical correlations* (8th ed.). Wiley-Liss. (Chapters on Carbohydrate Metabolism and Clinical Correlations)
-
-6. Scriver, C. R., et al. (2001). *The metabolic and molecular bases of inherited disease* (8th ed.). McGraw-Hill. (For glycogen storage diseases and other inborn errors)
-
-7. Kumar, V., Abbas, A. K., & Aster, J. C. (2020). *Robbins & Cotran pathologic basis of disease* (10th ed.). Elsevier. (Clinical correlations)
 
 ---
 
-**Recommended Textbooks for Further Reading:**
-- Lippincott Williams & Wilkins. (2020). *Lippincott's illustrated reviews: Biochemistry*. (Excellent for visual learning and clinical correlations)
-- Rodwell, V. W., et al. (2017). *Harper's illustrated biochemistry* (31st ed.). (Strong clinical emphasis)
-- Nelson, D. L., & Cox, M. M. (2017). *Lehninger principles of biochemistry* (7th ed.). (Comprehensive and detailed)
+## 5. Exam Angle
 
+### Short Questions (2-5 marks)
+1. Classify carbohydrates with suitable examples.
+2. What is optical activity? Explain D and L configuration of sugars.
+3. Differentiate between saponifiable and non-saponifiable lipids.
+4. List essential fatty acids and their pharmaceutical importance.
+5. What is the primary structure of proteins?
+6. What is denaturation of proteins? Give causes and examples.
+7. Differentiate between glucogenic and ketogenic amino acids.
+8. Write the test for tyrosine and cysteine.
+9. What are conjugated proteins? Give examples.
+10. Differentiate between α-helix and β-pleated sheet.
+
+### Long Essays (10+ marks)
+1. Classify carbohydrates, describe their chemical reactions, and explain their biological and pharmaceutical importance.
+2. Write a detailed note on the classification of lipids and the pharmaceutical importance of lipids.
+3. Describe the organizational levels of protein structure. Add a note on the biological and pharmaceutical importance of proteins.
+4. Give the classification of amino acids and describe their chemical reactions.
+
+### Key Points Frequently Tested
+- **Carbohydrates:** Reducing properties, mutarotation, D/L isomerism.
+- **Lipids:** Essential fatty acids (Omega-3, Omega-6), saponification number, rancidity.
+- **Proteins:** Names and abbreviations of 20 amino acids, denaturation, tests for specific amino acids.
+- **Clinical correlations:** G6PD deficiency (carbohydrate metabolism), hyperlipidemia, protein-energy malnutrition, rheumatoid arthritis (protein biomarkers).
+
+---
+
+## 6. Summary Box
+- **Carbohydrates** are polyhydroxy aldehydes/ketones classified as mono-, oligo-, and polysaccharides. They exhibit optical activity and provide energy, structure, and cell recognition.
+- **Lipids** are hydrophobic molecules classified as simple, complex, or derived lipids. Essential fatty acids (Omega-3, Omega-6) must be obtained from the diet. Lipids serve as energy stores, membrane components, and hormone precursors.
+- **Proteins** are macromolecules made of amino acids linked by peptide bonds. There are 20 standard amino acids, classified by R-group properties and nutritional requirements.
+- **Protein structure** has four levels: primary (sequence), secondary (α-helix/β-sheet), tertiary (3D folding), and quaternary (subunit assembly). The native conformation is essential for function.
+- All three classes of biomolecules have immense pharmaceutical importance—as drugs, excipients, diagnostic markers, drug targets, and therapeutic agents.
+
+---
+
+## 7. References
+- Chatterjee, M. N., & Shinde, R. (2011). *Textbook of Medical Biochemistry* (8th ed.). Jaypee Brothers Medical Publishers.
+- Murray, R. K., Bender, D. A., Botham, K. M., Kennelly, P. J., Rodwell, V. W., & Weil, P. A. (2015). *Harper's Illustrated Biochemistry* (30th ed.). Lange Medical Books / McGraw-Hill Education.
+- Nelson, D. L., & Cox, M. M. (2012). *Lehninger Principles of Biochemistry* (6th ed.). W. H. Freeman.
+- Peet, A., Lieberman, M. A., & Marks, A. (2012). *Marks' Basic Medical Biochemistry* (4th ed.). Lippincott Williams & Wilkins.
+- Champe, P. C., & Harvey, R. A. (2013). *Lippincott's Illustrated Reviews: Biochemistry* (6th ed.). Lippincott Williams & Wilkins.
 

@@ -41,8 +41,8 @@ const SEM_GRADS = [
 const AVAILABLE_SLUGS = new Set([
   "pharmaceutical-biochemistry",
   "physiology-histology-i",
-  "organic-chemistry",
   "physical-pharmacy",
+  "pharmaceutical-organic-chemistry"
 ]);
 
 export default function MCQBankHubPage() {

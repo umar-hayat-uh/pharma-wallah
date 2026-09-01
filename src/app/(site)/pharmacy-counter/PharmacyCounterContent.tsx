@@ -1233,24 +1233,48 @@ export default function PharmacySimulation() {
                             )}
                         </AnimatePresence>
 
-                        {/* Correction side panel */}
+                        {/* Correction Popup Modal */}
                         <AnimatePresence>
                             {correction && (
-                                <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", stiffness: 300, damping: 30 }} className="fixed right-0 top-0 bottom-0 w-full max-w-sm z-50 bg-white border-l border-slate-200 shadow-2xl flex flex-col">
-                                    <div className="bg-rose-600 px-5 py-4 flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <AlertTriangle size={18} className="text-rose-200" />
-                                            <h3 className="font-bold text-white text-sm">{correction.title}</h3>
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4"
+                                >
+                                    <motion.div
+                                        initial={{ scale: 0.9, y: 20 }}
+                                        animate={{ scale: 1, y: 0 }}
+                                        exit={{ scale: 0.9, y: 20 }}
+                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                        className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+                                    >
+                                        <div className="bg-rose-600 px-5 py-4 flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <AlertTriangle size={18} className="text-rose-200" />
+                                                <h3 className="font-bold text-white text-sm">{correction.title}</h3>
+                                            </div>
+                                            <button onClick={() => setCorrection(null)} className="text-rose-200 hover:text-white">
+                                                <X size={20} />
+                                            </button>
                                         </div>
-                                        <button onClick={() => setCorrection(null)} className="text-rose-200 hover:text-white"><X size={20} /></button>
-                                    </div>
-                                    <div className="flex-1 overflow-y-auto p-5 space-y-4">
-                                        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-sm text-slate-700">{correction.explanation}</div>
-                                        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-slate-700"><strong>Correct:</strong> {correction.correct}</div>
-                                    </div>
-                                    <div className="p-4 border-t border-slate-100">
-                                        <button onClick={() => setCorrection(null)} className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl transition">Understood — Continue</button>
-                                    </div>
+                                        <div className="p-5 space-y-4">
+                                            <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-sm text-slate-700">
+                                                {correction.explanation}
+                                            </div>
+                                            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-slate-700">
+                                                <strong>Correct:</strong> {correction.correct}
+                                            </div>
+                                        </div>
+                                        <div className="p-4 border-t border-slate-100">
+                                            <button
+                                                onClick={() => setCorrection(null)}
+                                                className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl transition"
+                                            >
+                                                Understood — Continue
+                                            </button>
+                                        </div>
+                                    </motion.div>
                                 </motion.div>
                             )}
                         </AnimatePresence>

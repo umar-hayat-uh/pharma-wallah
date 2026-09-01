@@ -3,8 +3,6 @@ import { headers } from "next/headers";
 import Hero from "@/components/Home/Hero";
 import Companies from "@/components/Home/Companies";
 import Features from "@/components/Home/Features";
-import Mentor from "@/components/Home/Mentor";
-import Testimonial from "@/components/Home/Testimonials";
 import ContactForm from "@/components/Home/ContactForm";
 import Courses from "@/components/Home/Courses";
 import { OfficialLaunchBanner } from "@/components/Home/tournament";
@@ -27,8 +25,6 @@ export default function Home() {
       <Companies />
       <Courses />
       <Features />
-      <Mentor />
-      <Testimonial />
       <ContactForm />
     </main>
   );
