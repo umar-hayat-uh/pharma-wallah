@@ -49,7 +49,7 @@ const doseCalculators = [
         icon: "droplet",
         color: "teal",
     },
-     {
+    {
         title: "Opioid MME Calculator",
         href: "/calculation-tools/OpioidMMECalculator",
         description: "Convert opioid doses to Morphine Milligram Equivalents",

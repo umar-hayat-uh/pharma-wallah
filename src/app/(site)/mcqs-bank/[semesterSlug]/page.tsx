@@ -27,6 +27,8 @@ const BG_ICONS = [
 const AVAILABLE_SLUGS = new Set([
   "pharmaceutical-biochemistry",
   "physiology-histology-i",
+  "organic-chemistry",
+  "physical-pharmacy",
 ]);
 
 const SEM_GRADS = [
@@ -136,8 +138,8 @@ export default function MCQBankSemesterPage({ params }: PageProps) {
               <div
                 key={sub.name}
                 className={`group relative rounded-3xl border-2 bg-white overflow-hidden transition-all duration-300 flex flex-col justify-between ${isAvail
-                    ? "border-gray-100 hover:border-blue-500 hover:shadow-xl hover:-translate-y-1 cursor-pointer"
-                    : "border-gray-100 opacity-60 cursor-default"
+                  ? "border-gray-100 hover:border-blue-500 hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+                  : "border-gray-100 opacity-60 cursor-default"
                   }`}
               >
                 <div className={`h-1.5 bg-gradient-to-r ${semGrad}`} />

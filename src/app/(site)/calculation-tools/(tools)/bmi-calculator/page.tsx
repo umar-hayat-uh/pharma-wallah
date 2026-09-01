@@ -472,8 +472,8 @@ Generated: ${new Date().toLocaleString()}`;
                                             type="button"
                                             onClick={() => setSex("male")}
                                             className={`py-1.5 text-xs font-bold rounded-md transition ${sex === "male"
-                                                    ? "bg-white text-blue-700 shadow-xs"
-                                                    : "text-gray-600 hover:text-gray-900"
+                                                ? "bg-white text-blue-700 shadow-xs"
+                                                : "text-gray-600 hover:text-gray-900"
                                                 }`}
                                         >
                                             Male (50 kg Base)
@@ -482,8 +482,8 @@ Generated: ${new Date().toLocaleString()}`;
                                             type="button"
                                             onClick={() => setSex("female")}
                                             className={`py-1.5 text-xs font-bold rounded-md transition ${sex === "female"
-                                                    ? "bg-white text-blue-700 shadow-xs"
-                                                    : "text-gray-600 hover:text-gray-900"
+                                                ? "bg-white text-blue-700 shadow-xs"
+                                                : "text-gray-600 hover:text-gray-900"
                                                 }`}
                                         >
                                             Female (45.5 kg Base)
@@ -582,8 +582,8 @@ Generated: ${new Date().toLocaleString()}`;
                                             type="button"
                                             onClick={() => setPopulation("who_standard")}
                                             className={`p-2.5 rounded-xl border transition text-left ${population === "who_standard"
-                                                    ? "border-blue-600 bg-blue-50 text-blue-900 ring-1 ring-blue-500"
-                                                    : "border-gray-200 bg-gray-50/70 text-gray-700 hover:bg-gray-100"
+                                                ? "border-blue-600 bg-blue-50 text-blue-900 ring-1 ring-blue-500"
+                                                : "border-gray-200 bg-gray-50/70 text-gray-700 hover:bg-gray-100"
                                                 }`}
                                         >
                                             <div className="font-extrabold">WHO International</div>
@@ -594,8 +594,8 @@ Generated: ${new Date().toLocaleString()}`;
                                             type="button"
                                             onClick={() => setPopulation("who_asian")}
                                             className={`p-2.5 rounded-xl border transition text-left ${population === "who_asian"
-                                                    ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-500"
-                                                    : "border-gray-200 bg-gray-50/70 text-gray-700 hover:bg-gray-100"
+                                                ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-500"
+                                                : "border-gray-200 bg-gray-50/70 text-gray-700 hover:bg-gray-100"
                                                 }`}
                                         >
                                             <div className="font-extrabold">WHO Asian-Pacific</div>

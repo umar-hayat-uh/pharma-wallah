@@ -7,9 +7,9 @@ import Mentor from "@/components/Home/Mentor";
 import Testimonial from "@/components/Home/Testimonials";
 import ContactForm from "@/components/Home/ContactForm";
 import Courses from "@/components/Home/Courses";
-import { TournamentAnnouncementBar } from "@/components/Home/bar";
-import { ScienceFairSection } from "@/components/Home/tournament";
+import { OfficialLaunchBanner } from "@/components/Home/tournament";
 import ClinicalLandingPage from "@/components/Clinical/ClinicalLandingPage";
+
 
 export default function Home() {
   const headersList = headers();
@@ -22,9 +22,8 @@ export default function Home() {
 
   return (
     <main className="bg-white">
-      <TournamentAnnouncementBar />
+      <OfficialLaunchBanner />
       <Hero />
-      <ScienceFairSection />
       <Companies />
       <Courses />
       <Features />

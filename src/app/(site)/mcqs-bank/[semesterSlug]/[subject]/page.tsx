@@ -24,11 +24,16 @@ import { useTracker } from "@/hooks/useTracker";
 
 import biochemBank from "@/app/api/mcq-data/pharmaceutical-biochemistry";
 import physioBank from "@/app/api/mcq-data/physiology-histology-i";
+import organicChemBank from "@/app/api/mcq-data/organic-chemistry";
+import physicalPharmacyBank from "@/app/api/mcq-data/physical-pharmacy";
 
 const BANK_REGISTRY: Record<string, MCQBank> = {
   "pharmaceutical-biochemistry": biochemBank,
   "physiology-histology-i": physioBank,
+  "organic-chemistry": organicChemBank,
+  "physical-pharmacy": physicalPharmacyBank,
 };
+
 
 interface PageProps {
   params: { semesterSlug: string; subject: string };
@@ -638,10 +643,10 @@ function TopQuizBar({
         <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2 min-w-0">
           {quizMode === "exam" ? (
             <div className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg sm:rounded-xl font-mono font-extrabold text-[11px] sm:text-xs shrink-0 shadow-sm ${isUrgent
-                ? "bg-red-500 text-white animate-pulse"
-                : isWarn
-                  ? "bg-amber-500 text-white"
-                  : `bg-gradient-to-r ${semGrad} text-white`
+              ? "bg-red-500 text-white animate-pulse"
+              : isWarn
+                ? "bg-amber-500 text-white"
+                : `bg-gradient-to-r ${semGrad} text-white`
               }`}>
               <Timer className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
               {mm}:{ss}
@@ -683,8 +688,8 @@ function TopQuizBar({
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
             className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl border transition-all ${soundEnabled
-                ? "bg-blue-50 border-blue-200 text-blue-600"
-                : "bg-gray-100 border-gray-200 text-gray-400"
+              ? "bg-blue-50 border-blue-200 text-blue-600"
+              : "bg-gray-100 border-gray-200 text-gray-400"
               }`}
             title={soundEnabled ? "Mute sound FX" : "Enable sound FX"}
             aria-label={soundEnabled ? "Mute sound effects" : "Enable sound effects"}
@@ -696,8 +701,8 @@ function TopQuizBar({
             <button
               onClick={() => setViewMode("focus")}
               className={`flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-extrabold transition-all ${viewMode === "focus"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-900"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-500 hover:text-gray-900"
                 }`}
               aria-label="Focus card view"
             >
@@ -706,8 +711,8 @@ function TopQuizBar({
             <button
               onClick={() => setViewMode("list")}
               className={`flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-extrabold transition-all ${viewMode === "list"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-900"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-500 hover:text-gray-900"
                 }`}
               aria-label="List view"
             >
@@ -1175,8 +1180,8 @@ export default function MCQBankQuizPage({ params }: PageProps) {
                 <button
                   onClick={() => setQuizMode("practice")}
                   className={`p-4 sm:p-5 rounded-2xl border-2 text-left transition-all relative overflow-hidden ${quizMode === "practice"
-                      ? "border-blue-600 bg-blue-50/60 shadow-md ring-2 ring-blue-500/20"
-                      : "border-gray-200 bg-white hover:border-gray-300"
+                    ? "border-blue-600 bg-blue-50/60 shadow-md ring-2 ring-blue-500/20"
+                    : "border-gray-200 bg-white hover:border-gray-300"
                     }`}
                 >
                   <div className="flex items-center justify-between mb-2 gap-2">
@@ -1194,8 +1199,8 @@ export default function MCQBankQuizPage({ params }: PageProps) {
                 <button
                   onClick={() => setQuizMode("exam")}
                   className={`p-4 sm:p-5 rounded-2xl border-2 text-left transition-all relative overflow-hidden ${quizMode === "exam"
-                      ? "border-violet-600 bg-violet-50/60 shadow-md ring-2 ring-violet-500/20"
-                      : "border-gray-200 bg-white hover:border-gray-300"
+                    ? "border-violet-600 bg-violet-50/60 shadow-md ring-2 ring-violet-500/20"
+                    : "border-gray-200 bg-white hover:border-gray-300"
                     }`}
                 >
                   <div className="flex items-center justify-between mb-2 gap-2">
@@ -1293,8 +1298,8 @@ export default function MCQBankQuizPage({ params }: PageProps) {
                   <button
                     onClick={() => toggleFlag(currentQ.id)}
                     className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg sm:rounded-xl border text-[11px] sm:text-xs font-extrabold transition-all shrink-0 ${isCurrentFlagged
-                        ? "bg-amber-500 text-white border-amber-500 shadow-sm"
-                        : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
+                      ? "bg-amber-500 text-white border-amber-500 shadow-sm"
+                      : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
                       }`}
                   >
                     <Flag className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isCurrentFlagged ? "fill-white" : ""}`} />
@@ -1356,8 +1361,8 @@ export default function MCQBankQuizPage({ params }: PageProps) {
                 {/* Feedback Box */}
                 {quizMode === "practice" && isAnswered && (
                   <div className={`rounded-xl sm:rounded-2xl border-2 p-3.5 sm:p-5 transition-all space-y-2 animate-fadeIn ${isRightAnswer
-                      ? "bg-emerald-50/80 border-emerald-300 text-emerald-950"
-                      : "bg-rose-50/80 border-rose-300 text-rose-950"
+                    ? "bg-emerald-50/80 border-emerald-300 text-emerald-950"
+                    : "bg-rose-50/80 border-rose-300 text-rose-950"
                     }`}>
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <div className="flex items-center gap-2">
@@ -1416,8 +1421,8 @@ export default function MCQBankQuizPage({ params }: PageProps) {
                           key={level}
                           onClick={() => setConfidenceForQ(currentQ.id, level)}
                           className={`px-2 sm:px-2.5 py-1 rounded-lg sm:rounded-xl text-[10px] sm:text-[11px] font-extrabold border transition-all ${currentConf === level
-                              ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                              : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
+                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                            : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
                             }`}
                         >
                           {label}

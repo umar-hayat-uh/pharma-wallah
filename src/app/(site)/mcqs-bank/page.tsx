@@ -17,12 +17,12 @@ import { semesterToSlug, subjectToSlug } from "@/lib/mcq-utils";
 const GRAD = "from-blue-600 via-indigo-600 to-cyan-500";
 
 const BG_ICONS = [
-  { Icon: Pill,         top: "8%",  left: "1.5%",  size: 28 },
-  { Icon: Beaker,       top: "38%", left: "1%",    size: 26 },
-  { Icon: Stethoscope,  top: "70%", left: "1.5%",  size: 28 },
-  { Icon: Microscope,   top: "8%",  left: "96.5%", size: 28 },
-  { Icon: FlaskConical, top: "38%", left: "97%",   size: 26 },
-  { Icon: Leaf,         top: "70%", left: "96.5%", size: 26 },
+  { Icon: Pill, top: "8%", left: "1.5%", size: 28 },
+  { Icon: Beaker, top: "38%", left: "1%", size: 26 },
+  { Icon: Stethoscope, top: "70%", left: "1.5%", size: 28 },
+  { Icon: Microscope, top: "8%", left: "96.5%", size: 28 },
+  { Icon: FlaskConical, top: "38%", left: "97%", size: 26 },
+  { Icon: Leaf, top: "70%", left: "96.5%", size: 26 },
 ];
 
 const SEM_GRADS = [
@@ -41,6 +41,8 @@ const SEM_GRADS = [
 const AVAILABLE_SLUGS = new Set([
   "pharmaceutical-biochemistry",
   "physiology-histology-i",
+  "organic-chemistry",
+  "physical-pharmacy",
 ]);
 
 export default function MCQBankHubPage() {
@@ -120,9 +122,9 @@ export default function MCQBankHubPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl">
             {[
               { n: String(SemesterData.length), l: "Semesters", icon: GraduationCap },
-              { n: String(totalSubjects),        l: "Total Subjects", icon: BookOpen },
-              { n: String(availableCount),       l: "Ready Now", icon: Sparkles },
-              { n: "100%",                       l: "Free Access", icon: Trophy },
+              { n: String(totalSubjects), l: "Total Subjects", icon: BookOpen },
+              { n: String(availableCount), l: "Ready Now", icon: Sparkles },
+              { n: "100%", l: "Free Access", icon: Trophy },
             ].map(({ n, l, icon: Icon }) => (
               <div key={l} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-3.5 text-left flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white shrink-0">
@@ -144,7 +146,7 @@ export default function MCQBankHubPage() {
         {/* Sticky Glassmorphic Filter & Search Bar */}
         <div className="bg-white/90 backdrop-blur-md rounded-3xl p-4 sm:p-5 border-2 border-gray-100 shadow-lg mb-8 space-y-4">
           <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
-            
+
             {/* Search Box */}
             <div className="relative flex-1 w-full">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -172,11 +174,10 @@ export default function MCQBankHubPage() {
                 <button
                   key={s}
                   onClick={() => handleSelectSem(s)}
-                  className={`shrink-0 px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 ${
-                    activeSem === s
-                      ? `bg-gradient-to-r ${GRAD} text-white shadow-md`
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
+                  className={`shrink-0 px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 ${activeSem === s
+                    ? `bg-gradient-to-r ${GRAD} text-white shadow-md`
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
                 >
                   {s === "All" ? "All Semesters" : s.replace("Semester ", "Sem ")}
                 </button>
@@ -227,14 +228,13 @@ export default function MCQBankHubPage() {
                     return (
                       <div
                         key={sub.name}
-                        className={`group relative rounded-3xl border-2 bg-white overflow-hidden transition-all duration-300 flex flex-col justify-between ${
-                          isAvail
-                            ? "border-gray-100 hover:border-blue-500 hover:shadow-xl hover:-translate-y-1 cursor-pointer"
-                            : "border-gray-100 opacity-60 cursor-default"
-                        }`}
+                        className={`group relative rounded-3xl border-2 bg-white overflow-hidden transition-all duration-300 flex flex-col justify-between ${isAvail
+                          ? "border-gray-100 hover:border-blue-500 hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+                          : "border-gray-100 opacity-60 cursor-default"
+                          }`}
                       >
                         <div className={`h-1.5 bg-gradient-to-r ${semGrad}`} />
-                        
+
                         <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                           <div>
                             <div className="flex items-start justify-between gap-2 mb-3">

@@ -1,62 +1,44 @@
 import Link from "next/link";
-import { Trophy, Medal, Award, ArrowRight } from "lucide-react";
+import { Sparkles, ArrowRight } from "lucide-react";
 
-const prizes = [
-    { icon: Trophy, text: "Grand Champion Trophy" },
-    { icon: Medal, text: "Per‑game Top 10 Medals" },
-    { icon: Award, text: "Certificates & Premium Access" },
-];
-
-export function ScienceFairSection() {
+export function OfficialLaunchBanner() {
     return (
-        <section className="bg-white py-16 sm:py-20">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-                {/* Header Card */}
-                <div className="text-center mb-10">
-                    <div className="inline-block p-1 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 mb-6">
-                        <div className="bg-white rounded-2xl px-8 py-5">
-                            <p className="text-sm font-medium text-gray-500 mb-1">PharmaWallah Presents</p>
-                            <h2 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-green-400 bg-clip-text text-transparent">
-                                Science Fair Tournament 2026
-                            </h2>
-                            <p className="text-lg text-gray-600 mt-2">
-                                Compete in MCQ Battle · Flashcard Rush · Spotting Challenge
-                            </p>
-                        </div>
-                    </div>
-                </div>
+        <Link
+            href="/pw"
+            className="group relative block w-full pt-6 overflow-hidden bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            aria-label="Science Fair 2026 — Play the PharmaWallah Rapid Pharmacy Quiz"
+        >
+            {/* Dynamic background gradient base */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-700 via-indigo-600 to-emerald-500 opacity-90 transition-opacity duration-300 group-hover:opacity-100" />
 
-                {/* Prize Pills */}
-                <div className="flex flex-wrap justify-center gap-3 mb-10">
-                    {prizes.map((item, idx) => (
-                        <div
-                            key={idx}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-blue-50 to-green-50 border border-gray-200 rounded-full"
-                        >
-                            <item.icon className="w-4 h-4 text-blue-600" />
-                            <span className="text-sm font-medium text-gray-700">{item.text}</span>
-                        </div>
-                    ))}
-                </div>
+            {/* Shimmer overlay effect */}
+            <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/15 to-transparent transition-transform duration-1000 ease-in-out group-hover:translate-x-full" />
 
-                {/* CTA Buttons */}
-                <div className="flex flex-col sm:flex-row justify-center gap-4">
-                    <Link
-                        href="/tournament/play"
-                        className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-green-400 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition"
-                    >
-                        Register / Enter Code
-                        <ArrowRight className="w-5 h-5" />
-                    </Link>
-                    <Link
-                        href="/leaderboard"
-                        className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white border-2 border-blue-600 text-blue-700 font-bold rounded-xl shadow-sm hover:bg-blue-50 transition"
-                    >
-                        <Trophy className="w-5 h-5" />
-                        View Live Leaderboard
-                    </Link>
+            {/* Ambient background blur circles */}
+            <div className="absolute -left-12 -top-12 h-32 w-32 rounded-full bg-blue-400/30 blur-2xl transition-transform duration-500 group-hover:scale-125" />
+            <div className="absolute right-10 -bottom-10 h-32 w-32 rounded-full bg-emerald-400/30 blur-2xl transition-transform duration-500 group-hover:scale-125" />
+
+            {/* Main Content */}
+            <div className="relative mx-auto flex max-w-7xl items-center justify-center gap-2 px-4 py-2.5 text-white sm:gap-3 sm:py-3">
+                {/* Pill Badge */}
+                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-2.5 py-0.5 text-xs font-semibold tracking-wider text-white backdrop-blur-md shadow-sm transition-colors group-hover:bg-white/20">
+                    <Sparkles className="h-3.5 w-3.5 text-amber-300 animate-pulse" />
+                    <span>Official Launch</span>
+                </span>
+
+                {/* Headline text */}
+                <p className="truncate text-xs font-medium tracking-tight text-white/95 sm:text-sm md:text-base">
+                    <span className="font-semibold text-white">Science Fair 2026</span>
+                    <span className="mx-1.5 hidden opacity-60 sm:inline">•</span>
+                    <span className="hidden sm:inline">Play the PharmaWallah Rapid Pharmacy Quiz</span>
+                </p>
+
+                {/* CTA Icon & Text Indicator */}
+                <div className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-white/90 group-hover:text-white sm:text-sm">
+                    <span className="hidden md:inline underline-offset-4 group-hover:underline">Play Now</span>
+                    <ArrowRight className="h-4 w-4 transition-transform duration-300 ease-out group-hover:translate-x-1" />
                 </div>
             </div>
-        </section>
+        </Link>
     );
 }
