@@ -3,11 +3,43 @@
 import { useState, useEffect } from "react";
 import { X, Trophy, Sparkles, ArrowRight, Stethoscope, Zap } from "lucide-react";
 
+// ---- Cache config ----
+// Key used in localStorage to remember the dismissal.
+const STORAGE_KEY = "pw_launch_banner_dismissed_at";
+// How long to keep the popup hidden after it's closed, in milliseconds.
+// 24 hours here — change this number if you want a shorter/longer "cooldown".
+const DISMISS_DURATION_MS = 24 * 60 * 60 * 1000;
+
+function wasRecentlyDismissed() {
+  if (typeof window === "undefined") return false;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const dismissedAt = parseInt(raw, 10);
+    if (Number.isNaN(dismissedAt)) return false;
+    return Date.now() - dismissedAt < DISMISS_DURATION_MS;
+  } catch {
+    // localStorage unavailable (e.g. private mode edge cases) — fail open, show banner
+    return false;
+  }
+}
+
+function markDismissed() {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, Date.now().toString());
+  } catch {
+    // ignore write failures silently
+  }
+}
+
 export default function LaunchBanner() {
   const [isOpen, setIsOpen] = useState(false);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    // Skip entirely if the user dismissed it within the cooldown window.
+    if (wasRecentlyDismissed()) return;
+
     const openTimer = setTimeout(() => setIsOpen(true), 800);
     return () => clearTimeout(openTimer);
   }, []);
@@ -20,6 +52,7 @@ export default function LaunchBanner() {
   }, [isOpen]);
 
   const close = () => {
+    markDismissed();
     setVisible(false);
     setTimeout(() => setIsOpen(false), 220);
   };

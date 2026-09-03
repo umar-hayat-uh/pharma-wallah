@@ -61,7 +61,7 @@ const tools: Tool[] = [
   },
 
   {
-    title: "Antibiogram",
+    title: "AMR Explorer",
     icon: <Bug className="w-6 h-6" />,
     color: "amber",
     href: "/clinical/amr",
