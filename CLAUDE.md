@@ -266,9 +266,12 @@ These are conventions **observed in the code**, not aspirations.
   nowhere on the web.** All 89 ship in the Android app, so they are reachable there.
 - **Spotting.** Histology has 17 lessons + a test; pathology has 16 lessons + a test;
   powder-microscopy has only 3 lessons + a test.
-- **AdSense.** The loader, `ads.txt`, `AdSlot` and 7 placements are in place, but every
-  `NEXT_PUBLIC_ADSENSE_SLOT_*` is blank, so **production renders no ads**. The variables also need
-  adding to **Vercel** — `.env` is gitignored. See `.claude/skills/adsense-monetization/SKILL.md`.
+- **AdSense.** The loader and the `google-adsense-account` meta tag are now in `<head>` on every
+  page unconditionally (the publisher ID is a hardcoded constant, env-overridable), and `ads.txt`
+  is live. But every `NEXT_PUBLIC_ADSENSE_SLOT_*` is blank, so **no ad unit renders yet** — only
+  Auto ads could, once the site is approved. Slot IDs must come from the AdSense dashboard, and
+  should be set in **Vercel** as well as `.env` (which is gitignored). See
+  `.claude/skills/adsense-monetization/SKILL.md`.
 
 ### Next Recommended
 **Register the remaining course subjects.** See `.claude/ROADMAP.md` for the reasoning and the
@@ -519,8 +522,39 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 - Confirm Auto ads are off in the dashboard.
 - Run `npm run build` with dev stopped (outstanding from the three previous entries).
 
+**Follow-up (same day) — AdSense answered "Couldn't verify your site".**
+Diagnosed against the live site, not locally: `curl https://www.pharmawallah.com/` returned **zero**
+occurrences of `ca-pub-…`, `adsbygoogle` or `googlesyndication`. Two causes, both fixed in
+`src/app/layout.tsx`:
+- **The publisher ID lived only in `.env`, which is gitignored**, so Vercel never received it and
+  the env-gated loader rendered nothing on the deployed site. The ID is now a **hardcoded constant
+  with an env override** — it is a public identifier (it is in `/ads.txt` and in every page's
+  source), and site verification plus Auto ads both require it on the live site, so it must not
+  depend on a dashboard variable being set.
+- **The loader was `strategy="afterInteractive"` in `<body>`.** That is injected by the Next runtime
+  after hydration, so a crawler reading the raw HTML may never see it. Now `beforeInteractive`,
+  which puts it in the server-rendered `<head>` — where AdSense asks for it.
+- Also added `<meta name="google-adsense-account">` via `generateMetadata` on both the site and
+  clinical branches, as an independent second verification path.
+
+`/ads.txt` was **already live and correct** at `https://www.pharmawallah.com/ads.txt`.
+
+Verified in the real production build (`npm run build` + `next start`): `pagead2.googlesyndication.com`,
+`google-adsense-account` and `ca-pub-9553986083846603` all resolve **INSIDE `<head>`**, on `/`,
+`/calculation-tools/animal-dose`, `/courses/pharmaceutical-biochemistry` and `/terms`.
+
+Also cleared up a non-defect: the home page renders **no** ad bands in production, and that is
+intentional — `AdBand` in `Chrome.tsx` returns `null` when its slot ID is unset, so no empty tinted
+strip appears between sections. It will start rendering when `NEXT_PUBLIC_ADSENSE_SLOT_HOME_*` are
+filled in.
+
+**Domain note:** the apex `pharmawallah.com` **307-redirects to `www.pharmawallah.com`**. Both serve
+`/ads.txt` (200). Worth knowing if verification keeps failing — point AdSense at the www host.
+
 **Next**
-- Fill in the ad-unit IDs, then confirm a real ad renders on `/calculation-tools/animal-dose`.
+- Push, wait for the Vercel deploy, confirm `curl -s https://www.pharmawallah.com/ | grep -c ca-pub`
+  returns non-zero, then click **Verify** in AdSense.
+- Then fill in the ad-unit IDs and confirm a real ad renders on `/calculation-tools/animal-dose`.
 
 ---
 
@@ -823,7 +857,7 @@ re-running `npx tsc --noEmit` → 0 errors.
 | --- | --- | --- |
 | Type-check | `npx tsc --noEmit` | **PASSES — 0 errors.** Any error you see is yours. |
 | Lint | `npm run lint` | **NOT AVAILABLE.** No ESLint config; the command opens an interactive setup prompt. Do not report lint as passing. |
-| Build | `npm run build` | ⚠ **Not re-verified since the PWA removal and the shadcn migration — run it before pushing.** Stop `npm run dev` first — they share `.next` and corrupt each other (§7 Known Issue 10).** **PASSES with a populated `.env`** — exit 0, ~170 routes emitted, middleware 81.8 kB, shared JS 87.8 kB. Only `/_not-found` is static; everything else is `ƒ` (dynamic, server-rendered on demand). **Without `.env` it FAILS**: `Missing environment variable: NEXT_PUBLIC_SUPABASE_URL` while collecting page data for `/api/admin/registrations`. Expected non-fatal warnings: the `@supabase/supabase-js` Edge-runtime `process.version` notice, the stale `caniuse-lite` Browserslist notice, and two webpack "Serializing big strings" cache notices. |
+| Build | `npm run build` | **PASSES — re-verified 2026-09-12** with the dev server stopped, after the AdSense work (the first successful run since the PWA removal, the shadcn migration and the Outfit switch): exit 0, ~170 routes, middleware 81.8 kB, shared JS 87.8 kB. Stop `npm run dev` first — they share `.next` and corrupt each other (§7 Known Issue 10). **PASSES with a populated `.env`** — exit 0, ~170 routes emitted, middleware 81.8 kB, shared JS 87.8 kB. Only `/_not-found` is static; everything else is `ƒ` (dynamic, server-rendered on demand). **Without `.env` it FAILS**: `Missing environment variable: NEXT_PUBLIC_SUPABASE_URL` while collecting page data for `/api/admin/registrations`. Expected non-fatal warnings: the `@supabase/supabase-js` Edge-runtime `process.version` notice, the stale `caniuse-lite` Browserslist notice, and two webpack "Serializing big strings" cache notices. |
 | Mobile build | `npm run mobile:build` | **PASSES** — 94 static pages, 90 HTML files under `mobile/out/calculation-tools/`, 7.7 MB, shared JS 87.9 kB, stylesheet **96,034 bytes** (re-measured 2026-09-12 after the AdSense work; grew from 93,056 with the calculator UI kit's classes). Independent of `.env` and safe to run while `npm run dev` is up (separate `mobile/.next`). **Also assert zero ad strings in `mobile/out`** — see `.claude/skills/adsense-monetization/SKILL.md`. |
 | Tests | — | **No test infrastructure exists.** Never claim tests passed. |
 

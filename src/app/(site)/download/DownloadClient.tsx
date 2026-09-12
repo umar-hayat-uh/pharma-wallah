@@ -10,14 +10,14 @@ import {
  * Release metadata. Bump these together with `versionCode`/`versionName` in
  * android/app/build.gradle when you publish a new APK.
  *
- * The download URL uses GitHub's `releases/latest/download/<asset>` form, which
- * always resolves to the newest release — so this page needs no edit for a
- * routine release, only when the displayed version or size changes.
+ * The APK is served from this site's own /public directory (committed to the
+ * repo and deployed with the site), so the download never leaves the domain.
+ * `npm run mobile:apk` copies the freshly built file into place — see
+ * scripts/build-apk.sh.
  */
-const APK_URL =
-    "https://github.com/umar-hayat-uh/pharma-wallah/releases/latest/download/pharmawallah-calculators.apk";
+const APK_URL = "/downloads/pharmawallah-calculators.apk";
 const APP_VERSION = "1.0";
-const APK_SIZE = "~12 MB";
+const APK_SIZE = "4.9 MB";
 const MIN_ANDROID = "Android 7.0 or newer";
 
 const HIGHLIGHTS = [
@@ -75,6 +75,7 @@ export default function DownloadClient() {
                         <div className="mt-8 flex flex-wrap items-center gap-4">
                             <a
                                 href={APK_URL}
+                                download="pharmawallah-calculators.apk"
                                 className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3.5 font-semibold text-brandBlue shadow-lg transition hover:bg-white/90"
                             >
                                 <Download className="w-5 h-5" />

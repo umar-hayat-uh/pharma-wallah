@@ -4,6 +4,28 @@
 const nextConfig = {
   reactStrictMode: true,
 
+  async headers() {
+    return [
+      {
+        // The Android app is served from this site rather than an external
+        // host. Without an explicit type some browsers try to display the file
+        // instead of saving it; the attachment disposition makes every browser
+        // download it under a stable name.
+        source: "/downloads/:file*.apk",
+        headers: [
+          { key: "Content-Type", value: "application/vnd.android.package-archive" },
+          {
+            key: "Content-Disposition",
+            value: 'attachment; filename="pharmawallah-calculators.apk"',
+          },
+          // Each release replaces the file at the same path, so it must not be
+          // cached indefinitely or users would keep getting the old build.
+          { key: "Cache-Control", value: "public, max-age=0, must-revalidate" },
+        ],
+      },
+    ];
+  },
+
   images: {
     unoptimized: true,
 

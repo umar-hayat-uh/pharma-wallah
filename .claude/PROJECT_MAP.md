@@ -41,6 +41,9 @@
 | Build / PWA config | `next.config.mjs` |
 | Design tokens | `tailwind.config.ts`, `src/app/globals.css`, `src/Style/` |
 | Header / footer / nav | `src/components/Layout/Header/`, `src/components/Layout/Footer/` |
+| Desktop mega menu | `src/components/Layout/Header/MegaMenu.tsx` (Radix NavigationMenu) + `Navigation/menuMeta.tsx` (icons/tints/descriptions, shared with the mobile drawer) |
+| Footer wordmark | `src/components/Layout/Footer/Wordmark.tsx` |
+| shadcn/ui primitives | `src/components/ui/{button,card,badge,input,label,navigation-menu}.tsx`, `cn()` in `src/lib/utils.ts`, tokens in `src/app/globals.css` |
 | 404 | `src/app/not-found.tsx`, `src/components/NotFound/` |
 
 ---
@@ -255,7 +258,10 @@ Supabase cache tables: `pubmed_cache`, `medlineplus_cache`, `clinicaltrials_cach
 | Drug finder UI | `src/app/(site)/drug-finder/page.tsx`, `src/components/{DrugSearch,DrugCard}.tsx` |
 | Contact form → Resend | `src/app/api/contact/route.ts`, `src/app/contact/page.tsx`, `src/components/Home/ContactForm/` |
 | Blog (MDX) | `markdown/blog/*.mdx`, `src/components/SharedComponent/Blog/` |
-| Home page sections | `src/components/Home/{Hero,Features,Courses,Mentor,Companies,tournament}/` |
+| **Landing page (`/`)** | `src/components/Home/landing/` — `LandingPage.tsx` composes it, `useLandingMotion.ts` holds every GSAP timeline, `landing.css` the scoped styles, `data.ts` the copy |
+| Landing page sections | `src/components/Home/landing/{LandingHero,StationAbsorption,StationDistribution,StationMetabolism,StationElimination,AiGuide,CloseCta,Chrome}.tsx` |
+| **Unused** home sections | `src/components/Home/{Hero,Features,Courses,Mentor,Companies,ContactForm}/` — replaced 2026-09-12, still on disk, rendered nowhere |
+| Home page promo strip | `src/components/Home/tournament/` (`OfficialLaunchBanner`, still rendered) |
 | Static pages | `src/app/(site)/{about-us,careers,faqs,privacy,terms,documentation,books-library,pw}/page.tsx` |
 | Toast context (misfiled under api/) | `src/app/api/contex/ToasetContex.tsx` |
 | Shared types | `src/types/*.ts` |

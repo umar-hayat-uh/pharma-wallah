@@ -64,6 +64,20 @@ pages, confirm progress tracking records a visit, then batch the rest.
 - **Dependencies:** —
 - **Notes:** `public/sw.js` is generated; never hand-edit.
 
+### Marketing landing page (`/`) and site chrome
+- **Status:** ✅ Implemented (2026-09-12)
+- **Existing implementation:** `src/components/Home/landing/` — an ADME-structured page with four
+  pinned/scrubbed GSAP stations, a preloader, an SVG spine, a ScrambleText AI panel and three ad
+  bands. Site chrome: a Radix/shadcn mega menu (`Layout/Header/MegaMenu.tsx`), a header that
+  retracts on scroll, and the footer wordmark.
+- **Remaining work:** Run `npm run build` with the dev server stopped. Set
+  `NEXT_PUBLIC_ADSENSE_SLOT_HOME_1/2/3` or the three ad bands stay hidden in production.
+- **Important files:** `src/components/Home/landing/{LandingPage,useLandingMotion,landing.css,data}`,
+  `src/components/Layout/Header/{index,MegaMenu}.tsx`, `src/components/ui/navigation-menu.tsx`
+- **Dependencies:** `gsap` 3.15, `@radix-ui/react-navigation-menu` 1.2.22, `tailwindcss-animate`
+- **Notes:** GSAP is confined to the landing directory — see
+  `.claude/skills/landing-page-motion/SKILL.md`. The previous home sections are dead but retained.
+
 ### Supabase authentication
 - **Status:** ✅ Implemented
 - **Existing implementation:** Email/password + OAuth via `@supabase/ssr`. Sign-in, sign-up, OTP
@@ -250,6 +264,9 @@ pages, confirm progress tracking records a visit, then batch the rest.
   `biochemistry-data.ts`; `src/lib/models/{Review,userProgress}.ts`; the `/api/reviews` entry in
   `PROTECTED_PATHS`; the `next-auth` / `next-cloudinary` / `next-mdx-remote` dependencies; the
   `predeploy`/`deploy` scripts. Nine subject `-data.ts` files go once converted.
+  Also `src/components/Home/{Hero,Companies,Courses,Features,ContactForm}/`, unrendered since the
+  landing-page replacement — but `ContactForm` was the home page's only entry to `POST /api/contact`
+  (Resend), so decide where that lead channel lives before deleting it.
 - **Important files:** See `PROJECT_MAP.md` §Dead or orphaned code
 - **Dependencies:** Subject conversion should land first
 - **Notes:** Verify zero importers immediately before each deletion — don't trust this list alone.
@@ -284,8 +301,10 @@ pages, confirm progress tracking records a visit, then batch the rest.
 ## Phase 4.6 — Monetisation (Google AdSense) 🟡
 
 ### Ad placements across the site
-- **Status:** 🟡 Plumbing complete and live on the site; **no ad will actually render until the
-  ad units are created in the AdSense dashboard and their IDs are set as env vars.**
+- **Status:** 🟡 Loader + verification tag now in `<head>` on every page and not env-dependent;
+  `ads.txt` live. **Blocked on two things only the account owner can do:** passing AdSense site
+  verification (needs the current code deployed), and creating the ad units so their IDs can be
+  set. No ad unit renders until then.
 - **Existing implementation:** `src/components/calculators/AdSlot.tsx` is the single placement
   component. `src/app/layout.tsx` renders the `adsbygoogle.js` loader, but only when
   `NEXT_PUBLIC_ADSENSE_CLIENT` is set. `public/ads.txt` authorises the publisher.
@@ -301,8 +320,9 @@ pages, confirm progress tracking records a visit, then batch the rest.
   - Create the ad units in **AdSense → Ads → By ad unit** and fill in
     `NEXT_PUBLIC_ADSENSE_SLOT_HOME_1/2/3`, `_CALCULATOR`, `_CALCULATOR_FOOTER`, `_LESSON`,
     `_LIST`. Any left blank simply renders nothing.
-  - Add **all eight** `NEXT_PUBLIC_ADSENSE_*` variables to the **Vercel** project — `.env` is
-    gitignored, so production shows no ads until they are set there.
+  - Add the seven `NEXT_PUBLIC_ADSENSE_SLOT_*` variables to the **Vercel** project — `.env` is
+    gitignored, so ad units stay blank in production until they are set there. (The publisher ID
+    no longer needs this; it is a hardcoded constant with an env override.)
   - Decide on **Auto ads**. Recommendation: leave them **off** and keep the manual placements —
     Auto ads inject into the timed tests, simulations and tournament pages, which is exactly what
     the exclusions above avoid.

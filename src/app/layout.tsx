@@ -26,6 +26,22 @@ const font = Outfit({
   variable: "--font-outfit",
 });
 
+/*
+ * The AdSense publisher ID.
+ *
+ * Hardcoded, with an env override, deliberately. It is a *public* identifier —
+ * it is served to every visitor in the page source and in /ads.txt — so it is
+ * not a secret. Keeping it only in `.env` (which is gitignored) meant Vercel
+ * never received it, so the deployed site carried no AdSense code at all and
+ * AdSense answered "Couldn't verify your site". Both site verification and
+ * Auto ads need the snippet on the LIVE site, so the default must not depend
+ * on someone remembering to set a dashboard variable.
+ *
+ * Ad *units* are still env-gated — see src/components/calculators/AdSlot.tsx.
+ */
+const ADSENSE_CLIENT =
+  process.env.NEXT_PUBLIC_ADSENSE_CLIENT || "ca-pub-9553986083846603";
+
 /* ── Dynamic metadata based on subdomain ─────────────────────────────────── */
 export async function generateMetadata(): Promise<Metadata> {
   const headersList = await headers();
@@ -43,12 +59,17 @@ export async function generateMetadata(): Promise<Metadata> {
         siteName: "PharmaWallah Clinical",
         type: "website",
       },
+      // AdSense's meta-tag verification method. A second, independent way for
+      // the crawler to recognise the site, in case it cannot execute or reach
+      // the loader script.
+      other: { "google-adsense-account": ADSENSE_CLIENT },
     };
   }
 
   return {
     title: "PharmaWallah",
     description: "AI-powered pharmacy platform",
+    other: { "google-adsense-account": ADSENSE_CLIENT },
   };
 }
 
@@ -79,18 +100,25 @@ export default async function RootLayout({
         <Analytics />
         <SpeedInsights />
 
-        {/* AdSense loader. Rendered only once a publisher ID is configured, so
-            nothing is requested while approval is pending. Individual
-            placements come from <AdSlot /> in src/components/calculators. */}
-        {process.env.NEXT_PUBLIC_ADSENSE_CLIENT && (
-          <Script
-            id="adsbygoogle-init"
-            async
-            strategy="afterInteractive"
-            crossOrigin="anonymous"
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_CLIENT}`}
-          />
-        )}
+        {/* AdSense loader — on every page of both the site and the clinical
+            subdomain, because this is the single root layout.
+
+            `beforeInteractive` is what puts the tag inside <head> in the
+            server-rendered HTML, which is where AdSense asks for it and where
+            its crawler looks. `afterInteractive` (the previous setting) is
+            injected by the Next runtime after hydration, so a crawler reading
+            the raw HTML may never see it.
+
+            Unconditional: the loader is also what AdSense verifies against and
+            what Auto ads needs, so it must not be switchable off by a missing
+            env var. Individual ad units are still gated — see AdSlot. */}
+        <Script
+          id="adsbygoogle-init"
+          async
+          strategy="beforeInteractive"
+          crossOrigin="anonymous"
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+        />
       </body>
     </html>
   );

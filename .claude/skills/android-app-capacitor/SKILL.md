@@ -140,10 +140,17 @@ Signing reads `android/keystore.properties` (gitignored; template at
 `android/keystore.properties.example`) or `PW_KEYSTORE_*` env vars. Without either, Gradle emits an
 **unsigned** APK that phones refuse to install, and the script fails loudly.
 
-Distribution is **GitHub Releases**, not Vercel — the asset must be named
-`pharmawallah-calculators.apk` so the site's `/download` page
-(`src/app/(site)/download/`) keeps working via `releases/latest/download/<asset>`. Bump
-`versionCode`/`versionName` in `android/app/build.gradle` and `APP_VERSION` in
+**Distribution is in-repo**, chosen deliberately on 2026-09-12: the build script copies the signed
+APK to `public/downloads/pharmawallah-calculators.apk`, which is committed and deployed with the
+site. `/download` links to it with a `download` attribute, and `next.config.mjs` sets
+`application/vnd.android.package-archive` plus `must-revalidate` so a new release is never served
+stale from cache.
+
+The trade-off is permanent git growth — ~5 MB per release, unreclaimable without rewriting
+history. GitHub Releases is the alternative if the repo gets heavy; the switch is a one-line change
+to `APK_URL` in `DownloadClient.tsx`.
+
+Bump `versionCode`/`versionName` in `android/app/build.gradle` and `APP_VERSION` in
 `DownloadClient.tsx` on every release.
 
 ## Common Failure Modes
@@ -162,6 +169,12 @@ Distribution is **GitHub Releases**, not Vercel — the asset must be named
   `cap add` / `cap sync` need only Node — it is only the Gradle compile that needs Java.
 - **Judging the mobile build by its exit code.** Both Tailwind traps above produce a green build
   and a broken-looking app. Check the CSS byte count.
+- **Malformed Android resource XML** — Gradle only parses it at
+  `:app:mergeReleaseResources`, *after* the whole web build and sync, so it costs minutes to find.
+  The classic offender is `--` inside an XML comment, which XML forbids. `scripts/build-apk.sh`
+  now validates every `res/**/*.xml` and the manifest up front.
+- **A stale APK in `public/downloads/`** next to a fresh `/download` page. The build script copies
+  it automatically; do not copy it by hand mid-build or you can capture a partially written file.
 - **Shipping an unsigned release APK** — installs fail with no useful message on the phone.
 - **Reading `navigator` during render** — pre-rendered HTML has no `navigator`; use the
   `useOnlineStatus` hook, which defaults to `true` and corrects in an effect.

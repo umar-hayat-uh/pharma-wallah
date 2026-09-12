@@ -131,6 +131,24 @@ fi
 
 WARN
 
+# Android resource XML is parsed by Gradle only at :app:mergeReleaseResources,
+# which runs AFTER the whole web build and sync — so a stray malformed file
+# costs minutes to discover. Validate it here in milliseconds. (The classic
+# offender: "--" inside an XML comment, which XML forbids outright.)
+say "Validating Android resource XML"
+python3 - <<'PYEOF' || fail "Fix the XML above, then re-run."
+import glob, sys, xml.dom.minidom
+bad = []
+for f in sorted(glob.glob("android/app/src/main/res/**/*.xml", recursive=True)) + ["android/app/src/main/AndroidManifest.xml"]:
+    try:
+        xml.dom.minidom.parse(f)
+    except Exception as e:
+        bad.append(f"{f}: {e}")
+for b in bad:
+    print(f"  INVALID {b}")
+sys.exit(1 if bad else 0)
+PYEOF
+
 # ── Build ───────────────────────────────────────────────────────────────────
 say "Building the static calculator bundle"
 npm run mobile:build
@@ -146,11 +164,21 @@ APK="$REPO_ROOT/android/app/build/outputs/apk/release/app-release.apk"
 UNSIGNED="$REPO_ROOT/android/app/build/outputs/apk/release/app-release-unsigned.apk"
 
 if [ -f "$APK" ]; then
+  # The site serves the APK from its own /public directory, so publishing is
+  # just a copy — done here rather than by hand, because a stale APK next to a
+  # fresh /download page is a silent and embarrassing failure.
+  PUBLISHED="$REPO_ROOT/public/downloads/pharmawallah-calculators.apk"
+  mkdir -p "$(dirname "$PUBLISHED")"
+  cp "$APK" "$PUBLISHED"
+
   say "Signed APK ready"
-  printf '   %s  (%s)\n\n' "$APK" "$(du -h "$APK" | cut -f1)"
-  printf '   Next: upload it to a GitHub release named after the version, as\n'
-  printf '   pharmawallah-calculators.apk — the /download page links to\n'
-  printf '   releases/latest/download/pharmawallah-calculators.apk\n\n'
+  printf '   built:     %s  (%s)\n' "$APK" "$(du -h "$APK" | cut -f1)"
+  printf '   published: public/downloads/pharmawallah-calculators.apk\n\n'
+  printf '   It ships with the site. Commit it and deploy:\n'
+  printf '     git add public/downloads/pharmawallah-calculators.apk\n'
+  printf '     git commit -m "Release APK <version>" && git push\n\n'
+  printf '   Remember to bump versionCode/versionName in android/app/build.gradle\n'
+  printf '   and APP_VERSION in src/app/(site)/download/DownloadClient.tsx.\n\n'
 elif [ -f "$UNSIGNED" ]; then
   fail "Built, but UNSIGNED: $UNSIGNED
 Phones will refuse to install it. Configure android/keystore.properties and re-run."

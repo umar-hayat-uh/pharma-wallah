@@ -17,16 +17,22 @@ app, the PDF export, AdSense's viewability measurement, or AdSense policy.
 
 - `src/components/calculators/AdSlot.tsx` — the **only** placement component. Read it before
   anything else; its three no-render branches explain most "ads aren't showing" reports.
-- `src/app/layout.tsx` — the `adsbygoogle.js` loader, gated on `NEXT_PUBLIC_ADSENSE_CLIENT`.
-- `.claude/MEMORY.md` §6 (ad env vars) and §8 gotchas **28, 29, 30**.
+- `src/app/layout.tsx` — the `adsbygoogle.js` loader and the `google-adsense-account` meta tag.
+- `.claude/MEMORY.md` §6 (ad env vars) and §8 gotchas **28–34**.
 - `.claude/skills/android-app-capacitor/SKILL.md` if the surface is a calculator.
 
 ## Architecture Context
 
-**One component, one loader, env-gated end to end.**
+**One component, one loader. The loader always ships; the ad *units* are env-gated.**
 
-- `src/app/layout.tsx` renders the loader `<Script>` **only** when `NEXT_PUBLIC_ADSENSE_CLIENT` is
-  set. Unset ⇒ the site makes zero ad requests. That is the master switch.
+- `src/app/layout.tsx` renders the loader `<Script>` **unconditionally**, with
+  `strategy="beforeInteractive"` so it lands in the server-rendered `<head>` — where AdSense asks
+  for it and where its crawler looks. The publisher ID is a hardcoded constant with a
+  `NEXT_PUBLIC_ADSENSE_CLIENT` override. It was env-gated until an AdSense verification failed
+  because `.env` is gitignored and Vercel never had the value (`MEMORY.md` gotcha 31).
+- The same layout emits `<meta name="google-adsense-account" content="ca-pub-…">` through
+  `generateMetadata`, on both the site and clinical branches — AdSense's second verification
+  method, independent of script execution.
 - `AdSlot` renders an `<ins class="adsbygoogle">` and pushes `adsbygoogle.push({})` from an
   effect. It renders **nothing** when:
   1. `NEXT_PUBLIC_IS_MOBILE_APP === "true"` (the Android app — offline by design, and serving ads
@@ -39,9 +45,10 @@ app, the PDF export, AdSense's viewability measurement, or AdSense policy.
 - Privacy (`src/app/(site)/privacy/page.tsx`) and terms already disclose AdSense cookies. If a
   placement reaches a new category of visitor data, check those two pages still cover it.
 
-**Publisher ID:** `ca-pub-9553986083846603`. It is a public identifier (it ships in `ads.txt` and
-in the page source) — it is *not* a secret, but it still lives in `.env`, so **Vercel needs every
-`NEXT_PUBLIC_ADSENSE_*` variable set in the project settings** or production shows no ads.
+**Publisher ID:** `ca-pub-9553986083846603`. A public identifier — it ships in `ads.txt` and in
+every page's source — so it is *not* a secret and is hardcoded as the default. The **slot** IDs
+still come from env, so **Vercel needs every `NEXT_PUBLIC_ADSENSE_SLOT_*` set in the project
+settings** or production renders no ad units.
 
 ### Current placements — 7 across 5 surfaces
 
@@ -106,6 +113,24 @@ exactly these pages and ignore the list.
 npx tsc --noEmit          # baseline: 0 errors
 ```
 
+**Verification-tag checks must run against the production build, not dev** — `beforeInteractive`
+placement and `generateMetadata` output are what ship, and the live host is what AdSense reads:
+
+```bash
+# local production output
+npm run build && npx next start -p 3100     # only with `npm run dev` stopped (gotcha 21)
+curl -s http://localhost:3100/ > /tmp/p.html
+python3 - <<'EOF'
+h=open('/tmp/p.html').read(); he=h.find('</head>')
+for n in ['pagead2.googlesyndication.com','google-adsense-account','ca-pub-']:
+    i=h.find(n); print(n, 'NOT FOUND' if i<0 else ('INSIDE <head>' if i<he else 'in <body>'))
+EOF
+
+# the live site — the only thing AdSense actually sees
+curl -s https://www.pharmawallah.com/ | grep -c "ca-pub"      # must be > 0
+curl -s -o /dev/null -w "%{http_code}\n" https://www.pharmawallah.com/ads.txt   # 200
+```
+
 Exercise the surface on the dev server and count what rendered. With a publisher ID set and slots
 blank, dev draws the placeholder, so the placeholder is the proof a placement is wired:
 
@@ -142,7 +167,9 @@ expression — that is fine and expected. Ad *markup*, the publisher ID, and the
 
 | Symptom | Cause |
 | --- | --- |
-| No ads in production, site otherwise fine | The `NEXT_PUBLIC_ADSENSE_*` vars are in `.env` only, which is gitignored — **set them in Vercel** |
+| **"Couldn't verify your site"** | The loader is not in the **live** HTML. Check with `curl -s https://www.pharmawallah.com/ \| grep -c ca-pub` — **never** judge this from the dev server. Causes seen: the value only in gitignored `.env` (gotcha 31), and `afterInteractive` keeping the tag out of the SSR markup (gotcha 32) |
+| No ad *units* in production, loader present | The `NEXT_PUBLIC_ADSENSE_SLOT_*` vars are blank, or set in `.env` only — **also set them in Vercel** |
+| Home page has no `adband` markup at all | Intentional: `AdBand` returns `null` without a slot ID (gotcha 34) |
 | A placement renders nothing while others work | Its slot env var is blank. `AdSlot` needs both a client ID **and** a `slot` |
 | Grey dashed box everywhere | The dev-only placeholder. Expected; set the slot IDs or check `NODE_ENV` |
 | `adsbygoogle.push() error: All 'ins' elements already have ads` | The same slot pushed twice. `AdSlot`'s `pushed` ref guards StrictMode's double effect — don't remove it |

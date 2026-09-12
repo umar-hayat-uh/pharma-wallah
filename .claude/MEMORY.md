@@ -509,6 +509,29 @@ Traps that will otherwise be rediscovered painfully.
     because AdSense forbids ads on a page with no content — the "content file not found" and
     "no search results" branches are exactly that.
 
+31. **`.env` is gitignored, so anything gated on an env var is OFF in production** until it is
+    also set in the Vercel project. This cost a failed AdSense site verification: the publisher ID
+    was in `.env` only, the root layout's loader was conditional on it, and the deployed site
+    served **zero** AdSense code while everything looked correct locally. The publisher ID is now
+    a hardcoded constant with an env override in `src/app/layout.tsx` — it is a **public**
+    identifier (it ships in `/ads.txt` and in every page's HTML), so hardcoding it is correct, not
+    a leak. **Diagnose "it works locally" reports by curl-ing the live host, not the dev server.**
+
+32. **`next/script` `strategy="afterInteractive"` is invisible to crawlers.** It is injected by the
+    Next runtime after hydration, so it is not in the server-rendered HTML. Anything a third party
+    must *find* in the markup — an ad loader, a verification tag — needs
+    `strategy="beforeInteractive"` in the root layout (which lands it in `<head>`) or a
+    `generateMetadata` entry. The AdSense loader and the `google-adsense-account` meta tag both do
+    this now; verified against `npm run build` + `next start`, not dev.
+
+33. **The apex domain redirects.** `https://pharmawallah.com/…` answers **307** to
+    `https://www.pharmawallah.com/…`. The canonical host is **www**. Both serve `/ads.txt` as 200.
+    Any external verifier, webhook or callback should be pointed at the www host.
+
+34. **`AdBand` on the home landing returns `null` in production when its slot ID is unset** — so
+    the live home page legitimately contains no `adband` markup at all. That is a deliberate guard
+    against an empty tinted strip between sections, **not** a broken placement. Don't debug it.
+
 30. **`src/app/globals.css` will fight any bespoke page, in three ways that are easy to misdiagnose.**
     (a) `html { scroll-behavior: smooth }` desynchronises every scrubbed GSAP ScrollTrigger and
     fights ScrollToPlugin — the landing page adds `html.pw-landing-mounted { scroll-behavior: auto }`
@@ -541,6 +564,12 @@ Traps that will otherwise be rediscovered painfully.
     ~88px bar, so the first ~20px of every page rendered behind the nav (invisible on pages whose
     first section is a tall centred hero, obvious on anything that starts with a band). The header
     now has a deterministic height and the spacer quotes the same numbers — change both together.
+
+35. **shadcn's `NavigationMenuList` ships a bare `group` class, and it will hijack every
+    `group-hover:` inside a nav item.** Tailwind's `group-hover:` compiles to `.group:hover &`,
+    which matches *any* `.group` ancestor — so a hover underline written on one link lit up on all
+    six the moment the pointer entered the list. Fixed by renaming the list's class to
+    `group/menu`. Whenever a shadcn component nests `group` inside `group`, name the outer one.
 
 ---
 

@@ -68,6 +68,13 @@ Animations: `marquee`, `fade-up`, `clinical-float`, `clinical-float-delayed`, `c
 2. Start `"use client"` unless the page genuinely needs server-only data.
 3. Use brand tokens, not raw hex — except where the neighbouring page uses a local palette.
 4. Use `lucide-react` icons and `framer-motion` motion. Do not introduce a third library for either.
+   **One exception, already made:** the landing page at `/` uses **GSAP**, confined to
+   `src/components/Home/landing/`. See `.claude/skills/landing-page-motion/SKILL.md`. Do not import
+   gsap anywhere else — it would load on all ~170 routes.
+   Shared controls come from **shadcn/ui** in `src/components/ui/` (`button`, `card`, `badge`,
+   `input`, `label`, `navigation-menu`) with `cn()` from `@/lib/utils`; tokens are the CSS
+   variables at the top of `src/app/globals.css`, and `tailwindcss-animate` is registered in
+   `tailwind.config.ts` so `data-[state=open]:` animations actually compile.
 5. Support **dark mode** (`darkMode: "class"`) — every colour needs a `dark:` counterpart.
 6. Make it **responsive**; these pages are used on phones during labs and lectures.
 7. **Add tracking** if it is a learning surface — `useTracker()` / `<UnitTracker />`, never a raw
@@ -118,6 +125,12 @@ is no visual regression tooling — looking at it is the verification.
   worst.
 - **Adding a remote image host** without updating `next.config.mjs`.
 - **Applying Tailwind v4 syntax.** This is v3 with a JS config.
+- **Nesting `group` inside `group`.** shadcn's `NavigationMenuList` carries a bare `group`, so a
+  `group-hover:` written on a child matched the whole list and every nav link lit up at once. Name
+  the outer group (`group/menu`) — `MEMORY.md` §8 gotcha 35.
+- **Fighting `globals.css` instead of namespacing around it.** `html{scroll-behavior:smooth}`,
+  `ul`/`li` list styling and `input{background:#fff!important}` apply to every route — see
+  `MEMORY.md` §8 gotcha 30.
 - **Over-extracting components** into a shared directory when the repo's norm is self-contained
   pages — it makes the change read foreign.
 - **Tracking progress with a raw fetch** instead of `queueActivity`/`useTracker`.

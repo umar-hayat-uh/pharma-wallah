@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- brandBlue (#1C7BD9) — matches --primary in the web app's stylesheet, so
-         the native launch screen and the first web paint are the same colour and
-         the handover between them is invisible. -->
+    <!-- brandBlue #1C7BD9. Same value as the primary token in the web app's
+         stylesheet, so the native launch screen and the first web paint are
+         identical and the handover between them is invisible. -->
     <color name="pwBrandBlue">#1C7BD9</color>
     <color name="pwBrandBlueDark">#155FA8</color>
 </resources>

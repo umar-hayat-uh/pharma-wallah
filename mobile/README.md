@@ -64,24 +64,34 @@ npm run mobile:apk      # full release build -> a signed .apk (needs JDK 21, see
 ### Every release
 
 1. Bump the version in **two** places:
-   - `android/app/build.gradle` → `versionCode` (must increase) and `versionName`
-   - `src/app/(site)/download/DownloadClient.tsx` → `APP_VERSION`, and `APK_SIZE` if it moved
+   - `android/app/build.gradle` -> `versionCode` (must increase) and `versionName`
+   - `src/app/(site)/download/DownloadClient.tsx` -> `APP_VERSION`, and `APK_SIZE` if it changed
 2. Build:
    ```bash
    npm run mobile:apk
    ```
-   Output: `android/app/build/outputs/apk/release/app-release.apk`
-3. **Rename the file to `pharmawallah-calculators.apk`** and attach it to a new GitHub release
-   (tag it `v<versionName>`). The name matters: the site's `/download` page links to
-   `releases/latest/download/pharmawallah-calculators.apk`, which always resolves to the newest
-   release, so the page itself never needs editing for a routine release.
-4. Deploy the site if you changed the version shown on the page.
+   This signs the APK **and copies it to `public/downloads/pharmawallah-calculators.apk`**.
+3. Commit and deploy:
+   ```bash
+   git add public/downloads/pharmawallah-calculators.apk
+   git commit -m "Release APK v<version>"
+   git push
+   ```
+   Vercel deploys it with the site; `/download` serves it from the same domain.
 
-### Why GitHub Releases and not Vercel
+### How the APK is distributed
 
-Vercel hosts the website; it neither builds nor serves the APK. Putting a ~12 MB binary in
-`public/` would add it to git history on every release and re-upload it on every deploy. GitHub
-Releases gives a permanent URL, keeps the repo clean, and reports download counts.
+It ships **inside the repo**, in `public/downloads/`, and is served straight from the site. The
+`/download` page links to `/downloads/pharmawallah-calculators.apk` with a `download` attribute,
+and `next.config.mjs` sets the Android package content type plus `must-revalidate` so a new release
+is never served from cache.
+
+**The cost of this choice:** every released APK stays in git history permanently, about 5 MB each.
+Ten releases is ~50 MB in every clone, and it cannot be reclaimed without rewriting history. The
+alternative is GitHub Releases, which keeps binaries out of git entirely — worth reconsidering if
+the repo becomes unwieldy. To switch, set `APK_URL` in `DownloadClient.tsx` back to
+`https://github.com/<owner>/<repo>/releases/latest/download/pharmawallah-calculators.apk`, drop the
+`download` attribute, and stop committing the file.
 
 ## What is generated vs. hand-written
 

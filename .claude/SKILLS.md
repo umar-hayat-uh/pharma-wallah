@@ -30,6 +30,7 @@ hard way in this codebase.
 | `deployment-and-env` | Build behaviour, env vars, PWA, hosting reality | Build failures, new env vars, deploying, fresh setup | `.claude/skills/deployment-and-env/` |
 | `frontend-ui-conventions` | Tokens, motion, icons, page structure, dark mode | Building or changing any page or component | `.claude/skills/frontend-ui-conventions/` |
 | `android-app-capacitor` | The offline calculators-only Android app: second Next project, generated routes, Capacitor | Anything touching `mobile/`, `android/`, or "does this work in the app?" | `.claude/skills/android-app-capacitor/` |
+| `landing-page-motion` | The GSAP landing page at `/`: four ADME stations, the motion hook, the scoped stylesheet | Any change to `/`, its copy, its sections or its animation | `.claude/skills/landing-page-motion/` |
 | `adsense-monetization` | Ad placements: the one `AdSlot` component, the env-gated loader, the excluded surfaces | Adding/moving an ad, "ads aren't showing", an AdSense policy warning | `.claude/skills/adsense-monetization/` |
 
 ## Domain skills
@@ -69,6 +70,7 @@ Most real tasks use three. Typical stacks:
 | "Add a tournament game" | `implement-feature` → `tournament-system` → `api-route-conventions` → `security-review` |
 | "New endpoint returning user data" | `implement-feature` → `api-route-conventions` → `supabase-data-access` → `security-review` |
 | "The build is failing" | `debug-issue` → `deployment-and-env` |
+| "Change the homepage hero / add a landing section" | `landing-page-motion` → `frontend-ui-conventions` → `testing-verification` |
 | "Put ads on the encyclopedia pages" | `adsense-monetization` → `frontend-ui-conventions` → `android-app-capacitor` (if a calculator is involved) |
 | "Add a clinical interaction checker" | `implement-feature` → `clinical-and-external-apis` → `api-route-conventions` → `caching-and-ratelimiting` |
 | "Improve the AI tutor" | `ai-gemini-integration` → `security-review` (it is an unthrottled paid endpoint) |
