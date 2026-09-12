@@ -774,7 +774,7 @@ const CSS = `
   background-color: var(--apc-bg);
   color: var(--apc-text);
   min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-outfit), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   padding: 16px 12px 48px;
   -webkit-font-smoothing: antialiased;
 }

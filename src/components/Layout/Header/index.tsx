@@ -4,6 +4,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { headerData } from "../Header/Navigation/menuData";
+import {
+  SUBMENU_COLORS,
+  SUBMENU_DESCRIPTIONS,
+  SUBMENU_ICONS,
+} from "../Header/Navigation/menuMeta";
+import MegaMenu from "./MegaMenu";
+import { Button } from "@/components/ui/button";
 import Logo from "./Logo";
 import {
   Pill,
@@ -70,175 +77,10 @@ function useInstallPrompt() {
   return { isInstallable, install };
 }
 
-// ─── Submenu Icons, Colors & Descriptions ──────────────────────────────────
-const SUBMENU_ICONS: Record<string, React.ReactNode> = {
-  Material: <BookOpen className="w-5 h-5" />,
-  "MCQ's Bank": <ListChecks className="w-5 h-5" />,
-  "Lab Simulation": <TestTube className="w-5 h-5" />,
-  "Slide Spotting": <Microscope className="w-5 h-5" />,
-  Flashcards: <Layers className="w-5 h-5" />,
-  "Pharmacy Counter": <ShoppingCart className="w-5 h-5" />,
-  "Compounding Lab": <FlaskConical className="w-5 h-5" />,
-  "ADR Detective": <Search className="w-5 h-5" />,
-  "Prescription Reader": <FileSearch className="w-5 h-5" />,
-  "Books Library": <Library className="w-5 h-5" />,
-  "Antibiogram Simulator": <ShieldAlert className="w-5 h-5" />,
-  "Molecule Viewer": <Atom className="w-5 h-5" />,
-  // ── Calculation Tools categories ──
-  "Pharmaceutical Chemistry": <Beaker className="w-5 h-5" />,
-  "Unit Conversion": <Scale className="w-5 h-5" />,
-  "Pharmaceutics": <Pill className="w-5 h-5" />,
-  "Biopharmaceutics & Pharmacokinetics": <Activity className="w-5 h-5" />,
-  "Pharmacology": <HeartPulse className="w-5 h-5" />,
-  "Pharmaceutical Analysis": <Microscope className="w-5 h-5" />,
-  "Microbiology": <Syringe className="w-5 h-5" />,
-  "Pharmaceutical Engineering": <FlaskRound className="w-5 h-5" />,
-  "Clinical & Hospital Pharmacy": <Stethoscope className="w-5 h-5" />,
-};
-
-const SUBMENU_COLORS: Record<string, { icon: string; bg: string; ring: string }> = {
-  Material: { icon: "text-blue-500", bg: "from-blue-50 to-blue-100/40", ring: "group-hover:border-blue-200" },
-  "MCQ's Bank": { icon: "text-green-500", bg: "from-green-50 to-green-100/40", ring: "group-hover:border-green-200" },
-  "Lab Simulation": { icon: "text-purple-500", bg: "from-purple-50 to-purple-100/40", ring: "group-hover:border-purple-200" },
-  "Slide Spotting": { icon: "text-sky-500", bg: "from-sky-50 to-sky-100/40", ring: "group-hover:border-sky-200" },
-  Flashcards: { icon: "text-amber-500", bg: "from-amber-50 to-amber-100/40", ring: "group-hover:border-amber-200" },
-  "Pharmacy Counter": { icon: "text-orange-500", bg: "from-orange-50 to-orange-100/40", ring: "group-hover:border-orange-200" },
-  "Compounding Lab": { icon: "text-teal-500", bg: "from-teal-50 to-teal-100/40", ring: "group-hover:border-teal-200" },
-  "ADR Detective": { icon: "text-red-500", bg: "from-red-50 to-red-100/40", ring: "group-hover:border-red-200" },
-  "Prescription Reader": { icon: "text-cyan-500", bg: "from-cyan-50 to-cyan-100/40", ring: "group-hover:border-cyan-200" },
-  "Books Library": { icon: "text-emerald-500", bg: "from-emerald-50 to-emerald-100/40", ring: "group-hover:border-emerald-200" },
-  "Antibiogram Simulator": { icon: "text-rose-500", bg: "from-rose-50 to-rose-100/40", ring: "group-hover:border-rose-200" },
-  "Molecule Viewer": { icon: "text-indigo-500", bg: "from-indigo-50 to-indigo-100/40", ring: "group-hover:border-indigo-200" },
-  // ── Calculation Tools categories ──
-  "Pharmaceutical Chemistry": { icon: "text-violet-500", bg: "from-violet-50 to-violet-100/40", ring: "group-hover:border-violet-200" },
-  "Unit Conversion": { icon: "text-slate-500", bg: "from-slate-50 to-slate-100/40", ring: "group-hover:border-slate-200" },
-  "Pharmaceutics": { icon: "text-amber-500", bg: "from-amber-50 to-amber-100/40", ring: "group-hover:border-amber-200" },
-  "Biopharmaceutics & Pharmacokinetics": { icon: "text-teal-500", bg: "from-teal-50 to-teal-100/40", ring: "group-hover:border-teal-200" },
-  "Pharmacology": { icon: "text-rose-500", bg: "from-rose-50 to-rose-100/40", ring: "group-hover:border-rose-200" },
-  "Pharmaceutical Analysis": { icon: "text-sky-500", bg: "from-sky-50 to-sky-100/40", ring: "group-hover:border-sky-200" },
-  "Microbiology": { icon: "text-lime-500", bg: "from-lime-50 to-lime-100/40", ring: "group-hover:border-lime-200" },
-  "Pharmaceutical Engineering": { icon: "text-orange-500", bg: "from-orange-50 to-orange-100/40", ring: "group-hover:border-orange-200" },
-  "Clinical & Hospital Pharmacy": { icon: "text-emerald-500", bg: "from-emerald-50 to-emerald-100/40", ring: "group-hover:border-emerald-200" },
-};
-
-const SUBMENU_DESCRIPTIONS: Record<string, string> = {
-  Material: "Curated curriculum notes & modules.",
-  "MCQ's Bank": "Extensive practice question sets.",
-  "Lab Simulation": "Interactive 2D & 3D experiments.",
-  "Slide Spotting": "Histology and pathology practice.",
-  Flashcards: "Quick review with spaced repetition.",
-  "Pharmacy Counter": "Virtual retail dispensing training.",
-  "Compounding Lab": "Practice pharmaceutical compounding.",
-  "ADR Detective": "Spot and analyze adverse drug reactions.",
-  "Prescription Reader": "Decipher and analyze Rx forms.",
-  "Books Library": "Comprehensive textbook collection.",
-  "Antibiogram Simulator": "Analyze resistance patterns.",
-  "Molecule Viewer": "Explore 3D chemical structures.",
-  // ── Calculation Tools categories ──
-  "Pharmaceutical Chemistry": "Solution prep, concentration & chemical analysis tools",
-  "Unit Conversion": "Mass, volume, temperature & unit conversions",
-  "Pharmaceutics": "Formulation, powder, dissolution & dosage calculations",
-  "Biopharmaceutics & Pharmacokinetics": "ADME parameters, half-life, clearance & kinetics",
-  "Pharmacology": "Drug-receptor interactions, dose-response & safety",
-  "Pharmaceutical Analysis": "Spectroscopy, chromatography & purity assays",
-  "Microbiology": "Microbial quantification & sterilization calculations",
-  "Pharmaceutical Engineering": "Heat transfer, fluid dynamics & scale-up",
-  "Clinical & Hospital Pharmacy": "Patient dosing, renal/hepatic adjustments & clinical tools",
-};
-
-// ─── Three‑Column Desktop Mega‑Dropdown ────────────────────────────────────
-const DesktopDropdown = ({
-  item,
-  isOpen,
-  onClose,
-}: {
-  item: (typeof headerData)[0];
-  isOpen: boolean;
-  onClose: () => void;
-}) => {
-  if (!item.submenu) return null;
-
-  return (
-    <div
-      className="absolute left-1/2 -translate-x-1/2 mt-1 bg-white rounded-2xl border border-slate-100 shadow-[0_25px_50px_-15px_rgba(37,99,235,0.18)] overflow-hidden z-50"
-      style={{
-        width: 780,
-        transform: isOpen
-          ? "translateX(-50%) translateY(8px) scale(1)"
-          : "translateX(-50%) translateY(4px) scale(0.97)",
-        opacity: isOpen ? 1 : 0,
-        pointerEvents: isOpen ? "auto" : "none",
-        transition: "opacity 220ms ease, transform 220ms ease",
-        willChange: "opacity, transform",
-      }}
-    >
-      <div className="h-[3px] w-full bg-gradient-to-r from-blue-600 to-green-400" />
-
-      {/* 3-column CSS Grid */}
-      <div className="p-4 grid grid-cols-3 gap-2">
-        {item.submenu.map((sub, i) => {
-          const colors = SUBMENU_COLORS[sub.label] ?? {
-            icon: "text-blue-500",
-            bg: "from-blue-50 to-blue-100/40",
-            ring: "group-hover:border-blue-200",
-          };
-          return (
-            <Link
-              key={i}
-              href={sub.href}
-              onClick={onClose}
-              className="group relative flex items-start gap-3 p-3 rounded-xl overflow-hidden transition-all duration-200 hover:bg-slate-50"
-              style={{
-                animation: isOpen
-                  ? `submenuFadeIn 320ms ease both`
-                  : undefined,
-                animationDelay: isOpen ? `${i * 25}ms` : undefined,
-              }}
-            >
-              {/* Hover sweep highlight */}
-              <span
-                className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${colors.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
-              />
-
-              <div
-                className={`relative shrink-0 w-11 h-11 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5 group-hover:shadow-md ${colors.ring}`}
-              >
-                <span className={colors.icon}>
-                  {SUBMENU_ICONS[sub.label] ?? <Pill className="w-5 h-5 text-blue-500" />}
-                </span>
-              </div>
-              <div className="relative flex flex-col justify-center min-w-0">
-                <div className="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors duration-200 truncate">
-                  {sub.label}
-                </div>
-                <div className="text-xs text-slate-500 mt-0.5 leading-snug line-clamp-2">
-                  {SUBMENU_DESCRIPTIONS[sub.label] || "Explore this resource"}
-                </div>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-
-      <div className="bg-slate-50/80 border-t border-slate-100 p-3 px-6 flex items-center justify-between">
-        <span className="text-xs font-medium text-slate-500">Press Esc to close</span>
-      </div>
-
-      <style jsx>{`
-        @keyframes submenuFadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(6px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-    </div>
-  );
-};
+/** The gradient pill both the Dashboard and Sign-Up CTAs wear. */
+const CTA_PILL =
+  "h-9 rounded-full px-4 font-bold text-white shadow-md transition-all hover:shadow-lg active:scale-95 " +
+  "bg-gradient-to-r from-blue-600 via-sky-500 to-green-400 hover:bg-gradient-to-r";
 
 // ─── Main Header ────────────────────────────────────────────────────────────
 const Header: React.FC = () => {
@@ -246,6 +88,12 @@ const Header: React.FC = () => {
   const router = useRouter();
   const [navbarOpen, setNavbarOpen] = useState(false);
   const [sticky, setSticky] = useState(false);
+  // Retracted while the reader is scrolling down through a long page, restored
+  // the moment they scroll back up. Never retracted while a menu is open.
+  const [retracted, setRetracted] = useState(false);
+  // Radix owns the mega menu's open state; the header only needs to know that
+  // something is open so it does not retract out from under it.
+  const [megaOpen, setMegaOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
 
@@ -281,8 +129,21 @@ const Header: React.FC = () => {
     dismissBanner();
   }, [install, dismissBanner]);
 
+  // Read inside the scroll listener without re-subscribing on every state change.
+  const menuOpenRef = useRef(false);
+  menuOpenRef.current = navbarOpen || megaOpen || openDropdown !== null;
+
   useEffect(() => {
-    const onScroll = () => setSticky(window.scrollY > 60);
+    let last = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      setSticky(y > 60);
+      // 4px of slack so a trackpad's jitter does not flap the bar.
+      if (menuOpenRef.current || y < 600) setRetracted(false);
+      else if (y > last + 4) setRetracted(true);
+      else if (y < last - 4) setRetracted(false);
+      last = y;
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -326,7 +187,7 @@ const Header: React.FC = () => {
   }, [openDropdown]);
 
   const isActive = (href: string, submenu?: { href: string }[]) =>
-    pathUrl === href || submenu?.some((s) => pathUrl === s.href);
+    pathUrl === href || (submenu?.some((s) => pathUrl === s.href) ?? false);
 
   const openMenu = () => setNavbarOpen(true);
   const closeMenu = () => setNavbarOpen(false);
@@ -336,125 +197,98 @@ const Header: React.FC = () => {
       {/* ══ HEADER ══════════════════════════════════════════════════════════ */}
       <header
         ref={headerRef}
-        className="fixed top-0 left-0 right-0 z-50 border-b border-gray-100/80 bg-white"
+        className={`fixed top-0 left-0 right-0 z-50 border-b border-gray-100/80 ${
+          sticky
+            ? "h-[60px] lg:h-[64px] bg-white/90 backdrop-blur-xl supports-[backdrop-filter]:bg-white/80"
+            : "h-[64px] lg:h-[76px] bg-white"
+        }`}
         style={{
-          boxShadow: sticky ? "0 2px 20px rgba(37,99,235,0.07)" : "none",
-          paddingTop: sticky ? 10 : 14,
-          paddingBottom: sticky ? 10 : 14,
-          transition: "box-shadow 220ms ease, padding 220ms ease",
+          boxShadow: sticky ? "0 10px 30px -26px rgba(10,30,70,0.6)" : "none",
+          transform: retracted ? "translateY(-100%)" : "translateY(0)",
+          transition:
+            "box-shadow 220ms ease, height 300ms cubic-bezier(.16,1,.3,1), transform 380ms cubic-bezier(.16,1,.3,1), background-color 220ms ease",
         }}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          <Logo />
+        <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+          {/* The logo SVG carries inline width/height:auto, so the override has
+              to win on specificity for the bar to have a fixed height. */}
+          <div
+            className={`flex items-center [&_img]:!w-auto ${
+              sticky ? "h-[30px] lg:h-[34px]" : "h-[32px] lg:h-[40px]"
+            } [&_img]:!h-full`}
+            style={{ transition: "height 300ms cubic-bezier(.16,1,.3,1)" }}
+          >
+            <Logo />
+          </div>
 
           {/* ── Desktop nav ── */}
-          <nav className="hidden lg:flex items-center gap-1">
-            {headerData.map((item, i) => {
-              const active = isActive(item.href, item.submenu);
-              const hasSubmenu = Boolean(item.submenu);
-              const dropOpen = openDropdown === item.label;
+          <MegaMenu isActive={isActive} onOpenChange={setMegaOpen} />
 
-              return (
-                <div key={i} className="relative">
-                  {hasSubmenu ? (
-                    <button
-                      onClick={() => setOpenDropdown(dropOpen ? null : item.label)}
-                      className={`flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-150 ${
-                        active
-                          ? "text-blue-700 bg-blue-50"
-                          : "text-gray-600 hover:text-blue-700 hover:bg-blue-50/60"
-                      }`}
-                    >
-                      {item.label}
-                      <ChevronDown
-                        className="w-3.5 h-3.5 transition-transform duration-200"
-                        style={{ transform: dropOpen ? "rotate(180deg)" : "rotate(0deg)" }}
-                      />
-                      {active && (
-                        <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-blue-500" />
-                      )}
-                    </button>
-                  ) : (
-                    <Link
-                      href={item.href}
-                      className={`relative flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-150 ${
-                        active
-                          ? "text-blue-700 bg-blue-50"
-                          : "text-gray-600 hover:text-blue-700 hover:bg-blue-50/60"
-                      }`}
-                    >
-                      {item.label}
-                      {active && (
-                        <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-blue-500" />
-                      )}
-                    </Link>
-                  )}
-                  <DesktopDropdown item={item} isOpen={dropOpen} onClose={() => setOpenDropdown(null)} />
-                </div>
-              );
-            })}
-          </nav>
-
-          {/* ── Desktop Auth CTA ── */}
-          <div className="hidden lg:flex items-center gap-3">
-            {!authLoading ? (
-              user ? (
-                <>
-                  <Link
-                    href="/dashboard"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-95"
-                  >
-                    <LayoutDashboard className="w-4 h-4" />
+          {/* ── Desktop Auth CTA ──
+              shadcn/ui <Button> so the bar shares the focus ring, disabled
+              handling and sizing scale used by the rest of the product. */}
+          <div className="hidden lg:flex items-center gap-2">
+            {authLoading ? (
+              // Reserve the space instead of collapsing it, or the whole bar
+              // reflows the moment the auth session resolves.
+              <div aria-hidden="true" className="h-9 w-[172px]" />
+            ) : user ? (
+              <>
+                <Button asChild size="sm" className={CTA_PILL}>
+                  <Link href="/dashboard">
+                    <LayoutDashboard className="h-4 w-4" />
                     Dashboard
                   </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="p-2.5 rounded-xl bg-gray-100 text-gray-600 hover:text-red-500 hover:bg-red-50 transition-colors"
-                    aria-label="Sign out"
-                  >
-                    <LogOut className="w-5 h-5" />
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link
-                    href="/signin"
-                    className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:text-blue-700 hover:bg-blue-50/60 transition-colors"
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    href="/signup"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 text-white text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-95"
-                  >
-                    <User className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleLogout}
+                  aria-label="Sign out"
+                  className="h-9 w-9 rounded-full text-slate-500 hover:bg-red-50 hover:text-red-500"
+                >
+                  <LogOut className="h-[18px] w-[18px]" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button asChild variant="ghost" size="sm" className="rounded-full text-slate-600 hover:text-blue-700">
+                  <Link href="/signin">Sign In</Link>
+                </Button>
+                <Button asChild size="sm" className={CTA_PILL}>
+                  <Link href="/signup">
+                    <User className="h-4 w-4" />
                     Sign Up
                   </Link>
-                </>
-              )
-            ) : null}
+                </Button>
+              </>
+            )}
 
             {isInstallable && (
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={handleInstall}
-                className="p-2.5 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
                 aria-label="Install app"
                 title="Install app"
+                className="h-9 w-9 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100"
               >
-                <Download className="w-5 h-5" />
-              </button>
+                <Download className="h-[18px] w-[18px]" />
+              </Button>
             )}
           </div>
 
           {/* ── Mobile hamburger ── */}
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={openMenu}
-            className="lg:hidden p-2.5 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 active:bg-blue-100 transition-colors"
             aria-label="Open menu"
             style={{ touchAction: "manipulation" }}
+            className="lg:hidden h-10 w-10 rounded-xl border border-blue-100 bg-blue-50 text-blue-600"
           >
-            <Menu className="w-5 h-5" />
-          </button>
+            <Menu className="h-5 w-5" />
+          </Button>
         </div>
 
         {/* Gradient bottom line */}
@@ -468,8 +302,11 @@ const Header: React.FC = () => {
         />
       </header>
 
-      {/* ── Spacer ── */}
-      <div className="h-[64px] lg:h-[68px]" />
+      {/* ── Spacer ──
+          Matches the header's un-scrolled height exactly. It used to be 64/68px
+          against an ~88px bar, so the first 20px of every page rendered behind
+          the nav. */}
+      <div className="h-[64px] lg:h-[76px]" />
 
       {/* ══ INSTALL BANNER ═══════════════════════════════════════════════════ */}
       {showInstallBanner && (

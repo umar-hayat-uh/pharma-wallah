@@ -1,0 +1,766 @@
+/*
+ * Landing-page stylesheet, scoped entirely under `.pw-landing`.
+ *
+ * WHY A STYLESHEET AND NOT ONLY TAILWIND
+ * This page is a one-off editorial design: masked line reveals, an SVG "spine"
+ * a molecule rides along, -webkit-text-stroke numerals, a pinned horizontal
+ * gallery and a card deck. Expressing that as Tailwind arbitrary values would
+ * be less readable than the CSS it compiles to, and it is used by exactly one
+ * page. Everything is namespaced so it can never leak into the other ~170
+ * routes; shared, reusable pieces (buttons, cards, badges, inputs) still come
+ * from shadcn/ui in src/components/ui.
+ *
+ * Three rules in src/app/globals.css actively fight this page and are
+ * neutralised here — see the "globals.css overrides" block at the bottom.
+ */
+
+.pw-landing {
+  /* brand, matching tailwind.config.ts brandBlue / brandGreen */
+  --blue: #2563eb;
+  --cyan: #2e9bd6;
+  --green: #22c55e;
+  --grad: linear-gradient(90deg, var(--blue), var(--cyan) 52%, var(--green));
+  --grad-br: linear-gradient(135deg, var(--blue), var(--cyan) 55%, var(--green));
+
+  /* terminal surface (the AI guide panel) */
+  --void: #0b1426;
+  --void-3: #17253f;
+  --hair: #22314f;
+  --chalk-2: #a8b8d0;
+  --chalk-3: #6f819c;
+
+  /* hero wash */
+  --sky: #f2f7ff;
+  --mint: #f1faf6;
+
+  /* light canvas */
+  --ink: #0a1122;
+  --ink-2: #46536b;
+  --muted: #6c7a93;
+  --line: #e4eaf3;
+  --line-2: #d6deeb;
+  --paper: #ffffff;
+  --tint: #f4f8ff;
+
+  --gut: clamp(20px, 4vw, 64px);
+
+  background: var(--paper);
+  color: var(--ink);
+  overflow-x: clip;
+}
+
+.pw-landing .mono {
+  font-family: var(--font-pw-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.pw-landing .gt {
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.pw-landing .wrap {
+  width: min(1240px, calc(100% - var(--gut) * 2));
+  margin: 0 auto;
+}
+
+/* ══════════════════ preloader ══════════════════ */
+.pw-pre {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: #fff;
+  display: grid;
+  place-items: center;
+}
+.pw-pre .capsule { width: 74px; height: 74px; }
+.pw-pre .pct {
+  position: absolute;
+  bottom: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-pw-mono), ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.14em;
+}
+
+/* ══════════════════ progress rail ══════════════════ */
+.pw-landing .rail {
+  position: fixed;
+  left: 26px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.pw-landing .rail i {
+  display: block;
+  width: 2px;
+  height: 34px;
+  background: var(--line-2);
+  border-radius: 2px;
+  position: relative;
+}
+.pw-landing .rail i b {
+  position: absolute;
+  inset: 0;
+  background: var(--grad);
+  transform: scaleY(0);
+  transform-origin: 50% 0;
+  display: block;
+  border-radius: 2px;
+}
+.pw-landing .rail em {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-pw-mono), ui-monospace, monospace;
+  font-size: 9.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  font-style: normal;
+  opacity: 0;
+}
+
+/* ══════════════════ hero ══════════════════ */
+.pw-landing .hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 64px 0 96px;
+  overflow: clip;
+  background: linear-gradient(168deg, var(--sky) 0%, #ffffff 46%, var(--mint) 100%);
+}
+.pw-landing .hero:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.5;
+  background-image: radial-gradient(#cbdcf3 1px, transparent 1.3px);
+  background-size: 26px 26px;
+  -webkit-mask-image: radial-gradient(70% 60% at 50% 40%, #000, transparent);
+  mask-image: radial-gradient(70% 60% at 50% 40%, #000, transparent);
+}
+.pw-landing .bonds { position: absolute; inset: 0; z-index: 0; opacity: 0.4; }
+.pw-landing .aura {
+  position: absolute;
+  z-index: 0;
+  border-radius: 50%;
+  filter: blur(130px);
+  opacity: 0.16;
+}
+.pw-landing .hero-in {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1.08fr 0.92fr;
+  gap: 60px;
+  align-items: center;
+}
+.pw-landing .kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-pw-mono), ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--ink-2);
+  border: 1px solid var(--line-2);
+  background: #fff;
+  border-radius: 100px;
+  padding: 7px 15px 7px 9px;
+  box-shadow: 0 6px 18px -14px rgba(10, 30, 70, 0.5);
+}
+.pw-landing .kicker .pip {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.16);
+}
+.pw-landing h1 {
+  font-size: clamp(44px, 6.6vw, 96px);
+  line-height: 0.94;
+  letter-spacing: -0.045em;
+  font-weight: 800;
+  margin-top: 26px;
+}
+.pw-landing .line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.06em;
+}
+.pw-landing .line > span { display: inline-block; }
+.pw-landing .swap { position: relative; display: inline-block; vertical-align: baseline; }
+.pw-landing .swap .w { display: inline-block; }
+.pw-landing .swap .w.ghost { position: absolute; left: 0; top: 0; opacity: 0; }
+.pw-landing .hero .lede {
+  font-size: clamp(15px, 1.25vw, 18px);
+  line-height: 1.68;
+  color: var(--ink-2);
+  max-width: 480px;
+  margin-top: 26px;
+}
+.pw-landing .hero-acts { display: flex; gap: 14px; margin-top: 36px; flex-wrap: wrap; }
+.pw-landing .hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  margin-top: 44px;
+  flex-wrap: wrap;
+}
+.pw-landing .hero-meta .m { display: flex; flex-direction: column; gap: 3px; }
+.pw-landing .hero-meta b { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+.pw-landing .hero-meta small {
+  font-family: var(--font-pw-mono), ui-monospace, monospace;
+  font-size: 10px;
+  color: var(--muted);
+}
+.pw-landing .hero-meta .vr { width: 1px; height: 34px; background: var(--line-2); }
+
+/* the product itself, stacked: a notes page, a marked MCQ, a monograph chip */
+.pw-landing .stage { position: relative; height: min(560px, 62vh); display: grid; place-items: center; }
+.pw-landing .pcard {
+  position: absolute;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 30px 60px -34px rgba(10, 30, 70, 0.42);
+  overflow: hidden;
+}
+.pw-landing .pcard .ph {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-pw-mono), ui-monospace, monospace;
+  font-size: 9.5px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+.pw-landing .pcard .ph .dot {
+  width: 22px; height: 22px; border-radius: 7px;
+  display: grid; place-items: center; color: #fff; flex: none;
+}
+.pw-landing .p-notes { width: min(270px, 74%); left: -2%; top: 6%; transform: rotate(-5deg); }
+.pw-landing .p-notes .body { padding: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.pw-landing .p-notes .body i { display: block; height: 9px; border-radius: 4px; background: #edf2f9; }
+.pw-landing .p-notes .body i.w { grid-column: span 2; }
+.pw-landing .p-notes .body .fig {
+  grid-column: span 2; height: 76px; border-radius: 9px;
+  background: linear-gradient(135deg, #e3eefd, #e4f7ee);
+  position: relative; overflow: hidden;
+}
+.pw-landing .p-notes .body .fig svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pw-landing .p-mcq { width: min(260px, 72%); right: -4%; top: 30%; transform: rotate(3.5deg); z-index: 3; }
+.pw-landing .p-mcq .body { padding: 14px; display: flex; flex-direction: column; gap: 7px; }
+.pw-landing .p-mcq .q { font-size: 11.5px; font-weight: 600; line-height: 1.5; color: var(--ink); }
+.pw-landing .p-mcq .o {
+  display: flex; align-items: center; gap: 8px;
+  border: 1px solid var(--line-2); border-radius: 9px;
+  padding: 7px 9px; font-size: 10.5px; color: var(--ink-2);
+}
+.pw-landing .p-mcq .o.ok { border-color: #93e7b7; background: #f2fdf7; color: #166534; font-weight: 600; }
+.pw-landing .p-mcq .o .k {
+  width: 17px; height: 17px; border-radius: 5px; background: #f1f5fb;
+  display: grid; place-items: center;
+  font-family: var(--font-pw-mono), ui-monospace, monospace; font-size: 8.5px; flex: none;
+}
+.pw-landing .p-mcq .o.ok .k { background: var(--green); color: #fff; }
+.pw-landing .p-drug {
+  width: min(214px, 60%); left: -6%; bottom: 12%; z-index: 4;
+  transform: rotate(-2.5deg); padding: 12px 14px;
+  display: flex; gap: 11px; align-items: center;
+}
+.pw-landing .p-drug .i {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: var(--grad-br); display: grid; place-items: center; flex: none;
+}
+.pw-landing .p-drug b { display: block; font-size: 12.5px; font-weight: 600; }
+.pw-landing .p-drug small {
+  display: block; font-family: var(--font-pw-mono), ui-monospace, monospace;
+  font-size: 9px; color: var(--muted); margin-top: 2px;
+}
+.pw-landing .ringlbl {
+  position: absolute;
+  font-family: var(--font-pw-mono), ui-monospace, monospace;
+  font-size: 10px; color: var(--ink-2);
+  border: 1px solid var(--line-2); background: rgba(255, 255, 255, 0.94);
+  border-radius: 100px; padding: 6px 13px; white-space: nowrap;
+  box-shadow: 0 10px 26px -18px rgba(10, 30, 70, 0.6); z-index: 5;
+}
+.pw-landing .scrollcue {
+  position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 3;
+  display: flex; flex-direction: column; align-items: center; gap: 9px;
+  font-family: var(--font-pw-mono), ui-monospace, monospace; font-size: 9.5px;
+  color: var(--muted); letter-spacing: 0.14em;
+}
+.pw-landing .scrollcue .bar {
+  width: 1px; height: 40px;
+  background: linear-gradient(180deg, var(--line-2), transparent);
+}
+
+/* ══════════════════ the spine (a drawn path the molecule rides) ══════════════════ */
+.pw-landing .spine {
+  position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 1; overflow: visible; opacity: 0.55;
+}
+.pw-landing .spine path { fill: none; stroke-width: 1.6; }
+.pw-landing .spine .track { stroke: var(--line); opacity: 0.9; }
+.pw-landing .spine .live { stroke: url(#pw-sg); stroke-linecap: round; }
+.pw-landing .mol {
+  position: absolute; z-index: 3; width: 54px; height: 54px;
+  margin: -27px 0 0 -27px; left: 0; top: 0; pointer-events: none;
+  display: grid; place-items: center; opacity: 0;
+}
+.pw-landing .mol .core {
+  width: 15px; height: 15px; border-radius: 50%; background: var(--grad-br);
+  box-shadow: 0 0 0 7px rgba(46, 155, 214, 0.16), 0 0 28px 6px rgba(37, 99, 235, 0.5);
+}
+.pw-landing .mol .halo {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 1px solid rgba(46, 155, 214, 0.4);
+}
+
+/* ══════════════════ stations ══════════════════ */
+.pw-landing .light { background: var(--paper); position: relative; }
+/* z-index 2 keeps station content above the decorative spine that runs behind
+   the whole ADME block; the molecule (z-index 3) still rides visibly on top. */
+.pw-landing .station { position: relative; z-index: 2; padding: clamp(80px, 9vw, 140px) 0; }
+.pw-landing .st-top {
+  display: flex; align-items: center; gap: 16px;
+  padding-bottom: 18px; border-bottom: 1px solid var(--line);
+}
+.pw-landing .st-top .num {
+  font-family: var(--font-pw-mono), ui-monospace, monospace;
+  font-size: clamp(26px, 3vw, 40px); font-weight: 500;
+  letter-spacing: -0.02em; line-height: 1;
+  color: transparent; -webkit-text-stroke: 1.3px #aec1da;
+}
+.pw-landing .st-top .lbl {
+  font-family: var(--font-pw-mono), ui-monospace, monospace;
+  font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--blue);
+}
+.pw-landing .st-top .stage-of {
+  margin-left: auto; font-family: var(--font-pw-mono), ui-monospace, monospace;
+  font-size: 10px; color: var(--muted); letter-spacing: 0.1em;
+}
+.pw-landing .st-body {
+  display: grid; grid-template-columns: 1.06fr 0.94fr;
+  gap: clamp(26px, 5vw, 80px); align-items: end; margin-top: clamp(26px, 3.4vw, 44px);
+}
+.pw-landing h2 {
+  font-size: clamp(32px, 4.4vw, 58px); line-height: 1.03;
+  letter-spacing: -0.035em; font-weight: 800;
+}
+.pw-landing .st-body p {
+  font-size: clamp(15px, 1.2vw, 17.5px); line-height: 1.72;
+  color: var(--ink-2); max-width: 520px;
+}
+.pw-landing .st-tags { display: flex; gap: 9px; margin-top: 20px; flex-wrap: wrap; }
+.pw-landing .st-tags span {
+  font-family: var(--font-pw-mono), ui-monospace, monospace; font-size: 10px;
+  color: var(--ink-2); border: 1px solid var(--line-2);
+  border-radius: 100px; padding: 6px 13px; background: #fff;
+}
+
+/* ── 01 absorption: the pinned horizontal gallery ── */
+.pw-landing .gal { position: relative; overflow: hidden; margin-top: clamp(40px, 5vw, 72px); }
+.pw-landing .gal-track {
+  display: flex; gap: clamp(18px, 2vw, 30px); width: max-content;
+  padding: 10px clamp(20px, 4vw, 64px) 24px; align-items: stretch;
+}
+.pw-landing .leaf {
+  width: clamp(260px, 25vw, 340px); background: #fff;
+  border: 1px solid var(--line); border-radius: 20px; overflow: hidden;
+  box-shadow: 0 20px 50px -34px rgba(10, 25, 60, 0.4);
+  display: flex; flex-direction: column;
+}
+.pw-landing .leaf .sheet { height: clamp(186px, 17vw, 232px); position: relative; padding: 15px; }
+.pw-landing .leaf .sheet .pg {
+  position: absolute; inset: 13px; background: #fff; border-radius: 10px; padding: 12px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 7px; align-content: start;
+  box-shadow: 0 10px 24px -20px rgba(10, 30, 70, 0.5);
+}
+.pw-landing .leaf .sheet .pg i { display: block; background: #eef3fa; border-radius: 4px; height: 7px; }
+.pw-landing .leaf .sheet .pg i.w { grid-column: span 2; }
+.pw-landing .leaf .sheet .pg .hd {
+  grid-column: span 2; display: flex; align-items: center; gap: 7px; margin-bottom: 2px;
+}
+.pw-landing .leaf .sheet .pg .hd b {
+  font-family: var(--font-pw-mono), ui-monospace, monospace; font-size: 8px;
+  letter-spacing: 0.1em; color: var(--ink-2); text-transform: uppercase;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.pw-landing .leaf .sheet .pg .hd .sw {
+  width: 16px; height: 16px; border-radius: 5px;
+  display: grid; place-items: center; color: #fff; flex: none;
+}
+.pw-landing .leaf .sheet .pg .fig {
+  grid-column: span 2; height: 66px; border-radius: 7px;
+  background: #f6f9fe; overflow: hidden; position: relative;
+}
+.pw-landing .leaf .sheet .pg .fig svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pw-landing .leaf .tag {
+  position: absolute; right: 24px; top: 24px; z-index: 2;
+  font-family: var(--font-pw-mono), ui-monospace, monospace; font-size: 9px;
+  background: var(--ink); color: #fff; border-radius: 100px; padding: 4px 9px;
+}
+.pw-landing .leaf .b { padding: 18px 20px 20px; display: flex; flex-direction: column; flex: 1; }
+.pw-landing .leaf h3 { font-size: 17px; font-weight: 600; line-height: 1.4; letter-spacing: -0.01em; }
+.pw-landing .leaf .sub {
+  font-family: var(--font-pw-mono), ui-monospace, monospace;
+  font-size: 10px; color: var(--muted); margin-top: 9px;
+}
+.pw-landing .leaf .foot {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: auto; padding-top: 16px; font-size: 13px; color: var(--ink-2);
+}
+.pw-landing .leaf .go {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1px solid var(--line-2); display: grid; place-items: center;
+  transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+.pw-landing .leaf:hover .go { background: var(--grad-br); border-color: transparent; color: #fff; }
+.pw-landing .galbar { height: 2px; background: var(--line); border-radius: 2px; margin: 0 clamp(20px, 4vw, 64px); }
+.pw-landing .galbar b {
+  display: block; height: 100%; width: 100%;
+  background: var(--grad); border-radius: 2px;
+  /* scaled 0.28 → 1 by the gallery's ScrollTrigger */
+  transform: scaleX(0.28); transform-origin: 0 50%;
+}
+
+/* ── 02 distribution: the hover index ── */
+.pw-landing .index { margin-top: clamp(36px, 4vw, 60px); border-top: 1px solid var(--line); }
+.pw-landing .irow {
+  display: grid; grid-template-columns: 52px 1fr auto; gap: 24px; align-items: center;
+  padding: clamp(18px, 2.1vw, 26px) 4px; border-bottom: 1px solid var(--line);
+  position: relative; cursor: pointer; width: 100%; text-align: left;
+}
+.pw-landing .irow .n { font-family: var(--font-pw-mono), ui-monospace, monospace; font-size: 11px; color: var(--muted); position: relative; z-index: 2; }
+.pw-landing .irow h3 { font-size: clamp(20px, 2.5vw, 32px); font-weight: 600; letter-spacing: -0.02em; position: relative; z-index: 2; }
+.pw-landing .irow .meta { font-family: var(--font-pw-mono), ui-monospace, monospace; font-size: 11px; color: var(--ink-2); position: relative; z-index: 2; }
+.pw-landing .irow .sweep {
+  position: absolute; inset: 0; background: var(--grad-br);
+  transform: scaleY(0); transform-origin: 50% 100%; z-index: 0; border-radius: 4px;
+}
+.pw-preview {
+  position: fixed; z-index: 45; width: 280px; height: 200px; border-radius: 16px;
+  overflow: hidden; pointer-events: none; opacity: 0;
+  box-shadow: 0 30px 60px -28px rgba(10, 25, 60, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+.pw-preview .p {
+  position: absolute; inset: 0; display: grid; place-items: center; color: #fff;
+  font-weight: 600; font-size: 17px; letter-spacing: -0.01em; text-align: center; padding: 22px;
+}
+
+/* ── 03 metabolism: the deck (sized so the card never falls below the fold) ── */
+.pw-landing .station.pin {
+  min-height: 100svh; display: flex; flex-direction: column; justify-content: center;
+  padding: clamp(84px, 11svh, 118px) 0 clamp(26px, 5svh, 52px);
+}
+.pw-landing .station.pin h2 { font-size: clamp(28px, 3.3vw, 46px); }
+.pw-landing .station.pin .st-body { margin-top: clamp(16px, 2.4svh, 26px); align-items: start; }
+.pw-landing .station.pin .st-body p { font-size: clamp(14px, 1.05vw, 16px); line-height: 1.65; }
+.pw-landing .station.pin .deck-wrap { margin-top: clamp(18px, 3svh, 38px); }
+.pw-landing .station.pin .stepper { margin-top: 0; }
+.pw-landing .station.pin .step { padding: clamp(7px, 1.1svh, 12px) 0; }
+.pw-landing .station.pin .copyslot { margin-top: clamp(14px, 2svh, 22px); min-height: clamp(74px, 11svh, 104px); }
+.pw-landing .station.pin .copyslot p { font-size: clamp(14px, 1.05vw, 16px); line-height: 1.65; }
+.pw-landing .deck-wrap {
+  display: grid; grid-template-columns: 1fr clamp(380px, 38vw, 520px);
+  gap: clamp(30px, 5vw, 80px); align-items: center;
+}
+.pw-landing .deck { position: relative; height: clamp(352px, 54svh, 500px); }
+.pw-landing .qcard {
+  position: absolute; inset: 0; background: #fff; border: 1px solid var(--line);
+  border-radius: 22px; box-shadow: 0 30px 70px -40px rgba(10, 25, 60, 0.5);
+  padding: clamp(17px, 2.4svh, 26px) clamp(18px, 1.9vw, 26px);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.pw-landing .qcard .top {
+  display: flex; align-items: center; gap: 12px;
+  font-family: var(--font-pw-mono), ui-monospace, monospace; font-size: 10px; color: var(--muted);
+}
+.pw-landing .qcard .top .s { background: #eef4ff; color: #1e40af; border-radius: 100px; padding: 5px 11px; }
+.pw-landing .qcard .top .t { margin-left: auto; display: inline-flex; gap: 7px; align-items: center; color: var(--ink-2); }
+.pw-landing .qcard .q {
+  font-size: clamp(15px, 1.35vw, 18.5px); font-weight: 600; line-height: 1.42;
+  margin-top: clamp(12px, 2svh, 18px); letter-spacing: -0.015em;
+}
+.pw-landing .opts { display: flex; flex-direction: column; gap: clamp(6px, 1.05svh, 9px); margin-top: clamp(12px, 2svh, 18px); }
+.pw-landing .opt {
+  display: flex; align-items: center; gap: 11px; border: 1.5px solid var(--line-2);
+  border-radius: 12px; padding: clamp(8px, 1.3svh, 12px) 14px;
+  font-size: clamp(13px, 1.05vw, 14px); text-align: left; background: #fff;
+}
+.pw-landing .opt .k {
+  width: 27px; height: 27px; border-radius: 8px; background: #f2f6fc;
+  display: grid; place-items: center;
+  font-family: var(--font-pw-mono), ui-monospace, monospace; font-size: 11px;
+  color: var(--ink-2); flex: none;
+}
+.pw-landing .opt.ok { border-color: #8fe7b4; background: #f1fdf6; }
+.pw-landing .opt.ok .k { background: var(--green); color: #fff; }
+.pw-landing .opt.no { border-color: #ffc9c9; background: #fff5f5; }
+.pw-landing .opt.no .k { background: #ef4444; color: #fff; }
+.pw-landing .why {
+  margin-top: auto; background: #f4f8ff; border: 1px solid #dee9fb; border-radius: 14px;
+  padding: clamp(10px, 1.6svh, 14px) 15px; display: flex; gap: 11px;
+}
+.pw-landing .why .i {
+  width: 32px; height: 32px; border-radius: 9px; background: var(--grad-br);
+  display: grid; place-items: center; flex: none;
+}
+.pw-landing .why b { font-size: 13.5px; font-weight: 600; display: block; }
+.pw-landing .why p { font-size: clamp(12px, 0.95vw, 13px); color: var(--ink-2); line-height: 1.55; margin-top: 3px; }
+.pw-landing .stepper { margin-top: clamp(26px, 3vw, 42px); display: flex; flex-direction: column; }
+.pw-landing .step {
+  display: grid; grid-template-columns: 34px 1fr; gap: 16px; align-items: center;
+  padding: 13px 0; color: var(--muted);
+}
+.pw-landing .step .n {
+  width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line-2);
+  display: grid; place-items: center;
+  font-family: var(--font-pw-mono), ui-monospace, monospace; font-size: 11px; background: #fff;
+}
+.pw-landing .step .t { font-size: clamp(14.5px, 1.2vw, 17px); font-weight: 600; letter-spacing: -0.015em; }
+.pw-landing .step.on { color: var(--ink); }
+.pw-landing .step.on .n { background: var(--grad-br); border-color: transparent; color: #fff; }
+.pw-landing .step .ln { grid-column: 2; height: 1.5px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.pw-landing .step .ln b { display: block; height: 100%; background: var(--grad); transform: scaleX(0); transform-origin: 0 50%; }
+.pw-landing .copyslot { position: relative; margin-top: 24px; min-height: 96px; max-width: 460px; }
+.pw-landing .copyslot p { font-size: clamp(14.5px, 1.15vw, 16.5px); line-height: 1.72; color: var(--ink-2); }
+.pw-landing.is-desk .copyslot p { position: absolute; inset: 0; }
+.pw-landing .copyslot p + p { margin-top: 14px; }
+.pw-landing.is-desk .copyslot p + p { margin-top: 0; }
+
+/* ── 04 elimination: the scoreboard ── */
+.pw-landing .board {
+  display: grid; grid-template-columns: clamp(240px, 24vw, 300px) 1fr;
+  gap: clamp(30px, 4vw, 64px); align-items: center; margin-top: clamp(40px, 5vw, 70px);
+}
+.pw-landing .dial { position: relative; display: grid; place-items: center; }
+.pw-landing .dial .val { position: absolute; text-align: center; }
+.pw-landing .dial .val b { font-size: clamp(42px, 5vw, 62px); font-weight: 800; letter-spacing: -0.05em; line-height: 1; }
+.pw-landing .dial .val small {
+  display: block; font-family: var(--font-pw-mono), ui-monospace, monospace;
+  font-size: 10px; color: var(--muted); margin-top: 6px;
+}
+.pw-landing .odo {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+  background: var(--line); border: 1px solid var(--line); border-radius: 18px; overflow: hidden;
+}
+.pw-landing .od { background: #fff; padding: clamp(18px, 2vw, 26px); }
+.pw-landing .od b { display: block; font-size: clamp(24px, 2.8vw, 38px); font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
+.pw-landing .od small {
+  display: block; font-family: var(--font-pw-mono), ui-monospace, monospace;
+  font-size: 9.5px; color: var(--muted); margin-top: 9px;
+}
+.pw-landing .topics { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+.pw-landing .topics span {
+  border: 1px solid var(--line-2); border-radius: 100px; padding: 8px 15px;
+  font-size: 13px; color: var(--ink-2); background: #fff;
+}
+
+/* ══════════════════ AI guide ══════════════════ */
+.pw-landing .ai {
+  background: linear-gradient(180deg, #ffffff, var(--sky));
+  padding: clamp(80px, 9vw, 140px) 0; position: relative; overflow: hidden;
+  border-top: 1px solid var(--line);
+}
+.pw-landing .ai-in {
+  display: grid; grid-template-columns: 1fr clamp(380px, 40vw, 540px);
+  gap: clamp(36px, 5vw, 80px); align-items: center;
+}
+.pw-landing .ai .lede {
+  color: var(--ink-2); font-size: clamp(15px, 1.2vw, 17.5px);
+  line-height: 1.7; margin-top: 22px; max-width: 440px;
+}
+.pw-landing .aipts {
+  margin-top: 34px; display: flex; flex-direction: column; gap: 1px;
+  background: var(--line); border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
+}
+.pw-landing .aipt { background: #fff; padding: 18px 20px; display: flex; gap: 14px; align-items: flex-start; }
+.pw-landing .aipt .i {
+  width: 34px; height: 34px; border-radius: 10px; background: #eaf3fc;
+  display: grid; place-items: center; color: var(--blue); flex: none;
+}
+.pw-landing .aipt b { font-size: 14.5px; font-weight: 600; display: block; color: var(--ink); }
+.pw-landing .aipt small { font-size: 13.5px; color: var(--ink-2); display: block; margin-top: 3px; line-height: 1.6; }
+.pw-landing .term {
+  background: var(--void); border: 1px solid var(--void-3); border-radius: 22px;
+  overflow: hidden; box-shadow: 0 44px 80px -42px rgba(10, 30, 70, 0.55);
+}
+.pw-landing .term .bar {
+  display: flex; align-items: center; gap: 9px; padding: 14px 18px;
+  border-bottom: 1px solid var(--hair);
+  font-family: var(--font-pw-mono), ui-monospace, monospace; font-size: 10px; color: var(--chalk-3);
+}
+.pw-landing .term .bar i { width: 8px; height: 8px; border-radius: 50%; background: var(--hair); display: block; }
+.pw-landing .term .body {
+  padding: 22px; min-height: clamp(280px, 30vw, 340px);
+  display: flex; flex-direction: column; gap: 14px;
+}
+.pw-landing .ask {
+  align-self: flex-end; background: var(--blue); color: #fff;
+  border-radius: 15px 15px 4px 15px; padding: 11px 15px; font-size: 14px; max-width: 82%;
+}
+.pw-landing .ans {
+  background: var(--void-3); border: 1px solid var(--hair);
+  border-radius: 15px 15px 15px 4px; padding: 15px 17px;
+  font-size: 14px; line-height: 1.7; color: var(--chalk-2); max-width: 92%;
+  /* the scrambled answer resolves into this box; reserve room so nothing jumps */
+  min-height: 7.5em;
+}
+.pw-landing .cite { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.pw-landing .cite span {
+  font-family: var(--font-pw-mono), ui-monospace, monospace; font-size: 9.5px;
+  color: var(--cyan); border: 1px solid rgba(46, 155, 214, 0.3);
+  border-radius: 100px; padding: 4px 10px;
+}
+.pw-landing .term .in {
+  border-top: 1px solid var(--hair); padding: 14px 18px;
+  display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--chalk-3);
+}
+.pw-landing .caret { width: 8px; height: 16px; background: var(--cyan); display: inline-block; vertical-align: -3px; }
+
+/* ══════════════════ closing CTA ══════════════════ */
+.pw-landing .close { background: var(--paper); padding: clamp(70px, 8vw, 120px) 0; }
+.pw-landing .closebox {
+  border-radius: 28px; background: var(--grad-br); color: #fff;
+  padding: clamp(36px, 5vw, 70px); display: grid; grid-template-columns: 1fr auto;
+  gap: 36px; align-items: center; position: relative; overflow: clip;
+}
+.pw-landing .closebox h2 { color: #fff; font-size: clamp(28px, 3.6vw, 48px); }
+.pw-landing .closebox p {
+  color: rgba(255, 255, 255, 0.88); margin-top: 14px;
+  font-size: clamp(14.5px, 1.15vw, 17px); max-width: 520px; line-height: 1.65;
+}
+.pw-landing .closebox .glow {
+  position: absolute; width: 520px; height: 520px; border-radius: 50%;
+  right: -140px; top: -220px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.26), transparent 62%);
+}
+
+/* ══════════════════ ad bands ══════════════════
+   Never animated, never inside a pinned or transformed parent, height reserved.
+   An animated opacity or transform on an ad breaks viewability measurement and
+   risks an AdSense policy violation. */
+.pw-landing .adband {
+  padding: clamp(34px, 4vw, 54px) 0;
+  background: var(--tint);
+  /* above every decorative layer, including the molecule at z-index 3:
+     nothing may paint over an ad unit */
+  position: relative;
+  z-index: 4;
+}
+.pw-landing .adband .ad { max-width: 1240px; margin: 0 auto; padding: 0 var(--gut); text-align: center; }
+.pw-landing .adband .ad > .lbl {
+  display: block; font-family: var(--font-pw-mono), ui-monospace, monospace;
+  font-size: 9.5px; color: var(--muted); margin-bottom: 10px; letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ══════════════════ first-paint guard ══════════════════
+   Elements that GSAP is about to animate in are hidden in the server-rendered
+   markup so they cannot flash at their final position before hydration. The
+   class is removed in the same layout effect that sets their start states, and
+   <noscript> unhides everything for a client that will never run the effect. */
+.pw-landing.is-loading [data-anim],
+.pw-landing.is-loading [data-hero-in] > * ,
+.pw-landing.is-loading .stage { visibility: hidden; }
+
+/* ══════════════════ responsive ══════════════════ */
+@media (max-width: 1024px) {
+  .pw-landing .rail { display: none; }
+  .pw-landing .hero-in,
+  .pw-landing .deck-wrap,
+  .pw-landing .ai-in,
+  .pw-landing .board,
+  .pw-landing .closebox { grid-template-columns: 1fr; }
+  .pw-landing .hero { padding: 40px 0 70px; }
+  .pw-landing .stage { height: 320px; order: 2; margin-top: 34px; }
+  .pw-landing .st-body { grid-template-columns: 1fr; gap: 20px; align-items: start; }
+  .pw-landing .st-top .stage-of { display: none; }
+  .pw-landing .deck { height: auto; min-height: 440px; }
+  .pw-landing .qcard { position: relative; inset: auto; }
+  .pw-landing .qcard.stack { display: none; }
+  .pw-landing .copyslot p { position: static; }
+  .pw-landing .copyslot p + p { margin-top: 14px; }
+  .pw-landing .stepper { display: none; }
+  .pw-landing .odo { grid-template-columns: repeat(2, 1fr); }
+  .pw-landing .irow { grid-template-columns: 34px 1fr; gap: 14px; }
+  .pw-landing .irow .meta { grid-column: 2; font-size: 10.5px; }
+  .pw-landing .closebox { gap: 26px; }
+  .pw-landing .spine, .pw-landing .mol { display: none; }
+  /* touch gets a native swipe rail instead of a pinned scrub */
+  .pw-landing .gal { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .pw-landing .gal::-webkit-scrollbar { display: none; }
+  .pw-landing .gal-track { padding-left: var(--gut); padding-right: var(--gut); }
+}
+
+/* laptop-height screens: tighten the pinned station so the card still fits
+   whole. Desktop only — the station is not pinned below 1025px. */
+@media (min-width: 1025px) and (max-height: 880px) {
+  .pw-landing .station.pin { padding: clamp(82px, 9.8svh, 100px) 0 clamp(16px, 3.2svh, 36px); }
+  .pw-landing .station.pin h2 { font-size: clamp(25px, 2.6vw, 35px); }
+  .pw-landing .station.pin .st-body { margin-top: 12px; }
+  .pw-landing .station.pin .st-body p { font-size: 14px; line-height: 1.6; }
+  .pw-landing .station.pin .deck-wrap { margin-top: 16px; }
+  .pw-landing .station.pin .copyslot { min-height: 72px; margin-top: 12px; }
+  .pw-landing .station.pin .copyslot p { font-size: 14px; line-height: 1.6; }
+  .pw-landing .station.pin .step { padding: 6px 0; }
+  .pw-landing .station.pin .step .n { width: 30px; height: 30px; }
+  .pw-landing .station.pin .deck { height: clamp(300px, 50svh, 430px); }
+  .pw-landing .station.pin .qcard .q { font-size: 15.5px; margin-top: 12px; }
+  .pw-landing .station.pin .opt { padding: 7px 12px; font-size: 13.5px; border-radius: 11px; }
+  .pw-landing .station.pin .opt .k { width: 24px; height: 24px; }
+  .pw-landing .station.pin .opts { gap: 6px; margin-top: 11px; }
+  .pw-landing .station.pin .why { padding: 10px 13px; }
+  .pw-landing .station.pin .why b { font-size: 13px; }
+  .pw-landing .station.pin .why p {
+    font-size: 12px; line-height: 1.5;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .pw-landing .station.pin .why .i { width: 28px; height: 28px; border-radius: 8px; }
+}
+@media (min-width: 1025px) and (max-height: 790px) {
+  .pw-landing .station.pin { padding: clamp(80px, 9vh, 88px) 0 12px; }
+  .pw-landing .station.pin h2 { font-size: clamp(24px, 2.3vw, 30px); }
+  .pw-landing .station.pin .st-body p { font-size: 13.5px; }
+  .pw-landing .station.pin .copyslot { min-height: 64px; }
+  .pw-landing .station.pin .copyslot p { font-size: 13.5px; line-height: 1.55; }
+  .pw-landing .station.pin .deck { height: clamp(300px, 53svh, 420px); }
+  .pw-landing .station.pin .qcard .q { font-size: 15px; margin-top: 10px; }
+  .pw-landing .station.pin .opt { padding: 6px 11px; font-size: 13px; }
+  .pw-landing .station.pin .step { padding: 5px 0; }
+}
+@media (min-width: 1025px) and (max-height: 620px) {
+  .pw-landing .station.pin { min-height: 0; padding: clamp(60px, 8vw, 90px) 0; }
+}
+
+/* ══════════════════ globals.css overrides ══════════════════
+   src/app/globals.css sets three site-wide rules that break this page. They are
+   neutralised here rather than there, because every other route depends on them.
+   1. `html { scroll-behavior: smooth }` desynchronises ScrollTrigger's scrub and
+      makes ScrollToPlugin fight the browser. The class is applied to <html> for
+      as long as this page is mounted.
+   2. `input { background-color: #fff !important }` would repaint the dark
+      terminal mock. This page renders no <input>, so only the guard matters.
+   3. `ul/li` get list bullets and a fixed grey; this page uses no list markup. */
+html.pw-landing-mounted { scroll-behavior: auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pw-landing .rail i b { transform: scaleY(1); }
+  .pw-landing.is-loading [data-anim],
+  .pw-landing.is-loading [data-hero-in] > *,
+  .pw-landing.is-loading .stage { visibility: visible; }
+}

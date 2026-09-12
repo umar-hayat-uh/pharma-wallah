@@ -173,7 +173,7 @@ export default function AuthCTA() {
                   x="0"
                   y="-4"
                   textAnchor="middle"
-                  fontFamily="system-ui, -apple-system, sans-serif"
+                  fontFamily="inherit"
                   fontWeight={800}
                   fontSize="13.5"
                   fill="#1e293b"
@@ -185,7 +185,7 @@ export default function AuthCTA() {
                   x="0"
                   y="15"
                   textAnchor="middle"
-                  fontFamily="system-ui, -apple-system, sans-serif"
+                  fontFamily="inherit"
                   fontWeight={600}
                   fontSize="12"
                   fill="#64748b"
@@ -369,7 +369,7 @@ export default function AuthCTA() {
                   x="0"
                   y="5"
                   textAnchor="middle"
-                  fontFamily="system-ui, -apple-system, sans-serif"
+                  fontFamily="inherit"
                   fontWeight={700}
                   fontSize="13"
                   fill="#ffffff"

@@ -423,7 +423,7 @@ function PrepScene({ reduced }: { reduced: boolean }) {
 
                     {/* Blue alcohol swab packet tab */}
                     <rect x="175" y="62" width="30" height="20" rx="4" fill="#2563EB" opacity="0.9" />
-                    <text x="190" y="76" textAnchor="middle" fill="#FFFFFF" fontSize="9" fontWeight="700" fontFamily="sans-serif">
+                    <text x="190" y="76" textAnchor="middle" fill="#FFFFFF" fontSize="9" fontWeight="700" fontFamily="inherit">
                         70%
                     </text>
                 </motion.g>
@@ -437,7 +437,7 @@ function PrepScene({ reduced }: { reduced: boolean }) {
                     y="4"
                     fill="#1E40AF"
                     fontSize="12"
-                    fontFamily="DM Sans, sans-serif"
+                    fontFamily="inherit"
                     fontWeight="600"
                 >
                     Disinfect & Air-Dry Site with 70% Spirit
@@ -517,7 +517,7 @@ function PunctureScene({ reduced }: { reduced: boolean }) {
                     y="4"
                     fill="#92400E"
                     fontSize="12"
-                    fontFamily="DM Sans, sans-serif"
+                    fontFamily="inherit"
                     fontWeight="600"
                 >
                     Quick, Standardized 3.0mm Puncture
@@ -686,7 +686,7 @@ function BlotScene({ reduced }: { reduced: boolean }) {
                         textAnchor="middle"
                         fill="#94A3B8"
                         fontSize="12"
-                        fontFamily="DM Sans, sans-serif"
+                        fontFamily="inherit"
                         fontWeight="700"
                         opacity="0.4"
                     >
@@ -869,7 +869,7 @@ function ResultScene({ reduced }: { reduced: boolean }) {
                     textAnchor="middle"
                     fill="#0F172A"
                     fontSize="16"
-                    fontFamily="Playfair Display, Georgia, serif"
+                    fontFamily="inherit"
                     fontWeight="700"
                 >
                     Duke's Bleeding Time Spectrum
@@ -939,13 +939,13 @@ function ResultScene({ reduced }: { reduced: boolean }) {
                 ))}
 
                 {/* Zone Labels */}
-                <text x={getX(1)} y="82" textAnchor="middle" fill="#92400E" fontSize="10" fontFamily="DM Sans, sans-serif" fontWeight="700">
+                <text x={getX(1)} y="82" textAnchor="middle" fill="#92400E" fontSize="10" fontFamily="inherit" fontWeight="700">
                     Short
                 </text>
-                <text x={getX(4.5)} y="82" textAnchor="middle" fill="#065F46" fontSize="11" fontFamily="DM Sans, sans-serif" fontWeight="700">
+                <text x={getX(4.5)} y="82" textAnchor="middle" fill="#065F46" fontSize="11" fontFamily="inherit" fontWeight="700">
                     NORMAL RANGE (2–7 min)
                 </text>
-                <text x={getX(8.5)} y="82" textAnchor="middle" fill="#991B1B" fontSize="10" fontFamily="DM Sans, sans-serif" fontWeight="700">
+                <text x={getX(8.5)} y="82" textAnchor="middle" fill="#991B1B" fontSize="10" fontFamily="inherit" fontWeight="700">
                     Prolonged
                 </text>
 
@@ -985,7 +985,7 @@ function ResultScene({ reduced }: { reduced: boolean }) {
                     y="-4"
                     fill="#1E40AF"
                     fontSize="12"
-                    fontFamily="DM Sans, sans-serif"
+                    fontFamily="inherit"
                     fontWeight="700"
                 >
                     Interpretation: Normal Primary Hemostasis
@@ -995,7 +995,7 @@ function ResultScene({ reduced }: { reduced: boolean }) {
                     y="14"
                     fill="#3B82F6"
                     fontSize="11"
-                    fontFamily="DM Sans, sans-serif"
+                    fontFamily="inherit"
                 >
                     Platelet count, vWF activity, & capillary integrity intact.
                 </text>
@@ -1090,13 +1090,13 @@ export default function BleedingTimeLabGuide() {
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased pb-16">
             <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Playfair+Display:wght@600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap");
+        @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&display=swap");
 
-        body {
-          font-family: 'DM Sans', sans-serif;
-        }
+        /* Outfit is the site font; the old Playfair heading face is gone. The
+           font-serif utility is kept and pointed at Outfit so the existing
+           headings do not fall back to the browser's default serif. */
         .font-serif {
-          font-family: 'Playfair Display', Georgia, serif;
+          font-family: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
         }
         .font-mono {
           font-family: 'JetBrains Mono', monospace;

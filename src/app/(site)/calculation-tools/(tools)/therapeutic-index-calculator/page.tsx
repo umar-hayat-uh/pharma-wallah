@@ -1,219 +1,296 @@
 "use client";
-import { useState } from 'react';
-import { BarChart3, RefreshCw, Shield, Info, AlertCircle } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+import { useMemo, useState } from "react";
+import { Shield, RefreshCw } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+    CalculatorShell,
+    CalcSection,
+    FieldGrid,
+    NumberField,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    AdSlot,
+    type ResultTone,
+} from "@/components/calculators";
+
+/**
+ * Safety bands. Thresholds and wording are carried over unchanged — only the
+ * presentation of them has moved from ad-hoc text colours to result tones.
+ */
+type Band = { margin: string; safety: string; tone: ResultTone; interpretation: string };
+
+function bandFor(ti: number): Band {
+    if (ti < 2)
+        return {
+            margin: "Very narrow",
+            safety: "High risk",
+            tone: "danger",
+            interpretation: "Requires close monitoring and precise dosing.",
+        };
+    if (ti < 5)
+        return {
+            margin: "Narrow",
+            safety: "Moderate risk",
+            tone: "warning",
+            interpretation: "Caution required; therapeutic drug monitoring recommended.",
+        };
+    if (ti < 10)
+        return {
+            margin: "Moderate",
+            safety: "Acceptable",
+            tone: "warning",
+            interpretation: "Standard precautions apply.",
+        };
+    return {
+        margin: "Wide",
+        safety: "Safe",
+        tone: "success",
+        interpretation: "Good safety margin.",
+    };
+}
+
+const SAMPLE_DRUGS = [
+    { name: "Digoxin", ED50: "0.8", TD50: "2.0" },
+    { name: "Warfarin", ED50: "1.5", TD50: "3.0" },
+    { name: "Penicillin", ED50: "10", TD50: "500" },
+    { name: "Lithium", ED50: "0.5", TD50: "1.5" },
+    { name: "Aspirin", ED50: "100", TD50: "500" },
+];
+
+const GUIDELINES = [
+    { range: "TI < 2", classification: "Very narrow", monitoring: "Continuous TDM required" },
+    { range: "TI 2–5", classification: "Narrow", monitoring: "Regular TDM recommended" },
+    { range: "TI 5–10", classification: "Moderate", monitoring: "Routine monitoring" },
+    { range: "TI > 10", classification: "Wide", monitoring: "Minimal monitoring" },
+];
 
 export default function TherapeuticIndexCalculator() {
-    const [td50, setTd50] = useState<string>('');
-    const [ed50, setEd50] = useState<string>('');
-    const [drugName, setDrugName] = useState<string>('');
-    const [result, setResult] = useState<{
-        ti: number;
-        margin: string;
-        safety: string;
-        color: string;
-        interpretation: string;
-    } | null>(null);
+    const [td50, setTd50] = useState("");
+    const [ed50, setEd50] = useState("");
 
-    const calculateTI = () => {
+    /*
+     * Computed as you type. The previous version required pressing "Calculate"
+     * and raised a browser `alert()` on bad input — a modal interruption that is
+     * especially jarring on a phone. Validation is now inline and non-blocking.
+     * The formula (TI = TD50 / ED50) and the four bands are unchanged.
+     */
+    const { result, errors } = useMemo(() => {
         const TD50 = parseFloat(td50);
         const ED50 = parseFloat(ed50);
 
-        if (isNaN(TD50) || isNaN(ED50) || TD50 <= 0 || ED50 <= 0) {
-            alert('Please enter valid positive numbers');
-            return;
-        }
+        const errors: { td50?: string; ed50?: string } = {};
+        if (td50 !== "" && (isNaN(TD50) || TD50 <= 0)) errors.td50 = "Enter a number greater than 0.";
+        if (ed50 !== "" && (isNaN(ED50) || ED50 <= 0)) errors.ed50 = "Enter a number greater than 0.";
 
-        const ti = TD50 / ED50; // [citation:4][citation:9]
+        if (isNaN(TD50) || isNaN(ED50) || TD50 <= 0 || ED50 <= 0) return { result: null, errors };
 
-        let margin = '', safety = '', color = '', interpretation = '';
-        if (ti < 2) {
-            margin = 'VERY NARROW';
-            safety = 'HIGH RISK';
-            color = 'text-red-600';
-            interpretation = 'Drug requires close monitoring and precise dosing.';
-        } else if (ti < 5) {
-            margin = 'NARROW';
-            safety = 'MODERATE RISK';
-            color = 'text-orange-600';
-            interpretation = 'Caution required, therapeutic drug monitoring recommended.';
-        } else if (ti < 10) {
-            margin = 'MODERATE';
-            safety = 'ACCEPTABLE';
-            color = 'text-yellow-600';
-            interpretation = 'Standard precautions apply.';
-        } else {
-            margin = 'WIDE';
-            safety = 'SAFE';
-            color = 'text-green-600';
-            interpretation = 'Drug has good safety margin.';
-        }
+        const ti = TD50 / ED50;
+        return { result: { ti, TD50, ED50, ...bandFor(ti) }, errors };
+    }, [td50, ed50]);
 
-        setResult({ ti, margin, safety, color, interpretation });
-    };
-
-    const reset = () => {
-        setTd50('');
-        setEd50('');
-        setDrugName('');
-        setResult(null);
-    };
-
-    const sampleDrugs = [
-        { name: 'Digoxin', ED50: '0.8', TD50: '2.0', TI: '2.5', safety: 'Narrow' },
-        { name: 'Warfarin', ED50: '1.5', TD50: '3.0', TI: '2.0', safety: 'Very Narrow' },
-        { name: 'Penicillin', ED50: '10', TD50: '500', TI: '50', safety: 'Wide' },
-        { name: 'Lithium', ED50: '0.5', TD50: '1.5', TI: '3.0', safety: 'Narrow' },
-        { name: 'Aspirin', ED50: '100', TD50: '500', TI: '5.0', safety: 'Moderate' },
-    ];
-
-    const safetyGuidelines = [
-        { range: 'TI < 2', classification: 'Very Narrow', monitoring: 'Continuous TDM required' },
-        { range: 'TI 2–5', classification: 'Narrow', monitoring: 'Regular TDM recommended' },
-        { range: 'TI 5–10', classification: 'Moderate', monitoring: 'Routine monitoring' },
-        { range: 'TI > 10', classification: 'Wide', monitoring: 'Minimal monitoring' },
-    ];
+    const chartData = result
+        ? [
+              { name: "ED50", value: result.ED50, fill: "#1C7BD9" },
+              { name: "TD50", value: result.TD50, fill: "#ef4444" },
+          ]
+        : [];
 
     return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 pt-20">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6 md:mb-8">
-                    <div className="flex flex-col md:flex-row items-center justify-between">
-                        <div className="flex items-center mb-4 md:mb-0">
-                            <div className="bg-white/20 p-3 rounded-xl mr-4">
-                                <Shield className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-white">Therapeutic Index Calculator</h1>
-                                <p className="text-blue-100 mt-2">TI = TD₅₀ / ED₅₀ – safety margin</p>
-                            </div>
-                        </div>
+        <CalculatorShell
+            title="Therapeutic Index Calculator"
+            subtitle="How much room there is between an effective dose and a toxic one."
+            icon={Shield}
+            aside={
+                <>
+                    <CalcAbout title="About the therapeutic index">
+                        <p>
+                            The therapeutic index is the classic measure of a drug&apos;s margin of
+                            safety: how far apart the dose that helps and the dose that harms actually
+                            are. A large index means an ordinary dosing error is unlikely to hurt
+                            anyone; a small one means the two doses nearly touch.
+                        </p>
+                        <CalcList
+                            title="Drugs with a narrow index"
+                            items={[
+                                "Digoxin, lithium and warfarin",
+                                "Phenytoin, carbamazepine and theophylline",
+                                "Aminoglycosides such as gentamicin",
+                                "Most cytotoxic chemotherapy agents",
+                            ]}
+                        />
+                        <CalcList
+                            tone="caution"
+                            title="Limits of this number"
+                            items={[
+                                "It is a population average and says nothing about one patient",
+                                "It ignores how steep the dose–response curves are",
+                                "Human values are usually extrapolated from animal data",
+                                "Clinically, the therapeutic window from real plasma levels matters more",
+                            ]}
+                        />
+                    </CalcAbout>
+
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+                </>
+            }
+        >
+            <ResultCard
+                label="Therapeutic index"
+                value={result ? result.ti.toFixed(2) : null}
+                interpretation={result ? `${result.margin} margin — ${result.interpretation}` : undefined}
+                tone={result?.tone ?? "neutral"}
+                empty="Enter ED50 and TD50 to see the therapeutic index."
+            />
+
+            <CalcSection title="Dose values" description="Both must be in the same units.">
+                <FieldGrid>
+                    <NumberField
+                        label="ED50 (effective dose, 50%)"
+                        value={ed50}
+                        onChange={setEd50}
+                        placeholder="e.g. 0.8"
+                        step="any"
+                        min={0}
+                        error={errors.ed50}
+                        hint="Dose producing the desired effect in half the population."
+                    />
+                    <NumberField
+                        label="TD50 (toxic dose, 50%)"
+                        value={td50}
+                        onChange={setTd50}
+                        placeholder="e.g. 2.0"
+                        step="any"
+                        min={0}
+                        error={errors.td50}
+                        hint="Dose producing toxicity in half the population."
+                    />
+                </FieldGrid>
+
+                <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Try a known drug</p>
+                    <div className="flex flex-wrap gap-2">
+                        {SAMPLE_DRUGS.map((drug) => (
+                            <button
+                                key={drug.name}
+                                type="button"
+                                onClick={() => {
+                                    setEd50(drug.ED50);
+                                    setTd50(drug.TD50);
+                                }}
+                                className="rounded-full border bg-background px-3 py-2 text-xs font-medium active:bg-accent"
+                            >
+                                {drug.name}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Inputs */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h2 className="text-xl font-bold text-gray-800 mb-6">Enter Doses</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">ED₅₀ (mg/kg)</label>
-                                    <input type="number" step="0.001" value={ed50} onChange={(e) => setEd50(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-green-200 rounded-lg" />
-                                    <p className="text-xs text-gray-500 mt-1">Dose effective in 50% of population</p>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">TD₅₀ / LD₅₀ (mg/kg)</label>
-                                    <input type="number" step="0.001" value={td50} onChange={(e) => setTd50(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-red-200 rounded-lg" />
-                                </div>
-                                <div className="col-span-2">
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Drug Name</label>
-                                    <input type="text" value={drugName} onChange={(e) => setDrugName(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg" />
-                                </div>
-                            </div>
+                <Button
+                    variant="outline"
+                    onClick={() => {
+                        setTd50("");
+                        setEd50("");
+                    }}
+                    className="w-full"
+                >
+                    <RefreshCw />
+                    Reset
+                </Button>
+            </CalcSection>
 
-                            {/* Sample Drugs */}
-                            <div className="mt-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-4">
-                                <h3 className="font-semibold text-gray-800 mb-3">Example Drugs</h3>
-                                <div className="grid grid-cols-5 gap-2">
-                                    {sampleDrugs.map((drug, idx) => (
-                                        <button key={idx} onClick={() => { setEd50(drug.ED50); setTd50(drug.TD50); setDrugName(drug.name); }}
-                                            className="bg-white p-2 rounded-lg text-xs hover:bg-blue-100">
-                                            <div className="font-semibold">{drug.name}</div>
-                                            <div>TI {drug.TI}</div>
-                                        </button>
+            {result && (
+                <CalcSection title="Dose comparison">
+                    {/* ResponsiveContainer keeps the chart inside the viewport on a
+                        phone; the old fixed-width chart forced sideways scrolling. */}
+                    <div className="h-52 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                                <XAxis dataKey="name" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+                                <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+                                <Tooltip
+                                    contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 13 }}
+                                />
+                                <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                                    {chartData.map((entry) => (
+                                        <Cell key={entry.name} fill={entry.fill} />
                                     ))}
-                                </div>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="flex gap-4 mt-6">
-                                <button onClick={calculateTI}
-                                    className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 px-6 rounded-xl shadow-lg">
-                                    Calculate TI
-                                </button>
-                                <button onClick={reset}
-                                    className="px-6 bg-gray-600 hover:bg-gray-700 text-white rounded-xl">
-                                    <RefreshCw className="w-5 h-5" />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Safety Guidelines Table */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">TI Safety Guidelines</h3>
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="bg-gray-50">
-                                        <th className="py-2 px-4 text-left">TI Range</th>
-                                        <th className="py-2 px-4 text-left">Classification</th>
-                                        <th className="py-2 px-4 text-left">Monitoring</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {safetyGuidelines.map((g, i) => (
-                                        <tr key={i} className="border-b">
-                                            <td className="py-2 px-4">{g.range}</td>
-                                            <td className="py-2 px-4">{g.classification}</td>
-                                            <td className="py-2 px-4">{g.monitoring}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
                     </div>
 
-                    {/* Results & Info */}
-                    <div className="space-y-6">
-                        {result && (
-                            <div className="bg-gradient-to-br from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 text-white">
-                                <h2 className="text-2xl font-bold mb-4">Therapeutic Index</h2>
-                                <div className="bg-white/20 rounded-xl p-6 text-center">
-                                    <div className="text-5xl font-bold">{result.ti.toFixed(2)}</div>
-                                    <div className={`mt-2 text-xl font-bold ${result.color}`}>{result.margin} MARGIN</div>
-                                </div>
-                                <div className="mt-4 p-4 bg-white/10 rounded-lg">
-                                    <p className="text-sm">{result.interpretation}</p>
-                                    <p className="text-sm mt-2"><strong>Safety:</strong> {result.safety}</p>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* TI Bar Chart */}
-                        {result && (
-                            <div className="bg-white rounded-2xl shadow-lg p-6">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4">Therapeutic Window</h3>
-                                <div className="h-24">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart layout="vertical" data={[{ name: 'Therapeutic', ED: 1, TD: result.ti }]}>
-                                            <CartesianGrid horizontal={false} />
-                                            <XAxis type="number" domain={[0, Math.max(result.ti * 1.5, 10)]} />
-                                            <YAxis type="category" dataKey="name" hide />
-                                            <Tooltip />
-                                            <Bar dataKey="ED" fill="#3b82f6" stackId="a" />
-                                            <Bar dataKey="TD" fill="#ef4444" stackId="a" />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-2">Red = toxic dose, Blue = effective dose</p>
-                            </div>
-                        )}
-
-                        {/* Notes */}
-                        <div className="bg-yellow-50 rounded-2xl shadow-lg p-6 border border-yellow-200">
-                            <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center">
-                                <AlertCircle className="w-5 h-5 mr-2 text-yellow-600" />
-                                Note
-                            </h3>
-                            <p className="text-sm text-gray-700">TI derived from quantal dose‑response curves in animals [citation:4][citation:9]. For humans, therapeutic window based on population data.</p>
-                        </div>
+                    <div>
+                        <ResultRow label="ED50" value={result.ED50} />
+                        <ResultRow label="TD50" value={result.TD50} />
+                        <ResultRow
+                            label="Safety classification"
+                            value={result.safety}
+                            badge={result.margin}
+                            badgeTone={result.tone === "success" ? "success" : result.tone === "danger" ? "destructive" : "warning"}
+                        />
                     </div>
+                </CalcSection>
+            )}
+
+            <CalcSection title="Monitoring guide">
+                <div className="-my-2.5">
+                    {GUIDELINES.map((guideline) => (
+                        <ResultRow
+                            key={guideline.range}
+                            label={`${guideline.range} · ${guideline.classification}`}
+                            value={guideline.monitoring}
+                        />
+                    ))}
                 </div>
-            </div>
-        </section>
+            </CalcSection>
+
+            <FormulaNote>
+                <Formula>Therapeutic index (TI) = TD50 ÷ ED50</Formula>
+                <p>
+                    ED50 is the dose that produces the desired effect in 50% of a population; TD50 is
+                    the dose that produces toxicity in 50%. Their ratio describes how much margin for
+                    error a drug allows.
+                </p>
+                <p>
+                    A large TI means a dosing mistake is unlikely to cause harm. A small one — digoxin,
+                    warfarin, lithium — means the effective and toxic doses are close together, which
+                    is why those drugs need therapeutic drug monitoring.
+                </p>
+            </FormulaNote>
+
+            <CalcFaq
+                items={[
+                    {
+                        q: "What is a 'good' therapeutic index?",
+                        a: "There is no formal cut-off, but above 10 is generally treated as a comfortable margin and below 2 as dangerous. Regulators tend to describe a drug as narrow-therapeutic-index when small changes in dose or blood level produce serious changes in effect.",
+                    },
+                    {
+                        q: "How is this different from the therapeutic window?",
+                        a: "The therapeutic index is a ratio of two doses derived from population curves. The therapeutic window is the range of actual plasma concentrations that are effective without being toxic — that is what therapeutic drug monitoring measures in a real patient.",
+                    },
+                    {
+                        q: "What are ED50 and TD50 exactly?",
+                        a: "ED50 is the dose producing the desired effect in 50% of the population; TD50 is the dose producing toxicity in 50%. Both come from fitting dose–response curves, and both must be expressed in the same units for the ratio to mean anything.",
+                    },
+                    {
+                        q: "Why do some textbooks use LD50 instead of TD50?",
+                        a: "The older definition used LD50, the lethal dose in 50% of animals, giving TI = LD50 ÷ ED50. TD50 is preferred in human pharmacology because the clinically relevant boundary is toxicity, not death.",
+                    },
+                    {
+                        q: "Can the index be less than 1?",
+                        a: "Arithmetically yes, if the toxic dose is lower than the effective one — which is why some otherwise effective compounds never become medicines. Certain cytotoxic drugs run close to this and are only justified by the severity of the disease.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
     );
 }

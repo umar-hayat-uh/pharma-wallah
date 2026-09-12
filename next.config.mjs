@@ -1,9 +1,6 @@
 // next.config.mjs
 
-import withPWAInit from "next-pwa";
-
 /** @type {import('next').NextConfig} */
-
 const nextConfig = {
   reactStrictMode: true,
 
@@ -23,20 +20,8 @@ const nextConfig = {
   },
 };
 
-const withPWA = withPWAInit({
-  dest: "public",
-  register: true,
-  skipWaiting: true,
-  clientsClaim: true,
-
-  disable: process.env.NODE_ENV === "development",
-
-  runtimeCaching: [],
-
-  exclude: [
-    ({ asset }) => asset.name.startsWith("server/"),
-    ({ size }) => size > 500000,
-  ],
-});
-
-export default withPWA(nextConfig);
+// next-pwa was removed on 2026-09-12: the offline story is now the real Android
+// app (see mobile/ and android/), and a service worker on top of it only added a
+// stale-cache failure mode plus an "Install app" prompt competing with the APK.
+// public/sw.js is now a self-destructing worker — see the comment in that file.
+export default nextConfig;

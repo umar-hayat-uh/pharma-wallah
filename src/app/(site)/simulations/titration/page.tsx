@@ -406,7 +406,7 @@ const BuretteSVG: React.FC<BuretteProps> = ({ fillPercent, tapOpen }) => {
           y="105"
           fontSize="12"
           fill="#37474f"
-          fontFamily="Arial"
+          fontFamily="inherit"
           fontWeight="bold"
         >
           0
@@ -416,7 +416,7 @@ const BuretteSVG: React.FC<BuretteProps> = ({ fillPercent, tapOpen }) => {
           y="185"
           fontSize="12"
           fill="#37474f"
-          fontFamily="Arial"
+          fontFamily="inherit"
           fontWeight="bold"
         >
           10
@@ -426,7 +426,7 @@ const BuretteSVG: React.FC<BuretteProps> = ({ fillPercent, tapOpen }) => {
           y="265"
           fontSize="12"
           fill="#37474f"
-          fontFamily="Arial"
+          fontFamily="inherit"
           fontWeight="bold"
         >
           20
@@ -436,7 +436,7 @@ const BuretteSVG: React.FC<BuretteProps> = ({ fillPercent, tapOpen }) => {
           y="345"
           fontSize="12"
           fill="#37474f"
-          fontFamily="Arial"
+          fontFamily="inherit"
           fontWeight="bold"
         >
           30
@@ -446,7 +446,7 @@ const BuretteSVG: React.FC<BuretteProps> = ({ fillPercent, tapOpen }) => {
           y="425"
           fontSize="12"
           fill="#37474f"
-          fontFamily="Arial"
+          fontFamily="inherit"
           fontWeight="bold"
         >
           40
@@ -456,7 +456,7 @@ const BuretteSVG: React.FC<BuretteProps> = ({ fillPercent, tapOpen }) => {
           y="485"
           fontSize="12"
           fill="#37474f"
-          fontFamily="Arial"
+          fontFamily="inherit"
           fontWeight="bold"
         >
           50
@@ -652,7 +652,7 @@ const IndicatorBottleSVG: React.FC = () => {
         y="75"
         fontSize="10"
         fill="#1e293b"
-        fontFamily="Arial"
+        fontFamily="inherit"
         fontWeight="bold"
         textAnchor="middle"
       >

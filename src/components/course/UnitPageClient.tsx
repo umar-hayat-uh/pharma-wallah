@@ -18,6 +18,7 @@ import MarkdownRenderer from "./MarkdownRenderer";
 import PdfDownloadButton from "./PdfDownloadButton";
 import Comments from "@/components/course/Comments";
 import ImageZoom from "@/components/ui/ImageZoom";
+import { AdSlot } from "@/components/calculators/AdSlot";
 
 interface Props {
   subject: SubjectMeta;
@@ -197,6 +198,17 @@ export default function UnitPageClient({
                   footerLabel={`${unit.title} · pharmawallah.com`}
                   gradientClass={GRAD}
                 />
+              </div>
+            )}
+
+            {/* Ad placement.
+                Deliberately outside the `printRef` block above, or it would be
+                rasterised into the downloaded PDF. Rendered only when the
+                lesson actually loaded: AdSense forbids ads on a page with no
+                content, and the no-content branch is exactly that. */}
+            {content && (
+              <div className="mt-8 max-w-4xl mx-auto">
+                <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LESSON} />
               </div>
             )}
 

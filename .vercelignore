@@ -1,0 +1,6 @@
+# The Android app is not part of the web deployment.
+# `mobile/` is a separate Next.js project root built by `npm run mobile:build`,
+# and `android/` is the native Capacitor project. Vercel builds neither, so
+# keep them out of the upload entirely.
+mobile
+android

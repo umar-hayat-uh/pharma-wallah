@@ -3,6 +3,15 @@ import { useState, useEffect } from 'react';
 import { Beaker, Calculator, RefreshCw, Info, BookOpen, AlertCircle, Activity, Scale, Camera, Loader2, CheckCircle2, XCircle, ImageOff } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
+/**
+ * Where the colony-scan API lives. Empty on the web, where the route is served
+ * from the same origin. The Android build (mobile/) is a static export served
+ * by Capacitor from https://localhost, which has no /api — so `npm run
+ * mobile:build` sets NEXT_PUBLIC_API_BASE_URL to the deployed site's origin.
+ * Public origin only; never a key.
+ */
+const SCAN_API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
+
 export default function CFUCalculator() {
     const [dilutionFactor, setDilutionFactor] = useState<string>('100');
     const [colonyCount, setColonyCount] = useState<string>('');
@@ -147,12 +156,22 @@ export default function CFUCalculator() {
 
     const handleScanImage = async () => {
         if (!imageBase64) return;
+
+        // This is the only calculator that cannot work offline: colony counting
+        // runs on the Gemini-backed /api/scan-colonies route. Inside the Android
+        // app there is no local server, so fail with an explanation rather than
+        // a generic network error — the manual count field still works.
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+            setScanError("Photo scanning needs an internet connection. You're offline — enter the colony count manually below and the rest of this calculator still works.");
+            return;
+        }
+
         setIsScanning(true);
         setScanError(null);
         setScanResult(null);
 
         try {
-            const response = await fetch('/api/scan-colonies', {
+            const response = await fetch(`${SCAN_API_BASE}/api/scan-colonies`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

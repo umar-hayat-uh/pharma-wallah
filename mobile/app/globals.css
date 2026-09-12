@@ -1,0 +1,174 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * shadcn/ui design tokens, tuned to the PharmaWallah brand.
+ * `--primary` is brandBlue (#1C7BD9) expressed in HSL, so shadcn components
+ * and the existing calculator markup share one accent colour.
+ *
+ * This file replaces src/app/globals.css for the Android build. That is safe:
+ * none of the 89 calculators uses a custom class defined there (styled-table,
+ * slick-dots, animate-blob, animate-fadeInUp, animation-delay-2000) — they use
+ * core Tailwind utilities only. Verified 2026-09-12.
+ */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* brandBlue #1C7BD9 */
+    --primary: 210 77% 48%;
+    --primary-foreground: 0 0% 100%;
+
+    /* brandGreen #21B67A */
+    --secondary: 156 69% 42%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 210 77% 48%;
+
+    --radius: 0.75rem;
+
+    /* The app bar is sticky but in flow, unlike the website's fixed header. */
+    --calc-top-offset: 0rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    /* Stop Android's pull-to-refresh from firing inside a scrolled calculator. */
+    overscroll-behavior-y: contain;
+  }
+
+  /* The tap highlight looks like a rendering bug on card grids. */
+  a,
+  button {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* ── Startup splash ────────────────────────────────────────────────────────
+ * Keyframes rather than a JS animation library on purpose: this markup is in
+ * the prerendered HTML, so the animation runs on the first paint, before any
+ * JavaScript has executed. See mobile/app/_components/StartupSplash.tsx.
+ *
+ * The background matches the native launch screen (@color/pwBrandBlue) and the
+ * WebView background in capacitor.config.ts, so startup is one continuous
+ * colour instead of a black flash.
+ */
+.pw-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  background: hsl(var(--primary));
+  color: #fff;
+  opacity: 1;
+  transition: opacity 420ms ease-out;
+}
+
+.pw-splash[data-leaving="true"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pw-splash__mark {
+  display: grid;
+  place-items: center;
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.16);
+  animation: pw-splash-mark 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.pw-splash__mark > svg {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.pw-splash__wordmark {
+  text-align: center;
+  animation: pw-splash-rise 600ms cubic-bezier(0.22, 1, 0.36, 1) 160ms both;
+}
+
+.pw-splash__name {
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.pw-splash__tagline {
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.pw-splash__bar {
+  width: 7rem;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  animation: pw-splash-rise 600ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both;
+}
+
+.pw-splash__bar > span {
+  display: block;
+  width: 45%;
+  height: 100%;
+  border-radius: inherit;
+  background: #fff;
+  animation: pw-splash-sweep 1s ease-in-out infinite;
+}
+
+@keyframes pw-splash-mark {
+  from { opacity: 0; transform: scale(0.82); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pw-splash-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pw-splash-sweep {
+  0%   { transform: translateX(-110%); }
+  100% { transform: translateX(240%); }
+}
+
+/* Respect the system setting: show the same screen, just without motion. */
+@media (prefers-reduced-motion: reduce) {
+  .pw-splash__mark,
+  .pw-splash__wordmark,
+  .pw-splash__bar,
+  .pw-splash__bar > span {
+    animation: none;
+  }
+}

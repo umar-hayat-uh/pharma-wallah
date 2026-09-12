@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookOpen, Clock, ChevronRight, GraduationCap, Zap, Play, Layers, Sparkles, Trophy } from "lucide-react";
 import { SUBJECTS, getSubject } from "@/lib/courses/registry";
+import { AdSlot } from "@/components/calculators/AdSlot";
 import type { Metadata } from "next";
 
 interface Params {
@@ -130,6 +131,12 @@ export default function SubjectPage({ params }: { params: Params }) {
               </div>
             </Link>
           ))}
+        </div>
+
+        {/* Ad placement: below the unit grid, so it never competes with the
+            list a visitor is choosing from. */}
+        <div className="mt-12">
+          <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LIST} format="horizontal" />
         </div>
       </div>
     </section>

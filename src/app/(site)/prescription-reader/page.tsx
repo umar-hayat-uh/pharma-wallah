@@ -77,7 +77,7 @@ export default function PrescriptionReaderPage() {
         pdfContent.style.width = "800px";
         pdfContent.style.padding = "40px";
         pdfContent.style.backgroundColor = "#ffffff";
-        pdfContent.style.fontFamily = "'Helvetica', 'Arial', sans-serif";
+        pdfContent.style.fontFamily = "var(--font-outfit), 'Helvetica', 'Arial', sans-serif";
         pdfContent.style.color = "#1e293b";
         pdfContent.style.position = "absolute";
         pdfContent.style.top = "-9999px";

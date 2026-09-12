@@ -250,17 +250,17 @@ function PetriDish({ org, placedDisks, diskPositions, measuredZones, streaks, ag
                         <circle cx={px} cy={py} r="11" fill="url(#dgrad)" stroke={dk.color} strokeWidth="2.5" />
                         <circle cx={px} cy={py} r="7" fill={dk.color} fillOpacity="0.11" />
                         <circle cx={px} cy={py} r="3" fill={dk.color} fillOpacity="0.28" />
-                        <text x={px} y={py + 1.5} fontSize="5.5" textAnchor="middle" dominantBaseline="middle" fill={dk.color} fontWeight="900" fontFamily="system-ui">{id}</text>
+                        <text x={px} y={py + 1.5} fontSize="5.5" textAnchor="middle" dominantBaseline="middle" fill={dk.color} fontWeight="900" fontFamily="inherit">{id}</text>
                         <circle cx={px - 3} cy={py - 3} r="2.5" fill="rgba(255,255,255,0.48)" />
                         {measured && incubDone && <>
                             <rect x={px - 13} y={py + 13} width="26" height="8" rx="4" fill={col} />
-                            <text x={px} y={py + 17.5} fontSize="4.5" textAnchor="middle" dominantBaseline="middle" fill="white" fontWeight="800" fontFamily="system-ui">{zone}mm·{res}</text>
+                            <text x={px} y={py + 17.5} fontSize="4.5" textAnchor="middle" dominantBaseline="middle" fill="white" fontWeight="800" fontFamily="inherit">{zone}mm·{res}</text>
                         </>}
                     </g>
                 );
             })}
 
-            {!agarPoured && <text x="100" y="105" fontSize="10" textAnchor="middle" fill="#94a3b8" fontFamily="system-ui">Empty Petri Dish</text>}
+            {!agarPoured && <text x="100" y="105" fontSize="10" textAnchor="middle" fill="#94a3b8" fontFamily="inherit">Empty Petri Dish</text>}
             <circle cx="100" cy="100" r="88" fill="url(#glare)" clipPath="url(#inner)" />
             <circle cx="100" cy="100" r="95" fill="url(#grrim)" clipPath="url(#plate)" />
             <circle cx="100" cy="100" r="88" fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth="3.5" />
@@ -284,7 +284,7 @@ function IncubatorSVG({ progress, org, disks, done, doorOpen, plateLoaded }: {
             <rect x="4" y="4" width="172" height="202" rx="12" fill="url(#ib)" stroke="#a8a29e" strokeWidth="1.5" filter="url(#ish)" />
             <rect x="4" y="4" width="172" height="24" rx="12" fill="#44403c" />
             <rect x="4" y="18" width="172" height="10" fill="#44403c" />
-            <text x="90" y="19" fontSize="8" textAnchor="middle" fill="#a8a29e" fontFamily="system-ui" fontWeight="700" letterSpacing="2">PHARMAWALLAH</text>
+            <text x="90" y="19" fontSize="8" textAnchor="middle" fill="#a8a29e" fontFamily="inherit" fontWeight="700" letterSpacing="2">PHARMAWALLAH</text>
             <text x="90" y="29" fontSize="5" textAnchor="middle" fill="#78716c" fontFamily="monospace">INCUBATOR 35°C</text>
             {/* Door frame */}
             <rect x="14" y="34" width="152" height="130" rx="8" fill="#57534e" stroke="#44403c" strokeWidth="1.5" />
@@ -308,8 +308,8 @@ function IncubatorSVG({ progress, org, disks, done, doorOpen, plateLoaded }: {
             )}
             {/* Door open state */}
             {doorOpen && <>
-                <text x="90" y="85" fontSize="7.5" textAnchor="middle" fill="#78716c" fontFamily="system-ui">Door Open</text>
-                <text x="90" y="97" fontSize="6" textAnchor="middle" fill="#57534e" fontFamily="system-ui">{plateLoaded ? 'Plate loaded ✓' : 'Tap "Load Plate" button'}</text>
+                <text x="90" y="85" fontSize="7.5" textAnchor="middle" fill="#78716c" fontFamily="inherit">Door Open</text>
+                <text x="90" y="97" fontSize="6" textAnchor="middle" fill="#57534e" fontFamily="inherit">{plateLoaded ? 'Plate loaded ✓' : 'Tap "Load Plate" button'}</text>
                 <ellipse cx="90" cy="112" rx="42" ry="16" fill={plateLoaded ? '#16a34a22' : 'none'} stroke={plateLoaded ? '#16a34a' : '#3b82f6'} strokeWidth="1.5" strokeDasharray={plateLoaded ? 'none' : '4,3'} opacity="0.6" />
                 {plateLoaded && <text x="90" y="116" fontSize="5" textAnchor="middle" fill="#16a34a" fontWeight="700">🧫 Plate inside</text>}
             </>}
@@ -331,7 +331,7 @@ function IncubatorSVG({ progress, org, disks, done, doorOpen, plateLoaded }: {
                 {done ? 'COMPLETE ✓' : progress > 0 ? `${Math.round(progress)}% · ${(progress / 100 * 18).toFixed(1)}h` : 'STANDBY'}
             </text>
             {[['PWR', '#4ade80'], ['HEAT', progress > 0 ? '#f97316' : '#374151'], ['DONE', done ? '#4ade80' : '#374151']].map(([l, c], i) => (
-                <g key={l as string}><circle cx={116 + i * 18} cy={182} r="4" fill={c as string} /><text x={116 + i * 18} y="193" fontSize="3.5" textAnchor="middle" fill="#6b7280" fontFamily="system-ui">{l}</text></g>
+                <g key={l as string}><circle cx={116 + i * 18} cy={182} r="4" fill={c as string} /><text x={116 + i * 18} y="193" fontSize="3.5" textAnchor="middle" fill="#6b7280" fontFamily="inherit">{l}</text></g>
             ))}
             <rect x="10" y="200" width="160" height="4" rx="2" fill="#374151" />
             <rect x="10" y="200" width={160 * (progress / 100)} height="4" rx="2" fill="url(#ip)" />
@@ -386,11 +386,11 @@ function AgarBottle({ selected }: { selected: boolean }) {
             <circle cx="42" cy="110" r="2.5" fill="rgba(255,255,255,0.32)" />
             <rect x="12" y="60" width="46" height="58" rx="5" fill="white" fillOpacity="0.9" />
             <rect x="13" y="61" width="44" height="56" rx="4" fill="#f0fdf4" stroke="#86efac" strokeWidth="0.8" />
-            <text x="35" y="76" fontSize="9" textAnchor="middle" fill="#15803d" fontWeight="900" fontFamily="system-ui">MHA</text>
+            <text x="35" y="76" fontSize="9" textAnchor="middle" fill="#15803d" fontWeight="900" fontFamily="inherit">MHA</text>
             <line x1="16" y1="80" x2="54" y2="80" stroke="#86efac" strokeWidth="0.8" />
-            <text x="35" y="88" fontSize="5.5" textAnchor="middle" fill="#166534" fontFamily="system-ui">Mueller-Hinton</text>
-            <text x="35" y="96" fontSize="5" textAnchor="middle" fill="#15803d" fontFamily="system-ui">Agar · 500 mL</text>
-            <text x="35" y="104" fontSize="4.5" textAnchor="middle" fill="#4ade80" fontFamily="system-ui">pH 7.2–7.4</text>
+            <text x="35" y="88" fontSize="5.5" textAnchor="middle" fill="#166534" fontFamily="inherit">Mueller-Hinton</text>
+            <text x="35" y="96" fontSize="5" textAnchor="middle" fill="#15803d" fontFamily="inherit">Agar · 500 mL</text>
+            <text x="35" y="104" fontSize="4.5" textAnchor="middle" fill="#4ade80" fontFamily="inherit">pH 7.2–7.4</text>
             <rect x="10" y="36" width="10" height="110" rx="6" fill="url(#aghi)" opacity="0.7" />
         </svg>
     );

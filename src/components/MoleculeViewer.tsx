@@ -138,7 +138,7 @@ const T = {
     success: '#10b981', successBg: 'rgba(16,185,129,0.07)',
     danger: '#ef4444', dangerBg: 'rgba(239,68,68,0.06)', dangerText: '#b91c1c',
     warn: '#f59e0b', warnBg: 'rgba(245,158,11,0.08)',
-    font: "'Inter','Segoe UI',system-ui,-apple-system,sans-serif",
+    font: "var(--font-outfit),'Inter','Segoe UI',system-ui,-apple-system,sans-serif",
 };
 
 /* ================================================================

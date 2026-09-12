@@ -343,7 +343,7 @@ function Logo({ size = 34 }: LogoProps) {
             <span
                 className="font-bold text-gray-800"
                 style={{
-                    fontFamily: "'Playfair Display', serif",
+                    fontFamily: "var(--font-outfit), ui-sans-serif, system-ui, sans-serif",
                     fontSize: size * 0.44,
                 }}
             >

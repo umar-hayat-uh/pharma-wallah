@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Shown by the system from the moment the icon is tapped until the WebView paints.
+  A solid brand colour rather than an image means no scaling artefacts across
+  densities and no black gap: the web splash that follows uses the same colour.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/pwBrandBlue" />
+    <item
+        android:width="132dp"
+        android:height="132dp"
+        android:gravity="center"
+        android:drawable="@mipmap/ic_launcher" />
+</layer-list>

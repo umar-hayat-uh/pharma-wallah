@@ -96,9 +96,8 @@ const smiles3DUrl = (smiles: string) =>
 // All CSS — responsive breakpoints injected via <style>
 // ─────────────────────────────────────────────────────────────────────────────
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
   .dc * { box-sizing: border-box; margin: 0; padding: 0; }
-  .dc { font-family: 'DM Sans', -apple-system, sans-serif; }
+  .dc { font-family: var(--font-outfit), -apple-system, sans-serif; }
   @keyframes dc-spin { to { transform: rotate(360deg); } }
 
   /* Layouts */

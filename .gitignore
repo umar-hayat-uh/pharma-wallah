@@ -38,3 +38,18 @@ next-env.d.ts
 .env
 .clerk/
 wget-log
+
+# android app (Capacitor) — build output and generated route tree.
+# The calculators themselves live in src/; mobile/app/calculation-tools/<slug>/
+# and mobile/app/_generated/ are re-emitted by scripts/generate-mobile-routes.mjs
+# on every `npm run mobile:build`, so they are not tracked.
+/mobile/.next/
+/mobile/out/
+/mobile/next-env.d.ts
+/mobile/app/_generated/
+/mobile/app/calculation-tools/*/
+
+# android signing — keys and passwords must never be committed
+android/keystore.properties
+*.jks
+*.keystore

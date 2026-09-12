@@ -9,10 +9,10 @@ export const TypographyConfiguration = () => {
         </p>
         <div className="py-4 px-3 rounded-md bg-dark_grey mt-8">
           <p className="text-sm text-gray-400 flex flex-col gap-2 mb-3">
-            {`import { Poppins } from "next/font/google";`}
+            {`import { Outfit } from "next/font/google";`}
           </p>
           <p className="text-sm text-gray-400 flex flex-col gap-2">
-            {`const font = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"], });`}
+            {`const font = Outfit({ subsets: ["latin"], display: "swap", variable: "--font-outfit" });`}
           </p>
         </div>
       </div>

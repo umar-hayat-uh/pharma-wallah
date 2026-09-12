@@ -2,6 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * shadcn/ui design tokens, expressed in the existing brand colours:
+ *   --primary   = brandBlue  #1C7BD9
+ *   --secondary = brandGreen #21B67A
+ * so `bg-primary` and `text-primary` render exactly as they did before this
+ * file defined them. Consumed by src/components/ui/* and the calculator kit in
+ * src/components/calculators/*.
+ *
+ * NOTE: shadcn's usual `@layer base { * { @apply border-border } }` reset is
+ * deliberately omitted — this stylesheet is loaded by every page on the live
+ * site, and a global border-colour change is not worth the risk.
+ */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 210 77% 48%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 156 69% 42%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 210 77% 48%;
+
+    --radius: 0.75rem;
+
+    /*
+     * The site header is `fixed top-0`, so page content must start below it.
+     * 43 of the 89 calculator pages hard-coded `pt-20` for this and the other
+     * 46 simply rendered underneath it. CalculatorShell reads this variable
+     * instead; the Android app sets it to 0 because its app bar is in flow.
+     */
+    --calc-top-offset: 5rem;
+  }
+}
+
 html {
   scroll-behavior: smooth;
 }

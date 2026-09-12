@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import defaultTheme from "tailwindcss/defaultTheme";
 
 const config: Config = {
   darkMode: "class",
@@ -9,6 +10,18 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      /*
+       * Outfit, loaded by next/font in src/app/layout.tsx (and mobile/app/layout.tsx,
+       * which inherits this config) and exposed as --font-outfit on <html>.
+       *
+       * Overriding `sans` matters as much as the <body> class: ~10 pages and
+       * components use the `font-sans` utility on their root element, and with
+       * Tailwind's default stack that utility silently overrode the body font
+       * with system-ui. They now resolve to Outfit like everything else.
+       */
+      fontFamily: {
+        sans: ["var(--font-outfit)", ...defaultTheme.fontFamily.sans],
+      },
       colors: {
         brandBlue: "#1C7BD9",
         brandGreen: "#21B67A",
@@ -18,9 +31,48 @@ const config: Config = {
         softBg: "#F4FBFF",
         softBg2: "#E9F7F2",
 
-        primary: "#1C7BD9",
-        secondary: "#21B67A",
+        /*
+         * `primary` keeps the exact brandBlue it always was (#1C7BD9 === hsl(210 77% 48%)),
+         * now driven by the CSS variable in globals.css so shadcn/ui components and the
+         * existing site markup share one accent. `secondary` likewise stays brandGreen.
+         * Existing `bg-primary` / `text-primary` usages are unaffected.
+         */
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
         success: "#21B67A",
+
+        /* ── shadcn/ui tokens ── */
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
 
         grey: "#6B7280",
         midnight_text: "#1A1A1A",
@@ -81,7 +133,14 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  /*
+   * tailwindcss-animate supplies the `animate-in` / `data-[state=open]:…`
+   * utilities that shadcn/ui components (navigation-menu) are written against.
+   * It was already a devDependency but was never registered, so those classes
+   * compiled to nothing.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  plugins: [require("tailwindcss-animate")],
 };
 
 export default config;

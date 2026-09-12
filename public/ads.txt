@@ -1,0 +1,5 @@
+# Authorized Digital Sellers for pharmawallah.com - https://iabtechlab.com/ads-txt/
+# Served at /ads.txt from Next's public/ directory. Without this file AdSense
+# reports "Earnings at risk - one or more of your sites does not have an ads.txt
+# file" and may throttle bidding on this site's inventory.
+google.com, pub-9553986083846603, DIRECT, f08c47fec0942fa0

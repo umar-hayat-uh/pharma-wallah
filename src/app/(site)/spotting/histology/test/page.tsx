@@ -510,9 +510,9 @@ type Slide = typeof SLIDE_DATA[number];
 function GlobalStyle() {
   return (
     <style jsx global>{`
-      @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650;9..144,800&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap');
-      .font-display { font-family: 'Fraunces', ui-serif, Georgia, serif; }
-      .font-body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; }
+      @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&display=swap');
+      .font-display { font-family: var(--font-outfit), ui-sans-serif, system-ui, sans-serif; }
+      .font-body { font-family: var(--font-outfit), ui-sans-serif, system-ui, sans-serif; }
       .font-lab { font-family: 'JetBrains Mono', ui-monospace, monospace; }
       html, body { overflow-x: hidden; }
       @keyframes hist-pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(225,75,114,0.4); } 100% { box-shadow: 0 0 0 10px rgba(225,75,114,0); } }

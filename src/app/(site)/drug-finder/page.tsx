@@ -145,7 +145,7 @@ export default function DrugFinderPage() {
           min-height: 100vh;
           background: #f6f8f7;
           color: #12201b;
-          font-family: "IBM Plex Sans", system-ui, sans-serif;
+          font-family: var(--font-outfit), "IBM Plex Sans", system-ui, sans-serif;
         }
         .masthead {
           background: #14312a;

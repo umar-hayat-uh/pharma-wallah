@@ -1,10 +1,11 @@
 import Link from "next/link";
 import Logo from "../Header/Logo";
+import Wordmark from "./Wordmark";
 import { Icon } from "@iconify/react";
 import { headerData } from "../Header/Navigation/menuData";
 import {
   BookOpen, Library, Layers, FileText, Scan, Sparkles,
-  MapPin, Phone, Mail,
+  MapPin, Phone, Mail, Smartphone,
 } from "lucide-react";
 
 const resourceLinks = [
@@ -14,6 +15,7 @@ const resourceLinks = [
   { label: "MCQ Bank",        href: "/mcqs",            Icon: FileText  },
   { label: "Slide Spotting",  href: "/slide-spotting",  Icon: Scan      },
   { label: "AI Guide",        href: "/ai-guide",        Icon: Sparkles  },
+  { label: "Android App",     href: "/download",        Icon: Smartphone },
 ];
 
 const companyLinks = [
@@ -292,6 +294,8 @@ const Footer = () => (
           </div>
         </div>
       </div>
+
+      <Wordmark />
 
       {/* ── Bottom bar (shared) ── */}
       <div className="py-5 border-t border-white/20 flex flex-col sm:flex-row items-center justify-between gap-3">

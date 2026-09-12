@@ -1078,7 +1078,7 @@ const CSS = `
   background-color: var(--sd-bg);
   color: var(--sd-text);
   min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-outfit), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   padding: 16px 12px 48px;
   -webkit-font-smoothing: antialiased;
 }
@@ -1833,7 +1833,7 @@ const CSS = `
   .sd-print-sheet {
     display: block !important;
     color: #000 !important;
-    font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif !important;
+    font-family: var(--font-outfit), -apple-system, BlinkMacSystemFont, Arial, sans-serif !important;
     padding: 20px !important;
     max-width: 100% !important;
   }

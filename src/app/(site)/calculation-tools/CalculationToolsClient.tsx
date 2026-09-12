@@ -10,6 +10,7 @@ import {
     Dna, BookOpen,
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
+import { AdSlot } from "@/components/calculators/AdSlot";
 
 // ── Tool icon resolver ─────────────────────────────────────────────
 const getToolIcon = (name: string) => {
@@ -279,6 +280,20 @@ export default function CalculationToolsClient() {
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {/* Ad placement.
+                    A plain div, never inside the motion wrappers below: an
+                    animated opacity or transform on an ad slot breaks
+                    AdSense's viewability measurement. Hidden while a search
+                    returns nothing, so the empty state stays clean. */}
+                {filteredCategories.length > 0 && (
+                    <div className="mb-12">
+                        <AdSlot
+                            slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LIST}
+                            format="horizontal"
+                        />
+                    </div>
+                )}
 
                 {/* Category sections */}
                 {filteredCategories.map(cat => {
