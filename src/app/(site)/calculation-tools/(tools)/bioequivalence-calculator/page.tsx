@@ -1,138 +1,169 @@
 "use client";
-import { useState, useEffect } from 'react';
+
+import { useMemo, useState } from "react";
+import { RefreshCw, Scale } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
-    Scale,
-    Calculator,
-    TrendingUp,
-    BarChart,
-    RefreshCw,
-    AlertCircle,
-    CheckCircle,
-    XCircle,
-    Percent,
-    Zap,
-    Activity
-} from 'lucide-react';
+    CalculatorShell,
+    CalcSection,
+    FieldGrid,
+    NumberField,
+    SelectField,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    AdSlot,
+} from "@/components/calculators";
+
+/* ── Constants (unchanged from the original page) ─────────────────────────── */
+
+/** z-value for a 90% two-sided interval (large-n approximation). */
+const T_VALUE = 1.645;
+const BE_LOWER = 0.8;
+const BE_UPPER = 1.25;
+
+/** The CI chart's axis, in percent. */
+const AXIS_MIN = 70;
+const AXIS_MAX = 130;
+const AXIS_TICKS = [70, 80, 100, 125, 130];
+
+type Study = {
+    name: string;
+    testAUC: string;
+    testSD: string;
+    refAUC: string;
+    refSD: string;
+    testCmax: string;
+    testCmaxSD: string;
+    refCmax: string;
+    refCmaxSD: string;
+    n: string;
+};
+
+const SAMPLE_STUDIES: Study[] = [
+    { name: "Generic Drug A", testAUC: "95", testSD: "12", refAUC: "100", refSD: "10", testCmax: "28", testCmaxSD: "3", refCmax: "30", refCmaxSD: "4", n: "24" },
+    { name: "Modified Release", testAUC: "105", testSD: "18", refAUC: "100", refSD: "15", testCmax: "22", testCmaxSD: "4", refCmax: "30", refCmaxSD: "5", n: "36" },
+    { name: "Different Salt", testAUC: "88", testSD: "20", refAUC: "100", refSD: "18", testCmax: "26", testCmaxSD: "5", refCmax: "30", refCmaxSD: "6", n: "48" },
+];
+
+const DEFAULTS = {
+    testAUC: "85",
+    testAUC_SD: "15",
+    referenceAUC: "100",
+    referenceAUC_SD: "12",
+    testCmax: "25",
+    testCmax_SD: "4",
+    referenceCmax: "30",
+    referenceCmax_SD: "5",
+    sampleSize: "24",
+    alpha: "0.05",
+};
+
+/* ── Pure maths ───────────────────────────────────────────────────────────── */
+
+type Interval = {
+    ratio: number;
+    se: number;
+    /** Bounds as fractions (0.8 = 80%). */
+    lower: number;
+    upper: number;
+};
+
+/**
+ * Ratio of means with a simplified standard error from the two coefficients of
+ * variation — exactly the arithmetic of the original page.
+ */
+function interval(test: number, testSD: number, ref: number, refSD: number, n: number): Interval {
+    const ratio = test / ref;
+    const se = Math.sqrt(Math.pow(testSD / test, 2) + Math.pow(refSD / ref, 2)) / Math.sqrt(n);
+    return { ratio, se, lower: ratio - T_VALUE * se, upper: ratio + T_VALUE * se };
+}
+
+/** The original page's status wording, on percentage bounds. */
+function statusOf(lower: number, upper: number) {
+    if (lower >= 80 && upper <= 125) return "Bioequivalent";
+    if (lower < 80 && upper > 125) return "Variable - More data needed";
+    if (upper < 80) return "Underperforming";
+    if (lower > 125) return "Overperforming";
+    return "Not Bioequivalent";
+}
+
+const parse = (value: string) => parseFloat(value);
+
+function positiveError(value: string) {
+    if (value.trim() === "") return undefined;
+    const v = parse(value);
+    if (!Number.isFinite(v)) return "Enter a number.";
+    if (v <= 0) return "Must be greater than 0.";
+    return undefined;
+}
+
+function sdError(value: string) {
+    if (value.trim() === "") return undefined;
+    const v = parse(value);
+    if (!Number.isFinite(v)) return "Enter a number.";
+    if (v < 0) return "A standard deviation cannot be negative.";
+    return undefined;
+}
+
+const validMean = (value: string) => Number.isFinite(parse(value)) && parse(value) > 0;
+const validSD = (value: string) => Number.isFinite(parse(value)) && parse(value) >= 0;
 
 export default function BioequivalenceCalculator() {
-    const [testAUC, setTestAUC] = useState<string>('85');
-    const [testAUC_SD, setTestAUC_SD] = useState<string>('15');
-    const [referenceAUC, setReferenceAUC] = useState<string>('100');
-    const [referenceAUC_SD, setReferenceAUC_SD] = useState<string>('12');
-    const [testCmax, setTestCmax] = useState<string>('25');
-    const [testCmax_SD, setTestCmax_SD] = useState<string>('4');
-    const [referenceCmax, setReferenceCmax] = useState<string>('30');
-    const [referenceCmax_SD, setReferenceCmax_SD] = useState<string>('5');
-    const [sampleSize, setSampleSize] = useState<string>('24');
-    const [alpha, setAlpha] = useState<string>('0.05');
-    const [confidenceInterval, setConfidenceInterval] = useState<[number, number] | null>(null);
-    const [cmaxCI, setCmaxCI] = useState<[number, number] | null>(null);
-    const [isBioequivalent, setIsBioequivalent] = useState<boolean | null>(null);
-    const [power, setPower] = useState<number | null>(null);
+    const [testAUC, setTestAUC] = useState(DEFAULTS.testAUC);
+    const [testAUC_SD, setTestAUC_SD] = useState(DEFAULTS.testAUC_SD);
+    const [referenceAUC, setReferenceAUC] = useState(DEFAULTS.referenceAUC);
+    const [referenceAUC_SD, setReferenceAUC_SD] = useState(DEFAULTS.referenceAUC_SD);
+    const [testCmax, setTestCmax] = useState(DEFAULTS.testCmax);
+    const [testCmax_SD, setTestCmax_SD] = useState(DEFAULTS.testCmax_SD);
+    const [referenceCmax, setReferenceCmax] = useState(DEFAULTS.referenceCmax);
+    const [referenceCmax_SD, setReferenceCmax_SD] = useState(DEFAULTS.referenceCmax_SD);
+    const [sampleSize, setSampleSize] = useState(DEFAULTS.sampleSize);
+    const [alpha, setAlpha] = useState(DEFAULTS.alpha);
 
-    const calculateBioequivalence = () => {
-        // Calculate geometric mean ratio and confidence interval per FDA/EMA guidelines [citation:4]
-        const testAUCVal = parseFloat(testAUC);
-        const refAUCVal = parseFloat(referenceAUC);
-        const testAUC_SDVal = parseFloat(testAUC_SD);
-        const refAUC_SDVal = parseFloat(referenceAUC_SD);
-        const n = parseFloat(sampleSize);
-        const alphaVal = parseFloat(alpha);
-
-        if (isNaN(testAUCVal) || isNaN(refAUCVal) || n <= 0) return;
-
-        // Ratio (Test/Reference)
-        const ratio = testAUCVal / refAUCVal;
-
-        // Standard error for log-transformed data (simplified)
-        const se = Math.sqrt(
-            (Math.pow(testAUC_SDVal / testAUCVal, 2)) +
-            (Math.pow(refAUC_SDVal / refAUCVal, 2))
-        ) / Math.sqrt(n);
-
-        // t-value for 90% CI (approximate)
-        const tValue = 1.645; // z-value for 90% CI (large n approximation)
-        const lowerCI = ratio - tValue * se;
-        const upperCI = ratio + tValue * se;
-
-        setConfidenceInterval([lowerCI * 100, upperCI * 100]);
-
-        // Calculate Cmax CI
-        const testCmaxVal = parseFloat(testCmax);
-        const refCmaxVal = parseFloat(referenceCmax);
-        const testCmax_SDVal = parseFloat(testCmax_SD);
-        const refCmax_SDVal = parseFloat(referenceCmax_SD);
-
-        let cmaxLowerCI = 0, cmaxUpperCI = 0;
-        if (!isNaN(testCmaxVal) && !isNaN(refCmaxVal)) {
-            const cmaxRatio = testCmaxVal / refCmaxVal;
-            const cmaxSE = Math.sqrt(
-                (Math.pow(testCmax_SDVal / testCmaxVal, 2)) +
-                (Math.pow(refCmax_SDVal / refCmaxVal, 2))
-            ) / Math.sqrt(n);
-
-            cmaxLowerCI = cmaxRatio - tValue * cmaxSE;
-            cmaxUpperCI = cmaxRatio + tValue * cmaxSE;
-            setCmaxCI([cmaxLowerCI * 100, cmaxUpperCI * 100]);
+    /*
+     * Derived live from the inputs. The old page stored the intervals in state
+     * from a useEffect, and read the *previous* render's Cmax interval when
+     * deciding the verdict — so the verdict on first load ignored Cmax, and an
+     * emptied field left stale numbers on screen. The arithmetic is unchanged.
+     */
+    const result = useMemo(() => {
+        if (!validMean(testAUC) || !validMean(referenceAUC) || !validSD(testAUC_SD) || !validSD(referenceAUC_SD)) {
+            return null;
         }
+        const n = parse(sampleSize);
+        if (!Number.isFinite(n) || n <= 0) return null;
 
-        // Bioequivalence criteria: 90% CI within 80-125% [citation:4]
-        const isAUCBioequivalent = lowerCI >= 0.8 && upperCI <= 1.25;
-        const isCmaxBioequivalent = cmaxCI ? cmaxLowerCI >= 0.8 && cmaxUpperCI <= 1.25 : true;
-        setIsBioequivalent(isAUCBioequivalent && isCmaxBioequivalent);
+        const tA = parse(testAUC);
+        const rA = parse(referenceAUC);
+        const tSD = parse(testAUC_SD);
+        const rSD = parse(referenceAUC_SD);
 
-        // Estimate power (simplified)
-        const cv = (Math.sqrt(testAUC_SDVal**2 + refAUC_SDVal**2) / ((testAUCVal + refAUCVal)/2)) * 100;
-        const estPower = Math.min(100, Math.max(0, 100 - (cv * 2))); // Simplified
-        setPower(estPower);
-    };
+        const auc = interval(tA, tSD, rA, rSD, n);
 
-    const resetCalculator = () => {
-        setTestAUC('85');
-        setTestAUC_SD('15');
-        setReferenceAUC('100');
-        setReferenceAUC_SD('12');
-        setTestCmax('25');
-        setTestCmax_SD('4');
-        setReferenceCmax('30');
-        setReferenceCmax_SD('5');
-        setSampleSize('24');
-        setAlpha('0.05');
-        setConfidenceInterval(null);
-        setCmaxCI(null);
-        setIsBioequivalent(null);
-        setPower(null);
-    };
+        // Cmax is assessed whenever all four of its values are usable.
+        const cmaxComplete =
+            validMean(testCmax) && validMean(referenceCmax) && validSD(testCmax_SD) && validSD(referenceCmax_SD);
+        const cmax = cmaxComplete
+            ? interval(parse(testCmax), parse(testCmax_SD), parse(referenceCmax), parse(referenceCmax_SD), n)
+            : null;
 
-    const sampleStudies = [
-        {
-            name: 'Generic Drug A',
-            testAUC: '95', testSD: '12',
-            refAUC: '100', refSD: '10',
-            testCmax: '28', testCmaxSD: '3',
-            refCmax: '30', refCmaxSD: '4',
-            n: '24'
-        },
-        {
-            name: 'Modified Release',
-            testAUC: '105', testSD: '18',
-            refAUC: '100', refSD: '15',
-            testCmax: '22', testCmaxSD: '4',
-            refCmax: '30', refCmaxSD: '5',
-            n: '36'
-        },
-        {
-            name: 'Different Salt',
-            testAUC: '88', testSD: '20',
-            refAUC: '100', refSD: '18',
-            testCmax: '26', testCmaxSD: '5',
-            refCmax: '30', refCmaxSD: '6',
-            n: '48'
-        }
-    ];
+        const aucPass = auc.lower >= BE_LOWER && auc.upper <= BE_UPPER;
+        const cmaxPass = cmax ? cmax.lower >= BE_LOWER && cmax.upper <= BE_UPPER : true;
 
-    const loadSample = (index: number) => {
-        const study = sampleStudies[index];
+        // Simplified power estimate, as on the original page.
+        const cv = (Math.sqrt(tSD ** 2 + rSD ** 2) / ((tA + rA) / 2)) * 100;
+        const power = Math.min(100, Math.max(0, 100 - cv * 2));
+
+        return { auc, cmax, aucPass, cmaxPass, bioequivalent: aucPass && cmaxPass, cv, power, n };
+    }, [testAUC, testAUC_SD, referenceAUC, referenceAUC_SD, testCmax, testCmax_SD, referenceCmax, referenceCmax_SD, sampleSize]);
+
+    const loadStudy = (study: Study) => {
         setTestAUC(study.testAUC);
         setTestAUC_SD(study.testSD);
         setReferenceAUC(study.refAUC);
@@ -144,367 +175,294 @@ export default function BioequivalenceCalculator() {
         setSampleSize(study.n);
     };
 
-    const getBioequivalenceStatus = (lower: number, upper: number) => {
-        if (lower >= 80 && upper <= 125) return 'Bioequivalent';
-        if (lower < 80 && upper > 125) return 'Variable - More data needed';
-        if (upper < 80) return 'Underperforming';
-        if (lower > 125) return 'Overperforming';
-        return 'Not Bioequivalent';
+    const reset = () => {
+        setTestAUC(DEFAULTS.testAUC);
+        setTestAUC_SD(DEFAULTS.testAUC_SD);
+        setReferenceAUC(DEFAULTS.referenceAUC);
+        setReferenceAUC_SD(DEFAULTS.referenceAUC_SD);
+        setTestCmax(DEFAULTS.testCmax);
+        setTestCmax_SD(DEFAULTS.testCmax_SD);
+        setReferenceCmax(DEFAULTS.referenceCmax);
+        setReferenceCmax_SD(DEFAULTS.referenceCmax_SD);
+        setSampleSize(DEFAULTS.sampleSize);
+        setAlpha(DEFAULTS.alpha);
     };
 
-    useEffect(() => {
-        calculateBioequivalence();
-    }, [testAUC, referenceAUC, testAUC_SD, referenceAUC_SD, testCmax, referenceCmax, testCmax_SD, referenceCmax_SD, sampleSize, alpha]);
+    const pct = (fraction: number) => (fraction * 100).toFixed(1);
+    const aucText = result ? `${pct(result.auc.lower)}–${pct(result.auc.upper)}%` : "";
+    const cmaxText = result?.cmax ? `${pct(result.cmax.lower)}–${pct(result.cmax.upper)}%` : "";
+
+    let interpretation: string | undefined;
+    if (result) {
+        const parts = [`AUC 90% CI ${aucText}`];
+        if (result.cmax) parts.push(`Cmax 90% CI ${cmaxText}`);
+        const summary = parts.join(" · ");
+        if (!result.cmax) {
+            interpretation = `${result.bioequivalent ? "Bioequivalent on AUC" : "Not bioequivalent"} — ${summary}. Cmax not entered, so it was not assessed.`;
+        } else if (result.bioequivalent) {
+            interpretation = `Bioequivalent — ${summary}, both inside 80–125%.`;
+        } else {
+            const failed = [!result.aucPass && "AUC", !result.cmaxPass && "Cmax"].filter(Boolean).join(" and ");
+            interpretation = `Not bioequivalent — ${failed} outside 80–125%. ${summary}.`;
+        }
+    }
+
+    const cmaxAnyEntered = [testCmax, testCmax_SD, referenceCmax, referenceCmax_SD].some((v) => v.trim() !== "");
 
     return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 pt-20">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6 md:mb-8">
-                    <div className="flex flex-col md:flex-row items-center justify-between">
-                        <div className="flex items-center mb-4 md:mb-0">
-                            <div className="bg-white/20 p-3 rounded-xl mr-4">
-                                <Scale className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-white">Bioequivalence Calculator</h1>
-                                <p className="text-blue-100 mt-2">90% Confidence Interval assessment per FDA/EMA guidelines</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-2 bg-white/20 px-4 py-2 rounded-lg">
-                            <BarChart className="w-5 h-5 text-white" />
-                            <span className="text-white font-semibold">Regulatory Assessment</span>
-                        </div>
-                    </div>
+        <CalculatorShell
+            title="Bioequivalence Calculator"
+            subtitle="Checks whether a test product's AUC and Cmax 90% confidence intervals fall inside the 80–125% acceptance range against a reference product."
+            icon={Scale}
+            eyebrow="Pharmacokinetics"
+            aside={
+                <>
+                    <CalcAbout title="About this calculator">
+                        <p>
+                            Two products are <strong>bioequivalent</strong> when they deliver the same drug
+                            to the bloodstream at the same rate and to the same extent. Regulators judge this
+                            from the ratio of the test (T) to the reference (R) product for two exposure
+                            measures: <strong>AUC</strong> (area under the concentration–time curve — how
+                            much drug) and <strong>Cmax</strong> (peak concentration — how fast).
+                        </p>
+                        <CalcList
+                            title="Regulatory guidelines"
+                            items={[
+                                "FDA/EMA: the 90% CI of AUC and Cmax must lie within 80–125%",
+                                "Sample size: typically 18–24 subjects for adequate power",
+                                "Design: randomised, two-period crossover",
+                            ]}
+                        />
+                        <CalcList
+                            tone="caution"
+                            title="Simplifications in this tool"
+                            items={[
+                                "Uses the arithmetic ratio of means, not the geometric mean ratio of log-transformed data",
+                                "Standard error is estimated from the two CVs and N, not from a crossover ANOVA",
+                                "Uses z = 1.645 whatever N is, rather than a t-value",
+                                "The power figure is a rough heuristic (100 − 2 × CV), not a formal power calculation",
+                            ]}
+                        />
+                    </CalcAbout>
+
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+                </>
+            }
+        >
+            <ResultCard
+                label="Bioequivalence verdict"
+                value={result ? (result.bioequivalent ? "Pass" : "Fail") : null}
+                interpretation={interpretation}
+                tone={result ? (result.bioequivalent ? "success" : "danger") : "neutral"}
+                empty="Enter the mean and SD of AUC for the test and reference products, and the number of subjects."
+            />
+
+            <CalcSection title="Study design">
+                <FieldGrid>
+                    <NumberField
+                        label="Sample size (N, subjects)"
+                        value={sampleSize}
+                        onChange={setSampleSize}
+                        step="1"
+                        min={1}
+                        hint="Typically 18–24 subjects in a crossover study."
+                        error={positiveError(sampleSize)}
+                    />
+                    <SelectField
+                        label="Alpha (α)"
+                        value={alpha}
+                        onChange={setAlpha}
+                        options={[
+                            { value: "0.05", label: "0.05 (90% CI)" },
+                            { value: "0.1", label: "0.10 (80% CI)" },
+                        ]}
+                        hint="The interval is always computed with z = 1.645 (the 90% CI), whichever alpha is chosen."
+                    />
+                </FieldGrid>
+            </CalcSection>
+
+            <CalcSection
+                title="AUC — primary endpoint"
+                description="Mean and standard deviation (SD). Any unit (e.g. ng·h/mL), as long as test and reference use the same one."
+            >
+                <FieldGrid>
+                    <NumberField label="Test — mean AUC" value={testAUC} onChange={setTestAUC} step="0.001" error={positiveError(testAUC)} />
+                    <NumberField label="Test — SD" value={testAUC_SD} onChange={setTestAUC_SD} step="0.001" error={sdError(testAUC_SD)} />
+                    <NumberField label="Reference — mean AUC" value={referenceAUC} onChange={setReferenceAUC} step="0.001" error={positiveError(referenceAUC)} />
+                    <NumberField label="Reference — SD" value={referenceAUC_SD} onChange={setReferenceAUC_SD} step="0.001" error={sdError(referenceAUC_SD)} />
+                </FieldGrid>
+            </CalcSection>
+
+            <CalcSection
+                title="Cmax — secondary endpoint"
+                description="Peak concentration, mean and SD, in the same unit for both products (e.g. ng/mL)."
+            >
+                <FieldGrid>
+                    <NumberField label="Test — mean Cmax" value={testCmax} onChange={setTestCmax} step="0.001" error={positiveError(testCmax)} />
+                    <NumberField label="Test — SD" value={testCmax_SD} onChange={setTestCmax_SD} step="0.001" error={sdError(testCmax_SD)} />
+                    <NumberField label="Reference — mean Cmax" value={referenceCmax} onChange={setReferenceCmax} step="0.001" error={positiveError(referenceCmax)} />
+                    <NumberField label="Reference — SD" value={referenceCmax_SD} onChange={setReferenceCmax_SD} step="0.001" error={sdError(referenceCmax_SD)} />
+                </FieldGrid>
+                {result && !result.cmax && cmaxAnyEntered && (
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                        Cmax is incomplete, so it is left out of the verdict until all four values are entered.
+                    </p>
+                )}
+            </CalcSection>
+
+            <CalcSection title="Try an example study">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    {SAMPLE_STUDIES.map((study) => (
+                        <button
+                            key={study.name}
+                            type="button"
+                            onClick={() => loadStudy(study)}
+                            className="min-h-[44px] rounded-xl border bg-background px-3.5 py-2.5 text-left transition-colors hover:border-primary/40 active:bg-accent"
+                        >
+                            <span className="block text-sm font-semibold text-foreground">{study.name}</span>
+                            <span className="mt-0.5 block font-mono text-xs text-muted-foreground">
+                                AUC T {study.testAUC}±{study.testSD} · R {study.refAUC}±{study.refSD} · N {study.n}
+                            </span>
+                        </button>
+                    ))}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Main Input Area */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
-                            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                                <Calculator className="w-6 h-6 mr-2 text-blue-600" />
-                                Study Parameters
-                            </h2>
+                <Button variant="outline" onClick={reset} className="w-full">
+                    <RefreshCw />
+                    Reset
+                </Button>
+            </CalcSection>
 
-                            {/* Study Design */}
-                            <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6 mb-6">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Study Design</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                            Sample Size (N)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={sampleSize}
-                                            onChange={(e) => setSampleSize(e.target.value)}
-                                            className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                                            placeholder="e.g., 24"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                            Alpha (α)
-                                        </label>
-                                        <select
-                                            value={alpha}
-                                            onChange={(e) => setAlpha(e.target.value)}
-                                            className="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:outline-none"
-                                        >
-                                            <option value="0.05">0.05 (90% CI)</option>
-                                            <option value="0.1">0.10 (80% CI)</option>
-                                        </select>
-                                    </div>
-                                    <div className="bg-white p-4 rounded-lg border border-gray-200">
-                                        <div className="text-sm font-semibold text-gray-600">Estimated Power</div>
-                                        <div className="text-2xl font-bold text-green-600">{power !== null ? `${power.toFixed(0)}%` : '--'}</div>
-                                    </div>
-                                </div>
-                            </div>
+            {result && (
+                <CalcSection title="90% confidence intervals" description="Shaded band = 80–125% acceptance range.">
+                    <CiBar name="AUC" lower={result.auc.lower * 100} upper={result.auc.upper * 100} />
+                    {result.cmax && <CiBar name="Cmax" lower={result.cmax.lower * 100} upper={result.cmax.upper * 100} />}
+                </CalcSection>
+            )}
 
-                            {/* AUC Parameters */}
-                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 mb-6 border border-blue-200">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                                    <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
-                                    AUC (Primary Endpoint)
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <h4 className="font-semibold text-blue-700 mb-3">Test</h4>
-                                        <div className="space-y-3">
-                                            <input
-                                                type="number"
-                                                step="0.001"
-                                                value={testAUC}
-                                                onChange={(e) => setTestAUC(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg"
-                                                placeholder="Mean AUC"
-                                            />
-                                            <input
-                                                type="number"
-                                                step="0.001"
-                                                value={testAUC_SD}
-                                                onChange={(e) => setTestAUC_SD(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg"
-                                                placeholder="SD"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h4 className="font-semibold text-green-700 mb-3">Reference</h4>
-                                        <div className="space-y-3">
-                                            <input
-                                                type="number"
-                                                step="0.001"
-                                                value={referenceAUC}
-                                                onChange={(e) => setReferenceAUC(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-green-200 rounded-lg"
-                                                placeholder="Mean AUC"
-                                            />
-                                            <input
-                                                type="number"
-                                                step="0.001"
-                                                value={referenceAUC_SD}
-                                                onChange={(e) => setReferenceAUC_SD(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-green-200 rounded-lg"
-                                                placeholder="SD"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Cmax Parameters */}
-                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 mb-6 border border-purple-200">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                                    <Zap className="w-5 h-5 mr-2 text-purple-600" />
-                                    Cmax (Secondary Endpoint)
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <h4 className="font-semibold text-purple-700 mb-3">Test</h4>
-                                        <div className="space-y-3">
-                                            <input
-                                                type="number"
-                                                step="0.001"
-                                                value={testCmax}
-                                                onChange={(e) => setTestCmax(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg"
-                                                placeholder="Mean Cmax"
-                                            />
-                                            <input
-                                                type="number"
-                                                step="0.001"
-                                                value={testCmax_SD}
-                                                onChange={(e) => setTestCmax_SD(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg"
-                                                placeholder="SD"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h4 className="font-semibold text-pink-700 mb-3">Reference</h4>
-                                        <div className="space-y-3">
-                                            <input
-                                                type="number"
-                                                step="0.001"
-                                                value={referenceCmax}
-                                                onChange={(e) => setReferenceCmax(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-pink-200 rounded-lg"
-                                                placeholder="Mean Cmax"
-                                            />
-                                            <input
-                                                type="number"
-                                                step="0.001"
-                                                value={referenceCmax_SD}
-                                                onChange={(e) => setReferenceCmax_SD(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-pink-200 rounded-lg"
-                                                placeholder="SD"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Sample Studies */}
-                            <div className="bg-white rounded-xl p-6 border border-gray-200 mb-6">
-                                <h3 className="font-semibold text-gray-800 mb-4">Example Studies</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                    {sampleStudies.map((study, index) => (
-                                        <button
-                                            key={index}
-                                            onClick={() => loadSample(index)}
-                                            className="bg-gradient-to-r from-blue-50 to-green-50 hover:from-blue-100 hover:to-green-100 border border-blue-200 rounded-lg p-4 text-left transition-all hover:shadow-md"
-                                        >
-                                            <div className="font-semibold text-blue-700">{study.name}</div>
-                                            <div className="text-xs text-gray-600 mt-2">
-                                                Test: {study.testAUC}±{study.testSD} | Ref: {study.refAUC}±{study.refSD}
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="flex flex-col sm:flex-row gap-4">
-                                <button
-                                    onClick={calculateBioequivalence}
-                                    className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
-                                >
-                                    Assess Bioequivalence
-                                </button>
-                                <button
-                                    onClick={resetCalculator}
-                                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center"
-                                >
-                                    <RefreshCw className="w-5 h-5 mr-2" />
-                                    Reset
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Results Sidebar */}
-                    <div className="space-y-6">
-                        {/* Bioequivalence Result */}
-                        <div className={`rounded-2xl shadow-xl p-6 md:p-8 text-white ${
-                            isBioequivalent === true ? 'bg-gradient-to-br from-green-600 to-green-400' :
-                            isBioequivalent === false ? 'bg-gradient-to-br from-red-600 to-red-400' :
-                            'bg-gradient-to-br from-blue-600 to-green-400'
-                        }`}>
-                            <h2 className="text-2xl font-bold mb-6 flex items-center">
-                                <Scale className="w-7 h-7 mr-3" />
-                                Bioequivalence Result
-                            </h2>
-
-                            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 mb-6">
-                                <div className="text-center">
-                                    {isBioequivalent !== null ? (
-                                        <>
-                                            <div className="text-4xl font-bold mb-4">
-                                                {isBioequivalent ? 'BIOEQUIVALENT' : 'NOT BIOEQUIVALENT'}
-                                            </div>
-                                            <div className="flex items-center justify-center text-2xl mb-2">
-                                                {isBioequivalent ?
-                                                    <CheckCircle className="w-8 h-8 mr-2" /> :
-                                                    <XCircle className="w-8 h-8 mr-2" />
-                                                }
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <div className="text-3xl font-bold">Enter Study Data</div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Confidence Intervals Visualization */}
-                        {confidenceInterval && (
-                            <div className="bg-white rounded-2xl shadow-lg p-6">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4">90% Confidence Intervals</h3>
-
-                                {/* AUC CI */}
-                                <div className="mb-6">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="font-semibold text-blue-700">AUC</span>
-                                        <span className={`font-bold ${
-                                            confidenceInterval[0] >= 80 && confidenceInterval[1] <= 125 ?
-                                            'text-green-600' : 'text-red-600'
-                                        }`}>
-                                            {getBioequivalenceStatus(confidenceInterval[0], confidenceInterval[1])}
-                                        </span>
-                                    </div>
-                                    <div className="relative h-16 bg-gray-100 rounded-lg overflow-hidden">
-                                        <div className="absolute inset-0 flex items-center">
-                                            {/* Scale markers */}
-                                            <div className="absolute left-0 w-full h-1 bg-gray-300"></div>
-                                            {[70, 80, 100, 125, 130].map((pos) => (
-                                                <div key={pos} className="absolute flex flex-col items-center"
-                                                    style={{ left: `${((pos - 70) / (130 - 70)) * 100}%` }}>
-                                                    <div className="h-3 w-px bg-gray-400"></div>
-                                                    <div className="text-xs mt-1">{pos}%</div>
-                                                </div>
-                                            ))}
-
-                                            {/* BE acceptance range */}
-                                            <div className="absolute h-16 bg-green-200 opacity-20"
-                                                style={{ left: '16.7%', width: '41.7%' }}></div>
-
-                                            {/* CI bar */}
-                                            <div className="absolute h-10 bg-gradient-to-r from-blue-400 to-green-400 rounded"
-                                                style={{
-                                                    left: `${((confidenceInterval[0] - 70) / (130 - 70)) * 100}%`,
-                                                    width: `${((confidenceInterval[1] - confidenceInterval[0]) / (130 - 70)) * 100}%`
-                                                }}>
-                                                <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
-                                                    {confidenceInterval[0].toFixed(1)}-{confidenceInterval[1].toFixed(1)}%
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Cmax CI */}
-                                {cmaxCI && (
-                                    <div>
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className="font-semibold text-purple-700">Cmax</span>
-                                            <span className={`font-bold ${
-                                                cmaxCI[0] >= 80 && cmaxCI[1] <= 125 ?
-                                                'text-green-600' : 'text-red-600'
-                                            }`}>
-                                                {getBioequivalenceStatus(cmaxCI[0], cmaxCI[1])}
-                                            </span>
-                                        </div>
-                                        <div className="relative h-16 bg-gray-100 rounded-lg overflow-hidden">
-                                            <div className="absolute inset-0 flex items-center">
-                                                {[70, 80, 100, 125, 130].map((pos) => (
-                                                    <div key={pos} className="absolute flex flex-col items-center"
-                                                        style={{ left: `${((pos - 70) / (130 - 70)) * 100}%` }}>
-                                                        <div className="h-3 w-px bg-gray-400"></div>
-                                                        <div className="text-xs mt-1">{pos}%</div>
-                                                    </div>
-                                                ))}
-                                                <div className="absolute h-16 bg-green-200 opacity-20"
-                                                    style={{ left: '16.7%', width: '41.7%' }}></div>
-                                                <div className="absolute h-10 bg-gradient-to-r from-purple-400 to-pink-400 rounded"
-                                                    style={{
-                                                        left: `${((cmaxCI[0] - 70) / (130 - 70)) * 100}%`,
-                                                        width: `${((cmaxCI[1] - cmaxCI[0]) / (130 - 70)) * 100}%`
-                                                    }}>
-                                                    <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
-                                                        {cmaxCI[0].toFixed(1)}-{cmaxCI[1].toFixed(1)}%
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+            {result && (
+                <CalcSection title="Working">
+                    <div>
+                        <ResultRow label="AUC ratio (T / R)" value={pct(result.auc.ratio)} unit="%" />
+                        <ResultRow label="AUC standard error" value={result.auc.se.toFixed(4)} />
+                        <ResultRow
+                            label="AUC 90% CI"
+                            value={aucText}
+                            badge={result.aucPass ? "Pass" : "Fail"}
+                            badgeTone={result.aucPass ? "success" : "destructive"}
+                        />
+                        {result.cmax && (
+                            <>
+                                <ResultRow label="Cmax ratio (T / R)" value={pct(result.cmax.ratio)} unit="%" />
+                                <ResultRow label="Cmax standard error" value={result.cmax.se.toFixed(4)} />
+                                <ResultRow
+                                    label="Cmax 90% CI"
+                                    value={cmaxText}
+                                    badge={result.cmaxPass ? "Pass" : "Fail"}
+                                    badgeTone={result.cmaxPass ? "success" : "destructive"}
+                                />
+                            </>
                         )}
-
-                        {/* Regulatory Guidelines */}
-                        <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-2xl shadow-lg p-6 border border-blue-200">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                                <AlertCircle className="w-5 h-5 mr-2 text-blue-600" />
-                                Regulatory Guidelines
-                            </h3>
-                            <div className="space-y-3 text-sm">
-                                <div className="p-3 bg-white/50 rounded-lg">
-                                    <span className="font-semibold">FDA/EMA:</span> 90% CI of AUC and Cmax within 80-125%
-                                </div>
-                                <div className="p-3 bg-white/50 rounded-lg">
-                                    <span className="font-semibold">Sample size:</span> Typically 18-24 subjects for adequate power
-                                </div>
-                                <div className="p-3 bg-white/50 rounded-lg">
-                                    <span className="font-semibold">Design:</span> Randomized, two-period crossover
-                                </div>
-                            </div>
-                        </div>
+                        <ResultRow label="Pooled AUC CV (for power)" value={result.cv.toFixed(1)} unit="%" />
+                        <ResultRow label="Estimated power" value={`${result.power.toFixed(0)}%`} />
                     </div>
-                </div>
+                </CalcSection>
+            )}
+
+            <FormulaNote>
+                <Formula>Ratio = mean(Test) ÷ mean(Reference)</Formula>
+                <Formula>SE = √[(SD_T ÷ mean_T)² + (SD_R ÷ mean_R)²] ÷ √N</Formula>
+                <Formula>90% CI = Ratio ± 1.645 × SE</Formula>
+                <Formula>Power ≈ 100 − 2 × CV, where CV = √(SD_T² + SD_R²) ÷ [(mean_T + mean_R) ÷ 2] × 100</Formula>
+                <p>
+                    Each SD is turned into a coefficient of variation (SD ÷ mean), the two are combined,
+                    and dividing by √N shrinks the uncertainty as more subjects are studied. The product
+                    passes when the whole interval — not just the ratio — sits inside 80–125% for both
+                    AUC and Cmax.
+                </p>
+                <p>
+                    Formal studies log-transform the data, run an ANOVA on the crossover design and use a
+                    t-value with the study&apos;s degrees of freedom. This tool is an approximation for
+                    learning how N, variability and the ratio drive the result.
+                </p>
+            </FormulaNote>
+
+            <CalcFaq
+                items={[
+                    {
+                        q: "Why 80–125% and not 80–120%?",
+                        a: "The limits are symmetric on a log scale: ln(0.8) = −0.223 and ln(1.25) = +0.223. A test product 20% lower than the reference is as far from equivalence as one 25% higher.",
+                    },
+                    {
+                        q: "My ratio is 95% — why does it still fail?",
+                        a: "The verdict depends on the whole confidence interval, not the ratio. High variability (large SDs) or too few subjects widen the interval until one end crosses 80% or 125%. Try increasing N to see the interval narrow.",
+                    },
+                    {
+                        q: "Which units should I use for AUC and Cmax?",
+                        a: "Any — the calculation only uses ratios, so units cancel. What matters is that the test and reference values are in the same unit.",
+                    },
+                    {
+                        q: "Does the alpha selector change the interval?",
+                        a: "No. The calculation always uses z = 1.645, which corresponds to the 90% interval that regulators require (two one-sided tests at α = 0.05).",
+                    },
+                    {
+                        q: "What does 'Variable - More data needed' mean?",
+                        a: "The interval is so wide that it runs below 80% and above 125% at the same time. The study cannot say whether the products differ — usually a sign of high variability or too few subjects.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
+    );
+}
+
+/**
+ * One confidence interval drawn on a 70–130% axis with the acceptance band
+ * shaded. Positions are clamped so an interval off the axis still reads as
+ * "beyond the edge" instead of disappearing.
+ */
+function CiBar({ name, lower, upper }: { name: string; lower: number; upper: number }) {
+    const status = statusOf(lower, upper);
+    const pass = lower >= 80 && upper <= 125;
+    const toPos = (value: number) => Math.min(100, Math.max(0, ((value - AXIS_MIN) / (AXIS_MAX - AXIS_MIN)) * 100));
+    const left = toPos(lower);
+    const right = toPos(upper);
+    const bandLeft = toPos(80);
+    const bandRight = toPos(125);
+
+    return (
+        <div>
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <span className="text-sm font-semibold text-foreground">{name}</span>
+                <span className="flex items-center gap-2">
+                    <span className="font-mono text-sm tabular-nums text-foreground">
+                        {lower.toFixed(1)}–{upper.toFixed(1)}%
+                    </span>
+                    <Badge variant={pass ? "success" : "destructive"}>{status}</Badge>
+                </span>
             </div>
-        </section>
+            <div className="relative h-12 rounded-lg bg-muted/70">
+                <div
+                    className="absolute inset-y-0 border-x border-emerald-500/50 bg-emerald-500/15"
+                    style={{ left: `${bandLeft}%`, width: `${bandRight - bandLeft}%` }}
+                    aria-hidden="true"
+                />
+                <div
+                    className={`absolute top-1/2 h-4 -translate-y-1/2 rounded-full ${pass ? "bg-primary" : "bg-red-500"}`}
+                    style={{ left: `${left}%`, width: `${Math.max(right - left, 0.8)}%` }}
+                    aria-hidden="true"
+                />
+            </div>
+            <div className="relative mt-1 h-4 font-mono text-[11px] text-muted-foreground" aria-hidden="true">
+                {AXIS_TICKS.map((tick) => (
+                    <span
+                        key={tick}
+                        className="absolute -translate-x-1/2"
+                        style={{ left: `${toPos(tick)}%` }}
+                    >
+                        {tick}
+                    </span>
+                ))}
+            </div>
+        </div>
     );
 }

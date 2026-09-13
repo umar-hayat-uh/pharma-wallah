@@ -33,7 +33,7 @@ export class DashboardErrorBoundary extends Component<Props, State> {
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2.5 px-5 rounded-xl transition"
+              className="inline-flex items-center gap-2 bg-[#1c7bd9] hover:bg-[#1668b8] text-white font-bold text-xs py-2.5 px-5 rounded-xl transition"
             >
               <RefreshCw className="w-3.5 h-3.5" /> Reload
             </button>

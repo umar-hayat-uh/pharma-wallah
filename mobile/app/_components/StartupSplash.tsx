@@ -1,10 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Calculator } from "lucide-react";
+import { PharmaLoader, LoaderSteps } from "@/components/loading/PharmaLoader";
+import { TOOL_SLUGS } from "../_generated/tool-slugs";
 
-/** How long the splash stays up before fading, in ms. */
-const HOLD_MS = 1100;
+/**
+ * How long the splash stays up before fading, in ms. Long enough for the
+ * procedure line (a 1.8 s cycle) to reach its last step, short enough not to
+ * delay the catalogue noticeably.
+ */
+const HOLD_MS = 1500;
 /** Must match the fade duration in the CSS below. */
 const FADE_MS = 420;
 
@@ -19,6 +24,11 @@ const FADE_MS = 420;
  * CSS keyframes rather than a JS animation library, so the animation is already
  * running on the very first paint — before React has hydrated. Hydration then
  * matches (both sides start visible) and the effect below fades it out.
+ *
+ * The mark is the shared PharmaLoader (src/components/loading/) — the same
+ * capsule the website shows while a page loads — replacing a stock calculator
+ * icon. The tool count comes from the generated slug list, so it cannot go
+ * stale the way the hand-typed "97 calculators" did.
  */
 export default function StartupSplash() {
   const [visible, setVisible] = useState(true);
@@ -45,16 +55,16 @@ export default function StartupSplash() {
       role="presentation"
     >
       <div className="pw-splash__mark">
-        <Calculator strokeWidth={1.75} />
+        <PharmaLoader tone="brand" label="Starting PharmaWallah" showSteps={false} />
       </div>
 
       <div className="pw-splash__wordmark">
         <p className="pw-splash__name">PharmaWallah</p>
-        <p className="pw-splash__tagline">89 calculators · works offline</p>
+        <p className="pw-splash__tagline">{TOOL_SLUGS.length} calculators · works offline</p>
       </div>
 
-      <div className="pw-splash__bar">
-        <span />
+      <div className="pw-splash__steps">
+        <LoaderSteps tone="brand" />
       </div>
     </div>
   );

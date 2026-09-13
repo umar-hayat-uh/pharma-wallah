@@ -16,6 +16,7 @@ import UnitSidebar from "./UnitSidebar";
 import MobileUnitNav from "./MobileUnitNav";
 import MarkdownRenderer from "./MarkdownRenderer";
 import PdfDownloadButton from "./PdfDownloadButton";
+import LessonCheckpoint from "./LessonCheckpoint";
 import Comments from "@/components/course/Comments";
 import ImageZoom from "@/components/ui/ImageZoom";
 import { AdSlot } from "@/components/calculators/AdSlot";
@@ -57,7 +58,12 @@ export default function UnitPageClient({
       className="min-h-screen bg-white relative"
       style={{ overflowX: "hidden" }}
     >
-      <UnitTracker unitTitle={unit.title} />
+      <UnitTracker
+        unitId={unit.id}
+        unitTitle={unit.title}
+        subjectTitle={subject.title}
+        semester={subject.semester}
+      />
 
       <MobileUnitNav
         subject={subject}
@@ -199,6 +205,18 @@ export default function UnitPageClient({
                   gradientClass={GRAD}
                 />
               </div>
+            )}
+
+            {/* End of lesson: optional questions, Mark as read, next unit.
+                Outside `printRef`, so none of it lands in the PDF. */}
+            {content && (
+              <LessonCheckpoint
+                subject={subject}
+                unit={unit}
+                unitIndex={unitIndex}
+                nextUnit={nextUnit}
+                basePath={basePath}
+              />
             )}
 
             {/* Ad placement.

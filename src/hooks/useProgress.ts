@@ -35,6 +35,15 @@ const MANUAL_REFETCH_THROTTLE_MS = 3_000;
 let cache: { userId: string; data: ProgressData; fetchedAt: number } | null = null;
 let inFlight: Promise<ProgressData | null> | null = null;
 
+/**
+ * Forget the tab's cached progress after a write the student will look for
+ * straight away — "Mark as read" on a lesson. Without this, a dashboard opened
+ * within STALE_TIME_MS still shows the unit as merely opened.
+ */
+export function clearProgressCache() {
+  cache = null;
+}
+
 async function fetchProgress(): Promise<ProgressData | null> {
   if (inFlight) return inFlight;
   inFlight = fetch("/api/progress")

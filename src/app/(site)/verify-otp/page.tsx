@@ -2,16 +2,15 @@
 
 import { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import {
-    Loader2,
-    ShieldCheck,
-    AlertCircle,
-    CheckCircle2,
-    ArrowRight,
-    User,
-} from "lucide-react";
+    AccountPanel,
+    AuthLayout,
+    AuthLoading,
+    AuthNotice,
+    AuthSubmit,
+    AuthSwitch,
+} from "@/components/auth/AuthKit";
 
 // ------------------------------------------------------------
 // Inner component that actually uses useSearchParams
@@ -103,133 +102,89 @@ function VerifyOTPContent() {
     };
 
     return (
-        <main className="min-h-screen flex w-full bg-white">
-            {/* LEFT SIDE */}
-            <div className="flex-1 flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-20 xl:px-24">
-                <div className="mx-auto w-full max-w-sm lg:max-w-md">
-                    <div className="mb-10">
-                        <Link href="/" className="inline-flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-green-400 flex items-center justify-center shadow-md">
-                                <User className="w-5 h-5 text-white" />
-                            </div>
-                            <span className="font-extrabold text-xl text-slate-900 tracking-tight">
-                                PharmaWallah
-                            </span>
-                        </Link>
-                        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-3">
-                            {verified ? "You're verified!" : "Check your email"}
-                        </h1>
-                        <p className="text-slate-500 text-base leading-relaxed">
-                            {verified
-                                ? "Your account has been confirmed. Welcome to the community."
-                                : `We’ve sent a 6‑digit code to ${email}. Enter it below to verify your account.`}
-                        </p>
-                    </div>
+        <AuthLayout
+            eyebrow={verified ? "Email verified" : "Verify your email · last step"}
+            title={verified ? "You're in." : "Enter the 6‑digit code."}
+            lead={
+                verified ? (
+                    <>
+                        <span className="font-medium text-[#16181d]">{email}</span> is confirmed. Your account is ready.
+                    </>
+                ) : (
+                    <>
+                        We sent it to <span className="font-medium text-[#16181d]">{email || "your email"}</span>. It
+                        can take a minute to arrive — check spam too.
+                    </>
+                )
+            }
+            panel={
+                <AccountPanel
+                    eyebrow="Why a code"
+                    heading="It proves the address is yours."
+                    intro="So password resets reach you and nobody else. Once you're in, this is what the account keeps:"
+                />
+            }
+            footer={
+                verified ? undefined : (
+                    <AuthSwitch prompt="Wrong address?" href="/signup" label="Start again" />
+                )
+            }
+        >
+            {error && <AuthNotice tone="error">{error}</AuthNotice>}
 
-                    {error && (
-                        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl flex items-start gap-3 shadow-sm">
-                            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-red-600" />
-                            <span className="font-medium">{error}</span>
+            {verified ? (
+                <AuthSubmit type="button" onClick={() => router.push("/dashboard")}>
+                    Go to your dashboard
+                </AuthSubmit>
+            ) : (
+                <form onSubmit={handleVerify} className="space-y-6">
+                    <fieldset>
+                        <legend className="mb-3 text-sm font-medium text-[#16181d]">Verification code</legend>
+                        <div className="grid grid-cols-6 gap-2 sm:gap-2.5">
+                            {code.map((digit, idx) => (
+                                <input
+                                    key={idx}
+                                    type="text"
+                                    inputMode="numeric"
+                                    autoComplete={idx === 0 ? "one-time-code" : "off"}
+                                    aria-label={`Digit ${idx + 1} of 6`}
+                                    maxLength={1}
+                                    value={digit}
+                                    ref={(el) => {
+                                        inputRefs.current[idx] = el;
+                                    }}
+                                    onChange={(e) => handleChange(idx, e.target.value)}
+                                    onKeyDown={(e) => handleKeyDown(idx, e)}
+                                    onPaste={handlePaste}
+                                    className="h-14 w-full min-w-0 rounded-xl border border-[#16181d]/15 bg-white text-center text-2xl font-semibold tabular-nums text-[#16181d] transition-[border-color,box-shadow] duration-300 ease-out-expo hover:border-[#16181d]/30 focus:border-[#1c7bd9] focus:outline-none focus:ring-4 focus:ring-[#1c7bd9]/15 disabled:opacity-60 sm:h-16 sm:text-[1.75rem]"
+                                    disabled={loading}
+                                />
+                            ))}
                         </div>
-                    )}
+                        <p className="mt-2 text-[13px] text-[#16181d]/50">Pasting the whole code fills every box.</p>
+                    </fieldset>
 
-                    {verified ? (
-                        <div className="space-y-6">
-                            <div className="flex justify-center">
-                                <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
-                                    <CheckCircle2 className="w-10 h-10 text-green-600" />
-                                </div>
-                            </div>
-                            <div className="text-center">
-                                <p className="text-slate-600 text-sm mb-4">
-                                    Your email <strong className="text-slate-900">{email}</strong> has been
-                                    successfully verified. You can now access your dashboard.
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => router.push("/dashboard")}
-                                className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-white text-sm font-bold rounded-xl shadow-md hover:shadow-lg transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-                            >
-                                Go to Dashboard
-                                <ArrowRight className="w-4 h-4" />
-                            </button>
-                        </div>
-                    ) : (
-                        <form onSubmit={handleVerify} className="space-y-6">
-                            <div className="flex justify-center gap-3">
-                                {code.map((digit, idx) => (
-                                    <input
-                                        key={idx}
-                                        type="text"
-                                        inputMode="numeric"
-                                        maxLength={1}
-                                        value={digit}
-                                        ref={(el) => {
-                                            inputRefs.current[idx] = el;
-                                        }}
-                                        onChange={(e) => handleChange(idx, e.target.value)}
-                                        onKeyDown={(e) => handleKeyDown(idx, e)}
-                                        onPaste={handlePaste}
-                                        className="w-12 h-14 sm:w-14 sm:h-16 text-center text-xl sm:text-2xl font-bold text-slate-900 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 outline-none transition-all"
-                                        disabled={loading}
-                                    />
-                                ))}
-                            </div>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-white text-sm font-bold rounded-xl shadow-md hover:shadow-lg transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 disabled:opacity-70 disabled:cursor-not-allowed"
-                            >
-                                {loading ? (
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                ) : (
-                                    "Verify Email"
-                                )}
-                            </button>
-                            <p className="text-center text-sm text-slate-500">
-                                Didn’t receive the code?{" "}
-                                {resendCooldown > 0 ? (
-                                    <span className="text-slate-400">
-                                        Resend in {resendCooldown}s
-                                    </span>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        onClick={handleResend}
-                                        className="text-blue-600 font-semibold hover:underline transition-colors"
-                                    >
-                                        Resend
-                                    </button>
-                                )}
-                            </p>
-                        </form>
-                    )}
-                </div>
-            </div>
+                    <AuthSubmit loading={loading} loadingLabel="Verifying" disabled={loading}>
+                        Verify email
+                    </AuthSubmit>
 
-            {/* RIGHT SIDE */}
-            <div className="hidden lg:flex flex-1 relative bg-slate-50 items-center justify-center overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-bl from-blue-50 to-green-50 z-0"></div>
-                <div className="absolute top-0 right-0 -translate-y-12 translate-x-1/3 w-[600px] h-[600px] bg-blue-400/10 rounded-full blur-3xl"></div>
-                <div className="absolute bottom-0 left-0 translate-y-1/3 -translate-x-1/4 w-[500px] h-[500px] bg-green-400/10 rounded-full blur-3xl"></div>
-                <div className="relative z-10 w-full max-w-lg px-8 flex flex-col items-center">
-                    <img
-                        src="/images/banner/signup.webp"
-                        className="w-full object-contain drop-shadow-2xl mb-8 transform hover:scale-105 transition-transform duration-700 ease-out"
-                        alt="Pharmacy e-learning platform illustration"
-                    />
-                    <div className="text-center">
-                        <h2 className="text-2xl font-bold text-slate-800 mb-3">
-                            One last step…
-                        </h2>
-                        <p className="text-slate-600 text-sm leading-relaxed">
-                            Enter the code we sent to your email and you’ll be ready to
-                            explore all the tools and resources.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </main>
+                    <p className="text-[15px] text-[#16181d]/62" aria-live="polite">
+                        Didn&apos;t get it?{" "}
+                        {resendCooldown > 0 ? (
+                            <span className="tabular-nums text-[#16181d]/45">Send again in {resendCooldown}s</span>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={handleResend}
+                                className="rounded-sm font-semibold text-[#16181d] underline decoration-[#16181d]/25 underline-offset-4 transition-colors duration-300 hover:decoration-[#16181d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1c7bd9]/50"
+                            >
+                                Send it again
+                            </button>
+                        )}
+                    </p>
+                </form>
+            )}
+        </AuthLayout>
     );
 }
 
@@ -238,13 +193,7 @@ function VerifyOTPContent() {
 // ------------------------------------------------------------
 export default function VerifyOTPPage() {
     return (
-        <Suspense
-            fallback={
-                <div className="min-h-screen flex items-center justify-center bg-white">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-                </div>
-            }
-        >
+        <Suspense fallback={<AuthLoading label="Loading verification" />}>
             <VerifyOTPContent />
         </Suspense>
     );

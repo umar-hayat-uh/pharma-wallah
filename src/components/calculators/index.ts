@@ -11,3 +11,20 @@ export { ResultCard, ResultRow, type ResultTone } from "./ResultCard";
 export { FormulaNote, Formula } from "./FormulaNote";
 export { CalcAbout, CalcList, CalcFaq } from "./CalcAbout";
 export { AdSlot } from "./AdSlot";
+export { CalcDisclaimer } from "./CalcDisclaimer";
+
+// Laboratory calculators — lab record card, mode switch, units, formula → molar mass.
+export {
+  LabReport,
+  LabActions,
+  reportToText,
+  downloadReportPng,
+  printReport,
+  type LabReportData,
+  type LabReportSection,
+  type LabReportRow,
+} from "./LabReport";
+export { ModeSwitch, type ModeOption } from "./ModeSwitch";
+export { TextField, LabNotice } from "./LabFields";
+export * from "./lab-math";
+export { molarMassFromFormula, ATOMIC_WEIGHTS, type FormulaResult } from "./chemistry";

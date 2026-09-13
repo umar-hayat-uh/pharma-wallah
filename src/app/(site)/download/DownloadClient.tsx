@@ -28,7 +28,7 @@ const HIGHLIGHTS = [
     },
     {
         Icon: Calculator,
-        title: "All 89 calculators",
+        title: "All 97 calculators",
         body: "Dosing, pharmacokinetics, formulation, analysis, microbiology and clinical tools — the full set.",
     },
     {
@@ -62,7 +62,7 @@ export default function DownloadClient() {
                         </span>
 
                         <h1 className="mt-5 text-3xl md:text-5xl font-bold leading-tight">
-                            89 pharmacy calculators.
+                            97 pharmacy calculators.
                             <br />
                             <span className="text-brandGreen">Offline, on your phone.</span>
                         </h1>

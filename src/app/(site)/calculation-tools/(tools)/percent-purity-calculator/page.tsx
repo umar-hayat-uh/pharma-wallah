@@ -1,246 +1,361 @@
 "use client";
-import { useState } from 'react';
-import { Calculator, Percent, AlertCircle, Info, FlaskConical, Beaker, Scale, BookOpen, Database, FileText, ChevronUp, ChevronDown, RefreshCw } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+
+import { useMemo, useState } from "react";
+import { Percent, RefreshCw } from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { Button } from "@/components/ui/button";
+import {
+  CalculatorShell,
+  CalcSection,
+  FieldGrid,
+  NumberField,
+  ResultCard,
+  ResultRow,
+  FormulaNote,
+  Formula,
+  CalcAbout,
+  CalcList,
+  CalcFaq,
+  AdSlot,
+  LabNotice,
+  type ResultTone,
+} from "@/components/calculators";
+
+type Status = "compliant" | "non-compliant" | "marginal";
+
+/* ── Classification bands and wording (unchanged from the original page) ─── */
+function classify(purity: number): { status: Status; message: string; interpretation: string } {
+  if (purity >= 98.0 && purity <= 102.0) {
+    return {
+      status: "compliant",
+      message: "Meets pharmacopoeial standards",
+      interpretation:
+        "The assay result is within the accepted range (98‑102%). The sample is suitable for use.",
+    };
+  }
+  if (purity >= 95.0 && purity < 98.0) {
+    return {
+      status: "marginal",
+      message: "Borderline – investigate",
+      interpretation:
+        "The purity is slightly below specification. Check for analytical errors, impurity interference, or degradation.",
+    };
+  }
+  return {
+    status: "non-compliant",
+    message: "Fails quality standards – reject",
+    interpretation:
+      "The assay result is outside acceptable limits. The sample may be adulterated, degraded, or incorrectly prepared.",
+  };
+}
+
+const TONE: Record<Status, ResultTone> = {
+  compliant: "success",
+  marginal: "warning",
+  "non-compliant": "danger",
+};
+
+const EXAMPLES = [
+  { label: "Aspirin", W: "0.5", V: "24.5", N: "0.1", E: "0.1802" },
+  { label: "Ascorbic Acid", W: "1.0", V: "48.2", N: "0.05", E: "0.1761" },
+  { label: "Paracetamol", W: "0.3", V: "15.8", N: "0.1", E: "0.1512" },
+  { label: "NaCl", W: "0.2", V: "34.2", N: "0.1", E: "0.05844" },
+  { label: "Amoxicillin", W: "0.5", V: "21.3", N: "0.1", E: "0.3644", D: "5" },
+];
+
+const COLORS = ["#2563eb", "#ef4444"];
+
+/** A positive-number check that only speaks once something has been typed. */
+function positiveError(raw: string): string | undefined {
+  if (raw.trim() === "") return undefined;
+  const value = parseFloat(raw);
+  if (isNaN(value)) return "Enter a number.";
+  if (value <= 0) return "Must be greater than zero.";
+  return undefined;
+}
 
 export default function PercentPurityCalculator() {
-  const [sampleWeight, setSampleWeight] = useState<string>('');
-  const [titrantVolume, setTitrantVolume] = useState<string>('');
-  const [titrantNormality, setTitrantNormality] = useState<string>('');
-  const [equivalentFactor, setEquivalentFactor] = useState<string>('');
-  const [dilutionFactor, setDilutionFactor] = useState<string>('1');
-  const [result, setResult] = useState<{
-    purity: number;
-    status: 'compliant' | 'non-compliant' | 'marginal';
-    message: string;
-    interpretation: string;
-  } | null>(null);
-  const [showDetails, setShowDetails] = useState<boolean>(false);
+  const [sampleWeight, setSampleWeight] = useState("");
+  const [titrantVolume, setTitrantVolume] = useState("");
+  const [titrantNormality, setTitrantNormality] = useState("");
+  const [equivalentFactor, setEquivalentFactor] = useState("");
+  const [dilutionFactor, setDilutionFactor] = useState("1");
 
-  const calculate = () => {
+  const errors = {
+    W: positiveError(sampleWeight),
+    V: positiveError(titrantVolume),
+    N: positiveError(titrantNormality),
+    E: positiveError(equivalentFactor),
+    // The original treated a blank or zero D as 1; a negative dilution factor is meaningless.
+    D: parseFloat(dilutionFactor) < 0 ? "Cannot be negative." : undefined,
+  };
+
+  /*
+   * Live, instead of the old "Calculate Purity" button + alert(). For any valid
+   * input the number is exactly what the button produced.
+   */
+  const result = useMemo(() => {
     const W = parseFloat(sampleWeight);
     const V = parseFloat(titrantVolume);
     const N = parseFloat(titrantNormality);
     const E = parseFloat(equivalentFactor);
     const D = parseFloat(dilutionFactor) || 1;
 
-    if (isNaN(W) || isNaN(V) || isNaN(N) || isNaN(E) || W <= 0 || V <= 0 || N <= 0 || E <= 0) {
-      alert('Please enter valid positive numbers');
-      return;
-    }
+    if (isNaN(W) || isNaN(V) || isNaN(N) || isNaN(E) || W <= 0 || V <= 0 || N <= 0 || E <= 0) return null;
+    if (D < 0) return null;
 
     const purity = (V * N * E * D * 100) / W;
+    if (!Number.isFinite(purity)) return null;
 
-    let status: 'compliant' | 'non-compliant' | 'marginal' = 'compliant';
-    let message = '';
-    let interpretation = '';
-
-    if (purity >= 98.0 && purity <= 102.0) {
-      status = 'compliant';
-      message = 'Meets pharmacopoeial standards';
-      interpretation = 'The assay result is within the accepted range (98‑102%). The sample is suitable for use.';
-    } else if (purity >= 95.0 && purity < 98.0) {
-      status = 'marginal';
-      message = 'Borderline – investigate';
-      interpretation = 'The purity is slightly below specification. Check for analytical errors, impurity interference, or degradation.';
-    } else {
-      status = 'non-compliant';
-      message = 'Fails quality standards – reject';
-      interpretation = 'The assay result is outside acceptable limits. The sample may be adulterated, degraded, or incorrectly prepared.';
-    }
-
-    setResult({ purity, status, message, interpretation });
-  };
+    return { W, V, N, E, D, purity, ...classify(purity) };
+  }, [sampleWeight, titrantVolume, titrantNormality, equivalentFactor, dilutionFactor]);
 
   const reset = () => {
-    setSampleWeight('');
-    setTitrantVolume('');
-    setTitrantNormality('');
-    setEquivalentFactor('');
-    setDilutionFactor('1');
-    setResult(null);
+    setSampleWeight("");
+    setTitrantVolume("");
+    setTitrantNormality("");
+    setEquivalentFactor("");
+    setDilutionFactor("1");
   };
 
-  const examples = [
-    { label: 'Aspirin', W: '0.5', V: '24.5', N: '0.1', E: '0.1802' },
-    { label: 'Ascorbic Acid', W: '1.0', V: '48.2', N: '0.05', E: '0.1761' },
-    { label: 'Paracetamol', W: '0.3', V: '15.8', N: '0.1', E: '0.1512' },
-    { label: 'NaCl', W: '0.2', V: '34.2', N: '0.1', E: '0.05844' },
-    { label: 'Amoxicillin', W: '0.5', V: '21.3', N: '0.1', E: '0.3644', D: '5' }
-  ];
-  const loadExample = (idx: number) => {
-    const ex = examples[idx];
+  const loadExample = (ex: (typeof EXAMPLES)[number]) => {
     setSampleWeight(ex.W);
     setTitrantVolume(ex.V);
     setTitrantNormality(ex.N);
     setEquivalentFactor(ex.E);
-    setDilutionFactor(ex.D || '1');
+    setDilutionFactor(ex.D || "1");
   };
 
-  const pieData = result ? [
-    { name: 'Purity', value: result.purity },
-    { name: 'Impurity', value: 100 - result.purity }
-  ] : [];
-  const COLORS = ['#3b82f6', '#ef4444'];
+  // The pie can only show 0–100 %; a result above 100 % is called out in words instead.
+  const pieData = result
+    ? [
+        { name: "Purity", value: Math.max(0, Math.min(result.purity, 100)) },
+        { name: "Impurity", value: Math.max(0, 100 - result.purity) },
+      ]
+    : [];
 
   return (
-    <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 pt-20">
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6">
-          <div className="flex flex-col md:flex-row items-center justify-between">
-            <div className="flex items-center">
-              <div className="bg-white/20 p-3 rounded-xl mr-4">
-                <Percent className="w-8 h-8 md:w-10 md:h-10 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-white">Percent Purity (Assay) Calculator</h1>
-                <p className="text-blue-100 mt-2">% Purity = (V·N·E·D·100)/W</p>
-              </div>
-            </div>
-            <div className="bg-white/20 px-4 py-2 rounded-lg">
-              <FlaskConical className="w-5 h-5 text-white inline mr-2" />
-              <span className="text-white font-semibold">Titrimetric Analysis</span>
-            </div>
-          </div>
-        </div>
+    <CalculatorShell
+      title="Percent Purity (Assay) Calculator"
+      subtitle="Works out the % purity of a drug sample from a titration, and checks it against assay limits."
+      icon={Percent}
+      eyebrow="Pharmaceutical Analysis"
+      aside={
+        <>
+          <CalcAbout title="About titrimetric assay">
+            <p>
+              In a titrimetric assay, the volume of titrant of known concentration needed to react
+              completely with the sample tells you how much analyte the sample contains. Dividing that
+              amount by the weight taken gives the purity as a percentage.
+            </p>
+            <CalcList
+              title="Use it when"
+              items={[
+                "Calculating an acid–base, redox or precipitation assay in a practical",
+                "Checking a raw material against its monograph limits",
+                "You know the titrant normality and the equivalent factor from the monograph",
+              ]}
+            />
+            <CalcList
+              tone="caution"
+              title="Check before trusting the number"
+              items={[
+                "W and E must use the same mass unit (g with g/mEq, or mg with mg/mEq)",
+                "A back-titration or blank correction must be applied to V first",
+                "The 98–102% band used here is the IP range — USP and BP limits differ",
+              ]}
+            />
+          </CalcAbout>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
-                <Calculator className="w-6 h-6 mr-2 text-blue-600" />
-                Assay Calculation
-              </h2>
+          <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+        </>
+      }
+    >
+      <ResultCard
+        label="Purity"
+        value={result ? result.purity.toFixed(2) : null}
+        unit="%"
+        interpretation={result?.message}
+        tone={result ? TONE[result.status] : "neutral"}
+        empty="Enter the sample weight, titrant volume, normality and equivalent factor."
+      />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
-                  <label className="block text-lg font-semibold mb-3">Sample Weight (mg)</label>
-                  <input type="number" step="0.001" min="0.001" value={sampleWeight} onChange={(e) => setSampleWeight(e.target.value)}
-                    className="w-full px-4 py-3 text-lg border-2 border-blue-200 rounded-lg" />
-                </div>
-                <div className="bg-green-50 p-6 rounded-lg border border-green-200">
-                  <label className="block text-lg font-semibold mb-3">Titrant Volume (mL)</label>
-                  <input type="number" step="0.01" min="0.01" value={titrantVolume} onChange={(e) => setTitrantVolume(e.target.value)}
-                    className="w-full px-4 py-3 text-lg border-2 border-green-200 rounded-lg" />
-                </div>
-                <div className="bg-purple-50 p-6 rounded-lg border border-purple-200">
-                  <label className="block text-lg font-semibold mb-3">Titrant Normality (N)</label>
-                  <input type="number" step="0.001" min="0.001" value={titrantNormality} onChange={(e) => setTitrantNormality(e.target.value)}
-                    className="w-full px-4 py-3 text-lg border-2 border-purple-200 rounded-lg" />
-                </div>
-                <div className="bg-orange-50 p-6 rounded-lg border border-orange-200">
-                  <label className="block text-lg font-semibold mb-3">Equivalent Factor (E)</label>
-                  <input type="number" step="0.0001" min="0.0001" value={equivalentFactor} onChange={(e) => setEquivalentFactor(e.target.value)}
-                    className="w-full px-4 py-3 text-lg border-2 border-orange-200 rounded-lg" />
-                </div>
-              </div>
+      <CalcSection title="Titration data">
+        <FieldGrid>
+          <NumberField
+            label="Sample weight (W)"
+            value={sampleWeight}
+            onChange={setSampleWeight}
+            unit="g"
+            step="0.001"
+            placeholder="e.g. 0.5"
+            error={errors.W}
+            hint="Accurately weighed sample, in the same mass unit as E."
+          />
+          <NumberField
+            label="Titrant volume (V)"
+            value={titrantVolume}
+            onChange={setTitrantVolume}
+            unit="mL"
+            step="0.01"
+            placeholder="e.g. 24.5"
+            error={errors.V}
+            hint="Burette reading at the end point (blank-corrected)."
+          />
+          <NumberField
+            label="Titrant normality (N)"
+            value={titrantNormality}
+            onChange={setTitrantNormality}
+            unit="N"
+            step="0.001"
+            placeholder="e.g. 0.1"
+            error={errors.N}
+            hint="Standardised strength of the titrant, e.g. 0.1 N NaOH."
+          />
+          <NumberField
+            label="Equivalent factor (E)"
+            value={equivalentFactor}
+            onChange={setEquivalentFactor}
+            unit="g/mEq"
+            step="0.0001"
+            placeholder="e.g. 0.1802"
+            error={errors.E}
+            hint="Weight of analyte equivalent to 1 mEq of titrant — MW ÷ n ÷ 1000."
+          />
+          <NumberField
+            label="Dilution factor (D)"
+            value={dilutionFactor}
+            onChange={setDilutionFactor}
+            step="1"
+            error={errors.D}
+            hint="1 if you titrated the whole sample; e.g. 5 if you titrated a 1-in-5 aliquot. Blank or 0 counts as 1."
+          />
+        </FieldGrid>
 
-              <div className="bg-gray-50 rounded-lg p-6 mt-4">
-                <label className="block text-lg font-semibold mb-3">Dilution Factor (D)</label>
-                <input type="number" step="1" min="1" value={dilutionFactor} onChange={(e) => setDilutionFactor(e.target.value)}
-                  className="w-32 px-4 py-3 text-lg border-2 border-gray-300 rounded-lg" />
-              </div>
-
-              <div className="mt-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-4">
-                <h3 className="font-semibold mb-3">Examples</h3>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  {examples.map((ex, idx) => (
-                    <button key={idx} onClick={() => loadExample(idx)}
-                      className="bg-white p-2 rounded-lg text-xs hover:bg-blue-100">
-                      <div className="font-semibold">{ex.label}</div>
-                      <div>V {ex.V} mL</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-4 mt-6">
-                <button onClick={calculate}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 rounded-xl shadow-lg">
-                  Calculate Purity
-                </button>
-                <button onClick={reset}
-                  className="px-6 bg-gray-600 hover:bg-gray-700 text-white rounded-xl flex items-center justify-center">
-                  <RefreshCw className="w-5 h-5 mr-2" /> Reset
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <button onClick={() => setShowDetails(!showDetails)}
-                className="flex items-center justify-between w-full text-left">
-                <h3 className="text-lg font-bold text-gray-800 flex items-center">
-                  <Info className="w-5 h-5 mr-2 text-blue-600" />
-                  About Titrimetric Assay
-                </h3>
-                {showDetails ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+        <div>
+          <p className="mb-2 text-xs font-medium text-muted-foreground">Try an example</p>
+          <div className="flex flex-wrap gap-2">
+            {EXAMPLES.map((ex) => (
+              <button
+                key={ex.label}
+                type="button"
+                onClick={() => loadExample(ex)}
+                className="min-h-[40px] rounded-full border bg-background px-3 py-2 text-xs font-medium active:bg-accent"
+              >
+                {ex.label} · V {ex.V} mL
               </button>
-              {showDetails && (
-                <div className="mt-4 space-y-3 text-sm text-gray-600">
-                  <p><span className="font-semibold">Principle:</span> The volume of titrant of known concentration needed to react completely with the sample is used to calculate the amount of analyte.</p>
-                  <p><span className="font-semibold">Equivalent factor (E):</span> Milliequivalent weight of the analyte (mg/mEq). For a compound with molecular weight M and n reacting equivalents, E = M / n.</p>
-                  <p><span className="font-semibold">Acceptance criteria:</span> USP: 90‑110%; BP: 95‑105%; IP: 98‑102% of label claim.</p>
-                  <p className="text-xs italic">Sources: USP General Chapter `&gt;`541, European Pharmacopoeia 2.5.</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right Column */}
-          <div className="space-y-6">
-            {result && (
-              <>
-                <div className={`rounded-2xl shadow-xl p-6 md:p-8 text-white ${result.status === 'compliant' ? 'bg-gradient-to-br from-green-600 to-green-400' :
-                    result.status === 'marginal' ? 'bg-gradient-to-br from-yellow-600 to-yellow-400' :
-                      'bg-gradient-to-br from-red-600 to-red-400'
-                  }`}>
-                  <h2 className="text-2xl font-bold mb-4">Purity</h2>
-                  <div className="bg-white/20 rounded-xl p-6 text-center">
-                    <div className="text-5xl font-bold">{result.purity.toFixed(2)}%</div>
-                    <div className="mt-2">{result.message}</div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl shadow-lg p-6">
-                  <h3 className="text-lg font-bold text-gray-800 mb-4">Composition</h3>
-                  <div className="h-48">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart margin={{ top: 10, right: 30, left: 30, bottom: 10 }}>
-                        <Pie
-                          data={pieData}
-                          dataKey="value"
-                          nameKey="name"
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={60}
-                          label={({ name, percent = 0 }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          labelLine={false}
-                        >
-                          {pieData.map((entry, idx) => (
-                            <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl shadow-lg p-6">
-                  <h3 className="text-lg font-bold text-gray-800 mb-2">Interpretation</h3>
-                  <p className="text-sm">{result.interpretation}</p>
-                </div>
-              </>
-            )}
-
-            <div className="bg-blue-50 rounded-2xl shadow-lg p-6 border border-blue-200">
-              <h3 className="text-lg font-bold text-gray-800 mb-2">Pharmacopoeial Limits</h3>
-              <p className="text-sm">USP: 90‑110%<br />BP: 95‑105%<br />IP: 98‑102%</p>
-            </div>
+            ))}
           </div>
         </div>
-      </div>
-    </section>
+
+        <Button variant="outline" onClick={reset} className="w-full">
+          <RefreshCw />
+          Reset
+        </Button>
+      </CalcSection>
+
+      {result && (
+        <CalcSection title="Working">
+          <div>
+            <ResultRow label="Milliequivalents of titrant (V × N)" value={(result.V * result.N).toFixed(4)} unit="mEq" />
+            <ResultRow
+              label="Analyte found (V × N × E × D)"
+              value={(result.V * result.N * result.E * result.D).toFixed(4)}
+              unit="g"
+            />
+            <ResultRow label="Dilution factor used" value={result.D} />
+            <ResultRow label="Purity" value={result.purity.toFixed(2)} unit="%" />
+          </div>
+          <Formula>
+            % purity = ({result.V} × {result.N} × {result.E} × {result.D} × 100) ÷ {result.W} ={" "}
+            {result.purity.toFixed(2)}%
+          </Formula>
+          <LabNotice tone={result.status === "compliant" ? "info" : "warning"} title="Interpretation">
+            {result.interpretation}
+          </LabNotice>
+        </CalcSection>
+      )}
+
+      {result && (
+        <CalcSection title="Composition">
+          <div className="h-52 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart margin={{ top: 10, right: 30, left: 30, bottom: 10 }}>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={60}
+                  label={({ name, percent = 0 }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  labelLine={false}
+                >
+                  {pieData.map((entry, idx) => (
+                    <Cell key={entry.name} fill={COLORS[idx % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 13 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          {result.purity > 100 && (
+            <p className="text-xs text-muted-foreground">
+              The result is above 100%, so the chart shows the sample as 100% analyte. A figure above
+              100% usually means a wrong equivalent factor, unit mismatch or titration error.
+            </p>
+          )}
+        </CalcSection>
+      )}
+
+      <CalcSection title="Pharmacopoeial limits">
+        <div>
+          <ResultRow label="USP" value="90 – 110" unit="%" />
+          <ResultRow label="BP" value="95 – 105" unit="%" />
+          <ResultRow label="IP" value="98 – 102" unit="%" />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          This calculator grades against 98–102% (compliant), 95–98% (borderline) and anything else
+          (fails). Always check the individual monograph.
+        </p>
+      </CalcSection>
+
+      <FormulaNote>
+        <Formula>% Purity = (V × N × E × D × 100) ÷ W</Formula>
+        <p>
+          <strong>V</strong> = titrant volume (mL), <strong>N</strong> = titrant normality (mEq/mL),{" "}
+          <strong>E</strong> = equivalent factor — the milliequivalent weight of the analyte
+          (for molecular weight M reacting with n equivalents, E = M ÷ n), <strong>D</strong> =
+          dilution factor, <strong>W</strong> = sample weight.
+        </p>
+        <p>
+          V × N gives the milliequivalents of titrant used; multiplying by E converts that to the mass
+          of analyte it reacted with. Dividing by the weight taken and multiplying by 100 gives the
+          percentage.
+        </p>
+        <p className="text-xs">Sources: USP General Chapter &lt;541&gt;, European Pharmacopoeia 2.5.</p>
+      </FormulaNote>
+
+      <CalcFaq
+        items={[
+          {
+            q: "What units should W and E be in?",
+            a: "The same mass unit. If E is written in g/mEq (e.g. 0.1802 for aspirin), enter W in grams; if E is in mg/mEq (180.2), enter W in milligrams. Mixing them makes the result 1000 times too big or too small.",
+          },
+          {
+            q: "How do I find the equivalent factor?",
+            a: "Most monographs state it directly, e.g. \"each mL of 0.1 M NaOH is equivalent to 18.02 mg of C₉H₈O₄\". Otherwise divide the molecular weight by the number of equivalents that react per molecule.",
+          },
+          {
+            q: "When do I need a dilution factor?",
+            a: "When you dissolve the sample, make it up to volume, and titrate only part of it. If you dissolved in 100 mL and titrated a 20 mL aliquot, D = 5.",
+          },
+          {
+            q: "Why is my purity above 100%?",
+            a: "Usually a unit mismatch between W and E, a normality that was not standardised, or an overshot end point. Results slightly over 100% can be real within assay error, which is why limits such as 98–102% extend above 100.",
+          },
+        ]}
+      />
+    </CalculatorShell>
   );
 }

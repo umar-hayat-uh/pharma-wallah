@@ -5,6 +5,13 @@ import { redis, progressCacheKey, PROGRESS_CACHE_TTL_SECONDS } from "@/lib/redis
 import { progressReadLimiter, progressWriteLimiter, checkLimit } from "@/lib/rateLimit";
 import { applyProgressEvent, invalidateProgressCache, ProgressEventValidationError } from "@/lib/progress-server";
 
+// The dashboard draws a 13-week activity calendar and derives the study streak
+// from these rows, so the read covers a window rather than the newest 20 (which
+// one busy afternoon used to exhaust, blanking the rest of the week). The row
+// cap bounds the payload and the Redis entry for a very active account.
+const ACTIVITY_WINDOW_DAYS = 91;
+const MAX_ACTIVITY_ROWS = 600;
+
 export async function GET() {
   const userSupabase = await createServerSupabaseClient();
   const { data: { user }, error: authError } = await userSupabase.auth.getUser();
@@ -64,7 +71,13 @@ export async function GET() {
       supabase.from("flashcard_progress").select("*").eq("progress_id", progressId),
       supabase.from("quiz_attempts").select("*").eq("progress_id", progressId).order("attempted_at", { ascending: false }),
       supabase.from("spotting_progress").select("*").eq("progress_id", progressId),
-      supabase.from("activity_log").select("*").eq("user_id", user.id).order("timestamp", { ascending: false }).limit(20),
+      supabase
+        .from("activity_log")
+        .select("*")
+        .eq("user_id", user.id)
+        .gte("timestamp", new Date(Date.now() - ACTIVITY_WINDOW_DAYS * 86_400_000).toISOString())
+        .order("timestamp", { ascending: false })
+        .limit(MAX_ACTIVITY_ROWS),
     ]);
 
     const [unitsRes, flashcardsRes, quizRes, spottingRes, activityRes] = results;

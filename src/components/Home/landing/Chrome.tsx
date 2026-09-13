@@ -1,68 +1,52 @@
 "use client";
 
 import React from "react";
-import { CapsuleMark } from "./art";
-import { STATIONS } from "./data";
-import { AdSlot } from "@/components/calculators/AdSlot";
 
 /**
- * The capsule that splits, rotates and lifts away on first paint.
- * Skipped entirely under `prefers-reduced-motion`.
+ * A film countdown leader — 3, 2, 1 — with a marker sweep circling the number,
+ * then the board is revealed. The page is a whiteboard video; this is the
+ * leader before it starts.
+ *
+ * Plays once per tab session. Skipped entirely under `prefers-reduced-motion`,
+ * hidden by <noscript>, and removed by a CSS failsafe if hydration never runs.
  */
 export function Preloader() {
   return (
-    <div className="pw-pre" data-pre aria-hidden="true">
-      <CapsuleMark />
-      <span className="pct" data-pct>
-        LOADING 0%
-      </span>
+    <div className="pre" data-pre aria-hidden="true">
+      <div className="pre__frame">
+        <svg className="pre__ring" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="88" className="pre__ring-track" />
+          <circle cx="100" cy="100" r="88" className="pre__ring-sweep" data-pre-sweep />
+          <line x1="100" y1="4" x2="100" y2="196" className="pre__cross" />
+          <line x1="4" y1="100" x2="196" y2="100" className="pre__cross" />
+        </svg>
+        <span className="pre__count" data-pre-count>
+          3
+        </span>
+      </div>
+      <span className="pre__label mono">PharmaWallah · Scene 01</span>
     </div>
-  );
-}
-
-/** Which ADME stage you are in, as four bars that fill down the left edge. */
-export function ProgressRail() {
-  return (
-    <div className="rail" data-rail aria-hidden="true">
-      {STATIONS.map((s) => (
-        <i key={s.num}>
-          <b />
-          <em>
-            {s.num} · {s.label}
-          </em>
-        </i>
-      ))}
-    </div>
-  );
-}
-
-/** The gradient tile that trails the cursor across the discipline index. */
-export function IndexPreview() {
-  return (
-    <span className="pw-preview" data-preview aria-hidden="true">
-      <span className="p" data-preview-t />
-    </span>
   );
 }
 
 /**
- * An ad band.
- *
- * Deliberately never animated and never inside a pinned or transformed parent:
- * an animated opacity or transform on an ad slot breaks AdSense's viewability
- * measurement and risks a policy violation. The 280px reservation means nothing
- * on the page shifts when the ad finally loads.
+ * The marker pen of a whiteboard video. The motion hook moves it to the tip of
+ * whichever stroke is being drawn, and fades it out when nothing is.
  */
-export function AdBand({ slot, label }: { slot?: string; label: string }) {
-  // In production AdSlot renders nothing without a configured slot id, which
-  // would leave an empty tinted strip between two sections. Drop the band too.
-  if (!slot && process.env.NODE_ENV !== "development") return null;
-
+export function Pen() {
   return (
-    <div className="adband" data-ad-band>
-      <div className="ad" data-ad>
-        <AdSlot slot={slot} className="min-h-[280px]" label={label} />
-      </div>
-    </div>
+    <span className="pen" data-pen aria-hidden="true">
+      <svg viewBox="0 0 64 120" width="46" height="86">
+        {/* Nib at the origin (bottom-left), so positioning the element puts the
+            nib exactly on the stroke. */}
+        <g transform="rotate(28 8 112)">
+          <path d="M5 112 L11 112 L13 96 L3 96 Z" fill="#22252b" />
+          <rect x="1" y="62" width="14" height="34" rx="2" fill="#1c7bd9" />
+          <rect x="0" y="6" width="16" height="58" rx="5" fill="#f4f4f1" stroke="#c9c9c3" strokeWidth="1.2" />
+          <rect x="0" y="0" width="16" height="16" rx="4" fill="#1c7bd9" />
+          <rect x="3" y="24" width="10" height="26" rx="2" fill="#e8e8e2" />
+        </g>
+      </svg>
+    </span>
   );
 }

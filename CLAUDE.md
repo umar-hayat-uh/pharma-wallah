@@ -15,7 +15,7 @@ The product is unusually broad for its size. Six distinct pillars share one Next
 
 | Pillar | What it is |
 | --- | --- |
-| **Calculation tools** | 89 standalone pharmacy calculators under `/calculation-tools/<tool>` |
+| **Calculation tools** | 98 standalone pharmacy calculators under `/calculation-tools/<tool>` |
 | **Courses & MCQ bank** | Semester → subject → unit markdown lessons + per-subject MCQ banks |
 | **Spotting labs** | Histology / pathology / powder-microscopy slide lessons + timed identification tests |
 | **Simulations** | 8 interactive wet-lab simulations (titration, disk diffusion, UV, staining, …) |
@@ -60,7 +60,7 @@ npx tsc --noEmit # type-check   — the only reliable static check today
 ```
 
 ```bash
-npm run mobile:build   # regenerate routes + static export of the 89 calculators -> mobile/out
+npm run mobile:build   # regenerate routes + static export of the 98 calculators -> mobile/out
 npm run mobile:sync    # mobile:build + `cap sync android`
 npm run mobile:open    # open the native project in Android Studio
 ```
@@ -127,7 +127,7 @@ acknowledge that a protocol exists. Do the steps. Report in the protocol's `## R
   - `src/app/clinical/…` — the clinical sub-brand.
   - `src/app/api/…` — route handlers **and, unusually, plain data modules** (see Gotchas).
 - A **fourth, separate Next.js project root**: `mobile/` — the offline Android app. It contains
-  only the 89 calculators, uses `output: "export"`, and has no API routes or middleware, so it
+  only the 98 calculators, uses `output: "export"`, and has no API routes or middleware, so it
   *can* be statically exported (the main app cannot). Its pages are generated one-line re-exports
   of the real tool files, so calculators are never duplicated. Capacitor packages `mobile/out`
   into the APK. See `.claude/skills/android-app-capacitor/SKILL.md`.
@@ -210,12 +210,19 @@ These are conventions **observed in the code**, not aspirations.
     **One documented exception:** the landing page (`src/components/Home/landing/`) uses **GSAP**
     for scroll pinning, scrubbing and the SVG plugins framer-motion has no equivalent for. GSAP is
     confined to that directory — nothing else in `src/` may import it, or a ~70 KB library lands on
-    all ~170 routes.
+    all ~170 routes. **Second exception (2026-09-13, user request): `src/components/dashboard/`**,
+    which loads GSAP with a dynamic `import()` after first paint (`useDashboardMotion.ts`). The landing page also loads two scoped faces via `next/font` (JetBrains Mono
+    for instrument labels, Caveat for marker annotations); Outfit remains the only site-wide face.
 14. **A page's bespoke CSS goes in a namespaced stylesheet next to its components**, imported by
-    the page's client component (`landing.css` under `.pw-landing`), never in `globals.css`.
+    the page's client component (`landing.css` under `.pw-idx`), never in `globals.css`.
     `globals.css` is loaded by every route; three of its rules (`html{scroll-behavior:smooth}`,
     `ul/li` list styling, `input{background:#fff!important}`) will fight a bespoke page, so
     neutralise them inside your namespace rather than editing them.
+15. **No black grounds — the theme is the blue→green brand gradient** (user rule, 2026-09-13).
+    Strong surfaces use `BRAND_SURFACE` / `BRAND_BUTTON` from `src/components/page-kit/brand.ts`
+    (gradient + a navy scrim that makes white text pass contrast). Ink stays a text colour.
+16. **No `backdrop-filter` on anything `position: fixed`** — it re-blurs scrolling content every
+    frame and was measured as the main scroll-lag source (`MEMORY.md` gotcha 51).
 
 ---
 
@@ -226,11 +233,43 @@ These are conventions **observed in the code**, not aspirations.
   large body of work is staged but uncommitted (the whole `.claude/` system, `mobile/`, `android/`,
   the landing-page redesign, the header/MegaMenu, the shared calculator UI kit, and the AdSense
   scaffolding). **Nothing here has been committed yet; don't assume `git log` reflects the tree.**
-- Focus: **monetisation (AdSense) and the shared calculator UI kit**, on top of expanding the
-  calculation-tools catalogue.
+- Focus: **site-wide redesign with the `top-design` skill** — a multi-session job tracked in
+  **`.claude/redesign-tracker.md`** (read it first if continuing). Phase 0 is done and **waiting for
+  the user to pick a direction per page family** (preview artifact linked from the tracker). No
+  family may be rolled out before its direction is chosen.
+- **Two Claude sessions may be working in the tree at once** (it happened on 2026-09-13) — check
+  `git status` and `ListAgents` before editing a shared directory. `MEMORY.md` §8 gotcha 46.
 - Typography: the site is now single-typeface (**Outfit**, variable) across web and APK.
 
 ### Recently Completed
+- **Pharmacy-themed loading screen (2026-09-13)** — shared `PharmaLoader` (capsule as a measuring
+  vessel + "weigh · dissolve · make up to volume"): the website's root `loading.tsx` and the Android
+  app's startup splash, CSS-only.
+- **Dashboard rebuilt (2026-09-13)** — chromeless app with lazy GSAP, derived figures, Read/Opened
+  syllabus grid, ⌘K palette; signed-in `/` redirects to it; **unit/spotting visits were never being
+  recorded (fixed)**; units gain an explicit Mark-as-read state. See the §8 entry.
+- **Header app CTA, favicon, calculator disclaimer, gradient footer, Master Formula Calculator
+  (2026-09-13).** A prominent "Get the app" CTA in the header (redesigned with `top-design`: solid
+  brand green, the real app icon, an arrow that drops into its tray), header scroll-lag fix (no
+  backdrop blur, rAF-batched handler), a proper PharmaWallah favicon set, an "educational purposes
+  only" card under every calculator on web and APK, the brand gradient on the footer, header pills,
+  mega-menu tile and calculator result face, and a new Dosage Form Lab tool that scales any master
+  formula (98 tools).
+- **Redesign Phase 0 (2026-09-13)** — inventory + tracker (106 page files, 97 calculators, 19
+  measured faults F1–F19), a dependency-free **page kit** in `src/components/page-kit/` (not yet
+  used by any page), and a published preview of three directions for six families.
+- **Science Fair 2026 banners removed (2026-09-13)** — the landing launch strip and the site-wide
+  launch dialog are unmounted (files kept); the landing hero's meta strip (counts + PKT clock) is gone.
+- **Design pass with the `top-design` skill (2026-09-13).** New landing page — "The Index" played as
+  a whiteboard explainer video (scroll-scrubbed marker annotations, a pen on the stroke, a
+  scroll-driven timeline bar, no play button and no ads, by decision). Header, mega menu, launch
+  strip, launch dialog and footer restyled to match. The shared calculator kit and shadcn
+  primitives restyled — one change reaches the web *and* the APK, because the app imports
+  `src/components/*` directly. Five 404 footer links fixed; a select-background bug fixed.
+- **Eight laboratory tools (2026-09-13)**: Theoretical Yield (with limiting-reactant stoichiometry),
+  Percentage Yield, Percentage Recovery, WBC Count, RBC Count, Density & Relative Density Bottle,
+  UV-Vis Spectrum Plotter and Serial Dilution. Built on the shared kit plus a new **lab-record
+  layer** (`LabReport` / `LabActions`: copy, PNG card, print) and a new **Physiology** hub category.
 - **Google AdSense is wired up** — publisher ID `ca-pub-9553986083846603` set, loader live,
   `public/ads.txt` added, 7 placements across 5 surfaces including all 89 calculators via
   `src/app/(site)/calculation-tools/(tools)/layout.tsx`. The APK stays provably ad-free.
@@ -247,8 +286,9 @@ These are conventions **observed in the code**, not aspirations.
 ### In Progress
 - **Shared calculator UI kit migration** (uncommitted). `src/components/calculators/` holds a new
   kit — `CalculatorShell` / `CalcSection` / `FieldGrid`, `NumberField` / `SelectField`,
-  `ResultCard`, `FormulaNote`, `CalcAbout`, `AdSlot` — and **3 of 89** tools are migrated to it
-  (`gfr-calculator`, `therapeutic-index-calculator`, `CorrectedCalciumCalculator`). Migrating a
+  `ResultCard`, `FormulaNote`, `CalcAbout`, `AdSlot`, plus the lab-record layer — and **17 of 98**
+  tool pages import it (re-measured 2026-09-13 with `grep -l @/components/calculators`; "21" was wrong). The kit and the
+  shadcn primitives were restyled on 2026-09-13; every exported prop is unchanged. Migrating a
   tool also gives it a sticky-`aside` ad slot for free.
 - **AdSense**: plumbing done, ad-unit IDs outstanding (Phase 4.6).
 
@@ -258,14 +298,16 @@ These are conventions **observed in the code**, not aspirations.
   subjects**. Nine subject files are dead code *and use a different data shape* (`*_META` +
   `*Units` + `*_DIFF_BADGE`) than the registry's `SubjectMeta` interface. A tenth,
   `natural-toxins.ts`, *is* in `SubjectMeta` shape but is still not registered.
-- **Calculation tools hub.** 89 tool directories exist; the `allTools` array lists **78**
-  (re-counted 2026-09-12; this file previously said 84). Six of the remainder are deliberately
+- **Calculation tools hub.** 98 tool directories exist; the `allTools` array lists **87** (re-counted 2026-09-13 after the Master Formula Calculator)
+  (re-counted 2026-09-13 after adding eight lab tools; 78 before that). Six of the remainder are deliberately
   linked from `src/app/clinical/dose-calculators/page.tsx` instead. **Five —
   `AntagonismSimulator`, `EmaxModelCalculator`, `drug-half-life-calculator`,
   `OsmolarGapCalculator`, `OpioidConversionCalculator` — are reachable by URL but linked from
-  nowhere on the web.** All 89 ship in the Android app, so they are reachable there.
-- **Spotting.** Histology has 17 lessons + a test; pathology has 16 lessons + a test;
-  powder-microscopy has only 3 lessons + a test.
+  nowhere on the web.** All 98 ship in the Android app, so they are reachable there.
+- **Spotting.** Histology has 17 lessons (16 in `HISTOLOGY_LESSONS`; `simple-columnar-epithelium`
+  is an orphan) + a test; pathology has **15** lessons (copy-pasted pages, not a template) + a test;
+  powder-microscopy has only 3 lessons + a test. The `/spotting` hub prints "8 lessons" per category
+  and "24+" in total, and its pathology link 404s (trailing space) — tracker F1/F2.
 - **AdSense.** The loader and the `google-adsense-account` meta tag are now in `<head>` on every
   page unconditionally (the publisher ID is a hardcoded constant, env-overridable), and `ads.txt`
   is live. But every `NEXT_PUBLIC_ADSENSE_SLOT_*` is blank, so **no ad unit renders yet** — only
@@ -279,6 +321,11 @@ exact steps — the content is already written and shipped in `public/content/`,
 existing dead assets into working pages at the lowest risk-per-value ratio in the repo.
 
 ### Known Issues
+0. **Measured UI/logic faults from redesign Phase 0 live in `.claude/redesign-tracker.md` (F1–F19)**,
+   each assigned to the batch that fixes it. The ones that are *logic*, and need the user's approval:
+   the dashboard reads activity capped at 20 rows and buckets days in UTC (F9/F10); sign-in ignores
+   middleware's `?redirect=` (F17); the titration sim's overshoot warning is unreachable (F19). The
+   dashboard's 12 course links and 2 quick links all 404 (F8).
 1. **`npm run lint` is not configured.** There is no `.eslintrc*` / `eslint.config.*` anywhere, so
    `next lint` drops into its interactive "How would you like to configure ESLint?" setup prompt
    and exits without linting. **There is no working lint baseline.**
@@ -297,7 +344,8 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 6. **Edge-runtime build warning**: `@supabase/supabase-js` uses `process.version`, unsupported in
    the Edge runtime. Warning only; the one edge route (`prescription-reader-v2`) doesn't use Supabase.
 7. **`caniuse-lite` is ~8 months stale** — build prints a Browserslist warning.
-8. **Streaks may be permanently zero.** `progress.current_streak` / `longest_streak` are selected
+8. **Streaks may be permanently zero.** *(The dashboard no longer reads these columns — since
+   2026-09-13 it derives the streak from `activity_log` days. The note stands for the columns.)* `progress.current_streak` / `longest_streak` are selected
    and returned by `GET /api/progress`, but **nothing in the codebase ever writes them** —
    `applyProgressEvent()` updates only `last_active_at`, `total_time_spent_min`, and `updated_at`.
    Either a Postgres trigger maintains them (the schema isn't in the repo, so this is unverified)
@@ -311,14 +359,32 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
     before building**; recover with `rm -rf .next && npm run dev`. (`npm run mobile:build` is safe
     to run alongside dev — it writes to `mobile/.next`.)
 
-11. **The three landing-page ad bands are invisible until slots are configured.** `AdBand` passes
-    `NEXT_PUBLIC_ADSENSE_SLOT_HOME_1/2/3`; with none set, `AdSlot` renders nothing in production and
-    the band removes itself. Set them to monetise the home page.
+11. **The home landing page has no ad placements** (removed at the user's request, 2026-09-13), so
+    `NEXT_PUBLIC_ADSENSE_SLOT_HOME_1/2/3` are now unused. Only Auto ads, if enabled in the AdSense
+    dashboard, could still put an ad on `/` — keep Auto ads off if the home page must stay ad-free.
 12. **Radix `NavigationMenuViewportItem` is not a `forwardRef` component**, so React 18 logs
     "Function components cannot be given refs" once per mega-menu open in development. It is a
     library-internal warning, harmless, and not fixable from this repo.
+13. **Footer placeholders.** The footer's phone number (`+92 300 1234567`) looks like a placeholder
+    and all four social links point at `#`. Both were carried over unchanged in the 2026-09-13
+    footer redesign — they need real values from the owner. The old footer's "Weekly Updates" email
+    box had **no submit handler** (typing an address did nothing); it was removed rather than
+    restyled. Wire a real newsletter endpoint before bringing it back.
+14. **Kit calculators show a double gap under the header (F16, confirmed 2026-09-13).** The header
+    renders an in-flow spacer (76px) *and* `CalculatorShell` pads `var(--calc-top-offset)` (5rem),
+    so an h1 sits at y≈218 on desktop. Owned by the redesign tracker's calculator batch; the likely
+    fix is `--calc-top-offset: 0` on the web (check the sticky `aside` top and `scroll-mt`).
 
 ### Technical Debt
+- **The header still carries the PWA install prompt** (`useInstallPrompt`, the "Install App" banner
+  and button in `src/components/Layout/Header/index.tsx`). `beforeinstallprompt` can no longer fire
+  — the PWA and its manifest link were removed on 2026-09-12 — so all of it is dead. The Android
+  CTA replaced its purpose; delete it together with the other PWA teardown files.
+- **Dead since 2026-09-13:** `src/components/LaunchPopup.tsx` and `OfficialLaunchBanner` in
+  `src/components/Home/tournament/index.tsx` — unmounted when Science Fair 2026 ended. Delete once
+  the tree is committed, or re-mount for the next event.
+- **The ADME landing page files were deleted on 2026-09-13** when "The Index" replaced it; they are
+  recoverable from git at `5dbe98c` (`src/components/Home/landing/`).
 - **`src/components/Home/{Hero,Companies,Courses,Features,ContactForm}/` are no longer rendered.**
   The ADME landing page replaced them on 2026-09-12; they were kept so the change is reversible.
   `ContactForm` was the home page's only entry to `POST /api/contact` (Resend) — decide whether that
@@ -365,6 +431,551 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 
 > Newest first. Never paste source code here. Archive entries older than ~10 into
 > `.claude/history/YYYY-MM.md`.
+
+### 2026-09-13 — Pharmacy-themed loading screen (website route loading + Android splash)
+
+**Completed**
+- **One shared loading mark, `PharmaLoader`**: the brand capsule from the logo with its green half as
+  a measuring vessel (sloshing meniscus, rising bubbles, graduation ticks, a gentle tilt) and a mono
+  procedure line — **WEIGH · DISSOLVE · MAKE UP TO VOLUME** — lighting one step at a time.
+- **Website**: new root `src/app/loading.tsx`, the Suspense fallback while any route segment loads
+  (main site and clinical; the dashboard has its own `loading.tsx` from `pharma-wallah-28`). It sits in
+  the page area under the header and stays invisible for 320 ms, so fast navigations flash nothing.
+- **Android app**: `StartupSplash` now shows the same capsule (white cap, green liquid) on brandBlue
+  instead of a stock calculator icon; the tagline count is derived from the generated slug list
+  (shows 98) instead of the stale hand-typed "97"; hold 1.1 s → 1.5 s so the procedure line reaches
+  its last step. Tagline raised to white/90 for contrast.
+- The user chose "Both" when asked which app. Both other active sessions were told about the new
+  files before work started, and when it finished.
+
+**Files**
+- New: `src/components/loading/PharmaLoader.tsx` (`PharmaLoader`, `LoaderSteps`),
+  `src/components/loading/pharma-loader.css`, `src/app/loading.tsx`.
+- `mobile/app/_components/StartupSplash.tsx`; `mobile/app/globals.css` (`.pw-splash__*` rules — bar
+  and sweep removed, entry animations without fill modes).
+
+**Architecture & Decisions**
+- **CSS-only, no hooks, plain classes** — it must animate before hydration (in both the SSR HTML and
+  the APK's static export) and the mobile Tailwind build only scans fixed globs, so no utility classes.
+- **No fake progress.** The level bobs and the steps cycle; nothing counts to 100%, because Next does
+  not know how far along a load is.
+- **Splash keeps solid brandBlue**, not the brand gradient: the native launch screen and the WebView
+  background are that blue, and a gradient would make the hand-off visible.
+- Reduced motion: static half-full capsule, all three steps readable, web loader shown at once.
+
+**Verification**
+- `npx tsc --noEmit` → **0 errors, whole repo** (after a stale `.next/types` stub from another
+  session's deleted temp route was removed — it had shown 2× TS2307; gotcha 64).
+- RSC payload of `/terms` contains the loader (`pw-loader-page`, "Loading page") — Next wired it as the
+  fallback. Rendered on a temporary route (since deleted) at 1440 and 390, motion and reduced motion:
+  level transform animating, bubbles, tilt; the Animations API showed the steps lit out of order
+  (`:nth-of-type` counted the separator dots) — fixed with modifier classes and re-sampled
+  (Weigh → Dissolve → Make up to volume). Real client navigations: 0 errors, loader never left behind.
+- `npm run mobile:build` → **passed**: 103 pages, CSS 114,820 B, **0** ad strings, **0** secrets.
+  Served `mobile/out`: splash on rgb(28,122,217) with "98 calculators · works offline", removed after
+  the hold, catalogue shows 98 tools.
+- **NOT verified:** the web loader appearing during a genuinely slow production navigation (dev-server
+  throttling stalled; it was verified by payload + direct render instead); `npm run build`; a real
+  device / Android WebView cold start; the APK was not compiled. No tests; lint not configured.
+
+**Remaining**
+- `npm run mobile:sync` before the next APK (pharma-wallah-a8 is preparing v1.1).
+
+**Next**
+- Watch a real phone cold start to tune `HOLD_MS` against the native launch screen.
+
+---
+
+### 2026-09-13 — Dashboard rebuilt (top-design, GSAP, shadcn); `/` → dashboard; unit tracking fixed
+
+**Completed**
+- **`/dashboard` rebuilt from scratch** at the user's request ("it takes too long to load"). A
+  chromeless app: fixed rail (sections with scroll-spy, study and reference links, account menu),
+  an opaque top bar (breadcrumb, ⌘K command palette, refresh, theme), a mobile sheet. Content: a
+  big greeting; a brand-gradient **Next up** panel (continue the last unread unit, or the next one);
+  a **syllabus coverage** ring and per-subject bars; figures (streak, active days, quiz average,
+  spotting); a **syllabus grid** (every registered unit as a cell: Read / Opened / Next up / Not yet);
+  a 13-week **study calendar**; **MCQ performance** (trend sparkline, per-subject bars); a day-grouped
+  **activity timeline**; **milestones** whose rules are printed beside them. Navy dark mode scoped to
+  the dashboard root, persisted in `localStorage` (`pw-dash-theme`). Ad-free.
+- **Header and footer hidden on `/dashboard`** (`AppShell`).
+- **Signed-in visitors of `/` are redirected to `/dashboard`** in middleware — only when a Supabase
+  auth cookie is present, so anonymous visitors and crawlers still cost no auth call; any error
+  fails open to the landing page. The clinical subdomain's `/` is untouched.
+- **Unit and spotting visits were never recorded, for any account.** `useTracker` dropped every event
+  while `useSupabaseUser` was still resolving, and `UnitTracker`/the pathology pages fire in a mount
+  effect, so on mount the event was always dropped. Measured (aggregate counts, PostgREST): `unit_progress`
+  **0 rows**, `spotting_progress` **0**, versus `activity_log` 119 and `quiz_attempts` 12. Events are now
+  held until the session resolves. `UnitTracker` also stopped filing every visit under "Unknown Semester".
+- **"Read" state for units:** `useTracker().markUnitRead()` sends a unit event with `completed: true`
+  (flushed at once); `applyProgressEvent` sets `unit_progress.completed` only when true, so a later
+  visit never clears it, and logs "Finished: <title>". The column already existed (confirmed from the
+  PostgREST schema). The **Mark as read** button itself is session `pharma-wallah-a8`'s
+  (`LessonCheckpoint` in `UnitPageClient.tsx`), by the user's spec.
+- Quiz stats count **MCQ-bank tests only**: end-of-lesson question sets from a8's `LessonCheckpoint`
+  are stored as `quiz_attempts` with a `lesson:` quiz-id prefix and are listed separately.
+- Old faults fixed in passing: F8 (dashboard's 14 dead course/quick links; courses now come from
+  `SUBJECTS`), F9 (activity read capped at 20 rows), F10 (UTC day bucketing), F11 (achievements that
+  could never unlock and names that didn't match their rules — replaced by milestones).
+
+**Files**
+- `src/app/(site)/dashboard/page.tsx` (hook wiring only), `dashboard/loading.tsx` (new).
+- `src/components/dashboard/` — new `DashboardView.tsx`, `Shell.tsx`, `Sections.tsx`,
+  `CommandPalette.tsx`, `dashboard-data.ts`, `useDashboardMotion.ts`, `dashboard.css`;
+  `DashboardErrorBoundary.tsx` recoloured. **Deleted:** `DashboardMain.tsx`, `DashboardSidebar.tsx`,
+  `DashboardTabs.tsx`, `dashboard-shared.ts` (deletion staged in git).
+- `src/components/AppShell.tsx`, `src/middleware.ts`.
+- `src/app/api/progress/route.ts` — activity read = last 91 days, max 600 rows (was newest 20).
+- `src/app/api/progress/batch/route.ts` — events applied in order, not in parallel.
+- `src/lib/progress-server.ts`, `src/hooks/useTracker.ts`, `src/components/UnitTracker.tsx`,
+  `src/components/course/UnitPageClient.tsx` (UnitTracker props only; the file then passed to a8).
+
+**Architecture & Decisions**
+- **Speed:** the frame and every panel's skeleton paint immediately; no recharts, confetti or
+  framer-motion; charts are inline SVG; GSAP is fetched in parallel with `/api/progress` and a
+  1.2 s gate shows content without an intro if it never arrives.
+- **Every figure is derived** (`dashboard-data.ts`) from API rows + the course registry. Nothing reads
+  `current_streak` (never written) or `total_time_spent_min` (only ever receives 0). Days are local time.
+- **`DashboardView` takes session + progress as props**, so the page can be rendered from fixtures
+  without an account (how it was verified — the fixture route was deleted afterwards).
+- XP and levels were **removed**, not redesigned — they were computed from the 20 newest activity
+  rows and meant nothing. Tracker decision "XP/levels" is resolved this way; reversible.
+- Coordinated with peers `pharma-wallah-f6`, `-08` (owns the site loader; the dashboard has its own
+  `loading.tsx`) and `-a8` (Mark-as-read UI).
+
+**Verification**
+- `npx tsc --noEmit` → **0 errors in source** (stale `.next/types` stubs for deleted preview routes
+  appear until the dev server regenerates them).
+- Headless Chrome/CDP against the running dev server, fixture data, **1440×900 and 390×844, reduced
+  and full motion: 0 exceptions, 0 console errors, `scrollWidth` = viewport**, no reveal target left
+  hidden, every counter at its final value. Screenshots read at both widths. This caught two faults,
+  both fixed: `globals.css` list markers beating the namespace reset (the user also reported it), and
+  a 756 px-wide activity column on phones.
+- `curl`: `/` anonymous → 200; `/` with a bogus `sb-*-auth-token` cookie → 200 (fails open);
+  `/dashboard` anonymous → 307 to sign-in.
+- **NOT verified:** the redirect with a real session, and the dashboard with a real account (no
+  credentials here — the user was watching it live); a real unit visit or Mark as read writing a
+  row; `npm run build` (dev server running, Known Issue 10). No tests exist; lint is not configured.
+
+**Remaining**
+- Confirm a unit visit now creates a `unit_progress` row, and that Mark as read sets `completed`.
+- Histology lessons (`HistologyLessonTemplate`) call no spotting tracker at all — only the
+  pathology pages do — so histology never counts toward "Spotting lessons".
+- `npm run build` with dev stopped.
+
+**Next**
+- Redesign family P1 (calculator hub) on the page kit.
+
+---
+
+### 2026-09-13 — Header app CTA (top-design), favicon, calculator disclaimer, gradient footer, Master Formula Calculator
+
+**Completed**
+- **"Get the app" CTA in the header** on every site page, linking to `/download`: desktop (≥1280px)
+  a green object — the real app icon on a white tile, a mono "ANDROID" eyebrow over "Get the app",
+  and a gradient download disc; phones/tablets a compact "Get app" pill beside the menu button
+  (icon-only under 360px); the drawer a full-width card. First built as a gradient pill with a ping
+  dot and shine sweep; the user rejected it ("not good") and asked for the `top-design` skill —
+  scored 4/10 (muddy under its scrim, stock tropes, motion without a reason) and rebuilt.
+- **Header scroll-lag fix**, on `pharma-wallah-f6`'s measurements: the sticky bar is opaque with no
+  `backdrop-filter`; the scroll handler runs once per animation frame and reads a cached scroll range
+  (ResizeObserver on `body` + `resize`) instead of `scrollHeight` per event.
+- **Header now switches to desktop at `xl`**, not `lg` — 1024–1279px could not fit the nav, CTA and
+  auth, and crushed the logo (gotcha 57).
+- **Favicon is the PharmaWallah mark**: new `favicon.ico` (16/32/48), `icon.png`, `apple-icon.png`,
+  transparent and properly cropped. The live site served a blurry 16px slice with part of the "P".
+- **"For educational purposes only" card on every calculator** — all 98 on the web, every tool page
+  in the APK.
+- **Brand blue→green on the footer** (reverses the same-day ink footer, at the user's request), and —
+  under the user's rule relayed by `pharma-wallah-f6` (no black grounds) — on the header Sign Up /
+  Dashboard pills, drawer buttons, active mobile nav item, mega-menu featured tile and the calculator
+  `ResultCard` face.
+- **Master Formula Calculator** (`/calculation-tools/master-formula-calculator`, Pharmaceutics,
+  "Dosage Form Lab"): formulation name, master batch size, desired quantity, add/remove ingredient
+  rows (name, quantity, unit); Calculate shows formulation / required quantity / scaling factor and
+  an Ingredient | Master Formula | Required Quantity table; an expandable "Calculation Details"
+  shows the factor and one line per ingredient. Load example (Simple Syrup) and Reset.
+
+**Files**
+- `src/components/Layout/Header/index.tsx` — `AppCta` + `DownloadGlyph` + `AppIconTile`, `.pw-brand-btn`
+  and arrow keyframes, scroll handler, opaque sticky bar, `xl` breakpoint, logo pin, drawer CTA.
+- `src/components/Layout/Header/MegaMenu.tsx` — `xl:flex`; brand-surface featured tile.
+- `src/components/Layout/Footer/index.tsx` — brand gradient under a 40% scrim; text at white/90.
+- `src/app/{favicon.ico,icon.png,apple-icon.png}` (favicon replaced; the other two new).
+- `src/components/calculators/CalcDisclaimer.tsx` (new), `index.ts` (export), `ResultCard.tsx`
+  (brand face). `src/app/(site)/calculation-tools/(tools)/layout.tsx` and
+  `mobile/app/_components/MobileShell.tsx` — the two disclaimer mounts.
+- `src/app/(site)/calculation-tools/(tools)/master-formula-calculator/{page.tsx,_scale.ts}` (new).
+- `src/app/(site)/calculation-tools/CalculationToolsClient.tsx` and `mobile/app/_data/tool-registry.ts`
+  — one registry entry each (+ short name "Master Formula"; header comment counts 87/98).
+
+**Architecture & Decisions**
+- **`%` and `q.s.` ingredients are carried over, not multiplied** (gotcha 54). The brief's formula
+  multiplies every ingredient, but multiplying a concentration is pharmaceutically wrong; the result
+  card and Calculation Details say why on the row. Batch units convert within mL/L and g/kg.
+- Kept deliberately simple, per the brief: no lab-record card, PNG, print or save — Calculate, Reset,
+  Load example only. The result updates live after the first Calculate (inputs are never snapshotted).
+- **The CTA uses ink text on solid brandGreen (7.49:1)** instead of white on the gradient, so it needs
+  no scrim and stays the only green object in the bar. Its visible text is its accessible name (an
+  earlier `aria-label` broke WCAG 2.5.3). The arrow animation runs twice after load and on hover,
+  never loops, and is off under reduced motion.
+- **Contrast was computed, not eyeballed**: footer scrim 40% → white/90 4.95:1 at the green corner;
+  brand button 30% → 4.60:1; disclaimer body 5.97:1.
+- **Disclaimer below the tool, not above it** — above, it would push every tool's inputs down on a
+  phone; the layout is the only single-file way to reach all 98 web tools.
+- File ownership was agreed with `pharma-wallah-f6` (redesign) and `pharma-wallah-28` (dashboard)
+  over cross-session messages; none of their files were touched.
+
+**Verification**
+- `npx tsc --noEmit` → **0 errors** (re-run after every stage; one transient failure coincided with
+  the other session mid-edit and was clean on immediate re-run).
+- Scaling maths transpiled and run in Node: spec example 650 g / 350 mL × 0.1 → 65 g / 35 mL; 500 mL →
+  2 L factor 4; 1 L → 60 mL with 10% and q.s. rows; 10 ÷ 3 factor; zero, negative, "12abc",
+  cross-family units, blank name and >100% all return no result.
+- Headless Chrome/CDP against the dev server: the calculator at 1440 and 390 (empty submit errors,
+  example → exact spec table and details text, %/q.s./L→mL via real inputs, >100% error, remove
+  row, reset); header at 320/360/375/390/1024/1279/1280/1440 (logo width, menu button inside the
+  gutter, no clipped controls, `scrollWidth` = viewport); drawer; mega menu (hit-tested opaque);
+  footer at 1440/390; disclaimer count = 1 on a kit tool and an unmigrated tool; hub card in
+  Pharmaceutics; the three icon links served 200. Arrow never blank at rest (59 samples). **0
+  exceptions / console errors** on clean loads apart from Known Issue 12.
+- `npm run mobile:build` → **passed** twice; final: 103 static pages, 99 HTML files, CSS 113,827 B,
+  9.2 MB, **0** ad strings, **0** secrets. Served `mobile/out`: the tool computes the example,
+  disclaimer once on the tool page and absent from the app home, catalogue shows "Master Formula".
+- **Scroll-lag fix NOT independently confirmed**: my same-method A/B on `/calculation-tools` was
+  dominated by headless/dev noise (blur-on 20 and 36 slow frames; blur-off 43 and 5). The change rests
+  on `pharma-wallah-f6`'s measurements (35 → 7 with the blur off).
+- **NOT verified:** `npm run build` (web) — the dev server was running (Known Issue 10); no real
+  device or Android WebView; no dark-mode check; no tests exist; lint is not configured.
+
+**Remaining**
+- Run `npm run build` with the dev server stopped.
+- `npm run mobile:sync` before the next APK so it carries the new tool, disclaimer and result face.
+- F16 double gap under the header on kit tools (Known Issue 14) — redesign tracker's calculator batch.
+- Remove the dead PWA install prompt from the header (Technical Debt).
+
+**Next**
+- Re-measure scroll smoothness on a real phone now that the header blur is gone.
+
+---
+
+### 2026-09-13 — Auth pages redesigned (direction 01); landing dock removed; scroll lag; brand-gradient rule
+
+**Completed**
+- **All five auth pages redesigned** on redesign direction 01, "What an account keeps": the form on
+  one side, and beside it a brand-gradient panel listing what an account saves (progress across the
+  registry's 22 units — derived, not typed — MCQ attempts, flashcard/spotting progress, dashboard,
+  Community posting) and what works without one. Each page frames the same panel for its moment
+  (signing in, verifying, resetting). The user said "redesign the auth pages" without naming a
+  direction; the published recommendation (01) was taken — 02/03 remain on the tracker.
+- **Landing page timeline dock removed** (the fixed "00:29 / 01:37 · SCENE 02" bar): `Player.tsx`
+  deleted, `CHAPTERS`/`RUNTIME_SECONDS`, every `data-chapter` hook and ~140 lines of player CSS removed.
+- **Scroll lag diagnosed with measurement.** The dock and the site header are both `position: fixed`
+  with `backdrop-filter`; the browser re-blurs moving content every frame. Removing the dock cut
+  frames >50 ms on `/` from 33 to 21; disabling the header blur as well cut it to 9. The header is
+  owned by session `pharma-wallah-08`, which agreed to apply the fix (opaque sticky background,
+  rAF-batched scroll handler with cached height) — **not applied by this session**.
+- **User rule: the theme is the blue→green gradient, not black.** Applied to everything this session
+  owns — auth panel and buttons, the page kit's cover hero (`ground="brand"`, was `"ink"`), and on
+  the landing page the primary buttons, specimen tab/link, drawn phone and its active chip. Relayed
+  to `pharma-wallah-08` for the header "Sign Up" pill and the calculator `ResultCard` face.
+
+**Files**
+- New: `src/components/auth/AuthKit.tsx` (`AuthLayout`, `AccountPanel`, `AuthField`, `FieldLink`,
+  `AuthSubmit`, `AuthDivider`, `GoogleButton`, `AuthNotice`, `AuthSwitch`, `AuthLoading`),
+  `src/components/page-kit/brand.ts`.
+- `src/app/(site)/{signin,signup,verify-otp,forgot-password,update-password}/page.tsx` — markup only.
+- `src/components/page-kit/{index.ts,PageHero.tsx,Eyebrow.tsx}` — brand ground replaces ink.
+- `src/components/Home/landing/{LandingPage.tsx,data.ts,Hero.tsx,Sections.tsx,IndexSection.tsx,useIndexMotion.ts,landing.css}`;
+  `Player.tsx` deleted (and removed from the git index, where the previous session had staged it).
+
+**Architecture & Decisions**
+- **Auth logic is byte-for-byte unchanged** — every Supabase call, state variable, redirect and the
+  OTP input handlers. Added only `autoComplete` hints, `aria-label`s on the six OTP boxes, and a
+  "Start again" link to `/signup` on the verify page.
+- **Brand surfaces carry a computed navy scrim** (surface 40% → white 5.72:1 at the green end; button
+  30% → 4.60:1), matching the footer `pharma-wallah-08` built. Buttons darken on hover with an inset
+  shadow (animatable, contrast only rises).
+- The panel's claims were checked against code: `/api/progress` writes unit/flashcard/quiz/spotting
+  progress; `/community/ask` redirects signed-out users; calculators, courses, spotting and
+  simulations are public. `AuthKit.tsx`'s header comment says to update the copy if any changes.
+- **F17 (`?redirect=` ignored) is still open** — direction 02 was not built; it needs approval.
+
+**Verification**
+- `npx tsc --noEmit` → **0 errors** (after each stage).
+- Headless Chrome/CDP, all five auth pages + `/`, at 1440×900 and 390×844, reduced motion **and**
+  no-preference: **24/24 runs with 0 exceptions, 0 console errors, scrollWidth = viewport**.
+  Screenshots read; fixed a "6-/digit" line break and added a hairline where the panel met the
+  gradient footer.
+- Interaction, no network: OTP typing auto-advances (4, 8 → focus on digit 3); pasting "123456"
+  fills all six; update-password with mismatched passwords shows "Passwords do not match" with
+  **0 Supabase requests**.
+- Scroll performance: numbers above, from 80 real wheel events per page with frame-delta and
+  `Performance.getMetrics` capture plus a CPU profile.
+- **NOT verified:** real sign-in / sign-up / OTP / reset against Supabase (would create or touch
+  production auth records); `npm run build` (dev server running); the header fix (not this
+  session's file); scroll feel on a real device. No tests; lint not configured.
+
+**Remaining**
+- `pharma-wallah-08` to apply the header blur/scroll-handler fix, then re-measure.
+- Decide F17 (honour `?redirect=`), which would let direction 02's destination line be added.
+- Remaining ink/black surfaces owned by the other session (header pill, `ResultCard`).
+
+**Next**
+- Continue Phase 1 with whichever family direction the user picks next (hub recommended first).
+
+---
+
+### 2026-09-13 — Redesign Phase 0: inventory, tracker, page kit, direction mockups; landing riders
+
+**Completed**
+- **Started the site-wide `top-design` redesign** (multi-session). Phase 0 per the brief: inventory,
+  tracker, shared page kit, and mockup directions for six families — then **stopped for the user's
+  choice**. No page has been redesigned yet.
+- **`.claude/redesign-tracker.md`** — every page file (106 outside `(tools)` + `/contact` + 404)
+  grouped into 13 families in the brief's order, every calculator (97; 16 on the kit, 81 to migrate
+  in 17 batches of ~5, grouped by hub category), chosen-direction table, verification log, and
+  **19 measured faults (F1–F19)**.
+- **Page kit** `src/components/page-kit/`: `PageHero` (+ `Trail` breadcrumb), `PageSection`,
+  `Figure`/`FigureRow`, `EmptyState`/`ErrorState`/`LoadingState`, `Eyebrow`, `Reveal`. Dependency-free,
+  server-component safe except `Reveal`, `dark:` counterparts throughout. Unused until a direction is chosen.
+- **Preview artifact** (link in the tracker): three directions each for the calculator hub, a course
+  subject page, a spotting lesson, a simulation, auth and the dashboard, rendered at a true 1440×900
+  and 390×844 in the product's tokens, with a recommendation per family.
+- **User riders, done in this session:** (1) Science Fair 2026 has ended — the landing page's launch
+  strip and the site-wide launch dialog are unmounted; (2) the landing hero's meta strip
+  ("Pharm-D · Pakistan / 97 tools / 69 lessons / 8 labs / PKT clock") is removed.
+
+**Files**
+- New: `.claude/redesign-tracker.md`, `src/components/page-kit/{index.ts,Eyebrow,PageHero,PageSection,Figures,States,Reveal}.tsx`.
+- `src/components/AppShell.tsx` — `LaunchPopup` unmounted.
+- `src/components/Home/landing/LandingPage.tsx` — `OfficialLaunchBanner` unmounted; font comment.
+- `src/components/Home/landing/Hero.tsx` — meta strip and `PktClock` removed.
+- `src/components/Home/landing/landing.css` — `.hero__meta`, `.live-dot`, `pw-idx-ping` removed; hero
+  grid `auto 1fr auto` → `1fr auto`, top padding raised.
+
+**Architecture & Decisions**
+- **The page kit is a sibling of the calculator kit, not a fork of it**: same tokens (board #fcfcfa,
+  ink #16181d/#0b0c0e, bone #f7f5f1, brandBlue signal), same mono eyebrow, same expo easing. Colours
+  are arbitrary-value classes (as in the footer) rather than new Tailwind tokens, because the running
+  dev server caches `tailwind.config.ts` (gotcha 26).
+- **`PageSection` has no entrance animation by design** — sections hold `AdSlot`s (gotcha 29).
+  `Reveal` renders visible on the server and only hides below-the-fold blocks after hydration.
+- **`Figure` requires a label and supports `note`** ("estimated") — Phase 0 measuring found three
+  pages printing wrong or unlabelled figures.
+- Directions were built with the `mockup-first-design` procedure: measured data first, four priors
+  applied (density over decoration; no "minimal" option; directions named by the question they answer).
+- Science Fair components were unmounted, **not deleted**, while the tree is uncommitted.
+- Coordinated with two peer sessions: `pharma-wallah-6a` (finished, released the kit) and
+  `pharma-wallah-08` (owns Header, Footer, `calculators/`, `(tools)/layout.tsx`, a new tool, until it
+  reports done).
+
+**Verification**
+- `npx tsc --noEmit` → **0 errors** (after the kit, and again after the landing edits).
+- Page kit: rendered every component with `react-dom/server` via `tsx` (temp tsconfig with
+  `jsx: react-jsx`, deleted afterwards) — breadcrumb/`aria-current`, figure link and note,
+  `role=alert`/`status` present; `Reveal` content visible at SSR.
+- `/` over headless Chrome/CDP at 1440×900 and 390×844, reduced motion **and** no-preference:
+  **0 exceptions, 0 console errors, scrollWidth = viewport**; screenshots read — no launch strip, no
+  dialog, no meta strip, hero spacing intact.
+- Preview artifact: 0 exceptions at 1280 light and 390 dark across all tabs and both mock viewports;
+  no horizontal overflow at 390.
+- **NOT verified:** `npm run build` (user's dev server was running — gotcha 21); `npm run mobile:build`
+  (no calculator changed). No tests exist; lint is not configured. The page kit has not rendered
+  inside a real page yet. The dashboard directions use a labelled sample persona — no real account
+  was measured.
+
+**Remaining**
+- **User decision:** a direction (or pairing) per family, plus the decisions on the cards (F7 reading
+  times; pathology template; XP/levels; F17 redirect; F9/F10/F19 logic).
+- Then Phase 1 from the calculator hub; Phase 2 calculator migration.
+- `npm run build` with dev stopped.
+
+**Next**
+- Build the chosen hub direction on the page kit (tracker P1), then courses.
+
+---
+
+### 2026-09-13 — top-design skill; whiteboard-video landing page; site chrome + calculator kit restyle
+
+**Completed**
+- **Installed the `top-design` design skill into the project** (`.claude/skills/top-design/`). The
+  vendor installer (`curl … | bash`) was audited first — it installs a Claude Code plugin with a
+  SessionStart sync hook and skill telemetry. Running it was blocked by the harness, so the skill's
+  files (already decoded from the installer during the audit) were copied into the project
+  instead. Its bundled template ends with an unrelated boilerplate "ORM" section; ignore it.
+- **New landing page at `/` — "The Index", played as a whiteboard explainer video.** The whole page
+  is a whiteboard: a dot-grid board, ghost formulas, marker underlines/circles/arrows and
+  handwritten notes that draw on as you scroll (scrubbed, so scrolling back rewinds), a marker pen
+  riding each stroke, a 3-2-1 countdown leader, and a fixed timeline bar mapping scroll to a
+  timecode (one second per calculator) with chapter seek points. Sections: a hero with a cycling
+  word and a taped-up worked-example card whose results are **computed** from real formulas; a
+  figures tape; the pillar Index (highlighter swipe + hand-lettered numeral per pillar); the tool
+  count ringed in red with one ruler tick per tool; the Android app with its real home screen drawn
+  in markup; "Begin anywhere." The ADME page was replaced, not kept.
+- **User decisions during the task:** a brand-new concept (not a refresh); a whiteboard look with
+  the current layout, made to feel like a video; **no play buttons** — playback is scroll only;
+  **no ad slots on the landing page**.
+- **Site chrome restyled** to match: header (ink CTAs, reading-progress hairline instead of a
+  decorative gradient), mega menu (ink featured tile, hairline active indicator), the Science Fair
+  launch strip, the site-wide launch dialog (now a real dialog: role, Escape, focus handling), and
+  the footer (one responsive grid instead of duplicated mobile/desktop trees).
+- **Shared calculator kit + shadcn primitives restyled** — result face with tone rule/pill and
+  copy-to-clipboard, animated disclosures that keep formula/FAQ text in the HTML, unit-width-aware
+  suffixes, halo focus, custom easing. New dependency-free primitives: `separator`, `alert`,
+  `progress`, `tabs`. `(tools)/layout.tsx` adds an "All calculators / Use them offline" strip under
+  every tool. Android hub and app bar redesigned. **All reach both web and APK from `src/`.**
+- **Bugs fixed:** five footer links 404'd on every page; `SelectField` lost its background colour
+  to tailwind-merge (grey selects in the APK); outlined type showed stray contour lines.
+
+**Files**
+- `.claude/skills/top-design/` (new).
+- `src/components/Home/landing/` — deleted the 15 ADME files; new `LandingPage.tsx`, `Hero.tsx`,
+  `Specimen.tsx`, `IndexSection.tsx`, `Sections.tsx`, `Marks.tsx`, `Player.tsx`, `Chrome.tsx`,
+  `Btn.tsx`, `data.ts`, `useIndexMotion.ts`, `landing.css`.
+- `src/components/Layout/Header/{index,MegaMenu}.tsx`, `Header/Logo/index.tsx` (alt text),
+  `src/components/ui/navigation-menu.tsx`, `src/components/Layout/Footer/{index,Wordmark}.tsx`,
+  `src/components/Home/tournament/index.tsx`, `src/components/LaunchPopup.tsx`.
+- `src/components/ui/{button,input}.tsx`; new `ui/{separator,alert,progress,tabs}.tsx`.
+- `src/components/calculators/{CalculatorShell,NumberField,ResultCard,FormulaNote,CalcAbout}.tsx`;
+  new internal `calculators/Collapse.tsx`. (`index.ts` and the lab files belong to the concurrent
+  lab-tools entry below — not touched here.)
+- `src/app/(site)/calculation-tools/(tools)/layout.tsx`.
+- `mobile/app/_components/{ToolHub,MobileShell}.tsx`, `mobile/app/globals.css`.
+- `tailwind.config.ts` — additive: `ease-out-expo`/`ease-out-quart` timing functions, `calc-result`
+  animation.
+
+**Architecture & Decisions**
+- **GSAP stays confined to `src/components/Home/landing/`**; the timeline bar is plain React.
+  ScrollSmoother was deliberately not used (it transforms a page wrapper — fights the fixed header
+  and the Radix mega menu).
+- **Two extra fonts, scoped to `/` only** (JetBrains Mono, Caveat). Outfit is still the only
+  site-wide face.
+- **The calculator count is derived from one constant** (`STATS.calculators`, 97) on the landing
+  page; the shared chrome no longer prints a number at all, so it cannot drift as tools are added.
+- **Kit restyle kept every exported prop stable**, coordinated with a second Claude session that was
+  building the eight lab tools in the same directory at the same time (file ownership agreed over
+  cross-session messages; `CalculationToolsClient.tsx` and `mobile/app/_data/tool-registry.ts`
+  were left to it).
+- **New shadcn primitives are dependency-free** — only two Radix packages are installed, and the
+  primitives ship inside the APK.
+
+**Verification**
+- `npx tsc --noEmit` → **0 errors** (matches baseline), re-run after every stage.
+- **Exercised in headless Chrome over CDP** against the running dev server, at 1440×900 and
+  390×844, in **both** reduced motion (full-page review, every mark drawn) and full motion
+  (mid-scroll frames: pen/notes mid-write, timeline bar 00:43 / chapter 03, highlighter on the
+  active row). **0 console errors/exceptions** in the final runs; `scrollWidth` = 390 on the phone
+  (no horizontal overflow). Full-motion testing caught a GSAP TDZ crash that reduced motion and
+  `tsc` both missed (fixed; gotcha 42). Final DOM check on `/`: 0 ad bands, 5 chapters, 9 marks,
+  4 notes.
+- `/calculation-tools/gfr-calculator` captured at both widths — restyled kit renders, no errors.
+- `npm run mobile:build` → **passed** (twice; second after the select fix): 98 HTML files, 8.9 MB,
+  stylesheet 111,673 bytes. Served `mobile/out`: hub and GFR both 200; all four selects compute to
+  white (were UA grey). **Ad-leak check 0** for all four ad strings; **secret check 0** for all six
+  patterns.
+- **NOT verified:** `npm run build` (web) — the user's `npm run dev` was running throughout
+  (Known Issue 10). No tests exist; lint is not configured. No real device or real Android WebView;
+  no dark-mode check (the kit has no `dark:` styles, unchanged from before). After the header/footer
+  restyle, `/calculation-tools`, `/courses`, `/download`, `/spotting` and `/clinical` were loaded:
+  0 errors (only the pre-existing logo LCP warning); those pages' own heroes were not redesigned.
+
+**Remaining**
+- Run `npm run build` with the dev server stopped.
+- Replace the footer's placeholder phone number and `#` social links (Known Issue 13).
+- Keep AdSense **Auto ads off** if `/` must stay ad-free.
+- `/download` (`DownloadClient.tsx`) and the APK splash (`mobile/app/_components/StartupSplash.tsx`)
+  still say "89 calculators" — there are 97 now. Not changed here (outside this task's files).
+
+**Next**
+- Migrate more calculators onto the restyled kit — each migration now inherits the new design.
+
+### 2026-09-13 — Eight laboratory calculators + lab-record kit
+
+**Completed**
+- **Eight new tools, registered on the web hub and in the Android catalogue:**
+  `theoretical-yield-calculator` (Simple mode + Reaction-stoichiometry mode with limiting/excess
+  reactant, reaction extent ξ, every product's theoretical mass), `percentage-yield-calculator`,
+  `percentage-recovery-calculator` (amounts, or C × V with unit families), `wbc-count-calculator`
+  and `rbc-count-calculator` (Neubauer standard-formula mode with the counting-square
+  configuration always visible + manual-factor mode, optional educational reference range),
+  `relative-density-bottle-calculator` (pycnometer; optional volume cross-check; 15–30 °C
+  water-density suggestion), `uv-spectrum-plotter` (editable/pasted spectrum, λmax, prominence-based
+  peaks, drag/button zoom, PNG/CSV/print, calibration regression with unknowns) and
+  `serial-dilution-calculator` (simple / serial / stepwise / reverse, keep-full-volume chain,
+  multi-step plan when a volume is below the pipettable minimum, saved calculations).
+- **"Use theoretical yield for percentage yield"** hands the value (and product/sample name) to the
+  Percentage Yield page via the query string.
+- **Every tool produces the same laboratory calculation card**: numbered sections (given data →
+  substitution → result), Calculate / Reset / Copy / Download card (PNG) / Print.
+- New hub category **Physiology** (WBC, RBC) on web and APK.
+- The existing `serial-diluation` (Serial Dose), `density-calculator` and `uv-analyzer-tool` are
+  **untouched** — they do different jobs; the new tools sit beside them.
+
+**Files**
+- `src/components/calculators/` (new): `LabReport.tsx` (card, `LabActions`, text/PNG/print
+  renderers), `ModeSwitch.tsx`, `LabFields.tsx` (`TextField`, `LabNotice`), `lab-math.ts` (strict
+  number parsing, `fieldError`, sig-fig formatting, unit tables, `calculatorHref`/`readQuery`),
+  `chemistry.ts` (formula → molar mass, IUPAC abridged atomic weights), `hemocytometer.ts`.
+  `index.ts` re-exports them.
+- `src/app/(site)/calculation-tools/(tools)/<8 new slugs>/page.tsx`; `uv-spectrum-plotter/` and
+  `serial-dilution-calculator/` also hold underscore-prefixed sibling modules (`_math.ts`, …).
+- `src/app/(site)/calculation-tools/CalculationToolsClient.tsx` — `allTools`, categories, new
+  `physiology` category + icon. `mobile/app/_data/tool-registry.ts` — names, slugs, category, short
+  names, corrected counts.
+
+**Architecture & Decisions**
+- **No chemistry database lookup.** The only reliable online source (PubChem) would add `fetch` to
+  a tool that ships offline in the APK and can return the wrong compound for a name. Instead the
+  student types the MW; an optional helper computes molar mass *from a formula* with IUPAC atomic
+  weights and is applied only when the student presses **Use**. Examples' MWs are computed from
+  formulas, never typed.
+- **One data description, three renderings.** `LabReportData` drives the on-screen card, the
+  clipboard text, a canvas-drawn PNG (no screenshot library → no new dependency in the APK) and an
+  iframe printout (user strings escaped). Charts join the PNG/print as self-contained SVG.
+- **Download and Print are hidden in the Android app** (`IS_MOBILE_APP`) — the WebView ignores
+  blob downloads and has no print dialog. Copy works in both.
+- **Calculate is meaningful, results stay live.** Results derive from inputs via `useMemo`;
+  Calculate reveals "Required" errors for untouched fields and scrolls to the card. Negative input
+  errors show immediately.
+- **Given data is printed exactly as typed** ("2.00 g" stays 2.00) — a lab record must not lose
+  the student's precision; computed values use significant figures.
+- **Hemocytometry is never one hard-coded factor**: area = squares × area per square, volume =
+  area × depth, count = N × dilution ÷ volume, with the configuration, assumptions and a Neubauer
+  diagram on the card; a manual-factor mode covers lab manuals with their own convention.
+- Built with four parallel sub-agents from a reference implementation (Theoretical Yield); each
+  agent's maths was re-checked by hand and every page was driven in headless Chrome.
+- A concurrent session restyled the kit's existing files (`CalculatorShell` gained an `eyebrow`
+  prop some new pages use). Files were split by agreement; none of its files were edited here.
+
+**Verification**
+- Hand-checked in Node: molar masses (C₇H₆O₃ 138.12, C₉H₈O₄ 180.16, MgCl₂·6H₂O 203.30,
+  K₄[Fe(CN)₆] 368.35, CuSO₄·5H₂O 249.68); aspirin 2.00 g → 2.609 g; 2 NaOH (4.00 g) + MgCl₂·6H₂O
+  (8.00 g) → MgCl₂·6H₂O limiting, ξ 0.039351 mol, 2.295 g Mg(OH)₂; WBC 150 × 20 ÷ 0.4 = 7,500/mm³;
+  RBC 480 × 200 ÷ 0.02 = 4,800,000/mm³; RD 31.450/24.950 = 1.2605; calibration c 2–10 →
+  m 0.05295, R² 0.99994; serial 10 mg/mL 1:10 × 5 and keep-full-volume chain 11.111/11.11/11.1/11.0/10.0 mL.
+- Headless Chrome (CDP) against the running dev server, 1440×900 and 390×844: all eight pages
+  rendered with no exceptions from these pages; hand-off link → Percentage Yield pre-filled; >100%
+  warnings; incompatible-unit refusals; negative/zero guards; PNG card, chart PNG and CSV downloads
+  produced and inspected; serial-dilution save wrote localStorage; hub shows all 8 in their
+  categories incl. Physiology.
+- `npx tsc --noEmit` → **0 errors, whole repo** (re-run after the concurrent session finished a
+  landing-page edit that briefly showed 4 errors in `IndexSection.tsx`).
+- `npm run mobile:build` → **passed**: 102 static pages, 98 HTML files under
+  `calculation-tools/`, stylesheet 111,525 bytes; **0** ad strings and **0** secret strings in
+  `mobile/out`.
+- **NOT verified:** `npm run build` (web) — the dev server was running (Known Issue 10). No tests
+  exist; lint is not configured. Print dialogs were not exercised (headless). The APK was not
+  compiled or run, so Copy and the hidden Download/Print buttons are unverified on a device.
+
+**Remaining**
+- Run `npm run build` with the dev server stopped.
+- `npm run mobile:sync` before the next APK so it carries the eight tools.
+
+**Next**
+- Commit this work together with the kit restyle it now depends on (`CalculatorShell` `eyebrow`).
+
+---
 
 ### 2026-09-12 — New ADME landing page (GSAP), shadcn mega menu, header refresh
 
@@ -858,7 +1469,7 @@ re-running `npx tsc --noEmit` → 0 errors.
 | Type-check | `npx tsc --noEmit` | **PASSES — 0 errors.** Any error you see is yours. |
 | Lint | `npm run lint` | **NOT AVAILABLE.** No ESLint config; the command opens an interactive setup prompt. Do not report lint as passing. |
 | Build | `npm run build` | **PASSES — re-verified 2026-09-12** with the dev server stopped, after the AdSense work (the first successful run since the PWA removal, the shadcn migration and the Outfit switch): exit 0, ~170 routes, middleware 81.8 kB, shared JS 87.8 kB. Stop `npm run dev` first — they share `.next` and corrupt each other (§7 Known Issue 10). **PASSES with a populated `.env`** — exit 0, ~170 routes emitted, middleware 81.8 kB, shared JS 87.8 kB. Only `/_not-found` is static; everything else is `ƒ` (dynamic, server-rendered on demand). **Without `.env` it FAILS**: `Missing environment variable: NEXT_PUBLIC_SUPABASE_URL` while collecting page data for `/api/admin/registrations`. Expected non-fatal warnings: the `@supabase/supabase-js` Edge-runtime `process.version` notice, the stale `caniuse-lite` Browserslist notice, and two webpack "Serializing big strings" cache notices. |
-| Mobile build | `npm run mobile:build` | **PASSES** — 94 static pages, 90 HTML files under `mobile/out/calculation-tools/`, 7.7 MB, shared JS 87.9 kB, stylesheet **96,034 bytes** (re-measured 2026-09-12 after the AdSense work; grew from 93,056 with the calculator UI kit's classes). Independent of `.env` and safe to run while `npm run dev` is up (separate `mobile/.next`). **Also assert zero ad strings in `mobile/out`** — see `.claude/skills/adsense-monetization/SKILL.md`. |
+| Mobile build | `npm run mobile:build` | **PASSES** — 103 static pages, 99 HTML files under `mobile/out/calculation-tools/`, shared JS 87.9 kB, stylesheet **113,827 bytes**, 9.2 MB (re-measured 2026-09-13 after the Master Formula Calculator; 111,673 before). Independent of `.env` and safe to run while `npm run dev` is up (separate `mobile/.next`). **Also assert zero ad strings in `mobile/out`** — see `.claude/skills/adsense-monetization/SKILL.md`. |
 | Tests | — | **No test infrastructure exists.** Never claim tests passed. |
 
 ---

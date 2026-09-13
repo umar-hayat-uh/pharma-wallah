@@ -62,6 +62,20 @@
     overscroll-behavior-y: contain;
   }
 
+  /* The category chips on the catalogue are in-page anchor jumps. */
+  html {
+    scroll-behavior: smooth;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.2);
+  }
+
   /* The tap highlight looks like a rendering bug on card grids. */
   a,
   button {
@@ -98,24 +112,18 @@
   pointer-events: none;
 }
 
+/* The capsule itself is PharmaLoader (src/components/loading/pharma-loader.css).
+   Entry animations here start from the resting state's neighbour and carry no
+   fill mode, so nothing can be left hidden (MEMORY.md gotcha 55). */
 .pw-splash__mark {
   display: grid;
   place-items: center;
-  width: 5.5rem;
-  height: 5.5rem;
-  border-radius: 1.5rem;
-  background: rgba(255, 255, 255, 0.16);
-  animation: pw-splash-mark 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.pw-splash__mark > svg {
-  width: 2.75rem;
-  height: 2.75rem;
+  animation: pw-splash-mark 700ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .pw-splash__wordmark {
   text-align: center;
-  animation: pw-splash-rise 600ms cubic-bezier(0.22, 1, 0.36, 1) 160ms both;
+  animation: pw-splash-rise 600ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .pw-splash__name {
@@ -127,25 +135,12 @@
 .pw-splash__tagline {
   margin-top: 0.25rem;
   font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.75);
+  /* White/90 on brandBlue: the 75% it replaced was below 4.5:1 for 13px text. */
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.pw-splash__bar {
-  width: 7rem;
-  height: 3px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.2);
-  animation: pw-splash-rise 600ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both;
-}
-
-.pw-splash__bar > span {
-  display: block;
-  width: 45%;
-  height: 100%;
-  border-radius: inherit;
-  background: #fff;
-  animation: pw-splash-sweep 1s ease-in-out infinite;
+.pw-splash__steps {
+  animation: pw-splash-rise 600ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes pw-splash-mark {
@@ -158,17 +153,11 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes pw-splash-sweep {
-  0%   { transform: translateX(-110%); }
-  100% { transform: translateX(240%); }
-}
-
 /* Respect the system setting: show the same screen, just without motion. */
 @media (prefers-reduced-motion: reduce) {
   .pw-splash__mark,
   .pw-splash__wordmark,
-  .pw-splash__bar,
-  .pw-splash__bar > span {
+  .pw-splash__steps {
     animation: none;
   }
 }

@@ -113,8 +113,12 @@ mv mobile/app/_generated /tmp/ && npx tsc --noEmit; mv /tmp/_generated mobile/ap
 Vercel never builds the APK. Distribution is separate: Play Store, or an APK hosted for download.
 
 ## Styling: shadcn/ui + two Tailwind traps
-The app uses **shadcn/ui** (`mobile/components/ui/`, `mobile/components.json`, `mobile/lib/utils.ts`)
-with tokens in `mobile/app/globals.css` mapped to the brand (`--primary` is brandBlue). The mobile
+The app uses **shadcn/ui** — the *same* primitives as the website. There is no `mobile/components/`
+(an earlier version of this skill said there was): `@/*` resolves to `../src/*`, so the app imports
+`src/components/ui/*`, `src/components/calculators/*` and `cn()` from `src/lib/utils.ts`. Restyle a
+primitive once and both surfaces change. Tokens live in `mobile/app/globals.css` mapped to the brand
+(`--primary` is brandBlue). New primitives must stay dependency-free (only `@radix-ui/react-slot`
+and `react-navigation-menu` are installed) because they ship inside the APK. The mobile
 app has its **own** `globals.css` rather than importing the web one — safe because no calculator
 uses a custom class defined there (verified: `styled-table`, `slick-dots`, `animate-blob`,
 `animate-fadeInUp`, `animation-delay-2000` → 0 uses).

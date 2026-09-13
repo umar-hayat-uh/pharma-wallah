@@ -1,204 +1,239 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { Droplets, Calculator, Activity, RefreshCw, AlertCircle, Thermometer, Info, BookOpen } from 'lucide-react';
 
-type GlucoseUnit = 'mg/dL' | 'mmol/L';
+import { useMemo, useState } from "react";
+import { Droplets, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+    CalculatorShell,
+    CalcSection,
+    FieldGrid,
+    NumberField,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    AdSlot,
+    type ResultTone,
+} from "@/components/calculators";
+
+type GlucoseUnit = "mg/dL" | "mmol/L";
+
+/* ── Conversion and reference bands, unchanged ────────────────────────────── */
+const MMOL_TO_MGDL = 18;
+const NORMAL_LOW = 135;
+const NORMAL_HIGH = 145;
+
+const SAMPLES = [
+    { name: "Normal", na: "140", glu: "100" },
+    { name: "Hyperglycaemia", na: "128", glu: "400" },
+    { name: "DKA", na: "125", glu: "600" },
+    { name: "Mild hyponatraemia", na: "132", glu: "120" },
+    { name: "Hypernatraemia", na: "148", glu: "90" },
+];
 
 export default function SodiumCorrectionCalculator() {
-    const [sodium, setSodium] = useState<string>('135');
-    const [glucose, setGlucose] = useState<string>('100');
-    const [glucoseUnit, setGlucoseUnit] = useState<GlucoseUnit>('mg/dL');
-    const [correctedSodium, setCorrectedSodium] = useState<number | null>(null);
-    const [interpretation, setInterpretation] = useState<string>('');
-    const [showDetails, setShowDetails] = useState<boolean>(false);
+    const [sodium, setSodium] = useState("135");
+    const [glucose, setGlucose] = useState("100");
+    const [glucoseUnit, setGlucoseUnit] = useState<GlucoseUnit>("mg/dL");
 
-    const calculateCorrectedSodium = () => {
-        let na = parseFloat(sodium);
+    /* Derived rather than pushed into state from a useEffect. Arithmetic unchanged. */
+    const result = useMemo(() => {
+        const na = parseFloat(sodium);
         let glu = parseFloat(glucose);
+        if (isNaN(na) || isNaN(glu)) return null;
 
-        if (isNaN(na) || isNaN(glu)) {
-            setCorrectedSodium(null);
-            setInterpretation('');
-            return;
-        }
+        if (glucoseUnit === "mmol/L") glu = glu * MMOL_TO_MGDL;
 
-        // Convert glucose to mg/dL if needed
-        if (glucoseUnit === 'mmol/L') {
-            glu = glu * 18; // 1 mmol/L = 18 mg/dL
-        }
-
-        // Corrected sodium formula for hyperglycemia
         const corrected = na + 0.016 * (glu - 100);
-        setCorrectedSodium(corrected);
 
-        // Interpretation (using corrected value)
-        if (corrected < 135) setInterpretation('Hyponatremia');
-        else if (corrected > 145) setInterpretation('Hypernatremia');
-        else setInterpretation('Normal');
-    };
+        let interpretation: string;
+        let tone: ResultTone;
+        if (corrected < NORMAL_LOW) {
+            interpretation = "Hyponatraemia — true sodium deficit, below 135 mEq/L even after correction.";
+            tone = "warning";
+        } else if (corrected > NORMAL_HIGH) {
+            interpretation = "Hypernatraemia — above 145 mEq/L after correction.";
+            tone = "danger";
+        } else {
+            interpretation = "Within the normal range of 135–145 mEq/L.";
+            tone = "success";
+        }
 
-    useEffect(() => {
-        calculateCorrectedSodium();
+        return { corrected, glucoseMgDl: glu, measured: na, interpretation, tone };
     }, [sodium, glucose, glucoseUnit]);
 
     const reset = () => {
-        setSodium('135');
-        setGlucose('100');
-        setGlucoseUnit('mg/dL');
-        setCorrectedSodium(null);
-        setInterpretation('');
-    };
-
-    const samplePatients = [
-        { name: 'Normal', na: '140', glu: '100' },
-        { name: 'Hyperglycemia', na: '128', glu: '400' },
-        { name: 'DKA', na: '125', glu: '600' },
-        { name: 'Mild hyponatremia', na: '132', glu: '120' },
-        { name: 'Hypernatremia', na: '148', glu: '90' },
-    ];
-
-    const loadSample = (idx: number) => {
-        const p = samplePatients[idx];
-        setSodium(p.na);
-        setGlucose(p.glu);
+        setSodium("135");
+        setGlucose("100");
+        setGlucoseUnit("mg/dL");
     };
 
     return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 pt-20">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6">
-                    <div className="flex flex-col md:flex-row items-center justify-between">
-                        <div className="flex items-center mb-4 md:mb-0">
-                            <div className="bg-white/20 p-3 rounded-xl mr-4">
-                                <Droplets className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-white">Sodium Correction Calculator</h1>
-                                <p className="text-blue-100 mt-2">Corrected Na = measured Na + 0.016 × (glucose – 100) </p>
-                            </div>
-                        </div>
-                        <div className="bg-white/20 px-4 py-2 rounded-lg">
-                            <Thermometer className="w-5 h-5 text-white inline mr-2" />
-                            <span className="text-white font-semibold">Electrolyte Evaluation</span>
-                        </div>
-                    </div>
-                </div>
+        <CalculatorShell
+            title="Sodium Correction Calculator"
+            subtitle="Corrects measured serum sodium for the dilutional effect of a high glucose."
+            icon={Droplets}
+            aside={
+                <>
+                    <CalcAbout title="About this calculator">
+                        <p>
+                            A high blood glucose pulls water out of cells into the bloodstream. The
+                            extra water dilutes the sodium, so the lab reports a low sodium in a patient
+                            who has no sodium deficit at all. This is{" "}
+                            <strong>translocational (dilutional) hyponatraemia</strong>.
+                        </p>
+                        <p>
+                            Correcting the sodium answers the question that actually matters: is this
+                            patient genuinely short of sodium, or does the number simply reflect their
+                            glucose?
+                        </p>
+                        <CalcList
+                            title="Use it when"
+                            items={[
+                                "Diabetic ketoacidosis or a hyperosmolar hyperglycaemic state",
+                                "Any hyponatraemia found alongside a glucose above 100 mg/dL",
+                                "Before treating an apparent hyponatraemia in a diabetic patient",
+                                "Tracking sodium as glucose falls during insulin therapy",
+                            ]}
+                        />
+                        <CalcList
+                            tone="caution"
+                            title="Do not rely on it when"
+                            items={[
+                                "Hyponatraemia has a cause other than glucose — SIADH, diuretics, heart failure",
+                                "Severe hyperlipidaemia or hyperproteinaemia (pseudohyponatraemia) is present",
+                                "Deciding the rate of correction — that is a separate clinical judgement",
+                                "The glucose is normal; the correction then does almost nothing",
+                            ]}
+                        />
+                        <p className="text-xs italic">
+                            Katz MA, N Engl J Med 1973; Hillier TA et al., Am J Med 1999.
+                        </p>
+                    </CalcAbout>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left column – inputs */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
-                                <Calculator className="w-6 h-6 mr-2 text-blue-600" />
-                                Patient Data
-                            </h2>
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+                </>
+            }
+        >
+            <ResultCard
+                label="Corrected sodium"
+                value={result ? result.corrected.toFixed(1) : null}
+                unit="mEq/L"
+                interpretation={result?.interpretation}
+                tone={result?.tone ?? "neutral"}
+                empty="Enter a sodium and a glucose value to see the corrected sodium."
+            />
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-4 border border-blue-200">
-                                    <label className="text-sm font-semibold mb-2">Sodium (mEq/L)</label>
-                                    <input type="number" step="1" value={sodium} onChange={(e) => setSodium(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg" />
-                                </div>
-                                <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-xl p-4 border border-green-200">
-                                    <label className="text-sm font-semibold mb-2">Glucose</label>
-                                    <input type="number" step="1" value={glucose} onChange={(e) => setGlucose(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-green-200 rounded-lg" />
-                                </div>
-                            </div>
+            <CalcSection title="Patient values">
+                <FieldGrid>
+                    <NumberField
+                        label="Measured sodium"
+                        value={sodium}
+                        onChange={setSodium}
+                        unit="mEq/L"
+                        step="1"
+                        hint="The sodium printed on the lab report."
+                    />
+                    <NumberField
+                        label="Blood glucose"
+                        value={glucose}
+                        onChange={setGlucose}
+                        units={["mg/dL", "mmol/L"]}
+                        unit={glucoseUnit}
+                        onUnitChange={(next) => setGlucoseUnit(next as GlucoseUnit)}
+                        step="1"
+                        hint="The correction only matters once glucose is well above 100 mg/dL."
+                    />
+                </FieldGrid>
 
-                            {/* Units selection */}
-                            <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                                <h3 className="font-semibold text-gray-800 mb-3">Glucose units</h3>
-                                <div className="flex gap-4">
-                                    <label className="flex items-center gap-2">
-                                        <input type="radio" value="mg/dL" checked={glucoseUnit === 'mg/dL'} onChange={(e) => setGlucoseUnit(e.target.value as GlucoseUnit)} />
-                                        <span>mg/dL</span>
-                                    </label>
-                                    <label className="flex items-center gap-2">
-                                        <input type="radio" value="mmol/L" checked={glucoseUnit === 'mmol/L'} onChange={(e) => setGlucoseUnit(e.target.value as GlucoseUnit)} />
-                                        <span>mmol/L</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            {/* Sample cases */}
-                            <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-4 mb-6">
-                                <h3 className="font-semibold mb-3">Example cases</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                                    {samplePatients.map((p, idx) => (
-                                        <button key={idx} onClick={() => loadSample(idx)}
-                                            className="bg-white p-2 rounded-lg text-xs hover:bg-blue-100">
-                                            <div className="font-semibold">{p.name}</div>
-                                            <div>Na {p.na}</div>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row gap-4">
-                                <button onClick={calculateCorrectedSodium}
-                                    className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 rounded-xl shadow-lg">
-                                    Calculate
-                                </button>
-                                <button onClick={reset}
-                                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white rounded-xl flex items-center justify-center">
-                                    <RefreshCw className="w-5 h-5 mr-2" /> Reset
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Details panel */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <button onClick={() => setShowDetails(!showDetails)}
-                                className="flex items-center justify-between w-full text-left">
-                                <h3 className="text-lg font-bold text-gray-800 flex items-center">
-                                    <Info className="w-5 h-5 mr-2 text-blue-600" />
-                                    About Sodium Correction
-                                </h3>
+                <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Try an example</p>
+                    <div className="flex flex-wrap gap-2">
+                        {SAMPLES.map((sample) => (
+                            <button
+                                key={sample.name}
+                                type="button"
+                                onClick={() => {
+                                    setSodium(sample.na);
+                                    setGlucose(sample.glu);
+                                    setGlucoseUnit("mg/dL");
+                                }}
+                                className="rounded-full border bg-background px-3 py-2 text-xs font-medium active:bg-accent"
+                            >
+                                {sample.name}
                             </button>
-                            {showDetails && (
-                                <div className="mt-4 space-y-3 text-sm text-gray-600">
-                                    <p>In hyperglycemia, water shifts from intracellular to extracellular space, lowering measured sodium. Corrected value estimates sodium after glucose normalization.</p>
-                                    <p>Formula: corrected Na = measured Na + 0.016 × (glucose – 100) for glucose in mg/dL. </p>
-                                    <p>Clinical use: differentiate true hyponatremia from dilutional hyponatremia in diabetic patients. </p>
-                                    <p className="text-xs italic">Sources: Katz MA, N Engl J Med 1973; Hillier TA et al., J Am Soc Nephrol 1999.</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Right column – results & reference */}
-                    <div className="space-y-6">
-                        <div className="bg-gradient-to-br from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 text-white">
-                            <h2 className="text-2xl font-bold mb-4">Corrected Sodium</h2>
-                            <div className="bg-white/20 rounded-xl p-4 text-center">
-                                <div className="text-4xl font-bold mb-2">{correctedSodium?.toFixed(1) ?? '—'}</div>
-                                <div className="text-sm">mEq/L</div>
-                            </div>
-                            {interpretation && (
-                                <div className="bg-white/10 rounded-lg p-4 mt-4 text-center">
-                                    <p className="text-lg font-semibold">{interpretation}</p>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                                <BookOpen className="w-5 h-5 mr-2 text-blue-600" />
-                                Normal Ranges
-                            </h3>
-                            <p className="text-sm">Sodium: 135–145 mEq/L<br />Glucose (fasting): 70–100 mg/dL</p>
-                        </div>
-
-                        <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-2xl shadow-lg p-6 border border-blue-200">
-                            <h3 className="text-lg font-bold text-gray-800 mb-2">Formula</h3>
-                            <p className="text-sm font-mono">Naₑ = Naₘ + 0.016 × (G – 100)</p>
-                            <p className="text-xs text-gray-600 mt-2">(glucose in mg/dL)</p>
-                        </div>
+                        ))}
                     </div>
                 </div>
-            </div>
-        </section>
+
+                <Button variant="outline" onClick={reset} className="w-full">
+                    <RefreshCw />
+                    Reset
+                </Button>
+            </CalcSection>
+
+            {result && (
+                <CalcSection title="Working">
+                    <div>
+                        <ResultRow label="Measured sodium" value={result.measured.toFixed(1)} unit="mEq/L" />
+                        <ResultRow
+                            label="Glucose (converted)"
+                            value={result.glucoseMgDl.toFixed(0)}
+                            unit="mg/dL"
+                        />
+                        <ResultRow
+                            label="Correction applied"
+                            value={`+${(result.corrected - result.measured).toFixed(1)}`}
+                            unit="mEq/L"
+                        />
+                        <ResultRow label="Normal sodium" value="135 – 145" unit="mEq/L" />
+                        <ResultRow label="Normal fasting glucose" value="70 – 100" unit="mg/dL" />
+                    </div>
+                </CalcSection>
+            )}
+
+            <FormulaNote>
+                <Formula>Corrected Na = measured Na + 0.016 × (glucose in mg/dL − 100)</Formula>
+                <p>
+                    For every 100 mg/dL the glucose sits above normal, the measured sodium reads about
+                    1.6 mEq/L lower than the patient&apos;s true sodium. The formula simply adds that
+                    back.
+                </p>
+                <p>
+                    A commonly taught alternative uses 0.024 rather than 0.016, based on work by
+                    Hillier, and is argued to be more accurate once glucose exceeds 400 mg/dL. This
+                    calculator uses the classic Katz factor of 0.016; expect a slightly larger
+                    correction if your institution prefers Hillier&apos;s.
+                </p>
+            </FormulaNote>
+
+            <CalcFaq
+                items={[
+                    {
+                        q: "Why does a high glucose lower sodium?",
+                        a: "Glucose is osmotically active and does not cross cell membranes freely without insulin. A high plasma glucose therefore draws water out of cells into the plasma, and that extra water dilutes the sodium already there. No sodium has been lost — it is simply spread through more water.",
+                    },
+                    {
+                        q: "Should I use 0.016 or 0.024?",
+                        a: "0.016 is the original Katz factor and the one most references still quote; this calculator uses it. Hillier's experimental work suggests 0.024 fits better, especially above 400 mg/dL. Follow your local protocol, and be aware the two can differ by several mEq/L in severe hyperglycaemia.",
+                    },
+                    {
+                        q: "The corrected sodium is normal but the measured one is low. What now?",
+                        a: "That pattern points to dilutional hyponatraemia caused by the glucose rather than a sodium deficit. Treating the hyperglycaemia will usually bring the measured sodium up on its own — which is why the sodium often rises during insulin therapy and should be watched rather than chased.",
+                    },
+                    {
+                        q: "What if the corrected sodium is still low?",
+                        a: "Then there is a genuine hyponatraemia on top of the hyperglycaemia, and it needs its own workup — volume status, urine osmolality, urine sodium and a medication review. Correction tells you the question is real; it does not tell you the cause.",
+                    },
+                    {
+                        q: "Does this apply to pseudohyponatraemia?",
+                        a: "No. Pseudohyponatraemia is a laboratory artefact from very high lipids or proteins displacing plasma water, and it is unrelated to glucose. This correction will not fix it — a direct ion-selective electrode measurement will.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
     );
 }

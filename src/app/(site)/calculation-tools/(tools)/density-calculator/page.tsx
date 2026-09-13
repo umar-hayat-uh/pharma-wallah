@@ -1,349 +1,341 @@
 "use client";
-import { useState } from 'react';
-import { Calculator, Scale, Weight, Beaker, Droplets, AlertCircle, Box } from 'lucide-react';
 
-type DensityType = 'true' | 'bulk' | 'tapped';
+import { useMemo, useState } from "react";
+import { Beaker, Droplets, RefreshCw, Scale, Weight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+    CalculatorShell,
+    CalcSection,
+    FieldGrid,
+    NumberField,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    AdSlot,
+    LabNotice,
+    ModeSwitch,
+    fieldError,
+    type ModeOption,
+} from "@/components/calculators";
+
+type DensityType = "true" | "bulk" | "tapped";
+
+const MODE_OPTIONS: ModeOption<DensityType>[] = [
+    { value: "true", label: "True", description: "Excluding pores and voids", icon: Weight },
+    { value: "bulk", label: "Bulk", description: "Including voids between particles", icon: Beaker },
+    { value: "tapped", label: "Tapped", description: "Bulk density after tapping", icon: Droplets },
+];
+
+const TYPE_LABEL: Record<DensityType, string> = { true: "True", bulk: "Bulk", tapped: "Tapped" };
+
+/* ── Common materials, g/mL (unchanged) ───────────────────────────────────── */
+const SAMPLE_MATERIALS: { name: string; density: number; type: DensityType }[] = [
+    { name: "Water", density: 1.0, type: "true" },
+    { name: "Lactose", density: 1.52, type: "true" },
+    { name: "Microcrystalline Cellulose", density: 1.5, type: "true" },
+    { name: "Magnesium Stearate", density: 1.1, type: "bulk" },
+    { name: "Talc", density: 2.7, type: "true" },
+];
+
+const COMMON_DENSITIES = [
+    { name: "Water", value: "1.0" },
+    { name: "Lactose", value: "1.52" },
+    { name: "MCC", value: "1.5" },
+    { name: "Mg Stearate", value: "1.1" },
+];
+
+/** The previous page's parse: an empty optional field counts as 0. */
+function optional(raw: string): number {
+    return raw ? parseFloat(raw) : 0;
+}
 
 export default function DensityCalculator() {
-    const [densityType, setDensityType] = useState<DensityType>('true');
-    const [mass, setMass] = useState<string>('');
-    const [volume, setVolume] = useState<string>('');
-    const [containerMass, setContainerMass] = useState<string>('');
-    const [containerVolume, setContainerVolume] = useState<string>('');
-    const [result, setResult] = useState<{
-        density: number;
-        unit: string;
-        interpretation: string;
-        formula: string;
-    } | null>(null);
+    const [densityType, setDensityType] = useState<DensityType>("true");
+    const [mass, setMass] = useState("");
+    const [volume, setVolume] = useState("");
+    const [containerMass, setContainerMass] = useState("");
+    const [containerVolume, setContainerVolume] = useState("");
 
-    const calculateDensity = () => {
+    const massError = fieldError(mass, { show: false });
+    const volumeError = fieldError(volume, { show: false });
+    const containerMassError = fieldError(containerMass, { show: false, allowZero: true, required: false });
+    const containerVolumeError = fieldError(containerVolume, { show: false, allowZero: true, required: false });
+
+    /*
+     * Live, derived from the inputs and the selected type. The previous page
+     * stored the result on Calculate and titled it with the *current* type, so
+     * switching type afterwards relabelled an old number. Arithmetic unchanged.
+     */
+    const result = useMemo(() => {
         const m = parseFloat(mass);
         const v = parseFloat(volume);
-        const cm = containerMass ? parseFloat(containerMass) : 0;
-        const cv = containerVolume ? parseFloat(containerVolume) : 0;
-
-        if (isNaN(m) || isNaN(v) || m <= 0 || v <= 0) {
-            alert('Please enter valid positive numbers for mass and volume');
-            return;
-        }
+        const cm = optional(containerMass);
+        const cv = optional(containerVolume);
+        if (isNaN(m) || isNaN(v) || m <= 0 || v <= 0) return null;
 
         let density = 0;
-        let unit = 'g/mL';
-        let interpretation = '';
-        let formula = '';
+        let interpretation = "";
+        let formula = "";
+        let substitution = "";
+        let containerIgnored = false;
 
         switch (densityType) {
-            case 'true':
+            case "true":
                 density = m / v;
-                formula = 'ρ = m / V';
-                if (density < 1) interpretation = 'Material will float on water';
-                else if (density < 2) interpretation = 'Typical for many pharmaceutical powders';
-                else interpretation = 'High density material';
+                formula = "ρ = m / V";
+                substitution = `${mass} ÷ ${volume}`;
+                if (density < 1) interpretation = "Material will float on water";
+                else if (density < 2) interpretation = "Typical for many pharmaceutical powders";
+                else interpretation = "High density material";
                 break;
 
-            case 'bulk':
+            case "bulk":
                 if (cm > 0) {
                     density = (m - cm) / v;
-                    formula = 'ρ_bulk = (m_total - m_container) / V';
+                    formula = "ρ_bulk = (m_total - m_container) / V";
+                    substitution = `(${mass} − ${containerMass}) ÷ ${volume}`;
                 } else {
                     density = m / v;
-                    formula = 'ρ_bulk = m / V';
+                    formula = "ρ_bulk = m / V";
+                    substitution = `${mass} ÷ ${volume}`;
                 }
-                interpretation = 'Includes void spaces between particles';
+                interpretation = "Includes void spaces between particles";
                 break;
 
-            case 'tapped':
+            case "tapped":
                 if (cv > 0 && v > cv) {
                     density = m / (v - cv);
-                    formula = 'ρ_tapped = m / (V_total - V_container)';
+                    formula = "ρ_tapped = m / (V_total - V_container)";
+                    substitution = `${mass} ÷ (${volume} − ${containerVolume})`;
                 } else {
                     density = m / v;
-                    formula = 'ρ_tapped = m / V';
+                    formula = "ρ_tapped = m / V";
+                    substitution = `${mass} ÷ ${volume}`;
+                    containerIgnored = cv > 0;
                 }
-                interpretation = 'Measured after standard tapping procedure';
+                interpretation = "Measured after standard tapping procedure";
                 break;
         }
 
-        setResult({
-            density,
-            unit,
-            interpretation,
-            formula
-        });
-    };
+        if (!Number.isFinite(density)) return null;
+        return { density, interpretation, formula, substitution, containerIgnored };
+    }, [densityType, mass, volume, containerMass, containerVolume]);
 
-    const resetCalculator = () => {
-        setMass('');
-        setVolume('');
-        setContainerMass('');
-        setContainerVolume('');
-        setResult(null);
-    };
+    const negative = result !== null && result.density < 0;
+    // Never print "-0.0000".
+    const shown = result ? (Object.is(Number(result.density.toFixed(4)), -0) ? "0.0000" : result.density.toFixed(4)) : null;
 
-    const sampleMaterials = [
-        { name: 'Water', density: 1.0, type: 'true' },
-        { name: 'Lactose', density: 1.52, type: 'true' },
-        { name: 'Microcrystalline Cellulose', density: 1.5, type: 'true' },
-        { name: 'Magnesium Stearate', density: 1.1, type: 'bulk' },
-        { name: 'Talc', density: 2.7, type: 'true' },
-    ];
+    const reset = () => {
+        setMass("");
+        setVolume("");
+        setContainerMass("");
+        setContainerVolume("");
+    };
 
     return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 pt-20">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6 md:mb-8">
-                    <div className="flex flex-col md:flex-row items-center justify-between">
-                        <div className="flex items-center mb-4 md:mb-0">
-                            <div className="bg-white/20 p-3 rounded-xl mr-4">
-                                <Scale className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-white">Density Calculator</h1>
-                                <p className="text-blue-100 mt-2">True, Bulk, and Tapped Density for pharmaceutical materials</p>
-                            </div>
-                        </div>
+        <CalculatorShell
+            title="Density Calculator"
+            subtitle="Calculates the true, bulk or tapped density of a pharmaceutical material from its mass and volume."
+            icon={Scale}
+            eyebrow="Pharmaceutics"
+            aside={
+                <>
+                    <CalcAbout title="About this calculator">
+                        <p>
+                            The same powder has three densities depending on which volume you divide by. True
+                            density uses the volume of the solid alone; bulk density includes the air between
+                            particles as the powder is poured; tapped density is the bulk density after the
+                            powder has been tapped down.
+                        </p>
+                        <CalcList
+                            title="Density types"
+                            items={[
+                                "True density — mass excluding pores and voids",
+                                "Bulk density — mass including pores and voids",
+                                "Tapped density — bulk density after tapping",
+                            ]}
+                        />
+                        <CalcList
+                            title="Applications"
+                            items={["Tablet formulation", "Capsule filling", "Powder flow", "Quality control"]}
+                        />
+                    </CalcAbout>
+
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+                </>
+            }
+        >
+            <ModeSwitch label="Density type" value={densityType} onChange={setDensityType} options={MODE_OPTIONS} />
+
+            <ResultCard
+                label={`${TYPE_LABEL[densityType]} density`}
+                value={shown}
+                unit="g/mL"
+                interpretation={result?.interpretation}
+                tone={negative ? "danger" : "neutral"}
+                empty="Enter a mass and a volume greater than zero to see the density."
+            />
+
+            <CalcSection title="Inputs">
+                <FieldGrid>
+                    <NumberField
+                        label={densityType === "bulk" ? "Mass (g) — total if weighed in a container" : "Mass (g)"}
+                        value={mass}
+                        onChange={setMass}
+                        unit="g"
+                        step="0.001"
+                        placeholder="Enter mass"
+                        hint={
+                            densityType === "bulk"
+                                ? "The powder's mass, or the powder plus container if you enter a container mass below."
+                                : "The weighed mass of the sample."
+                        }
+                        error={massError}
+                    />
+                    <NumberField
+                        label="Volume (mL)"
+                        value={volume}
+                        onChange={setVolume}
+                        unit="mL"
+                        step="0.01"
+                        placeholder="Enter volume"
+                        hint={
+                            densityType === "true"
+                                ? "Volume of the solid itself, e.g. by pycnometry."
+                                : densityType === "bulk"
+                                  ? "Volume read after gently pouring the powder into a cylinder."
+                                  : "Volume read after the standard tapping procedure."
+                        }
+                        error={volumeError}
+                    />
+                </FieldGrid>
+
+                {densityType === "bulk" && (
+                    <NumberField
+                        label="Container mass (g) — optional"
+                        value={containerMass}
+                        onChange={setContainerMass}
+                        unit="g"
+                        step="0.001"
+                        placeholder="Mass of empty container"
+                        hint="Leave blank if the mass above is the powder alone. Subtracted from the mass."
+                        error={containerMassError}
+                    />
+                )}
+
+                {densityType === "tapped" && (
+                    <NumberField
+                        label="Container volume (mL) — optional"
+                        value={containerVolume}
+                        onChange={setContainerVolume}
+                        unit="mL"
+                        step="0.01"
+                        placeholder="Volume of empty container"
+                        hint="Leave blank if the volume above is the powder alone. Used only when smaller than the volume."
+                        error={containerVolumeError}
+                    />
+                )}
+
+                {densityType === "bulk" && negative && (
+                    <LabNotice tone="danger" title="Container mass is larger than the mass">
+                        The mass above should be the total — powder plus container. With a heavier container
+                        the powder mass comes out negative, and so does the density.
+                    </LabNotice>
+                )}
+
+                {densityType === "tapped" && result?.containerIgnored && (
+                    <LabNotice tone="warning" title="Container volume not used">
+                        The container volume is not smaller than the volume, so it was ignored and the
+                        density was calculated as m / V.
+                    </LabNotice>
+                )}
+
+                <div>
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">
+                        Common materials — fills 100 g and the matching volume
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        {SAMPLE_MATERIALS.map((material) => (
+                            <button
+                                key={material.name}
+                                type="button"
+                                onClick={() => {
+                                    setDensityType(material.type);
+                                    setMass("100");
+                                    setVolume((100 / material.density).toFixed(2));
+                                }}
+                                className="min-h-[40px] rounded-full border bg-background px-3.5 text-sm font-medium transition-colors hover:border-foreground/25 active:bg-accent"
+                            >
+                                {material.name}{" "}
+                                <span className="font-normal text-muted-foreground">{material.density} g/mL</span>
+                            </button>
+                        ))}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Main Input Area */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
-                            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                                <Calculator className="w-6 h-6 mr-2 text-blue-600" />
-                                Density Calculation
-                            </h2>
+                <Button variant="outline" onClick={reset} className="w-full">
+                    <RefreshCw />
+                    Reset
+                </Button>
+            </CalcSection>
 
-                            {/* Density Type Selection */}
-                            <div className="mb-8">
-                                <label className="block text-lg font-semibold text-gray-800 mb-3">Select Density Type</label>
-                                <div className="grid grid-cols-3 gap-3">
-                                    <button
-                                        onClick={() => setDensityType('true')}
-                                        className={`p-4 rounded-lg transition-all duration-300 ${
-                                            densityType === 'true'
-                                                ? 'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-md'
-                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                        }`}
-                                    >
-                                        <Weight className="inline w-5 h-5 mr-2" />
-                                        True
-                                    </button>
-                                    <button
-                                        onClick={() => setDensityType('bulk')}
-                                        className={`p-4 rounded-lg transition-all duration-300 ${
-                                            densityType === 'bulk'
-                                                ? 'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-md'
-                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                        }`}
-                                    >
-                                        <Beaker className="inline w-5 h-5 mr-2" />
-                                        Bulk
-                                    </button>
-                                    <button
-                                        onClick={() => setDensityType('tapped')}
-                                        className={`p-4 rounded-lg transition-all duration-300 ${
-                                            densityType === 'tapped'
-                                                ? 'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-md'
-                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                        }`}
-                                    >
-                                        <Droplets className="inline w-5 h-5 mr-2" />
-                                        Tapped
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="space-y-6">
-                                {/* Mass Input */}
-                                <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6">
-                                    <label className="block text-lg font-semibold text-gray-800 mb-3">
-                                        <Weight className="inline w-5 h-5 mr-2" />
-                                        Mass (g)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        step="0.001"
-                                        min="0.001"
-                                        value={mass}
-                                        onChange={(e) => setMass(e.target.value)}
-                                        className="w-full px-4 py-3 text-lg border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                                        placeholder="Enter mass"
-                                    />
-                                </div>
-
-                                {/* Volume Input */}
-                                <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6">
-                                    <label className="block text-lg font-semibold text-gray-800 mb-3">
-                                        <Beaker className="inline w-5 h-5 mr-2" />
-                                        Volume (mL)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0.01"
-                                        value={volume}
-                                        onChange={(e) => setVolume(e.target.value)}
-                                        className="w-full px-4 py-3 text-lg border-2 border-green-200 rounded-lg focus:border-green-500 focus:outline-none"
-                                        placeholder="Enter volume"
-                                    />
-                                </div>
-
-                                {/* Optional container fields */}
-                                {densityType === 'bulk' && (
-                                    <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6">
-                                        <label className="block text-lg font-semibold text-gray-800 mb-3">
-                                            Container Mass (g) – Optional
-                                        </label>
-                                        <input
-                                            type="number"
-                                            step="0.001"
-                                            min="0"
-                                            value={containerMass}
-                                            onChange={(e) => setContainerMass(e.target.value)}
-                                            className="w-full px-4 py-3 text-lg border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                                            placeholder="Mass of empty container"
-                                        />
-                                    </div>
-                                )}
-
-                                {densityType === 'tapped' && (
-                                    <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6">
-                                        <label className="block text-lg font-semibold text-gray-800 mb-3">
-                                            Container Volume (mL) – Optional
-                                        </label>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            value={containerVolume}
-                                            onChange={(e) => setContainerVolume(e.target.value)}
-                                            className="w-full px-4 py-3 text-lg border-2 border-green-200 rounded-lg focus:border-green-500 focus:outline-none"
-                                            placeholder="Volume of empty container"
-                                        />
-                                    </div>
-                                )}
-
-                                {/* Quick Samples */}
-                                <div className="bg-gray-50 rounded-xl p-6">
-                                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Common Materials</h3>
-                                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                                        {sampleMaterials.map((material, index) => (
-                                            <button
-                                                key={index}
-                                                onClick={() => {
-                                                    setDensityType(material.type as DensityType);
-                                                    setMass('100');
-                                                    setVolume((100 / material.density).toFixed(2));
-                                                }}
-                                                className="bg-white border border-gray-300 rounded-lg p-3 hover:bg-blue-50 transition-colors text-center"
-                                            >
-                                                <div className="font-semibold text-blue-600">{material.name}</div>
-                                                <div className="text-sm text-gray-600 mt-1">{material.density} g/mL</div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Action Buttons */}
-                                <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                                    <button
-                                        onClick={calculateDensity}
-                                        className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
-                                    >
-                                        Calculate Density
-                                    </button>
-                                    <button
-                                        onClick={resetCalculator}
-                                        className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center"
-                                    >
-                                        Reset
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Results Display */}
-                        {result && (
-                            <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
-                                <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                                    <Scale className="w-6 h-6 mr-2 text-green-600" />
-                                    Density Result
-                                </h2>
-
-                                <div className="bg-gradient-to-br from-blue-50 to-cyan-100 rounded-xl p-8 text-center">
-                                    <div className="text-sm font-semibold text-blue-700 mb-2">
-                                        {densityType.charAt(0).toUpperCase() + densityType.slice(1)} Density
-                                    </div>
-                                    <div className="text-5xl md:text-6xl font-bold text-blue-600 mb-2">
-                                        {result.density.toFixed(4)}
-                                    </div>
-                                    <div className="text-2xl font-semibold text-blue-700">
-                                        {result.unit}
-                                    </div>
-                                </div>
-
-                                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="bg-gray-50 rounded-xl p-6">
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Formula Used</h3>
-                                        <p className="font-mono text-sm">{result.formula}</p>
-                                    </div>
-                                    <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6">
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Interpretation</h3>
-                                        <p className="text-gray-700">{result.interpretation}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+            {result && shown !== null && (
+                <CalcSection title="Working">
+                    <div>
+                        <ResultRow label="Formula used" value={result.formula} />
+                        <ResultRow label="Substitution" value={`${result.substitution} = ${shown}`} unit="g/mL" />
+                        <ResultRow label="Interpretation" value={result.interpretation} />
                     </div>
+                </CalcSection>
+            )}
 
-                    {/* Sidebar */}
-                    <div className="space-y-6">
-                        {/* Density Types Info */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">Density Types</h3>
-                            <div className="space-y-4">
-                                <div>
-                                    <h4 className="font-semibold text-blue-700">True Density</h4>
-                                    <p className="text-sm text-gray-600">Mass excluding pores and voids.</p>
-                                </div>
-                                <div>
-                                    <h4 className="font-semibold text-green-700">Bulk Density</h4>
-                                    <p className="text-sm text-gray-600">Mass including pores and voids.</p>
-                                </div>
-                                <div>
-                                    <h4 className="font-semibold text-blue-600">Tapped Density</h4>
-                                    <p className="text-sm text-gray-600">Bulk density after tapping.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Applications */}
-                        <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">Applications</h3>
-                            <ul className="space-y-2 text-sm text-gray-600">
-                                <li>• Tablet formulation</li>
-                                <li>• Capsule filling</li>
-                                <li>• Powder flow</li>
-                                <li>• Quality control</li>
-                            </ul>
-                        </div>
-
-                        {/* Reference Table */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">Common Densities</h3>
-                            <div className="space-y-2 text-sm">
-                                <div className="flex justify-between"><span>Water</span><span className="font-semibold">1.0 g/mL</span></div>
-                                <div className="flex justify-between"><span>Lactose</span><span className="font-semibold">1.52 g/mL</span></div>
-                                <div className="flex justify-between"><span>MCC</span><span className="font-semibold">1.5 g/mL</span></div>
-                                <div className="flex justify-between"><span>Mg Stearate</span><span className="font-semibold">1.1 g/mL</span></div>
-                            </div>
-                        </div>
-                    </div>
+            <CalcSection title="Common densities">
+                <div>
+                    {COMMON_DENSITIES.map((row) => (
+                        <ResultRow key={row.name} label={row.name} value={row.value} unit="g/mL" />
+                    ))}
                 </div>
-            </div>
-        </section>
+            </CalcSection>
+
+            <FormulaNote>
+                <Formula>ρ = m / V</Formula>
+                <Formula>ρ_bulk = (m_total − m_container) / V</Formula>
+                <Formula>ρ_tapped = m / (V_total − V_container)</Formula>
+                <p>
+                    ρ = density (g/mL), m = mass (g), V = volume (mL). The container terms are optional:
+                    use them when the powder was weighed in, or its volume read together with, a container.
+                </p>
+                <p>
+                    For true density the interpretation compares the result with water (1 g/mL): below 1
+                    the material floats, 1–2 g/mL is typical of pharmaceutical powders, and 2 g/mL or more
+                    is a high-density material.
+                </p>
+            </FormulaNote>
+
+            <CalcFaq
+                items={[
+                    {
+                        q: "Why is bulk density lower than true density?",
+                        a: "Bulk volume includes the air between and inside particles, so the same mass is spread over a larger volume. True density counts only the solid, which is why it is always the highest of the three.",
+                    },
+                    {
+                        q: "How is true density measured?",
+                        a: "Usually by gas (helium) pycnometry, which measures the volume of the solid by gas displacement. Helium penetrates the smallest pores, so the volume excludes voids.",
+                    },
+                    {
+                        q: "Can I enter kilograms or litres?",
+                        a: "Convert first. The calculator divides the numbers as entered and labels the result g/mL, so mass must be in grams and volume in millilitres.",
+                    },
+                    {
+                        q: "What do I do with bulk and tapped density?",
+                        a: "Use them together to judge powder flow — Carr's index and the Hausner ratio are both calculated from bulk and tapped density. See the Powder Flowability and Compressibility Index calculators.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
     );
 }

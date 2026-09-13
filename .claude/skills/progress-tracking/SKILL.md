@@ -83,7 +83,8 @@ that bypasses batching and hits the 10/10s write limiter fast.
 4. Add a human-readable entry to the `activityLabel` map.
 5. Extend the `ProgressData` type in `src/hooks/useProgress.ts` and the `EMPTY` object.
 6. Add the new table to the `Promise.allSettled` block and `payload` in `GET /api/progress`.
-7. Render it in `src/components/dashboard/DashboardTabs.tsx`.
+7. Derive it in `src/components/dashboard/dashboard-data.ts` and render it in
+   `src/components/dashboard/Sections.tsx` (verify by feeding fixtures to `DashboardView`).
 
 ### Debugging "the dashboard is empty"
 In this order:
@@ -123,6 +124,9 @@ Reload `/dashboard` and confirm the feed shows the human-readable label. Remembe
 the 8s flush. Verify isolation by signing in as a second user. **No tests exist.**
 
 ## Common Failure Modes
+- **Tracking before the session resolves.** Fixed in `useTracker` (events are held), but anything
+  that bypasses it and reads `user` in a mount effect will silently drop — MEMORY gotcha 59.
+- **Clearing `completed`.** Only send `completed: true`; a plain visit must omit the column.
 - **Testing immediately** and concluding it is broken — 8s flush + 45s cache.
 - **Dropping the `user_id` filter** on a service-role query.
 - **Adding an event type but not the read side** — it writes and never displays.

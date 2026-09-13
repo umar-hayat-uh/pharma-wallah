@@ -1,0 +1,463 @@
+/*
+ * /calculation-tools — the calculator index.
+ *
+ * Namespaced under .pw-hub (CLAUDE.md §6 rule 14). The class is doubled where a
+ * rule has to beat globals.css: `ul:not(.prose ul)` / `li:not(.prose li)` have
+ * specificity (0,1,2) and would otherwise put bullets, padding and a grey colour
+ * on every list here (MEMORY.md gotcha 60).
+ *
+ * Performance is the brief as much as looks. Nothing on this page starts hidden:
+ * the whole index is visible in the server HTML, before any JavaScript runs.
+ * Motion is transitions on hover/focus only — no entrance animation, no infinite
+ * loops, no backdrop-filter on the sticky rail (gotcha 51).
+ */
+
+.pw-hub {
+  --hub-ink: #16181d;
+  --hub-board: #fcfcfa;
+  --hub-blue: #1c7bd9;
+  --hub-rule: rgba(22, 24, 29, 0.1);
+  --hub-muted: rgba(22, 24, 29, 0.62);
+  --hub-faint: rgba(22, 24, 29, 0.45);
+  --hub-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Header bar is 60px scrolled on phones, 64px from lg (Header/index.tsx). */
+  --hub-header: 60px;
+  color: var(--hub-ink);
+}
+@media (min-width: 1024px) {
+  .pw-hub {
+    --hub-header: 64px;
+  }
+}
+
+.pw-hub.pw-hub ul,
+.pw-hub.pw-hub ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pw-hub.pw-hub li {
+  margin: 0;
+  padding: 0;
+  color: inherit;
+}
+
+/* ── Display title: the second line carries the brand gradient ─────────────
+   Darker stops than the surface gradient so the green end keeps 3:1+ on the
+   warm white (large-text AA); #1C7BD9 → #138a5b. */
+.pw-hub-title__accent {
+  background: linear-gradient(100deg, #1c7bd9 10%, #138a5b 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* Keeps descenders of the clipped line from being cut off. */
+  padding-bottom: 0.08em;
+}
+
+/* ── Start-here card (hero aside, brand surface) ─────────────────────────── */
+.pw-hub-start__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  text-decoration: none;
+  transition: padding 500ms var(--hub-ease, cubic-bezier(0.16, 1, 0.3, 1));
+}
+.pw-hub-start__row:hover {
+  padding-left: 0.4rem;
+}
+.pw-hub-start__row:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.pw-hub-start__formula {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+}
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+.pw-hub__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 1024px) {
+  .pw-hub__layout {
+    grid-template-columns: 15rem minmax(0, 1fr);
+    column-gap: 3rem;
+    align-items: start;
+  }
+}
+
+/* The rail: a sticky bar under the header on phones and tablets, a sticky
+   sidebar from lg. Same DOM, one search input. Opaque, never blurred. */
+.pw-hub__rail {
+  position: sticky;
+  top: var(--hub-header);
+  z-index: 20;
+  margin-inline: -1.25rem;
+  padding: 0.75rem 1.25rem 0;
+  background: var(--hub-board);
+  border-bottom: 1px solid var(--hub-rule);
+  /* Same duration and curve as the header's own slide. */
+  transition: transform 380ms var(--hub-ease);
+}
+.pw-hub__rail[data-header-hidden] {
+  transform: translateY(calc(-1 * var(--hub-header)));
+}
+@media (min-width: 640px) {
+  .pw-hub__rail {
+    margin-inline: -1.5rem;
+    padding-inline: 1.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .pw-hub__rail {
+    top: calc(var(--hub-header) + 1.5rem);
+    margin: 0;
+    padding: 0;
+    border-bottom: 0;
+    background: transparent;
+    max-height: calc(100vh - var(--hub-header) - 3rem);
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+}
+
+/* ── Search ──────────────────────────────────────────────────────────────── */
+.pw-hub__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.pw-hub__search-icon {
+  position: absolute;
+  left: 0.85rem;
+  width: 1rem;
+  height: 1rem;
+  color: var(--hub-faint);
+  pointer-events: none;
+}
+.pw-hub.pw-hub .pw-hub__input {
+  width: 100%;
+  height: 2.75rem;
+  padding: 0 4.25rem 0 2.5rem;
+  border: 1px solid rgba(22, 24, 29, 0.16);
+  border-radius: 0.75rem;
+  background-color: #fff;
+  color: var(--hub-ink);
+  font-size: 0.95rem;
+  transition:
+    border-color 300ms var(--hub-ease),
+    box-shadow 300ms var(--hub-ease);
+}
+.pw-hub.pw-hub .pw-hub__input::placeholder {
+  color: var(--hub-faint);
+}
+.pw-hub.pw-hub .pw-hub__input:hover {
+  border-color: rgba(22, 24, 29, 0.3);
+}
+.pw-hub.pw-hub .pw-hub__input:focus {
+  outline: none;
+  border-color: var(--hub-blue);
+  box-shadow: 0 0 0 4px rgba(28, 123, 217, 0.16);
+}
+/* The native clear button duplicates ours. */
+.pw-hub__input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+.pw-hub__kbd,
+.pw-hub__clear {
+  position: absolute;
+  right: 0.5rem;
+}
+.pw-hub__kbd {
+  display: none;
+  min-width: 1.5rem;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--hub-rule);
+  border-radius: 0.35rem;
+  background: var(--hub-board);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  text-align: center;
+  color: var(--hub-faint);
+  pointer-events: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .pw-hub__kbd {
+    display: block;
+  }
+}
+.pw-hub__clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 1.9rem;
+  padding: 0 0.6rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--hub-muted);
+  background: rgba(22, 24, 29, 0.05);
+  transition: background-color 300ms var(--hub-ease), color 300ms var(--hub-ease);
+}
+.pw-hub__clear:hover {
+  background: rgba(22, 24, 29, 0.1);
+  color: var(--hub-ink);
+}
+.pw-hub__clear:focus-visible {
+  outline: 2px solid var(--hub-blue);
+  outline-offset: 2px;
+}
+
+/* ── Subject index ───────────────────────────────────────────────────────── */
+.pw-hub__index-label {
+  display: none;
+}
+.pw-hub.pw-hub .pw-hub__index {
+  position: relative;
+  display: flex;
+  gap: 0.375rem;
+  margin-inline: -1.25rem;
+  padding: 0.625rem 1.25rem 0.75rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.pw-hub__index::-webkit-scrollbar {
+  display: none;
+}
+.pw-hub__subject {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--hub-rule);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--hub-ink);
+  white-space: nowrap;
+  text-decoration: none;
+  transition:
+    background-color 300ms var(--hub-ease),
+    border-color 300ms var(--hub-ease),
+    color 300ms var(--hub-ease);
+}
+.pw-hub__subject:hover {
+  border-color: rgba(22, 24, 29, 0.28);
+}
+.pw-hub__subject:focus-visible {
+  outline: 2px solid var(--hub-blue);
+  outline-offset: 2px;
+}
+.pw-hub__subject[aria-current="true"] {
+  border-color: var(--hub-blue);
+  background: var(--hub-blue);
+  color: #fff;
+}
+.pw-hub__subject[aria-disabled="true"] {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.pw-hub__subject-count {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.6;
+}
+
+@media (min-width: 640px) {
+  .pw-hub.pw-hub .pw-hub__index {
+    margin-inline: -1.5rem;
+    padding-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .pw-hub__index-label {
+    display: block;
+    margin: 1.75rem 0 0.5rem;
+  }
+  .pw-hub.pw-hub .pw-hub__index {
+    flex-direction: column;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    border-left: 1px solid var(--hub-rule);
+  }
+  .pw-hub__subject {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    padding: 0.45rem 0 0.45rem 1rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    white-space: normal;
+    color: var(--hub-muted);
+  }
+  /* The active marker sits on the rail's own hairline. */
+  .pw-hub__subject::before {
+    content: "";
+    position: absolute;
+    left: -1px;
+    top: 0.35rem;
+    bottom: 0.35rem;
+    width: 2px;
+    border-radius: 2px;
+    background: var(--hub-blue);
+    transform: scaleY(0);
+    transition: transform 500ms var(--hub-ease);
+  }
+  .pw-hub__subject:hover {
+    color: var(--hub-ink);
+  }
+  .pw-hub__subject[aria-current="true"] {
+    background: transparent;
+    color: var(--hub-ink);
+    font-weight: 600;
+  }
+  .pw-hub__subject[aria-current="true"]::before {
+    transform: scaleY(1);
+  }
+}
+
+/* ── Sections ────────────────────────────────────────────────────────────── */
+.pw-hub__section {
+  /* Clears the header plus the sticky rail on phones; only the header from lg. */
+  scroll-margin-top: calc(var(--hub-header) + 7.5rem);
+}
+@media (min-width: 1024px) {
+  .pw-hub__section {
+    scroll-margin-top: calc(var(--hub-header) + 1.5rem);
+  }
+}
+.pw-hub__section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 2px solid var(--hub-ink);
+}
+
+/* ── Tool rows ───────────────────────────────────────────────────────────── */
+.pw-hub.pw-hub .pw-hub__tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 2.5rem;
+  margin-top: 1.25rem;
+}
+@media (min-width: 768px) {
+  .pw-hub.pw-hub .pw-hub__tools {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.pw-hub.pw-hub .pw-hub__tools > li {
+  border-bottom: 1px solid var(--hub-rule);
+}
+
+.pw-hub__tool {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) 1.25rem;
+  gap: 0.25rem 0.5rem;
+  align-items: baseline;
+  padding: 0.9rem 0.25rem;
+  color: var(--hub-ink);
+  text-decoration: none;
+  isolation: isolate;
+}
+/* The hover wash bleeds past the text column so the row reads as one target. */
+.pw-hub__tool::before {
+  content: "";
+  position: absolute;
+  inset: 1px -0.75rem;
+  z-index: -1;
+  border-radius: 0.6rem;
+  background: rgba(28, 123, 217, 0.06);
+  opacity: 0;
+  transition: opacity 300ms var(--hub-ease);
+}
+.pw-hub__tool:hover::before {
+  opacity: 1;
+}
+.pw-hub__tool:focus-visible {
+  outline: none;
+}
+.pw-hub__tool:focus-visible::before {
+  opacity: 1;
+  box-shadow: inset 0 0 0 2px var(--hub-blue);
+}
+.pw-hub__code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--hub-faint);
+}
+.pw-hub__name {
+  display: block;
+  font-size: 0.975rem;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  transition: color 300ms var(--hub-ease);
+}
+.pw-hub__tool:hover .pw-hub__name,
+.pw-hub__tool:focus-visible .pw-hub__name {
+  color: #1567b8;
+}
+.pw-hub__desc {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--hub-muted);
+}
+.pw-hub__arrow {
+  align-self: center;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--hub-faint);
+  transition:
+    transform 500ms var(--hub-ease),
+    color 300ms var(--hub-ease);
+}
+.pw-hub__tool:hover .pw-hub__arrow,
+.pw-hub__tool:focus-visible .pw-hub__arrow {
+  color: var(--hub-blue);
+  transform: translateX(3px);
+}
+
+.pw-hub mark {
+  padding: 0 0.08em;
+  border-radius: 0.2em;
+  background: rgba(33, 182, 122, 0.22);
+  color: inherit;
+}
+
+/* ── Reduced motion: state changes stay, movement goes ───────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .pw-hub *,
+  .pw-hub *::before {
+    transition-duration: 1ms !important;
+  }
+  .pw-hub-start__row:hover {
+    padding-left: 0;
+  }
+  .pw-hub__tool:hover .pw-hub__arrow,
+  .pw-hub__tool:focus-visible .pw-hub__arrow {
+    transform: none;
+  }
+}

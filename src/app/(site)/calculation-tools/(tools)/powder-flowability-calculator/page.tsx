@@ -1,310 +1,313 @@
 "use client";
-import { useState } from 'react';
-import { Calculator, Scale, TrendingUp, AlertCircle, Info, Droplets, Wind, Activity } from 'lucide-react';
+
+import { useMemo, useState } from "react";
+import { RefreshCw, Wind } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+    CalculatorShell,
+    CalcSection,
+    FieldGrid,
+    NumberField,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    AdSlot,
+    LabNotice,
+    fieldError,
+    toNumber,
+    type ResultTone,
+} from "@/components/calculators";
+
+/* ── Quick samples, g/mL (unchanged) ──────────────────────────────────────── */
+const SAMPLES = [
+    { bulk: 0.45, tapped: 0.55, label: "Excellent Flow" },
+    { bulk: 0.5, tapped: 0.6, label: "Good Flow" },
+    { bulk: 0.4, tapped: 0.55, label: "Poor Flow" },
+    { bulk: 0.35, tapped: 0.5, label: "Very Poor Flow" },
+];
+
+/** The reference scale the previous page printed under its results (unchanged text). */
+const FLOW_SCALE = [
+    { range: "Carr's Index <10%", label: "Excellent", dot: "bg-emerald-500" },
+    { range: "10–15%", label: "Good", dot: "bg-blue-500" },
+    { range: "16–20%", label: "Fair", dot: "bg-amber-400" },
+    { range: "21–25%", label: "Passable", dot: "bg-orange-500" },
+    { range: ">25%", label: "Poor", dot: "bg-red-500" },
+];
+
+type Flow = {
+    carrsIndex: number;
+    hausnerRatio: number;
+    flowability: string;
+    compressibility: string;
+    quality: string;
+    hausnerQuality: string;
+};
+
+/**
+ * Carr's index and Hausner ratio from bulk and tapped density.
+ * Bands, strings and arithmetic are exactly the previous page's.
+ */
+function computeFlow(bulk: number, tapped: number): Flow {
+    const carrsIndex = ((tapped - bulk) / tapped) * 100;
+    const hausnerRatio = tapped / bulk;
+
+    let flowability = "";
+    let compressibility = "";
+    let quality = "";
+
+    if (carrsIndex < 10) {
+        flowability = "Excellent";
+        compressibility = "Very Low";
+        quality = "Excellent flow, no glidant needed.";
+    } else if (carrsIndex < 15) {
+        flowability = "Good";
+        compressibility = "Low";
+        quality = "Good flow, may require minimal glidant.";
+    } else if (carrsIndex < 20) {
+        flowability = "Fair";
+        compressibility = "Moderate";
+        quality = "Fair flow, may require glidant.";
+    } else if (carrsIndex < 25) {
+        flowability = "Passable";
+        compressibility = "High";
+        quality = "Poor flow, requires glidant.";
+    } else if (carrsIndex < 31) {
+        flowability = "Poor";
+        compressibility = "Very High";
+        quality = "Very poor flow, needs significant glidant.";
+    } else {
+        flowability = "Very Poor";
+        compressibility = "Extremely High";
+        quality = "Extremely poor flow, not suitable for direct compression.";
+    }
+
+    let hausnerQuality = "";
+    if (hausnerRatio < 1.2) hausnerQuality = "Excellent flow";
+    else if (hausnerRatio < 1.25) hausnerQuality = "Good flow";
+    else if (hausnerRatio < 1.4) hausnerQuality = "Fair flow";
+    else hausnerQuality = "Poor flow";
+
+    return {
+        carrsIndex,
+        hausnerRatio,
+        flowability,
+        compressibility,
+        quality: `${quality} Hausner Ratio indicates: ${hausnerQuality}.`,
+        hausnerQuality,
+    };
+}
 
 export default function PowderFlowabilityCalculator() {
-    const [bulkDensity, setBulkDensity] = useState<string>('');
-    const [tappedDensity, setTappedDensity] = useState<string>('');
-    const [result, setResult] = useState<{
-        carrsIndex: number;
-        hausnerRatio: number;
-        flowability: string;
-        compressibility: string;
-        quality: string;
-    } | null>(null);
+    const [bulkDensity, setBulkDensity] = useState("");
+    const [tappedDensity, setTappedDensity] = useState("");
 
-    const calculateFlowability = () => {
-        const bulk = parseFloat(bulkDensity);
-        const tapped = parseFloat(tappedDensity);
+    const bulkError = fieldError(bulkDensity, { show: false });
+    const tappedError = fieldError(tappedDensity, { show: false });
 
-        if (isNaN(bulk) || isNaN(tapped) || bulk <= 0 || tapped <= 0) {
-            alert('Please enter valid positive numbers for both densities');
-            return;
-        }
+    /*
+     * Live, derived from the inputs. The previous page computed on a button
+     * press and alerted on bad input — which left the last valid result on
+     * screen next to inputs that no longer produced it.
+     */
+    const state = useMemo(() => {
+        const bulk = toNumber(bulkDensity);
+        const tapped = toNumber(tappedDensity);
+        if (bulk === null || tapped === null || bulk <= 0 || tapped <= 0) return { result: null, orderError: false };
+        if (bulk >= tapped) return { result: null, orderError: true };
+        return { result: computeFlow(bulk, tapped), orderError: false };
+    }, [bulkDensity, tappedDensity]);
 
-        if (bulk >= tapped) {
-            alert('Bulk density must be less than tapped density');
-            return;
-        }
+    const result = state.result;
+    const tone: ResultTone = !result
+        ? "neutral"
+        : result.carrsIndex < 15
+          ? "success"
+          : result.carrsIndex < 25
+            ? "warning"
+            : "danger";
 
-        const carrsIndex = ((tapped - bulk) / tapped) * 100;
-        const hausnerRatio = tapped / bulk;
-
-        let flowability = '';
-        let compressibility = '';
-        let quality = '';
-
-        if (carrsIndex < 10) {
-            flowability = 'Excellent';
-            compressibility = 'Very Low';
-            quality = 'Excellent flow, no glidant needed.';
-        } else if (carrsIndex < 15) {
-            flowability = 'Good';
-            compressibility = 'Low';
-            quality = 'Good flow, may require minimal glidant.';
-        } else if (carrsIndex < 20) {
-            flowability = 'Fair';
-            compressibility = 'Moderate';
-            quality = 'Fair flow, may require glidant.';
-        } else if (carrsIndex < 25) {
-            flowability = 'Passable';
-            compressibility = 'High';
-            quality = 'Poor flow, requires glidant.';
-        } else if (carrsIndex < 31) {
-            flowability = 'Poor';
-            compressibility = 'Very High';
-            quality = 'Very poor flow, needs significant glidant.';
-        } else {
-            flowability = 'Very Poor';
-            compressibility = 'Extremely High';
-            quality = 'Extremely poor flow, not suitable for direct compression.';
-        }
-
-        let hausnerQuality = '';
-        if (hausnerRatio < 1.2) hausnerQuality = 'Excellent flow';
-        else if (hausnerRatio < 1.25) hausnerQuality = 'Good flow';
-        else if (hausnerRatio < 1.4) hausnerQuality = 'Fair flow';
-        else hausnerQuality = 'Poor flow';
-
-        setResult({
-            carrsIndex,
-            hausnerRatio,
-            flowability,
-            compressibility,
-            quality: `${quality} Hausner Ratio indicates: ${hausnerQuality}.`
-        });
+    const reset = () => {
+        setBulkDensity("");
+        setTappedDensity("");
     };
-
-    const resetCalculator = () => {
-        setBulkDensity('');
-        setTappedDensity('');
-        setResult(null);
-    };
-
-    const sampleValues = [
-        { bulk: 0.45, tapped: 0.55, label: 'Excellent Flow' },
-        { bulk: 0.50, tapped: 0.60, label: 'Good Flow' },
-        { bulk: 0.40, tapped: 0.55, label: 'Poor Flow' },
-        { bulk: 0.35, tapped: 0.50, label: 'Very Poor Flow' },
-    ];
 
     return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 pt-20">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6 md:mb-8">
-                    <div className="flex flex-col md:flex-row items-center justify-between">
-                        <div className="flex items-center mb-4 md:mb-0">
-                            <div className="bg-white/20 p-3 rounded-xl mr-4">
-                                <Wind className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-white">Powder Flowability Index Calculator</h1>
-                                <p className="text-blue-100 mt-2">Carr's Index & Hausner Ratio for powder flow assessment</p>
-                            </div>
-                        </div>
+        <CalculatorShell
+            title="Powder Flowability Index Calculator"
+            subtitle="Works out Carr's index and the Hausner ratio from a powder's bulk and tapped density, and says how well it will flow."
+            icon={Wind}
+            eyebrow="Pharmaceutics"
+            aside={
+                <>
+                    <CalcAbout title="About this calculator">
+                        <p>
+                            A powder that packs down a lot when tapped is cohesive: its particles cling
+                            together and it will not run smoothly from a hopper into a tablet die or capsule
+                            shell. Comparing the loosely poured (bulk) density with the tapped density puts a
+                            number on that.
+                        </p>
+                        <CalcList
+                            title="Applications"
+                            items={["Tablet manufacturing", "Capsule filling", "Powder blending", "Quality control"]}
+                        />
+                        <CalcList
+                            tone="caution"
+                            title="Factors affecting flow"
+                            items={[
+                                "Particle size & distribution",
+                                "Particle shape & surface texture",
+                                "Moisture content",
+                                "Cohesive forces",
+                            ]}
+                        />
+                    </CalcAbout>
+
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+                </>
+            }
+        >
+            <ResultCard
+                label="Carr's index"
+                value={result ? result.carrsIndex.toFixed(2) : null}
+                unit="%"
+                interpretation={result ? `${result.flowability} — ${result.quality}` : undefined}
+                tone={tone}
+                empty={
+                    state.orderError
+                        ? "Bulk density must be less than tapped density."
+                        : "Enter the bulk and tapped density to see Carr's index and the Hausner ratio."
+                }
+            />
+
+            <CalcSection title="Powder density values">
+                <FieldGrid>
+                    <NumberField
+                        label="Bulk density (ρᵦ)"
+                        value={bulkDensity}
+                        onChange={setBulkDensity}
+                        unit="g/mL"
+                        step="0.01"
+                        placeholder="e.g., 0.45"
+                        hint="Mass of powder divided by its bulk (poured, untapped) volume."
+                        error={bulkError}
+                    />
+                    <NumberField
+                        label="Tapped density (ρₜ)"
+                        value={tappedDensity}
+                        onChange={setTappedDensity}
+                        unit="g/mL"
+                        step="0.01"
+                        placeholder="e.g., 0.55"
+                        hint="Mass of powder divided by its tapped volume. Always higher than bulk density."
+                        error={tappedError}
+                    />
+                </FieldGrid>
+
+                {state.orderError && (
+                    <LabNotice tone="danger" title="Bulk density must be less than tapped density">
+                        Tapping only packs a powder down, so the tapped density cannot be lower than — or
+                        equal to — the bulk density. Check the two values have not been swapped.
+                    </LabNotice>
+                )}
+
+                <div>
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">Try an example</p>
+                    <div className="flex flex-wrap gap-2">
+                        {SAMPLES.map((sample) => (
+                            <button
+                                key={sample.label}
+                                type="button"
+                                onClick={() => {
+                                    setBulkDensity(sample.bulk.toString());
+                                    setTappedDensity(sample.tapped.toString());
+                                }}
+                                className="min-h-[40px] rounded-full border bg-background px-3.5 text-sm font-medium transition-colors hover:border-foreground/25 active:bg-accent"
+                            >
+                                {sample.label}{" "}
+                                <span className="font-normal text-muted-foreground">
+                                    {sample.bulk} / {sample.tapped} g/mL
+                                </span>
+                            </button>
+                        ))}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Main Input Area */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
-                            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                                <Calculator className="w-6 h-6 mr-2 text-blue-600" />
-                                Enter Powder Density Values
-                            </h2>
+                <Button variant="outline" onClick={reset} className="w-full">
+                    <RefreshCw />
+                    Reset
+                </Button>
+            </CalcSection>
 
-                            <div className="space-y-6">
-                                {/* Bulk Density Input */}
-                                <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6">
-                                    <label className="block text-lg font-semibold text-gray-800 mb-3">
-                                        <Scale className="inline w-5 h-5 mr-2" />
-                                        Bulk Density (g/mL)
-                                    </label>
-                                    <p className="text-sm text-gray-600 mb-3">Mass of powder divided by its bulk volume</p>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0.01"
-                                        value={bulkDensity}
-                                        onChange={(e) => setBulkDensity(e.target.value)}
-                                        className="w-full px-4 py-3 text-lg border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                                        placeholder="e.g., 0.45"
-                                    />
-                                </div>
-
-                                {/* Tapped Density Input */}
-                                <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6">
-                                    <label className="block text-lg font-semibold text-gray-800 mb-3">
-                                        <Droplets className="inline w-5 h-5 mr-2" />
-                                        Tapped Density (g/mL)
-                                    </label>
-                                    <p className="text-sm text-gray-600 mb-3">Mass of powder divided by its tapped volume</p>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0.01"
-                                        value={tappedDensity}
-                                        onChange={(e) => setTappedDensity(e.target.value)}
-                                        className="w-full px-4 py-3 text-lg border-2 border-green-200 rounded-lg focus:border-green-500 focus:outline-none"
-                                        placeholder="e.g., 0.55"
-                                    />
-                                </div>
-
-                                {/* Quick Samples */}
-                                <div className="bg-gray-50 rounded-xl p-6">
-                                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Quick Samples</h3>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                        {sampleValues.map((sample, index) => (
-                                            <button
-                                                key={index}
-                                                onClick={() => {
-                                                    setBulkDensity(sample.bulk.toString());
-                                                    setTappedDensity(sample.tapped.toString());
-                                                }}
-                                                className="bg-white border border-gray-300 rounded-lg p-3 hover:bg-blue-50 transition-colors text-center"
-                                            >
-                                                <div className="font-semibold text-blue-600">{sample.label}</div>
-                                                <div className="text-sm text-gray-600 mt-1">
-                                                    {sample.bulk} / {sample.tapped} g/mL
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Action Buttons */}
-                                <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                                    <button
-                                        onClick={calculateFlowability}
-                                        className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
-                                    >
-                                        Calculate Flowability
-                                    </button>
-                                    <button
-                                        onClick={resetCalculator}
-                                        className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center"
-                                    >
-                                        Reset
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Results Display */}
-                        {result && (
-                            <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
-                                <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                                    <Activity className="w-6 h-6 mr-2 text-green-600" />
-                                    Flowability Results
-                                </h2>
-
-                                {/* Summary Cards */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                                    <div className="bg-gradient-to-br from-blue-50 to-cyan-100 rounded-xl p-6">
-                                        <div className="text-sm font-semibold text-blue-700 mb-2">Carr's Index</div>
-                                        <div className={`text-4xl font-bold ${
-                                            result.carrsIndex < 15 ? 'text-green-600' : result.carrsIndex < 25 ? 'text-yellow-600' : 'text-red-600'
-                                        }`}>
-                                            {result.carrsIndex.toFixed(2)}%
-                                        </div>
-                                        <div className="text-sm text-blue-600 mt-2">{result.flowability}</div>
-                                    </div>
-
-                                    <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl p-6">
-                                        <div className="text-sm font-semibold text-green-700 mb-2">Hausner Ratio</div>
-                                        <div className={`text-4xl font-bold ${
-                                            result.hausnerRatio < 1.2 ? 'text-green-600' : result.hausnerRatio < 1.4 ? 'text-yellow-600' : 'text-red-600'
-                                        }`}>
-                                            {result.hausnerRatio.toFixed(3)}
-                                        </div>
-                                        <div className="text-sm text-green-600 mt-2">Target: &lt;1.25</div>
-                                    </div>
-                                </div>
-
-                                {/* Interpretation */}
-                                <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6">
-                                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Interpretation</h3>
-                                    <p className="text-gray-700">{result.quality}</p>
-                                </div>
-
-                                {/* Flow Scale */}
-                                <div className="mt-8">
-                                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Flowability Scale</h3>
-                                    <div className="space-y-2">
-                                        <div className="flex items-center">
-                                            <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                                            <span>Carr's Index &lt;10%: Excellent</span>
-                                        </div>
-                                        <div className="flex items-center">
-                                            <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                                            <span>10–15%: Good</span>
-                                        </div>
-                                        <div className="flex items-center">
-                                            <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
-                                            <span>16–20%: Fair</span>
-                                        </div>
-                                        <div className="flex items-center">
-                                            <div className="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
-                                            <span>21–25%: Passable</span>
-                                        </div>
-                                        <div className="flex items-center">
-                                            <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-                                            <span>&gt;25%: Poor</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+            {result && (
+                <CalcSection title="Breakdown">
+                    <div>
+                        <ResultRow
+                            label="Carr's index"
+                            value={`(${tappedDensity} − ${bulkDensity}) ÷ ${tappedDensity} × 100 = ${result.carrsIndex.toFixed(2)}`}
+                            unit="%"
+                        />
+                        <ResultRow label="Flow character" value={result.flowability} />
+                        <ResultRow label="Compressibility" value={result.compressibility} />
+                        <ResultRow
+                            label="Hausner ratio"
+                            value={`${tappedDensity} ÷ ${bulkDensity} = ${result.hausnerRatio.toFixed(3)}`}
+                        />
+                        <ResultRow label="Hausner target" value="<1.25" />
+                        <ResultRow label="Hausner ratio indicates" value={result.hausnerQuality} />
                     </div>
+                </CalcSection>
+            )}
 
-                    {/* Sidebar */}
-                    <div className="space-y-6">
-                        {/* Formula Card */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                                <Calculator className="w-5 h-5 mr-2 text-blue-500" />
-                                Formulae
-                            </h3>
-                            <div className="space-y-4">
-                                <div className="bg-gray-50 p-3 rounded-lg">
-                                    <p className="font-mono text-sm">Carr's Index = (ρₜ - ρᵦ)/ρₜ × 100</p>
-                                </div>
-                                <div className="bg-gray-50 p-3 rounded-lg">
-                                    <p className="font-mono text-sm">Hausner Ratio = ρₜ / ρᵦ</p>
-                                </div>
-                                <p className="text-xs text-gray-500">ρₜ = tapped density, ρᵦ = bulk density</p>
-                            </div>
+            <CalcSection title="Flowability scale" description="Carr's index bands used to describe powder flow.">
+                <div role="list" className="space-y-2.5">
+                    {FLOW_SCALE.map((band) => (
+                        <div role="listitem" key={band.range} className="flex items-center gap-2.5 text-sm text-foreground">
+                            <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${band.dot}`} aria-hidden="true" />
+                            <span>
+                                {band.range}: <span className="font-semibold">{band.label}</span>
+                            </span>
                         </div>
-
-                        {/* Applications */}
-                        <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">Applications</h3>
-                            <ul className="space-y-2 text-sm text-gray-600">
-                                <li>• Tablet manufacturing</li>
-                                <li>• Capsule filling</li>
-                                <li>• Powder blending</li>
-                                <li>• Quality control</li>
-                            </ul>
-                        </div>
-
-                        {/* Factors Affecting Flow */}
-                        <div className="bg-yellow-50 rounded-2xl shadow-lg p-6 border border-yellow-200">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                                <AlertCircle className="w-5 h-5 mr-2 text-yellow-600" />
-                                Factors Affecting Flow
-                            </h3>
-                            <ul className="space-y-2 text-sm text-gray-600">
-                                <li>• Particle size & distribution</li>
-                                <li>• Particle shape & surface texture</li>
-                                <li>• Moisture content</li>
-                                <li>• Cohesive forces</li>
-                            </ul>
-                        </div>
-                    </div>
+                    ))}
                 </div>
-            </div>
-        </section>
+            </CalcSection>
+
+            <FormulaNote>
+                <Formula>Carr&apos;s Index = (ρₜ − ρᵦ) / ρₜ × 100</Formula>
+                <Formula>Hausner Ratio = ρₜ / ρᵦ</Formula>
+                <p>ρₜ = tapped density, ρᵦ = bulk density (both in the same units, e.g. g/mL).</p>
+                <p>
+                    Both numbers describe the same thing — how much the powder consolidates when tapped.
+                    Carr&apos;s index expresses the loss of volume as a percentage; the Hausner ratio
+                    expresses it as a ratio. A free-flowing powder barely settles, so its index is low and
+                    its ratio is close to 1.
+                </p>
+            </FormulaNote>
+
+            <CalcFaq
+                items={[
+                    {
+                        q: "How do I measure bulk and tapped density?",
+                        a: "Pour a weighed amount of powder gently into a graduated cylinder and read the volume — mass ÷ that volume is the bulk density. Then tap the cylinder a set number of times (USP uses a mechanical tapper, typically 500–1250 taps) until the volume stops changing; mass ÷ the tapped volume is the tapped density.",
+                    },
+                    {
+                        q: "Do the densities have to be in g/mL?",
+                        a: "No. Both formulas divide one density by the other, so the units cancel. Any unit works as long as both values use the same one.",
+                    },
+                    {
+                        q: "Why must bulk density be lower than tapped density?",
+                        a: "Tapping removes air from between particles, so the same mass occupies less volume and the density can only rise. Equal or reversed values usually mean the two readings were swapped or mistyped.",
+                    },
+                    {
+                        q: "What does a high Carr's index mean for a formulation?",
+                        a: "The powder is cohesive and will flow unevenly, causing tablet or capsule weight variation. Adding a glidant such as colloidal silica, or granulating the powder, are the usual fixes.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
     );
 }

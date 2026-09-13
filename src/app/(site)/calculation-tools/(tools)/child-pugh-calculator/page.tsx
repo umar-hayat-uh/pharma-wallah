@@ -1,38 +1,33 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import { useCallback, useId, useMemo, useState } from "react";
+import { Check, Copy, Stethoscope, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
-    Activity,
-    AlertCircle,
-    Droplet,
-    Brain,
-    BookOpen,
-    RefreshCw,
-    Check,
-    Copy,
-    Sparkles,
-    ShieldCheck,
-    HelpCircle,
-    Zap,
-    ChevronDown,
-    ChevronUp,
-    SlidersHorizontal,
-    Stethoscope,
-    Pill,
-    TrendingUp,
-    Layers,
-} from "lucide-react";
+    CalculatorShell,
+    CalcSection,
+    FieldGrid,
+    NumberField,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    AdSlot,
+    ModeSwitch,
+    LabNotice,
+    type ResultTone,
+} from "@/components/calculators";
 
-// ─── STRICT TYPES & INTERFACES ───────────────────────────────────────
+type AscitesGrade = "none" | "mild" | "moderate";
+type EncephalopathyGrade = "none" | "grade1-2" | "grade3-4";
+type BilirubinUnit = "mg/dL" | "umol/L";
+type AlbuminUnit = "g/dL" | "g/L";
 
-export type AscitesGrade = "none" | "mild" | "moderate";
-export type EncephalopathyGrade = "none" | "grade1-2" | "grade3-4";
-export type BilirubinUnit = "mg/dL" | "umol/L";
-export type AlbuminUnit = "g/dL" | "g/L";
-
-export interface PatientPreset {
+interface PatientPreset {
     label: string;
-    tag: string;
     bili: string;
     biliUnit: BilirubinUnit;
     alb: string;
@@ -45,10 +40,38 @@ export interface PatientPreset {
     sodium: string;
 }
 
-// ─── MAIN COMPONENT ──────────────────────────────────────────────────
+/*
+ * Input values are unchanged from the previous page. Its chips also carried
+ * point/class tags ("8 pts, Moderate Risk", "Class B") that did not match what
+ * the calculator scores for those same inputs (10 points, Class C), so the
+ * tags are gone — the result card states the real score.
+ */
+const SAMPLE_PATIENTS: PatientPreset[] = [
+    { label: "Compensated", bili: "1.2", biliUnit: "mg/dL", alb: "4.0", albUnit: "g/dL", inr: "1.1", ascites: "none", encephalopathy: "none", cholestatic: false, creatinine: "0.9", sodium: "140" },
+    { label: "Decompensated", bili: "2.4", biliUnit: "mg/dL", alb: "3.1", albUnit: "g/dL", inr: "1.8", ascites: "mild", encephalopathy: "grade1-2", cholestatic: false, creatinine: "1.3", sodium: "135" },
+    { label: "Severe cirrhosis", bili: "5.6", biliUnit: "mg/dL", alb: "2.3", albUnit: "g/dL", inr: "2.6", ascites: "moderate", encephalopathy: "grade3-4", cholestatic: false, creatinine: "2.4", sodium: "128" },
+    { label: "PBC / cholestatic", bili: "6.2", biliUnit: "mg/dL", alb: "3.4", albUnit: "g/dL", inr: "1.3", ascites: "none", encephalopathy: "none", cholestatic: true, creatinine: "1.0", sodium: "138" },
+    { label: "Alcoholic hepatitis", bili: "4.1", biliUnit: "mg/dL", alb: "2.9", albUnit: "g/dL", inr: "2.1", ascites: "mild", encephalopathy: "grade1-2", cholestatic: false, creatinine: "1.5", sodium: "133" },
+];
+
+const ASCITES_LABEL: Record<AscitesGrade, string> = {
+    none: "None",
+    mild: "Mild",
+    moderate: "Moderate–severe",
+};
+
+const ENCEPH_LABEL: Record<EncephalopathyGrade, string> = {
+    none: "None",
+    "grade1-2": "Grade 1–2",
+    "grade3-4": "Grade 3–4",
+};
+
+const CLASS_TONE: Record<string, ResultTone> = { A: "success", B: "warning", C: "danger" };
+
+const pts = (n: number) => `${n} pt${n === 1 ? "" : "s"}`;
 
 export default function ChildPughCalculator() {
-    // Core Parameters
+    // Core parameters
     const [bilirubin, setBilirubin] = useState<string>("1.4");
     const [biliUnit, setBiliUnit] = useState<BilirubinUnit>("mg/dL");
     const [albumin, setAlbumin] = useState<string>("3.6");
@@ -57,57 +80,45 @@ export default function ChildPughCalculator() {
     const [ascites, setAscites] = useState<AscitesGrade>("none");
     const [encephalopathy, setEncephalopathy] = useState<EncephalopathyGrade>("none");
 
-    // Advanced Options (Cholestatic & MELD-Na)
+    // Advanced options (cholestatic criteria & MELD-Na)
     const [isCholestatic, setIsCholestatic] = useState<boolean>(false);
     const [creatinine, setCreatinine] = useState<string>("1.0");
     const [sodium, setSodium] = useState<string>("138");
     const [enableMeld, setEnableMeld] = useState<boolean>(false);
 
-    // UI States
-    const [showInstructions, setShowInstructions] = useState<boolean>(true);
-    const [showDetails, setShowDetails] = useState<boolean>(false);
     const [copied, setCopied] = useState<boolean>(false);
 
-    // Patient Archetypes
-    const samplePatients: PatientPreset[] = [
-        { label: "Compensated (Class A)", tag: "5 pts, Good Prognosis", bili: "1.2", biliUnit: "mg/dL", alb: "4.0", albUnit: "g/dL", inr: "1.1", ascites: "none", encephalopathy: "none", cholestatic: false, creatinine: "0.9", sodium: "140" },
-        { label: "Decompensated (Class B)", tag: "8 pts, Moderate Risk", bili: "2.4", biliUnit: "mg/dL", alb: "3.1", albUnit: "g/dL", inr: "1.8", ascites: "mild", encephalopathy: "grade1-2", cholestatic: false, creatinine: "1.3", sodium: "135" },
-        { label: "Severe Cirrhosis (Class C)", tag: "13 pts, Poor Prognosis", bili: "5.6", biliUnit: "mg/dL", alb: "2.3", albUnit: "g/dL", inr: "2.6", ascites: "moderate", encephalopathy: "grade3-4", cholestatic: false, creatinine: "2.4", sodium: "128" },
-        { label: "PBC / Cholestatic", tag: "Altered Bili Cutoffs", bili: "6.2", biliUnit: "mg/dL", alb: "3.4", albUnit: "g/dL", inr: "1.3", ascites: "none", encephalopathy: "none", cholestatic: true, creatinine: "1.0", sodium: "138" },
-        { label: "Alcoholic Hepatitis", tag: "Class B, Encephalopathy", bili: "4.1", biliUnit: "mg/dL", alb: "2.9", albUnit: "g/dL", inr: "2.1", ascites: "mild", encephalopathy: "grade1-2", cholestatic: false, creatinine: "1.5", sodium: "133" },
-    ];
-
-    // Numeric Normalization
+    /* ── Numeric normalisation (unchanged) ─────────────────────────────────── */
     const rawBili = parseFloat(bilirubin) || 0;
     const rawAlb = parseFloat(albumin) || 0;
     const rawInr = parseFloat(inr) || 0;
     const rawCr = parseFloat(creatinine) || 1.0;
     const rawNa = parseFloat(sodium) || 138;
 
-    // Normalized Bilirubin in mg/dL
+    // Bilirubin in mg/dL, rounded to 0.1 before scoring
     const biliMgDl = useMemo(() => {
         if (biliUnit === "umol/L") return Math.round((rawBili / 17.1) * 10) / 10;
         return rawBili;
     }, [rawBili, biliUnit]);
 
-    // Normalized Albumin in g/dL
+    // Albumin in g/dL, rounded to 0.1 before scoring
     const albGDl = useMemo(() => {
         if (albUnit === "g/L") return Math.round((rawAlb / 10) * 10) / 10;
         return rawAlb;
     }, [rawAlb, albUnit]);
 
-    // ─── CHILD-PUGH SCORING LOGIC ───────────────────────────────────────
+    /* ── Child-Pugh scoring (unchanged) ───────────────────────────────────── */
     const calculations = useMemo(() => {
         if (biliMgDl <= 0 || albGDl <= 0 || rawInr <= 0) return null;
 
         let biliPoints = 1;
         if (isCholestatic) {
-            // Primary Biliary Cholangitis / PSC Criteria
+            // Primary biliary cholangitis / PSC criteria
             if (biliMgDl < 4.0) biliPoints = 1;
             else if (biliMgDl <= 10.0) biliPoints = 2;
             else biliPoints = 3;
         } else {
-            // Standard Cirrhosis Criteria
+            // Standard cirrhosis criteria
             if (biliMgDl < 2.0) biliPoints = 1;
             else if (biliMgDl <= 3.0) biliPoints = 2;
             else biliPoints = 3;
@@ -135,15 +146,12 @@ export default function ChildPughCalculator() {
 
         const totalScore = biliPoints + albPoints + inrPoints + ascitesPoints + encephPoints;
 
-        // Classification & Survival Stats
         let childClass = "A";
-        let statusLabel = "Well-Compensated Cirrhosis";
+        let statusLabel = "Class A — Well Compensated";
         let oneYearSurvival = "100% 1-Year Survival";
         let twoYearSurvival = "85% 2-Year Survival";
         let surgicalRisk = "Low Perioperative Mortality (~10%)";
-        let badgeColor = "bg-emerald-100 text-emerald-800 border-emerald-300";
-        let barColor = "bg-emerald-500";
-        let dosingDirectives = "Standard hepatic dosing. Safe for most cardiovascular and metabolic therapies with routine monitoring.";
+        let dosingDirectives = "Normal to mild hepatic compromise. Standard drug dosing. Monitor LFTs periodically.";
 
         if (totalScore <= 6) {
             childClass = "A";
@@ -151,8 +159,6 @@ export default function ChildPughCalculator() {
             oneYearSurvival = "100% 1-Year Survival";
             twoYearSurvival = "85% 2-Year Survival";
             surgicalRisk = "Low Perioperative Mortality (~10%)";
-            badgeColor = "bg-emerald-100 text-emerald-800 border-emerald-300";
-            barColor = "bg-emerald-500";
             dosingDirectives = "Normal to mild hepatic compromise. Standard drug dosing. Monitor LFTs periodically.";
         } else if (totalScore <= 9) {
             childClass = "B";
@@ -160,8 +166,6 @@ export default function ChildPughCalculator() {
             oneYearSurvival = "80% 1-Year Survival";
             twoYearSurvival = "60% 2-Year Survival";
             surgicalRisk = "Moderate Perioperative Mortality (~30%)";
-            badgeColor = "bg-yellow-100 text-yellow-800 border-yellow-300";
-            barColor = "bg-yellow-500";
             dosingDirectives = "Moderate hepatic impairment. Reduce dose by 25–50% for hepatically cleared drugs (e.g. DOACs, Statins, Beta-blockers). Avoid sedatives.";
         } else {
             childClass = "C";
@@ -169,23 +173,22 @@ export default function ChildPughCalculator() {
             oneYearSurvival = "45% 1-Year Survival";
             twoYearSurvival = "35% 2-Year Survival";
             surgicalRisk = "High Perioperative Mortality (~75–80%)";
-            badgeColor = "bg-rose-100 text-rose-800 border-rose-300";
-            barColor = "bg-rose-600";
             dosingDirectives = "Severe decompensated liver disease. Contraindicated for most DOACs, Statins, and hepatotoxins. Restrict Acetaminophen (≤ 2 g/day). Liver transplant evaluation indicated.";
         }
 
-        // Optional MELD-Na Calculation (UNOS 2016 Refit)
+        // Optional MELD-Na (UNOS 2016 refit)
         let meldNaScore: number | null = null;
         let meldMortality90d = "";
+        let meldInitialRounded: number | null = null;
+        const crBound = Math.min(Math.max(rawCr, 1.0), 4.0);
+        const biliBound = Math.max(biliMgDl, 1.0);
+        const inrBound = Math.max(rawInr, 1.0);
+        const naBound = Math.min(Math.max(rawNa, 125), 137);
 
         if (enableMeld && rawCr > 0 && biliMgDl > 0 && rawInr > 0) {
-            const crBound = Math.min(Math.max(rawCr, 1.0), 4.0);
-            const biliBound = Math.max(biliMgDl, 1.0);
-            const inrBound = Math.max(rawInr, 1.0);
-            const naBound = Math.min(Math.max(rawNa, 125), 137);
-
             const meldInitial = 9.57 * Math.log(crBound) + 3.78 * Math.log(biliBound) + 11.2 * Math.log(inrBound) + 6.43;
             let finalMeld = Math.round(meldInitial);
+            meldInitialRounded = finalMeld;
 
             if (finalMeld > 11) {
                 const meldNa = finalMeld + 1.32 * (137 - naBound) - 0.033 * finalMeld * (137 - naBound);
@@ -207,8 +210,6 @@ export default function ChildPughCalculator() {
             oneYearSurvival,
             twoYearSurvival,
             surgicalRisk,
-            badgeColor,
-            barColor,
             dosingDirectives,
             biliPoints,
             albPoints,
@@ -217,10 +218,14 @@ export default function ChildPughCalculator() {
             encephPoints,
             meldNaScore,
             meldMortality90d,
+            meldInitialRounded,
+            crBound,
+            biliBound,
+            inrBound,
+            naBound,
         };
     }, [biliMgDl, albGDl, rawInr, ascites, encephalopathy, isCholestatic, enableMeld, rawCr, rawNa]);
 
-    // Load Preset
     const handleLoadPreset = (p: PatientPreset) => {
         setBilirubin(p.bili);
         setBiliUnit(p.biliUnit);
@@ -234,7 +239,6 @@ export default function ChildPughCalculator() {
         setSodium(p.sodium);
     };
 
-    // Reset
     const handleReset = () => {
         setBilirubin("1.4");
         setBiliUnit("mg/dL");
@@ -248,7 +252,7 @@ export default function ChildPughCalculator() {
         setSodium("138");
     };
 
-    // Copy Consult Note
+    // Consult note — text unchanged from the previous page.
     const handleCopyConsultNote = useCallback(() => {
         if (!calculations) return;
 
@@ -276,621 +280,412 @@ CLINICAL CAUTION:
 - Avoid Benzodiazepines / Opioids (risk of worsening Hepatic Encephalopathy).
 Generated: ${new Date().toLocaleString()}`;
 
-        navigator.clipboard.writeText(note);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2400);
+        try {
+            navigator.clipboard.writeText(note);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2400);
+        } catch {
+            // No clipboard in this context (insecure origin, old WebView).
+        }
     }, [calculations, biliMgDl, rawBili, biliUnit, isCholestatic, albGDl, rawAlb, albUnit, rawInr, ascites, encephalopathy]);
 
+    /* ── Field validation (display only — scoring rules above decide the result) ── */
+    const positiveError = (raw: string, name: string) => {
+        if (raw.trim() === "") return undefined;
+        const n = parseFloat(raw);
+        return Number.isFinite(n) && n <= 0 ? `${name} must be greater than 0.` : undefined;
+    };
+    const biliError = positiveError(bilirubin, "Bilirubin");
+    const albError = positiveError(albumin, "Albumin");
+    const inrError = positiveError(inr, "INR");
+    const crError = creatinine.trim() !== "" && parseFloat(creatinine) < 0 ? "Creatinine cannot be negative." : undefined;
+
+    const biliBands = isCholestatic
+        ? "Cholestatic bands (mg/dL): < 4 → 1 pt, 4–10 → 2 pts, > 10 → 3 pts."
+        : "Bands (mg/dL): < 2 → 1 pt, 2–3 → 2 pts, > 3 → 3 pts. 1 mg/dL = 17.1 µmol/L.";
+
+    const gaugeLeft = calculations
+        ? Math.min(100, Math.max(0, ((calculations.totalScore - 5) / (15 - 5)) * 100))
+        : 0;
+
     return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50/70 via-white to-green-50/70 p-3 sm:p-5 md:p-8 font-sans selection:bg-teal-500 selection:text-white">
-            <div className="max-w-7xl mx-auto space-y-6">
+        <CalculatorShell
+            title="Child-Pugh Score Calculator"
+            subtitle="Grades the severity of chronic liver disease (Class A, B or C) from three lab values and two clinical signs, with an optional MELD-Na score."
+            icon={Stethoscope}
+            eyebrow="Clinical & Hospital Pharmacy"
+            aside={
+                <>
+                    <CalcAbout title="About the Child-Pugh score">
+                        <p>
+                            The Child-Pugh (Child-Turcotte-Pugh) score adds 1–3 points for each of five
+                            findings — bilirubin, albumin, INR, ascites and hepatic encephalopathy — to give a
+                            total of 5–15. The total maps to Class A (5–6), B (7–9) or C (10–15), which
+                            predicts survival and surgical risk and is the scale most drug labels use for
+                            hepatic dose adjustment.
+                        </p>
+                        <CalcList
+                            title="Use it when"
+                            items={[
+                                "Staging a patient with known cirrhosis",
+                                "Checking a drug label's hepatic-impairment dosing (Class A/B/C)",
+                                "Estimating perioperative risk before surgery",
+                                "Tracking decompensation over time",
+                            ]}
+                        />
+                        <CalcList
+                            tone="caution"
+                            title="Keep in mind"
+                            items={[
+                                "Designed for chronic liver disease prognosis and surgical risk. For acute liver failure, transplant priority or unstable patients, use MELD-Na and specialist hepatology review.",
+                                "In Class B and C cirrhosis avoid NSAIDs — they can precipitate hepatorenal syndrome and GI bleeding.",
+                                "Restrict paracetamol (acetaminophen) to ≤ 2 g/day.",
+                                "Avoid benzodiazepines and opioids — they can trigger severe hepatic encephalopathy.",
+                                "INR is raised by warfarin and other anticoagulants, which inflates the score.",
+                            ]}
+                        />
+                    </CalcAbout>
 
-                {/* ─── HEADER ──────────────────────────────────────────────────────── */}
-                <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-blue-700 to-green-500 p-6 md:p-8 text-white shadow-xl">
-                    <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div className="flex items-start sm:items-center gap-4">
-                            <div className="rounded-2xl bg-white/20 p-3.5 backdrop-blur-md ring-1 ring-white/30 shadow-inner">
-                                <Brain className="h-8 w-8 md:h-10 md:w-10 text-white" />
-                            </div>
-                            <div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                                        Child-Pugh Score & Hepatic Function Suite
-                                    </h1>
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur-md">
-                                        <Sparkles className="h-3 w-3 text-yellow-300" /> Cirrhosis & Surgical Risk
-                                    </span>
-                                </div>
-                                <p className="mt-1 text-sm md:text-base text-blue-100 font-medium">
-                                    Assess severity of liver disease, 1-year mortality, surgical candidacy & MELD-Na score
-                                </p>
-                            </div>
-                        </div>
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+                </>
+            }
+        >
+            <ResultCard
+                label="Child-Pugh class"
+                value={calculations ? `Class ${calculations.childClass}` : null}
+                unit={calculations ? `${calculations.totalScore} / 15 points` : undefined}
+                interpretation={calculations?.statusLabel}
+                tone={calculations ? CLASS_TONE[calculations.childClass] : "neutral"}
+                empty="Enter bilirubin, albumin and INR (all above 0) to see the class."
+            />
 
-                        <div className="flex flex-wrap items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setShowInstructions((prev) => !prev)}
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-3.5 py-2 text-xs md:text-sm font-medium text-white backdrop-blur-md transition hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/40"
-                            >
-                                <HelpCircle className="h-4 w-4" />
-                                {showInstructions ? "Hide Instructions" : "Clinical Guide"}
-                            </button>
-                        </div>
-                    </div>
+            <CalcSection title="Lab values" description="From the patient's liver function tests and coagulation screen.">
+                <FieldGrid>
+                    <NumberField
+                        label="Total bilirubin"
+                        value={bilirubin}
+                        onChange={setBilirubin}
+                        units={[
+                            { value: "mg/dL", label: "mg/dL" },
+                            { value: "umol/L", label: "µmol/L" },
+                        ]}
+                        unit={biliUnit}
+                        onUnitChange={(next) => setBiliUnit(next as BilirubinUnit)}
+                        step="0.1"
+                        min={0}
+                        placeholder="e.g. 1.4"
+                        hint={biliBands}
+                        error={biliError}
+                    />
+                    <NumberField
+                        label="Serum albumin"
+                        value={albumin}
+                        onChange={setAlbumin}
+                        units={["g/dL", "g/L"]}
+                        unit={albUnit}
+                        onUnitChange={(next) => setAlbUnit(next as AlbuminUnit)}
+                        step="0.1"
+                        min={0}
+                        placeholder="e.g. 3.6"
+                        hint="Bands (g/dL): > 3.5 → 1 pt, 2.8–3.5 → 2 pts, < 2.8 → 3 pts."
+                        error={albError}
+                    />
+                    <NumberField
+                        label="INR (international normalised ratio)"
+                        value={inr}
+                        onChange={setInr}
+                        step="0.05"
+                        min={0}
+                        placeholder="e.g. 1.2"
+                        hint="< 1.7 → 1 pt, 1.7–2.2 → 2 pts, > 2.2 → 3 pts. Normal is about 0.8–1.2."
+                        error={inrError}
+                    />
+                </FieldGrid>
 
-                    <div className="pointer-events-none absolute -right-12 -top-12 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
-                </header>
+                <Toggle
+                    checked={isCholestatic}
+                    onChange={setIsCholestatic}
+                    label="Use cholestatic bilirubin bands (PBC / PSC)"
+                    description="For primary biliary cholangitis or primary sclerosing cholangitis, where bilirubin runs higher: < 4, 4–10, > 10 mg/dL."
+                />
+            </CalcSection>
 
-                {/* ─── STEP-BY-STEP DIRECTIONS / CLINICAL GUIDE ─────────────────────── */}
-                {showInstructions && (
-                    <div className="rounded-2xl border border-blue-100 bg-white/90 p-4 sm:p-6 shadow-sm backdrop-blur-sm transition-all animate-in fade-in duration-300">
-                        <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
-                            <div className="flex items-center gap-2 text-blue-900 font-bold text-sm sm:text-base">
-                                <BookOpen className="h-5 w-5 text-blue-600" />
-                                <span>Hepatic Function Assessment & Child-Pugh Protocol</span>
-                            </div>
-                            <span className="text-xs text-gray-500 font-medium">3-Step Workflow</span>
-                        </div>
+            <CalcSection title="Clinical findings" description="From examination and history.">
+                <div className="space-y-2">
+                    <p className="text-[13px] font-medium text-foreground/90">Ascites</p>
+                    <ModeSwitch<AscitesGrade>
+                        label="Ascites"
+                        value={ascites}
+                        onChange={setAscites}
+                        options={[
+                            { value: "none", label: "None · 1 pt", description: "No ascites" },
+                            { value: "mild", label: "Mild · 2 pts", description: "Diuretic-responsive" },
+                            { value: "moderate", label: "Moderate–severe · 3 pts", description: "Refractory / tense" },
+                        ]}
+                    />
+                </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="flex items-start gap-3 rounded-xl bg-blue-50/60 p-3.5 border border-blue-100/70">
-                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-                                    1
-                                </div>
-                                <div className="text-xs sm:text-sm text-gray-700">
-                                    <strong className="block text-gray-900 font-semibold mb-0.5">Enter Laboratory Values</strong>
-                                    Input Bilirubin, Albumin, and INR. Toggle units (mg/dL or µmol/L) and PBC/PSC criteria if applicable.
-                                </div>
-                            </div>
+                <div className="space-y-2">
+                    <p className="text-[13px] font-medium text-foreground/90">Hepatic encephalopathy (West Haven grade)</p>
+                    <ModeSwitch<EncephalopathyGrade>
+                        label="Hepatic encephalopathy"
+                        value={encephalopathy}
+                        onChange={setEncephalopathy}
+                        options={[
+                            { value: "none", label: "None · 1 pt", description: "Normal sensorium" },
+                            { value: "grade1-2", label: "Grade 1–2 · 2 pts", description: "Mild confusion / asterixis" },
+                            { value: "grade3-4", label: "Grade 3–4 · 3 pts", description: "Stupor / coma" },
+                        ]}
+                    />
+                </div>
 
-                            <div className="flex items-start gap-3 rounded-xl bg-green-50/60 p-3.5 border border-green-100/70">
-                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white">
-                                    2
-                                </div>
-                                <div className="text-xs sm:text-sm text-gray-700">
-                                    <strong className="block text-gray-900 font-semibold mb-0.5">Grade Ascites & Encephalopathy</strong>
-                                    Select clinical findings for fluid retention (Ascites) and cognitive state (West Haven encephalopathy scale).
-                                </div>
-                            </div>
-
-                            <div className="flex items-start gap-3 rounded-xl bg-emerald-50/60 p-3.5 border border-emerald-100/70">
-                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">
-                                    3
-                                </div>
-                                <div className="text-xs sm:text-sm text-gray-700">
-                                    <strong className="block text-gray-900 font-semibold mb-0.5">Review Class & Dosing Guidance</strong>
-                                    View Class A/B/C classification, perioperative surgical mortality risk, and export the clinical consult note.
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* ─── QUICK CLINICAL ARCHETYPES BAR ────────────────────────────────── */}
-                <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-md shadow-gray-200/50">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                            <Zap className="h-4 w-4 text-blue-600" />
-                            <span className="text-xs font-bold text-gray-800 uppercase tracking-wider">
-                                Quick Patient Archetypes (1-Click Presets)
-                            </span>
-                        </div>
-                        <span className="text-[11px] text-gray-400">Clinical Scenarios</span>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-                        {samplePatients.map((p) => (
+                <div>
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">Try an example patient</p>
+                    <div className="flex flex-wrap gap-2">
+                        {SAMPLE_PATIENTS.map((p) => (
                             <button
                                 key={p.label}
                                 type="button"
                                 onClick={() => handleLoadPreset(p)}
-                                className="group p-2.5 rounded-xl border border-gray-200 bg-gray-50/70 hover:bg-blue-50 hover:border-blue-300 text-left transition flex flex-col justify-between"
+                                className="min-h-[40px] rounded-full border bg-background px-3.5 py-2 text-xs font-medium hover:bg-accent active:bg-accent"
                             >
-                                <div className="font-bold text-xs text-gray-900 group-hover:text-blue-700">
-                                    {p.label}
-                                </div>
-                                <span className="text-[10px] text-gray-500 mt-0.5 font-medium">
-                                    {p.tag}
-                                </span>
+                                {p.label}
                             </button>
                         ))}
                     </div>
                 </div>
 
-                {/* ─── MAIN WORKSPACE GRID: 12 COLS ─────────────────────────────────── */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <Button variant="outline" onClick={handleReset} className="w-full">
+                    <RefreshCw />
+                    Reset
+                </Button>
+            </CalcSection>
 
-                    {/* LEFT: LAB INPUTS & CLINICAL SIGNS (6 COLS) */}
-                    <div className="lg:col-span-6 space-y-6">
-
-                        {/* CARD 1: LABORATORY PARAMETERS */}
-                        <div className="rounded-2xl border border-gray-100 bg-white p-5 sm:p-6 shadow-md shadow-gray-200/50 space-y-4">
-                            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                                <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                                    <Droplet className="h-5 w-5 text-blue-600" />
-                                    1. Laboratory Parameters
-                                </h2>
-                                <button
-                                    type="button"
-                                    onClick={handleReset}
-                                    className="text-xs text-gray-500 hover:text-blue-600 flex items-center gap-1 font-medium transition"
-                                >
-                                    <RefreshCw className="h-3.5 w-3.5" /> Reset
-                                </button>
-                            </div>
-
-                            <div className="space-y-3.5">
-                                {/* Bilirubin & Albumin */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                                    {/* Total Bilirubin */}
-                                    <div className="rounded-xl border border-blue-200/70 bg-blue-50/30 p-3">
-                                        <div className="flex items-center justify-between mb-1">
-                                            <label className="text-[11px] font-bold text-gray-700 uppercase">
-                                                Total Bilirubin
-                                            </label>
-                                            <div className="inline-flex rounded bg-blue-100 p-0.5 text-[10px] font-bold">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setBiliUnit("mg/dL")}
-                                                    className={`px-1.5 py-0.5 rounded ${biliUnit === "mg/dL" ? "bg-white text-blue-700 shadow-xs" : "text-blue-600"}`}
-                                                >
-                                                    mg/dL
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setBiliUnit("umol/L")}
-                                                    className={`px-1.5 py-0.5 rounded ${biliUnit === "umol/L" ? "bg-white text-blue-700 shadow-xs" : "text-blue-600"}`}
-                                                >
-                                                    µmol/L
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="relative">
-                                            <input
-                                                type="number"
-                                                step="0.1"
-                                                min="0.1"
-                                                value={bilirubin}
-                                                onChange={(e) => setBilirubin(e.target.value)}
-                                                placeholder="e.g. 1.4"
-                                                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-base font-bold text-gray-900 focus:outline-none focus:border-blue-500"
-                                            />
-                                            <span className="absolute right-3 top-2 text-xs font-bold text-gray-400">
-                                                {biliUnit}
-                                            </span>
-                                        </div>
-                                        <span className="text-[10px] text-gray-500 block mt-1">
-                                            {isCholestatic ? "< 4 (1pt), 4–10 (2pt), > 10 (3pt)" : "< 2 (1pt), 2–3 (2pt), > 3 (3pt)"}
-                                        </span>
-                                    </div>
-
-                                    {/* Serum Albumin */}
-                                    <div className="rounded-xl border border-green-200/70 bg-green-50/30 p-3">
-                                        <div className="flex items-center justify-between mb-1">
-                                            <label className="text-[11px] font-bold text-gray-700 uppercase">
-                                                Serum Albumin
-                                            </label>
-                                            <div className="inline-flex rounded bg-green-100 p-0.5 text-[10px] font-bold">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setAlbUnit("g/dL")}
-                                                    className={`px-1.5 py-0.5 rounded ${albUnit === "g/dL" ? "bg-white text-green-800 shadow-xs" : "text-green-700"}`}
-                                                >
-                                                    g/dL
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setAlbUnit("g/L")}
-                                                    className={`px-1.5 py-0.5 rounded ${albUnit === "g/L" ? "bg-white text-green-800 shadow-xs" : "text-green-700"}`}
-                                                >
-                                                    g/L
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="relative">
-                                            <input
-                                                type="number"
-                                                step="0.1"
-                                                min="0.1"
-                                                value={albumin}
-                                                onChange={(e) => setAlbumin(e.target.value)}
-                                                placeholder="e.g. 3.6"
-                                                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-base font-bold text-gray-900 focus:outline-none focus:border-green-500"
-                                            />
-                                            <span className="absolute right-3 top-2 text-xs font-bold text-gray-400">
-                                                {albUnit}
-                                            </span>
-                                        </div>
-                                        <span className="text-[10px] text-gray-500 block mt-1">
-                                            &gt; 3.5 (1pt), 2.8–3.5 (2pt), &lt; 2.8 (3pt)
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* INR Input */}
-                                <div className="rounded-xl border border-purple-200/70 bg-purple-50/30 p-3">
-                                    <div className="flex items-center justify-between mb-1">
-                                        <label className="text-[11px] font-bold text-purple-950 uppercase">
-                                            Prothrombin Time / INR
-                                        </label>
-                                        <span className="text-[10px] text-purple-700 font-semibold">Coagulation Status</span>
-                                    </div>
-                                    <input
-                                        type="number"
-                                        step="0.05"
-                                        min="0.5"
-                                        value={inr}
-                                        onChange={(e) => setInr(e.target.value)}
-                                        placeholder="e.g. 1.2"
-                                        className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-base font-bold text-gray-900 focus:outline-none focus:border-purple-500"
-                                    />
-                                    <span className="text-[10px] text-gray-500 block mt-1">
-                                        &lt; 1.7 (1pt), 1.7–2.2 (2pt), &gt; 2.2 (3pt)
-                                    </span>
-                                </div>
-
-                                {/* Cholestatic PBC/PSC Checkbox */}
-                                <div className="flex items-center justify-between rounded-xl bg-gray-50 p-3 border border-gray-200 text-xs">
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            id="cholestaticToggle"
-                                            checked={isCholestatic}
-                                            onChange={(e) => setIsCholestatic(e.target.checked)}
-                                            className="h-4 w-4 rounded text-blue-600 focus:ring-blue-500"
-                                        />
-                                        <label htmlFor="cholestaticToggle" className="text-gray-800 font-semibold cursor-pointer">
-                                            Primary Biliary Cholangitis (PBC) / PSC Bilirubin Criteria
-                                        </label>
-                                    </div>
-                                    <span className="text-[10px] text-gray-400 font-mono">&lt;4, 4-10, &gt;10</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* CARD 2: CLINICAL FINDINGS (ASCITES & ENCEPHALOPATHY) */}
-                        <div className="rounded-2xl border border-gray-100 bg-white p-5 sm:p-6 shadow-md shadow-gray-200/50 space-y-4">
-                            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2 border-b border-gray-100 pb-3">
-                                <Stethoscope className="h-5 w-5 text-emerald-600" />
-                                2. Clinical Findings & Physical Signs
-                            </h2>
-
-                            <div className="space-y-4">
-                                {/* Ascites Grade Selector */}
-                                <div>
-                                    <div className="flex items-center justify-between mb-1.5">
-                                        <label className="text-xs font-bold text-gray-700 uppercase">
-                                            Ascites Status
-                                        </label>
-                                        <span className="text-[10px] text-gray-400">Fluid overload</span>
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-1.5 text-xs font-bold">
-                                        {[
-                                            { id: "none", name: "None (1 pt)", sub: "No ascites" },
-                                            { id: "mild", name: "Mild (2 pts)", sub: "Diuretic-responsive" },
-                                            { id: "moderate", name: "Severe (3 pts)", sub: "Refractory / Tense" },
-                                        ].map((item) => (
-                                            <button
-                                                key={item.id}
-                                                type="button"
-                                                onClick={() => setAscites(item.id as AscitesGrade)}
-                                                className={`p-2.5 rounded-xl border transition text-center flex flex-col items-center justify-center ${ascites === item.id
-                                                        ? "border-blue-600 bg-blue-50 text-blue-900 ring-1 ring-blue-500 font-extrabold"
-                                                        : "border-gray-200 bg-gray-50/70 text-gray-700 hover:bg-gray-100"
-                                                    }`}
-                                            >
-                                                <span>{item.name}</span>
-                                                <span className="text-[10px] text-gray-400 font-normal">{item.sub}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Hepatic Encephalopathy Selector */}
-                                <div>
-                                    <div className="flex items-center justify-between mb-1.5">
-                                        <label className="text-xs font-bold text-gray-700 uppercase">
-                                            Hepatic Encephalopathy (West Haven Criteria)
-                                        </label>
-                                        <span className="text-[10px] text-gray-400">Cognitive state</span>
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-1.5 text-xs font-bold">
-                                        {[
-                                            { id: "none", name: "None (1 pt)", sub: "Normal sensorium" },
-                                            { id: "grade1-2", name: "Grade 1–2 (2 pts)", sub: "Mild confusion / Asterixis" },
-                                            { id: "grade3-4", name: "Grade 3–4 (3 pts)", sub: "Stupor / Comatose" },
-                                        ].map((item) => (
-                                            <button
-                                                key={item.id}
-                                                type="button"
-                                                onClick={() => setEncephalopathy(item.id as EncephalopathyGrade)}
-                                                className={`p-2.5 rounded-xl border transition text-center flex flex-col items-center justify-center ${encephalopathy === item.id
-                                                        ? "border-blue-600 bg-blue-50 text-blue-900 ring-1 ring-blue-500 font-extrabold"
-                                                        : "border-gray-200 bg-gray-50/70 text-gray-700 hover:bg-gray-100"
-                                                    }`}
-                                            >
-                                                <span>{item.name}</span>
-                                                <span className="text-[10px] text-gray-400 font-normal">{item.sub}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Optional MELD-Na Calculator Accordion / Toggle */}
-                                <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-3 space-y-2.5">
-                                    <div className="flex items-center justify-between">
-                                        <label className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
-                                            <TrendingUp className="h-3.5 w-3.5 text-blue-600" />
-                                            Optional: Calculate MELD-Na (UNOS 2016)
-                                        </label>
-                                        <button
-                                            type="button"
-                                            onClick={() => setEnableMeld(!enableMeld)}
-                                            className={`px-2 py-0.5 rounded text-[10px] font-bold transition ${enableMeld ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"
-                                                }`}
-                                        >
-                                            {enableMeld ? "Enabled" : "Enable"}
-                                        </button>
-                                    </div>
-
-                                    {enableMeld && (
-                                        <div className="grid grid-cols-2 gap-3 pt-1">
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-gray-600 uppercase mb-1">
-                                                    Serum Creatinine (mg/dL)
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    step="0.1"
-                                                    value={creatinine}
-                                                    onChange={(e) => setCreatinine(e.target.value)}
-                                                    className="w-full bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-gray-900 focus:outline-none focus:border-blue-500"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-gray-600 uppercase mb-1">
-                                                    Serum Sodium (mEq/L)
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    step="1"
-                                                    value={sodium}
-                                                    onChange={(e) => setSodium(e.target.value)}
-                                                    className="w-full bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-gray-900 focus:outline-none focus:border-blue-500"
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    {/* RIGHT: HERO SCORE OUTPUT & CLINICAL DIRECTIVES (6 COLS) */}
-                    <div className="lg:col-span-6 space-y-6">
-
-                        {/* HERO CHILD-PUGH CARD */}
-                        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-green-500 p-6 text-white shadow-xl">
-                            <div className="flex items-center justify-between border-b border-white/20 pb-3 mb-4">
-                                <div className="flex items-center gap-2">
-                                    <Activity className="h-5 w-5 text-green-300" />
-                                    <span className="text-xs font-bold uppercase tracking-wider text-blue-100">
-                                        Child-Pugh Classification
-                                    </span>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={handleCopyConsultNote}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-white/20 px-3 py-1 text-xs font-semibold text-white backdrop-blur-md transition hover:bg-white/30"
-                                >
-                                    {copied ? (
-                                        <>
-                                            <Check className="h-3.5 w-3.5 text-green-300" />
-                                            <span>Copied to EHR!</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Copy className="h-3.5 w-3.5" />
-                                            <span>Copy Consult</span>
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-
-                            {calculations ? (
-                                <div className="space-y-4">
-                                    {/* Big Number Output */}
-                                    <div className="rounded-xl bg-white/15 p-5 text-center backdrop-blur-md ring-1 ring-white/20">
-                                        <span className="text-[11px] font-bold text-blue-100 uppercase tracking-wider block mb-1">
-                                            {calculations.statusLabel}
-                                        </span>
-                                        <div className="text-5xl sm:text-6xl font-black tracking-tight text-white">
-                                            Class {calculations.childClass}{" "}
-                                            <span className="text-2xl font-bold text-green-200">({calculations.totalScore} pts)</span>
-                                        </div>
-                                        <div className="mt-2 text-xs font-mono text-blue-100/90 bg-black/10 inline-block px-3 py-1 rounded-full">
-                                            {calculations.oneYearSurvival} — {calculations.surgicalRisk}
-                                        </div>
-                                    </div>
-
-                                    {/* MELD-Na Display if Enabled */}
-                                    {calculations.meldNaScore !== null && (
-                                        <div className="rounded-xl bg-white/10 p-3.5 backdrop-blur-sm border border-white/15 flex items-center justify-between text-xs">
-                                            <div>
-                                                <span className="text-green-200 font-bold block">UNOS MELD-Na Score:</span>
-                                                <span className="text-[11px] text-blue-100">{calculations.meldMortality90d}</span>
-                                            </div>
-                                            <div className="text-2xl font-black text-white">
-                                                {calculations.meldNaScore} <span className="text-xs font-normal text-blue-100">pts</span>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Survival & Surgical Statistics */}
-                                    <div className="grid grid-cols-2 gap-3 text-center text-xs">
-                                        <div className="rounded-xl bg-white/10 p-3 backdrop-blur-sm">
-                                            <span className="text-blue-100 text-[10px] uppercase font-bold block">Survival Prognosis</span>
-                                            <span className="text-sm font-bold text-white mt-0.5 block">{calculations.oneYearSurvival}</span>
-                                            <span className="text-[10px] text-green-200 font-medium">{calculations.twoYearSurvival}</span>
-                                        </div>
-
-                                        <div className="rounded-xl bg-white/10 p-3 backdrop-blur-sm">
-                                            <span className="text-blue-100 text-[10px] uppercase font-bold block">Surgical Candidacy</span>
-                                            <span className="text-sm font-bold text-white mt-0.5 block">{calculations.surgicalRisk}</span>
-                                            <span className="text-[10px] text-blue-200 font-medium">Perioperative Mortality</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Pharmacotherapy Directives */}
-                                    <div className="rounded-xl bg-white/10 p-3.5 backdrop-blur-sm border border-white/10 text-xs text-blue-100 space-y-1">
-                                        <strong className="text-white block font-bold">Hepatic Drug Dosing Directive:</strong>
-                                        <p className="leading-relaxed text-[11px]">{calculations.dosingDirectives}</p>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="py-10 text-center text-blue-100">
-                                    <Activity className="h-12 w-12 mx-auto mb-2 opacity-60" />
-                                    <p className="font-medium text-sm">Enter clinical parameters to compute score.</p>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* VISUAL CHILD-PUGH CLASS GAUGE */}
-                        {calculations && (
-                            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-md shadow-gray-200/50 space-y-3">
-                                <div className="flex items-center justify-between text-xs font-bold">
-                                    <span className="text-gray-700 flex items-center gap-1.5">
-                                        <TrendingUp className="h-4 w-4 text-blue-600" />
-                                        Severity Spectrum (5–15 Points)
-                                    </span>
-                                    <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${calculations.badgeColor}`}>
-                                        Class {calculations.childClass} ({calculations.totalScore} pts)
-                                    </span>
-                                </div>
-
-                                <div className="relative pt-6 pb-2">
-                                    {/* Gauge Track */}
-                                    <div className="h-3.5 bg-gradient-to-r from-emerald-500 via-yellow-400 to-rose-600 rounded-full w-full relative overflow-hidden" />
-
-                                    {/* Marker Needle */}
-                                    <div
-                                        className="absolute top-1 transition-all duration-300 -translate-x-1/2"
-                                        style={{
-                                            left: `${Math.min(100, Math.max(0, ((calculations.totalScore - 5) / (15 - 5)) * 100))}%`,
-                                        }}
-                                    >
-                                        <div className="bg-gray-900 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded shadow-md whitespace-nowrap">
-                                            {calculations.totalScore} pts
-                                        </div>
-                                        <div className="w-0.5 h-3.5 bg-gray-900 mx-auto" />
-                                    </div>
-
-                                    <div className="flex justify-between text-[10px] font-bold text-gray-400 px-0.5 mt-1">
-                                        <span>5 (Class A)</span>
-                                        <span>7 (Class B)</span>
-                                        <span>10 (Class C)</span>
-                                        <span>15</span>
-                                    </div>
-                                </div>
+            <CalcSection title="MELD-Na score (optional)" description="Model for End-Stage Liver Disease with sodium — the UNOS 2016 refit used for transplant listing.">
+                <Toggle
+                    checked={enableMeld}
+                    onChange={setEnableMeld}
+                    label="Also calculate MELD-Na"
+                    description="Uses the bilirubin and INR above plus creatinine and sodium."
+                />
+                {enableMeld && (
+                    <>
+                        <FieldGrid>
+                            <NumberField
+                                label="Serum creatinine"
+                                value={creatinine}
+                                onChange={setCreatinine}
+                                unit="mg/dL"
+                                step="0.1"
+                                min={0}
+                                hint="Bounded to 1.0–4.0 in the equation. Left blank, 1.0 is used."
+                                error={crError}
+                            />
+                            <NumberField
+                                label="Serum sodium"
+                                value={sodium}
+                                onChange={setSodium}
+                                unit="mEq/L"
+                                step="1"
+                                hint="Bounded to 125–137 in the equation. Left blank, 138 is used."
+                            />
+                        </FieldGrid>
+                        {calculations && calculations.meldNaScore !== null && (
+                            <div>
+                                <ResultRow label="MELD-Na score" value={calculations.meldNaScore} unit="points" />
+                                <ResultRow label="Estimated 90-day mortality" value={calculations.meldMortality90d.replace(" 90-Day Mortality", "")} />
                             </div>
                         )}
+                    </>
+                )}
+            </CalcSection>
 
-                        {/* SCORING BREAKDOWN TABLE */}
-                        {calculations && (
-                            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-md shadow-gray-200/50 space-y-3">
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
-                                    <Layers className="h-3.5 w-3.5 text-blue-600" />
-                                    Patient Scoring Breakdown (Points Awarded)
-                                </h3>
-                                <div className="overflow-x-auto rounded-xl border border-gray-200">
-                                    <table className="w-full text-left text-xs">
-                                        <thead className="bg-gray-50 text-gray-600 font-bold border-b border-gray-200 uppercase text-[10px]">
-                                            <tr>
-                                                <th className="py-2 px-3">Parameter</th>
-                                                <th className="py-2 px-3">Patient Value</th>
-                                                <th className="py-2 px-3">Points</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-100 text-[11px]">
-                                            <tr><td className="py-1.5 px-3 font-semibold">Total Bilirubin</td><td className="py-1.5 px-3">{biliMgDl} mg/dL</td><td className="py-1.5 px-3 font-bold text-blue-700">{calculations.biliPoints} pt</td></tr>
-                                            <tr><td className="py-1.5 px-3 font-semibold">Serum Albumin</td><td className="py-1.5 px-3">{albGDl} g/dL</td><td className="py-1.5 px-3 font-bold text-blue-700">{calculations.albPoints} pt</td></tr>
-                                            <tr><td className="py-1.5 px-3 font-semibold">INR</td><td className="py-1.5 px-3">{rawInr}</td><td className="py-1.5 px-3 font-bold text-blue-700">{calculations.inrPoints} pt</td></tr>
-                                            <tr><td className="py-1.5 px-3 font-semibold">Ascites</td><td className="py-1.5 px-3 capitalize">{ascites}</td><td className="py-1.5 px-3 font-bold text-blue-700">{calculations.ascitesPoints} pt</td></tr>
-                                            <tr><td className="py-1.5 px-3 font-semibold">Encephalopathy</td><td className="py-1.5 px-3 capitalize">{encephalopathy.replace("-", " ")}</td><td className="py-1.5 px-3 font-bold text-blue-700">{calculations.encephPoints} pt</td></tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* MANDATORY CLINICAL SAFETY WARNING */}
-                        <div className="rounded-2xl border border-blue-200/80 bg-gradient-to-r from-blue-50/80 via-white to-green-50/80 p-4 shadow-sm text-gray-700">
-                            <div className="flex items-start gap-2.5">
-                                <ShieldCheck className="h-4 w-4 text-blue-700 shrink-0 mt-0.5" />
-                                <div className="text-[11px] leading-relaxed">
-                                    <strong className="font-semibold text-gray-900 block mb-0.5">Hepatology Pharmacotherapy Advisory:</strong>
-                                    In patients with cirrhosis (Class B and C), avoid NSAIDs due to severe risks of precipitating Hepatorenal Syndrome (HRS) and GI bleeding. Restrict Acetaminophen to &le; 2 g/day. Avoid Benzodiazepines and Opioids to prevent triggering severe Hepatic Encephalopathy.
-                                </div>
-                            </div>
-                        </div>
-
+            {calculations && (
+                <CalcSection title="Prognosis & dosing">
+                    <div>
+                        <ResultRow label="1-year survival" value={calculations.oneYearSurvival.replace(" 1-Year Survival", "")} />
+                        <ResultRow label="2-year survival" value={calculations.twoYearSurvival.replace(" 2-Year Survival", "")} />
+                        <ResultRow label="Perioperative mortality" value={calculations.surgicalRisk.replace(" Perioperative Mortality", "")} />
                     </div>
 
-                </div>
-
-                {/* ─── COLLAPSIBLE FORMULAS & EVIDENCE REFERENCE ────────────────────── */}
-                <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-md shadow-gray-200/50 space-y-3">
-                    <button
-                        type="button"
-                        onClick={() => setShowDetails(!showDetails)}
-                        className="w-full flex items-center justify-between text-xs font-bold text-blue-600 hover:text-blue-800 transition"
+                    <LabNotice
+                        tone={calculations.childClass === "A" ? "info" : calculations.childClass === "B" ? "warning" : "danger"}
+                        title="Hepatic drug dosing"
                     >
-                        <span className="flex items-center gap-2 text-sm">
-                            <BookOpen className="h-4 w-4 text-blue-600" />
-                            Child-Pugh & MELD-Na Scoring Criteria & Evidence Reference
-                        </span>
-                        {showDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </button>
+                        {calculations.dosingDirectives}
+                    </LabNotice>
 
-                    {showDetails && (
-                        <div className="space-y-3 text-xs text-gray-600 pt-2 border-t border-gray-100 leading-relaxed">
-                            <div>
-                                <strong className="text-gray-900 block mb-0.5">1. Child-Pugh Scoring System (Pugh RN et al. Br J Surg 1973):</strong>
-                                <p className="text-gray-600">
-                                    Evaluates 5 components: Bilirubin (&lt;2, 2–3, &gt;3 mg/dL), Albumin (&gt;3.5, 2.8–3.5, &lt;2.8 g/dL), INR (&lt;1.7, 1.7–2.2, &gt;2.2), Ascites (None, Mild, Moderate/Severe), and Encephalopathy (None, Grade 1–2, Grade 3–4).
-                                </p>
+                    <Button variant="outline" onClick={handleCopyConsultNote} className="w-full">
+                        {copied ? <Check /> : <Copy />}
+                        {copied ? "Consult note copied" : "Copy consult note"}
+                    </Button>
+                </CalcSection>
+            )}
+
+            {calculations && (
+                <CalcSection title="Score breakdown" description="Points awarded for each finding, and where the total sits on the 5–15 scale.">
+                    <div>
+                        <ResultRow
+                            label={`Total bilirubin${isCholestatic ? " (cholestatic)" : ""}`}
+                            value={biliMgDl}
+                            unit="mg/dL"
+                            badge={pts(calculations.biliPoints)}
+                        />
+                        <ResultRow label="Serum albumin" value={albGDl} unit="g/dL" badge={pts(calculations.albPoints)} />
+                        <ResultRow label="INR" value={rawInr} badge={pts(calculations.inrPoints)} />
+                        <ResultRow label="Ascites" value={ASCITES_LABEL[ascites]} badge={pts(calculations.ascitesPoints)} />
+                        <ResultRow label="Encephalopathy" value={ENCEPH_LABEL[encephalopathy]} badge={pts(calculations.encephPoints)} />
+                        <ResultRow
+                            label="Total"
+                            value={`${calculations.biliPoints} + ${calculations.albPoints} + ${calculations.inrPoints} + ${calculations.ascitesPoints} + ${calculations.encephPoints} = ${calculations.totalScore}`}
+                            badge={`Class ${calculations.childClass}`}
+                            badgeTone={calculations.childClass === "A" ? "success" : calculations.childClass === "B" ? "warning" : "destructive"}
+                        />
+                    </div>
+
+                    {/* Severity spectrum, 5–15 points */}
+                    <div className="pt-7" role="img" aria-label={`Score ${calculations.totalScore} of 15, Class ${calculations.childClass}`}>
+                        <div className="relative">
+                            <div className="h-3 w-full rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-red-500" />
+                            {/* The needle sits exactly on the score; the label is shifted by
+                                the same percentage so it never hangs off either end at 5 or 15. */}
+                            <div
+                                className="absolute bottom-0 h-4 w-0.5 -translate-x-1/2 bg-primary"
+                                style={{ left: `${gaugeLeft}%` }}
+                            />
+                            <div
+                                className="absolute bottom-4 whitespace-nowrap rounded bg-primary px-1.5 py-0.5 text-[11px] font-bold text-primary-foreground shadow"
+                                style={{ left: `${gaugeLeft}%`, transform: `translateX(-${gaugeLeft}%)` }}
+                            >
+                                {calculations.totalScore} pts
                             </div>
-                            <div>
-                                <strong className="text-gray-900 block mb-0.5">2. MELD-Na Equation (UNOS / OPTN 2016 Refit):</strong>
-                                <code className="text-blue-700 bg-gray-100 p-1.5 rounded block text-[11px] font-mono">
-                                    MELD(i) = 9.57 × ln(Cr) + 3.78 × ln(Bili) + 11.2 × ln(INR) + 6.43
-                                    <br />
-                                    If MELD(i) &gt; 11: MELD-Na = MELD(i) + 1.32 × (137 - Na) - [0.033 × MELD(i) × (137 - Na)]
-                                </code>
-                            </div>
-                            <div>
-                                <strong className="text-gray-900 block mb-0.5">3. Reference Citations:</strong>
-                                <p className="text-gray-600">
-                                    Pugh RN, Murray-Lyon IM, Dawson JL, Pietroni MC, Williams R. Transection of the oesophagus for bleeding oesophageal varices. Br J Surg. 1973;60(8):646-649.
-                                </p>
-                            </div>
+                        </div>
+                        <div className="mt-1.5 flex justify-between text-[11px] font-medium text-muted-foreground">
+                            <span>5 · A</span>
+                            <span>7 · B</span>
+                            <span>10 · C</span>
+                            <span>15</span>
+                        </div>
+                    </div>
+
+                    {calculations.meldNaScore !== null && (
+                        <div>
+                            <p className="mb-1 text-xs font-medium text-muted-foreground">MELD-Na working (bounded values)</p>
+                            <ResultRow label="Creatinine / bilirubin / INR used" value={`${calculations.crBound} / ${calculations.biliBound} / ${calculations.inrBound}`} />
+                            <ResultRow label="MELD(i), rounded" value={calculations.meldInitialRounded ?? "—"} />
+                            <ResultRow
+                                label="Sodium used"
+                                value={calculations.naBound}
+                                unit="mEq/L"
+                                badge={calculations.meldInitialRounded !== null && calculations.meldInitialRounded > 11 ? "Na adjustment applied" : "No Na adjustment (MELD ≤ 11)"}
+                            />
                         </div>
                     )}
+                </CalcSection>
+            )}
+
+            <FormulaNote>
+                <p className="font-medium text-foreground">Child-Pugh criteria (Pugh RN et al., Br J Surg 1973)</p>
+                <div className="overflow-x-auto rounded-lg border border-border/70">
+                    <table className="w-full min-w-[420px] text-left text-xs">
+                        <thead className="bg-muted/60 text-foreground">
+                            <tr>
+                                <th className="px-3 py-2 font-semibold">Finding</th>
+                                <th className="px-3 py-2 font-semibold">1 pt</th>
+                                <th className="px-3 py-2 font-semibold">2 pts</th>
+                                <th className="px-3 py-2 font-semibold">3 pts</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/70">
+                            <tr><td className="px-3 py-2">Bilirubin (mg/dL)</td><td className="px-3 py-2">&lt; 2</td><td className="px-3 py-2">2–3</td><td className="px-3 py-2">&gt; 3</td></tr>
+                            <tr><td className="px-3 py-2">Bilirubin, PBC/PSC (mg/dL)</td><td className="px-3 py-2">&lt; 4</td><td className="px-3 py-2">4–10</td><td className="px-3 py-2">&gt; 10</td></tr>
+                            <tr><td className="px-3 py-2">Albumin (g/dL)</td><td className="px-3 py-2">&gt; 3.5</td><td className="px-3 py-2">2.8–3.5</td><td className="px-3 py-2">&lt; 2.8</td></tr>
+                            <tr><td className="px-3 py-2">INR</td><td className="px-3 py-2">&lt; 1.7</td><td className="px-3 py-2">1.7–2.2</td><td className="px-3 py-2">&gt; 2.2</td></tr>
+                            <tr><td className="px-3 py-2">Ascites</td><td className="px-3 py-2">None</td><td className="px-3 py-2">Mild</td><td className="px-3 py-2">Moderate–severe</td></tr>
+                            <tr><td className="px-3 py-2">Encephalopathy</td><td className="px-3 py-2">None</td><td className="px-3 py-2">Grade 1–2</td><td className="px-3 py-2">Grade 3–4</td></tr>
+                        </tbody>
+                    </table>
                 </div>
+                <Formula>Class A = 5–6 · Class B = 7–9 · Class C = 10–15</Formula>
+                <p>
+                    µmol/L bilirubin is divided by 17.1 and g/L albumin by 10, each rounded to one decimal,
+                    before the bands are applied.
+                </p>
+                <p className="font-medium text-foreground">MELD-Na (UNOS / OPTN 2016 refit)</p>
+                <Formula>
+                    MELD(i) = 9.57 × ln(Cr) + 3.78 × ln(Bili) + 11.2 × ln(INR) + 6.43
+                    <br />
+                    If MELD(i) &gt; 11: MELD-Na = MELD(i) + 1.32 × (137 − Na) − [0.033 × MELD(i) × (137 − Na)]
+                </Formula>
+                <p>
+                    Cr — serum creatinine (mg/dL, bounded 1.0–4.0); Bili — total bilirubin (mg/dL, minimum
+                    1.0); INR minimum 1.0; Na — serum sodium (mEq/L, bounded 125–137). The result is capped
+                    at 6–40. 90-day mortality bands: ≤ 9 → 1.9%, 10–19 → 6.0%, 20–29 → 19.6%, 30–39 →
+                    52.6%, ≥ 40 → 71.3%.
+                </p>
+                <p>
+                    Reference: Pugh RN, Murray-Lyon IM, Dawson JL, Pietroni MC, Williams R. Transection of
+                    the oesophagus for bleeding oesophageal varices. Br J Surg. 1973;60(8):646-649.
+                </p>
+            </FormulaNote>
 
-                {/* ─── FOOTER ──────────────────────────────────────────────────────── */}
-                <footer className="border-t border-gray-200 pt-6 pb-10 text-center text-xs text-gray-500 space-y-2">
-                    <p className="max-w-4xl mx-auto leading-relaxed">
-                        <strong>Clinical Hepatology Advisory:</strong> Child-Pugh classification is designed for chronic liver disease prognosis and surgical risk assessment. For acute liver failure, liver transplant priority, or unstable patients, MELD-Na and clinical hepatology specialist review are recommended.
-                    </p>
-                    <p className="text-gray-400">
-                        &copy; 2024–2026 Advanced Hepatic Function & Child-Pugh Clinical Decision Support.
-                    </p>
-                </footer>
+            <CalcFaq
+                items={[
+                    {
+                        q: "Which Child-Pugh class does a drug label mean by “mild”, “moderate” and “severe” hepatic impairment?",
+                        a: "Mild = Class A (5–6 points), moderate = Class B (7–9), severe = Class C (10–15). Always follow the specific drug's label, because the recommended dose change differs from drug to drug.",
+                    },
+                    {
+                        q: "My lab reports bilirubin in µmol/L — do I need to convert it?",
+                        a: "No. Switch the unit next to the field to µmol/L and the calculator divides by 17.1 for you. The breakdown shows the converted mg/dL value that was scored.",
+                    },
+                    {
+                        q: "When should I tick the PBC / PSC option?",
+                        a: "Only for cholestatic liver disease — primary biliary cholangitis or primary sclerosing cholangitis. Bilirubin rises early in these conditions, so the bands are higher (< 4, 4–10, > 10 mg/dL) to avoid over-scoring.",
+                    },
+                    {
+                        q: "Child-Pugh or MELD-Na — which should I use?",
+                        a: "Child-Pugh is the standard for drug dosing and general prognosis. MELD-Na uses only objective lab values and is used to prioritise liver transplant candidates. They answer different questions, so many clinicians report both.",
+                    },
+                    {
+                        q: "How do I grade ascites and encephalopathy?",
+                        a: "Ascites: none, mild (controlled with diuretics) or moderate–severe (tense or refractory). Encephalopathy uses the West Haven grades: grade 1–2 is mild confusion or asterixis, grade 3–4 is stupor or coma. Grade from the current clinical assessment.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
+    );
+}
 
-            </div>
-        </section>
+/** A full-width, thumb-sized checkbox row. */
+function Toggle({
+    checked,
+    onChange,
+    label,
+    description,
+}: {
+    checked: boolean;
+    onChange: (next: boolean) => void;
+    label: string;
+    description?: string;
+}) {
+    const id = useId();
+    return (
+        <label
+            htmlFor={id}
+            className="flex min-h-[48px] cursor-pointer items-start gap-3 rounded-xl border border-border/80 bg-background px-3.5 py-3 hover:bg-muted/50"
+        >
+            <input
+                id={id}
+                type="checkbox"
+                checked={checked}
+                onChange={(event) => onChange(event.target.checked)}
+                className="mt-0.5 h-5 w-5 shrink-0 accent-primary"
+            />
+            <span className="min-w-0">
+                <span className="block text-sm font-medium text-foreground">{label}</span>
+                {description && <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{description}</span>}
+            </span>
+        </label>
     );
 }

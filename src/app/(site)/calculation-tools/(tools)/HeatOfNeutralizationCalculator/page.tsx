@@ -1,494 +1,382 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { Calculator, Thermometer, Beaker, RefreshCw, Zap, AlertCircle, Flame, ChevronDown } from 'lucide-react';
 
-type MassUnit = 'g' | 'kg';
-type TempUnit = '°C' | 'K';
-type HeatUnit = 'J' | 'kJ';
+import { useMemo, useState } from "react";
+import { Flame, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+    CalculatorShell,
+    CalcSection,
+    FieldGrid,
+    NumberField,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    AdSlot,
+    ModeSwitch,
+    type ModeOption,
+} from "@/components/calculators";
+
+type MassUnit = "g" | "kg";
+type TempUnit = "°C" | "K";
+type HeatUnit = "J" | "kJ";
+
+const TEMP_UNITS = [
+    { value: "C", label: "°C" },
+    { value: "K", label: "K" },
+];
+
+const HEAT_UNIT_OPTIONS: ModeOption<HeatUnit>[] = [
+    { value: "J", label: "Joules (J)" },
+    { value: "kJ", label: "Kilojoules (kJ)" },
+];
+
+const DEFAULTS = {
+    massAcid: "100",
+    massBase: "100",
+    specificHeat: "4.18",
+    temp1: "25.0",
+    temp2: "31.5",
+    moles: "0.1",
+};
+
+/* ── Reference data (unchanged) ───────────────────────────────────────────── */
+const TYPICAL_ENTHALPIES = [
+    { acid: "HCl", base: "NaOH", dH: "−57.9", note: "Strong–strong" },
+    { acid: "H₂SO₄", base: "NaOH", dH: "−57.1", note: "Per mol H⁺" },
+    { acid: "CH₃COOH", base: "NaOH", dH: "−55.8", note: "Weak acid" },
+    { acid: "HCl", base: "NH₃", dH: "−51.6", note: "Weak base" },
+];
+
+/* ── Unchanged conversions and bands ──────────────────────────────────────── */
+const massToGrams = (value: number, unit: MassUnit): number => (unit === "kg" ? value * 1000 : value);
+const joulesToUnit = (value: number, unit: HeatUnit): number => (unit === "kJ" ? value / 1000 : value);
+const getTempInCelsius = (value: number, unit: TempUnit): number => (unit === "K" ? value - 273.15 : value);
+
+function getInterpretation(value: number, isMolar = false): string {
+    if (isMolar) {
+        const absH = Math.abs(value);
+        if (absH < 10) return "Very weak neutralization";
+        if (absH < 30) return "Weak neutralization";
+        if (absH < 50) return "Moderate neutralization";
+        if (absH < 70) return "Strong neutralization";
+        return "Very strong neutralization";
+    }
+    const absQ = Math.abs(value);
+    if (absQ < 100) return "Small heat change";
+    if (absQ < 1000) return "Moderate heat change";
+    if (absQ < 10000) return "Large heat change";
+    return "Very large heat change";
+}
+
+function positiveError(raw: string): string | undefined {
+    if (raw.trim() === "") return "Required.";
+    const value = parseFloat(raw);
+    if (isNaN(value)) return "Enter a number.";
+    if (value <= 0) return "Must be greater than zero.";
+    return undefined;
+}
 
 export default function HeatOfNeutralizationCalculator() {
-  const [massAcid, setMassAcid] = useState<string>('100');
-  const [massBase, setMassBase] = useState<string>('100');
-  const [massUnitAcid, setMassUnitAcid] = useState<MassUnit>('g');
-  const [massUnitBase, setMassUnitBase] = useState<MassUnit>('g');
-  const [specificHeat, setSpecificHeat] = useState<string>('4.18');
-  const [heatUnit, setHeatUnit] = useState<HeatUnit>('J');
-  const [temp1, setTemp1] = useState<string>('25.0');
-  const [temp2, setTemp2] = useState<string>('31.5');
-  const [tempUnit, setTempUnit] = useState<TempUnit>('°C');
-  const [moles, setMoles] = useState<string>('0.1');
-  const [showMolarEnthalpy, setShowMolarEnthalpy] = useState<boolean>(false);
-  const [heat, setHeat] = useState<number | null>(null);
-  const [molarEnthalpy, setMolarEnthalpy] = useState<number | null>(null);
-  const [showFormula, setShowFormula] = useState(false);
+    const [massAcid, setMassAcid] = useState(DEFAULTS.massAcid);
+    const [massBase, setMassBase] = useState(DEFAULTS.massBase);
+    const [massUnitAcid, setMassUnitAcid] = useState<MassUnit>("g");
+    const [massUnitBase, setMassUnitBase] = useState<MassUnit>("g");
+    const [specificHeat, setSpecificHeat] = useState(DEFAULTS.specificHeat);
+    const [heatUnit, setHeatUnit] = useState<HeatUnit>("J");
+    const [temp1, setTemp1] = useState(DEFAULTS.temp1);
+    const [temp2, setTemp2] = useState(DEFAULTS.temp2);
+    const [tempUnit, setTempUnit] = useState<TempUnit>("°C");
+    const [moles, setMoles] = useState(DEFAULTS.moles);
+    const [showMolarEnthalpy, setShowMolarEnthalpy] = useState(false);
 
-  const massToGrams = (value: number, unit: MassUnit): number =>
-    unit === 'kg' ? value * 1000 : value;
+    /*
+     * Derived rather than refreshed from a useEffect. Arithmetic unchanged:
+     * ΔQ (J) = (m_acid + m_base in g) × c × (T₂ − T₁ in °C); ΔH (kJ/mol) = ΔQ/1000 ÷ moles.
+     */
+    const result = useMemo(() => {
+        const ma = parseFloat(massAcid);
+        const mb = parseFloat(massBase);
+        const c = parseFloat(specificHeat);
+        const t1 = parseFloat(temp1);
+        const t2 = parseFloat(temp2);
+        const mol = parseFloat(moles);
 
-  const joulesToUnit = (value: number, unit: HeatUnit): number =>
-    unit === 'kJ' ? value / 1000 : value;
+        if (isNaN(ma) || isNaN(mb) || isNaN(c) || isNaN(t1) || isNaN(t2) || ma <= 0 || mb <= 0 || c <= 0) {
+            return null;
+        }
 
-  const getTempInCelsius = (value: number, unit: TempUnit): number =>
-    unit === 'K' ? value - 273.15 : value;
+        const totalMass = massToGrams(ma, massUnitAcid) + massToGrams(mb, massUnitBase);
+        const deltaT = getTempInCelsius(t2, tempUnit) - getTempInCelsius(t1, tempUnit);
+        const heat = totalMass * c * deltaT;
+        if (!Number.isFinite(heat)) return null;
 
-  const calculateHeat = () => {
-    const ma = parseFloat(massAcid);
-    const mb = parseFloat(massBase);
-    const c = parseFloat(specificHeat);
-    const t1 = parseFloat(temp1);
-    const t2 = parseFloat(temp2);
-    const mol = parseFloat(moles);
+        const molarEnthalpy = showMolarEnthalpy && !isNaN(mol) && mol > 0 ? heat / 1000 / mol : null;
+        return { heat, totalMass, deltaT, molarEnthalpy };
+    }, [massAcid, massBase, massUnitAcid, massUnitBase, specificHeat, temp1, temp2, tempUnit, moles, showMolarEnthalpy]);
 
-    if (isNaN(ma) || isNaN(mb) || isNaN(c) || isNaN(t1) || isNaN(t2) || ma <= 0 || mb <= 0 || c <= 0) {
-      setHeat(null);
-      setMolarEnthalpy(null);
-      return;
-    }
+    const reset = () => {
+        setMassAcid(DEFAULTS.massAcid);
+        setMassBase(DEFAULTS.massBase);
+        setMassUnitAcid("g");
+        setMassUnitBase("g");
+        setSpecificHeat(DEFAULTS.specificHeat);
+        setHeatUnit("J");
+        setTemp1(DEFAULTS.temp1);
+        setTemp2(DEFAULTS.temp2);
+        setTempUnit("°C");
+        setMoles(DEFAULTS.moles);
+        setShowMolarEnthalpy(false);
+    };
 
-    const ma_g = massToGrams(ma, massUnitAcid);
-    const mb_g = massToGrams(mb, massUnitBase);
-    const t1_c = getTempInCelsius(t1, tempUnit);
-    const t2_c = getTempInCelsius(t2, tempUnit);
-    const deltaT = t2_c - t1_c;
-    const deltaQ_joules = (ma_g + mb_g) * c * deltaT;
-    setHeat(deltaQ_joules);
+    const tempError = (raw: string) => (raw.trim() === "" ? "Required." : isNaN(parseFloat(raw)) ? "Enter a number." : undefined);
+    const molesError = showMolarEnthalpy && moles.trim() !== "" && !(parseFloat(moles) > 0) ? "Must be greater than zero." : undefined;
 
-    if (showMolarEnthalpy && !isNaN(mol) && mol > 0) {
-      setMolarEnthalpy((deltaQ_joules / 1000) / mol);
-    } else {
-      setMolarEnthalpy(null);
-    }
-  };
-
-  const resetCalculator = () => {
-    setMassAcid('100');
-    setMassBase('100');
-    setMassUnitAcid('g');
-    setMassUnitBase('g');
-    setSpecificHeat('4.18');
-    setHeatUnit('J');
-    setTemp1('25.0');
-    setTemp2('31.5');
-    setTempUnit('°C');
-    setMoles('0.1');
-    setShowMolarEnthalpy(false);
-    setHeat(null);
-    setMolarEnthalpy(null);
-  };
-
-  const getInterpretation = (value: number, isMolar: boolean = false) => {
-    if (isMolar) {
-      const absH = Math.abs(value);
-      if (absH < 10) return 'Very weak neutralization';
-      if (absH < 30) return 'Weak neutralization';
-      if (absH < 50) return 'Moderate neutralization';
-      if (absH < 70) return 'Strong neutralization';
-      return 'Very strong neutralization';
-    } else {
-      const absQ = Math.abs(value);
-      if (absQ < 100) return 'Small heat change';
-      if (absQ < 1000) return 'Moderate heat change';
-      if (absQ < 10000) return 'Large heat change';
-      return 'Very large heat change';
-    }
-  };
-
-  useEffect(() => {
-    calculateHeat();
-  }, [massAcid, massBase, massUnitAcid, massUnitBase, specificHeat, temp1, temp2, tempUnit, moles, showMolarEnthalpy, heatUnit]);
-
-  const totalMass =
-    !isNaN(parseFloat(massAcid)) && !isNaN(parseFloat(massBase))
-      ? massToGrams(parseFloat(massAcid), massUnitAcid) + massToGrams(parseFloat(massBase), massUnitBase)
-      : null;
-
-  const deltaT =
-    !isNaN(parseFloat(temp1)) && !isNaN(parseFloat(temp2))
-      ? getTempInCelsius(parseFloat(temp2), tempUnit) - getTempInCelsius(parseFloat(temp1), tempUnit)
-      : null;
-
-  /* ── Shared input/select styles ── */
-  const inputCls =
-    'w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition';
-  const selectCls =
-    'px-2 py-2.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition cursor-pointer';
-
-  return (
-    <div className="min-h-screen bg-slate-50 font-sans">
-      {/* ── Header ── */}
-      <div className="max-w-5xl mx-auto bg-gradient-to-r from-blue-600 to-emerald-500 shadow-lg">
-        <div className="px-4 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="bg-white/20 p-2.5 rounded-xl">
-              <Flame className="w-7 h-7 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-white leading-tight">
-                Heat of Neutralization
-              </h1>
-              <p className="text-blue-100 text-xs sm:text-sm mt-0.5">
-                Acid–base calorimetry calculator
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-lg text-white text-sm font-medium">
-            <Thermometer className="w-4 h-4" />
-            Calorimetry
-          </div>
-        </div>
-      </div>
-
-      {/* ── Main grid ── */}
-      <div className="max-w-5xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-        {/* ────────── INPUT CARD ────────── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 sm:p-6 flex flex-col gap-5">
-          <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-            <Calculator className="w-5 h-5 text-blue-600" />
-            Experimental Data
-          </h2>
-
-          {/* Mass of Acid */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
-              Mass of Acid (m<sub>a</sub>)
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                step="0.1"
-                value={massAcid}
-                onChange={(e) => setMassAcid(e.target.value)}
-                className={inputCls}
-                placeholder="e.g. 100"
-              />
-              <select
-                value={massUnitAcid}
-                onChange={(e) => setMassUnitAcid(e.target.value as MassUnit)}
-                className={selectCls + ' w-16 flex-shrink-0'}
-              >
-                <option value="g">g</option>
-                <option value="kg">kg</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Mass of Base */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
-              Mass of Base (m<sub>b</sub>)
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                step="0.1"
-                value={massBase}
-                onChange={(e) => setMassBase(e.target.value)}
-                className={inputCls}
-                placeholder="e.g. 100"
-              />
-              <select
-                value={massUnitBase}
-                onChange={(e) => setMassUnitBase(e.target.value as MassUnit)}
-                className={selectCls + ' w-16 flex-shrink-0'}
-              >
-                <option value="g">g</option>
-                <option value="kg">kg</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Specific Heat */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
-              Specific Heat Capacity (c)
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                step="0.001"
-                value={specificHeat}
-                onChange={(e) => setSpecificHeat(e.target.value)}
-                className={inputCls}
-                placeholder="e.g. 4.18"
-              />
-              <span className="flex-shrink-0 flex items-center px-3 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-600 text-sm whitespace-nowrap">
-                J/g·°C
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 mt-1">Default 4.18 for dilute aqueous solutions</p>
-          </div>
-
-          {/* Temperature row */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                Temperatures
-              </label>
-              <select
-                value={tempUnit}
-                onChange={(e) => setTempUnit(e.target.value as TempUnit)}
-                className={selectCls + ' text-xs'}
-              >
-                <option value="°C">°C</option>
-                <option value="K">K</option>
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">
-                  T₁ (Initial)
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={temp1}
-                  onChange={(e) => setTemp1(e.target.value)}
-                  className={inputCls}
-                  placeholder="e.g. 25.0"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">
-                  T₂ (Final)
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={temp2}
-                  onChange={(e) => setTemp2(e.target.value)}
-                  className={inputCls}
-                  placeholder="e.g. 31.5"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Molar Enthalpy toggle */}
-          <div className="bg-blue-50 rounded-xl border border-blue-100 p-4">
-            <label className="flex items-center gap-2.5 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={showMolarEnthalpy}
-                onChange={(e) => setShowMolarEnthalpy(e.target.checked)}
-                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-400"
-              />
-              <span className="text-sm font-semibold text-slate-700">
-                Calculate Molar Enthalpy (ΔH)
-              </span>
-            </label>
-            {showMolarEnthalpy && (
-              <div className="mt-3">
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
-                  Moles of Limiting Reactant
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    step="0.001"
-                    value={moles}
-                    onChange={(e) => setMoles(e.target.value)}
-                    className={inputCls}
-                    placeholder="e.g. 0.1"
-                  />
-                  <span className="flex-shrink-0 flex items-center px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-slate-600 text-sm">
-                    mol
-                  </span>
-                </div>
-                <p className="text-xs text-slate-400 mt-1">Moles of the limiting reactant</p>
-              </div>
-            )}
-          </div>
-
-          {/* Heat unit toggle */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-2 uppercase tracking-wide">
-              Display Heat In
-            </label>
-            <div className="flex rounded-lg overflow-hidden border border-slate-200">
-              {(['J', 'kJ'] as HeatUnit[]).map((u) => (
-                <button
-                  key={u}
-                  onClick={() => setHeatUnit(u)}
-                  className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${
-                    heatUnit === u
-                      ? 'bg-gradient-to-r from-blue-600 to-emerald-500 text-white'
-                      : 'bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {u === 'J' ? 'Joules (J)' : 'Kilojoules (kJ)'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Formula accordion */}
-          <div className="border border-slate-200 rounded-xl overflow-hidden">
-            <button
-              onClick={() => setShowFormula(!showFormula)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition text-sm font-semibold text-slate-700"
-            >
-              <span className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-blue-500" />
-                Show Formula
-              </span>
-              <ChevronDown
-                className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${showFormula ? 'rotate-180' : ''}`}
-              />
-            </button>
-            {showFormula && (
-              <div className="px-4 py-4 bg-white text-sm text-slate-700 space-y-3">
-                <div className="bg-slate-100 rounded-lg p-3 text-center font-mono text-sm overflow-x-auto">
-                  ΔQ = (m<sub>a</sub> + m<sub>b</sub>) × c × ΔT
-                </div>
-                <div className="space-y-1.5 text-slate-600">
-                  <p><span className="font-semibold text-slate-800">ΔQ</span> — Heat absorbed/released (J)</p>
-                  <p><span className="font-semibold text-slate-800">m<sub>a</sub>, m<sub>b</sub></span> — Masses of acid and base solutions (g)</p>
-                  <p><span className="font-semibold text-slate-800">c</span> — Specific heat capacity (J/g·°C)</p>
-                  <p><span className="font-semibold text-slate-800">ΔT</span> — Temperature change (T₂ – T₁)</p>
-                  <p><span className="font-semibold text-slate-800">ΔH</span> — ΔQ (kJ) ÷ moles of limiting reactant</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex gap-3 pt-1">
-            <button
-              onClick={calculateHeat}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-emerald-500 hover:from-blue-700 hover:to-emerald-600 text-white font-semibold py-3 rounded-xl shadow transition-all duration-200 text-sm"
-            >
-              Calculate
-            </button>
-            <button
-              onClick={resetCalculator}
-              className="flex items-center gap-2 px-5 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-xl transition text-sm"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Reset
-            </button>
-          </div>
-        </div>
-
-        {/* ────────── RESULTS COLUMN ────────── */}
-        <div className="flex flex-col gap-5">
-
-          {/* Heat result card */}
-          <div className="bg-gradient-to-br from-blue-600 to-emerald-500 rounded-2xl shadow-lg p-5 sm:p-6 text-white">
-            <h2 className="text-base font-bold mb-4 flex items-center gap-2">
-              <Beaker className="w-5 h-5" />
-              Heat of Neutralization
-            </h2>
-
-            {/* Main value display */}
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-5 mb-4 text-center">
-              <p className="text-xs font-semibold text-blue-100 mb-2 uppercase tracking-widest">
-                Heat Change (ΔQ)
-              </p>
-              {heat !== null ? (
+    return (
+        <CalculatorShell
+            title="Heat of Neutralization Calculator"
+            subtitle="Acid–base calorimetry: works out the heat released when an acid and a base are mixed, from their masses and the temperature rise."
+            icon={Flame}
+            eyebrow="Pharmaceutical Chemistry"
+            aside={
                 <>
-                  <p className="text-4xl sm:text-5xl font-bold mb-1 leading-none break-all">
-                    {joulesToUnit(heat, heatUnit).toFixed(2)}
-                  </p>
-                  <p className="text-xl font-semibold mb-2">{heatUnit}</p>
-                  <span
-                    className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
-                      heat >= 0 ? 'bg-emerald-400/30' : 'bg-blue-400/30'
-                    }`}
-                  >
-                    {heat >= 0 ? '🔥 Exothermic' : '❄️ Endothermic'}
-                  </span>
+                    <CalcAbout title="About this calculator">
+                        <p>
+                            When an acid neutralises a base in a coffee-cup calorimeter, the heat given out warms
+                            the mixture. Measuring that temperature rise, together with the mass and specific heat
+                            capacity of the solution, gives the heat change ΔQ. Dividing by the moles of the
+                            limiting reactant gives the molar enthalpy of neutralization.
+                        </p>
+                        <CalcList
+                            title="Use it when"
+                            items={[
+                                "Writing up a calorimetry practical",
+                                "Comparing strong and weak acids or bases",
+                                "Checking a textbook ΔQ = mcΔT problem",
+                            ]}
+                        />
+                        <CalcList
+                            tone="caution"
+                            title="Check before relying on it"
+                            items={[
+                                "Assumes no heat is lost to the cup or the air — real results come out slightly low",
+                                "The specific heat default (4.18 J/g·°C) is for dilute aqueous solutions",
+                                "The molar value takes the sign of the temperature change (positive when the mixture warms); by convention an exothermic ΔH is written with a minus sign, as in the table",
+                            ]}
+                        />
+                    </CalcAbout>
+
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
                 </>
-              ) : (
-                <p className="text-blue-100 text-lg">Enter valid data above</p>
-              )}
-            </div>
+            }
+        >
+            <ResultCard
+                label="Heat change (ΔQ)"
+                value={result ? joulesToUnit(result.heat, heatUnit).toFixed(2) : null}
+                unit={heatUnit}
+                interpretation={
+                    result
+                        ? `${result.heat >= 0 ? "Exothermic" : "Endothermic"} · ${getInterpretation(result.heat)} – ${
+                              result.heat > 0 ? "heat released to surroundings." : "heat absorbed from surroundings."
+                          }`
+                        : undefined
+                }
+                empty="Enter valid data: both masses and the specific heat must be greater than zero, and both temperatures filled in."
+            />
 
-            {/* Molar enthalpy */}
-            {showMolarEnthalpy && molarEnthalpy !== null && (
-              <div className="bg-white/10 rounded-xl px-4 py-3 mb-4 flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-xs text-blue-100 font-medium">Molar Enthalpy (ΔH)</p>
-                  <p className="text-xs text-blue-200 mt-0.5">{getInterpretation(molarEnthalpy, true)}</p>
-                </div>
-                <p className="text-lg font-bold whitespace-nowrap">
-                  {molarEnthalpy.toFixed(2)} kJ/mol
-                </p>
-              </div>
+            {showMolarEnthalpy && (
+                <ResultCard
+                    label="Molar enthalpy (ΔH)"
+                    value={result?.molarEnthalpy != null ? result.molarEnthalpy.toFixed(2) : null}
+                    unit="kJ/mol"
+                    interpretation={result?.molarEnthalpy != null ? getInterpretation(result.molarEnthalpy, true) : undefined}
+                    empty="Enter the moles of the limiting reactant (greater than zero)."
+                />
             )}
 
-            {/* Interpretation */}
-            {heat !== null && (
-              <div className="bg-white/10 rounded-xl px-4 py-3 flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div className="text-sm">
-                  <span className="font-semibold">Interpretation: </span>
-                  <span className="text-blue-100">
-                    {getInterpretation(heat)} – {heat > 0 ? 'heat released to surroundings.' : 'heat absorbed from surroundings.'}
-                  </span>
+            <CalcSection title="Experimental data">
+                <FieldGrid>
+                    <NumberField
+                        label="Mass of acid, m_acid"
+                        value={massAcid}
+                        onChange={setMassAcid}
+                        units={["g", "kg"]}
+                        unit={massUnitAcid}
+                        onUnitChange={(next) => setMassUnitAcid(next as MassUnit)}
+                        step="0.1"
+                        placeholder="e.g. 100"
+                        hint="Mass of the acid solution. 100 mL of dilute solution ≈ 100 g."
+                        error={positiveError(massAcid)}
+                    />
+                    <NumberField
+                        label="Mass of base, m_base"
+                        value={massBase}
+                        onChange={setMassBase}
+                        units={["g", "kg"]}
+                        unit={massUnitBase}
+                        onUnitChange={(next) => setMassUnitBase(next as MassUnit)}
+                        step="0.1"
+                        placeholder="e.g. 100"
+                        hint="Mass of the base solution."
+                        error={positiveError(massBase)}
+                    />
+                    <NumberField
+                        label="Specific heat capacity, c (J/g·°C)"
+                        value={specificHeat}
+                        onChange={setSpecificHeat}
+                        unit="J/g·°C"
+                        step="0.001"
+                        placeholder="e.g. 4.18"
+                        hint="Default 4.18 for dilute aqueous solutions."
+                        error={positiveError(specificHeat)}
+                        className="sm:col-span-2"
+                    />
+                    <NumberField
+                        label="T₁ — initial temperature"
+                        value={temp1}
+                        onChange={setTemp1}
+                        units={TEMP_UNITS}
+                        unit={tempUnit === "K" ? "K" : "C"}
+                        onUnitChange={(next) => setTempUnit(next === "K" ? "K" : "°C")}
+                        step="0.1"
+                        placeholder="e.g. 25.0"
+                        hint="Temperature of the solutions before mixing."
+                        error={tempError(temp1)}
+                    />
+                    <NumberField
+                        label="T₂ — final temperature"
+                        value={temp2}
+                        onChange={setTemp2}
+                        units={TEMP_UNITS}
+                        unit={tempUnit === "K" ? "K" : "C"}
+                        onUnitChange={(next) => setTempUnit(next === "K" ? "K" : "°C")}
+                        step="0.1"
+                        placeholder="e.g. 31.5"
+                        hint="Highest temperature reached. Both share one unit."
+                        error={tempError(temp2)}
+                    />
+                </FieldGrid>
+
+                <div className="rounded-xl border border-border/80 bg-muted/40 p-3 sm:p-4">
+                    <label className="flex min-h-[44px] cursor-pointer select-none items-center gap-3">
+                        <input
+                            type="checkbox"
+                            checked={showMolarEnthalpy}
+                            onChange={(e) => setShowMolarEnthalpy(e.target.checked)}
+                            className="h-5 w-5 shrink-0 rounded accent-blue-600"
+                        />
+                        <span className="text-sm font-medium text-foreground">Calculate molar enthalpy (ΔH)</span>
+                    </label>
+                    {showMolarEnthalpy && (
+                        <NumberField
+                            label="Moles of limiting reactant (mol)"
+                            value={moles}
+                            onChange={setMoles}
+                            unit="mol"
+                            step="0.001"
+                            placeholder="e.g. 0.1"
+                            hint="Concentration × volume in litres of whichever reactant runs out first."
+                            error={molesError}
+                            className="mt-2"
+                        />
+                    )}
                 </div>
-              </div>
+
+                <div className="space-y-1.5">
+                    <p className="text-[13px] font-medium text-foreground/90">Display heat in</p>
+                    <ModeSwitch label="Display heat in" value={heatUnit} onChange={setHeatUnit} options={HEAT_UNIT_OPTIONS} />
+                </div>
+
+                <Button variant="outline" onClick={reset} className="w-full">
+                    <RefreshCw />
+                    Reset
+                </Button>
+            </CalcSection>
+
+            {result && (
+                <CalcSection title="Working" description="Masses converted to grams and temperatures to °C, then substituted.">
+                    <div>
+                        <ResultRow label="Total mass, m_acid + m_base" value={result.totalMass.toFixed(2)} unit="g" />
+                        <ResultRow label="ΔT = T₂ − T₁" value={result.deltaT.toFixed(2)} unit="°C" />
+                        {result.molarEnthalpy !== null && (
+                            <ResultRow
+                                label="ΔH = ΔQ (kJ) ÷ moles"
+                                value={`${(result.heat / 1000).toFixed(4)} ÷ ${moles} = ${result.molarEnthalpy.toFixed(2)}`}
+                                unit="kJ/mol"
+                            />
+                        )}
+                    </div>
+                    <p className="overflow-x-auto rounded-lg border border-border/70 bg-muted/60 px-3.5 py-3 font-mono text-[13px] leading-relaxed text-foreground">
+                        ΔQ = {result.totalMass.toFixed(1)} g × {specificHeat} J/g·°C × {result.deltaT.toFixed(2)} °C
+                        <br />= <strong>{result.heat.toFixed(2)} J</strong>
+                    </p>
+                </CalcSection>
             )}
-          </div>
 
-          {/* Calculation details */}
-          {heat !== null && totalMass !== null && deltaT !== null && (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
-              <h3 className="text-sm font-bold text-slate-800 mb-3">Calculation Breakdown</h3>
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div className="bg-slate-50 rounded-lg p-3">
-                  <p className="text-xs text-slate-500 mb-0.5">Total mass</p>
-                  <p className="font-semibold text-slate-800 text-sm">{totalMass.toFixed(2)} g</p>
+            <CalcSection title="Typical neutralization enthalpies" description="Values at 25 °C. Negative = exothermic.">
+                <div className="-mx-4 overflow-x-auto sm:mx-0">
+                    <table className="w-full min-w-[20rem] text-left text-sm">
+                        <thead>
+                            <tr className="border-b border-border text-xs text-muted-foreground">
+                                <th className="px-4 py-2.5 font-medium sm:px-3">Reaction</th>
+                                <th className="px-3 py-2.5 font-medium">Note</th>
+                                <th className="px-4 py-2.5 text-right font-medium sm:px-3">ΔH (kJ/mol)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {TYPICAL_ENTHALPIES.map((row) => (
+                                <tr key={`${row.acid}-${row.base}`} className="border-b border-border/70 last:border-b-0">
+                                    <td className="px-4 py-2.5 font-medium text-foreground sm:px-3">
+                                        {row.acid} + {row.base}
+                                    </td>
+                                    <td className="px-3 py-2.5 text-muted-foreground">{row.note}</td>
+                                    <td className="px-4 py-2.5 text-right font-semibold tabular-nums text-foreground sm:px-3">
+                                        {row.dH}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
-                <div className="bg-slate-50 rounded-lg p-3">
-                  <p className="text-xs text-slate-500 mb-0.5">ΔT</p>
-                  <p className="font-semibold text-slate-800 text-sm">{deltaT.toFixed(2)} °C</p>
-                </div>
-              </div>
-              <div className="bg-gradient-to-r from-blue-50 to-emerald-50 border border-blue-100 rounded-lg p-3">
-                <p className="text-center font-mono text-xs sm:text-sm text-slate-700 break-words leading-relaxed">
-                  ΔQ = {totalMass.toFixed(1)} g × {specificHeat} J/g·°C × {deltaT.toFixed(2)} °C
-                  <br />= <span className="font-bold text-blue-700">{heat.toFixed(2)} J</span>
+            </CalcSection>
+
+            <FormulaNote>
+                <Formula>ΔQ = (m_acid + m_base) × c × ΔT</Formula>
+                <Formula>ΔH = ΔQ (kJ) ÷ moles of limiting reactant</Formula>
+                <p>
+                    <strong>ΔQ</strong> — heat absorbed/released (J). <strong>m_acid, m_base</strong> — masses of the acid
+                    and base solutions (g). <strong>c</strong> — specific heat capacity (J/g·°C).{" "}
+                    <strong>ΔT</strong> — temperature change (T₂ − T₁). <strong>ΔH</strong> — ΔQ in kJ divided by
+                    the moles of the limiting reactant.
                 </p>
-              </div>
-            </div>
-          )}
+                <p>
+                    A temperature change in kelvin is the same size as in °C, so K inputs give the same ΔT.
+                </p>
+            </FormulaNote>
 
-          {/* Reference table */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
-            <h3 className="text-sm font-bold text-slate-800 mb-3">Typical Neutralization Enthalpies</h3>
-            <div className="overflow-x-auto -mx-1">
-              <table className="w-full text-xs sm:text-sm min-w-[280px]">
-                <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="py-2 px-1 text-left font-semibold text-slate-600">Reaction</th>
-                    <th className="py-2 px-1 text-left font-semibold text-slate-600 hidden sm:table-cell">Note</th>
-                    <th className="py-2 px-1 text-right font-semibold text-slate-600">ΔH (kJ/mol)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    { acid: 'HCl', base: 'NaOH', dH: '−57.9', note: 'Strong–strong' },
-                    { acid: 'H₂SO₄', base: 'NaOH', dH: '−57.1', note: 'Per mol H⁺' },
-                    { acid: 'CH₃COOH', base: 'NaOH', dH: '−55.8', note: 'Weak acid' },
-                    { acid: 'HCl', base: 'NH₃', dH: '−51.6', note: 'Weak base' },
-                  ].map((row, i) => (
-                    <tr key={i} className="border-b border-slate-100 hover:bg-slate-50 transition">
-                      <td className="py-2 px-1 font-medium text-slate-800">
-                        {row.acid} + {row.base}
-                      </td>
-                      <td className="py-2 px-1 text-slate-500 hidden sm:table-cell">{row.note}</td>
-                      <td className="py-2 px-1 text-right font-bold text-blue-600">{row.dH}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="text-xs text-slate-400 mt-3">Values at 25 °C. Negative = exothermic.</p>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  );
+            <CalcFaq
+                items={[
+                    {
+                        q: "Why use the mass of both solutions?",
+                        a: "After mixing, the whole solution absorbs the heat, so the heat capacity is that of the combined mass. For dilute solutions 1 mL is taken as about 1 g, so 50 mL acid + 50 mL base is 100 g.",
+                    },
+                    {
+                        q: "How do I find the moles of the limiting reactant?",
+                        a: "Multiply concentration (mol/L) by volume (L) for each reactant; the smaller number is limiting. 50 mL of 1.0 M HCl is 0.050 mol.",
+                    },
+                    {
+                        q: "Why is my value lower than the textbook −57 kJ/mol?",
+                        a: "Some heat escapes to the cup, thermometer and air, and weak acids or bases use energy to ionise first. Both make the measured value smaller than for a strong acid with a strong base.",
+                    },
+                    {
+                        q: "Should ΔH be negative?",
+                        a: "By convention, yes — neutralization is exothermic, so ΔH is written with a minus sign (for example −57.9 kJ/mol). This calculator follows the sign of ΔT, so a warming mixture gives a positive number — add the minus sign when you write it up.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
+    );
 }

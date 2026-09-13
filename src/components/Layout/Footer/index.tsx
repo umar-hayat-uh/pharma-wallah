@@ -1,313 +1,191 @@
 import Link from "next/link";
-import Logo from "../Header/Logo";
+import Image from "next/image";
 import Wordmark from "./Wordmark";
 import { Icon } from "@iconify/react";
 import { headerData } from "../Header/Navigation/menuData";
-import {
-  BookOpen, Library, Layers, FileText, Scan, Sparkles,
-  MapPin, Phone, Mail, Smartphone,
-} from "lucide-react";
+import { MapPin, Phone, Mail, ArrowUpRight } from "lucide-react";
 
+/*
+ * Every href below was checked against src/app on 2026-09-13. Five of the seven
+ * resource links used to 404 on every page (/material, /books, /flashcards,
+ * /mcqs, /slide-spotting) — they now point at the routes that exist.
+ */
 const resourceLinks = [
-  { label: "Study Material",  href: "/material",       Icon: BookOpen  },
-  { label: "Books Library",   href: "/books",           Icon: Library   },
-  { label: "Flashcards",      href: "/flashcards",      Icon: Layers    },
-  { label: "MCQ Bank",        href: "/mcqs",            Icon: FileText  },
-  { label: "Slide Spotting",  href: "/slide-spotting",  Icon: Scan      },
-  { label: "AI Guide",        href: "/ai-guide",        Icon: Sparkles  },
-  { label: "Android App",     href: "/download",        Icon: Smartphone },
+  { label: "Study material", href: "/courses" },
+  { label: "Books library", href: "/books-library" },
+  { label: "Flashcards", href: "/flash-cards" },
+  { label: "MCQ bank", href: "/mcqs-bank" },
+  { label: "Slide spotting", href: "/spotting" },
+  { label: "AI Guide", href: "/ai-guide" },
+  { label: "Android app", href: "/download" },
 ];
 
 const companyLinks = [
-  { label: "About Us",    href: "/about-us"  },
-  { label: "Our Mentors", href: "/mentor"    },
-  { label: "Careers",     href: "/careers"   },
-  { label: "FAQ's",       href: "/faqs"      },
-  { label: "Contact",     href: "/contact"   },
+  { label: "About us", href: "/about-us" },
+  { label: "Our mentors", href: "/mentor" },
+  { label: "Careers", href: "/careers" },
+  { label: "FAQs", href: "/faqs" },
+  { label: "Contact", href: "/contact" },
+];
+
+// "Resources" is a menu heading with href "#", not a destination.
+const quickLinks = headerData.filter((item) => item.href && item.href !== "#");
+
+const contact = [
+  { Icon: MapPin, text: "Dept. of Pharmacy, University of Karachi" },
+  { Icon: Phone, text: "+92 300 1234567" },
+  { Icon: Mail, text: "info@pharmawallah.com" },
 ];
 
 const socials = [
-  { icon: "tabler:brand-facebook",  href: "#", label: "Facebook"  },
-  { icon: "tabler:brand-twitter",   href: "#", label: "Twitter"   },
+  { icon: "tabler:brand-facebook", href: "#", label: "Facebook" },
+  { icon: "tabler:brand-twitter", href: "#", label: "Twitter" },
   { icon: "tabler:brand-instagram", href: "#", label: "Instagram" },
-  { icon: "tabler:brand-linkedin",  href: "#", label: "LinkedIn"  },
+  { icon: "tabler:brand-linkedin", href: "#", label: "LinkedIn" },
 ];
 
-const Footer = () => (
-  <footer className="relative overflow-hidden bg-gradient-to-br from-blue-700 via-blue-600 to-green-500">
-    {/* Subtle decorative blobs */}
-    <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      <div className="absolute -top-32 -right-32 w-72 h-72 rounded-full bg-white/10 blur-3xl" />
-      <div className="absolute -bottom-32 -left-32 w-72 h-72 rounded-full bg-white/10 blur-3xl" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full bg-white/5 blur-3xl" />
+function Column({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h3 className="font-mono text-[10.5px] font-medium uppercase tracking-[0.18em] text-white/90">{title}</h3>
+      {/* div + role="list": globals.css styles every ul/li with bullets and a grey colour. */}
+      <div role="list" className="mt-5 flex flex-col gap-3">
+        {children}
+      </div>
     </div>
+  );
+}
 
-    {/* Top white divider line */}
-    <div className="absolute top-0 left-0 right-0 h-[3px] bg-white/30" />
+function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <div role="listitem">
+      <Link
+        href={href}
+        className="group inline-flex items-center gap-1 text-[15px] text-white/90 transition-colors duration-300 hover:text-white"
+      >
+        {children}
+        <ArrowUpRight
+          className="h-3.5 w-3.5 -translate-x-1 opacity-0 transition-[opacity,transform] duration-500 [transition-timing-function:cubic-bezier(.16,1,.3,1)] group-hover:translate-x-0 group-hover:opacity-100"
+          aria-hidden="true"
+        />
+      </Link>
+    </div>
+  );
+}
 
-    <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8">
-      {/* ── MOBILE LAYOUT (hidden on sm and up) ── */}
-      <div className="sm:hidden py-16 flex flex-col gap-8">
-        {/* Brand */}
-        <div className="flex flex-col gap-5">
-          <div className="bg-white rounded-2xl px-4 py-3 inline-flex w-fit shadow-sm">
-            <Logo />
-          </div>
-          <p className="text-white/90 text-sm leading-relaxed font-medium">
-            Empowering pharmacy students across Pakistan with curated academic resources, MCQ banks, and AI-powered learning tools.
+/*
+ * The brand blue→green (tailwind.config.ts brandBlue → brandGreen), restored at
+ * the user's request on 2026-09-13 after a same-day redesign had swapped it for
+ * an ink ground. The ink scrim layered on top is for legibility, not mood:
+ * white on raw brandGreen is 2.61:1. With a 40% scrim, white/90 (every link,
+ * label and the bottom bar) is 4.95:1 even at the greenest corner, and the
+ * large white/65 statement is 3.38:1 — so keep small text at /90 or above.
+ * No blurred blobs — the old gradient footer's three blobs stay gone.
+ */
+const FOOTER_BG =
+  "linear-gradient(rgba(6,18,36,.40), rgba(6,18,36,.40)), linear-gradient(120deg, #1C7BD9 0%, #21B67A 100%)";
+
+/**
+ * The site footer, on every route.
+ *
+ * Redesigned 2026-09-13 in the landing page's language: mono column labels,
+ * hairline rules, and the wordmark as a filled ghost, on the brand gradient.
+ * One responsive grid, replacing a markup tree that duplicated every column
+ * once for mobile and once for desktop.
+ */
+const Footer = () => (
+  <footer className="relative overflow-hidden text-white" style={{ background: FOOTER_BG }}>
+    <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+      {/* Lead row: the brand statement, and the one action worth offering here. */}
+      <div className="flex flex-col gap-8 border-b border-white/20 py-14 sm:py-20 lg:flex-row lg:items-end lg:justify-between">
+        <div className="max-w-xl">
+          <Link href="/" aria-label="PharmaWallah home" className="inline-flex rounded-2xl bg-white px-4 py-3">
+            <Image src="/images/logo/logo.svg" alt="PharmaWallah" width={180} height={48} className="h-10 w-auto" />
+          </Link>
+          <p className="mt-7 text-[1.65rem] font-bold leading-[1.12] tracking-[-0.03em] [text-wrap:balance] sm:text-4xl">
+            Empowering pharmacy students across Pakistan
+            <span className="text-white/65"> with curated resources, MCQ banks and AI-powered learning tools.</span>
           </p>
-          <div className="flex items-center gap-2.5">
+        </div>
+
+        <Link
+          href="/calculation-tools"
+          className="group inline-flex min-h-[56px] w-full items-center justify-between gap-6 rounded-full bg-white pl-7 pr-2 font-semibold text-[#0b0c0e] shadow-lg shadow-black/10 transition-colors duration-500 hover:bg-[#0b0c0e] hover:text-white sm:w-auto"
+        >
+          Open the calculators
+          <span className="grid h-10 w-10 place-items-center rounded-full bg-[#0b0c0e]/10 transition-transform duration-500 group-hover:-rotate-45">
+            <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+          </span>
+        </Link>
+      </div>
+
+      {/* Columns */}
+      <div className="grid grid-cols-2 gap-x-6 gap-y-12 py-14 md:grid-cols-4">
+        <Column title="Explore">
+          {quickLinks.map((item) => (
+            <FooterLink key={item.label} href={item.href}>
+              {item.label}
+            </FooterLink>
+          ))}
+        </Column>
+
+        <Column title="Resources">
+          {resourceLinks.map(({ label, href }) => (
+            <FooterLink key={label} href={href}>
+              {label}
+            </FooterLink>
+          ))}
+        </Column>
+
+        <Column title="Company">
+          {companyLinks.map(({ label, href }) => (
+            <FooterLink key={label} href={href}>
+              {label}
+            </FooterLink>
+          ))}
+        </Column>
+
+        <div className="col-span-2 md:col-span-1">
+          <Column title="Contact">
+            {contact.map(({ Icon: IconComp, text }) => (
+              <div role="listitem" key={text} className="flex items-start gap-3 text-[15px] leading-snug text-white/90">
+                <IconComp className="mt-0.5 h-4 w-4 shrink-0 text-white/70" aria-hidden="true" />
+                {text}
+              </div>
+            ))}
+          </Column>
+
+          <div className="mt-8 flex items-center gap-2">
             {socials.map(({ icon, href, label }) => (
               <Link
                 key={label}
                 href={href}
                 aria-label={label}
-                className="w-9 h-9 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center text-white hover:bg-white hover:text-blue-600 transition-all duration-200"
+                className="grid h-10 w-10 place-items-center rounded-full border border-white/35 text-white/90 transition-colors duration-300 hover:border-white hover:bg-white hover:text-[#1C7BD9]"
               >
                 <Icon icon={icon} className="text-lg" />
               </Link>
             ))}
           </div>
         </div>
-
-        {/* Quick Links + Resources side by side */}
-        <div className="grid grid-cols-2 gap-6">
-          {/* Quick Links */}
-          <div className="flex flex-col gap-4">
-            <div>
-              <h3 className="text-white font-extrabold text-sm uppercase tracking-widest">Quick Links</h3>
-              <div className="mt-2 h-[2px] w-10 rounded-full bg-white/40" />
-            </div>
-            <ul className="list-none flex flex-col gap-2.5">
-              {headerData.map((item, i) => (
-                <li key={i}>
-                  <Link
-                    href={item.href}
-                    className="text-sm font-semibold text-white/80 hover:text-white transition-colors duration-200"
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Resources */}
-          <div className="flex flex-col gap-4">
-            <div>
-              <h3 className="text-white font-extrabold text-sm uppercase tracking-widest">Resources</h3>
-              <div className="mt-2 h-[2px] w-10 rounded-full bg-white/40" />
-            </div>
-            <ul className="list-none flex flex-col gap-2.5">
-              {resourceLinks.map(({ label, href, Icon: IconComp }) => (
-                <li key={label}>
-                  <Link
-                    href={href}
-                    className="group flex items-center gap-2.5 text-sm font-semibold text-white/80 hover:text-white transition-colors duration-200"
-                  >
-                    <IconComp className="w-3.5 h-3.5 text-white/50 group-hover:text-white transition-colors shrink-0" />
-                    {label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* Company */}
-        <div className="flex flex-col gap-4">
-          <div>
-            <h3 className="text-white font-extrabold text-sm uppercase tracking-widest">Company</h3>
-            <div className="mt-2 h-[2px] w-10 rounded-full bg-white/40" />
-          </div>
-          <ul className="list-none flex flex-col gap-2.5">
-            {companyLinks.map(({ label, href }) => (
-              <li key={label}>
-                <Link
-                  href={href}
-                  className="text-sm font-semibold text-white/80 hover:text-white transition-colors duration-200"
-                >
-                  {label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Contact */}
-        <div className="flex flex-col gap-4">
-          <div>
-            <h3 className="text-white font-extrabold text-sm uppercase tracking-widest">Contact Us</h3>
-            <div className="mt-2 h-[2px] w-10 rounded-full bg-white/40" />
-          </div>
-          <ul className="list-none flex flex-col gap-4">
-            {[
-              { Icon: MapPin, text: "Dept. of Pharmacy, University of Karachi", align: "items-start" },
-              { Icon: Phone,  text: "+92 300 1234567",          align: "items-center" },
-              { Icon: Mail,   text: "info@pharmawallah.com",    align: "items-center" },
-            ].map(({ Icon: IconComp, text, align }) => (
-              <li key={text} className={`flex ${align} gap-3`}>
-                <div className="w-8 h-8 rounded-xl bg-white/20 border border-white/20 flex items-center justify-center shrink-0">
-                  <IconComp className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-sm font-semibold text-white/85 leading-snug">{text}</span>
-              </li>
-            ))}
-          </ul>
-          {/* Newsletter */}
-          <div className="mt-2 rounded-2xl bg-white/15 border border-white/20 p-4">
-            <p className="text-xs font-bold text-white/90 mb-3 uppercase tracking-wide">Weekly Updates</p>
-            <div className="flex gap-2">
-              <input
-                type="email"
-                placeholder="your@email.com"
-                className="flex-1 min-w-0 px-3 py-2 rounded-xl bg-white/20 border border-white/20 text-white text-xs placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/40"
-              />
-              <button className="px-3 py-2 rounded-xl bg-white text-blue-600 text-xs font-extrabold hover:bg-blue-50 transition shrink-0 shadow-sm">
-                Go
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── DESKTOP/TABLET LAYOUT (hidden on mobile) ── */}
-      <div className="hidden sm:block py-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8">
-          {/* Col 1 — Brand */}
-          <div className="sm:col-span-2 lg:col-span-1 flex flex-col gap-5">
-            <div className="bg-white rounded-2xl px-4 py-3 inline-flex w-fit shadow-sm">
-              <Logo />
-            </div>
-            <p className="text-white/90 text-sm leading-relaxed font-medium">
-              Empowering pharmacy students across Pakistan with curated academic resources, MCQ banks, and AI-powered learning tools.
-            </p>
-            <div className="flex items-center gap-2.5">
-              {socials.map(({ icon, href, label }) => (
-                <Link
-                  key={label}
-                  href={href}
-                  aria-label={label}
-                  className="w-9 h-9 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center text-white hover:bg-white hover:text-blue-600 transition-all duration-200"
-                >
-                  <Icon icon={icon} className="text-lg" />
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Col 2 — Quick Links */}
-          <div className="flex flex-col gap-4">
-            <div>
-              <h3 className="text-white font-extrabold text-sm uppercase tracking-widest">Quick Links</h3>
-              <div className="mt-2 h-[2px] w-10 rounded-full bg-white/40" />
-            </div>
-            <ul className="list-none flex flex-col gap-2.5">
-              {headerData.map((item, i) => (
-                <li key={i}>
-                  <Link
-                    href={item.href}
-                    className="text-sm font-semibold text-white/80 hover:text-white transition-colors duration-200"
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Col 3 — Resources */}
-          <div className="flex flex-col gap-4">
-            <div>
-              <h3 className="text-white font-extrabold text-sm uppercase tracking-widest">Resources</h3>
-              <div className="mt-2 h-[2px] w-10 rounded-full bg-white/40" />
-            </div>
-            <ul className="list-none flex flex-col gap-2.5" style={{ listStyleType: "none" }}> 
-              {resourceLinks.map(({ label, href, Icon: IconComp }) => (
-                <li key={label}>
-                  <Link
-                    href={href}
-                    className="group flex items-center gap-2.5 text-sm font-semibold text-white/80 hover:text-white transition-colors duration-200"
-                  >
-                    <IconComp className="w-3.5 h-3.5 text-white/50 group-hover:text-white transition-colors shrink-0" />
-                    {label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Col 4 — Company */}
-          <div className="flex flex-col gap-4">
-            <div>
-              <h3 className="text-white font-extrabold text-sm uppercase tracking-widest">Company</h3>
-              <div className="mt-2 h-[2px] w-10 rounded-full bg-white/40" />
-            </div>
-            <ul className="list-none flex flex-col gap-2.5">
-              {companyLinks.map(({ label, href }) => (
-                <li key={label}>
-                  <Link
-                    href={href}
-                    className="text-sm font-semibold text-white/80 hover:text-white transition-colors duration-200"
-                  >
-                    {label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Col 5 — Contact */}
-          <div className="flex flex-col gap-4">
-            <div>
-              <h3 className="text-white font-extrabold text-sm uppercase tracking-widest">Contact Us</h3>
-              <div className="mt-2 h-[2px] w-10 rounded-full bg-white/40" />
-            </div>
-            <ul className="list-none flex flex-col gap-4">
-              {[
-                { Icon: MapPin, text: "Dept. of Pharmacy, University of Karachi", align: "items-start" },
-                { Icon: Phone,  text: "+92 300 1234567",          align: "items-center" },
-                { Icon: Mail,   text: "info@pharmawallah.com",    align: "items-center" },
-              ].map(({ Icon: IconComp, text, align }) => (
-                <li key={text} className={`flex ${align} gap-3`}>
-                  <div className="w-8 h-8 rounded-xl bg-white/20 border border-white/20 flex items-center justify-center shrink-0">
-                    <IconComp className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="text-sm font-semibold text-white/85 leading-snug">{text}</span>
-                </li>
-              ))}
-            </ul>
-            {/* Newsletter */}
-            <div className="mt-2 rounded-2xl bg-white/15 border border-white/20 p-4">
-              <p className="text-xs font-bold text-white/90 mb-3 uppercase tracking-wide">Weekly Updates</p>
-              <div className="flex gap-2">
-                <input
-                  type="email"
-                  placeholder="your@email.com"
-                  className="flex-1 min-w-0 px-3 py-2 rounded-xl bg-white/20 border border-white/20 text-white text-xs placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/40"
-                />
-                <button className="px-3 py-2 rounded-xl bg-white text-blue-600 text-xs font-extrabold hover:bg-blue-50 transition shrink-0 shadow-sm">
-                  Go
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <Wordmark />
 
-      {/* ── Bottom bar (shared) ── */}
-      <div className="py-5 border-t border-white/20 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <p className="text-white/70 text-xs font-medium text-center sm:text-left">
-          © {new Date().getFullYear()} <span className="text-white font-extrabold">PharmaWallah</span>. All rights reserved. Pakistan's #1 Pharmacy eLearning Platform.
+      {/* Bottom bar */}
+      <div className="flex flex-col items-start justify-between gap-3 border-t border-white/20 py-6 sm:flex-row sm:items-center">
+        <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-white/90">
+          © {new Date().getFullYear()} PharmaWallah · Pharm-D · Pakistan
         </p>
-        <div className="flex items-center gap-5">
-          {[["Privacy Policy", "/privacy"], ["Terms & Conditions", "/terms"]].map(([label, href]) => (
+        <div className="flex items-center gap-6">
+          {[
+            ["Privacy", "/privacy"],
+            ["Terms", "/terms"],
+          ].map(([label, href]) => (
             <Link
               key={label}
               href={href}
-              className="text-xs font-semibold text-white/70 hover:text-white transition-colors"
+              className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-white/90 transition-colors hover:text-white"
             >
               {label}
             </Link>

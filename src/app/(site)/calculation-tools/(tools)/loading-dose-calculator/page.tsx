@@ -1,539 +1,349 @@
 "use client";
-import { useState, useEffect } from 'react';
-import {
-    Zap,
-    Calculator,
-    Activity,
-    Target,
-    RefreshCw,
-    AlertCircle,
-    TrendingUp,
-    PieChart,
-    Shield
-} from 'lucide-react';
 
-type AdministrationRoute = 'iv' | 'im' | 'oral' | 'sc';
+import { useMemo, useState } from "react";
+import { RefreshCw, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+    CalculatorShell,
+    CalcSection,
+    FieldGrid,
+    NumberField,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    AdSlot,
+    ModeSwitch,
+    type ResultTone,
+} from "@/components/calculators";
+
+type AdministrationRoute = "iv" | "im" | "oral" | "sc";
+type DoseBasis = "weight" | "fixed";
+
+const DEFAULTS = {
+    target: "10",
+    vd: "50",
+    bioavailability: "100",
+    route: "iv" as AdministrationRoute,
+    weight: "70",
+};
+
+const SAMPLE_DRUGS = [
+    { name: "Digoxin", targetC: "1.5", vd: "440", f: "100", route: "iv" as AdministrationRoute, weightBased: true, note: "Therapeutic range: 0.8-2.0 mcg/L" },
+    { name: "Vancomycin", targetC: "20", vd: "0.7", f: "100", route: "iv" as AdministrationRoute, weightBased: true, note: "Based on actual body weight" },
+    { name: "Phenytoin", targetC: "15", vd: "0.65", f: "90", route: "oral" as AdministrationRoute, weightBased: true, note: "Non-linear kinetics" },
+    { name: "Amiodarone", targetC: "1", vd: "66", f: "50", route: "iv" as AdministrationRoute, weightBased: true, note: "Large Vd due to tissue binding" },
+];
+
+/** Safety wording from the original page, checked in the same order. */
+function doseSafety(dose: number): { text: string; tone: ResultTone } {
+    if (dose < 10) return { text: "Very small dose - verify calculations", tone: "warning" };
+    if (dose > 1000) return { text: "Large dose - consider divided loading", tone: "warning" };
+    if (dose > 5000) return { text: "Very large dose - verify Vd and target concentration", tone: "danger" };
+    return { text: "Dose appears reasonable", tone: "success" };
+}
+
+function positiveError(value: string) {
+    if (value.trim() === "") return undefined;
+    const v = parseFloat(value);
+    if (isNaN(v)) return "Enter a number.";
+    if (v <= 0) return "Must be greater than 0.";
+    return undefined;
+}
 
 export default function LoadingDoseCalculator() {
-    const [targetConcentration, setTargetConcentration] = useState<string>('10');
-    const [volumeDistribution, setVolumeDistribution] = useState<string>('50');
-    const [bioavailability, setBioavailability] = useState<string>('100');
-    const [administrationRoute, setAdministrationRoute] = useState<AdministrationRoute>('iv');
-    const [loadingDose, setLoadingDose] = useState<number | null>(null);
-    const [correctedLoadingDose, setCorrectedLoadingDose] = useState<number | null>(null);
-    const [patientWeight, setPatientWeight] = useState<string>('70');
-    const [weightBased, setWeightBased] = useState<boolean>(true);
+    const [targetConcentration, setTargetConcentration] = useState(DEFAULTS.target);
+    const [volumeDistribution, setVolumeDistribution] = useState(DEFAULTS.vd);
+    const [bioavailability, setBioavailability] = useState(DEFAULTS.bioavailability);
+    const [administrationRoute, setAdministrationRoute] = useState<AdministrationRoute>(DEFAULTS.route);
+    const [patientWeight, setPatientWeight] = useState(DEFAULTS.weight);
+    const [doseBasis, setDoseBasis] = useState<DoseBasis>("weight");
+    const weightBased = doseBasis === "weight";
 
-    const calculateLoadingDose = () => {
+    /*
+     * Derived live. The old page stored the doses in state from a useEffect,
+     * so clearing a field left the previous dose on screen. The arithmetic —
+     * including the separate weight-based expression — is unchanged.
+     */
+    const result = useMemo(() => {
         const targetC = parseFloat(targetConcentration);
         const vd = parseFloat(volumeDistribution);
         const f = parseFloat(bioavailability) / 100;
         const weight = parseFloat(patientWeight);
 
-        if (isNaN(targetC) || isNaN(vd) || vd <= 0) return;
+        if (isNaN(targetC) || isNaN(vd) || vd <= 0 || targetC <= 0) return null;
+        const adjustForF = administrationRoute !== "iv" && !isNaN(f);
+        if (adjustForF && f <= 0) return null;
 
-        // Basic loading dose calculation
+        // Basic loading dose, adjusted for bioavailability when not IV.
         let ld = targetC * vd;
+        if (adjustForF) ld /= f;
 
-        // Adjust for bioavailability if not IV
-        if (administrationRoute !== 'iv' && !isNaN(f)) {
-            ld /= f;
-        }
-
-        // Calculate weight-based dose
+        // Weight-based dose (original expression kept as-is).
         let weightBasedDose = ld;
-        if (weightBased && !isNaN(weight) && weight > 0) {
-            // Calculate Vd per kg if total Vd is provided
+        const weightValid = !isNaN(weight) && weight > 0;
+        if (weightBased && weightValid) {
             const vdPerKg = vd / weight;
             weightBasedDose = targetC * vdPerKg * weight;
-
-            // Adjust for bioavailability
-            if (administrationRoute !== 'iv' && !isNaN(f)) {
-                weightBasedDose /= f;
-            }
+            if (adjustForF) weightBasedDose /= f;
         }
 
-        setLoadingDose(ld);
-        setCorrectedLoadingDose(weightBasedDose);
-    };
+        if (!Number.isFinite(weightBasedDose)) return null;
 
-    const resetCalculator = () => {
-        setTargetConcentration('10');
-        setVolumeDistribution('50');
-        setBioavailability('100');
-        setAdministrationRoute('iv');
-        setLoadingDose(null);
-        setCorrectedLoadingDose(null);
-        setPatientWeight('70');
-    };
+        return {
+            targetC,
+            vd,
+            f,
+            adjustForF,
+            loadingDose: ld,
+            dose: weightBasedDose,
+            perKg: weightBased && weightValid ? weightBasedDose / weight : null,
+            ivEquivalent: targetC * vd,
+            safety: doseSafety(weightBasedDose || ld),
+        };
+    }, [targetConcentration, volumeDistribution, bioavailability, administrationRoute, patientWeight, weightBased]);
 
-    const sampleDrugs = [
-        {
-            name: 'Digoxin',
-            targetC: '1.5',
-            vd: '440',
-            f: '100',
-            route: 'iv' as AdministrationRoute,
-            weightBased: true,
-            note: 'Therapeutic range: 0.8-2.0 mcg/L'
-        },
-        {
-            name: 'Vancomycin',
-            targetC: '20',
-            vd: '0.7',
-            f: '100',
-            route: 'iv' as AdministrationRoute,
-            weightBased: true,
-            note: 'Based on actual body weight'
-        },
-        {
-            name: 'Phenytoin',
-            targetC: '15',
-            vd: '0.65',
-            f: '90',
-            route: 'oral' as AdministrationRoute,
-            weightBased: true,
-            note: 'Non-linear kinetics'
-        },
-        {
-            name: 'Amiodarone',
-            targetC: '1',
-            vd: '66',
-            f: '50',
-            route: 'iv' as AdministrationRoute,
-            weightBased: true,
-            note: 'Large Vd due to tissue binding'
-        }
-    ];
-
-    const loadSample = (index: number) => {
-        const drug = sampleDrugs[index];
+    const loadSample = (drug: (typeof SAMPLE_DRUGS)[number]) => {
         setTargetConcentration(drug.targetC);
         setVolumeDistribution(drug.vd);
         setBioavailability(drug.f);
         setAdministrationRoute(drug.route);
-        setWeightBased(drug.weightBased);
+        setDoseBasis(drug.weightBased ? "weight" : "fixed");
     };
 
-    const getDoseSafety = (dose: number) => {
-        if (dose < 10) return 'Very small dose - verify calculations';
-        if (dose > 1000) return 'Large dose - consider divided loading';
-        if (dose > 5000) return 'Very large dose - verify Vd and target concentration';
-        return 'Dose appears reasonable';
+    const reset = () => {
+        setTargetConcentration(DEFAULTS.target);
+        setVolumeDistribution(DEFAULTS.vd);
+        setBioavailability(DEFAULTS.bioavailability);
+        setAdministrationRoute(DEFAULTS.route);
+        setPatientWeight(DEFAULTS.weight);
     };
 
-    useEffect(() => {
-        calculateLoadingDose();
-    }, [targetConcentration, volumeDistribution, bioavailability, administrationRoute, patientWeight, weightBased]);
+    const routeLabel = administrationRoute.toUpperCase();
 
     return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6">
-            <div className="max-w-6xl mx-auto">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6 md:mb-8">
-                    <div className="flex flex-col md:flex-row items-center justify-between">
-                        <div className="flex items-center mb-4 md:mb-0">
-                            <div className="bg-white/20 p-3 rounded-xl mr-4">
-                                <Zap className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-white">Loading Dose Calculator</h1>
-                                <p className="text-blue-100 mt-2">Calculate initial loading doses to rapidly achieve therapeutic concentrations</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-2 bg-white/20 px-4 py-2 rounded-lg">
-                            <Target className="w-5 h-5 text-white" />
-                            <span className="text-white font-semibold">Rapid Onset</span>
-                        </div>
+        <CalculatorShell
+            title="Loading Dose Calculator"
+            subtitle="Calculates the initial dose needed to reach a target plasma concentration straight away, from Vd and bioavailability."
+            icon={Zap}
+            eyebrow="Pharmacokinetics"
+            aside={
+                <>
+                    <CalcAbout title="About this calculator">
+                        <p>
+                            A <strong>loading dose</strong> fills the body&apos;s volume of distribution to the
+                            target concentration in one step, instead of waiting 4–5 half-lives for maintenance
+                            doses to build up. It depends on <strong>Vd</strong> (volume of distribution) and
+                            <strong> F</strong> (bioavailability), not on clearance.
+                        </p>
+                        <CalcList
+                            title="Administration guidance"
+                            items={[
+                                "IV bolus: administer over 1–5 minutes",
+                                "Divided loading: for large doses or risk of toxicity",
+                                "Monitoring: check levels 30 min post-dose",
+                            ]}
+                        />
+                        <CalcList
+                            tone="caution"
+                            title="Clinical considerations"
+                            items={[
+                                "Adjust for renal/hepatic impairment",
+                                "Consider protein binding changes",
+                                "Monitor for adverse effects",
+                                "Calculate the maintenance dose separately",
+                                "Verify with therapeutic drug monitoring",
+                            ]}
+                        />
+                    </CalcAbout>
+
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+                </>
+            }
+        >
+            <ModeSwitch
+                label="Administration route"
+                value={administrationRoute}
+                onChange={setAdministrationRoute}
+                options={[
+                    { value: "iv", label: "IV Bolus", description: "F = 100%" },
+                    { value: "im", label: "IM", description: "Intramuscular" },
+                    { value: "oral", label: "Oral", description: "By mouth" },
+                    { value: "sc", label: "SC", description: "Subcutaneous" },
+                ]}
+            />
+
+            <ResultCard
+                label={`${routeLabel} loading dose`}
+                value={result ? result.dose.toFixed(1) : null}
+                unit={result?.perKg != null ? `mg · ${result.perKg.toFixed(2)} mg/kg` : "mg"}
+                interpretation={result?.safety.text}
+                tone={result?.safety.tone ?? "neutral"}
+                empty="Enter a target concentration and a volume of distribution above 0 (and a bioavailability above 0 for non-IV routes)."
+            />
+
+            <CalcSection title="Inputs">
+                <FieldGrid>
+                    <NumberField
+                        label="Target concentration (Cₚ)"
+                        value={targetConcentration}
+                        onChange={setTargetConcentration}
+                        unit="mg/L"
+                        step="0.001"
+                        placeholder="e.g. 10"
+                        hint="Therapeutic level wanted. Typical: digoxin 0.8–2.0 mcg/L, vancomycin 15–20 mg/L, phenytoin 10–20 mg/L."
+                        error={positiveError(targetConcentration)}
+                    />
+                    <NumberField
+                        label="Volume of distribution (Vd)"
+                        value={volumeDistribution}
+                        onChange={setVolumeDistribution}
+                        unit="L"
+                        step="0.001"
+                        placeholder="e.g. 50"
+                        hint="Apparent volume of distribution, in total litres."
+                        error={positiveError(volumeDistribution)}
+                    />
+                    {administrationRoute !== "iv" && (
+                        <NumberField
+                            label="Bioavailability (F)"
+                            value={bioavailability}
+                            onChange={setBioavailability}
+                            unit="%"
+                            step="0.1"
+                            min={0}
+                            max={100}
+                            placeholder="e.g. 80"
+                            hint="Typical: IM 75–100%, oral 0–100%, SC 70–95%. Leave blank for no adjustment."
+                            error={positiveError(bioavailability)}
+                        />
+                    )}
+                </FieldGrid>
+
+                <div className="space-y-3">
+                    <ModeSwitch
+                        label="Dose basis"
+                        value={doseBasis}
+                        onChange={setDoseBasis}
+                        options={[
+                            { value: "weight", label: "Weight-based", description: "Also show mg/kg" },
+                            { value: "fixed", label: "Fixed", description: "Total dose only" },
+                        ]}
+                    />
+                    <FieldGrid>
+                        <NumberField
+                            label="Patient weight"
+                            value={patientWeight}
+                            onChange={setPatientWeight}
+                            unit="kg"
+                            step="0.1"
+                            placeholder="e.g. 70"
+                            disabled={!weightBased}
+                            hint={weightBased ? "Used to express the dose per kilogram." : "Switch to weight-based to use it."}
+                            error={weightBased ? positiveError(patientWeight) : undefined}
+                        />
+                    </FieldGrid>
+                </div>
+
+                <div>
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">Try an example drug</p>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        {SAMPLE_DRUGS.map((drug) => (
+                            <button
+                                key={drug.name}
+                                type="button"
+                                onClick={() => loadSample(drug)}
+                                className="min-h-[44px] rounded-xl border bg-background px-3.5 py-2.5 text-left transition-colors hover:border-primary/40 active:bg-accent"
+                            >
+                                <span className="block text-sm font-semibold text-foreground">{drug.name}</span>
+                                <span className="mt-0.5 block font-mono text-xs text-muted-foreground">
+                                    Cₚ {drug.targetC} · Vd {drug.vd} L · {drug.route.toUpperCase()}
+                                </span>
+                                <span className="mt-0.5 block text-xs text-primary">{drug.note}</span>
+                            </button>
+                        ))}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Main Calculator Section */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
-                            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                                <Calculator className="w-6 h-6 md:w-7 md:h-7 mr-2" />
-                                Loading Dose Calculation
-                            </h2>
+                <Button variant="outline" onClick={reset} className="w-full">
+                    <RefreshCw />
+                    Reset
+                </Button>
+            </CalcSection>
 
-                            {/* Route Selection */}
-                            <div className="mb-6">
-                                <label className="block text-lg font-semibold text-gray-800 mb-3">Administration Route</label>
-                                <div className="grid grid-cols-4 gap-3">
-                                    <button
-                                        onClick={() => setAdministrationRoute('iv')}
-                                        className={`p-3 rounded-lg transition-all ${administrationRoute === 'iv' ?
-                                            'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-md' :
-                                            'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                            }`}
-                                    >
-                                        IV Bolus
-                                    </button>
-                                    <button
-                                        onClick={() => setAdministrationRoute('im')}
-                                        className={`p-3 rounded-lg transition-all ${administrationRoute === 'im' ?
-                                            'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-md' :
-                                            'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                            }`}
-                                    >
-                                        IM
-                                    </button>
-                                    <button
-                                        onClick={() => setAdministrationRoute('oral')}
-                                        className={`p-3 rounded-lg transition-all ${administrationRoute === 'oral' ?
-                                            'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-md' :
-                                            'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                            }`}
-                                    >
-                                        Oral
-                                    </button>
-                                    <button
-                                        onClick={() => setAdministrationRoute('sc')}
-                                        className={`p-3 rounded-lg transition-all ${administrationRoute === 'sc' ?
-                                            'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-md' :
-                                            'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                            }`}
-                                    >
-                                        SC
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Calculation Inputs */}
-                            <div className="space-y-6">
-                                {/* Target Concentration */}
-                                <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6 border border-blue-200">
-                                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                                        <Target className="w-5 h-5 mr-2 text-blue-600" />
-                                        Target Concentration
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                Desired Concentration Cₚ (mg/L)
-                                            </label>
-                                            <input
-                                                type="number"
-                                                step="0.001"
-                                                value={targetConcentration}
-                                                onChange={(e) => setTargetConcentration(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
-                                                placeholder="e.g., 10"
-                                            />
-                                            <div className="text-xs text-gray-500 mt-2">
-                                                Therapeutic concentration at steady state
-                                            </div>
-                                        </div>
-                                        <div className="flex items-end">
-                                            <div className="bg-white p-4 rounded-lg border border-gray-300 w-full">
-                                                <div className="text-sm font-semibold text-gray-600">Typical Ranges</div>
-                                                <div className="text-xs text-gray-600 mt-1">
-                                                    Digoxin: 0.8-2.0 mcg/L<br />
-                                                    Vancomycin: 15-20 mg/L<br />
-                                                    Phenytoin: 10-20 mg/L
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Volume of Distribution */}
-                                <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 border border-green-200">
-                                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                                        <Activity className="w-5 h-5 mr-2 text-green-600" />
-                                        Volume of Distribution
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                Vd (L)
-                                            </label>
-                                            <input
-                                                type="number"
-                                                step="0.001"
-                                                value={volumeDistribution}
-                                                onChange={(e) => setVolumeDistribution(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none"
-                                                placeholder="e.g., 50"
-                                            />
-                                            <div className="text-xs text-gray-500 mt-2">
-                                                Apparent volume of distribution
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div className="flex items-center justify-between mb-2">
-                                                <label className="block text-sm font-semibold text-gray-700">
-                                                    Patient Weight (kg)
-                                                </label>
-                                                <button
-                                                    onClick={() => setWeightBased(!weightBased)}
-                                                    className={`px-3 py-1 rounded text-sm ${weightBased ?
-                                                        'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                                                        }`}
-                                                >
-                                                    {weightBased ? 'Weight-based' : 'Fixed'}
-                                                </button>
-                                            </div>
-                                            <input
-                                                type="number"
-                                                step="0.1"
-                                                value={patientWeight}
-                                                onChange={(e) => setPatientWeight(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                                                placeholder="e.g., 70"
-                                                disabled={!weightBased}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Bioavailability */}
-                                {administrationRoute !== 'iv' && (
-                                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200">
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                                            <TrendingUp className="w-5 h-5 mr-2 text-purple-600" />
-                                            Bioavailability Adjustment
-                                        </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                    Bioavailability F (%)
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    step="0.1"
-                                                    min="0"
-                                                    max="100"
-                                                    value={bioavailability}
-                                                    onChange={(e) => setBioavailability(e.target.value)}
-                                                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none"
-                                                    placeholder="e.g., 80"
-                                                />
-                                            </div>
-                                            <div className="flex items-end">
-                                                <div className="bg-white p-4 rounded-lg border border-gray-300 w-full">
-                                                    <div className="text-sm font-semibold text-gray-600">Typical F values</div>
-                                                    <div className="text-xs text-gray-600 mt-1">
-                                                        IV: 100%<br />
-                                                        IM: 75-100%<br />
-                                                        Oral: 0-100%<br />
-                                                        SC: 70-95%
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Formula Display */}
-                                <div className="bg-gray-50 rounded-xl p-6">
-                                    <h3 className="font-semibold text-gray-800 mb-3">Loading Dose Formula</h3>
-                                    <div className="p-4 bg-white rounded-lg border border-gray-300">
-                                        <div className="font-mono text-lg mb-2">
-                                            LD = (Cₚ × Vd) ÷ F
-                                        </div>
-                                        <div className="text-sm text-gray-600">
-                                            Where:<br />
-                                            • Cₚ = Target plasma concentration<br />
-                                            • Vd = Volume of distribution<br />
-                                            • F = Bioavailability fraction (1 for IV)
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Sample Drugs */}
-                                <div className="bg-white rounded-xl p-6 border border-gray-200">
-                                    <h3 className="font-semibold text-gray-800 mb-4">Example Drugs</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                                        {sampleDrugs.map((drug, index) => (
-                                            <button
-                                                key={index}
-                                                onClick={() => loadSample(index)}
-                                                className="bg-gradient-to-r from-blue-50 to-green-50 hover:from-blue-100 hover:to-green-100 border border-blue-200 rounded-lg p-4 text-left transition-all hover:shadow-md"
-                                            >
-                                                <div className="font-semibold text-blue-700">{drug.name}</div>
-                                                <div className="text-xs text-gray-600 mt-2">
-                                                    Target: {drug.targetC} mg/L<br />
-                                                    Vd: {drug.vd} L{drug.weightBased ? '/kg' : ''}<br />
-                                                    Route: {drug.route.toUpperCase()}
-                                                </div>
-                                                <div className="text-xs text-blue-600 mt-2">{drug.note}</div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Action Buttons */}
-                                <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                                    <button
-                                        onClick={calculateLoadingDose}
-                                        className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
-                                    >
-                                        Calculate Loading Dose
-                                    </button>
-                                    <button
-                                        onClick={resetCalculator}
-                                        className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center"
-                                    >
-                                        <RefreshCw className="w-5 h-5 mr-2" />
-                                        Reset
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Results Section */}
-                    <div className="space-y-6">
-                        {/* Loading Dose Result */}
-                        <div className="bg-gradient-to-br from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 text-white">
-                            <h2 className="text-2xl font-bold mb-6 flex items-center">
-                                <Zap className="w-7 h-7 mr-3" />
-                                Loading Dose
-                            </h2>
-
-                            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 mb-6">
-                                <div className="text-center">
-                                    <div className="text-sm font-semibold text-blue-100 mb-2">
-                                        {administrationRoute.toUpperCase()} Loading Dose
-                                    </div>
-                                    {loadingDose !== null ? (
-                                        <>
-                                            <div className="text-5xl md:text-6xl font-bold mb-2">
-                                                {correctedLoadingDose?.toFixed(1) || loadingDose.toFixed(1)}
-                                            </div>
-                                            <div className="text-2xl font-semibold">
-                                                mg
-                                            </div>
-                                            {weightBased && (
-                                                <div className="text-lg mt-2">
-                                                    {(correctedLoadingDose! / parseFloat(patientWeight)).toFixed(2)} mg/kg
-                                                </div>
-                                            )}
-                                        </>
-                                    ) : (
-                                        <div className="text-3xl font-bold text-blue-100">
-                                            Enter Values
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Comparison to IV dose */}
-                            {administrationRoute !== 'iv' && loadingDose && (
-                                <div className="bg-white/10 rounded-lg p-4">
-                                    <div className="text-center">
-                                        <div className="text-sm font-semibold mb-1">Equivalent IV Dose</div>
-                                        <div className="text-xl font-bold">
-                                            {(parseFloat(targetConcentration) * parseFloat(volumeDistribution)).toFixed(1)} mg
-                                        </div>
-                                        <div className="text-xs mt-1 text-blue-100">
-                                            Without bioavailability adjustment
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Safety Assessment */}
-                        {loadingDose !== null && (
-                            <div className="bg-white rounded-2xl shadow-lg p-6">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                                    <Shield className="w-5 h-5 mr-2 text-blue-600" />
-                                    Safety Assessment
-                                </h3>
-                                <div className="space-y-4">
-                                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                        <p className="text-sm text-gray-700">
-                                            {getDoseSafety(correctedLoadingDose || loadingDose)}
-                                        </p>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-gray-600">Initial concentration:</span>
-                                            <span className="font-semibold">{targetConcentration} mg/L</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-gray-600">Time to therapeutic:</span>
-                                            <span className="font-semibold">Immediate (IV) or ~30 min (non-IV)</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+            {result && (
+                <CalcSection title="Working">
+                    <div>
+                        <ResultRow
+                            label="LD = (Cₚ × Vd) ÷ F"
+                            value={`${result.targetC} × ${result.vd} ÷ ${result.adjustForF ? result.f : 1}`}
+                        />
+                        <ResultRow label={`${routeLabel} loading dose`} value={result.dose.toFixed(1)} unit="mg" />
+                        {result.perKg != null && <ResultRow label="Dose per kilogram" value={result.perKg.toFixed(2)} unit="mg/kg" />}
+                        {administrationRoute !== "iv" && result.loadingDose !== 0 && (
+                            <ResultRow
+                                label="Equivalent IV dose (without F adjustment)"
+                                value={result.ivEquivalent.toFixed(1)}
+                                unit="mg"
+                            />
                         )}
-
-                        {/* Administration Guidance */}
-                        <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-2xl shadow-lg p-6 border border-blue-200">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">Administration Guidance</h3>
-                            <div className="space-y-3 text-sm">
-                                <div className="p-3 bg-white/50 rounded-lg">
-                                    <div className="font-semibold text-gray-700">IV Bolus:</div>
-                                    <div className="text-gray-600 mt-1">Administer over 1-5 minutes</div>
-                                </div>
-                                <div className="p-3 bg-white/50 rounded-lg">
-                                    <div className="font-semibold text-gray-700">Divided Loading:</div>
-                                    <div className="text-gray-600 mt-1">For large doses or risk of toxicity</div>
-                                </div>
-                                <div className="p-3 bg-white/50 rounded-lg">
-                                    <div className="font-semibold text-gray-700">Monitoring:</div>
-                                    <div className="text-gray-600 mt-1">Check levels 30 min post-dose</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Clinical Considerations */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                                <AlertCircle className="w-5 h-5 mr-2 text-yellow-600" />
-                                Clinical Considerations
-                            </h3>
-                            <ul className="space-y-2 text-sm text-gray-600">
-                                <li>• Adjust for renal/hepatic impairment</li>
-                                <li>• Consider protein binding changes</li>
-                                <li>• Monitor for adverse effects</li>
-                                <li>• Calculate maintenance dose separately</li>
-                                <li>• Verify with therapeutic drug monitoring</li>
-                            </ul>
-                        </div>
+                        <ResultRow label="Initial concentration" value={targetConcentration} unit="mg/L" />
+                        <ResultRow label="Time to therapeutic" value={administrationRoute === "iv" ? "Immediate (IV)" : "~30 min (non-IV)"} />
                     </div>
-                </div>
+                </CalcSection>
+            )}
 
-                {/* Advanced Concepts */}
-                <div className="mt-8 bg-white rounded-2xl shadow-lg p-6 md:p-8">
-                    <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6">Advanced Loading Concepts</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-blue-50 rounded-xl p-5">
-                            <h3 className="font-bold text-blue-700 mb-3">Divided Loading</h3>
-                            <div className="space-y-2 text-sm text-gray-600">
-                                <p>• For drugs with long half-life</p>
-                                <p>• Reduces toxicity risk</p>
-                                <p>• Example: Digoxin 50% initial, then 25% q6-8h</p>
-                                <p>• Allows assessment of response</p>
-                            </div>
-                        </div>
-                        <div className="bg-green-50 rounded-xl p-5">
-                            <h3 className="font-bold text-green-700 mb-3">Non-Linear Kinetics</h3>
-                            <div className="space-y-2 text-sm text-gray-600">
-                                <p>• Phenytoin, Theophylline</p>
-                                <p>• Michaelis-Menten kinetics</p>
-                                <p>• Small dose increases cause large Cₚ changes</p>
-                                <p>• Requires careful titration</p>
-                            </div>
-                        </div>
-                        <div className="bg-purple-50 rounded-xl p-5">
-                            <h3 className="font-bold text-purple-700 mb-3">Loading in Special Populations</h3>
-                            <div className="space-y-2 text-sm text-gray-600">
-                                <p>• Elderly: Reduced Vd, increased sensitivity</p>
-                                <p>• Obesity: Use adjusted body weight</p>
-                                <p>• Renal failure: Reduced clearance</p>
-                                <p>• Pediatrics: Different Vd/kg</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+            <FormulaNote>
+                <Formula>LD = (Cₚ × Vd) ÷ F</Formula>
+                <p>
+                    <strong>Cₚ</strong> = target plasma concentration (mg/L); <strong>Vd</strong> = volume of
+                    distribution (L); <strong>F</strong> = bioavailability as a fraction (1 for IV). mg/L × L
+                    gives mg — so if the target is in mcg/L, the dose comes out in mcg.
+                </p>
+                <p>
+                    <strong>Divided loading</strong> — for drugs with a long half-life, to reduce toxicity
+                    risk and allow response to be assessed (e.g. digoxin 50% initially, then 25% every
+                    6–8 h).
+                </p>
+                <p>
+                    <strong>Non-linear kinetics</strong> — phenytoin and theophylline follow
+                    Michaelis–Menten kinetics: small dose increases cause large Cₚ changes, so titrate
+                    carefully.
+                </p>
+                <p>
+                    <strong>Special populations</strong> — elderly: reduced Vd and increased sensitivity;
+                    obesity: use adjusted body weight; renal failure: reduced clearance; paediatrics:
+                    different Vd per kg.
+                </p>
+            </FormulaNote>
+
+            <CalcFaq
+                items={[
+                    {
+                        q: "Why doesn't clearance or half-life appear in the formula?",
+                        a: "A loading dose only has to fill the volume of distribution to the target concentration. Clearance decides how fast the drug leaves afterwards, which is the maintenance dose's job.",
+                    },
+                    {
+                        q: "My Vd is in L/kg — what do I enter?",
+                        a: "Multiply it by the patient's weight first. This calculator treats Vd as total litres: vancomycin 0.7 L/kg in a 70 kg patient is 49 L.",
+                    },
+                    {
+                        q: "Why is the oral dose bigger than the IV dose?",
+                        a: "Only the fraction F of an oral dose reaches the circulation, so the dose is divided by F. With F = 50%, twice the IV dose is needed.",
+                    },
+                    {
+                        q: "Does bioavailability matter for IV doses?",
+                        a: "No — an IV dose goes straight into the circulation, so F is 1 and the bioavailability field is hidden.",
+                    },
+                    {
+                        q: "Which units should the concentration be in?",
+                        a: "mg/L with Vd in litres gives the dose in mg. Targets quoted in mcg/L (such as digoxin) give a dose in mcg; divide by 1000 for mg.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
     );
 }

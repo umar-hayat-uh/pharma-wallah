@@ -17,6 +17,8 @@ import {
   FlaskRound,
   Stethoscope,
   Calculator,
+  ChevronRight,
+  Droplets,
   type LucideIcon,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -39,6 +41,7 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
   microbiology: Syringe,
   "pharmaceutical-engineering": FlaskRound,
   "clinical-hospital-pharmacy": Stethoscope,
+  physiology: Droplets,
   more: Calculator,
 };
 
@@ -71,30 +74,38 @@ function buildGroups(): Group[] {
   return groups;
 }
 
-function ToolCard({ slug }: { slug: string }) {
+/*
+ * The search bar sticks directly under the app bar, which is 3.5rem tall plus
+ * the Android status-bar inset. Section headings scroll to just below both.
+ */
+const STICKY_TOP = "calc(3.5rem + env(safe-area-inset-top))";
+
+function ToolCard({ slug, icon: Icon }: { slug: string; icon: LucideIcon }) {
   const needsInternet = ONLINE_ONLY_SLUGS.has(slug);
 
   return (
-    <Link href={`/calculation-tools/${slug}`} className="group" title={TOOL_NAMES[slug] ?? slug}>
+    <Link
+      href={`/calculation-tools/${slug}`}
+      className="group rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      title={TOOL_NAMES[slug] ?? slug}
+    >
       <Card
         className={cn(
-          "relative h-full min-h-[104px] p-3 flex flex-col items-center justify-start gap-2 text-center",
-          "transition-transform active:scale-[0.97] active:bg-accent",
+          "relative flex h-full min-h-[108px] flex-col items-start justify-between gap-3 rounded-2xl border-border/80 p-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.04)]",
+          "transition-[transform,background-color,border-color] duration-300 ease-out-expo",
+          "active:scale-[0.96] active:border-primary/40 active:bg-primary/5",
         )}
       >
         {needsInternet && (
-          <WifiOff
-            className="absolute top-1.5 right-1.5 w-3.5 h-3.5 text-amber-500"
-            aria-label="Needs internet"
-          />
+          <WifiOff className="absolute right-2 top-2 h-3.5 w-3.5 text-amber-500" aria-label="Needs internet" />
         )}
 
-        <span className="grid place-items-center w-9 h-9 rounded-lg bg-primary/10 text-primary shrink-0">
-          <Calculator className="w-[18px] h-[18px]" />
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
+          <Icon className="h-4 w-4" />
         </span>
 
         {/* Three lines is the most a 3-up phone card can hold without clipping. */}
-        <span className="text-[11px] leading-[1.25] font-medium text-foreground line-clamp-3">
+        <span className="line-clamp-3 text-[11.5px] font-semibold leading-[1.22] tracking-[-0.01em] text-foreground">
           {toolShortName(slug)}
         </span>
       </Card>
@@ -126,73 +137,117 @@ export default function ToolHub() {
   const matches = visible.reduce((sum, group) => sum + group.slugs.length, 0);
 
   return (
-    <div className="pb-12">
-      {/* Offline promise — the reason this app exists at all. */}
-      <div className="bg-primary text-primary-foreground px-4 pb-5 pt-1">
-        <p className="text-sm text-primary-foreground/90 flex items-center gap-1.5">
-          <ShieldCheck className="w-4 h-4 shrink-0" />
-          {total} calculators, available with no internet
+    <div className="pb-14">
+      {/* The count as a figure, not a sentence — and the offline promise, which
+          is the reason this app exists at all. */}
+      <section className="border-b border-border/80 px-4 pb-5 pt-6">
+        <p className="flex items-center gap-2 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+          Pharmacy calculators
         </p>
-      </div>
+        <div className="mt-2 flex items-end justify-between gap-4">
+          <p className="text-[4.25rem] font-bold leading-[0.8] tracking-[-0.06em] tabular-nums text-foreground">
+            {total}
+            <span className="text-primary">.</span>
+          </p>
+          <p className="mb-1 flex max-w-[11rem] items-start gap-1.5 text-right text-xs leading-snug text-muted-foreground">
+            <ShieldCheck className="mt-px h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
+            Every one works with no internet connection
+          </p>
+        </div>
+      </section>
 
-      <div className="sticky top-14 z-40 bg-background/95 backdrop-blur px-4 pt-3 pb-3 border-b">
+      <div
+        className="sticky z-40 border-b border-border/80 bg-background/90 px-4 pb-3 pt-3 backdrop-blur-md"
+        style={{ top: STICKY_TOP }}
+      >
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
             inputMode="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search calculators…"
+            placeholder={`Search ${total} calculators…`}
             aria-label="Search calculators"
-            className="pl-9 pr-9"
+            className="pl-10 pr-10 [&::-webkit-search-cancel-button]:hidden"
           />
           {query && (
             <button
               type="button"
               onClick={() => setQuery("")}
               aria-label="Clear search"
-              className="absolute right-2 top-1/2 -translate-y-1/2 grid place-items-center w-7 h-7 rounded-lg text-muted-foreground active:bg-accent"
+              className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-muted-foreground active:bg-accent"
             >
-              <X className="w-4 h-4" />
+              <X className="h-4 w-4" />
             </button>
           )}
         </div>
-        {query && (
-          <p className="mt-2 text-xs text-muted-foreground">
+
+        {query ? (
+          <p className="mt-2.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground" aria-live="polite">
             {matches} {matches === 1 ? "match" : "matches"}
           </p>
+        ) : (
+          /* Jump links into each category — the catalogue is ~10 screens long. */
+          <nav
+            aria-label="Categories"
+            className="-mx-4 mt-2.5 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {groups.map((group) => (
+              <a
+                key={group.id}
+                href={`#${group.id}`}
+                className="shrink-0 rounded-full border border-border/80 bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-colors duration-300 ease-out-expo active:border-primary/40 active:bg-primary/10"
+              >
+                {group.label}
+                <span className="ml-1.5 tabular-nums text-muted-foreground">{group.slugs.length}</span>
+              </a>
+            ))}
+          </nav>
         )}
       </div>
 
       {visible.length === 0 ? (
         <div className="px-4 py-16 text-center">
-          <p className="text-sm text-muted-foreground">
-            No calculator matches “{query.trim()}”.
+          <p className="text-5xl font-bold tracking-[-0.04em] text-muted-foreground/25" aria-hidden="true">
+            0
           </p>
+          <p className="mt-2 text-sm text-muted-foreground">No calculator matches “{query.trim()}”.</p>
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary"
+          >
+            Show all {total}
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
       ) : (
         visible.map((group) => {
           const Icon = CATEGORY_ICONS[group.id] ?? Calculator;
           return (
-            <section key={group.id} className="px-4 pt-6">
-              <div className="flex items-center gap-2.5">
-                <span className="grid place-items-center w-8 h-8 rounded-lg bg-primary/10 text-primary shrink-0">
-                  <Icon className="w-4 h-4" />
-                </span>
+            <section
+              key={group.id}
+              id={group.id}
+              className="px-4 pt-7"
+              // Anchor jumps land below the app bar and the sticky search, not under them.
+              style={{ scrollMarginTop: `calc(${STICKY_TOP} + 7.5rem)` }}
+            >
+              <div className="flex items-end gap-3 border-b border-border/70 pb-2.5">
                 <div className="min-w-0 flex-1">
-                  <h2 className="text-[15px] font-semibold leading-tight">{group.label}</h2>
-                  <p className="text-xs text-muted-foreground truncate">{group.desc}</p>
+                  <h2 className="text-[17px] font-bold leading-tight tracking-[-0.02em]">{group.label}</h2>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{group.desc}</p>
                 </div>
-                <Badge variant="secondary" className="shrink-0">
-                  {group.slugs.length}
+                <Badge variant="secondary" className="shrink-0 font-mono tabular-nums">
+                  {String(group.slugs.length).padStart(2, "0")}
                 </Badge>
               </div>
 
               {/* Three across on a phone; wider screens get more columns. */}
-              <div className="mt-3 grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:grid-cols-6">
+              <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
                 {group.slugs.map((slug) => (
-                  <ToolCard key={slug} slug={slug} />
+                  <ToolCard key={slug} slug={slug} icon={Icon} />
                 ))}
               </div>
             </section>

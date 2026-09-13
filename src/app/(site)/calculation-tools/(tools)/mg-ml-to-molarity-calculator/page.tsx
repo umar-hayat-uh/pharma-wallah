@@ -1,241 +1,230 @@
 "use client";
-import { useState } from 'react';
-import { Calculator, Beaker, FlaskConical } from 'lucide-react';
 
+import { useMemo, useState } from "react";
+import { Beaker, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+    CalculatorShell,
+    CalcSection,
+    FieldGrid,
+    NumberField,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    AdSlot,
+    formatSig,
+} from "@/components/calculators";
+
+/** Worked examples covering a small molecule, a sugar and a protein. */
+const EXAMPLES = [
+    { name: "Glucose 1 mg/mL", conc: "1", mw: "180.16" },
+    { name: "Sucrose 0.5 mg/mL", conc: "0.5", mw: "342.3" },
+    { name: "Albumin (BSA) 2.5 mg/mL", conc: "2.5", mw: "66430" },
+];
+
+/** Error text for a field that must be a positive number; silent while empty. */
+function positiveError(raw: string): string | undefined {
+    if (raw.trim() === "") return undefined;
+    const value = parseFloat(raw);
+    if (isNaN(value)) return "Enter a number.";
+    if (value <= 0) return "Must be greater than zero.";
+    return undefined;
+}
 
 export default function MgMlMolarityCalculator() {
-    // State variables for calculator inputs with proper TypeScript typing
-    const [concentration, setConcentration] = useState(''); // Concentration in mg/mL
-    const [molarMass, setMolarMass] = useState(''); // Molar mass in g/mol
-    const [result, setResult] = useState<{
-        molarity?: string;
-        molarityMicro?: string;
-        molarityMilli?: string;
-        error?: string | null;
-    } | null>(null); // Calculated molarity result with proper TypeScript typing
+    const [concentration, setConcentration] = useState("");
+    const [molarMass, setMolarMass] = useState("");
 
-    /**
-     * Calculate molarity from mg/mL concentration
-     * Formula: Molarity (M) = (Concentration in mg/mL) / (Molar Mass in g/mol)
-     * 
-     * Conversion steps:
-     * 1. mg/mL to g/L: multiply by 1 (since 1 mg/mL = 1 g/L)
-     * 2. g/L to mol/L: divide by molar mass
+    /*
+     * Derived live from the inputs (the previous page waited for a Calculate
+     * press). Arithmetic and rounding unchanged: 1 mg/mL = 1 g/L, so
+     * M = concentration ÷ molar mass; mM = M × 1000 (4 dp); µM = M × 1,000,000 (2 dp).
      */
-    const calculateMolarity = () => {
-        // Parse input values to floats
+    const result = useMemo(() => {
         const concentrationValue = parseFloat(concentration);
         const molarMassValue = parseFloat(molarMass);
 
-        // Validate inputs - check if all values are valid numbers and greater than 0
         if (
             isNaN(concentrationValue) ||
             isNaN(molarMassValue) ||
             concentrationValue <= 0 ||
             molarMassValue <= 0
         ) {
-            setResult({
-                error: 'Please enter valid positive numbers for all fields'
-            });
-            return;
+            return null;
         }
 
         // Convert mg/mL to g/L (1 mg/mL = 1 g/L)
         const concentrationInGperL = concentrationValue;
-
-        // Calculate molarity: (g/L) / (g/mol) = mol/L
         const molarityValue = concentrationInGperL / molarMassValue;
+        if (!Number.isFinite(molarityValue)) return null;
 
-        // Calculate alternative units for better readability
-        const molarityInMilli = molarityValue * 1000; // millimolar (mM)
-        const molarityInMicro = molarityValue * 1000000; // micromolar (μM)
+        return {
+            concentrationValue,
+            molarMassValue,
+            molarity: molarityValue,
+            molarityMilli: molarityValue * 1000,
+            molarityMicro: molarityValue * 1000000,
+        };
+    }, [concentration, molarMass]);
 
-        // Store calculation results
-        setResult({
-            molarity: molarityValue.toFixed(6),
-            molarityMilli: molarityInMilli.toFixed(4),
-            molarityMicro: molarityInMicro.toFixed(2),
-            error: null
-        });
-    };
-
-    /**
-     * Reset all input fields and clear results
-     */
-    const handleReset = () => {
-        setConcentration('');
-        setMolarMass('');
-        setResult(null);
+    const reset = () => {
+        setConcentration("");
+        setMolarMass("");
     };
 
     return (
-        <section id="mg-ml-molarity-calculator-section" className='min-h-screen bg-gradient-to-br from-blue-50 to-green-50'>
-            <div className="mt-6 px-4">
-                <div className="max-w-2xl mx-auto">
-                    {/* Header Section */}
-                    <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
-                        <div className="flex items-center justify-center mb-4">
-                            <Beaker className="w-10 h-10 text-blue-600 mr-3" />
-                            <h1 className="text-3xl font-bold text-gray-800">
-                                MG/ML to Molarity Calculator
-                            </h1>
-                        </div>
-                        <p className="text-gray-600 text-center">
-                            Convert concentration from mg/mL to molarity (M, mM, μM)
+        <CalculatorShell
+            title="mg/mL to Molarity Calculator"
+            subtitle="Converts a concentration in mg/mL into molarity, and shows it in M, mM and µM."
+            icon={Beaker}
+            eyebrow="Pharmaceutical Chemistry"
+            aside={
+                <>
+                    <CalcAbout title="About mg/mL to molarity">
+                        <p>
+                            Converting mg/mL to molarity is a routine step in biochemistry and pharmacology —
+                            drug and protein stocks are usually weighed, but assays and literature quote
+                            molar concentrations. The key is that 1 mg/mL equals 1 g/L, so dividing by the
+                            molar mass gives moles per litre directly.
                         </p>
-                    </div>
+                        <CalcList
+                            title="Quick reference"
+                            items={["1 M = 1000 mM (millimolar)", "1 M = 1,000,000 µM (micromolar)", "1 mg/mL = 1 g/L"]}
+                        />
+                        <CalcList
+                            title="Use it when"
+                            items={[
+                                "Turning a weighed drug or protein stock into a molar concentration",
+                                "Comparing your stock with an IC₅₀ or Kd quoted in µM or nM",
+                                "Planning a dilution that is written in molar units",
+                            ]}
+                        />
+                        <CalcList
+                            tone="caution"
+                            title="Check before relying on it"
+                            items={[
+                                "Use the molar mass of the exact salt or hydrate you weighed",
+                                "For proteins, the molecular weight in daltons equals g/mol",
+                                "A concentration in µg/mL must be divided by 1000 first",
+                            ]}
+                        />
+                    </CalcAbout>
 
-                    {/* Calculator Card */}
-                    <div className="bg-white rounded-lg shadow-lg p-8">
-                        {/* Formula Display */}
-                        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-6">
-                            <div className="flex items-center justify-center mb-2">
-                                <FlaskConical className="w-5 h-5 text-blue-600 mr-2" />
-                                <h3 className="text-sm font-semibold text-blue-800">Formula</h3>
-                            </div>
-                            <p className="text-center text-blue-900 font-mono text-sm">
-                                Molarity (M) = (Concentration in mg/mL) / (Molecular Weight in g/mol)
-                            </p>
-                            <p className="text-center text-xs text-blue-700 mt-2">
-                                Note: 1 mg/mL = 1 g/L
-                            </p>
-                            <p className="text-center text-xs text-blue-700">
-                                M = (mg/mL) / (g/mol) = (g/L) / (g/mol) = mol/L
-                            </p>
-                        </div>
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+                </>
+            }
+        >
+            <ResultCard
+                label="Molarity"
+                value={result ? result.molarity.toFixed(6) : null}
+                unit="M (mol/L)"
+                interpretation={
+                    result ? `${result.molarityMilli.toFixed(4)} mM · ${result.molarityMicro.toFixed(2)} µM` : undefined
+                }
+                empty="Enter the concentration in mg/mL and the molecular weight — both greater than zero."
+            />
 
-                        {/* Input Fields */}
-                        <div className="space-y-5">
-                            {/* Concentration Input */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Concentration (mg/mL)
-                                </label>
-                                <input
-                                    type="number"
-                                    value={concentration}
-                                    onChange={(e) => setConcentration(e.target.value)}
-                                    placeholder="Enter concentration in mg/mL"
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none transition-colors"
-                                    step="0.01"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Also known as: mg per milliliter or milligrams per milliliter
-                                </p>
-                            </div>
+            <CalcSection title="Inputs">
+                <FieldGrid>
+                    <NumberField
+                        label="Concentration (mg/mL)"
+                        value={concentration}
+                        onChange={setConcentration}
+                        unit="mg/mL"
+                        step="0.01"
+                        placeholder="e.g. 1"
+                        hint="Milligrams per millilitre — the same number as g/L."
+                        error={positiveError(concentration)}
+                    />
+                    <NumberField
+                        label="Molecular weight (g/mol)"
+                        value={molarMass}
+                        onChange={setMolarMass}
+                        unit="g/mol"
+                        step="0.01"
+                        placeholder="e.g. 180.16"
+                        hint="Also known as molar mass (g/mol or g·mol⁻¹)."
+                        error={positiveError(molarMass)}
+                    />
+                </FieldGrid>
 
-                            {/* Molecular Weight Input */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Molecular Weight (g/mol)
-                                </label>
-                                <input
-                                    type="number"
-                                    value={molarMass}
-                                    onChange={(e) => setMolarMass(e.target.value)}
-                                    placeholder="Enter molecular weight"
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none transition-colors"
-                                    step="0.01"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Also known as molar mass (g/mol or g·mol⁻¹)
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-4 mt-6">
+                <div>
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">Try an example</p>
+                    <div className="flex flex-wrap gap-2">
+                        {EXAMPLES.map((example) => (
                             <button
-                                onClick={calculateMolarity}
-                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center"
+                                key={example.name}
+                                type="button"
+                                onClick={() => {
+                                    setConcentration(example.conc);
+                                    setMolarMass(example.mw);
+                                }}
+                                className="min-h-[40px] rounded-full border bg-background px-3.5 text-sm font-medium transition-colors hover:border-foreground/25 active:bg-accent"
                             >
-                                <Calculator className="w-5 h-5 mr-2" />
-                                Calculate
+                                {example.name}
                             </button>
-                            <button
-                                onClick={handleReset}
-                                className="flex-1 bg-green-400 hover:bg-green-500 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-                            >
-                                Reset
-                            </button>
-                        </div>
-
-                        {/* Results Section */}
-                        {result && (
-                            <div className="mt-6">
-                                {result.error ? (
-                                    // Error Message Display
-                                    <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
-                                        <p className="text-red-800 text-center font-medium">
-                                            {result.error}
-                                        </p>
-                                    </div>
-                                ) : (
-                                    // Success Results Display
-                                    <div className="bg-gradient-to-r from-blue-50 to-green-50 border-2 border-green-400 rounded-lg p-6">
-                                        <h3 className="text-lg font-bold text-gray-800 mb-4 text-center">
-                                            Calculation Results
-                                        </h3>
-
-                                        {/* Molarity Result (M) */}
-                                        <div className="bg-white rounded-lg p-4 mb-3 shadow-sm">
-                                            <p className="text-sm text-gray-600 mb-1">Molarity</p>
-                                            <p className="text-3xl font-bold text-blue-600">
-                                                {result.molarity} <span className="text-lg">M</span>
-                                            </p>
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                mol/L or mol·L⁻¹
-                                            </p>
-                                        </div>
-
-                                        {/* Millimolar Result (mM) */}
-                                        <div className="bg-white rounded-lg p-4 mb-3 shadow-sm">
-                                            <p className="text-sm text-gray-600 mb-1">Millimolar</p>
-                                            <p className="text-2xl font-bold text-green-600">
-                                                {result.molarityMilli} <span className="text-base">mM</span>
-                                            </p>
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                millimol/L or mmol·L⁻¹
-                                            </p>
-                                        </div>
-
-                                        {/* Micromolar Result (μM) */}
-                                        <div className="bg-white rounded-lg p-4 shadow-sm">
-                                            <p className="text-sm text-gray-600 mb-1">Micromolar</p>
-                                            <p className="text-2xl font-bold text-blue-500">
-                                                {result.molarityMicro} <span className="text-base">μM</span>
-                                            </p>
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                micromol/L or μmol·L⁻¹
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Information Section */}
-                        <div className="mt-8 pt-6 border-t-2 border-gray-200">
-                            <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                                About MG/ML to Molarity Conversion
-                            </h4>
-                            <p className="text-xs text-gray-600 leading-relaxed mb-3">
-                                Converting mg/mL to molarity is commonly needed in biochemistry and pharmacology.
-                                The key insight is that 1 mg/mL equals 1 g/L, which simplifies the calculation.
-                                Simply divide the concentration by the molar mass to get molarity.
-                            </p>
-                            <div className="bg-blue-50 rounded-lg p-3">
-                                <p className="text-xs font-semibold text-blue-800 mb-1">Quick Reference:</p>
-                                <ul className="text-xs text-blue-700 space-y-1">
-                                    <li>• 1 M = 1000 mM (millimolar)</li>
-                                    <li>• 1 M = 1,000,000 μM (micromolar)</li>
-                                    <li>• 1 mg/mL = 1 g/L</li>
-                                </ul>
-                            </div>
-                        </div>
+                        ))}
                     </div>
                 </div>
-            </div>
-        </section>
+
+                <Button variant="outline" onClick={reset} className="w-full">
+                    <RefreshCw />
+                    Reset
+                </Button>
+            </CalcSection>
+
+            {result && (
+                <CalcSection title="Working" description="Your numbers substituted into the formula, then scaled to smaller units.">
+                    <div>
+                        <ResultRow label="Concentration in g/L" value={`${result.concentrationValue}`} unit="g/L" />
+                        <ResultRow
+                            label="Molarity = g/L ÷ g/mol"
+                            value={`${result.concentrationValue} ÷ ${result.molarMassValue} = ${result.molarity.toFixed(6)}`}
+                            unit="M"
+                        />
+                        <ResultRow label="Millimolar (× 1000)" value={result.molarityMilli.toFixed(4)} unit="mM" />
+                        <ResultRow label="Micromolar (× 1,000,000)" value={result.molarityMicro.toFixed(2)} unit="µM" />
+                        {/* The rounded figures above collapse to zero for very dilute
+                            solutions; the same value to 4 significant figures does not. */}
+                        <ResultRow label="Molarity (4 significant figures)" value={formatSig(result.molarity, 4)} unit="M" />
+                    </div>
+                </CalcSection>
+            )}
+
+            <FormulaNote>
+                <Formula>Molarity (M) = Concentration (mg/mL) ÷ Molecular weight (g/mol)</Formula>
+                <Formula>M = (mg/mL) ÷ (g/mol) = (g/L) ÷ (g/mol) = mol/L</Formula>
+                <p>
+                    A milligram is a thousandth of a gram and a millilitre is a thousandth of a litre, so the
+                    thousands cancel: <strong>1 mg/mL = 1 g/L</strong>. Dividing grams per litre by grams per
+                    mole leaves moles per litre. Multiply by 1000 for mM and by 1,000,000 for µM.
+                </p>
+            </FormulaNote>
+
+            <CalcFaq
+                items={[
+                    {
+                        q: "Why is 1 mg/mL the same as 1 g/L?",
+                        a: "Both the numerator and the denominator are scaled by 1000: 1 mg is 0.001 g and 1 mL is 0.001 L. The factors cancel, so the number stays the same and the calculation reduces to dividing by the molecular weight.",
+                    },
+                    {
+                        q: "My concentration is in µg/mL — what do I enter?",
+                        a: "Divide by 1000 to get mg/mL first. 500 µg/mL is 0.5 mg/mL. For % w/v, multiply by 10: a 1% w/v solution is 10 mg/mL.",
+                    },
+                    {
+                        q: "What molecular weight do I use for a protein?",
+                        a: "The molecular weight in daltons (Da) or kilodaltons (kDa) — 1 Da equals 1 g/mol, so 66.43 kDa is 66,430 g/mol. Use the mass of the form you have, including tags or glycosylation if they are part of it.",
+                    },
+                    {
+                        q: "Why does the molarity show 0.000000 M?",
+                        a: "The molarity is rounded to 6 decimal places, so very dilute solutions round to zero. Read the µM figure, or the 4-significant-figure value in the Working section.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
     );
 }

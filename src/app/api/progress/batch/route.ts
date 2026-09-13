@@ -41,7 +41,18 @@ export async function POST(req: Request) {
 
   const supabase = await createServiceSupabaseClient();
 
-  const results = await Promise.allSettled(events.map((e) => applyProgressEvent(supabase, user, e)));
+  // In order, not in parallel: every event first reads-or-creates the user's
+  // `progress` row, so two parallel events for a brand-new account (a unit
+  // visit and its activity row arrive together) could each insert one.
+  const results: PromiseSettledResult<void>[] = [];
+  for (let i = 0; i < events.length; i++) {
+    try {
+      await applyProgressEvent(supabase, user, events[i]);
+      results.push({ status: "fulfilled", value: undefined });
+    } catch (reason) {
+      results.push({ status: "rejected", reason });
+    }
+  }
 
   const errors: { index: number; message: string }[] = [];
   results.forEach((r, i) => {

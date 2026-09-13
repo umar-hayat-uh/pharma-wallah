@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * The outlined PHARMAWALLAH wordmark that closes the footer.
+ * The ghosted PHARMAWALLAH wordmark that closes the footer.
  *
- * It rises out of its own mask the first time it scrolls into view and the
- * stroke thickens behind it. Deliberately CSS + IntersectionObserver rather
+ * It rises out of its own mask the first time it scrolls into view and its
+ * fill deepens behind it. Deliberately CSS + IntersectionObserver rather
  * than GSAP: the footer renders on every one of the site's ~170 routes, and
  * pulling the animation library into every page for one decorative flourish is
  * not a trade worth making. The landing page owns GSAP; the footer does not.
@@ -57,13 +57,13 @@ export default function Wordmark() {
           fontSize="168"
           textLength="1176"
           lengthAdjust="spacingAndGlyphs"
+          // Filled, not stroked. Outfit is a variable font whose glyphs are
+          // built from overlapping contours; a stroke draws every overlap, so
+          // the old outline showed stray lines through the P, R, A and H.
           style={{
             fontWeight: 800,
-            fill: "none",
-            stroke: "rgba(255,255,255,.45)",
-            strokeWidth: shown ? 1.6 : 0.7,
-            paintOrder: "stroke",
-            transition: "stroke-width 1.4s ease .35s",
+            fill: shown ? "rgba(247,245,241,.08)" : "rgba(247,245,241,0)",
+            transition: "fill 1.4s cubic-bezier(.16,1,.3,1) .2s",
           }}
         >
           PHARMAWALLAH

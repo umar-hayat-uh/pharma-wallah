@@ -1,0 +1,220 @@
+/*
+ * PharmaLoader — see PharmaLoader.tsx. Namespaced under .pw-loader; loaded on
+ * the website and inside the Android app, so no Tailwind and no globals.css
+ * assumptions.
+ *
+ * Every animation starts and ends on the resting state and uses no fill mode
+ * except the deliberate delayed reveal on the web wrapper, so a late-attaching
+ * stylesheet can never leave part of the mark invisible (MEMORY.md gotcha 55).
+ * Only transform and opacity animate, plus the colour of three short words.
+ */
+
+/* Tone classes carry only colour variables, so they can sit on the loader or on
+   a standalone LoaderSteps line. */
+.pw-loader--light {
+  --pw-loader-cap: #1c7bd9;
+  --pw-loader-outline: #21b67a;
+  --pw-loader-liquid: #21b67a;
+  --pw-loader-bubble: rgba(255, 255, 255, 0.9);
+  --pw-loader-shine: rgba(255, 255, 255, 0.75);
+  --pw-loader-ticks: rgba(22, 24, 29, 0.28);
+  --pw-loader-step: #16181d;
+  --pw-loader-step-active: #1c7bd9;
+}
+
+.pw-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+/* On the app's brandBlue splash: the cap turns white so it still reads as the
+   logo's two-tone capsule, and the liquid keeps the brand green. */
+.pw-loader--brand {
+  --pw-loader-cap: #ffffff;
+  --pw-loader-outline: #ffffff;
+  --pw-loader-liquid: #21b67a;
+  --pw-loader-bubble: rgba(255, 255, 255, 0.95);
+  --pw-loader-shine: rgba(28, 123, 217, 0.45);
+  --pw-loader-ticks: rgba(255, 255, 255, 0.55);
+  --pw-loader-step: #ffffff;
+  --pw-loader-step-active: #ffffff;
+}
+
+.pw-loader__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.pw-loader__capsule {
+  width: 4.25rem;
+  height: auto;
+  overflow: visible;
+  animation: pw-loader-tilt 3.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  transform-origin: 50% 70%;
+}
+
+/* The app splash is a whole screen, so its capsule is larger. Scoped under
+   .pw-splash, because the tone class alone does not mean "splash". */
+.pw-splash .pw-loader__capsule {
+  width: 5rem;
+}
+
+.pw-loader__cap {
+  fill: var(--pw-loader-cap);
+}
+
+.pw-loader__outline {
+  fill: none;
+  stroke: var(--pw-loader-outline);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.pw-loader__shine {
+  fill: none;
+  stroke: var(--pw-loader-shine);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.pw-loader__ticks {
+  fill: none;
+  stroke: var(--pw-loader-ticks);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.pw-loader__wave {
+  fill: var(--pw-loader-liquid);
+  animation: pw-loader-wave 1.6s linear infinite;
+}
+
+/* Resting level y=90 — the vessel reads about half full. */
+.pw-loader__level {
+  transform: translateY(90px);
+  animation: pw-loader-level 3.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.pw-loader__bubble {
+  fill: var(--pw-loader-bubble);
+  opacity: 0;
+  animation: pw-loader-bubble 2.4s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+}
+
+.pw-loader__bubble--late {
+  animation-delay: 1.1s;
+}
+
+/* The procedure line. Mono, like every instrument label on the site. */
+.pw-loader__steps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--pw-loader-step);
+}
+
+.pw-loader__step {
+  opacity: 0.5;
+  animation: pw-loader-step 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+/* Modifier classes, not :nth-of-type — the separator dots are spans too, so
+   nth-of-type(2) matched the first dot and the steps lit out of order. */
+.pw-loader__step--2 {
+  animation-delay: 0.6s;
+}
+
+.pw-loader__step--3 {
+  animation-delay: 1.2s;
+}
+
+.pw-loader__dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.35;
+}
+
+/* Wave slides exactly one period (44 units), so the loop has no seam. */
+@keyframes pw-loader-wave {
+  from { transform: translateX(0); }
+  to   { transform: translateX(44px); }
+}
+
+@keyframes pw-loader-level {
+  0%, 100% { transform: translateY(90px); }
+  50%      { transform: translateY(80px); }
+}
+
+@keyframes pw-loader-tilt {
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(-4deg); }
+  75%      { transform: rotate(4deg); }
+}
+
+@keyframes pw-loader-bubble {
+  0%   { transform: translateY(0); opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 0.9; }
+  100% { transform: translateY(-30px); opacity: 0; }
+}
+
+@keyframes pw-loader-step {
+  0%, 38%, 100% { opacity: 0.5; color: var(--pw-loader-step); }
+  8%, 30%       { opacity: 1; color: var(--pw-loader-step-active); }
+}
+
+/* ── Website route loading wrapper (src/app/loading.tsx) ──────────────────
+ * Sits in the page area under the header. It stays invisible for 320 ms and
+ * then fades in, so a fast client navigation never flashes a loader — only a
+ * load slow enough to notice shows one. This is the one place a fill mode is
+ * used on purpose: hidden-until-delay is the point.
+ */
+.pw-loader-page {
+  display: grid;
+  place-items: center;
+  min-height: 62vh;
+  padding: 4rem 1rem;
+  opacity: 0;
+  animation: pw-loader-in 500ms cubic-bezier(0.16, 1, 0.3, 1) 320ms forwards;
+}
+
+@keyframes pw-loader-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Same screen, no motion: the capsule half full, every step readable, and the
+   page loader visible at once rather than after a delay. */
+@media (prefers-reduced-motion: reduce) {
+  .pw-loader__capsule,
+  .pw-loader__wave,
+  .pw-loader__level,
+  .pw-loader__bubble,
+  .pw-loader__step {
+    animation: none;
+  }
+  .pw-loader__step {
+    opacity: 1;
+  }
+  .pw-loader-page {
+    animation: none;
+    opacity: 1;
+  }
+}

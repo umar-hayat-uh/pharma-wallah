@@ -39,3 +39,16 @@ export async function checkLimit(
     return { success: true, remaining: Infinity };
   }
 }
+/**
+ * Anonymous drug search (`/api/search`). Generous — the encyclopedia debounces
+ * keystrokes and caches pages client-side, so a real reader stays far below it;
+ * it exists to stop a scraper walking all 12,673 documents.
+ */
+export const drugSearchLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(40, "10 s"),
+      analytics: true,
+      prefix: "ratelimit:drugs:search",
+    })
+  : null;

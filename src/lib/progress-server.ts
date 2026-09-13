@@ -105,6 +105,9 @@ export async function applyProgressEvent(
           subject: rest.subject || "",
           semester: rest.semester || "",
           last_visited: new Date().toISOString(),
+          // Only ever set, never cleared: a plain visit omits the column, so
+          // upsert leaves an earlier "read to the end" in place.
+          ...(rest.completed === true ? { completed: true } : {}),
         },
         { onConflict: "progress_id, unit_id" }
       );
@@ -168,7 +171,7 @@ export async function applyProgressEvent(
   // FeedTab renders instead of the raw event type.
   if (type !== "activity") {
     const activityLabel: Record<string, string> = {
-      unit: `Visited: ${(rest.unitTitle as string) || (rest.unitId as string)}`,
+      unit: `${rest.completed === true ? "Finished" : "Visited"}: ${(rest.unitTitle as string) || (rest.unitId as string)}`,
       flashcard: `Practiced flashcards: ${rest.category}`,
       quiz: `Quiz: ${rest.subject} – ${rest.score}/${rest.total}`,
       spotting: `Spotting: ${(rest.lessonTitle as string) || (rest.lessonId as string)}`,

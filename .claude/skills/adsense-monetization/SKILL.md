@@ -50,14 +50,13 @@ every page's source — so it is *not* a secret and is hardcoded as the default.
 still come from env, so **Vercel needs every `NEXT_PUBLIC_ADSENSE_SLOT_*` set in the project
 settings** or production renders no ad units.
 
-### Current placements — 7 across 5 surfaces
+### Current placements — 4 surfaces (the home landing has none, by decision, 2026-09-13)
 
 | Surface | File | Slot env var |
 | --- | --- | --- |
-| Home landing ×3 | `src/components/Home/landing/{LandingPage,Chrome}.tsx` (`AdBand`) | `_HOME_1/2/3` |
 | Calculator hub | `src/app/(site)/calculation-tools/CalculationToolsClient.tsx` | `_LIST` |
-| **All 89 calculators** | `src/app/(site)/calculation-tools/(tools)/layout.tsx` | `_CALCULATOR_FOOTER` |
-| Migrated calculators' `aside` | the tool page itself (3 of 89 so far) | `_CALCULATOR` |
+| **Every calculator** | `src/app/(site)/calculation-tools/(tools)/layout.tsx` | `_CALCULATOR_FOOTER` |
+| Migrated calculators' `aside` | the tool page itself (the ones that pass `AdSlot` in `aside`) | `_CALCULATOR` |
 | Course subject listing | `src/app/(site)/courses/[subjectSlug]/page.tsx` | `_LIST` |
 | Course lesson | `src/components/course/UnitPageClient.tsx` | `_LESSON` |
 
@@ -94,7 +93,6 @@ exactly these pages and ignore the list.
 - `src/components/calculators/AdSlot.tsx` — the component
 - `src/app/layout.tsx` — the loader script
 - `src/app/(site)/calculation-tools/(tools)/layout.tsx` — the all-89 band
-- `src/components/Home/landing/Chrome.tsx` — `AdBand`
 - `public/ads.txt`, `.env`
 - `src/app/(site)/{privacy,terms}/page.tsx` — the disclosures
 
@@ -169,7 +167,7 @@ expression — that is fine and expected. Ad *markup*, the publisher ID, and the
 | --- | --- |
 | **"Couldn't verify your site"** | The loader is not in the **live** HTML. Check with `curl -s https://www.pharmawallah.com/ \| grep -c ca-pub` — **never** judge this from the dev server. Causes seen: the value only in gitignored `.env` (gotcha 31), and `afterInteractive` keeping the tag out of the SSR markup (gotcha 32) |
 | No ad *units* in production, loader present | The `NEXT_PUBLIC_ADSENSE_SLOT_*` vars are blank, or set in `.env` only — **also set them in Vercel** |
-| Home page has no `adband` markup at all | Intentional: `AdBand` returns `null` without a slot ID (gotcha 34) |
+| Home page has no ad placement at all | Intentional: the user removed the landing page's ad bands on 2026-09-13. The only `ins.adsbygoogle` on `/` is the loader's own hidden, unfilled probe — not a placement. `_HOME_1/2/3` are unused. |
 | A placement renders nothing while others work | Its slot env var is blank. `AdSlot` needs both a client ID **and** a `slot` |
 | Grey dashed box everywhere | The dev-only placeholder. Expected; set the slot IDs or check `NODE_ENV` |
 | `adsbygoogle.push() error: All 'ins' elements already have ads` | The same slot pushed twice. `AdSlot`'s `pushed` ref guards StrictMode's double effect — don't remove it |

@@ -1,30 +1,55 @@
 "use client";
-import { useState } from 'react';
-import { Calculator, Beaker, FlaskConical } from 'lucide-react';
+
+import { useMemo, useState } from "react";
+import { Beaker, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+    CalculatorShell,
+    CalcSection,
+    FieldGrid,
+    NumberField,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    AdSlot,
+    formatSig,
+} from "@/components/calculators";
+
+/** Worked examples, so a student can see a sensible answer before typing their own. */
+const EXAMPLES = [
+    { name: "1 M NaCl, 100 mL", mass: "5.844", mw: "58.44", volume: "0.1" },
+    { name: "Glucose in 250 mL", mass: "0.5", mw: "180.16", volume: "0.25" },
+    { name: "0.1 M NaOH, 1 L", mass: "4", mw: "40.00", volume: "1" },
+];
+
+/** Error text for a field that must be a positive number; silent while empty. */
+function positiveError(raw: string): string | undefined {
+    if (raw.trim() === "") return undefined;
+    const value = parseFloat(raw);
+    if (isNaN(value)) return "Enter a number.";
+    if (value <= 0) return "Must be greater than zero.";
+    return undefined;
+}
 
 export default function MassMolarityCalculator() {
-    // State variables for calculator inputs
-    const [mass, setMass] = useState(''); // Mass in grams
-    const [molarMass, setMolarMass] = useState(''); // Molar mass in g/mol
-    const [volume, setVolume] = useState(''); // Volume in liters
-    const [result, setResult] = useState<{
-        molarity?: string;
-        moles?: string;
-        error?: string | null;
-    } | null>(null); // Calculated molarity result with proper TypeScript typing
+    const [mass, setMass] = useState("");
+    const [molarMass, setMolarMass] = useState("");
+    const [volume, setVolume] = useState("");
 
-    /**
-     * Calculate molarity using the formula: M = (mass / molar mass) / volume
-     * Molarity (M) = moles / volume in liters
-     * Where moles = mass (g) / molar mass (g/mol)
+    /*
+     * Derived live from the inputs. The previous page computed only on a
+     * Calculate press; the arithmetic and the 4-decimal rounding are unchanged:
+     * moles = mass ÷ molar mass, molarity = moles ÷ volume (L).
      */
-    const calculateMolarity = () => {
-        // Parse input values to floats
+    const result = useMemo(() => {
         const massValue = parseFloat(mass);
         const molarMassValue = parseFloat(molarMass);
         const volumeValue = parseFloat(volume);
 
-        // Validate inputs - check if all values are valid numbers and greater than 0
         if (
             isNaN(massValue) ||
             isNaN(molarMassValue) ||
@@ -33,191 +58,190 @@ export default function MassMolarityCalculator() {
             molarMassValue <= 0 ||
             volumeValue <= 0
         ) {
-            setResult({
-                error: 'Please enter valid positive numbers for all fields'
-            });
-            return;
+            return null;
         }
 
-        // Calculate moles from mass and molar mass
         const moles = massValue / molarMassValue;
-
-        // Calculate molarity (moles per liter)
         const molarity = moles / volumeValue;
+        if (!Number.isFinite(moles) || !Number.isFinite(molarity)) return null;
 
-        // Store calculation results
-        setResult({
-            molarity: molarity.toFixed(4),
-            moles: moles.toFixed(4),
-            error: null
-        });
-    };
+        return {
+            molarity,
+            moles,
+            massValue,
+            molarMassValue,
+            volumeValue,
+        };
+    }, [mass, molarMass, volume]);
 
-    /**
-     * Reset all input fields and clear results
-     */
-    const handleReset = () => {
-        setMass('');
-        setMolarMass('');
-        setVolume('');
-        setResult(null);
+    const reset = () => {
+        setMass("");
+        setMolarMass("");
+        setVolume("");
     };
 
     return (
-        <section className='bg-gradient-to-br from-blue-50 to-green-50'>
-
-            <div className="min-h-screen py-12 px-4">
-                <div className="max-w-2xl mx-auto">
-                    {/* Header Section */}
-                    <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
-                        <div className="flex items-center justify-center mb-4">
-                            <Beaker className="w-10 h-10 text-blue-600 mr-3" />
-                            <h1 className="text-3xl font-bold text-gray-800">
-                                Mass Molarity Calculator
-                            </h1>
-                        </div>
-                        <p className="text-gray-600 text-center">
-                            Calculate the molarity of a solution from mass, molar mass, and volume
+        <CalculatorShell
+            title="Mass Molarity Calculator"
+            subtitle="Works out the molarity of a solution from the mass of solute you weighed, its molar mass and the final volume."
+            icon={Beaker}
+            eyebrow="Pharmaceutical Chemistry"
+            aside={
+                <>
+                    <CalcAbout title="About molarity">
+                        <p>
+                            Molarity (M) is the number of moles of solute in one litre of solution. It is
+                            one of the most common ways to state a concentration in chemistry. To get it,
+                            first turn the mass you weighed into moles by dividing by the molar mass, then
+                            divide by the volume in litres.
                         </p>
-                    </div>
+                        <CalcList
+                            title="Use it when"
+                            items={[
+                                "Preparing a standard solution from a weighed solid",
+                                "Checking the concentration written on a lab label",
+                                "Converting a recipe given in grams into mol/L",
+                            ]}
+                        />
+                        <CalcList
+                            tone="caution"
+                            title="Check before relying on it"
+                            items={[
+                                "Volume is the final volume of solution, not the volume of solvent added",
+                                "Use the molar mass of the form you weighed — hydrates weigh more per mole",
+                                "Enter the volume in litres: 250 mL is 0.25 L",
+                            ]}
+                        />
+                    </CalcAbout>
 
-                    {/* Calculator Card */}
-                    <div className="bg-white rounded-lg shadow-lg p-8">
-                        {/* Formula Display */}
-                        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-6">
-                            <div className="flex items-center justify-center mb-2">
-                                <FlaskConical className="w-5 h-5 text-blue-600 mr-2" />
-                                <h3 className="text-sm font-semibold text-blue-800">Formula</h3>
-                            </div>
-                            <p className="text-center text-blue-900 font-mono">
-                                Molarity (M) = (Mass / Molar Mass) / Volume
-                            </p>
-                            <p className="text-center text-xs text-blue-700 mt-1">
-                                M = (g / g·mol⁻¹) / L = mol·L⁻¹
-                            </p>
-                        </div>
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+                </>
+            }
+        >
+            <ResultCard
+                label="Molarity"
+                value={result ? result.molarity.toFixed(4) : null}
+                unit="M (mol/L)"
+                interpretation={result ? `${result.moles.toFixed(4)} mol of solute` : undefined}
+                empty="Enter the mass, molar mass and volume — all greater than zero."
+            />
 
-                        {/* Input Fields */}
-                        <div className="space-y-5">
-                            {/* Mass Input */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Mass of Solute (g)
-                                </label>
-                                <input
-                                    type="number"
-                                    value={mass}
-                                    onChange={(e) => setMass(e.target.value)}
-                                    placeholder="Enter mass in grams"
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none transition-colors"
-                                    step="0.01"
-                                />
-                            </div>
+            <CalcSection title="Inputs">
+                <FieldGrid>
+                    <NumberField
+                        label="Mass of solute (g)"
+                        value={mass}
+                        onChange={setMass}
+                        unit="g"
+                        step="0.01"
+                        placeholder="e.g. 5.844"
+                        hint="The mass you weighed on the balance, in grams."
+                        error={positiveError(mass)}
+                    />
+                    <NumberField
+                        label="Molar mass (g/mol)"
+                        value={molarMass}
+                        onChange={setMolarMass}
+                        unit="g/mol"
+                        step="0.01"
+                        placeholder="e.g. 58.44"
+                        hint="Also called molecular weight. NaCl is 58.44 g/mol."
+                        error={positiveError(molarMass)}
+                    />
+                    <NumberField
+                        label="Volume of solution (L)"
+                        value={volume}
+                        onChange={setVolume}
+                        unit="L"
+                        step="0.001"
+                        placeholder="e.g. 0.1"
+                        hint="Final volume in litres — 100 mL is 0.1 L."
+                        error={positiveError(volume)}
+                    />
+                </FieldGrid>
 
-                            {/* Molar Mass Input */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Molar Mass (g/mol)
-                                </label>
-                                <input
-                                    type="number"
-                                    value={molarMass}
-                                    onChange={(e) => setMolarMass(e.target.value)}
-                                    placeholder="Enter molar mass"
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none transition-colors"
-                                    step="0.01"
-                                />
-                            </div>
-
-                            {/* Volume Input */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Volume of Solution (L)
-                                </label>
-                                <input
-                                    type="number"
-                                    value={volume}
-                                    onChange={(e) => setVolume(e.target.value)}
-                                    placeholder="Enter volume in liters"
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none transition-colors"
-                                    step="0.001"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-4 mt-6">
+                <div>
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">Try an example</p>
+                    <div className="flex flex-wrap gap-2">
+                        {EXAMPLES.map((example) => (
                             <button
-                                onClick={calculateMolarity}
-                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center"
+                                key={example.name}
+                                type="button"
+                                onClick={() => {
+                                    setMass(example.mass);
+                                    setMolarMass(example.mw);
+                                    setVolume(example.volume);
+                                }}
+                                className="min-h-[40px] rounded-full border bg-background px-3.5 text-sm font-medium transition-colors hover:border-foreground/25 active:bg-accent"
                             >
-                                <Calculator className="w-5 h-5 mr-2" />
-                                Calculate
+                                {example.name}
                             </button>
-                            <button
-                                onClick={handleReset}
-                                className="flex-1 bg-green-400 hover:bg-green-500 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-                            >
-                                Reset
-                            </button>
-                        </div>
-
-                        {/* Results Section */}
-                        {result && (
-                            <div className="mt-6">
-                                {result.error ? (
-                                    // Error Message Display
-                                    <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
-                                        <p className="text-red-800 text-center font-medium">
-                                            {result.error}
-                                        </p>
-                                    </div>
-                                ) : (
-                                    // Success Results Display
-                                    <div className="bg-gradient-to-r from-blue-50 to-green-50 border-2 border-green-400 rounded-lg p-6">
-                                        <h3 className="text-lg font-bold text-gray-800 mb-4 text-center">
-                                            Calculation Results
-                                        </h3>
-
-                                        {/* Molarity Result */}
-                                        <div className="bg-white rounded-lg p-4 mb-3 shadow-sm">
-                                            <p className="text-sm text-gray-600 mb-1">Molarity</p>
-                                            <p className="text-3xl font-bold text-blue-600">
-                                                {result.molarity} <span className="text-lg">M</span>
-                                            </p>
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                mol/L or mol·L⁻¹
-                                            </p>
-                                        </div>
-
-                                        {/* Moles Result */}
-                                        <div className="bg-white rounded-lg p-4 shadow-sm">
-                                            <p className="text-sm text-gray-600 mb-1">Number of Moles</p>
-                                            <p className="text-2xl font-bold text-green-600">
-                                                {result.moles} <span className="text-base">mol</span>
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Information Section */}
-                        <div className="mt-8 pt-6 border-t-2 border-gray-200">
-                            <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                                About Molarity
-                            </h4>
-                            <p className="text-xs text-gray-600 leading-relaxed">
-                                Molarity (M) is a measure of concentration expressed as moles of solute
-                                per liter of solution. It's one of the most common units used in chemistry
-                                to describe solution concentrations. To calculate molarity, first determine
-                                the number of moles by dividing the mass by the molar mass, then divide
-                                by the volume in liters.
-                            </p>
-                        </div>
+                        ))}
                     </div>
                 </div>
-            </div>
-        </section>
+
+                <Button variant="outline" onClick={reset} className="w-full">
+                    <RefreshCw />
+                    Reset
+                </Button>
+            </CalcSection>
+
+            {result && (
+                <CalcSection title="Working" description="The numbers you entered, substituted into the formula.">
+                    <div>
+                        <ResultRow
+                            label="Moles = mass ÷ molar mass"
+                            value={`${result.massValue} ÷ ${result.molarMassValue} = ${result.moles.toFixed(4)}`}
+                            unit="mol"
+                        />
+                        <ResultRow
+                            label="Molarity = moles ÷ volume"
+                            value={`${formatSig(result.moles, 4)} ÷ ${result.volumeValue} = ${result.molarity.toFixed(4)}`}
+                            unit="M"
+                        />
+                        {/* The substitution above uses moles to 4 significant figures, so
+                            it does not look off by rounding. 4 decimals shows 0.0000 for very dilute solutions, so the
+                            unrounded value is given as well, to 4 significant figures. */}
+                        <ResultRow label="Molarity (4 significant figures)" value={formatSig(result.molarity, 4)} unit="M" />
+                        <ResultRow label="Same as" value="mol/L or mol·L⁻¹" />
+                    </div>
+                </CalcSection>
+            )}
+
+            <FormulaNote>
+                <Formula>Molarity (M) = (Mass ÷ Molar mass) ÷ Volume</Formula>
+                <Formula>M = (g ÷ g·mol⁻¹) ÷ L = mol·L⁻¹</Formula>
+                <p>
+                    <strong>Mass</strong> is the solute in grams, <strong>molar mass</strong> is in g/mol
+                    and <strong>volume</strong> is the final volume of solution in litres. Dividing mass by
+                    molar mass gives the amount in moles; dividing that by the volume gives moles per litre.
+                </p>
+            </FormulaNote>
+
+            <CalcFaq
+                items={[
+                    {
+                        q: "My volume is in millilitres — what do I enter?",
+                        a: "Divide by 1000 first. 250 mL is 0.25 L and 50 mL is 0.05 L. Entering 250 instead of 0.25 gives an answer 1000 times too small.",
+                    },
+                    {
+                        q: "Is molarity the same as molality?",
+                        a: "No. Molarity is moles per litre of solution; molality is moles per kilogram of solvent. They are close for dilute aqueous solutions but differ for concentrated ones, and molarity changes slightly with temperature because volume does.",
+                    },
+                    {
+                        q: "Why does the result show 0.0000 M?",
+                        a: "The result is rounded to 4 decimal places, so anything below 0.00005 M rounds to zero. The Working section also gives the value to 4 significant figures, which shows very dilute concentrations properly.",
+                    },
+                    {
+                        q: "Which molar mass should I use for a hydrate?",
+                        a: "The molar mass of exactly what you weighed. Copper sulfate pentahydrate (CuSO₄·5H₂O) is 249.68 g/mol, while anhydrous CuSO₄ is 159.61 g/mol — using the wrong one gives a concentration about 1.6 times off.",
+                    },
+                    {
+                        q: "How do I convert molarity to millimolar?",
+                        a: "Multiply by 1000. 0.0111 M is 11.1 mM, and 1 M is 1000 mM.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
     );
 }

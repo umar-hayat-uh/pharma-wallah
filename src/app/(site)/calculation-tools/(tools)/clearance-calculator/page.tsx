@@ -1,320 +1,450 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { Calculator, Filter, Activity, AlertCircle, Clock, Droplet, Gauge } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+
+import { useMemo, useState } from "react";
+import { Activity, Filter, Gauge, RefreshCw } from "lucide-react";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { Button } from "@/components/ui/button";
+import {
+    CalculatorShell,
+    CalcSection,
+    FieldGrid,
+    NumberField,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    AdSlot,
+    ModeSwitch,
+    type ModeOption,
+    type ResultTone,
+} from "@/components/calculators";
+
+/** Joins class names, skipping falsy ones (kept local: no @/lib imports in tool pages). */
+const cn = (...classes: (string | false | undefined)[]) => classes.filter(Boolean).join(" ");
+
+type Method = "single" | "steady";
+
+const METHODS: ModeOption<Method>[] = [
+    { value: "single", label: "Single dose", description: "CL = Dose / AUC", icon: Activity },
+    { value: "steady", label: "Steady-state infusion", description: "CL = R₀ / Css", icon: Gauge },
+];
+
+/** The per-kg figure is always for a 70 kg reference patient (unchanged). */
+const REFERENCE_WEIGHT_KG = 70;
+
+/*
+ * Clearance bands in L/h (unchanged). Upper bounds exclusive, as the original
+ * if/else chain: < 0.5, < 2, < 10, < 30.
+ */
+const BANDS: {
+    upTo: number;
+    range: string;
+    short: string;
+    interpretation: string;
+    organInvolved: string;
+    tone: ResultTone;
+    text: string;
+}[] = [
+    {
+        upTo: 0.5,
+        range: "< 0.5 L/h",
+        short: "Severe impairment",
+        interpretation: "Very low clearance – severely impaired elimination",
+        organInvolved: "Severe hepatic/renal impairment",
+        tone: "danger",
+        text: "text-red-600",
+    },
+    {
+        upTo: 2,
+        range: "0.5 – 2 L/h",
+        short: "Reduced",
+        interpretation: "Low clearance – reduced elimination capacity",
+        organInvolved: "Moderate hepatic/renal impairment",
+        tone: "warning",
+        text: "text-amber-600",
+    },
+    {
+        upTo: 10,
+        range: "2 – 10 L/h",
+        short: "Normal",
+        interpretation: "Normal clearance – typical elimination",
+        organInvolved: "Normal hepatic/renal function",
+        tone: "success",
+        text: "text-emerald-600",
+    },
+    {
+        upTo: 30,
+        range: "10 – 30 L/h",
+        short: "High",
+        interpretation: "High clearance – efficient elimination",
+        organInvolved: "Enhanced metabolism/excretion",
+        tone: "neutral",
+        text: "text-blue-600",
+    },
+    {
+        upTo: Infinity,
+        range: "≥ 30 L/h",
+        short: "Flow-limited",
+        interpretation: "Very high clearance – blood flow limited",
+        organInvolved: "Liver blood flow limited",
+        tone: "neutral",
+        text: "text-blue-800",
+    },
+];
+
+const SAMPLE_DRUGS: { name: string; clearance: number; method: Method }[] = [
+    { name: "Digoxin", clearance: 0.12, method: "single" },
+    { name: "Theophylline", clearance: 0.04, method: "single" },
+    { name: "Gentamicin", clearance: 0.1, method: "steady" },
+    { name: "Lidocaine", clearance: 0.95, method: "steady" },
+    { name: "Propranolol", clearance: 1.2, method: "single" },
+];
+
+const COLORS = ["#2563EB", "#10B981", "#F59E0B"];
+
+function positiveError(raw: string): string | undefined {
+    if (raw.trim() === "") return undefined;
+    const value = parseFloat(raw);
+    if (isNaN(value)) return "Enter a number.";
+    if (value <= 0) return "Must be greater than zero.";
+    return undefined;
+}
 
 export default function ClearanceCalculator() {
-    const [method, setMethod] = useState<'single' | 'steady'>('single');
-    const [dose, setDose] = useState<string>('');
-    const [auc, setAuc] = useState<string>('');
-    const [concentration, setConcentration] = useState<string>('');
-    const [infusionRate, setInfusionRate] = useState<string>('');
-    const [volume, setVolume] = useState<string>(''); // optional for half-life
-    const [result, setResult] = useState<{
-        clearance: number;
-        clearancePerKg: number;
-        halfLife: number | null;
-        interpretation: string;
-        organInvolved: string;
-    } | null>(null);
-    const [chartData, setChartData] = useState<any[]>([]);
+    const [method, setMethod] = useState<Method>("single");
+    const [dose, setDose] = useState("");
+    const [auc, setAuc] = useState("");
+    const [concentration, setConcentration] = useState("");
+    const [infusionRate, setInfusionRate] = useState("");
+    const [volume, setVolume] = useState(""); // optional, for half-life
 
-    const calculateClearance = () => {
-        if (method === 'single') {
+    /*
+     * Live from the inputs. The old page computed on a button and kept the last
+     * result when the method changed or an alert() rejected the new inputs, so
+     * the card could describe values that were no longer on screen.
+     */
+    const result = useMemo(() => {
+        let clearance: number;
+        if (method === "single") {
             const D = parseFloat(dose);
             const AUC = parseFloat(auc);
-
-            if (isNaN(D) || isNaN(AUC) || D <= 0 || AUC <= 0) {
-                alert('Please enter valid positive numbers for dose and AUC');
-                return;
-            }
-
-            const clearance = D / AUC; // L/h
-            calculateInterpretation(clearance);
+            if (isNaN(D) || isNaN(AUC) || D <= 0 || AUC <= 0) return null;
+            clearance = D / AUC; // L/h
         } else {
             const Css = parseFloat(concentration);
             const R0 = parseFloat(infusionRate);
-
-            if (isNaN(Css) || isNaN(R0) || Css <= 0 || R0 <= 0) {
-                alert('Please enter valid positive numbers for steady‑state concentration and infusion rate');
-                return;
-            }
-
-            const clearance = R0 / Css;
-            calculateInterpretation(clearance);
+            if (isNaN(Css) || isNaN(R0) || Css <= 0 || R0 <= 0) return null;
+            clearance = R0 / Css;
         }
-    };
 
-    const calculateInterpretation = (clearance: number) => {
         const V = parseFloat(volume);
         const halfLife = !isNaN(V) && V > 0 ? (0.693 * V) / clearance : null;
 
         // Per 70 kg patient
-        const clearancePerKg = clearance / 70;
+        const clearancePerKg = clearance / REFERENCE_WEIGHT_KG;
 
-        let interpretation = '';
-        let organInvolved = '';
+        const bandIndex = BANDS.findIndex((band) => clearance < band.upTo);
 
-        if (clearance < 0.5) {
-            interpretation = 'Very low clearance – severely impaired elimination';
-            organInvolved = 'Severe hepatic/renal impairment';
-        } else if (clearance < 2) {
-            interpretation = 'Low clearance – reduced elimination capacity';
-            organInvolved = 'Moderate hepatic/renal impairment';
-        } else if (clearance < 10) {
-            interpretation = 'Normal clearance – typical elimination';
-            organInvolved = 'Normal hepatic/renal function';
-        } else if (clearance < 30) {
-            interpretation = 'High clearance – efficient elimination';
-            organInvolved = 'Enhanced metabolism/excretion';
-        } else {
-            interpretation = 'Very high clearance – blood flow limited';
-            organInvolved = 'Liver blood flow limited';
-        }
+        // Organ contribution (illustrative)
+        const chartData = [
+            { name: "Liver", value: clearance > 10 ? 70 : 40 },
+            { name: "Kidneys", value: clearance < 10 ? 60 : 20 },
+            { name: "Other", value: 10 },
+        ];
 
-        setResult({ clearance, clearancePerKg, halfLife, interpretation, organInvolved });
+        return { clearance, clearancePerKg, halfLife, bandIndex, band: BANDS[bandIndex], chartData };
+    }, [method, dose, auc, concentration, infusionRate, volume]);
 
-        // Prepare pie data for organ contribution (illustrative)
-        setChartData([
-            { name: 'Liver', value: clearance > 10 ? 70 : 40 },
-            { name: 'Kidneys', value: clearance < 10 ? 60 : 20 },
-            { name: 'Other', value: 10 },
-        ]);
-    };
-
-    const resetCalculator = () => {
-        setDose('');
-        setAuc('');
-        setConcentration('');
-        setInfusionRate('');
-        setVolume('');
-        setResult(null);
-        setChartData([]);
-    };
-
-    const sampleDrugs = [
-        { name: 'Digoxin', clearance: 0.12, method: 'single' },
-        { name: 'Theophylline', clearance: 0.04, method: 'single' },
-        { name: 'Gentamicin', clearance: 0.1, method: 'steady' },
-        { name: 'Lidocaine', clearance: 0.95, method: 'steady' },
-        { name: 'Propranolol', clearance: 1.2, method: 'single' },
-    ];
-
-    const loadSample = (index: number) => {
-        const drug = sampleDrugs[index];
-        setMethod(drug.method as 'single' | 'steady');
-        if (drug.method === 'single') {
-            setDose('100');
+    const loadSample = (drug: (typeof SAMPLE_DRUGS)[number]) => {
+        setMethod(drug.method);
+        if (drug.method === "single") {
+            setDose("100");
             setAuc((100 / drug.clearance).toFixed(2));
         } else {
-            setConcentration('10');
+            setConcentration("10");
             setInfusionRate((10 * drug.clearance).toFixed(2));
         }
     };
 
-    const COLORS = ['#3b82f6', '#10b981', '#f59e0b'];
+    const reset = () => {
+        setDose("");
+        setAuc("");
+        setConcentration("");
+        setInfusionRate("");
+        setVolume("");
+    };
 
     return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 pt-20">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6 md:mb-8">
-                    <div className="flex flex-col md:flex-row items-center justify-between">
-                        <div className="flex items-center mb-4 md:mb-0">
-                            <div className="bg-white/20 p-3 rounded-xl mr-4">
-                                <Filter className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-white">Clearance (CL) Calculator</h1>
-                                <p className="text-blue-100 mt-2">Dose / AUC or Infusion rate / Css</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-2 bg-white/20 px-4 py-2 rounded-lg">
-                            <Gauge className="w-5 h-5 text-white" />
-                            <span className="text-white font-semibold">Elimination capacity</span>
-                        </div>
+        <CalculatorShell
+            title="Clearance Calculator"
+            subtitle="Works out drug clearance (CL) from a single dose and its AUC, or from an infusion rate and the steady-state level."
+            icon={Filter}
+            eyebrow="Pharmacokinetics"
+            aside={
+                <>
+                    <CalcAbout title="About this calculator">
+                        <p>
+                            <strong>CL — clearance</strong> — is the volume of plasma cleared of drug per
+                            unit time. It measures the body&apos;s capacity to eliminate the drug (liver,
+                            kidneys and other routes combined) and is the one parameter that sets the
+                            maintenance dose.
+                        </p>
+                        <CalcList
+                            title="Use it when"
+                            items={[
+                                "You have an AUC from a single IV dose",
+                                "A continuous infusion has reached steady state",
+                                "Estimating half-life from clearance and Vd",
+                                "Comparing elimination capacity between patients",
+                            ]}
+                        />
+                        <CalcList
+                            tone="caution"
+                            title="Watch for"
+                            items={[
+                                "Dose ÷ AUC is total clearance only for an IV dose — oral gives CL/F",
+                                "Css is valid only after about 4–5 half-lives of infusion",
+                                "The per-kg figure assumes a 70 kg patient",
+                                "The organ chart is illustrative, not derived from your data",
+                            ]}
+                        />
+                    </CalcAbout>
+
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+                </>
+            }
+        >
+            <ModeSwitch label="Calculation method" value={method} onChange={setMethod} options={METHODS} />
+
+            <ResultCard
+                label="Clearance (CL)"
+                value={result ? result.clearance.toFixed(3) : null}
+                unit="L/h"
+                interpretation={result?.band.interpretation}
+                tone={result?.band.tone ?? "neutral"}
+                empty={
+                    method === "single"
+                        ? "Enter the dose and the AUC to see the clearance."
+                        : "Enter the steady-state concentration and the infusion rate to see the clearance."
+                }
+            />
+
+            <CalcSection title="Inputs">
+                <FieldGrid>
+                    {method === "single" ? (
+                        <>
+                            <NumberField
+                                label="Dose (mg)"
+                                value={dose}
+                                onChange={setDose}
+                                unit="mg"
+                                step="0.001"
+                                min={0}
+                                error={positiveError(dose)}
+                                hint="The IV dose given."
+                            />
+                            <NumberField
+                                label="AUC (mg·h/L)"
+                                value={auc}
+                                onChange={setAuc}
+                                unit="mg·h/L"
+                                step="0.001"
+                                min={0}
+                                error={positiveError(auc)}
+                                hint="Area under the concentration–time curve, 0 to infinity."
+                            />
+                        </>
+                    ) : (
+                        <>
+                            <NumberField
+                                label="Steady-state concentration Css (mg/L)"
+                                value={concentration}
+                                onChange={setConcentration}
+                                unit="mg/L"
+                                step="0.001"
+                                min={0}
+                                error={positiveError(concentration)}
+                                hint="Plasma level once the infusion has plateaued."
+                            />
+                            <NumberField
+                                label="Infusion rate R₀ (mg/h)"
+                                value={infusionRate}
+                                onChange={setInfusionRate}
+                                unit="mg/h"
+                                step="0.001"
+                                min={0}
+                                error={positiveError(infusionRate)}
+                                hint="Constant rate of drug going in."
+                            />
+                        </>
+                    )}
+                    <NumberField
+                        label="Volume of distribution Vd (L) — optional"
+                        value={volume}
+                        onChange={setVolume}
+                        unit="L"
+                        step="0.001"
+                        min={0}
+                        error={positiveError(volume)}
+                        hint="Enter it to also get the half-life: t½ = 0.693 × Vd / CL."
+                    />
+                </FieldGrid>
+
+                <div>
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">Try an example drug</p>
+                    <div className="flex flex-wrap gap-2">
+                        {SAMPLE_DRUGS.map((drug) => (
+                            <button
+                                key={drug.name}
+                                type="button"
+                                onClick={() => loadSample(drug)}
+                                className="min-h-[40px] rounded-full border bg-background px-3 py-2 text-xs font-medium hover:bg-accent active:bg-accent"
+                            >
+                                {drug.name}
+                                <span className="ml-1.5 font-normal text-muted-foreground">CL {drug.clearance} L/h</span>
+                            </button>
+                        ))}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Main Input Area */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
-                            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                                <Calculator className="w-6 h-6 mr-2 text-blue-600" />
-                                Calculation Method
-                            </h2>
+                <Button variant="outline" onClick={reset} className="w-full">
+                    <RefreshCw />
+                    Reset
+                </Button>
+            </CalcSection>
 
-                            {/* Method Cards */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                                <button onClick={() => setMethod('single')}
-                                    className={`p-4 rounded-xl transition-all ${method === 'single' ?
-                                        'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-lg' :
-                                        'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                                    <div className="flex flex-col items-center">
-                                        <Activity className="w-8 h-8 mb-2" />
-                                        <span className="font-semibold">Single Dose</span>
-                                        <span className="text-xs mt-1">CL = Dose / AUC</span>
-                                    </div>
-                                </button>
-                                <button onClick={() => setMethod('steady')}
-                                    className={`p-4 rounded-xl transition-all ${method === 'steady' ?
-                                        'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-lg' :
-                                        'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                                    <div className="flex flex-col items-center">
-                                        <Gauge className="w-8 h-8 mb-2" />
-                                        <span className="font-semibold">Steady‑State</span>
-                                        <span className="text-xs mt-1">CL = R₀ / Css</span>
-                                    </div>
-                                </button>
-                            </div>
+            {result && (
+                <CalcSection title="Working">
+                    <div>
+                        {method === "single" ? (
+                            <ResultRow label={`CL = ${dose} ÷ ${auc}`} value={result.clearance.toFixed(3)} unit="L/h" />
+                        ) : (
+                            <ResultRow
+                                label={`CL = ${infusionRate} ÷ ${concentration}`}
+                                value={result.clearance.toFixed(3)}
+                                unit="L/h"
+                            />
+                        )}
+                        <ResultRow
+                            label={`CL per kg (÷ ${REFERENCE_WEIGHT_KG} kg)`}
+                            value={result.clearancePerKg.toFixed(4)}
+                            unit="L/h/kg"
+                        />
+                        {result.halfLife !== null ? (
+                            <ResultRow
+                                label={`t½ = 0.693 × ${volume} ÷ ${result.clearance.toFixed(3)}`}
+                                value={result.halfLife.toFixed(2)}
+                                unit="h"
+                            />
+                        ) : (
+                            <ResultRow label="Half-life (t½)" value="Enter Vd" />
+                        )}
+                        <ResultRow label="Primary organ" value={result.band.organInvolved} />
+                    </div>
+                </CalcSection>
+            )}
 
-                            {/* Inputs */}
-                            {method === 'single' ? (
-                                <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6 space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Dose (mg)</label>
-                                        <input type="number" step="0.001" value={dose} onChange={(e) => setDose(e.target.value)}
-                                            className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">AUC (mg·h/L)</label>
-                                        <input type="number" step="0.001" value={auc} onChange={(e) => setAuc(e.target.value)}
-                                            className="w-full px-4 py-3 border-2 border-green-200 rounded-lg" />
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6 space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Steady‑State Conc. (mg/L)</label>
-                                        <input type="number" step="0.001" value={concentration} onChange={(e) => setConcentration(e.target.value)}
-                                            className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Infusion Rate (mg/h)</label>
-                                        <input type="number" step="0.001" value={infusionRate} onChange={(e) => setInfusionRate(e.target.value)}
-                                            className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg" />
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Volume (optional) */}
-                            <div className="mt-6 bg-gray-50 rounded-xl p-6">
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Volume of Distribution (L) – optional</label>
-                                <input type="number" step="0.001" value={volume} onChange={(e) => setVolume(e.target.value)}
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg" />
-                                <p className="text-xs text-gray-500 mt-2">Enter to calculate half‑life: t½ = 0.693·Vd/CL</p>
-                            </div>
-
-                            {/* Example Drugs */}
-                            <div className="bg-white rounded-xl p-6 border border-gray-200 mt-6">
-                                <h3 className="font-semibold text-gray-800 mb-4">Example Drugs</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                                    {sampleDrugs.map((drug, index) => (
-                                        <button key={index} onClick={() => loadSample(index)}
-                                            className="bg-gradient-to-r from-blue-50 to-green-50 hover:from-blue-100 hover:to-green-100 border border-blue-200 rounded-lg p-3 text-center">
-                                            <div className="font-semibold text-blue-700">{drug.name}</div>
-                                            <div className="text-xs text-gray-600 mt-1">CL = {drug.clearance} L/h</div>
-                                        </button>
+            {result && (
+                <CalcSection
+                    title="Organ contribution (illustrative)"
+                    description="A teaching sketch of which organs usually dominate at this clearance — not calculated from your inputs."
+                >
+                    <div className="h-56">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={result.chartData}
+                                    dataKey="value"
+                                    nameKey="name"
+                                    cx="50%"
+                                    cy="50%"
+                                    outerRadius={70}
+                                    label
+                                    isAnimationActive={false}
+                                >
+                                    {result.chartData.map((entry, idx) => (
+                                        <Cell key={entry.name} fill={COLORS[idx % COLORS.length]} />
                                     ))}
-                                </div>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="flex flex-col sm:flex-row gap-4 mt-6">
-                                <button onClick={calculateClearance}
-                                    className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl">
-                                    Calculate Clearance
-                                </button>
-                                <button onClick={resetCalculator}
-                                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center">
-                                    Reset
-                                </button>
-                            </div>
-                        </div>
+                                </Pie>
+                                <Tooltip />
+                            </PieChart>
+                        </ResponsiveContainer>
                     </div>
+                    <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground">
+                        {result.chartData.map((entry, idx) => (
+                            <span key={entry.name} className="flex items-center gap-1.5">
+                                <span
+                                    className="h-2.5 w-2.5 rounded-full"
+                                    style={{ background: COLORS[idx % COLORS.length] }}
+                                    aria-hidden="true"
+                                />
+                                {entry.name}
+                            </span>
+                        ))}
+                    </div>
+                </CalcSection>
+            )}
 
-                    {/* Results & Info Sidebar */}
-                    <div className="space-y-6">
-                        {/* Results Card */}
-                        {result && (
-                            <div className="bg-gradient-to-br from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 text-white">
-                                <h2 className="text-2xl font-bold mb-6 flex items-center">
-                                    <Filter className="w-7 h-7 mr-3" />
-                                    Clearance Result
-                                </h2>
-                                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 mb-4 text-center">
-                                    <div className="text-sm font-semibold text-blue-100 mb-2">CL</div>
-                                    <div className="text-4xl font-bold mb-2">{result.clearance.toFixed(3)} L/h</div>
-                                    <div className="text-lg">({result.clearancePerKg.toFixed(4)} L/h/kg)</div>
-                                </div>
-                                {result.halfLife !== null && (
-                                    <div className="bg-white/10 rounded-lg p-4 flex items-center justify-between">
-                                        <div>
-                                            <div className="text-sm font-semibold">Half-life (t½)</div>
-                                            <div className="text-2xl font-bold">{result.halfLife.toFixed(2)} h</div>
-                                        </div>
-                                        <Clock className="w-8 h-8 opacity-80" />
-                                    </div>
+            <CalcSection title="Clearance scale" description="Total clearance bands used for the interpretation.">
+                <div role="list">
+                    {BANDS.map((band, index) => {
+                        const active = result?.bandIndex === index;
+                        return (
+                            <div
+                                role="listitem"
+                                key={band.range}
+                                className={cn(
+                                    "flex items-center justify-between gap-3 border-b border-border/70 px-2 py-3 last:border-b-0",
+                                    active && "rounded-lg bg-primary/10",
                                 )}
+                            >
+                                <span className="font-mono text-xs text-muted-foreground sm:text-sm">{band.range}</span>
+                                <span className={cn("text-right text-sm", band.text, active && "font-semibold")}>
+                                    {band.short}
+                                </span>
                             </div>
-                        )}
-
-                        {/* Interpretation */}
-                        {result && (
-                            <div className="bg-white rounded-2xl shadow-lg p-6">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                                    <AlertCircle className="w-5 h-5 mr-2 text-blue-600" />
-                                    Interpretation
-                                </h3>
-                                <p className="text-gray-700 mb-2">{result.interpretation}</p>
-                                <p className="text-sm text-gray-600"><strong>Primary organ:</strong> {result.organInvolved}</p>
-                            </div>
-                        )}
-
-                        {/* Organ Contribution Pie */}
-                        {chartData.length > 0 && (
-                            <div className="bg-white rounded-2xl shadow-lg p-6">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4">Organ Contribution (illustrative)</h3>
-                                <div className="h-48">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} label>
-                                                {chartData.map((entry, idx) => (
-                                                    <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Formula Card */}
-                        <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-2xl shadow-lg p-6 border border-blue-200">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">Formulae</h3>
-                            <div className="space-y-2 text-sm">
-                                <div className="p-2 bg-white rounded">CL = Dose / AUC (single dose)</div>
-                                <div className="p-2 bg-white rounded">CL = R₀ / Css (steady‑state)</div>
-                                <div className="p-2 bg-white rounded">t½ = 0.693 × Vd / CL</div>
-                            </div>
-                        </div>
-
-                        {/* Clearance Scale */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">Clearance Scale</h3>
-                            <div className="space-y-2 text-sm">
-                                <div className="flex justify-between"><span>&lt;0.5 L/h</span><span className="text-red-600">Severe impairment</span></div>
-                                <div className="flex justify-between"><span>0.5–2 L/h</span><span className="text-orange-600">Reduced</span></div>
-                                <div className="flex justify-between"><span>2–10 L/h</span><span className="text-green-600">Normal</span></div>
-                                <div className="flex justify-between"><span>10–30 L/h</span><span className="text-blue-600">High</span></div>
-                                <div className="flex justify-between"><span>&gt;30 L/h</span><span className="text-purple-600">Flow‑limited</span></div>
-                            </div>
-                        </div>
-                    </div>
+                        );
+                    })}
                 </div>
-            </div>
-        </section>
+            </CalcSection>
+
+            <FormulaNote>
+                <Formula>CL = Dose / AUC   (single dose)</Formula>
+                <Formula>CL = R₀ / Css   (steady-state infusion)</Formula>
+                <Formula>t½ = 0.693 × Vd / CL</Formula>
+                <p>
+                    Dose in mg divided by AUC in mg·h/L gives litres per hour. At steady state the rate in
+                    (R₀, mg/h) equals the rate out (CL × Css), so rearranging gives CL = R₀ / Css.
+                </p>
+                <p>
+                    Half-life depends on both clearance and distribution: a large Vd or a small CL makes it
+                    longer. 0.693 is ln 2.
+                </p>
+            </FormulaNote>
+
+            <CalcFaq
+                items={[
+                    {
+                        q: "Why is clearance in litres per hour and not mg per hour?",
+                        a: "Clearance is a volume of plasma completely cleared of drug per unit time. The amount removed per hour (mg/h) is CL × concentration, so it changes as the level changes while CL stays constant for first-order drugs.",
+                    },
+                    {
+                        q: "Can I use an oral dose and AUC?",
+                        a: "You can, but the answer is apparent oral clearance, CL/F, because only the bioavailable fraction F reached the circulation. Divide by F — or multiply the dose by F first — to get true clearance.",
+                    },
+                    {
+                        q: "How do I know the infusion is at steady state?",
+                        a: "It takes about 4–5 half-lives of constant infusion to reach roughly 94–97% of the plateau. A level drawn earlier underestimates Css and so overestimates clearance.",
+                    },
+                    {
+                        q: "Why does the per-kg figure use 70 kg?",
+                        a: "The calculator has no weight input, so it scales to a standard 70 kg adult. For a real patient, divide the clearance by their actual weight instead.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
     );
 }

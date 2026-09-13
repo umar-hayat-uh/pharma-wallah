@@ -30,14 +30,15 @@ hard way in this codebase.
 | `deployment-and-env` | Build behaviour, env vars, PWA, hosting reality | Build failures, new env vars, deploying, fresh setup | `.claude/skills/deployment-and-env/` |
 | `frontend-ui-conventions` | Tokens, motion, icons, page structure, dark mode | Building or changing any page or component | `.claude/skills/frontend-ui-conventions/` |
 | `android-app-capacitor` | The offline calculators-only Android app: second Next project, generated routes, Capacitor | Anything touching `mobile/`, `android/`, or "does this work in the app?" | `.claude/skills/android-app-capacitor/` |
-| `landing-page-motion` | The GSAP landing page at `/`: four ADME stations, the motion hook, the scoped stylesheet | Any change to `/`, its copy, its sections or its animation | `.claude/skills/landing-page-motion/` |
+| `landing-page-motion` | The GSAP landing page at `/`: "The Index" as a scroll-played whiteboard video — marker marks, pen, timeline bar, motion hook, scoped stylesheet | Any change to `/`, its copy, its sections, annotations or animation | `.claude/skills/landing-page-motion/` |
+| `top-design` | Awwwards-level design standard: typography as architecture, composition, custom easing, colour, micro-details, 0–10 scoring rubric | Designing or reviewing any page's visual quality; "make it premium" | `.claude/skills/top-design/` |
 | `adsense-monetization` | Ad placements: the one `AdSlot` component, the env-gated loader, the excluded surfaces | Adding/moving an ad, "ads aren't showing", an AdSense policy warning | `.claude/skills/adsense-monetization/` |
 
 ## Domain skills
 
 | Skill | Purpose | Use When | Location |
 | --- | --- | --- | --- |
-| `calculator-tool` | Add/fix one of the 89 calculators and register it on the hub | Any calculation-tools work | `.claude/skills/calculator-tool/` |
+| `calculator-tool` | Add/fix one of the 97 calculators and register it on the hub | Any calculation-tools work | `.claude/skills/calculator-tool/` |
 | `course-content-system` | Subject registry, units, lesson markdown, the 9 unregistered subjects | Courses, units, MCQ subject coverage | `.claude/skills/course-content-system/` |
 | `progress-tracking` | Progress events, batching queue, dashboard, streaks | Tracking a new page, dashboard bugs, new event types | `.claude/skills/progress-tracking/` |
 | `tournament-system` | Entry codes, server-authoritative scoring, leaderboard, admin | Any tournament or admin work | `.claude/skills/tournament-system/` |

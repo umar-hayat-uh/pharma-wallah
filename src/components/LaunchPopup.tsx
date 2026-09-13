@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { X, Trophy, Sparkles, ArrowRight, Stethoscope, Zap } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { X, ArrowRight, Stethoscope } from "lucide-react";
 
 // ---- Cache config ----
 // Key used in localStorage to remember the dismissal.
@@ -32,9 +32,30 @@ function markDismissed() {
   }
 }
 
+const FORMAT = [
+  { figure: "10", label: "Questions" },
+  { figure: "10s", label: "Per answer" },
+  { figure: "8/10", label: "To win" },
+];
+
+/**
+ * The Science Fair 2026 launch dialog, shown once per 24 hours on every
+ * non-clinical page (mounted by AppShell).
+ *
+ * Redesigned 2026-09-13 to match the landing page and the launch strip: an ink
+ * header with a live status, the quiz format as three tabular figures, and one
+ * solid call to action — replacing gradient text, a gradient button, a flowing
+ * gradient edge and two floating blurred orbs.
+ *
+ * Also made a real dialog: role="dialog" + aria-modal, labelled by its heading,
+ * Escape closes it, and focus moves to the primary action when it opens and
+ * returns to where it was when it closes.
+ */
 export default function LaunchBanner() {
   const [isOpen, setIsOpen] = useState(false);
   const [visible, setVisible] = useState(false);
+  const primaryRef = useRef<HTMLAnchorElement>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     // Skip entirely if the user dismissed it within the cooldown window.
@@ -45,139 +66,130 @@ export default function LaunchBanner() {
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
-      const raf = requestAnimationFrame(() => setVisible(true));
-      return () => cancelAnimationFrame(raf);
-    }
+    if (!isOpen) return;
+    restoreFocusRef.current = document.activeElement as HTMLElement | null;
+    const raf = requestAnimationFrame(() => {
+      setVisible(true);
+      primaryRef.current?.focus({ preventScroll: true });
+    });
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("keydown", onKey);
+    };
+    // `close` is stable in behaviour; re-binding on every render is unnecessary.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const close = () => {
     markDismissed();
     setVisible(false);
-    setTimeout(() => setIsOpen(false), 220);
+    setTimeout(() => {
+      setIsOpen(false);
+      restoreFocusRef.current?.focus?.({ preventScroll: true });
+    }, 320);
   };
 
   if (!isOpen) return null;
 
+  const ease = "cubic-bezier(0.16, 1, 0.3, 1)";
+
   return (
     <div
-      className={`fixed inset-0 bg-slate-900/45 backdrop-blur-md flex items-center justify-center z-[100] p-4 transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0"
-        }`}
+      className="fixed inset-0 z-[100] flex items-end justify-center bg-[#0b0c0e]/50 p-3 backdrop-blur-sm sm:items-center sm:p-4"
+      style={{ opacity: visible ? 1 : 0, transition: `opacity 320ms ${ease}` }}
       onClick={close}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pw-launch-title"
+        aria-describedby="pw-launch-desc"
         onClick={(e) => e.stopPropagation()}
-        className={`relative bg-white rounded-3xl max-w-md w-full shadow-[0_24px_60px_rgba(15,_98,_254,_0.16)] border border-slate-100 overflow-hidden transition-all duration-300 ${visible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-3 scale-[0.98]"
-          }`}
+        className="relative w-full max-w-[420px] overflow-hidden rounded-[28px] bg-[#f7f5f1] text-[#0b0c0e] shadow-[0_40px_90px_-30px_rgba(11,12,14,0.6)]"
+        style={{
+          opacity: visible ? 1 : 0,
+          transform: visible ? "translateY(0) scale(1)" : "translateY(18px) scale(0.985)",
+          transition: `opacity 420ms ${ease}, transform 620ms ${ease}`,
+        }}
       >
-        {/* Animated gradient top edge — signature motion moment */}
-        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 via-green-400 to-blue-600 bg-[length:200%_100%] animate-[bannerFlow_4s_ease-in-out_infinite]" />
+        {/* Ink header */}
+        <div className="relative bg-[#0b0c0e] px-6 pb-7 pt-6 text-[#f7f5f1] sm:px-7">
+          <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[3px] bg-[#1c7bd9]" />
 
-        {/* Soft floating glow */}
-        <div className="absolute -top-16 -right-16 w-36 h-36 bg-blue-100 rounded-full blur-2xl pointer-events-none animate-[float_7s_ease-in-out_infinite]" />
-        <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-green-100 rounded-full blur-2xl pointer-events-none animate-[float_8s_ease-in-out_infinite_1.5s]" />
-
-        {/* Close */}
-        <button
-          onClick={close}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-full transition-all z-20"
-          aria-label="Close"
-        >
-          <X size={18} />
-        </button>
-
-        <div className="p-6 sm:p-8 relative z-10">
-          {/* Live badge + animated trophy */}
-          <div className="flex items-center justify-between mb-4">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200/60">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+          <div className="flex items-center justify-between">
+            <span className="inline-flex items-center gap-2 font-mono text-[10.5px] font-medium uppercase tracking-[0.18em] text-emerald-400">
+              <span className="relative flex h-2 w-2" aria-hidden="true">
+                <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400/70 motion-reduce:animate-none" />
+                <span className="relative h-2 w-2 rounded-full bg-emerald-400" />
               </span>
-              Live now
+              Live now · 2026
             </span>
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-green-400 flex items-center justify-center shadow-lg shadow-blue-500/25">
-              <Trophy className="w-6 h-6 text-white" />
-            </div>
-          </div>
-
-          {/* Heading */}
-          <div className="mb-5">
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-              Science Fair <br />
-              <span className="bg-gradient-to-r from-blue-600 to-green-500 bg-clip-text text-transparent">
-                Rapid Pharmacy Quiz
-              </span>
-            </h2>
-            <p className="text-slate-500 text-sm mt-1.5 leading-relaxed">
-              Think fast, answer correctly, and win a prize! Play the PharmaWallah Rapid Pharmacy Quiz now.
-            </p>
-          </div>
-
-          {/* Format chips */}
-          <div className="flex flex-wrap gap-1.5 mb-6">
-            <span className="text-[11px] font-medium px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200/50">
-              10 Questions
-            </span>
-            <span className="text-[11px] font-medium px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200/50">
-              10 Seconds Each
-            </span>
-            <span className="text-[11px] font-medium px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200/50">
-              Win 8/10
-            </span>
-          </div>
-
-          {/* Clinical cross-link */}
-          <div className="bg-green-50/60 border border-green-100 rounded-xl p-3.5 mb-6 flex items-center gap-3">
-            <Stethoscope className="w-5 h-5 text-green-600 shrink-0" />
-            <p className="text-xs text-green-900 font-medium leading-snug">
-              Also new: <span className="font-semibold">PharmaWallah Clinical</span>, our case-based clinical pharmacy hub.
-            </p>
-          </div>
-
-          {/* Actions */}
-          <div className="flex flex-col gap-2.5">
-            <a
-              href="/pw"
-              className="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-white font-semibold rounded-xl shadow-md shadow-blue-500/15 transition-all flex items-center justify-center gap-2 group"
+            <button
+              onClick={close}
+              className="-mr-2 grid h-9 w-9 place-items-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+              aria-label="Close"
             >
-              <span>Play Rapid Quiz</span>
-              <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+              <X size={18} />
+            </button>
+          </div>
+
+          <p className="mt-6 font-mono text-[10.5px] uppercase tracking-[0.18em] text-white/50">Science Fair</p>
+          <h2
+            id="pw-launch-title"
+            className="mt-1.5 text-[2.35rem] font-extrabold leading-[0.92] tracking-[-0.045em]"
+          >
+            Rapid Pharmacy
+            <br />
+            Quiz<span className="text-[#1c7bd9]">.</span>
+          </h2>
+        </div>
+
+        <div className="px-6 pb-6 pt-5 sm:px-7">
+          <p id="pw-launch-desc" className="text-[15px] leading-relaxed text-[#0b0c0e]/65">
+            Think fast, answer correctly, and win a prize.
+          </p>
+
+          {/* The format, as figures rather than chips. */}
+          <dl className="mt-5 grid grid-cols-3 border-y border-[#0b0c0e]/10">
+            {FORMAT.map((item, i) => (
+              <div key={item.label} className={`py-3.5 ${i > 0 ? "border-l border-[#0b0c0e]/10 pl-4" : ""}`}>
+                <dt className="sr-only">{item.label}</dt>
+                <dd className="text-2xl font-bold leading-none tracking-[-0.04em] tabular-nums">{item.figure}</dd>
+                <dd aria-hidden="true" className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[#0b0c0e]/50">
+                  {item.label}
+                </dd>
+              </div>
+            ))}
+          </dl>
+
+          <div className="mt-6 flex flex-col gap-2">
+            <a
+              ref={primaryRef}
+              href="/pw"
+              className="group flex min-h-[52px] items-center justify-between rounded-full bg-[#0b0c0e] pl-6 pr-2 font-semibold text-white transition-colors duration-500 hover:bg-[#1c7bd9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1c7bd9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f5f1]"
+            >
+              Play the quiz
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-white/10 transition-transform duration-500 group-hover:-rotate-45">
+                <ArrowRight size={16} />
+              </span>
             </a>
 
+            {/* Cross-link, demoted to a quiet row rather than a second card. */}
             <a
               href="/clinical"
-              className="w-full py-3 px-4 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold rounded-xl transition text-center border border-slate-200/80 text-sm flex items-center justify-center gap-1.5"
+              className="flex min-h-[44px] items-center justify-center gap-2 rounded-full text-sm font-medium text-[#0b0c0e]/70 transition-colors hover:bg-[#0b0c0e]/5 hover:text-[#0b0c0e]"
             >
-              <Stethoscope size={14} className="text-green-600" />
-              Clinical
+              <Stethoscope size={15} className="text-emerald-600" aria-hidden="true" />
+              Also new: PharmaWallah Clinical
+              <ArrowRight size={14} aria-hidden="true" />
             </a>
-          </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-center gap-1.5 mt-5 text-[11px] text-slate-400">
-            <Zap size={12} className="text-blue-500" />
-            <span>PharmaWallah Rapid Pharmacy Quiz · Live · 2026</span>
           </div>
         </div>
       </div>
-
-      <style jsx global>{`
-        @keyframes bannerFlow {
-          0%, 100% { background-position: 0% 50%; }
-          50%      { background-position: 100% 50%; }
-        }
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50%      { transform: translateY(-10px); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          *, *::before, *::after {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }

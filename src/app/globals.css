@@ -47,10 +47,11 @@
     --radius: 0.75rem;
 
     /*
-     * The site header is `fixed top-0`, so page content must start below it.
-     * 43 of the 89 calculator pages hard-coded `pt-20` for this and the other
-     * 46 simply rendered underneath it. CalculatorShell reads this variable
-     * instead; the Android app sets it to 0 because its app bar is in flow.
+     * The site header is `fixed top-0`, so sticky content must sit below it.
+     * CalculatorShell uses this for its sticky aside only — page content is
+     * already pushed down by the header's own in-flow spacer, so it must NOT
+     * also be used as top padding (that double gap was tracker F16). The
+     * Android app sets it to 0 because its app bar is in flow.
      */
     --calc-top-offset: 5rem;
   }

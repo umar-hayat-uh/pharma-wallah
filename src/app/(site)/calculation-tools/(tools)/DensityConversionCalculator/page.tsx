@@ -1,6 +1,25 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { Weight, RefreshCw, AlertCircle, Droplet } from 'lucide-react';
+
+import { useMemo, useState } from "react";
+import { RefreshCw, Weight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+    CalculatorShell,
+    CalcSection,
+    FieldGrid,
+    NumberField,
+    SelectField,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    AdSlot,
+    ModeSwitch,
+    type ModeOption,
+} from "@/components/calculators";
 
 type Substance = {
     name: string;
@@ -9,505 +28,382 @@ type Substance = {
     commonUses: string[];
 };
 
+type CalculationType = "mass_to_volume" | "volume_to_mass";
+type MassUnit = "mg" | "g" | "kg";
+type VolumeUnit = "mL" | "L";
+
+/* ── Reference densities, g/mL at 20–25 °C (unchanged) ────────────────────── */
+const SUBSTANCES: Record<string, Substance> = {
+    water: { name: "Water", density: 1.0, category: "Solvent", commonUses: ["Diluent", "Vehicle", "Reconstitution"] },
+    ethanol: { name: "Ethanol (95%)", density: 0.816, category: "Solvent", commonUses: ["Extraction", "Preservative", "Tinctures"] },
+    glycerol: { name: "Glycerol", density: 1.26, category: "Vehicle", commonUses: ["Syrups", "Ointments", "Humectant"] },
+    propylene_glycol: { name: "Propylene Glycol", density: 1.04, category: "Vehicle", commonUses: ["Injectables", "Topicals", "Solvent"] },
+    mineral_oil: { name: "Mineral Oil", density: 0.88, category: "Vehicle", commonUses: ["Laxative", "Ointment base", "Lubricant"] },
+    olive_oil: { name: "Olive Oil", density: 0.92, category: "Vehicle", commonUses: ["Ointments", "Emulsions", "Carrier"] },
+    honey: { name: "Honey", density: 1.42, category: "Vehicle", commonUses: ["Cough syrups", "Demulcent", "Sweetener"] },
+};
+
+const SUBSTANCE_OPTIONS = [
+    ...Object.entries(SUBSTANCES).map(([key, s]) => ({ value: key, label: `${s.name} — ${s.density} g/mL` })),
+    { value: "custom", label: "Custom — enter density" },
+];
+
+const COMMON_CONVERSIONS = [
+    { substance: "water", mass: 100, volume: 100, type: "mass_to_volume" as const },
+    { substance: "ethanol", mass: 100, volume: 122.5, type: "mass_to_volume" as const },
+    { substance: "glycerol", mass: 100, volume: 79.4, type: "mass_to_volume" as const },
+    { substance: "propylene_glycol", mass: 100, volume: 96.2, type: "mass_to_volume" as const },
+    { substance: "mineral_oil", mass: 100, volume: 113.6, type: "mass_to_volume" as const },
+];
+
+const MODE_OPTIONS: ModeOption<CalculationType>[] = [
+    { value: "mass_to_volume", label: "Mass → Volume", description: "Volume = Mass ÷ Density" },
+    { value: "volume_to_mass", label: "Volume → Mass", description: "Mass = Volume × Density" },
+];
+
+const COMPOUNDING_TIPS = [
+    "Always measure liquids at room temperature (20-25°C)",
+    "Account for temperature effects on density",
+    "Use calibrated glassware for volume measurements",
+    "Verify density values in USP/NF monographs",
+];
+
+/** Unchanged: 2 decimal places, or scientific notation for very large/small values. */
+function formatNumber(num: number): string {
+    if (num === 0) return "0";
+    if (Math.abs(num) >= 10000 || (Math.abs(num) < 0.001 && num !== 0)) {
+        return num.toExponential(3);
+    }
+    return num.toFixed(2);
+}
+
+const DEFAULTS = {
+    mass: "100",
+    volume: "100",
+    density: "1",
+    substance: "water",
+    type: "mass_to_volume" as CalculationType,
+};
+
 export default function DensityConversionCalculator() {
-    const [mass, setMass] = useState<string>('100');
-    const [volume, setVolume] = useState<string>('100');
-    const [density, setDensity] = useState<string>('1');
-    const [selectedSubstance, setSelectedSubstance] = useState<string>('water');
-    const [calculationType, setCalculationType] = useState<'mass_to_volume' | 'volume_to_mass'>('mass_to_volume');
-    const [calculatedValue, setCalculatedValue] = useState<number | null>(null);
-    const [massUnit, setMassUnit] = useState<'mg' | 'g' | 'kg'>('g');
-    const [volumeUnit, setVolumeUnit] = useState<'mL' | 'L'>('mL');
+    const [mass, setMass] = useState(DEFAULTS.mass);
+    const [volume, setVolume] = useState(DEFAULTS.volume);
+    const [density, setDensity] = useState(DEFAULTS.density);
+    const [selectedSubstance, setSelectedSubstance] = useState(DEFAULTS.substance);
+    const [calculationType, setCalculationType] = useState<CalculationType>(DEFAULTS.type);
+    const [massUnit, setMassUnit] = useState<MassUnit>("g");
+    const [volumeUnit, setVolumeUnit] = useState<VolumeUnit>("mL");
 
-    const substances: Record<string, Substance> = {
-        water: {
-            name: 'Water',
-            density: 1.00,
-            category: 'Solvent',
-            commonUses: ['Diluent', 'Vehicle', 'Reconstitution']
-        },
-        ethanol: {
-            name: 'Ethanol (95%)',
-            density: 0.816,
-            category: 'Solvent',
-            commonUses: ['Extraction', 'Preservative', 'Tinctures']
-        },
-        glycerol: {
-            name: 'Glycerol',
-            density: 1.26,
-            category: 'Vehicle',
-            commonUses: ['Syrups', 'Ointments', 'Humectant']
-        },
-        propylene_glycol: {
-            name: 'Propylene Glycol',
-            density: 1.04,
-            category: 'Vehicle',
-            commonUses: ['Injectables', 'Topicals', 'Solvent']
-        },
-        mineral_oil: {
-            name: 'Mineral Oil',
-            density: 0.88,
-            category: 'Vehicle',
-            commonUses: ['Laxative', 'Ointment base', 'Lubricant']
-        },
-        olive_oil: {
-            name: 'Olive Oil',
-            density: 0.92,
-            category: 'Vehicle',
-            commonUses: ['Ointments', 'Emulsions', 'Carrier']
-        },
-        honey: {
-            name: 'Honey',
-            density: 1.42,
-            category: 'Vehicle',
-            commonUses: ['Cough syrups', 'Demulcent', 'Sweetener']
-        }
-    };
+    const isCustom = selectedSubstance === "custom";
+    const substance = isCustom ? null : SUBSTANCES[selectedSubstance];
+    const massToVolume = calculationType === "mass_to_volume";
+    const amountRaw = massToVolume ? mass : volume;
+    const inputUnit = massToVolume ? massUnit : volumeUnit;
+    const outputUnit = massToVolume ? volumeUnit : massUnit;
 
-    const commonConversions = [
-        { substance: 'water', mass: 100, volume: 100, type: 'mass_to_volume' as const },
-        { substance: 'ethanol', mass: 100, volume: 122.5, type: 'mass_to_volume' as const },
-        { substance: 'glycerol', mass: 100, volume: 79.4, type: 'mass_to_volume' as const },
-        { substance: 'propylene_glycol', mass: 100, volume: 96.2, type: 'mass_to_volume' as const },
-        { substance: 'mineral_oil', mass: 100, volume: 113.6, type: 'mass_to_volume' as const }
-    ];
+    const parsedAmount = parseFloat(amountRaw);
+    const amountError =
+        amountRaw.trim() !== "" && isNaN(parsedAmount)
+            ? "Enter a number."
+            : parsedAmount < 0
+              ? `A ${massToVolume ? "mass" : "volume"} cannot be negative.`
+              : undefined;
+    const parsedDensity = parseFloat(density);
+    const densityError =
+        isCustom && (density.trim() === "" || isNaN(parsedDensity))
+            ? "Enter the density."
+            : isCustom && parsedDensity <= 0
+              ? "Density must be greater than zero."
+              : undefined;
 
-    const calculateConversion = () => {
+    /*
+     * Derived, not stored — the previous page refreshed state from a useEffect.
+     * Same arithmetic: volume = mass ÷ density, mass = volume × density, with a
+     * listed substance always using its reference density.
+     */
+    const result = useMemo(() => {
         const massVal = parseFloat(mass);
         const volumeVal = parseFloat(volume);
-        const densityVal = selectedSubstance === 'custom' ? parseFloat(density) : substances[selectedSubstance].density;
+        const densityVal = selectedSubstance === "custom" ? parseFloat(density) : SUBSTANCES[selectedSubstance].density;
+        if (isNaN(densityVal) || densityVal <= 0) return null;
 
-        if (isNaN(densityVal) || densityVal <= 0) {
-            setCalculatedValue(null);
-            return;
-        }
+        const value = calculationType === "mass_to_volume" ? massVal / densityVal : volumeVal * densityVal;
+        if (!Number.isFinite(value) || value < 0) return null;
+        return { value, densityVal };
+    }, [mass, volume, density, selectedSubstance, calculationType]);
 
-        let result: number;
+    const substanceName = substance?.name || "Substance";
 
-        if (calculationType === 'mass_to_volume') {
-            // Mass to volume: Volume = Mass / Density
-            result = massVal / densityVal;
-        } else {
-            // Volume to mass: Mass = Volume × Density
-            result = volumeVal * densityVal;
-        }
-
-        setCalculatedValue(result);
+    const handleSubstanceChange = (next: string) => {
+        setSelectedSubstance(next);
+        if (next !== "custom") setDensity(SUBSTANCES[next].density.toFixed(3));
     };
 
-    const resetCalculator = () => {
-        setMass('100');
-        setVolume('100');
-        setDensity('1');
-        setSelectedSubstance('water');
-        setCalculationType('mass_to_volume');
-        setCalculatedValue(null);
+    const reset = () => {
+        setMass(DEFAULTS.mass);
+        setVolume(DEFAULTS.volume);
+        setDensity(DEFAULTS.density);
+        setSelectedSubstance(DEFAULTS.substance);
+        setCalculationType(DEFAULTS.type);
     };
-
-    const loadCommonConversion = (index: number) => {
-        const conv = commonConversions[index];
-        setSelectedSubstance(conv.substance);
-        setCalculationType(conv.type);
-        setMass(conv.mass.toString());
-        calculateConversion();
-    };
-
-    const formatNumber = (num: number): string => {
-        if (num === 0) return '0';
-        if (Math.abs(num) >= 10000 || (Math.abs(num) < 0.001 && num !== 0)) {
-            return num.toExponential(3);
-        }
-        return num.toFixed(2);
-    };
-
-    const handleSubstanceChange = (substance: string) => {
-        setSelectedSubstance(substance);
-        if (substance !== 'custom') {
-            setDensity(substances[substance].density.toFixed(3));
-        }
-    };
-
-    useEffect(() => {
-        calculateConversion();
-    }, [mass, volume, density, selectedSubstance, calculationType, massUnit, volumeUnit]);
 
     return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6">
-            <div className="max-w-6xl mx-auto">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6 md:mb-8">
-                    <div className="flex flex-col md:flex-row items-center justify-between">
-                        <div className="flex items-center mb-4 md:mb-0">
-                            <div className="bg-white/20 p-3 rounded-xl mr-4">
-                                <Weight className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-white">Density-Based Conversion Calculator</h1>
-                                <p className="text-blue-100 mt-2">Convert between mass and volume using density for liquid drug substances</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-2 bg-white/20 px-4 py-2 rounded-lg">
-                            <Droplet className="w-5 h-5 text-white" />
-                            <span className="text-white font-semibold">Liquid Compounding</span>
-                        </div>
+        <CalculatorShell
+            title="Density-Based Conversion Calculator"
+            subtitle="Converts between the mass and the volume of a liquid using its density — for weighing viscous vehicles and measuring solvents in compounding."
+            icon={Weight}
+            eyebrow="Unit Conversion"
+            aside={
+                <>
+                    <CalcAbout title="About this calculator">
+                        <p>
+                            Density links how much a liquid weighs to how much space it takes up. Glycerol
+                            and honey are too viscous to measure accurately by volume, so formulas are often
+                            converted to a mass and weighed; ethanol is lighter than water, so 100 g of it
+                            fills more than 100 mL.
+                        </p>
+                        <CalcList
+                            title="Use it when"
+                            items={[
+                                "A formula gives a volume but the liquid is easier to weigh",
+                                "Converting a weighed quantity of solvent into millilitres",
+                                "Checking a w/w and v/v preparation against each other",
+                            ]}
+                        />
+                        <CalcList title="Compounding tips" items={COMPOUNDING_TIPS} />
+                        <CalcList
+                            tone="caution"
+                            title="Check before relying on it"
+                            items={[
+                                "Density changes with temperature and, for mixtures such as ethanol–water, with composition",
+                                "Use the density from the monograph or certificate of analysis for the batch you hold",
+                                "The mass and volume units are labels here: enter grams with millilitres (g/mL density) for a correct answer",
+                            ]}
+                        />
+                    </CalcAbout>
+
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+                </>
+            }
+        >
+            <ModeSwitch
+                label="Calculation type"
+                value={calculationType}
+                onChange={setCalculationType}
+                options={MODE_OPTIONS}
+            />
+
+            <ResultCard
+                label={`${massToVolume ? "Volume" : "Mass"} of ${substanceName}`}
+                value={result ? formatNumber(result.value) : null}
+                unit={outputUnit}
+                interpretation={result ? `${amountRaw} ${inputUnit} of ${substanceName} · density ${density} g/mL` : undefined}
+                empty={
+                    densityError
+                        ? "Enter a density greater than zero for the custom substance."
+                        : `Enter the ${massToVolume ? "mass" : "volume"} to convert.`
+                }
+            />
+
+            <CalcSection title="Inputs">
+                <FieldGrid>
+                    <SelectField
+                        label="Substance"
+                        value={selectedSubstance}
+                        onChange={handleSubstanceChange}
+                        options={SUBSTANCE_OPTIONS}
+                        hint="Pick a listed liquid, or Custom to type your own density."
+                    />
+                    <NumberField
+                        label="Density (g/mL)"
+                        value={density}
+                        onChange={setDensity}
+                        unit="g/mL"
+                        step="0.001"
+                        placeholder="Enter density"
+                        disabled={!isCustom}
+                        hint={substance ? `Density of ${substance.name}: ${density} g/mL` : "From the monograph or certificate of analysis."}
+                        error={densityError}
+                    />
+                </FieldGrid>
+
+                {massToVolume ? (
+                    <NumberField
+                        label={`Mass (${massUnit})`}
+                        value={mass}
+                        onChange={setMass}
+                        units={["mg", "g", "kg"]}
+                        unit={massUnit}
+                        onUnitChange={(next) => setMassUnit(next as MassUnit)}
+                        step="0.001"
+                        placeholder="Enter mass"
+                        hint="The weighed amount of the liquid."
+                        error={amountError}
+                    />
+                ) : (
+                    <NumberField
+                        label={`Volume (${volumeUnit})`}
+                        value={volume}
+                        onChange={setVolume}
+                        units={["mL", "L"]}
+                        unit={volumeUnit}
+                        onUnitChange={(next) => setVolumeUnit(next as VolumeUnit)}
+                        step="0.001"
+                        placeholder="Enter volume"
+                        hint="The measured volume of the liquid."
+                        error={amountError}
+                    />
+                )}
+
+                <div>
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">Common conversions</p>
+                    <div className="flex flex-wrap gap-2">
+                        {COMMON_CONVERSIONS.map((conv) => (
+                            <button
+                                key={conv.substance}
+                                type="button"
+                                onClick={() => {
+                                    handleSubstanceChange(conv.substance);
+                                    setCalculationType(conv.type);
+                                    setMass(conv.mass.toString());
+                                }}
+                                className="min-h-[40px] rounded-full border bg-background px-3.5 text-sm font-medium transition-colors hover:border-foreground/25 active:bg-accent"
+                            >
+                                {conv.mass}g {SUBSTANCES[conv.substance].name}{" "}
+                                <span className="font-normal text-muted-foreground">= {conv.volume}mL</span>
+                            </button>
+                        ))}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Main Calculator Section */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
-                            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                                <Weight className="w-6 h-6 md:w-7 md:h-7 mr-2" />
-                                Density Conversion
-                            </h2>
+                <Button variant="outline" onClick={reset} className="w-full">
+                    <RefreshCw />
+                    Reset
+                </Button>
+            </CalcSection>
 
-                            {/* Calculation Type */}
-                            <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6 border border-blue-200 mb-6">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Calculation Type</h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <button
-                                        onClick={() => setCalculationType('mass_to_volume')}
-                                        className={`p-4 rounded-lg transition-all ${calculationType === 'mass_to_volume' ?
-                                            'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-lg' :
-                                            'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-                                    >
-                                        <div className="font-semibold">Mass → Volume</div>
-                                        <div className="text-sm mt-1">Volume = Mass ÷ Density</div>
-                                    </button>
-                                    <button
-                                        onClick={() => setCalculationType('volume_to_mass')}
-                                        className={`p-4 rounded-lg transition-all ${calculationType === 'volume_to_mass' ?
-                                            'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-lg' :
-                                            'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-                                    >
-                                        <div className="font-semibold">Volume → Mass</div>
-                                        <div className="text-sm mt-1">Mass = Volume × Density</div>
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Substance Selection */}
-                            <div className="bg-white rounded-xl p-6 border border-gray-200 mb-6">
-                                <h3 className="font-semibold text-gray-800 mb-4">Select Substance</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                    {Object.entries(substances).map(([key, substance]) => (
-                                        <button
-                                            key={key}
-                                            onClick={() => handleSubstanceChange(key)}
-                                            className={`p-3 rounded-lg border transition-all ${selectedSubstance === key ?
-                                                'bg-gradient-to-r from-blue-600 to-green-400 text-white border-transparent' :
-                                                'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'}`}
-                                        >
-                                            <div className="font-semibold">{substance.name}</div>
-                                            <div className="text-xs mt-1">Density: {substance.density} g/mL</div>
-                                        </button>
-                                    ))}
-                                    <button
-                                        onClick={() => handleSubstanceChange('custom')}
-                                        className={`p-3 rounded-lg border transition-all ${selectedSubstance === 'custom' ?
-                                            'bg-gradient-to-r from-purple-600 to-pink-400 text-white border-transparent' :
-                                            'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'}`}
-                                    >
-                                        <div className="font-semibold">Custom</div>
-                                        <div className="text-xs mt-1">Enter density</div>
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Input Values */}
-                            <div className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6 border border-blue-200">
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-4">Input</h3>
-                                        {calculationType === 'mass_to_volume' ? (
-                                            <div>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                    Mass ({massUnit})
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    step="0.001"
-                                                    value={mass}
-                                                    onChange={(e) => setMass(e.target.value)}
-                                                    className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
-                                                    placeholder="Enter mass"
-                                                />
-                                                <div className="mt-3">
-                                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                        Mass Unit
-                                                    </label>
-                                                    <div className="grid grid-cols-3 gap-2">
-                                                        {(['mg', 'g', 'kg'] as const).map(unit => (
-                                                            <button
-                                                                key={unit}
-                                                                onClick={() => setMassUnit(unit)}
-                                                                className={`py-2 rounded ${massUnit === unit ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
-                                                            >
-                                                                {unit}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                    Volume ({volumeUnit})
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    step="0.001"
-                                                    value={volume}
-                                                    onChange={(e) => setVolume(e.target.value)}
-                                                    className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
-                                                    placeholder="Enter volume"
-                                                />
-                                                <div className="mt-3">
-                                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                        Volume Unit
-                                                    </label>
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        {(['mL', 'L'] as const).map(unit => (
-                                                            <button
-                                                                key={unit}
-                                                                onClick={() => setVolumeUnit(unit)}
-                                                                className={`py-2 rounded ${volumeUnit === unit ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
-                                                            >
-                                                                {unit}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 border border-green-200">
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-4">Density</h3>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                Density (g/mL)
-                                            </label>
-                                            <input
-                                                type="number"
-                                                step="0.001"
-                                                value={density}
-                                                onChange={(e) => setDensity(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none"
-                                                placeholder="Enter density"
-                                                disabled={selectedSubstance !== 'custom'}
-                                            />
-                                            {selectedSubstance !== 'custom' && (
-                                                <div className="mt-3 text-sm text-gray-600">
-                                                    Density of {substances[selectedSubstance].name}: {density} g/mL
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Common Conversions */}
-                                <div className="bg-white rounded-xl p-6 border border-gray-200">
-                                    <h3 className="font-semibold text-gray-800 mb-4">Common Conversions</h3>
-                                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                                        {commonConversions.map((conv, index) => (
-                                            <button
-                                                key={index}
-                                                onClick={() => loadCommonConversion(index)}
-                                                className="bg-gradient-to-r from-blue-50 to-green-50 hover:from-blue-100 hover:to-green-100 border border-blue-200 rounded-lg p-3 text-center transition-all hover:shadow-md"
-                                            >
-                                                <div className="font-semibold text-blue-700">
-                                                    {conv.mass}g
-                                                </div>
-                                                <div className="text-xs text-gray-600 mt-1">
-                                                    {substances[conv.substance].name}
-                                                </div>
-                                                <div className="text-sm font-bold text-gray-800 mt-1">
-                                                    = {conv.volume}mL
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Action Buttons */}
-                                <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                                    <button
-                                        onClick={calculateConversion}
-                                        className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
-                                    >
-                                        Calculate Conversion
-                                    </button>
-                                    <button
-                                        onClick={resetCalculator}
-                                        className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center"
-                                    >
-                                        <RefreshCw className="w-5 h-5 mr-2" />
-                                        Reset
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Results Section */}
-                    <div className="space-y-6">
-                        {/* Calculation Result */}
-                        <div className="bg-gradient-to-br from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 text-white">
-                            <h2 className="text-2xl font-bold mb-6 flex items-center">
-                                <Weight className="w-7 h-7 mr-3" />
-                                Calculation Result
-                            </h2>
-
-                            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 mb-6">
-                                <div className="text-center">
-                                    <div className="text-sm font-semibold text-blue-100 mb-2">
-                                        {calculationType === 'mass_to_volume' ? `${mass} ${massUnit} of ${substances[selectedSubstance]?.name || 'Substance'}` :
-                                            `${volume} ${volumeUnit} of ${substances[selectedSubstance]?.name || 'Substance'}`}
-                                    </div>
-                                    {calculatedValue !== null ? (
-                                        <>
-                                            <div className="text-5xl md:text-6xl font-bold mb-2">
-                                                {formatNumber(calculatedValue)}
-                                            </div>
-                                            <div className="text-2xl font-semibold">
-                                                {calculationType === 'mass_to_volume' ? volumeUnit : massUnit}
-                                            </div>
-                                            <div className="text-sm mt-4 text-blue-100">
-                                                Density: {density} g/mL
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <div className="text-3xl font-bold text-blue-100">
-                                            Enter Values
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Formula */}
-                            <div className="bg-white/10 rounded-lg p-4">
-                                <div className="text-center">
-                                    <div className="text-sm font-semibold mb-1">Formula</div>
-                                    <div className="font-mono text-xs">
-                                        {calculationType === 'mass_to_volume' ? 'Volume = Mass ÷ Density' : 'Mass = Volume × Density'}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Substance Information */}
-                        {selectedSubstance !== 'custom' && (
-                            <div className="bg-white rounded-2xl shadow-lg p-6">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                                    <AlertCircle className="w-5 h-5 mr-2 text-blue-600" />
-                                    Substance Information
-                                </h3>
-                                <div className="space-y-4">
-                                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                        <p className="text-sm text-gray-700">
-                                            <strong>Name:</strong> {substances[selectedSubstance].name}<br />
-                                            <strong>Density:</strong> {substances[selectedSubstance].density} g/mL<br />
-                                            <strong>Category:</strong> {substances[selectedSubstance].category}<br />
-                                            <strong>Uses:</strong> {substances[selectedSubstance].commonUses.join(', ')}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
+            {result && (
+                <CalcSection title="Working">
+                    <div>
+                        <ResultRow label={massToVolume ? "Mass" : "Volume"} value={amountRaw} unit={inputUnit} />
+                        <ResultRow label="Density" value={density} unit="g/mL" />
+                        <ResultRow
+                            label="Substitution"
+                            value={
+                                massToVolume
+                                    ? `${amountRaw} ÷ ${result.densityVal} = ${formatNumber(result.value)}`
+                                    : `${amountRaw} × ${result.densityVal} = ${formatNumber(result.value)}`
+                            }
+                            unit={outputUnit}
+                        />
+                        {substance && (
+                            <>
+                                <ResultRow label="Category" value={substance.category} />
+                                <ResultRow label="Uses" value={substance.commonUses.join(", ")} />
+                            </>
                         )}
+                    </div>
+                </CalcSection>
+            )}
 
-                        {/* Density Comparison */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">Density Comparison</h3>
-                            <div className="space-y-3">
-                                {Object.values(substances).map((substance, index) => (
-                                    <div key={index} className="flex items-center">
-                                        <div className="w-32 text-sm text-gray-700 font-medium">
-                                            {substance.name}
-                                        </div>
-                                        <div className="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-gradient-to-r from-blue-400 to-green-400"
-                                                style={{ width: `${(substance.density / 1.5) * 100}%` }}
-                                            ></div>
-                                        </div>
-                                        <div className="w-16 text-right text-sm font-semibold">
-                                            {substance.density}
-                                        </div>
-                                    </div>
-                                ))}
+            <CalcSection title="Density comparison" description="Reference densities in g/mL; the bar is scaled to 1.5 g/mL.">
+                <div className="space-y-3">
+                    {Object.entries(SUBSTANCES).map(([key, s]) => (
+                        <div key={key} className="flex items-center gap-3">
+                            <div
+                                className={
+                                    key === selectedSubstance
+                                        ? "w-28 shrink-0 text-sm font-semibold text-foreground sm:w-36"
+                                        : "w-28 shrink-0 text-sm text-muted-foreground sm:w-36"
+                                }
+                            >
+                                {s.name}
+                            </div>
+                            <div className="h-3 flex-1 overflow-hidden rounded-full bg-muted">
+                                <div
+                                    className="h-full rounded-full bg-gradient-to-r from-blue-600 to-emerald-500"
+                                    style={{ width: `${(s.density / 1.5) * 100}%` }}
+                                />
+                            </div>
+                            <div className="w-12 shrink-0 text-right text-sm font-semibold tabular-nums text-foreground">
+                                {s.density}
                             </div>
                         </div>
-
-                        {/* Compounding Tips */}
-                        <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-2xl shadow-lg p-6 border border-blue-200">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">Compounding Tips</h3>
-                            <div className="space-y-3 text-sm">
-                                <div className="flex items-start p-3 bg-white/50 rounded-lg">
-                                    <div className="mr-3 text-blue-600">•</div>
-                                    <span className="text-gray-700">Always measure liquids at room temperature (20-25°C)</span>
-                                </div>
-                                <div className="flex items-start p-3 bg-white/50 rounded-lg">
-                                    <div className="mr-3 text-green-600">•</div>
-                                    <span className="text-gray-700">Account for temperature effects on density</span>
-                                </div>
-                                <div className="flex items-start p-3 bg-white/50 rounded-lg">
-                                    <div className="mr-3 text-purple-600">•</div>
-                                    <span className="text-gray-700">Use calibrated glassware for volume measurements</span>
-                                </div>
-                                <div className="flex items-start p-3 bg-white/50 rounded-lg">
-                                    <div className="mr-3 text-red-600">•</div>
-                                    <span className="text-gray-700">Verify density values in USP/NF monographs</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    ))}
                 </div>
+            </CalcSection>
 
-                {/* Density Reference Table */}
-                <div className="mt-8 bg-white rounded-2xl shadow-lg p-6 md:p-8">
-                    <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6">Density Reference Table</h2>
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="bg-gradient-to-r from-blue-50 to-green-50">
-                                    <th className="p-3 text-left font-semibold text-gray-700">Substance</th>
-                                    <th className="p-3 text-left font-semibold text-gray-700">Density (g/mL)</th>
-                                    <th className="p-3 text-left font-semibold text-gray-700">Category</th>
-                                    <th className="p-3 text-left font-semibold text-gray-700">Common Uses</th>
-                                    <th className="p-3 text-left font-semibold text-gray-700">Temperature</th>
+            <CalcSection title="Density reference table">
+                <div className="-mx-4 overflow-x-auto sm:mx-0">
+                    <table className="w-full min-w-[36rem] text-left text-sm">
+                        <thead>
+                            <tr className="border-b border-border text-xs text-muted-foreground">
+                                <th className="px-4 py-2.5 font-medium sm:px-3">Substance</th>
+                                <th className="px-3 py-2.5 font-medium">Density (g/mL)</th>
+                                <th className="px-3 py-2.5 font-medium">Category</th>
+                                <th className="px-3 py-2.5 font-medium">Common uses</th>
+                                <th className="px-3 py-2.5 font-medium">Temperature</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {Object.entries(SUBSTANCES).map(([key, s]) => (
+                                <tr key={key} className="border-b border-border/70">
+                                    <td className="px-4 py-2.5 font-medium text-foreground sm:px-3">{s.name}</td>
+                                    <td className="px-3 py-2.5 tabular-nums">{s.density.toFixed(3)}</td>
+                                    <td className="px-3 py-2.5">{s.category}</td>
+                                    <td className="px-3 py-2.5">{s.commonUses.join(", ")}</td>
+                                    <td className="px-3 py-2.5">20-25°C</td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {Object.values(substances).map((substance, index) => (
-                                    <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
-                                        <td className="p-3 font-medium">{substance.name}</td>
-                                        <td className="p-3">{substance.density.toFixed(3)}</td>
-                                        <td className="p-3">{substance.category}</td>
-                                        <td className="p-3 text-sm">{substance.commonUses.join(', ')}</td>
-                                        <td className="p-3">20-25°C</td>
-                                    </tr>
-                                ))}
-                                <tr className="bg-gray-50">
-                                    <td className="p-3 font-medium">Water (4°C)</td>
-                                    <td className="p-3">1.000</td>
-                                    <td className="p-3">Reference</td>
-                                    <td className="p-3 text-sm">Standard reference</td>
-                                    <td className="p-3">4°C</td>
-                                </tr>
-                                <tr className="hover:bg-gray-50">
-                                    <td className="p-3 font-medium">Ethanol (100%)</td>
-                                    <td className="p-3">0.789</td>
-                                    <td className="p-3">Solvent</td>
-                                    <td className="p-3 text-sm">Tinctures, extracts</td>
-                                    <td className="p-3">20°C</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                            ))}
+                            <tr className="border-b border-border/70 bg-muted/50">
+                                <td className="px-4 py-2.5 font-medium text-foreground sm:px-3">Water (4°C)</td>
+                                <td className="px-3 py-2.5 tabular-nums">1.000</td>
+                                <td className="px-3 py-2.5">Reference</td>
+                                <td className="px-3 py-2.5">Standard reference</td>
+                                <td className="px-3 py-2.5">4°C</td>
+                            </tr>
+                            <tr>
+                                <td className="px-4 py-2.5 font-medium text-foreground sm:px-3">Ethanol (100%)</td>
+                                <td className="px-3 py-2.5 tabular-nums">0.789</td>
+                                <td className="px-3 py-2.5">Solvent</td>
+                                <td className="px-3 py-2.5">Tinctures, extracts</td>
+                                <td className="px-3 py-2.5">20°C</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-            </div>
-        </section>
+            </CalcSection>
+
+            <FormulaNote>
+                <Formula>Density (ρ) = Mass ÷ Volume</Formula>
+                <Formula>Volume = Mass ÷ Density · Mass = Volume × Density</Formula>
+                <p>
+                    Density is quoted in g/mL, so the arithmetic is only correct when mass is in grams and
+                    volume in millilitres. A density above 1 means the liquid is heavier than water — its
+                    volume is smaller than its mass in grams; below 1, the volume is larger.
+                </p>
+            </FormulaNote>
+
+            <CalcFaq
+                items={[
+                    {
+                        q: "Why weigh a liquid instead of measuring its volume?",
+                        a: "Viscous liquids such as glycerol, honey and syrups cling to glassware, so a measured volume delivers less than it reads. Weighing on a calibrated balance avoids that loss, and density turns the prescribed volume into the mass to weigh.",
+                    },
+                    {
+                        q: "Is density the same as specific gravity?",
+                        a: "Numerically almost, near room temperature. Specific gravity is density divided by the density of water, so it has no units; because water is about 1.00 g/mL, the two figures match to two decimals for everyday pharmacy work.",
+                    },
+                    {
+                        q: "Why is 95% ethanol 0.816 g/mL but pure ethanol 0.789?",
+                        a: "Ethanol–water mixtures are denser than pure ethanol because water is heavier. The exact figure depends on strength and temperature, so use the value for the grade you actually hold.",
+                    },
+                    {
+                        q: "Does temperature matter?",
+                        a: "Yes. Most liquids expand when warmed, so their density falls. The reference values here are for 20–25 °C; measure at room temperature or use a density for your actual temperature.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
     );
 }

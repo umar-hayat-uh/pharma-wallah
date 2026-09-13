@@ -15,15 +15,29 @@ import { queueActivity, flush, type ProgressEvent } from "@/lib/activityQueue";
  * No call sites need to change.
  */
 export function useTracker() {
-  const { user } = useSupabaseUser();
+  const { user, loading } = useSupabaseUser();
   const userRef = useRef(user);
+  const loadingRef = useRef(loading);
+  // Events tracked before the session has resolved. useSupabaseUser starts at
+  // user=null and resolves getSession() asynchronously, so anything a page
+  // tracks in a mount effect arrives here first. This used to be dropped
+  // silently — which is why unit_progress and spotting_progress held zero rows
+  // for every account until 2026-09-13. Now they wait for the session and are
+  // queued if there is a user, discarded if there isn't.
+  const pendingRef = useRef<ProgressEvent[]>([]);
+
   useEffect(() => {
     userRef.current = user;
-  }, [user]);
+    loadingRef.current = loading;
+    if (loading) return;
+    const pending = pendingRef.current;
+    pendingRef.current = [];
+    if (user) pending.forEach(queueActivity);
+  }, [user, loading]);
 
   const track = useCallback((event: ProgressEvent) => {
-    if (!userRef.current) return;
-    queueActivity(event);
+    if (userRef.current) queueActivity(event);
+    else if (loadingRef.current) pendingRef.current.push(event);
   }, []);
 
   const trackUnit = useCallback(
@@ -40,6 +54,21 @@ export function useTracker() {
       // under subType instead of letting it collide.
       const { type: callerType, activityType, ...rest } = data;
       track({ type: "activity", subType: callerType || activityType || "generic", ...rest });
+    },
+    [track]
+  );
+
+  /**
+   * The student's explicit "Mark as read". Sets unit_progress.completed = true
+   * (never cleared by later visits) and writes a "Finished: <title>" activity
+   * row. Flushed at once rather than waiting up to 8s, so a dashboard opened
+   * straight afterwards already shows it. Same session rule as every tracker:
+   * held while the session resolves, dropped if signed out.
+   */
+  const markUnitRead = useCallback(
+    (data: { unitId: string; unitTitle?: string; subject?: string; semester?: string; href?: string }) => {
+      track({ type: "unit", ...data, completed: true });
+      if (userRef.current) flush();
     },
     [track]
   );
@@ -82,6 +111,7 @@ export function useTracker() {
 
   return {
     trackUnit,
+    markUnitRead,
     trackActivity,
     trackFlashcard,
     trackQuiz,

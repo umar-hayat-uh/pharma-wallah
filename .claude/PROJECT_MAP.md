@@ -36,14 +36,17 @@
 | Concern | Files |
 | --- | --- |
 | Root layout, theming, PWA manifest, analytics | `src/app/layout.tsx`, `src/components/AppShell.tsx`, `public/manifest.json` |
-| **Advertising (AdSense)** | `src/components/calculators/AdSlot.tsx` (the only placement component), the loader in `src/app/layout.tsx`, `public/ads.txt`, `src/app/(site)/calculation-tools/(tools)/layout.tsx` (band under all 89 tools), `AdBand` in `src/components/Home/landing/Chrome.tsx` |
+| **Advertising (AdSense)** | `src/components/calculators/AdSlot.tsx` (the only placement component), the loader in `src/app/layout.tsx`, `public/ads.txt`, `src/app/(site)/calculation-tools/(tools)/layout.tsx` (nav strip + band under every tool). The home landing has no placement. |
 | Subdomain + auth gating | `src/middleware.ts` |
 | Build / PWA config | `next.config.mjs` |
 | Design tokens | `tailwind.config.ts`, `src/app/globals.css`, `src/Style/` |
-| Header / footer / nav | `src/components/Layout/Header/`, `src/components/Layout/Footer/` |
+| Loading screens | `src/components/loading/PharmaLoader.tsx` + `pharma-loader.css` (shared mark), `src/app/loading.tsx` (website route loading), `mobile/app/_components/StartupSplash.tsx` (Android splash) |
+| Header / footer / nav | `src/components/Layout/Header/` (reading-progress hairline, Android "Get the app" CTA `AppCta`, `.pw-brand-btn` in `index.tsx`; desktop layout from `xl`), `src/components/Layout/Footer/` (one responsive grid on the brand gradient) |
+| Favicon / app icons | `src/app/favicon.ico`, `src/app/icon.png`, `src/app/apple-icon.png` (Next file convention; generated from `public/icons/icon-512x512.png` — `MEMORY.md` gotcha 58) |
+| Science Fair launch dialog (site-wide, 24h dismissal) | `src/components/LaunchPopup.tsx`, mounted by `src/components/AppShell.tsx` |
 | Desktop mega menu | `src/components/Layout/Header/MegaMenu.tsx` (Radix NavigationMenu) + `Navigation/menuMeta.tsx` (icons/tints/descriptions, shared with the mobile drawer) |
 | Footer wordmark | `src/components/Layout/Footer/Wordmark.tsx` |
-| shadcn/ui primitives | `src/components/ui/{button,card,badge,input,label,navigation-menu}.tsx`, `cn()` in `src/lib/utils.ts`, tokens in `src/app/globals.css` |
+| shadcn/ui primitives | `src/components/ui/{button,card,badge,input,label,navigation-menu,separator,alert,progress,tabs}.tsx` (the last four dependency-free), `cn()` in `src/lib/utils.ts`, tokens in `src/app/globals.css` — **shared with the Android app** |
 | 404 | `src/app/not-found.tsx`, `src/components/NotFound/` |
 
 ---
@@ -58,7 +61,9 @@
 | Client-side user hook | `src/hooks/useSupabaseUser.ts` |
 | OAuth / magic-link callback | `src/app/api/auth/callback/route.ts` |
 | Route gating | `src/middleware.ts` → `PROTECTED_PATHS` |
-| Sign in / sign up / OTP / password reset pages | `src/app/(site)/{signin,signup,verify-otp,forgot-password,update-password}/page.tsx` |
+| Sign in / sign up / OTP / password reset pages | `src/app/(site)/{signin,signup,verify-otp,forgot-password,update-password}/page.tsx` (logic) |
+| Shared auth page frame (layout, brand panel, fields, buttons) | `src/components/auth/AuthKit.tsx` |
+| Brand gradient surfaces (no black grounds) | `src/components/page-kit/brand.ts` |
 
 ---
 
@@ -67,7 +72,11 @@
 | Piece | File |
 | --- | --- |
 | Page | `src/app/(site)/dashboard/page.tsx` |
-| UI | `src/components/dashboard/{DashboardMain,DashboardSidebar,DashboardTabs,DashboardErrorBoundary}.tsx`, `dashboard-shared.ts` |
+| UI (props-only view) | `src/components/dashboard/DashboardView.tsx` → `Shell.tsx` (rail, top bar, sheet, account), `Sections.tsx` (panels), `CommandPalette.tsx` (⌘K) |
+| Every derived figure (streak, coverage, next-up, milestones) | `src/components/dashboard/dashboard-data.ts` |
+| Dashboard motion (lazy GSAP) + styles | `src/components/dashboard/useDashboardMotion.ts`, `dashboard.css` (`.pw-dash`) |
+| Signed-in `/` → `/dashboard`; no header/footer there | `src/middleware.ts`, `src/components/AppShell.tsx` |
+| "Mark as read" event | `useTracker().markUnitRead` → `unit_progress.completed` |
 | Read + single-write API | `src/app/api/progress/route.ts` |
 | Batched-write API | `src/app/api/progress/batch/route.ts` |
 | **Shared write logic + validation** | `src/lib/progress-server.ts` → `applyProgressEvent()`, `ProgressEventValidationError` |
@@ -109,7 +118,7 @@
 
 ---
 
-## Calculation tools (89 calculators)
+## Calculation tools (97 calculators)
 
 | Piece | File |
 | --- | --- |
@@ -118,8 +127,18 @@
 | One tool | `src/app/(site)/calculation-tools/(tools)/<tool-slug>/page.tsx` |
 | Clinical-only tool hub | `src/app/clinical/dose-calculators/page.tsx`, `src/app/clinical/calculators/page.tsx` |
 | **Dead legacy registry — do not edit** | `src/app/api/calculators.tsx` |
-| **Web-only wrapper for all 89 tools** | `src/app/(site)/calculation-tools/(tools)/layout.tsx` — never reaches the APK |
-| **Android app catalogue (all 89)** | `mobile/app/_data/tool-registry.ts` |
+| **Web-only wrapper for all 97 tools** | `src/app/(site)/calculation-tools/(tools)/layout.tsx` — never reaches the APK |
+| **Android app catalogue (all 97)** | `mobile/app/_data/tool-registry.ts` |
+| **Shared calculator kit** | `src/components/calculators/` — shell, fields, result card, `AdSlot`, and the lab layer below |
+| Calculator disclaimer ("educational purposes only") | `src/components/calculators/CalcDisclaimer.tsx`, mounted only in `(tools)/layout.tsx` (web) and `mobile/app/_components/MobileShell.tsx` (APK) |
+| Master Formula Calculator (Dosage Form Lab) | `src/app/(site)/calculation-tools/(tools)/master-formula-calculator/` — `page.tsx` + pure `_scale.ts` (`%`/`q.s.` not scaled) |
+| **Shared page kit** (non-calculator pages) | `src/components/page-kit/` — `PageHero`/`Trail`, `PageSection`, `Figure`/`FigureRow`, `EmptyState`/`ErrorState`/`LoadingState`, `Eyebrow`, `Reveal` (2026-09-13; not yet used by a page) |
+| **Site-wide redesign tracker** | `.claude/redesign-tracker.md` — every page and calculator, batch status, chosen directions, measured faults F1–F19 |
+| **Lab-record card (copy / PNG / print)** | `src/components/calculators/LabReport.tsx` (`LabReport`, `LabActions`, `reportToText`, `downloadReportPng`, `printReport`) |
+| Lab helpers | `lab-math.ts` (parsing, `fieldError`, sig figs, units, `calculatorHref`), `ModeSwitch.tsx`, `LabFields.tsx`, `chemistry.ts` (formula → molar mass), `hemocytometer.ts` |
+| **Reference lab tool** (copy this) | `(tools)/theoretical-yield-calculator/page.tsx` |
+| Theoretical → percentage yield hand-off | `calculatorHref("percentage-yield-calculator", …)` in theoretical-yield; `readQuery()` in percentage-yield |
+| Multi-file tools | `(tools)/uv-spectrum-plotter/_*.ts(x)`, `(tools)/serial-dilution-calculator/_*.ts` |
 | Android app home screen | `mobile/app/_components/ToolHub.tsx` |
 | Android route generator | `scripts/generate-mobile-routes.mjs` |
 
@@ -258,8 +277,8 @@ Supabase cache tables: `pubmed_cache`, `medlineplus_cache`, `clinicaltrials_cach
 | Drug finder UI | `src/app/(site)/drug-finder/page.tsx`, `src/components/{DrugSearch,DrugCard}.tsx` |
 | Contact form → Resend | `src/app/api/contact/route.ts`, `src/app/contact/page.tsx`, `src/components/Home/ContactForm/` |
 | Blog (MDX) | `markdown/blog/*.mdx`, `src/components/SharedComponent/Blog/` |
-| **Landing page (`/`)** | `src/components/Home/landing/` — `LandingPage.tsx` composes it, `useLandingMotion.ts` holds every GSAP timeline, `landing.css` the scoped styles, `data.ts` the copy |
-| Landing page sections | `src/components/Home/landing/{LandingHero,StationAbsorption,StationDistribution,StationMetabolism,StationElimination,AiGuide,CloseCta,Chrome}.tsx` |
+| **Landing page (`/`)** | `src/components/Home/landing/` — `LandingPage.tsx` composes it, `useIndexMotion.ts` holds every GSAP tween, `landing.css` the scoped `.pw-idx` styles, `data.ts` the copy, figures and chapters |
+| Landing page sections | `src/components/Home/landing/{Hero,Specimen,IndexSection,Sections,Chrome,Btn}.tsx`; marker annotations `Marks.tsx`; scroll timeline bar `Player.tsx` |
 | **Unused** home sections | `src/components/Home/{Hero,Features,Courses,Mentor,Companies,ContactForm}/` — replaced 2026-09-12, still on disk, rendered nowhere |
 | Home page promo strip | `src/components/Home/tournament/` (`OfficialLaunchBanner`, still rendered) |
 | Static pages | `src/app/(site)/{about-us,careers,faqs,privacy,terms,documentation,books-library,pw}/page.tsx` |
@@ -299,7 +318,7 @@ exported. See `.claude/skills/android-app-capacitor/SKILL.md`.
 | Catalogue of all 89 tools | `mobile/app/_data/tool-registry.ts` |
 | Route generator (re-exports the real tools) | `scripts/generate-mobile-routes.mjs` |
 | Generated, gitignored | `mobile/app/calculation-tools/<slug>/`, `mobile/app/_generated/`, `mobile/out/` |
-| shadcn/ui components | `mobile/components/ui/`, `mobile/components.json`, `mobile/lib/utils.ts` |
+| shadcn/ui components | **none of its own** — `@/*` → `../src/*`, so the app uses `src/components/ui/` and `src/components/calculators/` |
 | Mobile design tokens | `mobile/app/globals.css` (`--primary` = brandBlue) |
 | Release APK build | `scripts/build-apk.sh` (`npm run mobile:apk`) |
 | Release signing | `android/app/build.gradle`, `android/keystore.properties` (gitignored) |

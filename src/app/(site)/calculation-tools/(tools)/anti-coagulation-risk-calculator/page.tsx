@@ -1,34 +1,30 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { Check, Copy, Droplet, HeartPulse, Pill, RefreshCw, Shield } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
-    Heart,
-    AlertTriangle,
-    Activity,
-    TrendingUp,
-    Shield,
-    BookOpen,
-    RefreshCw,
-    Pill,
-    Droplet,
-    Check,
-    Copy,
-    Sparkles,
-    ShieldCheck,
-    HelpCircle,
-    Zap,
-    ChevronDown,
-    ChevronUp,
-    SlidersHorizontal,
-    Stethoscope,
-    ArrowRight,
-} from "lucide-react";
+    CalculatorShell,
+    CalcSection,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    AdSlot,
+    ModeSwitch,
+    LabNotice,
+    type ResultTone,
+} from "@/components/calculators";
 
-// ─── STRICT TYPES & INTERFACES ───────────────────────────────────────
+/** Joins class names; a local stand-in so the page imports nothing from @/lib. */
+const cn = (...classes: (string | false | undefined)[]) => classes.filter(Boolean).join(" ");
 
-export type RiskTool = "chads" | "hasbled" | "doac_dosing";
+type RiskTool = "chads" | "hasbled" | "doac_dosing";
 
-export interface ChadsFactors {
+interface ChadsFactors {
     chf: boolean;
     hypertension: boolean;
     ageOver75: boolean;
@@ -39,7 +35,7 @@ export interface ChadsFactors {
     female: boolean;
 }
 
-export interface HasbledFactors {
+interface HasbledFactors {
     hypertension: boolean;
     abnormalRenal: boolean;
     abnormalLiver: boolean;
@@ -50,15 +46,14 @@ export interface HasbledFactors {
     drugsAlcohol: boolean;
 }
 
-export interface PatientPreset {
+interface PatientPreset {
     name: string;
-    tag: string;
     tool: RiskTool;
     chads: ChadsFactors;
     hasbled: HasbledFactors;
 }
 
-export interface DOACMonograph {
+interface DOACMonograph {
     drug: string;
     brand: string;
     standardDose: string;
@@ -67,8 +62,7 @@ export interface DOACMonograph {
     monitoringPearls: string;
 }
 
-// ─── DOAC CLINICAL MONOGRAPHS ────────────────────────────────────────
-
+/* ── DOAC monographs (content unchanged) ──────────────────────────────────── */
 const DOAC_MONOGRAPHS: DOACMonograph[] = [
     {
         drug: "Apixaban",
@@ -120,13 +114,76 @@ const DOAC_MONOGRAPHS: DOACMonograph[] = [
     },
 ];
 
-// ─── MAIN COMPONENT ──────────────────────────────────────────────────
+const CHADS_ITEMS: { id: keyof ChadsFactors; letter: string; label: string; pts: number }[] = [
+    { id: "chf", letter: "C", label: "Congestive heart failure / LVEF ≤ 40%", pts: 1 },
+    { id: "hypertension", letter: "H", label: "Hypertension (resting SBP > 140 mmHg or treated)", pts: 1 },
+    { id: "ageOver75", letter: "A₂", label: "Age ≥ 75 years", pts: 2 },
+    { id: "diabetes", letter: "D", label: "Diabetes mellitus (oral agent or insulin)", pts: 1 },
+    { id: "strokeTIA", letter: "S₂", label: "Prior stroke, TIA or systemic thromboembolism", pts: 2 },
+    { id: "vascularDisease", letter: "V", label: "Vascular disease (prior MI, PAD, aortic plaque)", pts: 1 },
+    { id: "age65to74", letter: "A", label: "Age 65–74 years", pts: 1 },
+    { id: "female", letter: "Sc", label: "Female sex (sex category)", pts: 1 },
+];
+
+const HASBLED_ITEMS: { id: keyof HasbledFactors; letter: string; label: string }[] = [
+    { id: "hypertension", letter: "H", label: "Uncontrolled hypertension (SBP > 160 mmHg)" },
+    { id: "abnormalRenal", letter: "A", label: "Abnormal renal function (dialysis, Cr > 2.26 mg/dL)" },
+    { id: "abnormalLiver", letter: "A", label: "Abnormal liver function (cirrhosis, bilirubin > 2× or AST/ALT > 3× normal)" },
+    { id: "stroke", letter: "S", label: "Prior stroke (ischaemic or haemorrhagic)" },
+    { id: "bleeding", letter: "B", label: "Bleeding history or predisposition (major bleed, anaemia)" },
+    { id: "labileINR", letter: "L", label: "Labile INR (time in therapeutic range < 60% on warfarin)" },
+    { id: "elderly", letter: "E", label: "Elderly (age > 65 years or frailty)" },
+    { id: "drugsAlcohol", letter: "D", label: "Drugs (antiplatelets / NSAIDs) or alcohol (≥ 8 drinks/week)" },
+];
+
+const NO_CHADS: ChadsFactors = { chf: false, hypertension: false, ageOver75: false, diabetes: false, strokeTIA: false, vascularDisease: false, age65to74: false, female: false };
+const NO_HASBLED: HasbledFactors = { hypertension: false, abnormalRenal: false, abnormalLiver: false, stroke: false, bleeding: false, labileINR: false, elderly: false, drugsAlcohol: false };
+
+/*
+ * Factor sets unchanged. The previous chips carried tags; the demographic ones
+ * are kept in the name, and "HAS-BLED Score 4" was dropped because those
+ * factors score 5.
+ */
+const SAMPLE_PATIENTS: PatientPreset[] = [
+    {
+        name: "Low risk (lone AF), M 52",
+        tool: "chads",
+        chads: { chf: false, hypertension: false, ageOver75: false, diabetes: false, strokeTIA: false, vascularDisease: false, age65to74: false, female: false },
+        hasbled: { hypertension: false, abnormalRenal: false, abnormalLiver: false, stroke: false, bleeding: false, labileINR: false, elderly: false, drugsAlcohol: false },
+    },
+    {
+        name: "Senior with HTN, M 71",
+        tool: "chads",
+        chads: { chf: false, hypertension: true, ageOver75: false, diabetes: false, strokeTIA: false, vascularDisease: false, age65to74: true, female: false },
+        hasbled: { hypertension: true, abnormalRenal: false, abnormalLiver: false, stroke: false, bleeding: false, labileINR: false, elderly: true, drugsAlcohol: false },
+    },
+    {
+        name: "Diabetic with CHF, F 78",
+        tool: "chads",
+        chads: { chf: true, hypertension: true, ageOver75: true, diabetes: true, strokeTIA: false, vascularDisease: false, age65to74: false, female: true },
+        hasbled: { hypertension: true, abnormalRenal: false, abnormalLiver: false, stroke: false, bleeding: false, labileINR: false, elderly: true, drugsAlcohol: false },
+    },
+    {
+        name: "Prior TIA & PAD, M 68",
+        tool: "chads",
+        chads: { chf: false, hypertension: true, ageOver75: false, diabetes: false, strokeTIA: true, vascularDisease: true, age65to74: true, female: false },
+        hasbled: { hypertension: true, abnormalRenal: false, abnormalLiver: false, stroke: true, bleeding: false, labileINR: false, elderly: true, drugsAlcohol: false },
+    },
+    {
+        name: "High bleeding hazard (NSAIDs + renal)",
+        tool: "hasbled",
+        chads: { chf: true, hypertension: true, ageOver75: false, diabetes: true, strokeTIA: false, vascularDisease: false, age65to74: true, female: false },
+        hasbled: { hypertension: true, abnormalRenal: true, abnormalLiver: false, stroke: false, bleeding: true, labileINR: false, elderly: true, drugsAlcohol: true },
+    },
+];
+
+type Level = "low" | "moderate" | "high";
+const LEVEL_TONE: Record<Level, ResultTone> = { low: "success", moderate: "warning", high: "danger" };
+const LEVEL_NOTICE: Record<Level, "info" | "warning" | "danger"> = { low: "info", moderate: "warning", high: "danger" };
 
 export default function AnticoagulationRiskCalculator() {
-    // Navigation State
     const [activeTab, setActiveTab] = useState<RiskTool>("chads");
 
-    // CHA2DS2-VASc State
     const [chadsFactors, setChadsFactors] = useState<ChadsFactors>({
         chf: false,
         hypertension: true,
@@ -138,7 +195,6 @@ export default function AnticoagulationRiskCalculator() {
         female: false,
     });
 
-    // HAS-BLED State
     const [hasbledFactors, setHasbledFactors] = useState<HasbledFactors>({
         hypertension: true,
         abnormalRenal: false,
@@ -150,51 +206,9 @@ export default function AnticoagulationRiskCalculator() {
         drugsAlcohol: false,
     });
 
-    // UI States
-    const [showInstructions, setShowInstructions] = useState<boolean>(true);
-    const [showDetails, setShowDetails] = useState<boolean>(false);
     const [copied, setCopied] = useState<boolean>(false);
 
-    // Patient Archetypes
-    const samplePatients: PatientPreset[] = [
-        {
-            name: "Low Risk (Lone AF)",
-            tag: "Male, 52y, No comorbidities",
-            tool: "chads",
-            chads: { chf: false, hypertension: false, ageOver75: false, diabetes: false, strokeTIA: false, vascularDisease: false, age65to74: false, female: false },
-            hasbled: { hypertension: false, abnormalRenal: false, abnormalLiver: false, stroke: false, bleeding: false, labileINR: false, elderly: false, drugsAlcohol: false },
-        },
-        {
-            name: "Moderate Risk Senior",
-            tag: "Male, 71y, HTN",
-            tool: "chads",
-            chads: { chf: false, hypertension: true, ageOver75: false, diabetes: false, strokeTIA: false, vascularDisease: false, age65to74: true, female: false },
-            hasbled: { hypertension: true, abnormalRenal: false, abnormalLiver: false, stroke: false, bleeding: false, labileINR: false, elderly: true, drugsAlcohol: false },
-        },
-        {
-            name: "High-Risk Diabetic Female",
-            tag: "Female, 78y, HTN, T2D, CHF",
-            tool: "chads",
-            chads: { chf: true, hypertension: true, ageOver75: true, diabetes: true, strokeTIA: false, vascularDisease: false, age65to74: false, female: true },
-            hasbled: { hypertension: true, abnormalRenal: false, abnormalLiver: false, stroke: false, bleeding: false, labileINR: false, elderly: true, drugsAlcohol: false },
-        },
-        {
-            name: "Prior Stroke High-Risk",
-            tag: "Male, 68y, Prior TIA & PAD",
-            tool: "chads",
-            chads: { chf: false, hypertension: true, ageOver75: false, diabetes: false, strokeTIA: true, vascularDisease: true, age65to74: true, female: false },
-            hasbled: { hypertension: true, abnormalRenal: false, abnormalLiver: false, stroke: true, bleeding: false, labileINR: false, elderly: true, drugsAlcohol: false },
-        },
-        {
-            name: "High Bleeding Hazard",
-            tag: "HAS-BLED Score 4 (NSAIDs + Renal)",
-            tool: "hasbled",
-            chads: { chf: true, hypertension: true, ageOver75: false, diabetes: true, strokeTIA: false, vascularDisease: false, age65to74: true, female: false },
-            hasbled: { hypertension: true, abnormalRenal: true, abnormalLiver: false, stroke: false, bleeding: true, labileINR: false, elderly: true, drugsAlcohol: true },
-        },
-    ];
-
-    // ─── CHA2DS2-VASc CALCULATIONS ───────────────────────────────────────
+    /* ── CHA₂DS₂-VASc (scoring, rates and recommendations unchanged) ─────── */
     const chadsResult = useMemo(() => {
         let score = 0;
         if (chadsFactors.chf) score += 1;
@@ -206,7 +220,7 @@ export default function AnticoagulationRiskCalculator() {
         if (chadsFactors.age65to74 && !chadsFactors.ageOver75) score += 1; // Mutually exclusive
         if (chadsFactors.female) score += 1;
 
-        // Annual Ischemic Stroke Rates (Lip GY et al. Stroke 2010; ESC 2024)
+        // Annual ischaemic stroke rates (as cited: Lip GY et al. Stroke 2010; ESC 2024)
         const annualStrokeRates: Record<number, number> = {
             0: 0.2,
             1: 0.6,
@@ -222,52 +236,45 @@ export default function AnticoagulationRiskCalculator() {
 
         const annualRisk = annualStrokeRates[score] ?? 15.2;
 
-        // Clinical Guideline Recommendation (ESC 2024 / AHA 2023)
         const isFemale = chadsFactors.female;
         let recommendation = "";
         let classOfRecommendation = "";
-        let badgeColor = "";
+        let level: Level = "low";
 
         if (isFemale) {
             if (score === 1) {
                 recommendation = "Low Risk (Female sex alone). No oral anticoagulation (OAC) or antiplatelet therapy recommended.";
                 classOfRecommendation = "Class III (No Benefit / Potential Harm)";
-                badgeColor = "bg-emerald-100 text-emerald-800 border-emerald-300";
+                level = "low";
             } else if (score === 2) {
                 recommendation = "Moderate Risk (1 non-sex risk factor). Oral anticoagulation (DOAC) should be considered based on individual clinical judgment and patient values.";
                 classOfRecommendation = "Class IIa (Moderate Recommendation)";
-                badgeColor = "bg-yellow-100 text-yellow-800 border-yellow-300";
+                level = "moderate";
             } else {
                 recommendation = "High Risk (≥ 2 non-sex risk factors). Oral anticoagulation (DOAC preferred over Warfarin) is strongly recommended unless absolute contraindications exist.";
                 classOfRecommendation = "Class I (Strong Recommendation)";
-                badgeColor = "bg-rose-100 text-rose-800 border-rose-300";
+                level = "high";
             }
         } else {
             if (score === 0) {
                 recommendation = "Truly Low Risk. No oral anticoagulation or antiplatelet therapy recommended.";
                 classOfRecommendation = "Class III (No Benefit)";
-                badgeColor = "bg-emerald-100 text-emerald-800 border-emerald-300";
+                level = "low";
             } else if (score === 1) {
                 recommendation = "Moderate Risk (1 clinical risk factor). Oral anticoagulation (DOAC) should be considered based on net clinical benefit and patient preference.";
                 classOfRecommendation = "Class IIa (Moderate Recommendation)";
-                badgeColor = "bg-yellow-100 text-yellow-800 border-yellow-300";
+                level = "moderate";
             } else {
                 recommendation = "High Risk (≥ 2 clinical risk factors). Oral anticoagulation (DOAC preferred over Warfarin) is strongly recommended.";
                 classOfRecommendation = "Class I (Strong Recommendation)";
-                badgeColor = "bg-rose-100 text-rose-800 border-rose-300";
+                level = "high";
             }
         }
 
-        return {
-            score,
-            annualRisk,
-            recommendation,
-            classOfRecommendation,
-            badgeColor,
-        };
+        return { score, annualRisk, recommendation, classOfRecommendation, level };
     }, [chadsFactors]);
 
-    // ─── HAS-BLED CALCULATIONS ──────────────────────────────────────────
+    /* ── HAS-BLED (scoring, rates and tiers unchanged) ───────────────────── */
     const hasbledResult = useMemo(() => {
         let score = 0;
         if (hasbledFactors.hypertension) score += 1;
@@ -279,7 +286,7 @@ export default function AnticoagulationRiskCalculator() {
         if (hasbledFactors.elderly) score += 1;
         if (hasbledFactors.drugsAlcohol) score += 1;
 
-        // Annual Major Bleeding Rates (Pisters R et al. Chest 2010)
+        // Annual major bleeding rates (as cited: Pisters R et al. Chest 2010)
         const annualBleedRates: Record<number, number> = {
             0: 0.9,
             1: 1.1,
@@ -295,60 +302,45 @@ export default function AnticoagulationRiskCalculator() {
         const annualRisk = annualBleedRates[score] ?? 18.0;
 
         let riskTier = "Low Bleeding Risk";
-        let badgeColor = "bg-emerald-100 text-emerald-800 border-emerald-300";
+        let level: Level = "low";
         let directive = "Standard monitoring. Continue scheduled clinical reviews.";
 
         if (score >= 3) {
             riskTier = "High Bleeding Risk (HAS-BLED ≥ 3)";
-            badgeColor = "bg-rose-100 text-rose-800 border-rose-300";
+            level = "high";
             directive = "High bleeding risk is NOT an automatic reason to withhold OAC. Rather, it warrants identifying and correcting modifiable risk factors (e.g. discontinue NSAIDs, control blood pressure, optimize TTR) and scheduling frequent follow-up (every 3–6 months).";
         } else if (score === 2) {
             riskTier = "Moderate Bleeding Risk";
-            badgeColor = "bg-yellow-100 text-yellow-800 border-yellow-300";
+            level = "moderate";
             directive = "Address any modifiable bleeding risks (antiplatelets, alcohol, blood pressure).";
         }
 
-        return {
-            score,
-            annualRisk,
-            riskTier,
-            badgeColor,
-            directive,
-        };
+        return { score, annualRisk, riskTier, level, directive };
     }, [hasbledFactors]);
 
-    // Load Preset
     const handleLoadPreset = (p: PatientPreset) => {
         setActiveTab(p.tool);
         setChadsFactors(p.chads);
         setHasbledFactors(p.hasbled);
     };
 
-    // Reset
     const handleReset = () => {
-        setChadsFactors({
-            chf: false,
-            hypertension: false,
-            ageOver75: false,
-            diabetes: false,
-            strokeTIA: false,
-            vascularDisease: false,
-            age65to74: false,
-            female: false,
-        });
-        setHasbledFactors({
-            hypertension: false,
-            abnormalRenal: false,
-            abnormalLiver: false,
-            stroke: false,
-            bleeding: false,
-            labileINR: false,
-            elderly: false,
-            drugsAlcohol: false,
-        });
+        setChadsFactors(NO_CHADS);
+        setHasbledFactors(NO_HASBLED);
     };
 
-    // Copy Consult Note
+    // Age bands are mutually exclusive: ticking one clears the other (unchanged).
+    const toggleChads = (id: keyof ChadsFactors, val: boolean) => {
+        if (id === "ageOver75" && val) {
+            setChadsFactors((prev) => ({ ...prev, ageOver75: true, age65to74: false }));
+        } else if (id === "age65to74" && val) {
+            setChadsFactors((prev) => ({ ...prev, age65to74: true, ageOver75: false }));
+        } else {
+            setChadsFactors((prev) => ({ ...prev, [id]: val }));
+        }
+    };
+
+    // Consult note — text unchanged from the previous page.
     const handleCopyConsultNote = useCallback(() => {
         const note = `=== CLINICAL ANTICOAGULATION & AF STROKE RISK CONSULT ===
 THROMBOEMBOLIC STROKE RISK (CHA₂DS₂-VASc):
@@ -370,536 +362,387 @@ Screen for dose-reduction criteria (Renal function CrCl, age ≥ 80, body weight
 Guidelines: 2024 ESC Atrial Fibrillation Guidelines & 2023 ACC/AHA/ACCP/HRS Guidelines.
 Generated: ${new Date().toLocaleString()}`;
 
-        navigator.clipboard.writeText(note);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2400);
+        try {
+            navigator.clipboard.writeText(note);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2400);
+        } catch {
+            // No clipboard in this context (insecure origin, old WebView).
+        }
     }, [chadsResult, hasbledResult]);
 
+    const showingBleed = activeTab === "hasbled";
+
+    // What each ticked box contributed, so the total can be checked by hand.
+    const chadsContrib = CHADS_ITEMS.filter((item) => chadsFactors[item.id]).map((item) => ({
+        ...item,
+        // Age 65–74 scores nothing if age ≥ 75 is also ticked (matches the scoring above).
+        pts: item.id === "age65to74" && chadsFactors.ageOver75 ? 0 : item.pts,
+    }));
+    const hasbledContrib = HASBLED_ITEMS.filter((item) => hasbledFactors[item.id]);
+
+    const sumLine = (values: number[], total: number) =>
+        values.length > 1 ? `${values.join(" + ")} = ${total}` : `${total}`;
+
     return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50/70 via-white to-green-50/70 p-3 sm:p-5 md:p-8 font-sans selection:bg-teal-500 selection:text-white">
-            <div className="max-w-7xl mx-auto space-y-6">
+        <CalculatorShell
+            title="Anticoagulation Risk Calculator"
+            subtitle="Scores stroke risk (CHA₂DS₂-VASc) and bleeding risk (HAS-BLED) in atrial fibrillation, with a DOAC dosing reference."
+            icon={HeartPulse}
+            eyebrow="Clinical & Hospital Pharmacy"
+            aside={
+                <>
+                    <CalcAbout title="About these scores">
+                        <p>
+                            In non-valvular atrial fibrillation (AF), the decision to start an oral anticoagulant
+                            (OAC) weighs the yearly risk of ischaemic stroke against the risk of major bleeding.
+                            CHA₂DS₂-VASc estimates the first, HAS-BLED the second.
+                        </p>
+                        <p>
+                            DOACs — direct oral anticoagulants: apixaban, rivaroxaban, dabigatran, edoxaban — are
+                            recommended in preference to vitamin K antagonists (warfarin) for non-valvular AF.
+                            Aspirin alone is not recommended for stroke prevention in AF: it is less effective
+                            with a similar bleeding risk.
+                        </p>
+                        <CalcList
+                            title="How to use it"
+                            items={[
+                                "Score stroke risk: OAC is indicated at CHA₂DS₂-VASc ≥ 2 in men or ≥ 3 in women",
+                                "Score bleeding risk to find modifiable factors — hypertension, NSAIDs, alcohol — without withholding OAC",
+                                "Choose a DOAC and check its renal, age and weight dose-reduction criteria",
+                            ]}
+                        />
+                        <CalcList
+                            tone="caution"
+                            title="Keep in mind"
+                            items={[
+                                "These scores are decision aids. Always weigh individual bleeding risk, renal function, adherence and the patient's own preferences before starting OAC.",
+                                "The scores apply to non-valvular AF — not to mechanical heart valves or moderate–severe mitral stenosis.",
+                                "Calculate CrCl with Cockcroft-Gault for DOAC dose decisions, not eGFR.",
+                            ]}
+                        />
+                    </CalcAbout>
 
-                {/* ─── HEADER ──────────────────────────────────────────────────────── */}
-                <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-blue-700 to-green-500 p-6 md:p-8 text-white shadow-xl">
-                    <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div className="flex items-start sm:items-center gap-4">
-                            <div className="rounded-2xl bg-white/20 p-3.5 backdrop-blur-md ring-1 ring-white/30 shadow-inner">
-                                <Heart className="h-8 w-8 md:h-10 md:w-10 text-white" />
-                            </div>
-                            <div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                                        Anticoagulation Risk & DOAC Dosing Suite
-                                    </h1>
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur-md">
-                                        <Sparkles className="h-3 w-3 text-yellow-300" /> ESC 2024 & ACC/AHA 2023
-                                    </span>
-                                </div>
-                                <p className="mt-1 text-sm md:text-base text-blue-100 font-medium">
-                                    CHA₂DS₂-VASc stroke risk, HAS-BLED bleeding hazard & direct oral anticoagulant (DOAC) dosing guide
-                                </p>
-                            </div>
-                        </div>
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+                </>
+            }
+        >
+            <ModeSwitch<RiskTool>
+                label="Score"
+                value={activeTab}
+                onChange={setActiveTab}
+                options={[
+                    { value: "chads", label: "CHA₂DS₂-VASc", description: "Stroke risk", icon: Shield },
+                    { value: "hasbled", label: "HAS-BLED", description: "Bleeding risk", icon: Droplet },
+                    { value: "doac_dosing", label: "DOAC dosing", description: "Dose reference", icon: Pill },
+                ]}
+            />
 
-                        <div className="flex flex-wrap items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setShowInstructions((prev) => !prev)}
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-3.5 py-2 text-xs md:text-sm font-medium text-white backdrop-blur-md transition hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/40"
-                            >
-                                <HelpCircle className="h-4 w-4" />
-                                {showInstructions ? "Hide Instructions" : "Clinical Guide"}
-                            </button>
-                        </div>
-                    </div>
+            {showingBleed ? (
+                <ResultCard
+                    label="HAS-BLED score"
+                    value={hasbledResult.score}
+                    unit="of 8 points"
+                    interpretation={`${hasbledResult.riskTier} · major bleeding ${hasbledResult.annualRisk}% / year`}
+                    tone={LEVEL_TONE[hasbledResult.level]}
+                />
+            ) : (
+                <ResultCard
+                    label="CHA₂DS₂-VASc score"
+                    value={chadsResult.score}
+                    unit="of 9 points"
+                    interpretation={`Ischaemic stroke ${chadsResult.annualRisk}% / year · ${chadsResult.classOfRecommendation}`}
+                    tone={LEVEL_TONE[chadsResult.level]}
+                />
+            )}
 
-                    <div className="pointer-events-none absolute -right-12 -top-12 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
-                </header>
-
-                {/* ─── STEP-BY-STEP DIRECTIONS / CLINICAL GUIDE ─────────────────────── */}
-                {showInstructions && (
-                    <div className="rounded-2xl border border-blue-100 bg-white/90 p-4 sm:p-6 shadow-sm backdrop-blur-sm transition-all animate-in fade-in duration-300">
-                        <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
-                            <div className="flex items-center gap-2 text-blue-900 font-bold text-sm sm:text-base">
-                                <BookOpen className="h-5 w-5 text-blue-600" />
-                                <span>Atrial Fibrillation Anticoagulation Decision Pathway</span>
-                            </div>
-                            <span className="text-xs text-gray-500 font-medium">3-Step Protocol</span>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="flex items-start gap-3 rounded-xl bg-blue-50/60 p-3.5 border border-blue-100/70">
-                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-                                    1
-                                </div>
-                                <div className="text-xs sm:text-sm text-gray-700">
-                                    <strong className="block text-gray-900 font-semibold mb-0.5">Calculate Stroke Risk (CHA₂DS₂-VASc)</strong>
-                                    Determine if patient warrants oral anticoagulation (OAC indicated if score &ge; 2 in men or &ge; 3 in women).
-                                </div>
-                            </div>
-
-                            <div className="flex items-start gap-3 rounded-xl bg-green-50/60 p-3.5 border border-green-100/70">
-                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white">
-                                    2
-                                </div>
-                                <div className="text-xs sm:text-sm text-gray-700">
-                                    <strong className="block text-gray-900 font-semibold mb-0.5">Evaluate Bleeding Hazard (HAS-BLED)</strong>
-                                    Identify modifiable risk factors (hypertension, NSAIDs, alcohol) to mitigate bleeding without withholding OAC.
-                                </div>
-                            </div>
-
-                            <div className="flex items-start gap-3 rounded-xl bg-emerald-50/60 p-3.5 border border-emerald-100/70">
-                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">
-                                    3
-                                </div>
-                                <div className="text-xs sm:text-sm text-gray-700">
-                                    <strong className="block text-gray-900 font-semibold mb-0.5">Select DOAC & Adjust Dosing</strong>
-                                    Choose Apixaban, Rivaroxaban, Dabigatran, or Edoxaban and verify renal/weight dose-reduction criteria.
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <CalcSection title={showingBleed ? "What it means" : "Recommendation"}>
+                {showingBleed ? (
+                    <LabNotice tone={LEVEL_NOTICE[hasbledResult.level]} title={hasbledResult.riskTier}>
+                        {hasbledResult.directive}
+                    </LabNotice>
+                ) : (
+                    <LabNotice tone={LEVEL_NOTICE[chadsResult.level]} title={chadsResult.classOfRecommendation}>
+                        {chadsResult.recommendation}
+                    </LabNotice>
                 )}
+                <Button variant="outline" onClick={handleCopyConsultNote} className="w-full">
+                    {copied ? <Check /> : <Copy />}
+                    {copied ? "Consult note copied" : "Copy consult note (both scores)"}
+                </Button>
+            </CalcSection>
 
-                {/* ─── QUICK CLINICAL ARCHETYPES BAR ────────────────────────────────── */}
-                <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-md shadow-gray-200/50">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                            <Zap className="h-4 w-4 text-blue-600" />
-                            <span className="text-xs font-bold text-gray-800 uppercase tracking-wider">
-                                Quick Patient Archetypes (1-Click Presets)
-                            </span>
-                        </div>
-                        <span className="text-[11px] text-gray-400">Clinical Scenarios</span>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-                        {samplePatients.map((p) => (
-                            <button
-                                key={p.name}
-                                type="button"
-                                onClick={() => handleLoadPreset(p)}
-                                className="group p-2.5 rounded-xl border border-gray-200 bg-gray-50/70 hover:bg-blue-50 hover:border-blue-300 text-left transition flex flex-col justify-between"
-                            >
-                                <div className="font-bold text-xs text-gray-900 group-hover:text-blue-700">
-                                    {p.name}
-                                </div>
-                                <span className="text-[10px] text-gray-500 mt-0.5 font-medium">
-                                    {p.tag}
-                                </span>
-                            </button>
+            {activeTab === "chads" && (
+                <CalcSection title="Stroke risk factors" description="Tick every factor the patient has. The two age bands are mutually exclusive.">
+                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                        {CHADS_ITEMS.map((item) => (
+                            <FactorCheck
+                                key={item.id}
+                                letter={item.letter}
+                                label={item.label}
+                                pts={`+${item.pts}`}
+                                checked={chadsFactors[item.id]}
+                                onChange={(val) => toggleChads(item.id, val)}
+                            />
                         ))}
                     </div>
-                </div>
+                    <Presets onPick={handleLoadPreset} onReset={handleReset} />
+                </CalcSection>
+            )}
 
-                {/* ─── NAVIGATION TABS ──────────────────────────────────────────────── */}
-                <div className="flex gap-2 p-1.5 bg-gray-200/70 rounded-2xl max-w-xl mx-auto shadow-inner text-xs sm:text-sm font-bold">
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab("chads")}
-                        className={`flex-1 py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5 ${activeTab === "chads"
-                                ? "bg-white text-blue-700 shadow-md"
-                                : "text-gray-600 hover:text-gray-900"
-                            }`}
-                    >
-                        <Shield className="h-4 w-4" />
-                        <span>CHA₂DS₂-VASc (Stroke)</span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab("hasbled")}
-                        className={`flex-1 py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5 ${activeTab === "hasbled"
-                                ? "bg-white text-rose-700 shadow-md"
-                                : "text-gray-600 hover:text-gray-900"
-                            }`}
-                    >
-                        <Droplet className="h-4 w-4" />
-                        <span>HAS-BLED (Bleeding)</span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab("doac_dosing")}
-                        className={`flex-1 py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5 ${activeTab === "doac_dosing"
-                                ? "bg-white text-emerald-700 shadow-md"
-                                : "text-gray-600 hover:text-gray-900"
-                            }`}
-                    >
-                        <Pill className="h-4 w-4" />
-                        <span>DOAC Dosing Guide</span>
-                    </button>
-                </div>
-
-                {/* ─── MAIN WORKSPACE GRID: 12 COLS ─────────────────────────────────── */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-                    {/* LEFT: RISK FACTOR CHECKLIST / DOAC SELECTOR (7 COLS) */}
-                    <div className="lg:col-span-7 space-y-6">
-
-                        {/* TAB 1: CHA2DS2-VASc CHECKLIST */}
-                        {activeTab === "chads" && (
-                            <div className="rounded-2xl border border-gray-100 bg-white p-5 sm:p-6 shadow-md shadow-gray-200/50 space-y-4">
-                                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                                    <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                                        <Shield className="h-5 w-5 text-blue-600" />
-                                        CHA₂DS₂-VASc Stroke Risk Factors
-                                    </h2>
-                                    <button
-                                        type="button"
-                                        onClick={handleReset}
-                                        className="text-xs text-gray-500 hover:text-blue-600 flex items-center gap-1 font-medium transition"
-                                    >
-                                        <RefreshCw className="h-3.5 w-3.5" /> Reset
-                                    </button>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    {[
-                                        { id: "chf", label: "C — Congestive Heart Failure / LVEF ≤ 40%", pts: "+1" },
-                                        { id: "hypertension", label: "H — Hypertension (Resting SBP > 140 or treated)", pts: "+1" },
-                                        { id: "ageOver75", label: "A₂ — Age ≥ 75 Years", pts: "+2" },
-                                        { id: "diabetes", label: "D — Diabetes Mellitus (Oral agent or insulin)", pts: "+1" },
-                                        { id: "strokeTIA", label: "S₂ — Prior Stroke, TIA, or Systemic Thromboembolism", pts: "+2" },
-                                        { id: "vascularDisease", label: "V — Vascular Disease (Prior MI, PAD, Aortic Plaque)", pts: "+1" },
-                                        { id: "age65to74", label: "A — Age 65–74 Years (If < 75y)", pts: "+1" },
-                                        { id: "female", label: "Sc — Female Biological Sex", pts: "+1" },
-                                    ].map((item) => (
-                                        <label
-                                            key={item.id}
-                                            className={`p-3.5 rounded-xl border transition flex items-start justify-between gap-2 cursor-pointer ${chadsFactors[item.id as keyof ChadsFactors]
-                                                    ? "border-blue-500 bg-blue-50/80 ring-1 ring-blue-400"
-                                                    : "border-gray-200 bg-gray-50/60 hover:bg-gray-100"
-                                                }`}
-                                        >
-                                            <div className="flex items-start gap-2.5">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={chadsFactors[item.id as keyof ChadsFactors]}
-                                                    onChange={(e) => {
-                                                        const val = e.target.checked;
-                                                        if (item.id === "ageOver75" && val) {
-                                                            setChadsFactors((prev) => ({ ...prev, ageOver75: true, age65to74: false }));
-                                                        } else if (item.id === "age65to74" && val) {
-                                                            setChadsFactors((prev) => ({ ...prev, age65to74: true, ageOver75: false }));
-                                                        } else {
-                                                            setChadsFactors((prev) => ({ ...prev, [item.id]: val }));
-                                                        }
-                                                    }}
-                                                    className="mt-0.5 h-4 w-4 rounded text-blue-600 focus:ring-blue-500"
-                                                />
-                                                <span className="text-xs font-semibold text-gray-800 leading-snug">
-                                                    {item.label}
-                                                </span>
-                                            </div>
-                                            <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 text-[10px] font-bold shrink-0">
-                                                {item.pts}
-                                            </span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* TAB 2: HAS-BLED CHECKLIST */}
-                        {activeTab === "hasbled" && (
-                            <div className="rounded-2xl border border-gray-100 bg-white p-5 sm:p-6 shadow-md shadow-gray-200/50 space-y-4">
-                                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                                    <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                                        <Droplet className="h-5 w-5 text-rose-600" />
-                                        HAS-BLED Bleeding Risk Factors
-                                    </h2>
-                                    <button
-                                        type="button"
-                                        onClick={handleReset}
-                                        className="text-xs text-gray-500 hover:text-blue-600 flex items-center gap-1 font-medium transition"
-                                    >
-                                        <RefreshCw className="h-3.5 w-3.5" /> Reset
-                                    </button>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    {[
-                                        { id: "hypertension", label: "H — Uncontrolled Hypertension (SBP > 160 mmHg)", pts: "+1" },
-                                        { id: "abnormalRenal", label: "A — Abnormal Renal Function (Dialysis, Cr > 2.26 mg/dL)", pts: "+1" },
-                                        { id: "abnormalLiver", label: "A — Abnormal Liver Function (Cirrhosis, Bilirubin > 2x, AST/ALT > 3x)", pts: "+1" },
-                                        { id: "stroke", label: "S — Prior Stroke History (Ischemic or Hemorrhagic)", pts: "+1" },
-                                        { id: "bleeding", label: "B — Bleeding History or Predisposition (Major bleed, Anemia)", pts: "+1" },
-                                        { id: "labileINR", label: "L — Labile INR (Time in Therapeutic Range < 60% on Warfarin)", pts: "+1" },
-                                        { id: "elderly", label: "E — Elderly (Age > 65 Years or Frailty)", pts: "+1" },
-                                        { id: "drugsAlcohol", label: "D — Drugs (Antiplatelets / NSAIDs) or Alcohol (≥ 8 drinks/week)", pts: "+1" },
-                                    ].map((item) => (
-                                        <label
-                                            key={item.id}
-                                            className={`p-3.5 rounded-xl border transition flex items-start justify-between gap-2 cursor-pointer ${hasbledFactors[item.id as keyof HasbledFactors]
-                                                    ? "border-rose-500 bg-rose-50/80 ring-1 ring-rose-400"
-                                                    : "border-gray-200 bg-gray-50/60 hover:bg-gray-100"
-                                                }`}
-                                        >
-                                            <div className="flex items-start gap-2.5">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={hasbledFactors[item.id as keyof HasbledFactors]}
-                                                    onChange={(e) => setHasbledFactors((prev) => ({ ...prev, [item.id]: e.target.checked }))}
-                                                    className="mt-0.5 h-4 w-4 rounded text-rose-600 focus:ring-rose-500"
-                                                />
-                                                <span className="text-xs font-semibold text-gray-800 leading-snug">
-                                                    {item.label}
-                                                </span>
-                                            </div>
-                                            <span className="px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 text-[10px] font-bold shrink-0">
-                                                {item.pts}
-                                            </span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* TAB 3: DOAC CLINICAL MONOGRAPHS */}
-                        {activeTab === "doac_dosing" && (
-                            <div className="rounded-2xl border border-gray-100 bg-white p-5 sm:p-6 shadow-md shadow-gray-200/50 space-y-4">
-                                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                                    <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                                        <Pill className="h-5 w-5 text-emerald-600" />
-                                        Direct Oral Anticoagulant (DOAC) Dosing Monographs
-                                    </h2>
-                                    <span className="text-xs text-gray-500 font-semibold">2024 ESC Protocol</span>
-                                </div>
-
-                                <div className="space-y-3">
-                                    {DOAC_MONOGRAPHS.map((d) => (
-                                        <div key={d.drug} className="p-4 rounded-xl border border-gray-200 bg-gray-50/60 space-y-2">
-                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                                                <div>
-                                                    <strong className="text-sm font-black text-gray-900">
-                                                        {d.drug} ({d.brand})
-                                                    </strong>
-                                                    <span className="text-xs text-emerald-700 font-bold ml-2">
-                                                        Standard: {d.standardDose}
-                                                    </span>
-                                                </div>
-                                                <span className="text-xs font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200 self-start">
-                                                    Reduced: {d.reducedDose}
-                                                </span>
-                                            </div>
-
-                                            <div className="text-xs text-gray-700 space-y-1 bg-white p-2.5 rounded-lg border border-gray-200/80">
-                                                <strong className="text-gray-900 block text-[11px] uppercase tracking-wider">
-                                                    Dose Reduction Criteria:
-                                                </strong>
-                                                <ul className="list-disc list-inside space-y-0.5 text-gray-600">
-                                                    {d.reductionCriteria.map((c, i) => (
-                                                        <li key={i}>{c}</li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-
-                                            <p className="text-[11px] text-gray-500 leading-snug">
-                                                <strong>Clinical Pearl:</strong> {d.monitoringPearls}
-                                            </p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* ESC / ACCP CLINICAL SUMMARY BOX */}
-                        <div className="rounded-2xl border border-blue-200/80 bg-gradient-to-r from-blue-50/80 via-white to-green-50/80 p-4 shadow-sm text-gray-700 space-y-1">
-                            <div className="flex items-start gap-2.5">
-                                <ShieldCheck className="h-4 w-4 text-blue-700 shrink-0 mt-0.5" />
-                                <div className="text-[11px] leading-relaxed">
-                                    <strong className="font-semibold text-gray-900 block mb-0.5">2024 ESC Guideline Principle:</strong>
-                                    DOACs (Apixaban, Rivaroxaban, Dabigatran, Edoxaban) are recommended in preference to Vitamin K Antagonists (Warfarin) for non-valvular atrial fibrillation. Antiplatelet monotherapy (Aspirin) is not recommended for stroke prevention in AF due to inferior efficacy and similar bleeding risk.
-                                </div>
-                            </div>
-                        </div>
-
+            {activeTab === "hasbled" && (
+                <CalcSection title="Bleeding risk factors" description="Tick every factor the patient has. Each scores 1 point.">
+                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                        {HASBLED_ITEMS.map((item) => (
+                            <FactorCheck
+                                key={item.id}
+                                letter={item.letter}
+                                label={item.label}
+                                pts="+1"
+                                checked={hasbledFactors[item.id]}
+                                onChange={(val) => setHasbledFactors((prev) => ({ ...prev, [item.id]: val }))}
+                            />
+                        ))}
                     </div>
+                    <Presets onPick={handleLoadPreset} onReset={handleReset} />
+                </CalcSection>
+            )}
 
-                    {/* RIGHT: HERO SCORE OUTPUT & RISK VISUALIZATION (5 COLS) */}
-                    <div className="lg:col-span-5 space-y-6">
-
-                        {/* HERO SCORE CARD */}
-                        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-green-500 p-6 text-white shadow-xl">
-                            <div className="flex items-center justify-between border-b border-white/20 pb-3 mb-4">
-                                <div className="flex items-center gap-2">
-                                    <Activity className="h-5 w-5 text-green-300" />
-                                    <span className="text-xs font-bold uppercase tracking-wider text-blue-100">
-                                        {activeTab === "hasbled" ? "HAS-BLED Bleeding Risk" : "CHA₂DS₂-VASc Stroke Risk"}
-                                    </span>
+            {activeTab === "doac_dosing" && (
+                <CalcSection title="DOAC dosing reference" description="Standard and reduced doses for non-valvular AF, with the criteria that trigger a reduction (2024 ESC protocol).">
+                    <div className="space-y-3">
+                        {DOAC_MONOGRAPHS.map((d) => (
+                            <div key={d.drug} className="rounded-xl border border-border/80 bg-background p-4">
+                                <p className="text-[15px] font-semibold text-foreground">
+                                    {d.drug} <span className="font-normal text-muted-foreground">({d.brand})</span>
+                                </p>
+                                <div className="mt-1">
+                                    <ResultRow label="Standard dose" value={d.standardDose} />
+                                    <ResultRow label="Reduced dose" value={d.reducedDose} />
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={handleCopyConsultNote}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-white/20 px-3 py-1 text-xs font-semibold text-white backdrop-blur-md transition hover:bg-white/30"
-                                >
-                                    {copied ? (
-                                        <>
-                                            <Check className="h-3.5 w-3.5 text-green-300" />
-                                            <span>Copied to EHR!</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Copy className="h-3.5 w-3.5" />
-                                            <span>Copy Consult</span>
-                                        </>
-                                    )}
-                                </button>
+                                <div className="mt-2">
+                                    <CalcList title="Dose reduction criteria" items={d.reductionCriteria} />
+                                </div>
+                                <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                                    <span className="font-semibold text-foreground">Clinical pearl: </span>
+                                    {d.monitoringPearls}
+                                </p>
                             </div>
-
-                            <div className="space-y-4">
-                                {/* Big Score Display */}
-                                <div className="rounded-xl bg-white/15 p-5 text-center backdrop-blur-md ring-1 ring-white/20">
-                                    <span className="text-[11px] font-bold text-blue-100 uppercase tracking-wider block mb-1">
-                                        {activeTab === "hasbled" ? "Bleeding Hazard Score" : "Ischemic Stroke Risk Score"}
-                                    </span>
-                                    <div className="text-6xl font-black tracking-tight text-white">
-                                        {activeTab === "hasbled" ? hasbledResult.score : chadsResult.score}
-                                        <span className="text-2xl font-bold text-green-200 ml-1">pts</span>
-                                    </div>
-                                    <div className="mt-2 text-xs font-mono text-blue-100/90 bg-black/10 inline-block px-3 py-1 rounded-full">
-                                        {activeTab === "hasbled"
-                                            ? `Est. Major Bleeding: ${hasbledResult.annualRisk}% / year`
-                                            : `Est. Ischemic Stroke: ${chadsResult.annualRisk}% / year`}
-                                    </div>
-                                </div>
-
-                                {/* Recommendation Box */}
-                                <div className="rounded-xl bg-white/10 p-3.5 backdrop-blur-sm border border-white/15 space-y-1 text-xs">
-                                    <strong className="text-white block font-bold">
-                                        {activeTab === "hasbled" ? hasbledResult.riskTier : chadsResult.classOfRecommendation}
-                                    </strong>
-                                    <p className="text-blue-100 text-[11px] leading-relaxed">
-                                        {activeTab === "hasbled" ? hasbledResult.directive : chadsResult.recommendation}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* DUAL RISK COMPARISON GAUGE */}
-                        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-md shadow-gray-200/50 space-y-4">
-                            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
-                                    <TrendingUp className="h-4 w-4 text-blue-600" />
-                                    Net Clinical Benefit Balance
-                                </h3>
-                                <span className="text-[10px] text-gray-400">Annual Event Rates</span>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3 text-center">
-                                {/* Stroke Rate */}
-                                <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-100">
-                                    <span className="text-[10px] uppercase font-bold text-blue-700 block">Annual Stroke Risk</span>
-                                    <div className="text-2xl font-black text-blue-900 mt-0.5">{chadsResult.annualRisk}%</div>
-                                    <span className="text-[10px] text-gray-500 block">CHA₂DS₂-VASc: {chadsResult.score} pts</span>
-                                </div>
-
-                                {/* Bleed Rate */}
-                                <div className="p-3 rounded-xl bg-rose-50/70 border border-rose-100">
-                                    <span className="text-[10px] uppercase font-bold text-rose-700 block">Annual Major Bleed</span>
-                                    <div className="text-2xl font-black text-rose-900 mt-0.5">{hasbledResult.annualRisk}%</div>
-                                    <span className="text-[10px] text-gray-500 block">HAS-BLED: {hasbledResult.score} pts</span>
-                                </div>
-                            </div>
-
-                            {/* Progress Bars */}
-                            <div className="space-y-2 pt-1 text-xs text-gray-600">
-                                <div>
-                                    <div className="flex justify-between text-[11px] font-semibold mb-1">
-                                        <span>Stroke Risk Scale ({chadsResult.score}/9):</span>
-                                        <span className="text-blue-700 font-bold">{chadsResult.annualRisk}% / yr</span>
-                                    </div>
-                                    <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                                        <div
-                                            style={{ width: `${Math.min(100, (chadsResult.score / 9) * 100)}%` }}
-                                            className="bg-blue-600 h-full rounded-full"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div className="flex justify-between text-[11px] font-semibold mb-1">
-                                        <span>Bleeding Risk Scale ({hasbledResult.score}/8):</span>
-                                        <span className="text-rose-700 font-bold">{hasbledResult.annualRisk}% / yr</span>
-                                    </div>
-                                    <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                                        <div
-                                            style={{ width: `${Math.min(100, (hasbledResult.score / 8) * 100)}%` }}
-                                            className="bg-rose-500 h-full rounded-full"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* MODIFIABLE BLEEDING RISK FACTORS CALLOUT */}
-                        <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 shadow-sm text-xs text-amber-950 space-y-1.5">
-                            <div className="flex items-center gap-1.5 font-bold uppercase text-[11px] text-amber-800">
-                                <AlertTriangle className="h-4 w-4 text-amber-600" />
-                                <span>Actionable Modifiable Bleeding Risks</span>
-                            </div>
-                            <ul className="list-disc list-inside space-y-0.5 text-amber-900 text-[11px]">
-                                <li>Control systolic BP (&lt; 140 mmHg resting).</li>
-                                <li>Deprescribe unnecessary NSAIDs, Aspirin, or antiplatelets.</li>
-                                <li>Counsel on reducing alcohol intake (&lt; 8 units/week).</li>
-                                <li>If on Warfarin, target TTR &gt; 70% or switch to a DOAC.</li>
-                            </ul>
-                        </div>
-
+                        ))}
                     </div>
+                </CalcSection>
+            )}
 
+            {activeTab !== "doac_dosing" && (
+                <CalcSection title="Working" description="Points from each ticked factor.">
+                    <div>
+                        {showingBleed
+                            ? hasbledContrib.map((item) => (
+                                  <ResultRow key={item.id} label={`${item.letter} — ${item.label}`} value="+1" />
+                              ))
+                            : chadsContrib.map((item) => (
+                                  <ResultRow
+                                      key={item.id}
+                                      label={`${item.letter} — ${item.label}`}
+                                      value={`+${item.pts}`}
+                                      badge={item.pts === 0 ? "counted in age ≥ 75" : undefined}
+                                  />
+                              ))}
+                        <ResultRow
+                            label="Total"
+                            value={
+                                showingBleed
+                                    ? sumLine(hasbledContrib.map(() => 1), hasbledResult.score)
+                                    : sumLine(chadsContrib.map((c) => c.pts), chadsResult.score)
+                            }
+                            unit="points"
+                        />
+                    </div>
+                </CalcSection>
+            )}
+
+            <CalcSection title="Net clinical benefit" description="Annual event rates for both scores side by side.">
+                <div>
+                    <ResultRow label={`Annual stroke risk · CHA₂DS₂-VASc ${chadsResult.score}`} value={`${chadsResult.annualRisk}%`} />
+                    <RiskBar value={chadsResult.score} max={9} barClass="bg-primary" label={`Stroke risk scale ${chadsResult.score} of 9`} />
+                    <ResultRow label={`Annual major bleed · HAS-BLED ${hasbledResult.score}`} value={`${hasbledResult.annualRisk}%`} />
+                    <RiskBar value={hasbledResult.score} max={8} barClass="bg-red-500" label={`Bleeding risk scale ${hasbledResult.score} of 8`} />
                 </div>
+                <LabNotice tone="warning" title="Modifiable bleeding risks to act on">
+                    <div role="list" className="mt-1 space-y-1">
+                        {[
+                            "Control systolic BP (< 140 mmHg resting).",
+                            "Deprescribe unnecessary NSAIDs, Aspirin, or antiplatelets.",
+                            "Counsel on reducing alcohol intake (< 8 units/week).",
+                            "If on Warfarin, target TTR > 70% or switch to a DOAC.",
+                        ].map((line) => (
+                            <div role="listitem" key={line} className="flex gap-2">
+                                <span aria-hidden="true">•</span>
+                                <span>{line}</span>
+                            </div>
+                        ))}
+                    </div>
+                </LabNotice>
+            </CalcSection>
 
-                {/* ─── COLLAPSIBLE EVIDENCE & GUIDELINES REFERENCE ─────────────────── */}
-                <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-md shadow-gray-200/50 space-y-3">
-                    <button
-                        type="button"
-                        onClick={() => setShowDetails(!showDetails)}
-                        className="w-full flex items-center justify-between text-xs font-bold text-blue-600 hover:text-blue-800 transition"
-                    >
-                        <span className="flex items-center gap-2 text-sm">
-                            <BookOpen className="h-4 w-4 text-blue-600" />
-                            Clinical Evidence & Guideline Citations (ESC / ACC / AHA)
-                        </span>
-                        {showDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </button>
+            <FormulaNote>
+                <p className="font-medium text-foreground">CHA₂DS₂-VASc (0–9 points)</p>
+                <Formula>
+                    C 1 + H 1 + A₂ (age ≥ 75) 2 + D 1 + S₂ (stroke/TIA) 2 + V 1 + A (age 65–74) 1 + Sc (female) 1
+                </Formula>
+                <p>
+                    Men: 0 = no OAC (Class III), 1 = consider OAC (Class IIa), ≥ 2 = OAC recommended (Class I).
+                    Women: 1 (sex alone) = no OAC, 2 = consider OAC, ≥ 3 = OAC recommended.
+                </p>
+                <RateTable
+                    title="Annual ischaemic stroke rate by score"
+                    rows={[[0, 0.2], [1, 0.6], [2, 2.2], [3, 3.2], [4, 4.8], [5, 7.2], [6, 9.7], [7, 11.2], [8, 12.5], [9, 15.2]]}
+                />
+                <p className="font-medium text-foreground">HAS-BLED (0–8 points)</p>
+                <Formula>H + A (renal) + A (liver) + S + B + L + E + D (drugs or alcohol) — 1 point each</Formula>
+                <p>0–1 = low, 2 = moderate, ≥ 3 = high bleeding risk.</p>
+                <RateTable
+                    title="Annual major bleeding rate by score"
+                    rows={[[0, 0.9], [1, 1.1], [2, 1.9], [3, 3.7], [4, 8.7], [5, 12.5], [6, 14.0], [7, 15.0], [8, 18.0]]}
+                />
+                <p className="font-medium text-foreground">References</p>
+                <p>
+                    2024 ESC Guidelines for the Management of Atrial Fibrillation. Eur Heart J. 2024. Recommends
+                    oral anticoagulation in non-valvular AF for men with CHA₂DS₂-VASc ≥ 2 and women with
+                    CHA₂DS₂-VASc ≥ 3 (Class I). DOACs preferred over VKAs.
+                </p>
+                <p>
+                    2023 ACC/AHA/ACCP/HRS Guideline for the Diagnosis and Management of AF. Circulation. 2023.
+                    Reinforces that high bleeding risk scores (HAS-BLED ≥ 3) should prompt risk factor
+                    modification rather than withholding anticoagulation.
+                </p>
+                <p>
+                    Pisters R, et al. A novel user-friendly score (HAS-BLED) to assess 1-year risk of major
+                    bleeding in patients with atrial fibrillation. Chest. 2010;138(5):1093-1100.
+                </p>
+            </FormulaNote>
 
-                    {showDetails && (
-                        <div className="space-y-3 text-xs text-gray-600 pt-2 border-t border-gray-100 leading-relaxed">
-                            <div>
-                                <strong className="text-gray-900 block mb-0.5">1. 2024 ESC Guidelines for the Management of Atrial Fibrillation:</strong>
-                                <p className="text-gray-600">
-                                    Eur Heart J. 2024. Recommends oral anticoagulation in non-valvular AF for men with CHA₂DS₂-VASc ≥ 2 and women with CHA₂DS₂-VASc ≥ 3 (Class I). DOACs preferred over VKAs.
-                                </p>
-                            </div>
-                            <div>
-                                <strong className="text-gray-900 block mb-0.5">2. 2023 ACC/AHA/ACCP/HRS Guideline for the Diagnosis and Management of AF:</strong>
-                                <p className="text-gray-600">
-                                    Circulation. 2023;148:e00-e00. Reinforces that high bleeding risk scores (HAS-BLED ≥ 3) should prompt risk factor modification rather than withholding anticoagulation.
-                                </p>
-                            </div>
-                            <div>
-                                <strong className="text-gray-900 block mb-0.5">3. HAS-BLED Bleeding Score Validation:</strong>
-                                <p className="text-gray-600">
-                                    Pisters R, et al. A novel user-friendly score (HAS-BLED) to assess 1-year risk of major bleeding in patients with atrial fibrillation. Chest. 2010;138(5):1093-1100.
-                                </p>
-                            </div>
-                        </div>
-                    )}
+            <CalcFaq
+                items={[
+                    {
+                        q: "Should a high HAS-BLED score stop me starting an anticoagulant?",
+                        a: "No. A HAS-BLED of 3 or more flags patients who need their modifiable risks corrected — blood pressure, NSAIDs or antiplatelets, alcohol, labile INR — and closer follow-up every 3–6 months. It is not on its own a reason to withhold OAC.",
+                    },
+                    {
+                        q: "Why does a woman need a higher CHA₂DS₂-VASc before OAC?",
+                        a: "Female sex adds a point but is a risk modifier rather than an independent risk factor: a woman whose only factor is her sex (score 1) has a low stroke risk. That is why the threshold for OAC is one point higher in women.",
+                    },
+                    {
+                        q: "Can I tick both age boxes?",
+                        a: "No. Age 65–74 scores 1 and age ≥ 75 scores 2; a patient is in one band only. Ticking one clears the other.",
+                    },
+                    {
+                        q: "Which kidney function value do the DOAC criteria use?",
+                        a: "Creatinine clearance calculated with the Cockcroft-Gault equation (actual body weight), which is what the DOAC trials and labels used. eGFR can overestimate clearance in older, lighter patients and lead to overdosing.",
+                    },
+                    {
+                        q: "Why is aspirin not an alternative for stroke prevention in AF?",
+                        a: "Aspirin prevents far fewer AF-related strokes than an anticoagulant, while its major bleeding risk — especially in older patients — is similar to a DOAC. Guidelines therefore recommend against antiplatelet monotherapy for this purpose.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
+    );
+}
+
+/** One risk factor as a large, tappable checkbox card. */
+function FactorCheck({
+    letter,
+    label,
+    pts,
+    checked,
+    onChange,
+}: {
+    letter: string;
+    label: string;
+    pts: string;
+    checked: boolean;
+    onChange: (next: boolean) => void;
+}) {
+    return (
+        <label
+            className={cn(
+                "flex min-h-[52px] cursor-pointer items-start gap-3 rounded-xl border px-3.5 py-3 transition-colors",
+                checked ? "border-primary/60 bg-primary/10" : "border-border/80 bg-background hover:bg-muted/50",
+            )}
+        >
+            <input
+                type="checkbox"
+                checked={checked}
+                onChange={(event) => onChange(event.target.checked)}
+                className="mt-0.5 h-5 w-5 shrink-0 accent-primary"
+            />
+            <span className="min-w-0 flex-1 text-sm leading-snug text-foreground">
+                <span className="font-semibold">{letter}</span> — {label}
+            </span>
+            <span className="shrink-0 rounded-md bg-muted px-2 py-0.5 font-mono text-xs font-semibold text-foreground">
+                {pts}
+            </span>
+        </label>
+    );
+}
+
+function Presets({ onPick, onReset }: { onPick: (p: PatientPreset) => void; onReset: () => void }) {
+    return (
+        <>
+            <div>
+                <p className="mb-2 text-xs font-medium text-muted-foreground">Try an example patient</p>
+                <div className="flex flex-wrap gap-2">
+                    {SAMPLE_PATIENTS.map((p) => (
+                        <button
+                            key={p.name}
+                            type="button"
+                            onClick={() => onPick(p)}
+                            className="min-h-[40px] rounded-full border bg-background px-3.5 py-2 text-xs font-medium hover:bg-accent active:bg-accent"
+                        >
+                            {p.name}
+                        </button>
+                    ))}
                 </div>
-
-                {/* ─── FOOTER ──────────────────────────────────────────────────────── */}
-                <footer className="border-t border-gray-200 pt-6 pb-10 text-center text-xs text-gray-500 space-y-2">
-                    <p className="max-w-4xl mx-auto leading-relaxed">
-                        <strong>Clinical Anticoagulation Advisory:</strong> Risk scores are clinical decision support aids. Always evaluate individual bleeding risk, renal function, compliance, and shared patient decision-making prior to initiating OAC therapy.
-                    </p>
-                    <p className="text-gray-400">
-                        &copy; 2024–2026 Advanced Anticoagulation & Atrial Fibrillation Clinical Decision Support.
-                    </p>
-                </footer>
-
             </div>
-        </section>
+            <Button variant="outline" onClick={onReset} className="w-full">
+                <RefreshCw />
+                Reset (clears both scores)
+            </Button>
+        </>
+    );
+}
+
+function RiskBar({ value, max, barClass, label }: { value: number; max: number; barClass: string; label: string }) {
+    return (
+        <div className="pb-3" role="img" aria-label={label}>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div style={{ width: `${Math.min(100, (value / max) * 100)}%` }} className={cn("h-full rounded-full", barClass)} />
+            </div>
+        </div>
+    );
+}
+
+function RateTable({ title, rows }: { title: string; rows: [number, number][] }) {
+    return (
+        <div className="overflow-x-auto rounded-lg border border-border/70">
+            <table className="w-full min-w-[360px] text-center text-xs">
+                <caption className="px-3 py-2 text-left text-xs font-medium text-foreground">{title}</caption>
+                <tbody className="divide-y divide-border/70">
+                    <tr className="bg-muted/60">
+                        <th className="px-2 py-1.5 text-left font-semibold">Score</th>
+                        {rows.map(([s]) => (
+                            <td key={s} className="px-2 py-1.5 font-semibold">{s}</td>
+                        ))}
+                    </tr>
+                    <tr>
+                        <th className="px-2 py-1.5 text-left font-semibold">% / yr</th>
+                        {rows.map(([s, r]) => (
+                            <td key={s} className="px-2 py-1.5">{r}</td>
+                        ))}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     );
 }

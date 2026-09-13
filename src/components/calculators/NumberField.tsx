@@ -53,7 +53,9 @@ export function NumberField({
 
   return (
     <div className={cn("space-y-1.5", className)}>
-      <Label htmlFor={id}>{label}</Label>
+      <Label htmlFor={id} className="text-[13px] font-medium text-foreground/90">
+        {label}
+      </Label>
 
       <div className="flex gap-2">
         <div className="relative flex-1">
@@ -71,12 +73,15 @@ export function NumberField({
             aria-invalid={error ? true : undefined}
             aria-describedby={hint || error ? `${id}-desc` : undefined}
             className={cn(
-              unit && !normalisedUnits && "pr-14",
-              error && "border-destructive focus-visible:ring-destructive",
+              "text-[17px] font-medium",
+              error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/15",
             )}
+            // Reserve exactly the width the suffix needs. A fixed pr-14 let long
+            // units such as "mL/min/1.73m²" run underneath the typed number.
+            style={unit && !normalisedUnits ? { paddingRight: `calc(${unit.length}ch + 1.75rem)` } : undefined}
           />
           {unit && !normalisedUnits && (
-            <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+            <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 font-mono text-xs text-muted-foreground">
               {unit}
             </span>
           )}
@@ -97,7 +102,7 @@ export function NumberField({
       {(hint || error) && (
         <p
           id={`${id}-desc`}
-          className={cn("text-xs leading-relaxed", error ? "text-destructive" : "text-muted-foreground")}
+          className={cn("text-xs leading-relaxed", error ? "font-medium text-destructive" : "text-muted-foreground")}
         >
           {error ?? hint}
         </p>
@@ -136,16 +141,28 @@ export function SelectField({
 
   return (
     <div className={cn("space-y-1.5", className)}>
-      {label && <Label htmlFor={id}>{label}</Label>}
+      {label && (
+        <Label htmlFor={id} className="text-[13px] font-medium text-foreground/90">
+          {label}
+        </Label>
+      )}
       <select
         id={id}
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
         className={cn(
-          "flex h-12 w-full appearance-none rounded-xl border border-input bg-background px-3.5 text-base",
-          "bg-[length:1.25rem] bg-[right_0.65rem_center] bg-no-repeat pr-9",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "flex h-12 w-full appearance-none rounded-xl border border-input bg-background px-3.5 text-base font-medium",
+          // Arbitrary *properties*, not `bg-[length:…]` / `bg-[right_…]`:
+          // tailwind-merge reads an arbitrary `bg-[…]` value as a background
+          // COLOUR and silently drops `bg-background` above. The website hid it
+          // (globals.css forces `select { background: #fff !important }`); the
+          // app has no such rule, so every select rendered UA grey.
+          "[background-size:1.25rem] [background-position:right_0.65rem_center] bg-no-repeat pr-9",
+          // Matches Input exactly — hover, halo and border — so a row mixing a
+          // number and a unit picker reads as one control.
+          "transition-[border-color,box-shadow] duration-300 ease-out-expo hover:border-foreground/25",
+          "focus-visible:outline-none focus-visible:border-ring focus-visible:ring-4 focus-visible:ring-ring/15",
           "disabled:cursor-not-allowed disabled:opacity-50",
         )}
         style={{

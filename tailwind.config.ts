@@ -100,6 +100,16 @@ const config: Config = {
         "75%": "75%",
       },
 
+      /*
+       * Motion curves for the calculator kit and shadcn primitives. The browser
+       * defaults (`ease`, `ease-out`) read as mechanical; these settle the way a
+       * physical control does. Values from .claude/skills/top-design.
+       */
+      transitionTimingFunction: {
+        "out-expo": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "out-quart": "cubic-bezier(0.25, 1, 0.5, 1)",
+      },
+
       backgroundImage: {
         "newsletter-bg": "url('/images/newsletter/bgFile.png')",
         "newsletter-bg-2": "url('/images/newsletter/bgFile.png')",
@@ -111,6 +121,8 @@ const config: Config = {
         "clinical-float": "clinicalFloat 6s ease-in-out infinite",
         "clinical-float-delayed": "clinicalFloat 6s ease-in-out 2s infinite",
         "clinical-pulse": "clinicalPulse 3s ease-in-out infinite",
+        /* A calculator result arriving — keyed on the value, so it replays each time the answer changes. */
+        "calc-result": "calcResult 0.6s cubic-bezier(0.16, 1, 0.3, 1) both",
       },
 
       keyframes: {
@@ -125,6 +137,10 @@ const config: Config = {
         clinicalFloat: {
           "0%, 100%": { transform: "translateY(0px)" },
           "50%": { transform: "translateY(-12px)" },
+        },
+        calcResult: {
+          "0%": { opacity: "0", transform: "translateY(6px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
         },
         clinicalPulse: {
           "0%, 100%": { opacity: "0.6" },

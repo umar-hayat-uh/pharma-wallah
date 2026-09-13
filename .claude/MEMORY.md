@@ -12,7 +12,7 @@ conventions, and traps. **Not** a work diary — that lives in `CLAUDE.md` §8.
 An AI-assisted pharmacy education platform for Doctor-of-Pharmacy students, plus a clinical
 decision-support sub-brand (`clinical.pharmawallah…`) aimed at practising pharmacists.
 
-Six pillars share one Next.js 14 App Router application: calculation tools (89), courses + MCQ
+Six pillars share one Next.js 14 App Router application: calculation tools (97), courses + MCQ
 banks, spotting labs (histology/pathology/powder microscopy), wet-lab simulations, an entry-code
 tournament, and the clinical subdomain.
 
@@ -304,8 +304,8 @@ PubMed 10/60s (its own inline limiter in the route).
 **Advertising (all `NEXT_PUBLIC_*`, all public by nature — none is a secret):**
 `NEXT_PUBLIC_ADSENSE_CLIENT` is the publisher ID and the **master switch**: without it
 `src/app/layout.tsx` renders no loader script and `AdSlot` renders nothing, so the site makes zero
-ad requests. `NEXT_PUBLIC_ADSENSE_SLOT_HOME_1` / `_HOME_2` / `_HOME_3`, `_CALCULATOR`,
-`_CALCULATOR_FOOTER`, `_LESSON`, `_LIST` are the per-placement ad-unit IDs; a blank one renders
+ad requests. `_CALCULATOR`, `_CALCULATOR_FOOTER`, `_LESSON`, `_LIST` are the per-placement
+ad-unit IDs (`_HOME_1/2/3` are unused since 2026-09-13, when the landing page's ad bands were removed); a blank one renders
 nothing in production and a labelled placeholder in dev. `NEXT_PUBLIC_IS_MOBILE_APP` is set only by
 `mobile/next.config.mjs` and makes `AdSlot` return `null`.
 
@@ -381,8 +381,8 @@ Traps that will otherwise be rediscovered painfully.
    the correct `SubjectMeta` shape but still absent from the array. The markdown content for the
    unregistered subjects already ships in `public/content/`.
 
-9. **The calculator hub registry is hand-maintained and can drift.** 89 tool directories exist;
-   `allTools` lists **78** (verified 2026-09-12 — earlier docs said 84). Six of the difference are
+9. **The calculator hub registry is hand-maintained and can drift.** 97 tool directories exist;
+   `allTools` lists **86** (verified 2026-09-13 — 78 before eight lab tools were added). Six of the difference are
    intentionally linked from `src/app/clinical/dose-calculators/page.tsx`; the other five
    (`AntagonismSimulator`, `EmaxModelCalculator`, `drug-half-life-calculator`,
    `OsmolarGapCalculator`, `OpioidConversionCalculator`) are linked from **nowhere** on the web —
@@ -424,13 +424,17 @@ Traps that will otherwise be rediscovered painfully.
 
 17. **Calculator pages are enormous single files** (1000–1900 lines, all `"use client"`). There is
     no shared calculator layout or shared input component. Adding a tool means copying the closest
-    existing one — that is the actual convention, not an accident.
+    existing one — that is the actual convention, not an accident. **Exception (2026-09-13):** the
+    shared kit in `src/components/calculators/` now exists, and new laboratory tools are built on it
+    (see gotcha 36) — copy `theoretical-yield-calculator` for a new lab tool, not an old 1,500-line page.
 
 18. **Calculators now have two consumers.** Every tool under `(tools)/` is compiled by both the
     web build and the Android build (`mobile/`), via generated re-export pages. A tool that starts
     importing `@/lib/...` or calling `fetch` breaks the offline app — see
     `.claude/skills/android-app-capacitor/SKILL.md`. Verified on 2026-09-12: all 89 import only
-    `react`, `lucide-react`, `recharts`, `framer-motion`.
+    `react`, `lucide-react`, `recharts`, `framer-motion`. Since then kit-based tools also import
+    `@/components/calculators` and `@/components/ui/*` — pure client modules, safe offline. The
+    rule is "no I/O, no server modules", not literally "no `@/`".
 
 19. **`mobile/app/calculation-tools/<slug>/page.tsx` is generated and gitignored.** Editing one
     does nothing — it is overwritten by `scripts/generate-mobile-routes.mjs` on every
@@ -528,13 +532,14 @@ Traps that will otherwise be rediscovered painfully.
     `https://www.pharmawallah.com/…`. The canonical host is **www**. Both serve `/ads.txt` as 200.
     Any external verifier, webhook or callback should be pointed at the www host.
 
-34. **`AdBand` on the home landing returns `null` in production when its slot ID is unset** — so
-    the live home page legitimately contains no `adband` markup at all. That is a deliberate guard
-    against an empty tinted strip between sections, **not** a broken placement. Don't debug it.
+34. **The home landing page has no ad placements** — removed at the user's request on 2026-09-13
+    (it used to have three `AdBand`s). The one `ins.adsbygoogle` in its DOM is the loader's own
+    hidden, unfilled probe, injected by `adsbygoogle.js` from the root layout — not a placement.
+    Only Auto ads, if switched on in the dashboard, could put an ad on `/` now.
 
 30. **`src/app/globals.css` will fight any bespoke page, in three ways that are easy to misdiagnose.**
     (a) `html { scroll-behavior: smooth }` desynchronises every scrubbed GSAP ScrollTrigger and
-    fights ScrollToPlugin — the landing page adds `html.pw-landing-mounted { scroll-behavior: auto }`
+    fights ScrollToPlugin — the landing page adds `html.pw-idx-mounted { scroll-behavior: auto }`
     for as long as it is mounted. (b) `ul:not(.prose ul)` and `li:not(.prose li)` put bullets,
     `pl-6` and a fixed grey on *every* list on the site, including a Radix menu's `<ul>`; their
     `:not()` makes them out-specify plain Tailwind utilities, so `!list-none` / `[&>li]:!m-0` is
@@ -555,7 +560,7 @@ Traps that will otherwise be rediscovered painfully.
 33. **GSAP lives only in `src/components/Home/landing/`.** The library plus ScrollTrigger is ~70 KB
     and the site has ~170 routes; every other surface uses `framer-motion` (`CLAUDE.md` §6 rule 13).
     The footer wordmark is animated with IntersectionObserver + CSS for exactly this reason. All the
-    landing page's timelines are created inside one `gsap.matchMedia(root)` in `useLandingMotion.ts`
+    landing page's timelines are created inside one `gsap.matchMedia(root)` in `useIndexMotion.ts`
     so `mm.revert()` on unmount kills them — a pinned ScrollTrigger that survives a client-side
     navigation breaks the *next* page's scrolling, with nothing in the console to say why.
 
@@ -570,6 +575,181 @@ Traps that will otherwise be rediscovered painfully.
     which matches *any* `.group` ancestor — so a hover underline written on one link lit up on all
     six the moment the pointer entered the list. Fixed by renaming the list's class to
     `group/menu`. Whenever a shadcn component nests `group` inside `group`, name the outer one.
+
+36. **Laboratory tools share a lab-record layer — describe the result once.** `LabReportData`
+    (`src/components/calculators/LabReport.tsx`) is rendered by `LabReport` on screen, by
+    `reportToText` for Copy, by a canvas painter for the PNG card and by `printReport` in a hidden
+    iframe. Build the object in one `useMemo`; never hand-write a second copy for the download, or
+    the card drifts from the screen. A chart in the PNG/print must be passed as **self-contained SVG
+    markup** (literal colours, `font-family`, `xmlns`) — an SVG inside `<img>` cannot see page CSS,
+    so a Recharts `<svg>` using `hsl(var(--border))` renders blank or black.
+
+37. **The root `tsconfig.json` has no `target`**, so TypeScript assumes ES3/ES5 for iteration:
+    `for (const [i, x] of arr.entries())` and `for…of` over a `Map`/`Set` fail with TS2802
+    ("can only be iterated through when using '--downlevelIteration'"). Use index loops,
+    `forEach`, `Array.from(...)` or `Object.entries`. Not worth changing the config for.
+
+38. **Calculator-to-calculator hand-offs go through the query string**, built with
+    `calculatorHref(slug, params)` and read with `readQuery()` inside a `useEffect`. Reading the URL
+    during render mismatches the server HTML, and `useSearchParams` needs a Suspense boundary in the
+    static APK export. `calculatorHref` adds the trailing slash only in the app
+    (`trailingSlash: true` + Capacitor's directory → `index.html` resolution).
+
+39. **A tool directory may hold underscore-prefixed sibling modules** (`_math.ts`, `_parts.tsx`) —
+    `uv-spectrum-plotter/` and `serial-dilution-calculator/` do. The App Router only routes
+    `page.tsx`, and `scripts/generate-mobile-routes.mjs` re-exports the page, whose relative
+    imports resolve normally, so the APK picks them up. Don't name a sibling `page`/`layout`.
+
+40. **Blob downloads and `window.print()` do nothing in the Android WebView.** `LabActions` hides
+    Download card and Print when `NEXT_PUBLIC_IS_MOBILE_APP` is true rather than showing dead
+    buttons; the UV plotter hides its PNG/CSV buttons the same way. Copy is the APK's export path.
+
+41. **tailwind-merge reads an arbitrary `bg-[…]` value as a background COLOUR.** `cn("bg-background
+    bg-[length:1.25rem] bg-[right_…]")` silently drops `bg-background`. `SelectField` shipped that
+    way: invisible on the web (globals.css forces `select{background:#fff!important}`), UA-grey in
+    the APK. Use arbitrary *properties* — `[background-size:1.25rem]` — for size/position. Fixed
+    2026-09-13; check any other `cn()` call mixing a `bg-*` colour with `bg-[…]`.
+
+42. **GSAP renders a `from`/`fromTo` start state inside the constructor**, which fires `onUpdate`
+    before `const tween = gsap.fromTo(…)` is assigned — a TDZ `ReferenceError`, hundreds per second
+    on the landing page. Read the tween as `this` in the callback (`onUpdate(this: gsap.core.Tween)`).
+    Reduced-motion testing never runs that code path; it was caught only in full motion.
+
+43. **`-webkit-text-stroke` (and SVG `stroke` on `<text>`) draws Outfit's contour overlaps.** Outfit is
+    a variable font built from overlapping contours, so an outlined glyph shows stray lines through
+    P, R, A, H, 3. Use a filled ghost (low-alpha fill) for large decorative type.
+
+44. **GSAP leaves an inline `transform` behind after a `from` tween**, which outranks any stylesheet
+    transform on the same element — a CSS tilt, a `:hover` lift. Add `clearProps: "transform"`, or
+    restate the CSS transform in the tween (the Index numeral carries `rotation: -4`).
+
+45. **Screenshotting a `100svh` page by resizing the viewport to the page height is wrong.** The hero
+    grows to thousands of pixels and everything appears blank. Keep a real viewport and use
+    `Page.captureScreenshot { captureBeyondViewport: true, clip }`.
+
+46. **More than one Claude session may be editing this repo at once.** On 2026-09-13 two sessions
+    worked in `src/components/calculators/` concurrently. Before editing a shared directory, check
+    `git status` for files you did not create and `ListAgents` for peers; agree file ownership, keep
+    exported props stable, and re-read knowledge files before syncing them.
+
+47. **Hand-typed figures drift, and several already have.** Measured 2026-09-13: the `/spotting` hub
+    hard-codes `lessonCount: 8` per category and "24+" total (real: 17 / 15 / 3 = 35); the calculator
+    hub prints `allTools.length` as "86+" (97 tools exist); every course unit's `readTime` is typed by
+    hand and understated up to 2.3× against its markdown. **Derive a count from the list it counts**
+    (the landing page's `STATS` is the one place a number is deliberately a constant, and it is
+    documented). New UI should use `Figure` from `@/components/page-kit`, which requires a label and
+    carries a `note` for estimates.
+
+48. **The dashboard's course navigation is a hard-coded `SEMESTERS` list** in
+    `src/components/dashboard/dashboard-shared.ts`, with `/courses/sem-1/<slug>` hrefs — the route is
+    `/courses/<slug>`, and 8 of its 12 subjects are not registered. **All 12 links 404**, as do the
+    `/pharmacovigilance` and `/adverse-reaction-sleuth` quick links. Anything that lists courses must
+    read `SUBJECTS` from `@/lib/courses/registry`.
+
+49. **Rendering a component outside Next (a quick SSR check with `npx tsx`) fails with
+    "React is not defined"** because the root `tsconfig.json` has `"jsx": "preserve"` and tsx then
+    uses the classic transform. Pass a throwaway tsconfig that extends the root one with
+    `"jsx": "react-jsx"` (`npx tsx --tsconfig <tmp>.json <file>`), and delete both temp files after.
+
+50. **Science Fair 2026 is over (2026-09-13).** `LaunchPopup` (was mounted site-wide in `AppShell`) and
+    `OfficialLaunchBanner` (was on the landing page) are **unmounted but still on disk**. The CDP
+    recipe's `localStorage.pw_launch_banner_dismissed_at` preset is harmless but no longer needed.
+    The landing hero also no longer has its meta strip or PKT clock.
+
+51. **`position: fixed` + `backdrop-filter` is the site's main scroll-lag source.** The browser
+    re-blurs whatever scrolls underneath on every frame. Measured 2026-09-13 (headless Chrome,
+    80 real mouse-wheel events, frames > 50 ms): `/` 33 with the landing timeline bar → 21 without
+    it → 9 with the header's `backdrop-blur-xl` also disabled; `/calculation-tools` 35 → 7 with the
+    header blur off. A CPU profile showed the cost as native paint, not JS. Use an opaque or
+    near-opaque background on fixed bars instead. Scroll handlers that read `scrollHeight` or
+    `getBoundingClientRect` per event add forced layout on top — batch them in one rAF and cache
+    measurements. Recipe: CDP `Input.dispatchMouseEvent` `mouseWheel` ×80 with a page-side rAF
+    frame-delta recorder and `Performance.getMetrics` before/after; compare pages relatively
+    (headless is software-rasterised, so absolute fps is pessimistic).
+
+52. **The theme is the blue→green brand gradient, never black (user rule, 2026-09-13).** Any strong
+    surface — a panel, a cover hero, a primary button — uses `BRAND_SURFACE` (40% navy scrim) or
+    `BRAND_BUTTON` (30% scrim) from `src/components/page-kit/brand.ts`, or the matching
+    `--brand-surface` / `--brand-button` vars on the landing page. Raw brandGreen is only 2.61:1
+    under white text; the scrims bring it to 5.72:1 / 4.60:1. White (or white/90) text only; never a
+    green icon on it — it disappears at the green end. This supersedes the "warm ink" grounds of
+    the 13 Sep design pass; ink #16181d remains a *text* colour.
+
+53. **The "educational purposes only" calculator disclaimer is mounted in exactly two places** —
+    `src/app/(site)/calculation-tools/(tools)/layout.tsx` (web, every tool, under the tool) and
+    `mobile/app/_components/MobileShell.tsx` (APK, tool pages only; not the app home). The component
+    is `src/components/calculators/CalcDisclaimer.tsx`. Never render it inside a tool page too, or it
+    appears twice on both surfaces. It is the gotcha-28 split in action: a web layout never reaches
+    the APK, so the app needs its own mount.
+
+54. **A master formula has two ingredient "units" that must never be multiplied**
+    (`(tools)/master-formula-calculator/_scale.ts`): `%` is a concentration (10% stays 10% at any batch
+    size) and `q.s.` has no amount (it becomes "q.s. to <required quantity>"). Scaling either gives a
+    wrong formula, not a smaller one. The batch-size units convert within a family (mL↔L, g↔kg) but a
+    count unit (tablets, capsules, suppositories) only scales against itself.
+
+55. **A `<style jsx global>` animation in dev starts when styles attach at hydration** (~2.5 s on a
+    cold dev page), not at first paint. A delayed animation with `animation-fill-mode: both` or
+    `backwards` therefore holds its FIRST keyframe for the whole delay — the header app CTA's arrow sat
+    invisible that way. Write keyframes that start and end on the element's resting state and use no
+    fill mode, so a late or never-running animation cannot leave anything hidden.
+
+56. **Two headless-testing traps that look like app bugs.** (a) `Page.captureScreenshot` with
+    `captureBeyondViewport: true` composites `position: fixed` layers wrongly — the header appears
+    mid-page and an opaque mega-menu panel looks translucent with the hero bleeding through. Confirm
+    with `document.elementFromPoint` + computed `background-color`, or a plain viewport screenshot,
+    before "fixing" it. (b) Successive `Runtime.evaluate` calls share one global scope, so a second
+    `const q = …` throws `SyntaxError: Identifier 'q' has already been declared`, the setter never
+    runs, and the page appears to ignore input. Wrap each expression in an IIFE.
+
+57. **The site header switches to its desktop layout at `xl` (1280px), not `lg`.** From 1024–1279px
+    the six nav items + the app CTA + the auth buttons do not fit, and flexbox crushed the logo
+    (113px of 214 before the CTA existed, 6px after). `MegaMenu.tsx`'s `xl:flex`, the header's
+    `hidden xl:flex` cluster and the compact bar's `xl:hidden` must change together. The logo is
+    `shrink-0` from 380px only; at 360px (the commonest Android width) it gives a little instead of
+    pushing the menu button into the gutter. The `lg:` height classes are unrelated and stayed.
+
+58. **The favicon set is generated, not drawn:** `src/app/favicon.ico` (16/32/48), `src/app/icon.png`
+    (256, transparent) and `src/app/apple-icon.png` (180, white ground) were produced on 2026-09-13
+    from `public/icons/icon-512x512.png` by cropping the mark and un-matting its opaque white ground
+    with a colour-to-alpha pass (so the tab icon has no white box or halo in dark browser themes).
+    Next's file convention emits all three `<link>`s; there is no `icons` entry in metadata. The
+    previous `favicon.ico` was a mis-cropped 16px slice with a sliver of the wordmark's "P".
+
+59. **A tracker that fires in a mount effect used to lose its event.** `useSupabaseUser()` starts at
+    `user = null` and resolves `getSession()` asynchronously; `useTracker` dropped anything tracked
+    before that. `UnitTracker` and the pathology spotting pages track on mount, so `unit_progress`
+    and `spotting_progress` held **zero rows for every account** until 2026-09-13 (quizzes survived:
+    they fire later). `useTracker` now holds events until the session resolves. Any new hook that
+    acts on `user` from a mount effect has the same trap — wait for `loading === false`.
+
+60. **`globals.css` list rules beat a one-class namespace.** `ul:not(.prose ul)` has specificity
+    (0,1,2) because `:not()` takes its argument's; `.pw-dash ul` is (0,1,1) and loses, so lists show
+    bullets and "1." markers. Double the class (`.pw-dash.pw-dash ul`) as the landing page does.
+
+61. **A grid with no explicit column lets a `truncate` child widen the page.** `grid lg:grid-cols-12`
+    is a single *auto* column below `lg`, sized to min-content — a long truncated label made the
+    dashboard 756 px wide on a 390 px phone. Give such grids `grid-cols-[minmax(0,1fr)]`.
+
+62. **Dashboard facts (2026-09-13).** `unit_progress` has `completed`, `read_count`, `time_spent_min`;
+    `spotting_progress` has `completed` (read from the PostgREST schema, not from code). `completed` is
+    set only by an explicit Mark as read and never cleared. `/api/progress` returns activity for the
+    last 91 days (≤600 rows) — keep `ACTIVITY_WINDOW_DAYS` in `dashboard-data.ts` in step. The dashboard
+    theme class sits on its own root, never on `<html>`, so it cannot leak to other pages.
+
+63. **`src/app/loading.tsx` is the site-wide route loading UI** (Suspense fallback for every segment
+    without a nearer `loading.tsx`; `/dashboard` has its own). It renders inside the root layout, so
+    the header and footer stay. `.pw-loader-page` is invisible for 320 ms and then fades in — that
+    delayed, fill-mode reveal is deliberate (a fast navigation must flash nothing) and is the one
+    exception to gotcha 55. The same `PharmaLoader` is the Android splash's mark; keep it CSS-only
+    with plain classes (no hooks, no Tailwind), or it stops animating before hydration and loses its
+    styles in the APK. Its steps use modifier classes, not `:nth-of-type` — the separator dots are
+    spans too.
+
+64. **A temporary preview route leaves a stale stub in `.next/types` after you delete it**, and
+    `npx tsc --noEmit` then fails with `TS2307: Cannot find module '…/src/app/<route>/page.js'` from
+    `.next/types/app/<route>/page.ts`. Not a source error. Delete that `.next/types/app/<route>`
+    directory (or restart dev). Check the error's path before blaming — or crediting — a code change.
 
 ---
 

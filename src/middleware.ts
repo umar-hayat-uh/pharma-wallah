@@ -74,6 +74,30 @@ export async function middleware(request: NextRequest) {
     }
   );
 
+  /*
+   * A signed-in student who opens the student landing page (`/`) goes straight
+   * to their dashboard — the landing page is a pitch they no longer need.
+   *
+   * This keeps the "only call Supabase when it matters" rule below: the
+   * network `getUser()` runs only when a Supabase auth cookie is present, so
+   * anonymous visitors and crawlers (no cookie) pay nothing. The clinical
+   * subdomain's `/` is a different product and is left alone. Any auth error
+   * fails open — the visitor simply sees the landing page.
+   */
+  if (!isClinical && request.nextUrl.pathname === '/' && hasSupabaseAuthCookie(request)) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const redirect = NextResponse.redirect(new URL('/dashboard', request.url));
+        // Carry any refreshed session cookies across the redirect.
+        response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+        return redirect;
+      }
+    } catch (err) {
+      console.error('Middleware landing redirect check failed:', err);
+    }
+  }
+
   try {
     const pathname = request.nextUrl.pathname;
     const isProtected = PROTECTED_PATHS.some(path => pathname.startsWith(path));
@@ -96,6 +120,11 @@ export async function middleware(request: NextRequest) {
   }
 
   return response;
+}
+
+/** @supabase/ssr stores the session as `sb-<project-ref>-auth-token`, chunked as `.0`, `.1`… when large. */
+function hasSupabaseAuthCookie(request: NextRequest) {
+  return request.cookies.getAll().some((c) => c.name.startsWith('sb-') && c.name.includes('-auth-token'));
 }
 
 export const config = {

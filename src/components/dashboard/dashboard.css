@@ -1,0 +1,233 @@
+/*
+ * /dashboard — every bespoke rule lives under .pw-dash (CLAUDE.md §6 rule 14).
+ *
+ * Colour is a token set, so dark mode is one block rather than a `dark:`
+ * variant on every element. The theme class sits on the dashboard root, NOT on
+ * <html>: toggling it cannot leak onto the next page after a client-side
+ * navigation (the old dashboard's toggle did, and nothing turned it off).
+ * Dark is deep navy, never black — the brand rule of 2026-09-13.
+ */
+
+.pw-dash {
+  --board: #f8f8f5;
+  --panel: #ffffff;
+  --panel-2: #f3f3ef;
+  --ink: #16181d;
+  --ink-2: rgba(22, 24, 29, 0.66);
+  --ink-3: rgba(22, 24, 29, 0.46);
+  --line: rgba(22, 24, 29, 0.09);
+  --line-2: rgba(22, 24, 29, 0.16);
+  --blue: #1c7bd9;
+  /* brandGreen darkened to pass 4.5:1 as text on white; raw #21B67A is fills only. */
+  --green-text: #0f7a4f;
+  --green: #21b67a;
+  --heat-0: rgba(22, 24, 29, 0.06);
+  --heat-1: #cfe5f7;
+  --heat-2: #8cc3ee;
+  --heat-3: #3f98e0;
+  --heat-4: #1a6fc4;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 24px -12px rgba(16, 24, 40, 0.12);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  min-height: 100svh;
+  background: var(--board);
+  color: var(--ink);
+  font-feature-settings: "ss01", "tnum";
+  -webkit-font-smoothing: antialiased;
+}
+
+.pw-dash.dark {
+  --board: #08131f;
+  --panel: #0d1b2b;
+  --panel-2: #112236;
+  --ink: #eef2f6;
+  --ink-2: rgba(238, 242, 246, 0.7);
+  --ink-3: rgba(238, 242, 246, 0.48);
+  --line: rgba(238, 242, 246, 0.08);
+  --line-2: rgba(238, 242, 246, 0.16);
+  --blue: #5aa9ef;
+  --green-text: #4fd29c;
+  --heat-0: rgba(238, 242, 246, 0.06);
+  --heat-1: #173a5c;
+  --heat-2: #1d5c93;
+  --heat-3: #2f86d0;
+  --heat-4: #69b5f3;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px -16px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+
+/* ── globals.css neutralised inside the namespace ───────────────────────
+   The class is doubled on purpose: globals.css writes `ul:not(.prose ul)`,
+   whose :not() argument lifts it to (0,1,2) — a plain `.pw-dash ul` (0,1,1)
+   loses, and every list shows bullets and "1." markers. */
+.pw-dash.pw-dash ul,
+.pw-dash.pw-dash ol {
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: 0;
+}
+.pw-dash.pw-dash li {
+  margin-bottom: 0;
+  color: inherit;
+}
+.pw-dash.pw-dash input,
+.pw-dash.pw-dash input:focus {
+  background-color: transparent !important;
+  color: var(--ink);
+  outline: none;
+}
+/* ScrollTrigger measures against native scroll; section jumps are smoothed in JS. */
+html.pw-dash-mounted {
+  scroll-behavior: auto;
+}
+
+.pw-dash ::selection {
+  background: rgba(28, 123, 217, 0.22);
+}
+
+.pw-dash :focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* ── Surfaces ─────────────────────────────────────────────────────────── */
+.pw-dash .d-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+}
+
+.pw-dash .d-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--ink-3);
+}
+
+.pw-dash .d-hair {
+  border-color: var(--line);
+}
+
+.pw-dash .d-link {
+  transition: color 0.3s var(--ease), background-color 0.3s var(--ease), border-color 0.3s var(--ease), transform 0.4s var(--ease);
+}
+
+/* Opaque, no backdrop-filter: a blurred sticky bar re-rasterises on every
+   scroll frame (MEMORY.md gotcha 51). */
+.pw-dash .d-topbar {
+  background: color-mix(in srgb, var(--board) 96%, transparent);
+  border-bottom: 1px solid var(--line);
+}
+
+/* The headline name: blue into a green dark enough to read as text. */
+.pw-dash .d-name {
+  background: linear-gradient(100deg, #1c7bd9 10%, #13865a 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.pw-dash.dark .d-name {
+  background-image: linear-gradient(100deg, #6cb4f2 10%, #5fdca8 90%);
+}
+
+/* ── Headline reveal: CSS, so it plays on first paint without waiting for GSAP ── */
+.pw-dash .d-line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+}
+.pw-dash .d-line > span {
+  display: inline-block;
+  animation: pw-dash-rise 1.1s var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 90ms + 60ms);
+}
+@keyframes pw-dash-rise {
+  from { transform: translateY(105%); }
+  to { transform: translateY(0); }
+}
+
+/* ── Intro gate ───────────────────────────────────────────────────────────
+   While data is on its way the skeletons show. When it lands, reveal targets
+   are held invisible for the moment it takes GSAP to take over; a timeout in
+   useDashboardMotion lifts the gate even if GSAP never loads. */
+.pw-dash[data-intro="wait"] [data-reveal] {
+  opacity: 0;
+}
+
+/* ── Skeletons ────────────────────────────────────────────────────────── */
+.pw-dash .d-skel {
+  position: relative;
+  overflow: hidden;
+  background: var(--panel-2);
+  border-radius: 10px;
+}
+.pw-dash .d-skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--panel) 70%, transparent), transparent);
+  animation: pw-dash-shimmer 1.4s infinite;
+}
+@keyframes pw-dash-shimmer {
+  to { transform: translateX(100%); }
+}
+
+/* ── Activity calendar ────────────────────────────────────────────────── */
+.pw-dash .d-heat {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: var(--heat-0);
+}
+.pw-dash .d-heat[data-l="1"] { background: var(--heat-1); }
+.pw-dash .d-heat[data-l="2"] { background: var(--heat-2); }
+.pw-dash .d-heat[data-l="3"] { background: var(--heat-3); }
+.pw-dash .d-heat[data-l="4"] { background: var(--heat-4); }
+.pw-dash .d-heat[data-future="true"] { background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+.pw-dash .d-heat[data-today="true"] { box-shadow: 0 0 0 2px var(--board), 0 0 0 3.5px var(--blue); }
+
+/* ── Syllabus cells ───────────────────────────────────────────────────── */
+.pw-dash .d-unit {
+  display: block;
+  height: 30px;
+  border-radius: 7px;
+  background: var(--panel-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  transition: transform 0.4s var(--ease), box-shadow 0.3s var(--ease);
+}
+/* Read: the full brand gradient. Opened but not read: the same colours at low
+   strength with a blue edge — visibly started, visibly unfinished. */
+.pw-dash .d-unit[data-state="read"] {
+  background: linear-gradient(120deg, #1c7bd9, #21b67a);
+  box-shadow: none;
+}
+.pw-dash .d-unit[data-state="opened"] {
+  background: linear-gradient(120deg, rgba(28, 123, 217, 0.18), rgba(33, 182, 122, 0.18));
+  box-shadow: inset 0 0 0 1px rgba(28, 123, 217, 0.45);
+}
+.pw-dash .d-unit[data-next="true"] {
+  box-shadow: inset 0 0 0 2px var(--blue);
+}
+.pw-dash .d-unit:hover {
+  transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pw-dash .d-line > span,
+  .pw-dash .d-skel::after {
+    animation: none;
+  }
+  .pw-dash .d-link,
+  .pw-dash .d-unit {
+    transition: none;
+  }
+}

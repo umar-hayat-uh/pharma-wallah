@@ -3,10 +3,10 @@
  *
  * Deliberately separate from the web hub's `allTools` array in
  * `src/app/(site)/calculation-tools/CalculationToolsClient.tsx`: the web hub
- * lists 78 tools, but 11 more tool directories exist — six are linked only
+ * lists 87 tools (before the six analytical practicals of 2026-09-13), but 11 more tool directories exist — six are linked only
  * from `src/app/clinical/dose-calculators/page.tsx` and five are linked from
  * nowhere at all. Offline, there is no clinical subdomain to reach them
- * through, so the app ships all 89.
+ * through, so the app ships every one (104 as of 2026-09-13).
  *
  * DRIFT IS HANDLED, NOT ASSUMED: `mobile/app/_generated/tool-slugs.ts` is
  * regenerated from the directory listing on every mobile build, and the home
@@ -33,6 +33,9 @@ export const TOOL_NAMES: Record<string, string> = {
   "percentage-solution-calculator": "Percentage Solution Calculator (w/v, w/w, v/v)",
   "ppm-ppb-calculator": "ppm / ppb Calculator",
   "dilution-calculator": "Dilution Calculator (C₁V₁ = C₂V₂)",
+  "serial-dilution-calculator": "Serial Dilution Calculator",
+  "theoretical-yield-calculator": "Theoretical Yield Calculator",
+  "percentage-yield-calculator": "Percentage Yield Calculator",
   "molecular-weight-finder": "Molecular Weight Finder",
   "solubility-calculator": "Solubility Calculator",
   "heat-formation-calculator": "Heat of Formation Calculator",
@@ -54,6 +57,18 @@ export const TOOL_NAMES: Record<string, string> = {
   "compressibility-index-calculator": "Compressibility Index Calculator",
   "porosity-calculator": "Porosity Calculator",
   "density-calculator": "Density Calculator",
+  "relative-density-bottle-calculator": "Density & Relative Density Bottle Calculator",
+  "master-formula-calculator": "Master Formula Calculator",
+  "uv-spectrum-plotter": "UV-Vis Spectrum Plotter",
+  "percentage-recovery-calculator": "Percentage Recovery Calculator",
+  "calibration-curve-calculator": "Calibration Curve Calculator",
+  "accuracy-recovery-calculator": "Accuracy & % Recovery Calculator",
+  "dissolution-calculator": "Dissolution Calculator",
+  "cumulative-drug-release-calculator": "Cumulative Drug Release Calculator",
+  "dialysis-diffusion-calculator": "Dialysis Membrane / Diffusion Calculator",
+  "partition-coefficient-calculator": "Partition / Distribution Coefficient Calculator",
+  "wbc-count-calculator": "WBC Count Calculator",
+  "rbc-count-calculator": "RBC Count Calculator",
   "tablet-disintegration-dissolution-profile-plotter": "Tablet Dissolution Profile Plotter",
   "content-uniformity-calculator": "Content Uniformity Calculator",
   "osmolarity-calculators": "Osmolarity Calculator",
@@ -146,6 +161,9 @@ export const CATEGORIES: ToolCategory[] = [
       "percentage-solution-calculator",
       "ppm-ppb-calculator",
       "dilution-calculator",
+      "serial-dilution-calculator",
+      "theoretical-yield-calculator",
+      "percentage-yield-calculator",
       "molecular-weight-finder",
       "solubility-calculator",
       "heat-formation-calculator",
@@ -177,6 +195,7 @@ export const CATEGORIES: ToolCategory[] = [
       "compressibility-index-calculator",
       "porosity-calculator",
       "density-calculator",
+      "relative-density-bottle-calculator",
       "tablet-disintegration-dissolution-profile-plotter",
       "content-uniformity-calculator",
       "osmolarity-calculators",
@@ -184,6 +203,9 @@ export const CATEGORIES: ToolCategory[] = [
       "isotonicity-calculator",
       "sterile-dose-volume",
       "drug-excipient-compatibility-predictor",
+      "master-formula-calculator",
+      "dissolution-calculator",
+      "cumulative-drug-release-calculator",
     ],
   },
   {
@@ -204,6 +226,8 @@ export const CATEGORIES: ToolCategory[] = [
       "bioequivalence-calculator",
       "AccumulationIndexCalculator",
       "MeanResidenceTimeCalculator",
+      "dialysis-diffusion-calculator",
+      "partition-coefficient-calculator",
       "vancomycin-auc-calculator",
     ],
   },
@@ -229,11 +253,21 @@ export const CATEGORIES: ToolCategory[] = [
     slugs: [
       "law-absorbance-calculator",
       "uv-analyzer-tool",
+      "uv-spectrum-plotter",
+      "calibration-curve-calculator",
       "chromatographic-resolution-calculator",
       "rf-value-calculator",
       "percent-purity-calculator",
+      "percentage-recovery-calculator",
+      "accuracy-recovery-calculator",
       "ash-value-calculator",
     ],
+  },
+  {
+    id: "physiology",
+    label: "Physiology",
+    desc: "Hemocytometry and blood-cell counting",
+    slugs: ["wbc-count-calculator", "rbc-count-calculator"],
   },
   {
     id: "microbiology",
@@ -322,6 +356,14 @@ const SHORT_NAME_OVERRIDES: Record<string, string> = {
   "zone-of-inhibition-calculator": "Zone of Inhibition",
   "volume-distribution-calculator": "Volume of Distribution",
   "law-absorbance-calculator": "Beer-Lambert",
+  "relative-density-bottle-calculator": "Density Bottle",
+  "percentage-recovery-calculator": "% Recovery",
+  "percentage-yield-calculator": "% Yield",
+  "master-formula-calculator": "Master Formula",
+  "accuracy-recovery-calculator": "Accuracy & Recovery",
+  "cumulative-drug-release-calculator": "Cumulative Release",
+  "dialysis-diffusion-calculator": "Dialysis / Diffusion",
+  "partition-coefficient-calculator": "Partition Coefficient",
 };
 
 const TYPE_SUFFIXES =

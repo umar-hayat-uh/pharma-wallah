@@ -10,8 +10,9 @@ Status legend: ✅ Implemented · 🟡 Partial · 🔵 In Progress · ⚪ Not St
 
 ## Current Development Focus
 
-Broadening the **content and tool catalogue** — the platform's feature surface is essentially built;
-what is missing is wiring the content that already exists into the navigation that users see.
+**Site-wide redesign (Phase 4.7)** — Phase 0 done; auth pages (P8) redesigned 2026-09-13; other
+families wait on the user's choice of direction; see `.claude/redesign-tracker.md`. Alongside it: broadening the **content and tool
+catalogue** — wiring the content that already exists into the navigation that users see.
 
 ## Current Phase
 
@@ -65,16 +66,17 @@ pages, confirm progress tracking records a visit, then batch the rest.
 - **Notes:** `public/sw.js` is generated; never hand-edit.
 
 ### Marketing landing page (`/`) and site chrome
-- **Status:** ✅ Implemented (2026-09-12)
-- **Existing implementation:** `src/components/Home/landing/` — an ADME-structured page with four
-  pinned/scrubbed GSAP stations, a preloader, an SVG spine, a ScrambleText AI panel and three ad
-  bands. Site chrome: a Radix/shadcn mega menu (`Layout/Header/MegaMenu.tsx`), a header that
-  retracts on scroll, and the footer wordmark.
-- **Remaining work:** Run `npm run build` with the dev server stopped. Set
-  `NEXT_PUBLIC_ADSENSE_SLOT_HOME_1/2/3` or the three ad bands stay hidden in production.
-- **Important files:** `src/components/Home/landing/{LandingPage,useLandingMotion,landing.css,data}`,
-  `src/components/Layout/Header/{index,MegaMenu}.tsx`, `src/components/ui/navigation-menu.tsx`
-- **Dependencies:** `gsap` 3.15, `@radix-ui/react-navigation-menu` 1.2.22, `tailwindcss-animate`
+- **Status:** ✅ Implemented (rebuilt 2026-09-13)
+- **Existing implementation:** `src/components/Home/landing/` — "The Index" as a whiteboard explainer
+  video: marker annotations drawn on by scroll with a pen on the stroke (scroll-only playback; the
+  timeline bar was removed 2026-09-13), a countdown leader, a computed worked-example
+  card and a highlighter pillar index — and no ad placements, by decision. Site chrome restyled to match:
+  header with reading progress and ink CTAs, mega menu, and footer. The Science Fair launch strip and
+  launch dialog were unmounted on 2026-09-13 (event over); the hero meta strip was removed the same day.
+  Black button/tab/phone surfaces now use the brand gradient (user rule, 2026-09-13).
+- **Important files:** `src/components/Home/landing/{LandingPage,useIndexMotion,landing.css,data,Marks}`,
+  `src/components/Layout/Header/{index,MegaMenu}.tsx`, `src/components/Layout/Footer/index.tsx`,
+  `src/components/LaunchPopup.tsx`, `src/components/Home/tournament/index.tsx`
 - **Notes:** GSAP is confined to the landing directory — see
   `.claude/skills/landing-page-motion/SKILL.md`. The previous home sections are dead but retained.
 
@@ -86,7 +88,9 @@ pages, confirm progress tracking records a visit, then batch the rest.
 - **Remaining work:** None for the happy path.
 - **Important files:** `src/lib/supabase*.ts`, `src/middleware.ts`, `src/app/(site)/{signin,signup,verify-otp,forgot-password,update-password}/`
 - **Dependencies:** Supabase project (not in repo)
-- **Notes:** `next-auth` is installed but unused — remove it during cleanup.
+- **Notes:** `next-auth` is installed but unused — remove it during cleanup. UI redesigned 2026-09-13
+  on `src/components/auth/AuthKit.tsx` (redesign P8). Open: sign-in ignores middleware's `?redirect=`
+  (tracker F17) — a logic change needing approval.
 
 ### Clinical subdomain routing
 - **Status:** ✅ Implemented
@@ -104,19 +108,23 @@ pages, confirm progress tracking records a visit, then batch the rest.
 
 ### Calculation tools
 - **Status:** 🟡 Partial
-- **Existing implementation:** 89 tool directories under
-  `src/app/(site)/calculation-tools/(tools)/`, each a self-contained `"use client"` page. Hub with
-  search and 10 categories driven by `allTools` + `categories` in `CalculationToolsClient.tsx`.
+- **Existing implementation:** 98 tool directories under
+  `src/app/(site)/calculation-tools/(tools)/`, each a `"use client"` page. Hub with search and 10
+  categories (Physiology added 2026-09-13) driven by `allTools` + `categories` in
+  `CalculationToolsClient.tsx`. ✅ 2026-09-13: eight laboratory tools (theoretical/percentage
+  yield, percentage recovery, WBC/RBC count, density bottle, UV-Vis spectrum plotter, serial
+  dilution) built on the shared kit with a lab-record card (copy / PNG / print).
 - **Remaining work:**
   - Five tools (`AntagonismSimulator`, `EmaxModelCalculator`, `drug-half-life-calculator`,
     `OsmolarGapCalculator`, `OpioidConversionCalculator`) are **reachable only by typed URL on the
     web** — add them to `allTools` and a `categories[].toolNames`, or to the clinical hub. All five
     already ship in the Android app.
   - Delete the dead legacy registry `src/app/api/calculators.tsx` (419 lines, zero importers).
-  - Consider a shared input/result component; 89 × ~1200-line files duplicate a lot of markup.
+  - Migrate older tools to the shared kit (`src/components/calculators/`); most of the 98 are still
+    ~1200-line standalone files.
 - **Important files:** `src/app/(site)/calculation-tools/CalculationToolsClient.tsx`, `(tools)/<slug>/page.tsx`, `src/app/clinical/dose-calculators/page.tsx`
 - **Dependencies:** —
-- **Notes:** Adding a directory does **not** add a card on the web hub (`allTools` lists 78 of 89).
+- **Notes:** Adding a directory does **not** add a card on the web hub (`allTools` lists 87 of 98). Every tool carries the educational disclaimer from the `(tools)` layout (web) and `MobileShell` (APK) since 2026-09-13.
   Registry + category are both required. Six tools are intentionally clinical-hub-only, not
   orphans. **The Android app consumes these same files** — keep every tool free of `@/` imports
   and `fetch`, or it breaks offline. See `.claude/skills/android-app-capacitor/SKILL.md`.
@@ -309,17 +317,17 @@ pages, confirm progress tracking records a visit, then batch the rest.
   component. `src/app/layout.tsx` renders the `adsbygoogle.js` loader, but only when
   `NEXT_PUBLIC_ADSENSE_CLIENT` is set. `public/ads.txt` authorises the publisher.
   Publisher ID: `ca-pub-9553986083846603` (a public identifier, also in `ads.txt`).
-- **Placements (7 on 5 surfaces):** home landing ×3 (`AdBand` in
-  `src/components/Home/landing/Chrome.tsx`), the calculator hub, every one of the 89 calculator
-  pages via `src/app/(site)/calculation-tools/(tools)/layout.tsx`, each migrated calculator's
+- **Placements (4 surfaces):** the calculator hub, every calculator page via
+  `src/app/(site)/calculation-tools/(tools)/layout.tsx`, each migrated calculator's
   sticky `aside`, the course subject listing, and the end of every course lesson.
 - **Deliberately excluded:** auth pages, the dashboard, `/admin`, tournament play and the
   leaderboard, timed spotting and MCQ tests, the simulations, and the AI tools — thin, private,
   or timed surfaces where an ad is disruptive or a policy risk.
 - **Remaining work:**
   - Create the ad units in **AdSense → Ads → By ad unit** and fill in
-    `NEXT_PUBLIC_ADSENSE_SLOT_HOME_1/2/3`, `_CALCULATOR`, `_CALCULATOR_FOOTER`, `_LESSON`,
-    `_LIST`. Any left blank simply renders nothing.
+    `NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR`, `_CALCULATOR_FOOTER`, `_LESSON`, `_LIST`. Any left
+    blank simply renders nothing. (`_HOME_1/2/3` are unused since the landing page's ad bands
+    were removed on 2026-09-13.)
   - Add the seven `NEXT_PUBLIC_ADSENSE_SLOT_*` variables to the **Vercel** project — `.env` is
     gitignored, so ad units stay blank in production until they are set there. (The publisher ID
     no longer needs this; it is a hardcoded constant with an env override.)
@@ -337,6 +345,18 @@ pages, confirm progress tracking records a visit, then batch the rest.
   `mobile/out`. Privacy and terms already disclose AdSense cookies.
 
 ---
+
+## Phase 4.7 — Site-wide redesign (top-design) 🔵
+
+### Bring every page and calculator to the 2026-09-13 design standard
+- **Status:** 🔵 In Progress — Phase 0 done (inventory, tracker, page kit, directions published);
+  **blocked on the user's choice of direction per family**. No page redesigned yet.
+- **Existing implementation:** `.claude/redesign-tracker.md` (the plan and status of record),
+  `src/components/page-kit/`.
+- **Remaining work:** Phase 1 pages in order hub → courses → MCQ → spotting → simulations → community →
+  dashboard → auth → static → tools → tournament → clinical → admin; Phase 2 migrates 81 calculators
+  onto the calculator kit with before/after output capture.
+- **Notes:** UI only. Logic faults found while measuring (tracker F9, F10, F17, F19) need approval.
 
 ## Phase 5 — Hardening ⚪
 

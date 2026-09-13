@@ -71,6 +71,12 @@ Animations: `marquee`, `fade-up`, `clinical-float`, `clinical-float-delayed`, `c
    **One exception, already made:** the landing page at `/` uses **GSAP**, confined to
    `src/components/Home/landing/`. See `.claude/skills/landing-page-motion/SKILL.md`. Do not import
    gsap anywhere else — it would load on all ~170 routes.
+   **Page chrome comes from `src/components/page-kit/`** (`PageHero`, `PageSection`, `FigureRow`,
+   empty/loading/error states, `Reveal`) — the non-calculator sibling of the calculator kit, in the
+   2026-09-13 language. Status of the site-wide rollout: `.claude/redesign-tracker.md`.
+   **No black grounds** — the theme is the blue→green brand gradient; strong surfaces use
+   `BRAND_SURFACE` / `BRAND_BUTTON` from `src/components/page-kit/brand.ts` (user rule 2026-09-13).
+   **No `backdrop-filter` on fixed bars** — measured scroll-lag source (`MEMORY.md` gotcha 51).
    Shared controls come from **shadcn/ui** in `src/components/ui/` (`button`, `card`, `badge`,
    `input`, `label`, `navigation-menu`) with `cn()` from `@/lib/utils`; tokens are the CSS
    variables at the top of `src/app/globals.css`, and `tailwindcss-animate` is registered in

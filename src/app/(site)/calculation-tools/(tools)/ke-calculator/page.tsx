@@ -1,326 +1,377 @@
 "use client";
-import { useState, useEffect } from 'react';
+
+import { useMemo, useState } from "react";
+import { Activity, Clock, PieChart, RefreshCw, TrendingDown } from "lucide-react";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Button } from "@/components/ui/button";
 import {
-    TrendingDown,
-    Calculator,
-    Activity,
-    Clock,
-    RefreshCw,
-    AlertCircle,
-    Zap,
-    PieChart,
-    Timer
-} from 'lucide-react';
-import { Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart } from 'recharts';
+    CalculatorShell,
+    CalcSection,
+    FieldGrid,
+    NumberField,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    AdSlot,
+    ModeSwitch,
+    type ModeOption,
+} from "@/components/calculators";
+
+type Method = "halfLife" | "clearance" | "concentration";
+
+const METHODS: ModeOption<Method>[] = [
+    { value: "halfLife", label: "From half-life", description: "kₑ = 0.693 / t½", icon: Clock },
+    { value: "clearance", label: "From CL and Vd", description: "kₑ = CL / Vd", icon: Activity },
+    { value: "concentration", label: "From dose and C₀", description: "Vd = Dose / C₀, then kₑ = CL / Vd", icon: PieChart },
+];
+
+const SAMPLE_VALUES = [
+    { name: "Short t½", t12: "2", ke: "0.346", cl: "10", vd: "30" },
+    { name: "Medium t½", t12: "6", ke: "0.116", cl: "8", vd: "70" },
+    { name: "Long t½", t12: "24", ke: "0.029", cl: "2", vd: "70" },
+];
+
+const DEFAULTS = { halfLife: "4", clearance: "5", volume: "50", dose: "100", initialConcentration: "10" };
+
+/* Interpretation bands (unchanged). */
+function getKeInterpretation(k: number) {
+    if (k > 0.5) return "Very rapid elimination – multiple daily doses";
+    if (k > 0.1) return "Rapid elimination – multiple daily doses";
+    if (k > 0.05) return "Moderate elimination – once or twice daily";
+    if (k > 0.01) return "Slow elimination – once daily";
+    return "Very slow elimination – weekly or less";
+}
+
+function positiveError(raw: string): string | undefined {
+    if (raw.trim() === "") return undefined;
+    const value = parseFloat(raw);
+    if (isNaN(value)) return "Enter a number.";
+    if (value <= 0) return "Must be greater than zero.";
+    return undefined;
+}
 
 export default function KeCalculator() {
-    const [method, setMethod] = useState<'halfLife' | 'clearance' | 'concentration'>('halfLife');
-    const [halfLife, setHalfLife] = useState<string>('4');
-    const [clearance, setClearance] = useState<string>('5');
-    const [volume, setVolume] = useState<string>('50');
-    const [dose, setDose] = useState<string>('100');
-    const [initialConcentration, setInitialConcentration] = useState<string>('10');
-    const [ke, setKe] = useState<number | null>(null);
-    const [calculatedHalfLife, setCalculatedHalfLife] = useState<number | null>(null);
-    const [timeUnits] = useState<'hours' | 'minutes'>('hours');
-    const [chartData, setChartData] = useState<Array<{ time: number, conc: number }>>([]);
+    const [method, setMethod] = useState<Method>("halfLife");
+    const [halfLife, setHalfLife] = useState(DEFAULTS.halfLife);
+    const [clearance, setClearance] = useState(DEFAULTS.clearance);
+    const [volume, setVolume] = useState(DEFAULTS.volume);
+    const [dose, setDose] = useState(DEFAULTS.dose);
+    const [initialConcentration, setInitialConcentration] = useState(DEFAULTS.initialConcentration);
 
-    const calculateKe = () => {
+    /*
+     * Derived with useMemo. The old page ran the maths from a useEffect into
+     * separate state, so invalid input displayed kₑ = 0.0000 ("very slow
+     * elimination") beside the half-life and curve left over from the previous
+     * valid input. Now an input that cannot give a positive, finite kₑ shows
+     * the empty state instead. Valid inputs give identical numbers.
+     */
+    const result = useMemo(() => {
         let k = 0;
+        let t12Out: number | null = null;
+        let vdCalc: number | null = null;
 
         switch (method) {
-            case 'halfLife':
+            case "halfLife": {
                 const t12 = parseFloat(halfLife);
                 if (!isNaN(t12) && t12 > 0) {
-                    k = 0.693 / t12; // [citation:1]
-                    setCalculatedHalfLife(t12);
+                    k = 0.693 / t12;
+                    t12Out = t12;
                 }
                 break;
-
-            case 'clearance':
+            }
+            case "clearance": {
                 const cl = parseFloat(clearance);
                 const vd = parseFloat(volume);
                 if (!isNaN(cl) && !isNaN(vd) && vd > 0) {
-                    k = cl / vd; // k = Cl / Vd [citation:1]
-                    setCalculatedHalfLife(0.693 / k);
+                    k = cl / vd; // k = Cl / Vd
+                    t12Out = 0.693 / k;
                 }
                 break;
-
-            case 'concentration':
+            }
+            case "concentration": {
                 const doseVal = parseFloat(dose);
                 const c0 = parseFloat(initialConcentration);
                 if (!isNaN(doseVal) && !isNaN(c0) && c0 > 0) {
-                    const vdCalc = doseVal / c0;
-                    // Assume typical clearance or use entered clearance
+                    vdCalc = doseVal / c0;
                     const cl = parseFloat(clearance);
                     if (!isNaN(cl)) {
                         k = cl / vdCalc;
-                        setCalculatedHalfLife(0.693 / k);
+                        t12Out = 0.693 / k;
                     }
                 }
                 break;
-        }
-
-        setKe(k);
-
-        // Generate decay curve
-        if (k > 0) {
-            const data = [];
-            for (let t = 0; t <= 10; t += 0.5) {
-                data.push({ time: t, conc: Math.exp(-k * t) * 100 });
             }
-            setChartData(data);
         }
-    };
 
-    const resetCalculator = () => {
-        setHalfLife('4');
-        setClearance('5');
-        setVolume('50');
-        setDose('100');
-        setInitialConcentration('10');
-        setKe(null);
-        setCalculatedHalfLife(null);
-        setChartData([]);
-    };
+        if (!(k > 0) || !Number.isFinite(k) || t12Out === null || !Number.isFinite(t12Out)) return null;
 
-    const sampleValues = [
-        { name: 'Short t½', t12: '2', ke: '0.346', cl: '10', vd: '30' },
-        { name: 'Medium t½', t12: '6', ke: '0.116', cl: '8', vd: '70' },
-        { name: 'Long t½', t12: '24', ke: '0.029', cl: '2', vd: '70' },
-    ];
+        // Decay curve, 0–10 h in 0.5 h steps
+        const chartData: { time: number; conc: number }[] = [];
+        for (let t = 0; t <= 10; t += 0.5) {
+            chartData.push({ time: t, conc: Math.exp(-k * t) * 100 });
+        }
 
-    const loadSample = (index: number) => {
-        const sample = sampleValues[index];
-        setMethod('halfLife');
+        return { k, t12: t12Out, vdCalc, chartData };
+    }, [method, halfLife, clearance, volume, dose, initialConcentration]);
+
+    const loadSample = (sample: (typeof SAMPLE_VALUES)[number]) => {
+        setMethod("halfLife");
         setHalfLife(sample.t12);
         setClearance(sample.cl);
         setVolume(sample.vd);
     };
 
-    const getKeInterpretation = (k: number) => {
-        if (k > 0.5) return 'Very rapid elimination – multiple daily doses';
-        if (k > 0.1) return 'Rapid elimination – multiple daily doses';
-        if (k > 0.05) return 'Moderate elimination – once or twice daily';
-        if (k > 0.01) return 'Slow elimination – once daily';
-        return 'Very slow elimination – weekly or less';
+    const reset = () => {
+        setHalfLife(DEFAULTS.halfLife);
+        setClearance(DEFAULTS.clearance);
+        setVolume(DEFAULTS.volume);
+        setDose(DEFAULTS.dose);
+        setInitialConcentration(DEFAULTS.initialConcentration);
     };
 
-    useEffect(() => {
-        calculateKe();
-    }, [method, halfLife, clearance, volume, dose, initialConcentration]);
+    const clearanceField = (
+        <NumberField
+            label="Clearance CL (L/h)"
+            value={clearance}
+            onChange={setClearance}
+            unit="L/h"
+            step="0.1"
+            min={0}
+            error={positiveError(clearance)}
+            hint="Total body clearance of the drug."
+        />
+    );
 
     return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 pt-20">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6 md:mb-8">
-                    <div className="flex flex-col md:flex-row items-center justify-between">
-                        <div className="flex items-center mb-4 md:mb-0">
-                            <div className="bg-white/20 p-3 rounded-xl mr-4">
-                                <TrendingDown className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-white">Elimination Rate Constant (kₑ) Calculator</h1>
-                                <p className="text-blue-100 mt-2">First-order elimination kinetics per MSD Manual</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-2 bg-white/20 px-4 py-2 rounded-lg">
-                            <Zap className="w-5 h-5 text-white" />
-                            <span className="text-white font-semibold">First-Order Kinetics</span>
-                        </div>
+        <CalculatorShell
+            title="Elimination Rate Constant (kₑ) Calculator"
+            subtitle="Finds the first-order elimination rate constant from a half-life, from clearance and Vd, or from a dose and C₀."
+            icon={TrendingDown}
+            eyebrow="Pharmacokinetics"
+            aside={
+                <>
+                    <CalcAbout title="About this calculator">
+                        <p>
+                            <strong>kₑ — the elimination rate constant</strong> — is the fraction of the drug
+                            in the body removed per unit time in first-order kinetics. A larger kₑ means a
+                            shorter half-life and more frequent dosing. It links half-life, clearance (CL)
+                            and volume of distribution (Vd).
+                        </p>
+                        <CalcList
+                            title="Use it when"
+                            items={[
+                                "Converting a half-life into a rate constant",
+                                "You know clearance and Vd but not the half-life",
+                                "Predicting how fast a level will fall after a dose",
+                                "Setting up concentration–time equations (C = C₀·e^(−kₑt))",
+                            ]}
+                        />
+                        <CalcList
+                            tone="caution"
+                            title="Watch for"
+                            items={[
+                                "Valid only for first-order (linear) elimination",
+                                "CL and Vd must use the same volume unit (L/h with L)",
+                                "The dose/C₀ method assumes an IV bolus into one compartment",
+                                "Half-life and kₑ must share a time unit — here, hours",
+                            ]}
+                        />
+                    </CalcAbout>
+
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+                </>
+            }
+        >
+            <ModeSwitch label="Calculation method" value={method} onChange={setMethod} options={METHODS} />
+
+            <ResultCard
+                label="Elimination rate constant"
+                value={result ? result.k.toFixed(4) : null}
+                unit="h⁻¹"
+                interpretation={result ? getKeInterpretation(result.k) : undefined}
+                empty="Enter positive values for the chosen method to see kₑ."
+            />
+
+            <CalcSection title="Inputs">
+                {method === "halfLife" && (
+                    <NumberField
+                        label="Half-life t½ (hours)"
+                        value={halfLife}
+                        onChange={setHalfLife}
+                        unit="h"
+                        step="0.1"
+                        min={0}
+                        error={positiveError(halfLife)}
+                        hint="The elimination half-life, e.g. from a drug monograph."
+                    />
+                )}
+                {method === "clearance" && (
+                    <FieldGrid>
+                        {clearanceField}
+                        <NumberField
+                            label="Volume of distribution Vd (L)"
+                            value={volume}
+                            onChange={setVolume}
+                            unit="L"
+                            step="0.1"
+                            min={0}
+                            error={positiveError(volume)}
+                            hint="Apparent volume, in litres (L/kg × body weight)."
+                        />
+                    </FieldGrid>
+                )}
+                {method === "concentration" && (
+                    <FieldGrid>
+                        <NumberField
+                            label="Dose (mg)"
+                            value={dose}
+                            onChange={setDose}
+                            unit="mg"
+                            step="0.1"
+                            min={0}
+                            error={positiveError(dose)}
+                            hint="IV bolus dose."
+                        />
+                        <NumberField
+                            label="Initial concentration C₀ (mg/L)"
+                            value={initialConcentration}
+                            onChange={setInitialConcentration}
+                            unit="mg/L"
+                            step="0.1"
+                            min={0}
+                            error={positiveError(initialConcentration)}
+                            hint="Concentration at time zero, back-extrapolated."
+                        />
+                        {clearanceField}
+                    </FieldGrid>
+                )}
+
+                <div>
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">Try an example (fills the half-life method)</p>
+                    <div className="flex flex-wrap gap-2">
+                        {SAMPLE_VALUES.map((sample) => (
+                            <button
+                                key={sample.name}
+                                type="button"
+                                onClick={() => loadSample(sample)}
+                                className="min-h-[40px] rounded-full border bg-background px-3 py-2 text-xs font-medium hover:bg-accent active:bg-accent"
+                            >
+                                {sample.name}
+                                <span className="ml-1.5 font-normal text-muted-foreground">kₑ = {sample.ke} h⁻¹</span>
+                            </button>
+                        ))}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Input Area */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
-                            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                                <Calculator className="w-6 h-6 mr-2 text-blue-600" />
-                                Calculation Method
-                            </h2>
+                <Button variant="outline" onClick={reset} className="w-full">
+                    <RefreshCw />
+                    Reset
+                </Button>
+            </CalcSection>
 
-                            {/* Method Cards */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                                <button onClick={() => setMethod('halfLife')}
-                                    className={`p-4 rounded-xl transition-all ${method === 'halfLife' ?
-                                        'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-lg' :
-                                        'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                                    <Clock className="w-8 h-8 mb-2 mx-auto" />
-                                    <span className="font-semibold block">From half-life</span>
-                                    <span className="text-xs mt-1">kₑ = 0.693 / t½</span>
-                                </button>
-                                <button onClick={() => setMethod('clearance')}
-                                    className={`p-4 rounded-xl transition-all ${method === 'clearance' ?
-                                        'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-lg' :
-                                        'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                                    <Activity className="w-8 h-8 mb-2 mx-auto" />
-                                    <span className="font-semibold block">From Cl & Vd</span>
-                                    <span className="text-xs mt-1">kₑ = Cl / Vd</span>
-                                </button>
-                                <button onClick={() => setMethod('concentration')}
-                                    className={`p-4 rounded-xl transition-all ${method === 'concentration' ?
-                                        'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-lg' :
-                                        'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                                    <PieChart className="w-8 h-8 mb-2 mx-auto" />
-                                    <span className="font-semibold block">From dose & C₀</span>
-                                    <span className="text-xs mt-1">Vd = Dose/C₀, then kₑ = Cl/Vd</span>
-                                </button>
-                            </div>
-
-                            {/* Inputs */}
-                            <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6">
-                                {method === 'halfLife' && (
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Half-Life (t½, {timeUnits})</label>
-                                        <input type="number" step="0.1" value={halfLife} onChange={(e) => setHalfLife(e.target.value)}
-                                            className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg" />
-                                    </div>
-                                )}
-                                {method === 'clearance' && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Clearance (L/h)</label>
-                                            <input type="number" step="0.1" value={clearance} onChange={(e) => setClearance(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-green-200 rounded-lg" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Volume of Distribution (L)</label>
-                                            <input type="number" step="0.1" value={volume} onChange={(e) => setVolume(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg" />
-                                        </div>
-                                    </div>
-                                )}
-                                {method === 'concentration' && (
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Dose (mg)</label>
-                                            <input type="number" step="0.1" value={dose} onChange={(e) => setDose(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">C₀ (mg/L)</label>
-                                            <input type="number" step="0.1" value={initialConcentration} onChange={(e) => setInitialConcentration(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Clearance (L/h)</label>
-                                            <input type="number" step="0.1" value={clearance} onChange={(e) => setClearance(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg" />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Sample Values */}
-                            <div className="bg-white rounded-xl p-6 border border-gray-200 mt-6">
-                                <h3 className="font-semibold text-gray-800 mb-4">Examples</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                    {sampleValues.map((sample, index) => (
-                                        <button key={index} onClick={() => loadSample(index)}
-                                            className="bg-gradient-to-r from-blue-50 to-green-50 hover:from-blue-100 hover:to-green-100 border border-blue-200 rounded-lg p-3 text-center">
-                                            <div className="font-semibold text-blue-700">{sample.name}</div>
-                                            <div className="text-xs text-gray-600 mt-1">kₑ = {sample.ke} h⁻¹</div>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="flex flex-col sm:flex-row gap-4 mt-6">
-                                <button onClick={calculateKe}
-                                    className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl">
-                                    Calculate kₑ
-                                </button>
-                                <button onClick={resetCalculator}
-                                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center">
-                                    <RefreshCw className="w-5 h-5 mr-2" /> Reset
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Results Sidebar */}
-                    <div className="space-y-6">
-                        {/* Ke Result */}
-                        <div className="bg-gradient-to-br from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 text-white">
-                            <h2 className="text-2xl font-bold mb-6 flex items-center">
-                                <TrendingDown className="w-7 h-7 mr-3" />
-                                Elimination Rate
-                            </h2>
-                            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 mb-4 text-center">
-                                <div className="text-sm font-semibold text-blue-100 mb-2">kₑ</div>
-                                {ke !== null ? (
-                                    <>
-                                        <div className="text-5xl font-bold mb-2">{ke.toFixed(4)}</div>
-                                        <div className="text-2xl">{timeUnits}⁻¹</div>
-                                    </>
-                                ) : (
-                                    <div className="text-3xl font-bold text-blue-100">Enter Values</div>
-                                )}
-                            </div>
-                            {calculatedHalfLife !== null && (
-                                <div className="bg-white/10 rounded-lg p-4 text-center">
-                                    <div className="text-sm font-semibold mb-1">Calculated t½</div>
-                                    <div className="text-2xl font-bold">{calculatedHalfLife.toFixed(2)} {timeUnits}</div>
-                                </div>
-                            )}
-                        </div>
-
-                        {chartData.length > 0 && (
-                            <div className="bg-white rounded-2xl shadow-lg p-6">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4">Elimination Curve</h3>
-                                <div className="h-64">  {/* increased height */}
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <LineChart
-                                            data={chartData}
-                                            margin={{ top: 20, right: 30, left: 50, bottom: 30 }}  // extra space
-                                        >
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis
-                                                dataKey="time"
-                                                label="Time (h)"
-                                                angle={-30}               // tilt labels
-                                                textAnchor="end"
-                                                height={70}                // room for angled text
-                                                interval="preserveStartEnd" // or a number like 3
-                                            />
-                                            <YAxis
-                                                label={{ value: "% Remaining", angle: -90, position: "insideLeft" }}
-                                            />
-                                            <Tooltip />
-                                            <Line type="monotone" dataKey="conc" stroke="#3b82f6" strokeWidth={2} dot={false} />
-                                        </LineChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
+            {result && (
+                <CalcSection title="Working">
+                    <div>
+                        {method === "halfLife" && (
+                            <ResultRow label={`kₑ = 0.693 ÷ ${halfLife}`} value={result.k.toFixed(4)} unit="h⁻¹" />
                         )}
-
-                        {/* Interpretation */}
-                        {ke !== null && (
-                            <div className="bg-white rounded-2xl shadow-lg p-6">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                                    <AlertCircle className="w-5 h-5 mr-2 text-blue-600" />
-                                    Clinical Significance
-                                </h3>
-                                <p className="text-gray-700">{getKeInterpretation(ke)}</p>
-                                <p className="text-xs text-gray-500 mt-2">Fraction eliminated per hour: {(ke * 100).toFixed(1)}%</p>
-                            </div>
+                        {method === "clearance" && (
+                            <ResultRow label={`kₑ = ${clearance} ÷ ${volume}`} value={result.k.toFixed(4)} unit="h⁻¹" />
                         )}
-
-                        {/* Key Relationships */}
-                        <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-2xl shadow-lg p-6 border border-blue-200">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">Key Relationships</h3>
-                            <div className="space-y-3 text-sm">
-                                <div className="p-2 bg-white/50 rounded">t½ = 0.693 / kₑ</div>
-                                <div className="p-2 bg-white/50 rounded">Cl = kₑ × Vd</div>
-                                <div className="p-2 bg-white/50 rounded">AUC = Dose / (kₑ × Vd)</div>
-                            </div>
-                        </div>
+                        {method === "concentration" && result.vdCalc !== null && (
+                            <>
+                                <ResultRow
+                                    label={`Vd = ${dose} ÷ ${initialConcentration}`}
+                                    value={Number(result.vdCalc.toFixed(4)).toString()}
+                                    unit="L"
+                                />
+                                <ResultRow
+                                    label={`kₑ = ${clearance} ÷ ${Number(result.vdCalc.toFixed(4))}`}
+                                    value={result.k.toFixed(4)}
+                                    unit="h⁻¹"
+                                />
+                            </>
+                        )}
+                        <ResultRow label="Calculated t½" value={result.t12.toFixed(2)} unit="hours" />
+                        <ResultRow
+                            label="Fraction eliminated per hour (kₑ × 100)"
+                            value={`${(result.k * 100).toFixed(1)}%`}
+                        />
                     </div>
-                </div>
-            </div>
-        </section>
+                </CalcSection>
+            )}
+
+            {result && (
+                <CalcSection title="Elimination curve" description="Percentage of the drug remaining over the first 10 hours.">
+                    <div className="-ml-2 h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={result.chartData} margin={{ top: 10, right: 12, left: 4, bottom: 16 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                <XAxis
+                                    dataKey="time"
+                                    tick={{ fontSize: 11 }}
+                                    stroke="hsl(var(--muted-foreground))"
+                                    type="number"
+                                    domain={[0, 10]}
+                                    ticks={[0, 2, 4, 6, 8, 10]}
+                                    label={{ value: "Time (h)", position: "insideBottom", offset: -8, fontSize: 11 }}
+                                />
+                                <YAxis
+                                    tick={{ fontSize: 11 }}
+                                    stroke="hsl(var(--muted-foreground))"
+                                    width={44}
+                                    label={{ value: "% remaining", angle: -90, position: "insideLeft", offset: 12, fontSize: 11 }}
+                                />
+                                <Tooltip
+                                    formatter={(value) => [`${Number(value).toFixed(1)}%`, "Remaining"]}
+                                    labelFormatter={(label) => `${label} h`}
+                                />
+                                <Line type="monotone" dataKey="conc" stroke="#2563EB" strokeWidth={2} dot={false} isAnimationActive={false} />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                </CalcSection>
+            )}
+
+            <FormulaNote>
+                <Formula>kₑ = 0.693 / t½</Formula>
+                <Formula>kₑ = CL / Vd</Formula>
+                <Formula>Vd = Dose / C₀   then   kₑ = CL / Vd</Formula>
+                <p>Key relationships between the parameters:</p>
+                <Formula>t½ = 0.693 / kₑ</Formula>
+                <Formula>CL = kₑ × Vd</Formula>
+                <Formula>AUC = Dose / (kₑ × Vd)</Formula>
+                <p>
+                    0.693 is ln 2. In first-order elimination the concentration falls exponentially,
+                    C = C₀ · e^(−kₑ·t), which is what the curve above plots as a percentage of C₀.
+                    First-order kinetics per the MSD Manual.
+                </p>
+            </FormulaNote>
+
+            <CalcFaq
+                items={[
+                    {
+                        q: "What are the units of kₑ?",
+                        a: "Reciprocal time — here h⁻¹, because half-life is entered in hours and clearance in L/h. If you enter a half-life in minutes the answer is in min⁻¹; multiply by 60 to convert to h⁻¹.",
+                    },
+                    {
+                        q: "Is kₑ × 100 really the percentage eliminated each hour?",
+                        a: "Only approximately, and only when kₑ is small. The exact fraction lost in one hour is 1 − e^(−kₑ). For kₑ = 0.1 h⁻¹ that is 9.5% rather than 10%; for larger kₑ the gap widens.",
+                    },
+                    {
+                        q: "Why does a bigger Vd give a smaller kₑ?",
+                        a: "Because kₑ = CL / Vd. With the same clearance, a drug spread through a larger volume has a smaller share of itself in the blood passing the liver and kidneys at any moment, so it leaves more slowly.",
+                    },
+                    {
+                        q: "Does this work for zero-order drugs like high-dose phenytoin or ethanol?",
+                        a: "No. Zero-order drugs are removed at a constant amount per hour, so there is no constant kₑ or half-life. Use the order-of-kinetics calculator to compare the two patterns.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
     );
 }

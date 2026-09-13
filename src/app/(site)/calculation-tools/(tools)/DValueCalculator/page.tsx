@@ -1,216 +1,321 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { Activity, Calculator, Thermometer, RefreshCw, AlertCircle, Sigma, Beaker, Info, BookOpen } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+
+import { useMemo, useState } from "react";
+import { Beaker, RefreshCw } from "lucide-react";
+import {
+    CartesianGrid,
+    Line,
+    LineChart,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from "recharts";
+import { Button } from "@/components/ui/button";
+import {
+    CalculatorShell,
+    CalcSection,
+    FieldGrid,
+    NumberField,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    AdSlot,
+} from "@/components/calculators";
+
+/** Published D₁₂₁ values, for a sense of scale. */
+const TYPICAL_D = [
+    { organism: "Geobacillus stearothermophilus", d: "1.5 – 3.0" },
+    { organism: "Clostridium botulinum spores", d: "0.21" },
+    { organism: "Bacillus subtilis spores", d: "0.5 – 0.8" },
+    { organism: "Vegetative bacteria", d: "< 0.01" },
+];
+
+const SAMPLES = [
+    { name: "6-log reduction", n0: "1000000", nt: "1", t: "10" },
+    { name: "3-log reduction", n0: "1000000", nt: "1000", t: "10" },
+    { name: "Bioburden 10⁵ → 10⁰", n0: "100000", nt: "1", t: "7.5" },
+    { name: "Slow 2-log", n0: "10000", nt: "100", t: "12" },
+];
 
 export default function DValueCalculator() {
-    const [initialCount, setInitialCount] = useState<string>('1000000');
-    const [finalCount, setFinalCount] = useState<string>('1000');
-    const [time, setTime] = useState<string>('10');
-    const [temperature, setTemperature] = useState<string>('121');
-    const [dValue, setDValue] = useState<number | null>(null);
-    const [logReduction, setLogReduction] = useState<number | null>(null);
-    const [chartData, setChartData] = useState<any[]>([]);
-    const [timeUnits] = useState<'minutes' | 'seconds'>('minutes');
-    const [showDetails, setShowDetails] = useState<boolean>(false);
+    const [initialCount, setInitialCount] = useState("1000000");
+    const [finalCount, setFinalCount] = useState("1000");
+    const [time, setTime] = useState("10");
+    const [temperature, setTemperature] = useState("121");
 
-    const calculate = () => {
+    /*
+     * Derived rather than written into state from a useEffect — the previous
+     * version also silently kept the last valid result on screen when the input
+     * became invalid. The arithmetic is unchanged.
+     */
+    const result = useMemo(() => {
         const N0 = parseFloat(initialCount);
         const Nt = parseFloat(finalCount);
         const t = parseFloat(time);
 
-        if (isNaN(N0) || isNaN(Nt) || isNaN(t) || N0 <= 0 || Nt <= 0 || Nt >= N0) return;
-
-        const logRed = Math.log10(N0 / Nt);
-        const D = t / logRed;
-
-        setDValue(D);
-        setLogReduction(logRed);
-
-        // Generate survivor curve
-        const data = [];
-        for (let i = 0; i <= 60; i += 1) {
-            const survivors = N0 * Math.pow(10, -i / D);
-            data.push({ time: i, logCount: Math.log10(survivors) });
+        if (isNaN(N0) || isNaN(Nt) || isNaN(t) || N0 <= 0 || Nt <= 0) return null;
+        if (Nt >= N0) {
+            return {
+                error: "The surviving count must be lower than the starting count.",
+            } as const;
         }
-        setChartData(data);
+
+        const logReduction = Math.log10(N0 / Nt);
+        const D = t / logReduction;
+
+        // Survivor curve: a straight line on a log scale, which is the whole point.
+        const curve = Array.from({ length: 61 }, (_, minute) => ({
+            time: minute,
+            logCount: Math.log10(N0 * Math.pow(10, -minute / D)),
+        }));
+
+        return { D, logReduction, curve } as const;
+    }, [initialCount, finalCount, time]);
+
+    const reset = () => {
+        setInitialCount("1000000");
+        setFinalCount("1000");
+        setTime("10");
+        setTemperature("121");
     };
 
-    useEffect(() => { calculate(); }, [initialCount, finalCount, time]);
-
-    const reset = () => { setInitialCount('1000000'); setFinalCount('1000'); setTime('10'); };
+    const hasValue = result !== null && !("error" in result);
 
     return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 pt-20">
-            <div className="max-w-7xl mx-auto">
-                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6">
-                    <div className="flex items-center">
-                        <div className="bg-white/20 p-3 rounded-xl mr-4">
-                            <Beaker className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl md:text-3xl font-bold text-white">D‑Value Calculator</h1>
-                            <p className="text-blue-100 mt-2">Decimal Reduction Time – First‑order kinetics [citation:2][citation:7]</p>
-                        </div>
-                    </div>
-                </div>
+        <CalculatorShell
+            title="D-Value Calculator"
+            subtitle="Decimal reduction time — the minutes needed to kill 90% of a microbial population."
+            icon={Beaker}
+            aside={
+                <>
+                    <CalcAbout title="About this calculator">
+                        <p>
+                            The <strong>D-value</strong>, or decimal reduction time, is the exposure time
+                            that reduces a microbial population by one log — that is, to a tenth of what
+                            it was. It is the fundamental measure of how resistant an organism is to a
+                            given lethal process.
+                        </p>
+                        <p>
+                            Because killing follows first-order kinetics, each successive D-value removes
+                            another 90% of whatever is left. That is why a survivor curve is a straight
+                            line when plotted on a log scale, and why sterility is expressed as a
+                            probability rather than an absolute.
+                        </p>
+                        <CalcList
+                            title="Use it when"
+                            items={[
+                                "Characterising a biological indicator or a resistant isolate",
+                                "Designing a sterilisation or pasteurisation cycle",
+                                "Converting a bioburden reduction into a required hold time",
+                                "Teaching first-order death kinetics",
+                            ]}
+                        />
+                        <CalcList
+                            tone="caution"
+                            title="Remember"
+                            items={[
+                                "D is specific to one organism, one temperature and one medium",
+                                "Changing the temperature changes D — that relationship is the z-value",
+                                "Real survivor curves can show shoulders or tails that this model ignores",
+                                "Counts below about 10 CFU carry large counting error",
+                            ]}
+                        />
+                    </CalcAbout>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Input Area */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h2 className="text-xl font-bold text-gray-800 mb-6">Decimal Reduction Time</h2>
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+                </>
+            }
+        >
+            <ResultCard
+                label="D-value"
+                value={hasValue ? result.D.toFixed(2) : null}
+                unit="min"
+                interpretation={
+                    hasValue
+                        ? `Each ${result.D.toFixed(2)} minutes at ${temperature} °C removes 90% of the surviving population.`
+                        : result && "error" in result
+                          ? result.error
+                          : undefined
+                }
+                tone={result && "error" in result ? "danger" : "neutral"}
+                empty="Enter a starting count, a surviving count and an exposure time."
+            />
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                                    <label className="text-sm font-semibold mb-2">Initial count N₀ (CFU)</label>
-                                    <input type="number" step="1" value={initialCount} onChange={(e) => setInitialCount(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg" />
-                                </div>
-                                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                                    <label className="text-sm font-semibold mb-2">Final count Nₜ (CFU)</label>
-                                    <input type="number" step="1" value={finalCount} onChange={(e) => setFinalCount(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-green-200 rounded-lg" />
-                                </div>
-                                <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                                    <label className="text-sm font-semibold mb-2">Exposure time ({timeUnits})</label>
-                                    <input type="number" step="0.1" value={time} onChange={(e) => setTime(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg" />
-                                </div>
-                                <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                                    <label className="text-sm font-semibold mb-2">Temperature (°C)</label>
-                                    <input type="number" step="1" value={temperature} onChange={(e) => setTemperature(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-orange-200 rounded-lg" />
-                                </div>
-                            </div>
+            <CalcSection title="Experimental data">
+                <FieldGrid>
+                    <NumberField
+                        label="Starting count (N₀)"
+                        value={initialCount}
+                        onChange={setInitialCount}
+                        unit="CFU"
+                        step="1"
+                        min={0}
+                        hint="Population before exposure."
+                    />
+                    <NumberField
+                        label="Surviving count (N)"
+                        value={finalCount}
+                        onChange={setFinalCount}
+                        unit="CFU"
+                        step="1"
+                        min={0}
+                        hint="Population after exposure. Must be lower than N₀."
+                    />
+                    <NumberField
+                        label="Exposure time"
+                        value={time}
+                        onChange={setTime}
+                        unit="min"
+                        step="0.1"
+                        min={0}
+                        hint="How long the population was held at the process temperature."
+                    />
+                    <NumberField
+                        label="Process temperature"
+                        value={temperature}
+                        onChange={setTemperature}
+                        unit="°C"
+                        step="1"
+                        hint="Recorded for reference — D is only meaningful with its temperature."
+                    />
+                </FieldGrid>
 
-                            {/* Survivor Curve */}
-                            {chartData.length > 0 && (
-                                <div className="mt-6 bg-gray-50 rounded-xl p-4">
-                                    <h3 className="text-lg font-bold text-gray-800 mb-4">Survivor Curve (First‑order kinetics)</h3>
-                                    <div className="h-64">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            {/* Increased margins to prevent label cutoff */}
-                                            <LineChart data={chartData} margin={{ top: 20, right: 40, left: 40, bottom: 40 }}>
-                                                <CartesianGrid strokeDasharray="3 3" />
-
-                                                {/* Positioned label below the axis */}
-                                                <XAxis
-                                                    dataKey="time"
-                                                    label={{ value: "Time (minutes)", position: "insideBottom", offset: -20 }}
-                                                />
-
-                                                {/* Rotated label to the side to prevent overlapping with numbers */}
-                                                <YAxis
-                                                    label={{ value: "log₁₀(N)", angle: -90, position: "insideLeft", offset: 10 }}
-                                                    domain={[0, 'auto']}
-                                                />
-
-                                                <Tooltip />
-                                                <Line type="monotone" dataKey="logCount" stroke="#3b82f6" strokeWidth={2} dot={false} />
-
-                                                {/* Reference Line Label adjustment */}
-                                                <ReferenceLine
-                                                    y={Math.log10(parseFloat(initialCount) * 0.1)}
-                                                    stroke="#ef4444"
-                                                    strokeDasharray="3 3"
-                                                    label={{ value: "90% reduction", position: "top", fill: "#ef4444", fontSize: 12 }}
-                                                />
-                                            </LineChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                    <p className="text-xs text-gray-500 mt-6">The D‑value is the time required for the survivor curve to traverse one log cycle.</p>
-                                </div>
-                            )}
-
-                            <div className="bg-blue-50 p-4 rounded-lg mt-4">
-                                <p className="text-sm font-mono">D = t / log₁₀(N₀ / Nₜ) </p>
-                                <p className="text-xs text-gray-600 mt-2">where D = decimal reduction time, t = exposure time, N₀ = initial count, Nₜ = final count</p>
-                            </div>
-
-                            <div className="flex gap-4 mt-6">
-                                <button onClick={calculate}
-                                    className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 rounded-xl shadow-lg">
-                                    Calculate D
-                                </button>
-                                <button onClick={reset}
-                                    className="px-6 bg-gray-600 hover:bg-gray-700 text-white rounded-xl flex items-center">
-                                    <RefreshCw className="w-5 h-5 mr-2" /> Reset
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Detailed Information Panel */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <button onClick={() => setShowDetails(!showDetails)}
-                                className="flex items-center justify-between w-full text-left">
-                                <h3 className="text-lg font-bold text-gray-800 flex items-center">
-                                    <Info className="w-5 h-5 mr-2 text-blue-600" />
-                                    About D‑Value (Decimal Reduction Time)
-                                </h3>
+                <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Try an example</p>
+                    <div className="flex flex-wrap gap-2">
+                        {SAMPLES.map((sample) => (
+                            <button
+                                key={sample.name}
+                                type="button"
+                                onClick={() => {
+                                    setInitialCount(sample.n0);
+                                    setFinalCount(sample.nt);
+                                    setTime(sample.t);
+                                }}
+                                className="rounded-full border bg-background px-3 py-2 text-xs font-medium active:bg-accent"
+                            >
+                                {sample.name}
                             </button>
-                            {showDetails && (
-                                <div className="mt-4 space-y-3 text-sm text-gray-600">
-                                    <p><span className="font-semibold">Definition:</span> D‑value is the time (in minutes) required at a given temperature to reduce a microbial population by 90% (one log cycle) [citation:2][citation:7].</p>
-                                    <p><span className="font-semibold">First‑order kinetics:</span> The thermal death of microorganisms follows log‑linear kinetics: log(Nₜ/N₀) = -t/D [citation:2][citation:10].</p>
-                                    <p><span className="font-semibold">Applications:</span> D‑values are used to design sterilization cycles, compare heat resistance of different organisms, and validate processes [citation:4].</p>
-                                    <p><span className="font-semibold">Factors affecting D‑value:</span> Temperature, microbial species, spore state, suspending medium, pH, water activity [citation:2].</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Results & Reference */}
-                    <div className="space-y-6">
-                        <div className="bg-gradient-to-br from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 text-white">
-                            <h2 className="text-2xl font-bold mb-4">D‑Value</h2>
-                            <div className="bg-white/20 rounded-xl p-4 mb-4 text-center">
-                                <div className="text-4xl font-bold">{dValue?.toFixed(2) ?? '—'}</div>
-                                <div className="text-sm">{timeUnits}</div>
-                                {temperature && <div className="text-xs mt-1">at {temperature}°C</div>}
-                            </div>
-                            <div className="bg-white/10 rounded-lg p-4 text-center">
-                                <div className="text-sm">Log reduction achieved</div>
-                                <div className="text-2xl font-bold">{logReduction?.toFixed(2) ?? '—'}</div>
-                            </div>
-                        </div>
-
-                        {/* D‑value Reference Table */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                                <BookOpen className="w-5 h-5 mr-2 text-blue-600" />
-                                D‑values of Common Organisms [citation:2][citation:4]
-                            </h3>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="bg-gradient-to-r from-blue-50 to-green-50">
-                                            <th className="py-2 px-3 text-left">Organism</th>
-                                            <th className="py-2 px-3 text-left">Temp (°C)</th>
-                                            <th className="py-2 px-3 text-left">D‑value (min)</th>
-                                            <th className="py-2 px-3 text-left">Medium</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr><td>B. stearothermophilus</td><td>121</td><td>1.5–3.0</td><td>Water/glucose</td></tr>
-                                        <tr className="bg-gray-50"><td>C. botulinum</td><td>121</td><td>0.2–0.3</td><td>Phosphate buffer</td></tr>
-                                        <tr><td>C. sporogenes</td><td>121</td><td>0.8–1.5</td><td>Meat medium</td></tr>
-                                        <tr className="bg-gray-50"><td>B. subtilis</td><td>121</td><td>0.5–0.8</td><td>Water</td></tr>
-                                        <tr><td>E. coli</td><td>60</td><td>0.5–1.0</td><td>Culture medium</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-2">D‑values vary with temperature, strain, and suspending medium [citation:2].</p>
-                        </div>
-
-                        {/* Interpretation */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-2">Interpretation [citation:7]</h3>
-                            <p className="text-sm">Higher D‑value = greater heat resistance. For sterilization, processes are designed to achieve 12‑log reduction of C. botulinum (12D concept).</p>
-                        </div>
+                        ))}
                     </div>
                 </div>
-            </div>
-        </section>
+
+                <Button variant="outline" onClick={reset} className="w-full">
+                    <RefreshCw />
+                    Reset
+                </Button>
+            </CalcSection>
+
+            {hasValue && (
+                <>
+                    <CalcSection title="Working">
+                        <div>
+                            <ResultRow
+                                label="Log reduction achieved"
+                                value={result.logReduction.toFixed(2)}
+                                unit="log"
+                            />
+                            <ResultRow label="D-value" value={`${result.D.toFixed(2)}`} unit={`min at ${temperature} °C`} />
+                            <ResultRow
+                                label="Time for a 6-log reduction"
+                                value={(result.D * 6).toFixed(2)}
+                                unit="min"
+                            />
+                            <ResultRow
+                                label="Time for a 12-log reduction"
+                                value={(result.D * 12).toFixed(2)}
+                                unit="min"
+                            />
+                        </div>
+                    </CalcSection>
+
+                    <CalcSection
+                        title="Survivor curve"
+                        description="First-order death makes this a straight line on a log scale — one D-value per decade."
+                    >
+                        <div className="h-56 -ml-2">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={result.curve}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                    <XAxis
+                                        dataKey="time"
+                                        tick={{ fontSize: 11 }}
+                                        stroke="hsl(var(--muted-foreground))"
+                                        label={{ value: "Minutes", position: "insideBottom", offset: -4, fontSize: 11 }}
+                                    />
+                                    <YAxis
+                                        tick={{ fontSize: 11 }}
+                                        stroke="hsl(var(--muted-foreground))"
+                                        label={{ value: "log₁₀ CFU", angle: -90, position: "insideLeft", fontSize: 11 }}
+                                    />
+                                    <Tooltip
+                                        formatter={(value) => [Number(value).toFixed(2), "log₁₀ CFU"]}
+                                        labelFormatter={(label) => `${label} min`}
+                                    />
+                                    <Line type="monotone" dataKey="logCount" stroke="#2563EB" dot={false} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </CalcSection>
+                </>
+            )}
+
+            <CalcSection
+                title="Typical D₁₂₁ values"
+                description="Minutes at 121 °C in saturated steam."
+            >
+                <div>
+                    {TYPICAL_D.map((row) => (
+                        <ResultRow key={row.organism} label={row.organism} value={row.d} unit="min" />
+                    ))}
+                </div>
+            </CalcSection>
+
+            <FormulaNote>
+                <Formula>Log reduction = log₁₀(N₀ / N)</Formula>
+                <Formula>D = exposure time / log reduction</Formula>
+                <p>
+                    Microbial death under a constant lethal stress is first-order: a fixed{" "}
+                    <em>fraction</em> dies per unit time, not a fixed number. So the time to drop from
+                    10⁶ to 10⁵ is the same as the time to drop from 10² to 10¹ — and that time is the
+                    D-value.
+                </p>
+                <p>
+                    It follows that no finite process reaches zero organisms. Sterility assurance is
+                    defined as a probability instead: a SAL of 10⁻⁶ means no more than one chance in a
+                    million that a single unit is non-sterile.
+                </p>
+            </FormulaNote>
+
+            <CalcFaq
+                items={[
+                    {
+                        q: "What is the difference between D-value and z-value?",
+                        a: "D is the time for one log reduction at a single temperature. z is how many degrees the temperature must change to change D tenfold. D tells you how long; z tells you how the process responds when you turn up the heat.",
+                    },
+                    {
+                        q: "Why does the survivor curve never reach zero?",
+                        a: "Because each D-value removes 90% of what remains, not a fixed count. Ten organisms become one, one becomes a 10% chance of one, and so on. This is why sterilisation is validated to a sterility assurance level rather than to absolute sterility.",
+                    },
+                    {
+                        q: "My curve has a shoulder or a tail. Is the D-value still valid?",
+                        a: "Only over the log-linear portion. Shoulders (a lag before killing starts) and tails (a stubborn resistant subpopulation) both break the first-order assumption, and a single D calculated across them will be misleading. Fit D to the straight section and report the deviation separately.",
+                    },
+                    {
+                        q: "Does the medium matter?",
+                        a: "Considerably. Fat, sugar, protein and low water activity all protect organisms, so a spore suspended in oil can have a D-value many times its value in water. A D-value is only transferable between identical matrices.",
+                    },
+                    {
+                        q: "How does D relate to the F₀ of a cycle?",
+                        a: "F = D × log reduction. Once you know the D-value of the target organism and the log reduction you need, multiplying them gives the hold time the cycle must deliver — which is what the F-value calculator does.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
     );
 }
