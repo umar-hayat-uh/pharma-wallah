@@ -67,7 +67,7 @@ databases, Upstash Redis) and two authorization models coexist — see `MEMORY.m
    `framer-motion` for motion, Tailwind brand tokens. See `.claude/skills/frontend-ui-conventions/`.
 9. **Register it.** This repo has hand-maintained registries; a new file is often invisible until
    you add it:
-   - calculator → `allTools` **and** `categories[].toolNames` in `CalculationToolsClient.tsx`
+   - calculator → its subject in `src/app/(site)/calculation-tools/tool-index.ts`
    - course subject → `SUBJECTS` in `src/lib/courses/registry.ts`
    - nav entry → `src/components/Layout/Header/Navigation/`
    - protected route → `PROTECTED_PATHS` in `src/middleware.ts`

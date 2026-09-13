@@ -42,7 +42,7 @@ re-emitted on every `npm run mobile:build`, and the script deletes slugs whose d
 `mobile/next.config.mjs` is what lets Next compile files outside its project root.
 
 ### The mobile app ships 89 tools; the web hub lists 78
-The web hub's `allTools` array lists 78. Eleven more directories exist: six linked only from
+The web hub's registry (`tool-index.ts`, formerly `allTools`) listed 78 then; 93 of 104 on 2026-09-13. Eleven more directories exist: six linked only from
 `src/app/clinical/dose-calculators/page.tsx`, five linked from nowhere. Offline there is no
 clinical subdomain, so the app ships all 89 via `mobile/app/_data/tool-registry.ts`.
 
@@ -154,8 +154,20 @@ The trade-off is permanent git growth — ~5 MB per release, unreclaimable witho
 history. GitHub Releases is the alternative if the repo gets heavy; the switch is a one-line change
 to `APK_URL` in `DownloadClient.tsx`.
 
-Bump `versionCode`/`versionName` in `android/app/build.gradle` and `APP_VERSION` in
+Bump `versionCode`/`versionName` in `android/app/build.gradle` and `APP_VERSION` + `APK_SIZE` in
 `DownloadClient.tsx` on every release.
+
+**Verify the published file, not just the exit code** (done for v1.1, 2026-09-13):
+```bash
+BT=$(ls -d ~/Android/Sdk/build-tools/* | sort -V | tail -1)
+A=public/downloads/pharmawallah-calculators.apk
+$BT/aapt dump badging $A | head -1                  # versionCode / versionName you just set
+$BT/apksigner verify --print-certs $A | grep SHA-256 # must equal the previous release's certificate,
+git show HEAD:$A > /tmp/old.apk && $BT/apksigner verify --print-certs /tmp/old.apk | grep SHA-256
+#   ^ a different certificate means phones refuse to install it as an update
+```
+**Never build while another session's agents are rewriting tool pages** — `mobile:build` snapshots the
+tree, so a half-written page ships (or fails the export). Ask the peers for a safe point first.
 
 ## Common Failure Modes
 - **A tool imports `@/lib/...`** — the mobile build fails, or worse, succeeds and ships server

@@ -19,7 +19,7 @@
 | How do I add a calculator? | `.claude/skills/calculator-tool/SKILL.md` |
 | Where is the Android app? | `mobile/` (second Next project) + `android/` — see `.claude/skills/android-app-capacitor/SKILL.md` |
 | How do I add a course subject? | `.claude/skills/course-content-system/SKILL.md` |
-| Where's the list of calculators shown on the hub? | `allTools` + `categories` in `src/app/(site)/calculation-tools/CalculationToolsClient.tsx` |
+| Where's the list of calculators shown on the hub? | `HUB_SUBJECTS` in `src/app/(site)/calculation-tools/tool-index.ts` |
 | Where's the subject registry? | `src/lib/courses/registry.ts` |
 | Where does lesson markdown live? | `public/content/<subject>/<unit>.md` (69 files); also `src/content/` |
 | How is progress recorded? | `src/lib/activityQueue.ts` → `/api/progress/batch` → `applyProgressEvent()` |
@@ -118,12 +118,13 @@
 
 ---
 
-## Calculation tools (97 calculators)
+## Calculation tools (104 calculators)
 
 | Piece | File |
 | --- | --- |
 | Hub page | `src/app/(site)/calculation-tools/page.tsx` |
-| **Hub registry (`allTools` + `categories`)** | `src/app/(site)/calculation-tools/CalculationToolsClient.tsx` |
+| **Hub registry (`HUB_SUBJECTS`, tools nested per subject)** | `src/app/(site)/calculation-tools/tool-index.ts` |
+| Hub search, subject rail, scroll-spy (client island) | `src/app/(site)/calculation-tools/HubCatalogue.tsx` + `hub.css` (`.pw-hub`) |
 | One tool | `src/app/(site)/calculation-tools/(tools)/<tool-slug>/page.tsx` |
 | Clinical-only tool hub | `src/app/clinical/dose-calculators/page.tsx`, `src/app/clinical/calculators/page.tsx` |
 | **Dead legacy registry — do not edit** | `src/app/api/calculators.tsx` |
@@ -135,6 +136,8 @@
 | **Shared page kit** (non-calculator pages) | `src/components/page-kit/` — `PageHero`/`Trail`, `PageSection`, `Figure`/`FigureRow`, `EmptyState`/`ErrorState`/`LoadingState`, `Eyebrow`, `Reveal` (2026-09-13; not yet used by a page) |
 | **Site-wide redesign tracker** | `.claude/redesign-tracker.md` — every page and calculator, batch status, chosen directions, measured faults F1–F19 |
 | **Lab-record card (copy / PNG / print)** | `src/components/calculators/LabReport.tsx` (`LabReport`, `LabActions`, `reportToText`, `downloadReportPng`, `printReport`) |
+| **Analytical-practical layer** (calibration line, replicates, regression, graphs) | `src/components/calculators/lab-analysis/` — `math.ts` (`linearFit` with textbook sums, `concentrationFromAbsorbance`, `sampleSD`, `parseReplicates`), `format.ts` (typographic minus, equations), `figure.ts` (`chartSvg` for PNG/print), `calibration-store.ts` (hand-off: `?a=&b=&unit=` + `localStorage` `pw_lab_calibration_v1`), `parts.tsx` (`CalibrationFields`, `DataTable`, `ChartPanel`, `StepBlock`, `ReportSteps`, `ResultTable`, `CHART` palette). Not re-exported from the kit's `index.ts` |
+| Analytical-practical tools | `(tools)/{calibration-curve-calculator,dissolution-calculator,accuracy-recovery-calculator,dialysis-diffusion-calculator,cumulative-drug-release-calculator,partition-coefficient-calculator}/` — `page.tsx` + pure `_*.ts` maths; the calibration tool is the reference implementation |
 | Lab helpers | `lab-math.ts` (parsing, `fieldError`, sig figs, units, `calculatorHref`), `ModeSwitch.tsx`, `LabFields.tsx`, `chemistry.ts` (formula → molar mass), `hemocytometer.ts` |
 | **Reference lab tool** (copy this) | `(tools)/theoretical-yield-calculator/page.tsx` |
 | Theoretical → percentage yield hand-off | `calculatorHref("percentage-yield-calculator", …)` in theoretical-yield; `readQuery()` in percentage-yield |
@@ -161,6 +164,8 @@ Naming is inconsistent by design-drift: some directories are `kebab-case`, other
 | Server action: read a lesson file | `src/actions/lesson.ts` → `getLessonContent()` |
 | Markdown → HTML | `src/utils/markdownToHtml.ts`, `src/lib/markdown.ts`, `src/utils/markdown.ts` |
 | Lesson prose | `public/content/<subject>/<unit>.md`, `src/content/` |
+| **End-of-lesson block** (5 optional questions, Mark as read, next unit) | `src/components/course/LessonCheckpoint.tsx`, mounted in `src/components/course/UnitPageClient.tsx` |
+| Lesson ↔ MCQ-bank unit table (explicit, not by number) | `src/lib/courses/lesson-questions.ts` |
 | Slug helpers + MCQ types | `src/lib/mcq-utils.ts` |
 | MCQ bank pages | `src/app/(site)/mcqs-bank/page.tsx`, `[semesterSlug]/page.tsx`, `[semesterSlug]/[subject]/page.tsx` |
 | **MCQ question data (ships to client)** | `src/app/api/mcq-data/*.ts` |
@@ -213,7 +218,7 @@ Naming is inconsistent by design-drift: some directories are `kebab-case`, other
 | Drug–food interactions | `src/app/clinical/drug-food-interaction/page.tsx` → `src/app/api/clinical/drug-food-interactions/route.ts` |
 | AMR surveillance | `src/app/clinical/amr/page.tsx` → `src/app/api/clinical/amr/route.ts`; `src/lib/amr/{constants,utils}.ts`; `src/types/amr.ts`; `src/components/Clinical/amr/` |
 | ADR | `src/app/clinical/adr/page.tsx` |
-| Encyclopedia | `src/app/clinical/encyclopedia/page.tsx`, `src/app/(site)/encyclopedia/page.tsx` |
+| Encyclopedia (clinical) | `src/app/clinical/encyclopedia/page.tsx` — still the old `DrugSearch`/`DrugCard` pair |
 | Literature resources | `src/app/clinical/resources/page.tsx`, `resources/[source]/page.tsx` |
 | Dose calculators hub | `src/app/clinical/dose-calculators/page.tsx` |
 | Interaction datasets (seed) | `src/data/drug-drug-interactions.json`, `src/data/Drug to Food interactions Dataset.json`; loaders `src/lib/drug-{drug,food}-interactions.ts` |
@@ -272,9 +277,10 @@ Supabase cache tables: `pubmed_cache`, `medlineplus_cache`, `clinicaltrials_cach
 
 | Piece | File |
 | --- | --- |
-| Full-text search (Mongo `pharmacopedia`) | `src/app/api/search/route.ts` |
+| Drug search API (Mongo `pharmacopedia`, 3 collections as one set) | `src/app/api/search/route.ts` (limiter `drugSearchLimiter` in `src/lib/rateLimit.ts`) |
+| Encyclopedia `/encyclopedia` | `src/app/(site)/encyclopedia/page.tsx` (server: metadata, URL params, streamed figures) → `src/components/encyclopedia/` — `EncyclopediaClient.tsx` (cover, search, result index, URL state), `Monograph.tsx`, `prose.tsx` (DrugBank text cleaner), `useDrugSearch.ts`, `EncyclopediaFigures.tsx` (server, daily-cached counts), `types.ts`, `encyclopedia.css` |
 | Autocomplete | `src/app/api/autocomplete/route.ts`, `src/components/AutocompleteSearch.tsx` |
-| Drug finder UI | `src/app/(site)/drug-finder/page.tsx`, `src/components/{DrugSearch,DrugCard}.tsx` |
+| Drug finder UI | `src/app/(site)/drug-finder/page.tsx` (self-contained — it does **not** use `DrugSearch`/`DrugCard`, which only `/clinical/encyclopedia` imports) |
 | Contact form → Resend | `src/app/api/contact/route.ts`, `src/app/contact/page.tsx`, `src/components/Home/ContactForm/` |
 | Blog (MDX) | `markdown/blog/*.mdx`, `src/components/SharedComponent/Blog/` |
 | **Landing page (`/`)** | `src/components/Home/landing/` — `LandingPage.tsx` composes it, `useIndexMotion.ts` holds every GSAP tween, `landing.css` the scoped `.pw-idx` styles, `data.ts` the copy, figures and chapters |
@@ -291,7 +297,7 @@ Supabase cache tables: `pubmed_cache`, `medlineplus_cache`, `clinicaltrials_cach
 
 | Path | Status |
 | --- | --- |
-| `src/app/api/calculators.tsx` | 419 lines, zero importers — superseded by `allTools` in `CalculationToolsClient.tsx` |
+| `src/app/api/calculators.tsx` | 419 lines, zero importers — superseded by `tool-index.ts` |
 | `src/app/api/data.tsx`, `physiology-data.ts`, `biochemistry-data.ts` | Zero importers |
 | `src/lib/courses/subjects/*-data.ts` (9 files) | Zero importers; incompatible `*_META`/`*Units` shape |
 | `src/lib/courses/subjects/natural-toxins.ts` | Correct `SubjectMeta` shape, but not in the `SUBJECTS` array |

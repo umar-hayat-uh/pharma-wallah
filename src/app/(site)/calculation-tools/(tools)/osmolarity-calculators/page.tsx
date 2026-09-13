@@ -1,1093 +1,855 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { Calculator, Droplets, Activity, Syringe, Heart, Beaker, TestTube, AlertCircle, Thermometer } from 'lucide-react';
 
-type CalculatorType = 'general' | 'serum' | 'plasma' | 'iv' | 'tpn' | 'buffer';
+import { useMemo, useRef, useState } from "react";
+import {
+    Activity,
+    Beaker,
+    Calculator,
+    Droplets,
+    Heart,
+    Plus,
+    RefreshCw,
+    Syringe,
+    TestTube,
+    Trash2,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import {
+    CalculatorShell,
+    CalcSection,
+    FieldGrid,
+    NumberField,
+    TextField,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    AdSlot,
+    ModeSwitch,
+    LabNotice,
+} from "@/components/calculators";
+import {
+    BUFFERS,
+    IV_FLUIDS,
+    bufferOsmolarity,
+    fmt,
+    fmt0,
+    generalOsmolarity,
+    ivOsmolarity,
+    plasmaOsmolarity,
+    serumOsmolarity,
+    tpnOsmolarity,
+    type SerumMethod,
+    type Solute,
+} from "./_math";
 
-type Solute = {
-    id: number;
-    name: string;
-    concentration: number;
-    dissociation: number;
+type Mode = "general" | "serum" | "plasma" | "iv" | "tpn" | "buffer";
+
+/* ── Defaults, presets and reference content (all from the original page) ── */
+
+const DEFAULT_SOLUTES: Solute[] = [
+    { id: 1, name: "NaCl", concentration: 150, dissociation: 2 },
+    { id: 2, name: "Glucose", concentration: 5.5, dissociation: 1 },
+];
+
+const SAMPLE_SOLUTES = [
+    { name: "NaCl", concentration: "154", dissociation: "2" },
+    { name: "KCl", concentration: "5", dissociation: "2" },
+    { name: "CaCl₂", concentration: "2.5", dissociation: "3" },
+    { name: "Glucose", concentration: "5.5", dissociation: "1" },
+    { name: "Urea", concentration: "5", dissociation: "1" },
+];
+
+const SERUM_SCENARIOS = [
+    { label: "Normal", na: "140", glu: "100", bun: "15" },
+    { label: "Hyperglycemia", na: "130", glu: "450", bun: "18" },
+    { label: "Dehydration", na: "155", glu: "120", bun: "30" },
+];
+
+const TPN_PRESETS = [
+    { label: "Peripheral TPN", aa: "20", dex: "10", lip: "20" },
+    { label: "Standard Central TPN", aa: "40", dex: "25", lip: "20" },
+    { label: "High Protein", aa: "60", dex: "20", lip: "20" },
+    { label: "Renal Formula", aa: "35", dex: "35", lip: "20" },
+];
+
+const DEFAULT_ELECTROLYTES = { na: "40", k: "30", ca: "4.5", mg: "5", po4: "15" };
+
+const MODE_INFO: Record<Mode, { title: string; items: string[] }> = {
+    general: {
+        title: "General osmolarity",
+        items: [
+            "Osmolarity: total concentration of osmotically active particles",
+            "Formula: Σ(C × i), where C is concentration and i is the dissociation factor",
+            "Units: mOsm/L (milliosmoles per litre)",
+        ],
+    },
+    serum: {
+        title: "Serum osmolarity",
+        items: [
+            "Normal range: 275–295 mOsm/L",
+            "Critical values: < 260 or > 320 mOsm/L",
+            "Clinical use: evaluate fluid balance and renal function",
+        ],
+    },
+    plasma: {
+        title: "Plasma osmolarity",
+        items: [
+            "Normal band used here: 280–300 mOsm/L",
+            "All four inputs are in mmol/L (SI units)",
+        ],
+    },
+    iv: {
+        title: "IV fluid osmolarity",
+        items: [
+            "Isotonic: 250–375 mOsm/L (matches blood)",
+            "Hypotonic: < 250 mOsm/L (causes hemolysis)",
+            "Hypertonic: > 375 mOsm/L (causes dehydration)",
+        ],
+    },
+    tpn: {
+        title: "TPN osmolarity",
+        items: [
+            "Peripheral TPN: < 900 mOsm/L",
+            "Central TPN: up to 1800 mOsm/L",
+            "Critical: monitor for phlebitis and thrombosis",
+        ],
+    },
+    buffer: {
+        title: "Buffer osmolarity",
+        items: [
+            "Physiological band used here: 250–350 mOsm/L",
+            "Concentration is the strength of the stock, e.g. 1× or 10×",
+        ],
+    },
 };
 
+const REFERENCE_ROWS = [
+    { fluid: "Normal Saline (0.9% NaCl)", osm: "308", tonicity: "Isotonic", ph: "5.5", use: "Fluid resuscitation" },
+    { fluid: "Lactated Ringer's", osm: "273", tonicity: "Isotonic", ph: "6.5", use: "Surgery, burns" },
+    { fluid: "D5W (5% Dextrose)", osm: "252", tonicity: "Isotonic (initially)", ph: "4.0", use: "Free water replacement" },
+    { fluid: "TPN Standard", osm: "1200-1800", tonicity: "Hypertonic", ph: "5.5-6.5", use: "Nutrition support" },
+    { fluid: "Human Plasma", osm: "275-295", tonicity: "-", ph: "7.35-7.45", use: "Physiological reference" },
+];
+
+/* ── Small local parts the kit does not have ── */
+
+function negative(raw: string): string | undefined {
+    const value = parseFloat(raw);
+    return !isNaN(value) && value < 0 ? "Cannot be negative." : undefined;
+}
+
+const anyNegative = (...raws: string[]) => raws.some((raw) => negative(raw) !== undefined);
+
+function Chip({ onClick, children, detail }: { onClick: () => void; children: React.ReactNode; detail?: string }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className="min-h-[40px] rounded-full border bg-background px-3 py-2 text-left text-xs font-medium hover:bg-muted active:bg-accent"
+        >
+            {children}
+            {detail && <span className="ml-1.5 font-mono text-[11px] text-muted-foreground">{detail}</span>}
+        </button>
+    );
+}
+
+function ChipRow({ title, children, note }: { title: string; children: React.ReactNode; note?: string }) {
+    return (
+        <div>
+            <p className="mb-2 text-xs font-medium text-muted-foreground">{title}</p>
+            <div className="flex flex-wrap gap-2">{children}</div>
+            {note && <p className="mt-2 text-xs text-muted-foreground">{note}</p>}
+        </div>
+    );
+}
+
+/** A radio-card grid for picking one fluid or buffer from a list. */
+function ChoiceGrid<T extends { id: string; name: string }>({
+    label,
+    items,
+    value,
+    onChange,
+    detail,
+}: {
+    label: string;
+    items: T[];
+    value: string;
+    onChange: (id: string) => void;
+    detail: (item: T) => string | null;
+}) {
+    return (
+        <div>
+            <p className="mb-2 text-[13px] font-medium text-foreground/90">{label}</p>
+            <div role="radiogroup" aria-label={label} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {items.map((item) => {
+                    const selected = item.id === value;
+                    const text = detail(item);
+                    return (
+                        <button
+                            key={item.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={selected}
+                            onClick={() => onChange(item.id)}
+                            className={cn(
+                                "min-h-[48px] rounded-xl border px-3.5 py-2.5 text-left transition-colors",
+                                selected
+                                    ? "border-primary bg-primary/10 ring-1 ring-inset ring-primary/30"
+                                    : "border-border bg-background hover:bg-muted",
+                            )}
+                        >
+                            <span className="block text-sm font-semibold text-foreground">{item.name}</span>
+                            {text && <span className="mt-0.5 block font-mono text-xs text-muted-foreground">{text}</span>}
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+/* ── Page ── */
+
 export default function OsmolarityCalculators() {
-    const [calculatorType, setCalculatorType] = useState<CalculatorType>('general');
-    const [results, setResults] = useState<any>(null);
+    const [mode, setMode] = useState<Mode>("general");
 
-    return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-0 mt-5">
-            <div className="max-w-6xl mx-auto">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-xl shadow-lg p-8 mb-6">
-                    <div className="flex items-center justify-center mb-4">
-                        <Droplets className="w-10 h-10 text-blue-600 mr-3" />
-                        <div>
-                            <h1 className="text-3xl font-bold text-white">Osmolarity Calculator Suite</h1>
-                            <p className="text-white">Calculate osmolarity for various biological and pharmaceutical solutions</p>
-                        </div>
-                    </div>
-                </div>
+    // General
+    const [solutes, setSolutes] = useState<Solute[]>(DEFAULT_SOLUTES);
+    const [newSolute, setNewSolute] = useState({ name: "", concentration: "", dissociation: "1" });
+    const nextId = useRef(3);
 
-                {/* Calculator Selection */}
-                <div className="mb-8 bg-white rounded-xl shadow-lg p-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">Select Calculator Type</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                        {[
-                            { type: 'general', label: 'General Osmolarity', icon: Calculator },
-                            { type: 'serum', label: 'Serum Osmolarity', icon: Activity },
-                            { type: 'plasma', label: 'Plasma Osmolarity', icon: Heart },
-                            { type: 'iv', label: 'IV Fluid Osmolarity', icon: Syringe },
-                            { type: 'tpn', label: 'TPN Osmolarity', icon: Beaker },
-                            { type: 'buffer', label: 'Buffer Osmolarity', icon: TestTube },
-                        ].map(({ type, label, icon: Icon }) => (
-                            <button
-                                key={type}
-                                onClick={() => setCalculatorType(type as CalculatorType)}
-                                className={`p-4 rounded-lg transition-all duration-300 flex flex-col items-center justify-center ${calculatorType === type
-                                        ? 'bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-md'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                    }`}
-                            >
-                                <Icon className="w-6 h-6 mb-2" />
-                                <span className="text-sm font-semibold text-center">{label}</span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
+    // Serum
+    const [serumMethod, setSerumMethod] = useState<SerumMethod>("standard");
+    const [serumNa, setSerumNa] = useState("140");
+    const [serumGlu, setSerumGlu] = useState("100");
+    const [serumBun, setSerumBun] = useState("15");
+    const [serumEthanol, setSerumEthanol] = useState("");
 
-                {/* Calculator Content */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Input Section */}
-                    <div className="lg:col-span-2 bg-white rounded-xl shadow-lg p-8">
-                        {calculatorType === 'general' && <GeneralOsmolarityCalculator setResults={setResults} />}
-                        {calculatorType === 'serum' && <SerumOsmolarityCalculator setResults={setResults} />}
-                        {calculatorType === 'plasma' && <PlasmaOsmolarityCalculator setResults={setResults} />}
-                        {calculatorType === 'iv' && <IVFluidOsmolarityCalculator setResults={setResults} />}
-                        {calculatorType === 'tpn' && <TPNOsmolarityCalculator setResults={setResults} />}
-                        {calculatorType === 'buffer' && <BufferOsmolarityCalculator setResults={setResults} />}
-                    </div>
+    // Plasma
+    const [plasmaNa, setPlasmaNa] = useState("142");
+    const [plasmaK, setPlasmaK] = useState("4.0");
+    const [plasmaGlu, setPlasmaGlu] = useState("5.5");
+    const [plasmaUrea, setPlasmaUrea] = useState("5.0");
 
-                    {/* Results Section */}
-                    <div className="space-y-6">
-                        {/* Results Card */}
-                        {results && (
-                            <div className="bg-gradient-to-br from-blue-50 to-green-50 border-2 border-blue-400 rounded-xl shadow-lg p-6">
-                                <h2 className="text-2xl font-bold text-gray-800 mb-6">Results</h2>
-                                <div className="space-y-4">
-                                    {results.osmolarity && (
-                                        <div className="bg-white rounded-lg p-6 shadow-sm text-center">
-                                            <div className="text-sm font-semibold text-gray-600 mb-2">
-                                                Calculated Osmolarity
-                                            </div>
-                                            <div className="text-4xl font-bold text-green-600">
-                                                {results.osmolarity.toFixed(0)}
-                                            </div>
-                                            <div className="text-lg font-semibold text-gray-700 mt-2">
-                                                mOsm/L
-                                            </div>
-                                            {results.tonicity && (
-                                                <div className="mt-4 p-3 rounded-lg bg-blue-50">
-                                                    <div className="font-semibold text-blue-800">Tonicity:</div>
-                                                    <div className="text-lg font-bold text-blue-600">{results.tonicity}</div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
+    // IV
+    const [fluid, setFluid] = useState("ns");
+    const [customNaCl, setCustomNaCl] = useState("0.9");
+    const [customDextrose, setCustomDextrose] = useState("0");
 
-                                    {results.interpretation && (
-                                        <div className="bg-white rounded-lg p-4 shadow-sm">
-                                            <h4 className="font-semibold text-gray-800 mb-2">Interpretation</h4>
-                                            <p className="text-sm text-gray-700">{results.interpretation}</p>
-                                        </div>
-                                    )}
+    // TPN
+    const [aminoAcids, setAminoAcids] = useState("40");
+    const [dextrose, setDextrose] = useState("15");
+    const [lipids, setLipids] = useState("20");
+    const [electrolytes, setElectrolytes] = useState(DEFAULT_ELECTROLYTES);
 
-                                    {results.formula && (
-                                        <div className="bg-white rounded-lg p-4 shadow-sm">
-                                            <h4 className="font-semibold text-gray-800 mb-2">Formula Used</h4>
-                                            <div className="text-center text-sm font-mono bg-gray-50 p-3 rounded">
-                                                {results.formula}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
+    // Buffer
+    const [bufferType, setBufferType] = useState("pbs");
+    const [bufferConc, setBufferConc] = useState("1");
+    const [bufferPh, setBufferPh] = useState("7.4");
 
-                        {/* Information Card */}
-                        <div className="bg-white rounded-xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">
-                                {calculatorType.charAt(0).toUpperCase() + calculatorType.slice(1)} Calculator Info
-                            </h3>
-                            <div className="space-y-3 text-sm text-gray-600">
-                                {calculatorType === 'general' && (
-                                    <>
-                                        <p><strong>Osmolarity:</strong> Total concentration of osmotically active particles</p>
-                                        <p><strong>Formula:</strong> Σ(C × i) where C is concentration and i is dissociation factor</p>
-                                        <p><strong>Units:</strong> mOsm/L (milliosmoles per liter)</p>
-                                    </>
-                                )}
-                                {calculatorType === 'serum' && (
-                                    <>
-                                        <p><strong>Normal range:</strong> 275-295 mOsm/L</p>
-                                        <p><strong>Critical values:</strong> &lt;260 or &gt;320 mOsm/L</p>
-                                        <p><strong>Clinical use:</strong> Evaluate fluid balance and renal function</p>
-                                    </>
-                                )}
-                                {calculatorType === 'iv' && (
-                                    <>
-                                        <p><strong>Isotonic:</strong> 250-375 mOsm/L (matches blood)</p>
-                                        <p><strong>Hypotonic:</strong> &lt;250 mOsm/L (causes hemolysis)</p>
-                                        <p><strong>Hypertonic:</strong> &gt;375 mOsm/L (causes dehydration)</p>
-                                    </>
-                                )}
-                                {calculatorType === 'tpn' && (
-                                    <>
-                                        <p><strong>Peripheral TPN:</strong> &lt;900 mOsm/L</p>
-                                        <p><strong>Central TPN:</strong> Up to 1800 mOsm/L</p>
-                                        <p><strong>Critical:</strong> Monitor for phlebitis and thrombosis</p>
-                                    </>
-                                )}
-                            </div>
-                        </div>
+    /* Derived results — every mode computes live from its inputs. */
+    const general = useMemo(() => generalOsmolarity(solutes), [solutes]);
 
-                        {/* Applications Card */}
-                        <div className="bg-yellow-50 rounded-xl shadow-lg p-6 border border-yellow-200">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                                <AlertCircle className="w-5 h-5 mr-2 text-yellow-600" />
-                                Clinical Applications
-                            </h3>
-                            <ul className="space-y-2 text-sm text-gray-600">
-                                <li>• Fluid therapy planning</li>
-                                <li>• TPN formulation</li>
-                                <li>• IV compatibility checking</li>
-                                <li>• Renal function assessment</li>
-                                <li>• Electrolyte balance monitoring</li>
-                                <li>• Pharmaceutical formulation</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Reference Table */}
-                <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6">Osmolarity Reference Values</h2>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="bg-gradient-to-r from-blue-50 to-green-50">
-                                    <th className="py-3 px-4 text-left font-semibold text-gray-700">Solution/Fluid</th>
-                                    <th className="py-3 px-4 text-left font-semibold text-gray-700">Osmolarity (mOsm/L)</th>
-                                    <th className="py-3 px-4 text-left font-semibold text-gray-700">Tonicity</th>
-                                    <th className="py-3 px-4 text-left font-semibold text-gray-700">pH</th>
-                                    <th className="py-3 px-4 text-left font-semibold text-gray-700">Clinical Use</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr className="border-b border-gray-200">
-                                    <td className="py-3 px-4">Normal Saline (0.9% NaCl)</td>
-                                    <td className="py-3 px-4">308</td>
-                                    <td className="py-3 px-4">Isotonic</td>
-                                    <td className="py-3 px-4">5.5</td>
-                                    <td className="py-3 px-4">Fluid resuscitation</td>
-                                </tr>
-                                <tr className="border-b border-gray-200 bg-gray-50">
-                                    <td className="py-3 px-4">Lactated Ringer's</td>
-                                    <td className="py-3 px-4">273</td>
-                                    <td className="py-3 px-4">Isotonic</td>
-                                    <td className="py-3 px-4">6.5</td>
-                                    <td className="py-3 px-4">Surgery, burns</td>
-                                </tr>
-                                <tr className="border-b border-gray-200">
-                                    <td className="py-3 px-4">D5W (5% Dextrose)</td>
-                                    <td className="py-3 px-4">252</td>
-                                    <td className="py-3 px-4">Isotonic (initially)</td>
-                                    <td className="py-3 px-4">4.0</td>
-                                    <td className="py-3 px-4">Free water replacement</td>
-                                </tr>
-                                <tr className="border-b border-gray-200 bg-gray-50">
-                                    <td className="py-3 px-4">TPN Standard</td>
-                                    <td className="py-3 px-4">1200-1800</td>
-                                    <td className="py-3 px-4">Hypertonic</td>
-                                    <td className="py-3 px-4">5.5-6.5</td>
-                                    <td className="py-3 px-4">Nutrition support</td>
-                                </tr>
-                                <tr>
-                                    <td className="py-3 px-4">Human Plasma</td>
-                                    <td className="py-3 px-4">275-295</td>
-                                    <td className="py-3 px-4">-</td>
-                                    <td className="py-3 px-4">7.35-7.45</td>
-                                    <td className="py-3 px-4">Physiological reference</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </section>
+    const serum = useMemo(
+        () =>
+            anyNegative(serumNa, serumGlu, serumBun)
+                ? null
+                : serumOsmolarity(parseFloat(serumNa), parseFloat(serumGlu), parseFloat(serumBun), serumMethod),
+        [serumNa, serumGlu, serumBun, serumMethod],
     );
-}
 
-// 1. General Osmolarity Calculator
-function GeneralOsmolarityCalculator({ setResults }: { setResults: any }) {
-    const [solutes, setSolutes] = useState<Solute[]>([
-        { id: 1, name: 'NaCl', concentration: 150, dissociation: 2 },
-        { id: 2, name: 'Glucose', concentration: 5.5, dissociation: 1 },
-    ]);
-    const [newSolute, setNewSolute] = useState({ name: '', concentration: '', dissociation: '1' });
+    const plasma = useMemo(
+        () =>
+            anyNegative(plasmaNa, plasmaK, plasmaGlu, plasmaUrea)
+                ? null
+                : plasmaOsmolarity(parseFloat(plasmaNa), parseFloat(plasmaK), parseFloat(plasmaGlu), parseFloat(plasmaUrea)),
+        [plasmaNa, plasmaK, plasmaGlu, plasmaUrea],
+    );
 
-    const calculateOsmolarity = () => {
-        let totalOsmolarity = 0;
-        solutes.forEach(solute => {
-            totalOsmolarity += solute.concentration * solute.dissociation;
-        });
+    const iv = useMemo(
+        () =>
+            fluid === "custom" && anyNegative(customNaCl, customDextrose)
+                ? null
+                : ivOsmolarity(fluid, parseFloat(customNaCl), parseFloat(customDextrose)),
+        [fluid, customNaCl, customDextrose],
+    );
 
-        let tonicity = 'Isotonic';
-        if (totalOsmolarity < 250) tonicity = 'Hypotonic';
-        else if (totalOsmolarity > 375) tonicity = 'Hypertonic';
+    const tpn = useMemo(() => {
+        const raws = [aminoAcids, dextrose, lipids, electrolytes.na, electrolytes.k, electrolytes.ca, electrolytes.mg, electrolytes.po4];
+        if (anyNegative(...raws)) return null;
+        const [aa, dex, lip, na, k, ca, mg, po4] = raws.map((raw) => parseFloat(raw));
+        return tpnOsmolarity(aa, dex, lip, na, k, ca, mg, po4);
+    }, [aminoAcids, dextrose, lipids, electrolytes]);
 
-        setResults({
-            osmolarity: totalOsmolarity,
-            tonicity,
-            interpretation: tonicity === 'Isotonic'
-                ? 'Solution matches physiological osmolarity'
-                : tonicity === 'Hypotonic'
-                    ? 'May cause hemolysis in red blood cells'
-                    : 'May cause cellular dehydration',
-            formula: 'Osmolarity = Σ(Concentration × Dissociation factor)'
-        });
-    };
+    const buffer = useMemo(
+        () => (anyNegative(bufferConc) ? null : bufferOsmolarity(bufferType, parseFloat(bufferConc), parseFloat(bufferPh))),
+        [bufferType, bufferConc, bufferPh],
+    );
 
-    const addSolute = () => {
-        if (!newSolute.name || !newSolute.concentration) return;
+    const current = { general, serum, plasma, iv, tpn, buffer }[mode];
 
-        const newId = Math.max(...solutes.map(s => s.id)) + 1;
-        setSolutes([
-            ...solutes,
-            {
-                id: newId,
-                name: newSolute.name,
-                concentration: parseFloat(newSolute.concentration),
-                dissociation: parseFloat(newSolute.dissociation),
-            }
+    const addSolute = (name: string, concentration: string, dissociation: string) => {
+        setSolutes((previous) => [
+            ...previous,
+            { id: nextId.current++, name, concentration: parseFloat(concentration), dissociation: parseFloat(dissociation) },
         ]);
-        setNewSolute({ name: '', concentration: '', dissociation: '1' });
     };
 
-    const removeSolute = (id: number) => {
-        setSolutes(solutes.filter(s => s.id !== id));
-    };
+    const newDissociationInvalid = newSolute.dissociation.trim() === "" || isNaN(parseFloat(newSolute.dissociation));
+    const canAdd = newSolute.name.trim() !== "" && newSolute.concentration !== "" && !newDissociationInvalid;
 
-    const sampleSolutes = [
-        { name: 'NaCl', concentration: '154', dissociation: '2' },
-        { name: 'KCl', concentration: '5', dissociation: '2' },
-        { name: 'CaCl₂', concentration: '2.5', dissociation: '3' },
-        { name: 'Glucose', concentration: '5.5', dissociation: '1' },
-        { name: 'Urea', concentration: '5', dissociation: '1' },
-    ];
-
-    return (
-        <>
-            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                <Calculator className="w-6 h-6 mr-2" />
-                General Osmolarity Calculator
-            </h2>
-
-            <div className="space-y-6">
-                {/* Solutes Table */}
-                <div className="bg-blue-50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-blue-800 mb-4">Solutes in Solution</h3>
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="bg-blue-100">
-                                    <th className="py-2 px-4 text-left font-semibold text-blue-800">Solute</th>
-                                    <th className="py-2 px-4 text-left font-semibold text-blue-800">Concentration (mmol/L)</th>
-                                    <th className="py-2 px-4 text-left font-semibold text-blue-800">Dissociation (i)</th>
-                                    <th className="py-2 px-4 text-left font-semibold text-blue-800">Contribution</th>
-                                    <th className="py-2 px-4 text-left font-semibold text-blue-800">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {solutes.map((solute) => (
-                                    <tr key={solute.id} className="border-b border-blue-200">
-                                        <td className="py-2 px-4">{solute.name}</td>
-                                        <td className="py-2 px-4">{solute.concentration}</td>
-                                        <td className="py-2 px-4">{solute.dissociation}</td>
-                                        <td className="py-2 px-4">{solute.concentration * solute.dissociation} mOsm/L</td>
-                                        <td className="py-2 px-4">
-                                            <button
-                                                onClick={() => removeSolute(solute.id)}
-                                                className="text-red-600 hover:text-red-800 text-sm font-semibold"
-                                            >
-                                                Remove
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                {/* Add New Solute */}
-                <div className="bg-green-50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-green-800 mb-4">Add New Solute</h3>
-                    <div className="grid grid-cols-3 gap-4">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Solute Name</label>
-                            <input
-                                type="text"
-                                value={newSolute.name}
-                                onChange={(e) => setNewSolute({ ...newSolute, name: e.target.value })}
-                                className="w-full px-4 py-2 border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                                placeholder="e.g., NaCl"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Concentration (mmol/L)</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                value={newSolute.concentration}
-                                onChange={(e) => setNewSolute({ ...newSolute, concentration: e.target.value })}
-                                className="w-full px-4 py-2 border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                                placeholder="e.g., 150"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Dissociation Factor (i)</label>
-                            <input
-                                type="number"
-                                step="1"
-                                min="1"
-                                max="5"
-                                value={newSolute.dissociation}
-                                onChange={(e) => setNewSolute({ ...newSolute, dissociation: e.target.value })}
-                                className="w-full px-4 py-2 border-2 border-green-300 rounded-lg focus:border-green-500 focus:outline-none"
-                                placeholder="1-5"
-                            />
-                        </div>
-                    </div>
-                    <button
-                        onClick={addSolute}
-                        className="mt-4 w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold py-3 rounded-lg transition-all duration-300"
-                    >
-                        Add Solute
-                    </button>
-                </div>
-
-                {/* Sample Solutes */}
-                <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Common Solutes</h3>
-                    <div className="grid grid-cols-5 gap-3">
-                        {sampleSolutes.map((solute, idx) => (
-                            <button
-                                key={idx}
-                                onClick={() => {
-                                    const newId = Math.max(...solutes.map(s => s.id)) + 1;
-                                    setSolutes([
-                                        ...solutes,
-                                        {
-                                            id: newId,
-                                            name: solute.name,
-                                            concentration: parseFloat(solute.concentration),
-                                            dissociation: parseFloat(solute.dissociation),
-                                        }
-                                    ]);
-                                }}
-                                className="bg-white border border-gray-300 rounded-lg p-3 hover:bg-blue-50 transition-colors text-center"
-                            >
-                                <div className="font-semibold text-blue-600">{solute.name}</div>
-                                <div className="text-xs text-gray-600 mt-1">
-                                    {solute.concentration} mM · i={solute.dissociation}
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Calculate Button */}
-                <button
-                    onClick={calculateOsmolarity}
-                    className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold py-4 rounded-lg transition-all duration-300 text-lg shadow-md hover:shadow-lg"
-                >
-                    Calculate Osmolarity
-                </button>
-            </div>
-        </>
-    );
-}
-
-// 2. Serum Osmolarity Calculator
-function SerumOsmolarityCalculator({ setResults }: { setResults: any }) {
-    const [sodium, setSodium] = useState<string>('140');
-    const [glucose, setGlucose] = useState<string>('100');
-    const [bun, setBun] = useState<string>('15');
-    const [method, setMethod] = useState<'standard' | 'advanced'>('standard');
-
-    const calculateSerumOsmolarity = () => {
-        const na = parseFloat(sodium);
-        const glu = parseFloat(glucose);
-        const urea = parseFloat(bun);
-
-        let osmolarity = 0;
-        let formula = '';
-
-        if (method === 'standard') {
-            // Standard formula: 2*Na + Glucose/18 + BUN/2.8
-            osmolarity = (2 * na) + (glu / 18) + (urea / 2.8);
-            formula = '2×Na + Glucose/18 + BUN/2.8';
+    const reset = () => {
+        if (mode === "general") {
+            setSolutes(DEFAULT_SOLUTES);
+            setNewSolute({ name: "", concentration: "", dissociation: "1" });
+        } else if (mode === "serum") {
+            setSerumMethod("standard");
+            setSerumNa("140");
+            setSerumGlu("100");
+            setSerumBun("15");
+            setSerumEthanol("");
+        } else if (mode === "plasma") {
+            setPlasmaNa("142");
+            setPlasmaK("4.0");
+            setPlasmaGlu("5.5");
+            setPlasmaUrea("5.0");
+        } else if (mode === "iv") {
+            setFluid("ns");
+            setCustomNaCl("0.9");
+            setCustomDextrose("0");
+        } else if (mode === "tpn") {
+            setAminoAcids("40");
+            setDextrose("15");
+            setLipids("20");
+            setElectrolytes(DEFAULT_ELECTROLYTES);
         } else {
-            // Advanced formula with ethanol
-            osmolarity = (2 * na) + (glu / 18) + (urea / 2.8);
-            formula = '2×Na + Glucose/18 + BUN/2.8 + Ethanol/4.6';
+            setBufferType("pbs");
+            setBufferConc("1");
+            setBufferPh("7.4");
         }
-
-        let interpretation = '';
-        if (osmolarity < 275) interpretation = 'Hypotonic - Possible water intoxication';
-        else if (osmolarity <= 295) interpretation = 'Normal serum osmolarity';
-        else if (osmolarity <= 320) interpretation = 'Hypertonic - Mild dehydration';
-        else interpretation = 'Severely hypertonic - Critical condition';
-
-        const osmolarGap = osmolarity - (2 * na + glu / 18 + urea / 2.8);
-        let gapInterpretation = '';
-        if (osmolarGap < 10) gapInterpretation = 'Normal osmolar gap';
-        else if (osmolarGap <= 20) gapInterpretation = 'Moderately elevated - possible toxins';
-        else gapInterpretation = 'Markedly elevated - toxic alcohols likely';
-
-        setResults({
-            osmolarity,
-            interpretation: `${interpretation}. ${gapInterpretation}`,
-            formula,
-            osmolarGap: osmolarGap.toFixed(1),
-        });
     };
 
+    const resultLabel = {
+        general: "Solution osmolarity",
+        serum: "Serum osmolarity",
+        plasma: "Plasma osmolarity",
+        iv: "IV fluid osmolarity",
+        tpn: "TPN osmolarity",
+        buffer: "Buffer osmolarity",
+    }[mode];
+
+    const emptyText = {
+        general: "Add at least one solute with a concentration and dissociation factor.",
+        serum: "Enter sodium, glucose and BUN (none can be negative).",
+        plasma: "Enter sodium, potassium, glucose and urea in mmol/L (none can be negative).",
+        iv: "Enter the NaCl and dextrose percentages of the custom fluid.",
+        tpn: "Enter every macronutrient and electrolyte value (use 0 for none).",
+        buffer: "Enter the buffer concentration (×) and pH.",
+    }[mode];
+
+    const interpretation =
+        current && mode === "general" && current.tonicity
+            ? `${current.tonicity} — ${current.interpretation}`
+            : current?.interpretation;
+
     return (
-        <>
-            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                <Activity className="w-6 h-6 mr-2" />
-                Serum Osmolarity Calculator
-            </h2>
+        <CalculatorShell
+            title="Osmolarity Calculator Suite"
+            subtitle="Six osmolarity calculators in one place — any solution from its solutes, serum, plasma, IV fluids, TPN and laboratory buffers — in mOsm/L."
+            icon={Droplets}
+            eyebrow="Pharmaceutics"
+            aside={
+                <>
+                    <CalcAbout title="About osmolarity">
+                        <p>
+                            Osmolarity is the number of osmotically active particles per litre of solution
+                            (mOsm/L). A dissolved salt counts once for every particle it breaks into, so
+                            1 mmol of NaCl gives about 2 mOsm. It decides whether a fluid draws water into
+                            or out of cells — the basis of IV fluid, TPN and buffer choices.
+                        </p>
+                        <CalcList title={MODE_INFO[mode].title} items={MODE_INFO[mode].items} />
+                        <CalcList
+                            title="Clinical applications"
+                            items={[
+                                "Fluid therapy planning",
+                                "TPN formulation",
+                                "IV compatibility checking",
+                                "Renal function assessment",
+                                "Electrolyte balance monitoring",
+                                "Pharmaceutical formulation",
+                            ]}
+                        />
+                        <CalcList
+                            tone="caution"
+                            title="Read with care"
+                            items={[
+                                "Every mode is an estimate; a laboratory osmometer measures osmolality directly",
+                                "Tonicity bands and route limits vary between references and institutions",
+                                "The TPN and buffer modes use rule-of-thumb factors, not measured values",
+                            ]}
+                        />
+                    </CalcAbout>
 
-            <div className="space-y-6">
-                {/* Method Selection */}
-                <div className="mb-6">
-                    <label className="block text-lg font-semibold text-gray-800 mb-3">Calculation Method</label>
-                    <div className="grid grid-cols-2 gap-3">
-                        <button
-                            onClick={() => setMethod('standard')}
-                            className={`p-4 rounded-lg transition-all duration-300 ${method === 'standard' ? 'bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                        >
-                            Standard Formula
-                        </button>
-                        <button
-                            onClick={() => setMethod('advanced')}
-                            className={`p-4 rounded-lg transition-all duration-300 ${method === 'advanced' ? 'bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                        >
-                            Advanced (with Ethanol)
-                        </button>
-                    </div>
-                </div>
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+                </>
+            }
+        >
+            <ModeSwitch
+                label="Calculator type"
+                className="sm:grid-cols-3 lg:grid-cols-3"
+                value={mode}
+                onChange={setMode}
+                options={[
+                    { value: "general", label: "General", description: "Σ(C × i) of solutes", icon: Calculator },
+                    { value: "serum", label: "Serum", description: "Na, glucose, BUN", icon: Activity },
+                    { value: "plasma", label: "Plasma", description: "Na, K, glucose, urea", icon: Heart },
+                    { value: "iv", label: "IV fluid", description: "Standard or custom", icon: Syringe },
+                    { value: "tpn", label: "TPN", description: "Nutrients + electrolytes", icon: Beaker },
+                    { value: "buffer", label: "Buffer", description: "Lab buffers by strength", icon: TestTube },
+                ]}
+            />
 
-                {/* Input Fields */}
-                <div className="bg-blue-50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-blue-800 mb-4">Serum Parameters</h3>
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Sodium (Na⁺) - mmol/L
-                            </label>
-                            <input
-                                type="number"
-                                value={sodium}
-                                onChange={(e) => setSodium(e.target.value)}
-                                className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                                placeholder="Normal: 135-145"
-                            />
+            <ResultCard
+                label={resultLabel}
+                value={current ? fmt0(current.osmolarity) : null}
+                unit="mOsm/L"
+                interpretation={interpretation}
+                tone={current?.tone ?? "neutral"}
+                empty={emptyText}
+            />
+
+            {/* ── Inputs ── */}
+            {mode === "general" && (
+                <>
+                    <CalcSection title="Solutes in solution" description="Each solute contributes concentration × dissociation factor (i).">
+                        <div className="-mx-4 overflow-x-auto sm:mx-0">
+                            <table className="w-full min-w-[19rem] text-sm">
+                                <thead>
+                                    <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                                        <th className="px-4 py-2 font-medium sm:pl-0">Solute</th>
+                                        <th className="px-2 py-2 font-medium">mmol/L</th>
+                                        <th className="px-2 py-2 font-medium">i</th>
+                                        <th className="px-2 py-2 font-medium">mOsm/L</th>
+                                        <th className="px-4 py-2 sm:pr-0"><span className="sr-only">Remove</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {solutes.map((solute) => (
+                                        <tr key={solute.id} className="border-b border-border/70 last:border-b-0">
+                                            <td className="px-4 py-2 font-medium text-foreground sm:pl-0">{solute.name}</td>
+                                            <td className="px-2 py-2 tabular-nums">{solute.concentration}</td>
+                                            <td className="px-2 py-2 tabular-nums">{solute.dissociation}</td>
+                                            <td className="px-2 py-2 tabular-nums">
+                                                {solute.concentration * solute.dissociation}
+                                            </td>
+                                            <td className="px-4 py-1 text-right sm:pr-0">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSolutes((previous) => previous.filter((s) => s.id !== solute.id))}
+                                                    aria-label={`Remove ${solute.name}`}
+                                                    className="inline-grid h-10 w-10 place-items-center rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {solutes.length === 0 && (
+                                        <tr>
+                                            <td colSpan={5} className="px-4 py-4 text-center text-sm text-muted-foreground sm:px-0">
+                                                No solutes — add one below or tap a common solute.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Glucose - mg/dL
-                            </label>
-                            <input
-                                type="number"
-                                value={glucose}
-                                onChange={(e) => setGlucose(e.target.value)}
-                                className="w-full px-4 py-3 border-2 border-green-300 rounded-lg focus:border-green-500 focus:outline-none"
-                                placeholder="Normal: 70-100"
+
+                        <ChipRow title="Add a common solute" note="Each tap adds a new row; remove rows you do not need.">
+                            {SAMPLE_SOLUTES.map((sample) => (
+                                <Chip
+                                    key={sample.name}
+                                    onClick={() => addSolute(sample.name, sample.concentration, sample.dissociation)}
+                                    detail={`${sample.concentration} mM · i=${sample.dissociation}`}
+                                >
+                                    {sample.name}
+                                </Chip>
+                            ))}
+                        </ChipRow>
+                    </CalcSection>
+
+                    <CalcSection title="Add a solute" description="Name, concentration and dissociation factor of any other solute.">
+                        <FieldGrid className="lg:grid-cols-3">
+                            <TextField
+                                label="Solute name"
+                                value={newSolute.name}
+                                onChange={(name) => setNewSolute({ ...newSolute, name })}
+                                placeholder="e.g. NaCl"
+                                hint="Any label you like."
                             />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                BUN (Blood Urea Nitrogen) - mg/dL
-                            </label>
-                            <input
-                                type="number"
-                                value={bun}
-                                onChange={(e) => setBun(e.target.value)}
-                                className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                                placeholder="Normal: 7-20"
+                            <NumberField
+                                label="Concentration"
+                                value={newSolute.concentration}
+                                onChange={(concentration) => setNewSolute({ ...newSolute, concentration })}
+                                unit="mmol/L"
+                                step="0.1"
+                                placeholder="e.g. 150"
+                                hint="Molar concentration of the solute."
                             />
+                            <NumberField
+                                label="Dissociation factor (i)"
+                                value={newSolute.dissociation}
+                                onChange={(dissociation) => setNewSolute({ ...newSolute, dissociation })}
+                                step="1"
+                                min={1}
+                                max={5}
+                                placeholder="1–5"
+                                hint="Particles per formula unit: glucose 1, NaCl 2, CaCl₂ 3."
+                                error={newSolute.dissociation.trim() !== "" && newDissociationInvalid ? "Enter a number." : undefined}
+                            />
+                        </FieldGrid>
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            <Button
+                                onClick={() => {
+                                    if (!canAdd) return;
+                                    addSolute(newSolute.name, newSolute.concentration, newSolute.dissociation);
+                                    setNewSolute({ name: "", concentration: "", dissociation: "1" });
+                                }}
+                                disabled={!canAdd}
+                            >
+                                <Plus />
+                                Add solute
+                            </Button>
+                            <Button variant="outline" onClick={reset}>
+                                <RefreshCw />
+                                Reset solutes
+                            </Button>
                         </div>
-                        {method === 'advanced' && (
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Ethanol - mg/dL (Optional)
-                                </label>
-                                <input
-                                    type="number"
-                                    className="w-full px-4 py-3 border-2 border-green-300 rounded-lg focus:border-green-500 focus:outline-none"
-                                    placeholder="If applicable"
+                    </CalcSection>
+                </>
+            )}
+
+            {mode === "serum" && (
+                <CalcSection title="Serum values" description="From the patient's chemistry panel. Glucose and BUN in US units (mg/dL).">
+                    <ModeSwitch
+                        label="Serum calculation method"
+                        value={serumMethod}
+                        onChange={setSerumMethod}
+                        options={[
+                            { value: "standard", label: "Standard formula", description: "2×Na + Glu/18 + BUN/2.8" },
+                            { value: "advanced", label: "Advanced (with ethanol)", description: "Adds an ethanol field" },
+                        ]}
+                    />
+                    <FieldGrid className="lg:grid-cols-3">
+                        <NumberField label="Sodium (Na⁺)" value={serumNa} onChange={setSerumNa} unit="mmol/L" step="1" hint="Normal 135–145 mmol/L." error={negative(serumNa)} />
+                        <NumberField label="Glucose" value={serumGlu} onChange={setSerumGlu} unit="mg/dL" step="1" hint="Normal 70–100 mg/dL (fasting)." error={negative(serumGlu)} />
+                        <NumberField label="BUN (blood urea nitrogen)" value={serumBun} onChange={setSerumBun} unit="mg/dL" step="1" hint="Normal 7–20 mg/dL." error={negative(serumBun)} />
+                    </FieldGrid>
+                    {serumMethod === "advanced" && (
+                        <>
+                            <FieldGrid>
+                                <NumberField label="Ethanol (optional)" value={serumEthanol} onChange={setSerumEthanol} unit="mg/dL" step="1" placeholder="If applicable" hint="Blood alcohol level, if known." />
+                            </FieldGrid>
+                            <LabNotice tone="warning" title="Ethanol is not added to the result">
+                                The result above is 2×Na + Glucose/18 + BUN/2.8, exactly as in the standard method.
+                                {parseFloat(serumEthanol) > 0 && ` Ethanol ÷ 4.6 would add ${fmt(parseFloat(serumEthanol) / 4.6, 1)} mOsm/L.`}
+                            </LabNotice>
+                        </>
+                    )}
+                    <ChipRow title="Try a clinical scenario">
+                        {SERUM_SCENARIOS.map((s) => (
+                            <Chip
+                                key={s.label}
+                                onClick={() => {
+                                    setSerumNa(s.na);
+                                    setSerumGlu(s.glu);
+                                    setSerumBun(s.bun);
+                                }}
+                                detail={`Na ${s.na} · Glu ${s.glu} · BUN ${s.bun}`}
+                            >
+                                {s.label}
+                            </Chip>
+                        ))}
+                    </ChipRow>
+                    <Button variant="outline" onClick={reset} className="w-full">
+                        <RefreshCw />
+                        Reset
+                    </Button>
+                </CalcSection>
+            )}
+
+            {mode === "plasma" && (
+                <CalcSection title="Plasma values" description="All in SI units, mmol/L.">
+                    <FieldGrid>
+                        <NumberField label="Sodium (Na⁺)" value={plasmaNa} onChange={setPlasmaNa} unit="mmol/L" hint="Normal 135–145 mmol/L." error={negative(plasmaNa)} />
+                        <NumberField label="Potassium (K⁺)" value={plasmaK} onChange={setPlasmaK} unit="mmol/L" hint="Normal 3.5–5.0 mmol/L." error={negative(plasmaK)} />
+                        <NumberField label="Glucose" value={plasmaGlu} onChange={setPlasmaGlu} unit="mmol/L" hint="Normal 3.9–5.5 mmol/L (mg/dL ÷ 18)." error={negative(plasmaGlu)} />
+                        <NumberField label="Urea" value={plasmaUrea} onChange={setPlasmaUrea} unit="mmol/L" hint="Normal 2.5–6.5 mmol/L." error={negative(plasmaUrea)} />
+                    </FieldGrid>
+                    <Button variant="outline" onClick={reset} className="w-full">
+                        <RefreshCw />
+                        Reset
+                    </Button>
+                </CalcSection>
+            )}
+
+            {mode === "iv" && (
+                <CalcSection title="IV fluid" description="Pick a standard fluid, or build a custom NaCl / dextrose mix.">
+                    <ChoiceGrid
+                        label="Select IV fluid"
+                        items={IV_FLUIDS}
+                        value={fluid}
+                        onChange={setFluid}
+                        detail={(f) => (f.osmolarity > 0 ? `${f.osmolarity} mOsm/L` : "Enter NaCl % and dextrose %")}
+                    />
+                    {fluid === "custom" && (
+                        <FieldGrid>
+                            <NumberField label="NaCl concentration" value={customNaCl} onChange={setCustomNaCl} unit="% w/v" step="0.1" placeholder="e.g. 0.9" hint="0.9% is normal saline, 0.45% half-normal, 3% hypertonic." error={negative(customNaCl)} />
+                            <NumberField label="Dextrose concentration" value={customDextrose} onChange={setCustomDextrose} unit="% w/v" step="0.1" placeholder="e.g. 5" hint="5% (D5), 10% (D10). Enter 0 for none." error={negative(customDextrose)} />
+                        </FieldGrid>
+                    )}
+                    <Button variant="outline" onClick={reset} className="w-full">
+                        <RefreshCw />
+                        Reset
+                    </Button>
+                </CalcSection>
+            )}
+
+            {mode === "tpn" && (
+                <CalcSection title="TPN composition" description="Macronutrients and electrolytes of the final admixture (TPN — total parenteral nutrition).">
+                    <p className="text-[13px] font-medium text-foreground/90">Macronutrients</p>
+                    <FieldGrid className="lg:grid-cols-3">
+                        <NumberField label="Amino acids" value={aminoAcids} onChange={setAminoAcids} unit="g/L" placeholder="e.g. 40" hint="Counted as × 100 mOsm/L." error={negative(aminoAcids)} />
+                        <NumberField label="Dextrose" value={dextrose} onChange={setDextrose} unit="g/L" placeholder="e.g. 15" hint="Counted as × 50 mOsm/L." error={negative(dextrose)} />
+                        <NumberField label="Lipids" value={lipids} onChange={setLipids} unit="g/L" placeholder="e.g. 20" hint="Counted as × 20 mOsm/L." error={negative(lipids)} />
+                    </FieldGrid>
+                    <p className="pt-1 text-[13px] font-medium text-foreground/90">Electrolytes</p>
+                    <FieldGrid className="lg:grid-cols-3">
+                        {(
+                            [
+                                { key: "na", label: "Sodium (Na⁺)", hint: "× 2 mOsm per mmol." },
+                                { key: "k", label: "Potassium (K⁺)", hint: "× 2 mOsm per mmol." },
+                                { key: "ca", label: "Calcium (Ca²⁺)", hint: "× 3 mOsm per mmol." },
+                                { key: "mg", label: "Magnesium (Mg²⁺)", hint: "× 2 mOsm per mmol." },
+                                { key: "po4", label: "Phosphate (PO₄)", hint: "× 4 mOsm per mmol." },
+                            ] as const
+                        ).map((field) => (
+                            <NumberField
+                                key={field.key}
+                                label={field.label}
+                                value={electrolytes[field.key]}
+                                onChange={(value) => setElectrolytes((previous) => ({ ...previous, [field.key]: value }))}
+                                unit="mmol/L"
+                                placeholder={`e.g. ${DEFAULT_ELECTROLYTES[field.key]}`}
+                                hint={field.hint}
+                                error={negative(electrolytes[field.key])}
+                            />
+                        ))}
+                    </FieldGrid>
+                    <ChipRow title="Try a sample formulation" note="Samples set amino acids, dextrose and lipids; electrolytes stay as entered.">
+                        {TPN_PRESETS.map((p) => (
+                            <Chip
+                                key={p.label}
+                                onClick={() => {
+                                    setAminoAcids(p.aa);
+                                    setDextrose(p.dex);
+                                    setLipids(p.lip);
+                                }}
+                                detail={`AA ${p.aa} · Dex ${p.dex} · Lip ${p.lip}`}
+                            >
+                                {p.label}
+                            </Chip>
+                        ))}
+                    </ChipRow>
+                    <Button variant="outline" onClick={reset} className="w-full">
+                        <RefreshCw />
+                        Reset
+                    </Button>
+                </CalcSection>
+            )}
+
+            {mode === "buffer" && (
+                <CalcSection title="Buffer" description="Pick a buffer, then its strength and pH.">
+                    <ChoiceGrid
+                        label="Select buffer type"
+                        items={BUFFERS}
+                        value={bufferType}
+                        onChange={setBufferType}
+                        detail={(b) => (b.baseOsmolarity > 0 ? `~${b.baseOsmolarity} mOsm/L (1×)` : "Estimated at 300 mOsm/L (1×)")}
+                    />
+                    <FieldGrid>
+                        <NumberField label="Concentration" value={bufferConc} onChange={setBufferConc} unit="×" step="0.1" placeholder="e.g. 1" hint="Working strength is 1×; a 10× stock is ten times stronger." error={negative(bufferConc)} />
+                        <NumberField label="pH" value={bufferPh} onChange={setBufferPh} step="0.1" min={1} max={14} placeholder="e.g. 7.4" hint="Physiological pH is 7.4; each unit away adds 10 mOsm/L here." />
+                    </FieldGrid>
+                    <Button variant="outline" onClick={reset} className="w-full">
+                        <RefreshCw />
+                        Reset
+                    </Button>
+                </CalcSection>
+            )}
+
+            {/* ── Working ── */}
+            {current && (
+                <CalcSection title="Working" description="The numbers you entered, plugged into the formula.">
+                    <Formula>{current.formula}</Formula>
+                    <div>
+                        {mode === "general" && general && (
+                            <>
+                                {solutes.map((s) => (
+                                    <ResultRow key={s.id} label={`${s.name}: ${s.concentration} × ${s.dissociation}`} value={String(s.concentration * s.dissociation)} unit="mOsm/L" />
+                                ))}
+                                <ResultRow label="Total Σ(C × i)" value={fmt0(general.osmolarity)} unit="mOsm/L" />
+                                <ResultRow label="Tonicity (< 250 hypo, > 375 hyper)" value={general.tonicity ?? ""} />
+                            </>
+                        )}
+
+                        {mode === "serum" && serum && (
+                            <>
+                                <ResultRow label={`2 × Na = 2 × ${serumNa}`} value={fmt(serum.terms.sodium)} unit="mOsm/L" />
+                                <ResultRow label={`Glucose ÷ 18 = ${serumGlu} ÷ 18`} value={fmt(serum.terms.glucose)} unit="mOsm/L" />
+                                <ResultRow label={`BUN ÷ 2.8 = ${serumBun} ÷ 2.8`} value={fmt(serum.terms.bun)} unit="mOsm/L" />
+                                <ResultRow label="Sum" value={fmt(serum.osmolarity)} unit="mOsm/L" />
+                            </>
+                        )}
+
+                        {mode === "plasma" && plasma && (
+                            <>
+                                <ResultRow label={`2 × (Na + K) = 2 × (${plasmaNa} + ${plasmaK})`} value={fmt(plasma.components.electrolytes)} unit="mOsm/L" />
+                                <ResultRow label="Glucose" value={fmt(plasma.components.glucose)} unit="mOsm/L" />
+                                <ResultRow label="Urea" value={fmt(plasma.components.urea)} unit="mOsm/L" />
+                                <ResultRow label="Sum" value={fmt(plasma.osmolarity)} unit="mOsm/L" />
+                            </>
+                        )}
+
+                        {mode === "iv" && iv && (
+                            <>
+                                {iv.naclTerm !== null && iv.dextroseTerm !== null ? (
+                                    <>
+                                        <ResultRow label={`NaCl: (${customNaCl} ÷ 0.9) × 308`} value={fmt(iv.naclTerm)} unit="mOsm/L" />
+                                        <ResultRow label={`Dextrose: (${customDextrose} ÷ 5) × 278`} value={fmt(iv.dextroseTerm)} unit="mOsm/L" />
+                                        <ResultRow label="Sum" value={fmt(iv.osmolarity)} unit="mOsm/L" />
+                                    </>
+                                ) : (
+                                    <ResultRow label={IV_FLUIDS.find((f) => f.id === fluid)?.name ?? "Fluid"} value={String(iv.osmolarity)} unit="mOsm/L" />
+                                )}
+                                <ResultRow label="Tonicity (< 250 hypo, ≤ 375 iso)" value={iv.tonicity ?? ""} />
+                            </>
+                        )}
+
+                        {mode === "tpn" && tpn && (
+                            <>
+                                <ResultRow label={`Amino acids: ${aminoAcids} × 100`} value={fmt(tpn.components.aminoAcids, 1)} unit="mOsm/L" />
+                                <ResultRow label={`Dextrose: ${dextrose} × 50`} value={fmt(tpn.components.dextrose, 1)} unit="mOsm/L" />
+                                <ResultRow label={`Lipids: ${lipids} × 20`} value={fmt(tpn.components.lipids, 1)} unit="mOsm/L" />
+                                <ResultRow
+                                    label={`Electrolytes: (${electrolytes.na} + ${electrolytes.k}) × 2 + ${electrolytes.ca} × 3 + ${electrolytes.mg} × 2 + ${electrolytes.po4} × 4`}
+                                    value={fmt(tpn.components.electrolytes, 1)}
+                                    unit="mOsm/L"
                                 />
-                            </div>
+                                <ResultRow label="Sum" value={fmt(tpn.osmolarity, 1)} unit="mOsm/L" />
+                                <ResultRow label="Route cut-offs" value="<900 · ≥1200" unit="mOsm/L" />
+                            </>
+                        )}
+
+                        {mode === "buffer" && buffer && (
+                            <>
+                                <ResultRow label={`Base × concentration = ${buffer.base} × ${bufferConc}`} value={fmt(buffer.beforePh)} unit="mOsm/L" />
+                                <ResultRow label={`pH adjustment = |${bufferPh} − 7.4| × 10`} value={fmt(buffer.pHAdjustment)} unit="mOsm/L" />
+                                <ResultRow label="Sum" value={fmt(buffer.osmolarity)} unit="mOsm/L" />
+                                <ResultRow label="Recommended use" value={buffer.recommendedUse} />
+                            </>
                         )}
                     </div>
+                </CalcSection>
+            )}
+
+            {/* ── Reference table ── */}
+            <CalcSection title="Osmolarity reference values" description="Common fluids for comparison.">
+                <div className="-mx-4 overflow-x-auto sm:mx-0">
+                    <table className="w-full min-w-[34rem] text-sm">
+                        <thead>
+                            <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                                <th className="px-4 py-2 font-medium sm:pl-0">Solution / fluid</th>
+                                <th className="px-2 py-2 font-medium">mOsm/L</th>
+                                <th className="px-2 py-2 font-medium">Tonicity</th>
+                                <th className="px-2 py-2 font-medium">pH</th>
+                                <th className="px-4 py-2 font-medium sm:pr-0">Clinical use</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {REFERENCE_ROWS.map((row) => (
+                                <tr key={row.fluid} className="border-b border-border/70 last:border-b-0">
+                                    <td className="px-4 py-2.5 font-medium text-foreground sm:pl-0">{row.fluid}</td>
+                                    <td className="px-2 py-2.5 tabular-nums">{row.osm}</td>
+                                    <td className="px-2 py-2.5">{row.tonicity}</td>
+                                    <td className="px-2 py-2.5 tabular-nums">{row.ph}</td>
+                                    <td className="px-4 py-2.5 sm:pr-0">{row.use}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
+            </CalcSection>
 
-                {/* Sample Values */}
-                <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Clinical Scenarios</h3>
-                    <div className="grid grid-cols-3 gap-3">
-                        {[
-                            { label: 'Normal', na: '140', glu: '100', bun: '15' },
-                            { label: 'Hyperglycemia', na: '130', glu: '450', bun: '18' },
-                            { label: 'Dehydration', na: '155', glu: '120', bun: '30' },
-                        ].map((scenario, idx) => (
-                            <button
-                                key={idx}
-                                onClick={() => {
-                                    setSodium(scenario.na);
-                                    setGlucose(scenario.glu);
-                                    setBun(scenario.bun);
-                                }}
-                                className="bg-white border border-gray-300 rounded-lg p-4 hover:bg-blue-50 transition-colors"
-                            >
-                                <div className="font-semibold text-blue-600">{scenario.label}</div>
-                                <div className="text-xs text-gray-600 mt-2">
-                                    Na: {scenario.na} | Glu: {scenario.glu} | BUN: {scenario.bun}
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-                </div>
+            <FormulaNote>
+                <p className="font-medium text-foreground">General</p>
+                <Formula>Osmolarity = Σ(Concentration × Dissociation factor i)</Formula>
+                <p>
+                    Concentration in mmol/L; i is the number of particles each formula unit gives in solution.
+                    Below 250 mOsm/L is read as hypotonic, above 375 as hypertonic.
+                </p>
+                <p className="font-medium text-foreground">Serum</p>
+                <Formula>2 × Na + Glucose/18 + BUN/2.8</Formula>
+                <p>
+                    Sodium in mmol/L is doubled for its accompanying anions; glucose (mg/dL) ÷ 18 and BUN (mg/dL) ÷ 2.8
+                    convert to mmol/L. Normal 275–295 mOsm/L.
+                </p>
+                <p className="font-medium text-foreground">Plasma</p>
+                <Formula>2 × (Na⁺ + K⁺) + Glucose + Urea</Formula>
+                <p>All values already in mmol/L. Normal band used here 280–300 mOsm/L.</p>
+                <p className="font-medium text-foreground">IV fluid (custom)</p>
+                <Formula>(NaCl % ÷ 0.9) × 308 + (Dextrose % ÷ 5) × 278</Formula>
+                <p>0.9% NaCl = 154 mmol/L = 308 mOsm/L; 5% dextrose = 278 mmol/L = 278 mOsm/L. Standard fluids use pre-calculated values.</p>
+                <p className="font-medium text-foreground">TPN</p>
+                <Formula>AA × 100 + Dextrose × 50 + Lipids × 20 + (Na + K) × 2 + Ca × 3 + Mg × 2 + PO₄ × 4</Formula>
+                <p>
+                    Rule-of-thumb factors of about 100, 50 and 20 mOsm/L per 1% amino acids, dextrose and lipid.
+                    Under 900 mOsm/L is read as suitable for a peripheral line, 900–1199 as borderline, 1200 and above as central.
+                </p>
+                <p className="font-medium text-foreground">Buffer</p>
+                <Formula>Base osmolarity × Concentration + |pH − 7.4| × 10</Formula>
+                <p>Base values are approximate 1× figures (custom buffers use 300 mOsm/L). 250–350 mOsm/L is read as physiological.</p>
+            </FormulaNote>
 
-                <button
-                    onClick={calculateSerumOsmolarity}
-                    className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold py-4 rounded-lg transition-all duration-300 text-lg shadow-md hover:shadow-lg"
-                >
-                    Calculate Serum Osmolarity
-                </button>
-            </div>
-        </>
-    );
-}
-
-// 3. Plasma Osmolarity Calculator
-function PlasmaOsmolarityCalculator({ setResults }: { setResults: any }) {
-    const [sodium, setSodium] = useState<string>('142');
-    const [potassium, setPotassium] = useState<string>('4.0');
-    const [glucose, setGlucose] = useState<string>('5.5');
-    const [urea, setUrea] = useState<string>('5.0');
-
-    const calculatePlasmaOsmolarity = () => {
-        const na = parseFloat(sodium);
-        const k = parseFloat(potassium);
-        const glu = parseFloat(glucose); // in mmol/L
-        const ur = parseFloat(urea); // in mmol/L
-
-        // Plasma formula: 2(Na + K) + Glucose + Urea
-        const osmolarity = 2 * (na + k) + glu + ur;
-
-        let interpretation = '';
-        if (osmolarity < 280) interpretation = 'Hypo-osmolar - Consider SIADH, water intoxication';
-        else if (osmolarity <= 300) interpretation = 'Normal plasma osmolarity';
-        else if (osmolarity <= 320) interpretation = 'Mild hyper-osmolarity - Monitor hydration';
-        else interpretation = 'Severe hyper-osmolarity - Requires immediate attention';
-
-        setResults({
-            osmolarity,
-            interpretation,
-            formula: '2×(Na⁺ + K⁺) + Glucose + Urea',
-            components: {
-                electrolytes: 2 * (na + k),
-                glucose: glu,
-                urea: ur,
-            }
-        });
-    };
-
-    return (
-        <>
-            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                <Heart className="w-6 h-6 mr-2" />
-                Plasma Osmolarity Calculator
-            </h2>
-
-            <div className="space-y-6">
-                <div className="bg-blue-50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-blue-800 mb-4">Plasma Parameters (mmol/L)</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Sodium (Na⁺)</label>
-                            <input
-                                type="number"
-                                value={sodium}
-                                onChange={(e) => setSodium(e.target.value)}
-                                className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                                placeholder="135-145"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Potassium (K⁺)</label>
-                            <input
-                                type="number"
-                                value={potassium}
-                                onChange={(e) => setPotassium(e.target.value)}
-                                className="w-full px-4 py-3 border-2 border-green-300 rounded-lg focus:border-green-500 focus:outline-none"
-                                placeholder="3.5-5.0"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Glucose</label>
-                            <input
-                                type="number"
-                                value={glucose}
-                                onChange={(e) => setGlucose(e.target.value)}
-                                className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                                placeholder="3.9-5.5"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Urea</label>
-                            <input
-                                type="number"
-                                value={urea}
-                                onChange={(e) => setUrea(e.target.value)}
-                                className="w-full px-4 py-3 border-2 border-green-300 rounded-lg focus:border-green-500 focus:outline-none"
-                                placeholder="2.5-6.5"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <button
-                    onClick={calculatePlasmaOsmolarity}
-                    className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold py-4 rounded-lg transition-all duration-300 text-lg shadow-md hover:shadow-lg"
-                >
-                    Calculate Plasma Osmolarity
-                </button>
-            </div>
-        </>
-    );
-}
-
-// 4. IV Fluid Osmolarity Calculator
-function IVFluidOsmolarityCalculator({ setResults }: { setResults: any }) {
-    const [selectedFluid, setSelectedFluid] = useState<string>('ns');
-    const [customNaCl, setCustomNaCl] = useState<string>('0.9');
-    const [customDextrose, setCustomDextrose] = useState<string>('0');
-
-    const fluids = [
-        { id: 'ns', name: 'Normal Saline (0.9% NaCl)', osmolarity: 308 },
-        { id: 'halfns', name: 'Half Normal Saline (0.45% NaCl)', osmolarity: 154 },
-        { id: 'd5w', name: 'D5W (5% Dextrose)', osmolarity: 252 },
-        { id: 'lr', name: "Lactated Ringer's", osmolarity: 273 },
-        { id: 'd5ns', name: 'D5 Normal Saline', osmolarity: 560 },
-        { id: 'custom', name: 'Custom Fluid', osmolarity: 0 },
-    ];
-
-    const calculateIVOsmolarity = () => {
-        let osmolarity = 0;
-        let formula = '';
-        let interpretation = '';
-
-        if (selectedFluid === 'custom') {
-            const nacl = parseFloat(customNaCl);
-            const dextrose = parseFloat(customDextrose);
-
-            // NaCl: 0.9% = 154 mmol/L = 308 mOsm/L
-            // Dextrose: 5% = 278 mmol/L = 278 mOsm/L
-            osmolarity = (nacl / 0.9) * 308 + (dextrose / 5) * 278;
-            formula = `(${customNaCl}% NaCl × 308) + (${customDextrose}% Dextrose × 278)`;
-        } else {
-            const fluid = fluids.find(f => f.id === selectedFluid);
-            osmolarity = fluid?.osmolarity || 0;
-            formula = 'Pre-calculated value';
-        }
-
-        if (osmolarity < 250) {
-            interpretation = 'Hypotonic - May cause hemolysis if given rapidly';
-        } else if (osmolarity <= 375) {
-            interpretation = 'Isotonic - Safe for peripheral administration';
-        } else if (osmolarity <= 900) {
-            interpretation = 'Moderately hypertonic - Consider central line';
-        } else {
-            interpretation = 'Highly hypertonic - Requires central line';
-        }
-
-        setResults({
-            osmolarity,
-            interpretation,
-            formula,
-            tonicity: osmolarity < 250 ? 'Hypotonic' : osmolarity <= 375 ? 'Isotonic' : 'Hypertonic',
-        });
-    };
-
-    return (
-        <>
-            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                <Syringe className="w-6 h-6 mr-2" />
-                IV Fluid Osmolarity Calculator
-            </h2>
-
-            <div className="space-y-6">
-                {/* Fluid Selection */}
-                <div className="bg-blue-50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-blue-800 mb-4">Select IV Fluid</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                        {fluids.map((fluid) => (
-                            <button
-                                key={fluid.id}
-                                onClick={() => setSelectedFluid(fluid.id)}
-                                className={`p-4 rounded-lg transition-all duration-300 ${selectedFluid === fluid.id ? 'bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-md' : 'bg-white border border-gray-300 hover:bg-gray-100'}`}
-                            >
-                                <div className="font-semibold">{fluid.name}</div>
-                                {fluid.osmolarity > 0 && (
-                                    <div className="text-sm mt-1">{fluid.osmolarity} mOsm/L</div>
-                                )}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Custom Fluid Inputs */}
-                {selectedFluid === 'custom' && (
-                    <div className="bg-green-50 rounded-lg p-6">
-                        <h3 className="text-lg font-semibold text-green-800 mb-4">Custom Fluid Composition</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    NaCl Concentration (%)
-                                </label>
-                                <input
-                                    type="number"
-                                    step="0.1"
-                                    value={customNaCl}
-                                    onChange={(e) => setCustomNaCl(e.target.value)}
-                                    className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                                    placeholder="e.g., 0.9"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Dextrose Concentration (%)
-                                </label>
-                                <input
-                                    type="number"
-                                    step="0.1"
-                                    value={customDextrose}
-                                    onChange={(e) => setCustomDextrose(e.target.value)}
-                                    className="w-full px-4 py-3 border-2 border-green-300 rounded-lg focus:border-green-500 focus:outline-none"
-                                    placeholder="e.g., 5"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                <button
-                    onClick={calculateIVOsmolarity}
-                    className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold py-4 rounded-lg transition-all duration-300 text-lg shadow-md hover:shadow-lg"
-                >
-                    Calculate IV Fluid Osmolarity
-                </button>
-            </div>
-        </>
-    );
-}
-
-// 5. TPN Osmolarity Calculator
-function TPNOsmolarityCalculator({ setResults }: { setResults: any }) {
-    const [aminoAcids, setAminoAcids] = useState<string>('40');
-    const [dextrose, setDextrose] = useState<string>('15');
-    const [lipids, setLipids] = useState<string>('20');
-    const [electrolytes, setElectrolytes] = useState({
-        na: '40',
-        k: '30',
-        ca: '4.5',
-        mg: '5',
-        po4: '15',
-    });
-
-    const calculateTPNOsmolarity = () => {
-        const aa = parseFloat(aminoAcids);
-        const dex = parseFloat(dextrose);
-        const lip = parseFloat(lipids);
-        const na = parseFloat(electrolytes.na);
-        const k = parseFloat(electrolytes.k);
-        const ca = parseFloat(electrolytes.ca);
-        const mg = parseFloat(electrolytes.mg);
-        const po4 = parseFloat(electrolytes.po4);
-
-        // Approximation formulas for TPN components
-        const aaOsm = aa * 100; // ~100 mOsm/L per 1% AA
-        const dexOsm = dex * 50; // ~50 mOsm/L per 1% dextrose
-        const lipidOsm = lip * 20; // ~20 mOsm/L per 1% lipid
-        const electrolyteOsm = (na + k) * 2 + ca * 3 + mg * 2 + po4 * 4;
-
-        const totalOsmolarity = aaOsm + dexOsm + lipidOsm + electrolyteOsm;
-
-        let route = '';
-        if (totalOsmolarity < 900) {
-            route = 'Suitable for peripheral administration';
-        } else if (totalOsmolarity < 1200) {
-            route = 'Borderline - Consider central line';
-        } else {
-            route = 'Requires central venous access';
-        }
-
-        setResults({
-            osmolarity: totalOsmolarity,
-            interpretation: route,
-            formula: 'Amino Acids × 100 + Dextrose × 50 + Lipids × 20 + Electrolytes',
-            components: {
-                aminoAcids: aaOsm,
-                dextrose: dexOsm,
-                lipids: lipidOsm,
-                electrolytes: electrolyteOsm,
-            }
-        });
-    };
-
-    return (
-        <>
-            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                <Beaker className="w-6 h-6 mr-2" />
-                TPN Osmolarity Calculator
-            </h2>
-
-            <div className="space-y-6">
-                {/* Macronutrients */}
-                <div className="bg-blue-50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-blue-800 mb-4">Macronutrients (g/L)</h3>
-                    <div className="grid grid-cols-3 gap-4">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Amino Acids</label>
-                            <input
-                                type="number"
-                                value={aminoAcids}
-                                onChange={(e) => setAminoAcids(e.target.value)}
-                                className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                                placeholder="e.g., 40"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Dextrose</label>
-                            <input
-                                type="number"
-                                value={dextrose}
-                                onChange={(e) => setDextrose(e.target.value)}
-                                className="w-full px-4 py-3 border-2 border-green-300 rounded-lg focus:border-green-500 focus:outline-none"
-                                placeholder="e.g., 15"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Lipids</label>
-                            <input
-                                type="number"
-                                value={lipids}
-                                onChange={(e) => setLipids(e.target.value)}
-                                className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                                placeholder="e.g., 20"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Electrolytes */}
-                <div className="bg-green-50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-green-800 mb-4">Electrolytes (mmol/L)</h3>
-                    <div className="grid grid-cols-3 gap-4">
-                        {Object.entries(electrolytes).map(([key, value]) => (
-                            <div key={key}>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    {key.toUpperCase()}
-                                </label>
-                                <input
-                                    type="number"
-                                    value={value}
-                                    onChange={(e) => setElectrolytes({ ...electrolytes, [key]: e.target.value })}
-                                    className="w-full px-4 py-3 border-2 border-green-300 rounded-lg focus:border-green-500 focus:outline-none"
-                                    placeholder={`e.g., ${value}`}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Sample Formulations */}
-                <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Sample TPN Formulations</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                        {[
-                            { label: 'Peripheral TPN', aa: '20', dex: '10', lip: '20' },
-                            { label: 'Standard Central TPN', aa: '40', dex: '25', lip: '20' },
-                            { label: 'High Protein', aa: '60', dex: '20', lip: '20' },
-                            { label: 'Renal Formula', aa: '35', dex: '35', lip: '20' },
-                        ].map((formula, idx) => (
-                            <button
-                                key={idx}
-                                onClick={() => {
-                                    setAminoAcids(formula.aa);
-                                    setDextrose(formula.dex);
-                                    setLipids(formula.lip);
-                                }}
-                                className="bg-white border border-gray-300 rounded-lg p-4 hover:bg-blue-50 transition-colors"
-                            >
-                                <div className="font-semibold text-blue-600">{formula.label}</div>
-                                <div className="text-xs text-gray-600 mt-2">
-                                    AA: {formula.aa}g · Dex: {formula.dex}g · Lipids: {formula.lip}g
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                <button
-                    onClick={calculateTPNOsmolarity}
-                    className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold py-4 rounded-lg transition-all duration-300 text-lg shadow-md hover:shadow-lg"
-                >
-                    Calculate TPN Osmolarity
-                </button>
-            </div>
-        </>
-    );
-}
-
-// 6. Buffer Osmolarity Calculator
-function BufferOsmolarityCalculator({ setResults }: { setResults: any }) {
-    const [bufferType, setBufferType] = useState<string>('pbs');
-    const [concentration, setConcentration] = useState<string>('1');
-    const [pH, setPH] = useState<string>('7.4');
-
-    const buffers = [
-        { id: 'pbs', name: 'Phosphate Buffered Saline', baseOsmolarity: 290 },
-        { id: 'tris', name: 'Tris Buffer', baseOsmolarity: 250 },
-        { id: 'hepes', name: 'HEPES Buffer', baseOsmolarity: 280 },
-        { id: 'acetate', name: 'Acetate Buffer', baseOsmolarity: 270 },
-        { id: 'carbonate', name: 'Carbonate Buffer', baseOsmolarity: 300 },
-        { id: 'custom', name: 'Custom Buffer', baseOsmolarity: 0 },
-    ];
-
-    const calculateBufferOsmolarity = () => {
-        const conc = parseFloat(concentration);
-        const pHValue = parseFloat(pH);
-
-        let osmolarity = 0;
-        let formula = '';
-
-        const buffer = buffers.find(b => b.id === bufferType);
-        if (buffer && buffer.id !== 'custom') {
-            osmolarity = buffer.baseOsmolarity * conc;
-            formula = `Base osmolarity (${buffer.baseOsmolarity} mOsm/L) × Concentration`;
-        } else {
-            // Custom buffer approximation
-            osmolarity = 300 * conc; // Approximation
-            formula = 'Estimated 300 mOsm/L × Concentration';
-        }
-
-        // Adjust for pH (approximation)
-        const pHAdjustment = Math.abs(pHValue - 7.4) * 10;
-        osmolarity += pHAdjustment;
-
-        let interpretation = '';
-        if (osmolarity < 250) interpretation = 'Hypotonic buffer - May affect cell volume';
-        else if (osmolarity <= 350) interpretation = 'Physiological buffer - Suitable for most applications';
-        else interpretation = 'Hypertonic buffer - Use with caution for cell work';
-
-        setResults({
-            osmolarity,
-            interpretation,
-            formula,
-            pH: pHValue,
-            recommendedUse: bufferType === 'pbs' ? 'Cell culture, immunohistochemistry' :
-                bufferType === 'tris' ? 'DNA/RNA work, protein assays' :
-                    bufferType === 'hepes' ? 'Cell culture, enzyme assays' :
-                        'General laboratory use',
-        });
-    };
-
-    return (
-        <>
-            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                <TestTube className="w-6 h-6 mr-2" />
-                Buffer Osmolarity Calculator
-            </h2>
-
-            <div className="space-y-6">
-                {/* Buffer Selection */}
-                <div className="bg-blue-50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-blue-800 mb-4">Select Buffer Type</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                        {buffers.map((buffer) => (
-                            <button
-                                key={buffer.id}
-                                onClick={() => setBufferType(buffer.id)}
-                                className={`p-4 rounded-lg transition-all duration-300 ${bufferType === buffer.id ? 'bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-md' : 'bg-white border border-gray-300 hover:bg-gray-100'}`}
-                            >
-                                <div className="font-semibold">{buffer.name}</div>
-                                {buffer.baseOsmolarity > 0 && (
-                                    <div className="text-sm mt-1">~{buffer.baseOsmolarity} mOsm/L (1×)</div>
-                                )}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Buffer Parameters */}
-                <div className="bg-green-50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-green-800 mb-4">Buffer Parameters</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Concentration (×)
-                            </label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                value={concentration}
-                                onChange={(e) => setConcentration(e.target.value)}
-                                className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                                placeholder="e.g., 1"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                pH
-                            </label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                min="1"
-                                max="14"
-                                value={pH}
-                                onChange={(e) => setPH(e.target.value)}
-                                className="w-full px-4 py-3 border-2 border-green-300 rounded-lg focus:border-green-500 focus:outline-none"
-                                placeholder="e.g., 7.4"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <button
-                    onClick={calculateBufferOsmolarity}
-                    className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold py-4 rounded-lg transition-all duration-300 text-lg shadow-md hover:shadow-lg"
-                >
-                    Calculate Buffer Osmolarity
-                </button>
-            </div>
-        </>
+            <CalcFaq
+                items={[
+                    {
+                        q: "What is the difference between osmolarity and osmolality?",
+                        a: "Osmolarity counts particles per litre of solution (mOsm/L); osmolality counts them per kilogram of water (mOsm/kg). Osmometers measure osmolality, and formulas estimate osmolarity. For dilute body fluids the two numbers are within a few percent of each other.",
+                    },
+                    {
+                        q: "Why divide glucose by 18 and BUN by 2.8?",
+                        a: "They convert mg/dL to mmol/L. Glucose has a molar mass of 180 g/mol, and BUN is reported as the nitrogen in urea (28 g/mol), so dividing the mg/dL value by 18 and 2.8 gives mmol/L. If your lab already reports mmol/L, use the Plasma mode instead.",
+                    },
+                    {
+                        q: "What dissociation factor should I use?",
+                        a: "Non-electrolytes such as glucose and urea have i = 1. Ideal values for salts are the number of ions: NaCl and KCl 2, CaCl₂ 3. Real solutions dissociate a little less (NaCl about 1.85), so ideal values slightly overestimate osmolarity.",
+                    },
+                    {
+                        q: "Why does IV fluid osmolarity matter for the route?",
+                        a: "Strongly hypertonic fluids damage the lining of small peripheral veins (phlebitis). This calculator reads up to 375 mOsm/L as safe peripherally and 900 mOsm/L and above as needing a central line; local policies differ.",
+                    },
+                    {
+                        q: "Is a solution with normal osmolarity always isotonic?",
+                        a: "No. Tonicity depends only on solutes that cannot cross cell membranes. Urea crosses freely, so a urea solution can be iso-osmolar yet behave as hypotonic to red cells. D5W starts isotonic but becomes hypotonic once the glucose is metabolised.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
     );
 }

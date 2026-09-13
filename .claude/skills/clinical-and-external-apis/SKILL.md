@@ -118,6 +118,13 @@ query. **No tests exist.** Requires `MONGODB_*` and Supabase env vars.
 - **Using the wrong Mongo client.** These routes use `connectDB()`/`@/lib/mongodb` (mongoose,
   `pharmawallah`), **not** the root `lib/mongodb.tsx` (`pharmacopedia`, used only by
   `/api/search` and `/api/autocomplete`).
+- **Treating `/api/search` as one collection.** The drug documents are split across `drugsdata`,
+  `drugsdata_0`, `drugsdata_1` (no overlap). Rank, count and paginate them together
+  (`$unionWith`, project before `$sort`), or totals and pages go wrong. Its response contract
+  `{ success, data, pagination: { total, page, limit, totalPages }, searchQuery }` is shared by
+  `/encyclopedia` and `/clinical/encyclopedia` — keep `pagination` present even for a short query.
+  Verify with `aspirin` (→ Acetylsalicylic acid), `salbutamol` (→ Albuterol first), `DB00331`,
+  `50-78-2`, a one-letter query, and `me&page=2` (no rows repeated from page 1).
 - **Forgetting the `fetchedAt` TTL index** on a new cache model — the collection grows forever.
 - **Copying `/api/clinical/amr`'s client choice.** It uses the browser client server-side — a
   known quirk, not a pattern.

@@ -171,7 +171,7 @@ export default function CumulativeDrugReleaseCalculatorPage() {
 
   const analysis = useMemo(
     () => analyseRelease({ volume, sampleVolume, labelClaim, dilution, intercept, slope, unit, rows: cells }, replicates, submitted),
-    [volume, sampleVolume, labelClaim, dilution, intercept, slope, unit, rows, replicates, submitted], // eslint-disable-line
+    [volume, sampleVolume, labelClaim, dilution, intercept, slope, unit, rows, replicates, submitted],
   );
   const result = analysis.result;
   const otherMethod: Method = method === "A" ? "B" : "A";
@@ -179,7 +179,7 @@ export default function CumulativeDrugReleaseCalculatorPage() {
   // ── Worked steps per time point: one builder for the screen and the record ──
   const steps = useMemo(
     () => (result ? result.points.map((_, n) => pointSteps(result, method, n, cells[n], replicates)) : null),
-    [result, method, replicates], // eslint-disable-line
+    [result, method, replicates],
   );
 
   // ── Results table: the same rows on screen and on the lab record ──
@@ -209,7 +209,7 @@ export default function CumulativeDrugReleaseCalculatorPage() {
       `${formatFixed(rowsOut[i].percent, 2)} %`,
     ]);
     return { columns, body };
-  }, [result, method, unit, replicates]); // eslint-disable-line
+  }, [result, method, unit, replicates]);
 
   // ── Graph: the selected Y quantity, and optionally the other method dashed ──
   const chart = useMemo(() => {
@@ -315,7 +315,7 @@ export default function CumulativeDrugReleaseCalculatorPage() {
         caption: `${chart.axisLabel} vs time — ${METHOD_NAMES[method]}`,
       },
     };
-  }, [result, steps, table, chart, method, analysis.warnings, sample, volume, sampleVolume, labelClaim, dilution, unit, replicates]); // eslint-disable-line
+  }, [result, steps, table, chart, method, analysis.warnings, sample, volume, sampleVolume, labelClaim, dilution, unit, replicates]);
 
   const updateCell = (id: number, key: string, value: string) =>
     setRows((current) => current.map((row) => (row.id === id ? { ...row, cells: { ...row.cells, [key]: value } } : row)));

@@ -1,433 +1,461 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { Clock, RefreshCw, Zap } from 'lucide-react';
+
+import { useMemo, useState } from "react";
+import { Clock, RefreshCw } from "lucide-react";
+import {
+    CartesianGrid,
+    Line,
+    LineChart,
+    ReferenceLine,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from "recharts";
+import { Button } from "@/components/ui/button";
+import {
+    CalculatorShell,
+    CalcSection,
+    FieldGrid,
+    NumberField,
+    SelectField,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    AdSlot,
+    formatSig,
+} from "@/components/calculators";
+
+/** Joins class names, skipping falsy ones (kept local: no @/lib imports in tool pages). */
+const cn = (...classes: (string | false | undefined)[]) => classes.filter(Boolean).join(" ");
+
+const INTERVALS = [
+    { value: "4", label: "Q4H (6x daily)" },
+    { value: "6", label: "Q6H (4x daily)" },
+    { value: "8", label: "Q8H (3x daily)" },
+    { value: "12", label: "Q12H (2x daily)" },
+    { value: "24", label: "Q24H (1x daily)" },
+    { value: "48", label: "Q48H (Every 2 days)" },
+];
+
+const EXAMPLE_DRUGS = [
+    { drug: "Amoxicillin", halfLife: "1.3", dose: "500", interval: "8", comment: "Short half-life" },
+    { drug: "Metformin", halfLife: "6.2", dose: "500", interval: "12", comment: "Medium half-life" },
+    { drug: "Digoxin", halfLife: "36", dose: "0.125", interval: "24", comment: "Long half-life" },
+    { drug: "Warfarin", halfLife: "40", dose: "5", interval: "24", comment: "Very long half-life" },
+    { drug: "Aspirin", halfLife: "0.25", dose: "325", interval: "4", comment: "Very short half-life" },
+];
+
+const HALF_LIFE_GUIDE = [
+    { range: "< 4 hours", classification: "Short", dosing: "Multiple daily doses", badge: "bg-blue-100 text-blue-800" },
+    { range: "4-24 hours", classification: "Medium", dosing: "Once or twice daily", badge: "bg-emerald-100 text-emerald-800" },
+    { range: "24-48 hours", classification: "Long", dosing: "Once daily", badge: "bg-amber-100 text-amber-800" },
+    { range: "> 48 hours", classification: "Very Long", dosing: "Loading dose required", badge: "bg-red-100 text-red-800" },
+];
+
+const DEFAULTS = { interval: "24", doses: "5" };
+
+/** The chart draws at most this many doses, so a typo like 5000 cannot freeze a phone. */
+const MAX_CHART_DOSES = 50;
+const SAMPLES_PER_INTERVAL = 24;
+
+function positiveError(raw: string): string | undefined {
+    if (raw.trim() === "") return undefined;
+    const value = parseFloat(raw);
+    if (isNaN(value)) return "Enter a number.";
+    if (value <= 0) return "Must be greater than zero.";
+    return undefined;
+}
 
 export default function DrugHalfLifeCalculator() {
-    const [halfLife, setHalfLife] = useState<string>('');
-    const [dose, setDose] = useState<string>('');
-    const [interval, setInterval] = useState<string>('24');
-    const [doses, setDoses] = useState<string>('5');
-    const [eliminationConstant, setEliminationConstant] = useState<string>('');
-    const [result, setResult] = useState<{
-        ke: number;
-        steadyState: number;
-        timeToSteady: number;
-        accumulation: number;
-        trough: number;
-        peak: number;
-    } | null>(null);
+    const [halfLife, setHalfLife] = useState("");
+    const [dose, setDose] = useState("");
+    const [interval, setInterval] = useState(DEFAULTS.interval);
+    const [doses, setDoses] = useState(DEFAULTS.doses);
 
-    useEffect(() => {
-        if (halfLife) {
-            const ke = 0.693 / parseFloat(halfLife);
-            setEliminationConstant(ke.toFixed(4));
-        }
-    }, [halfLife]);
-
-    const calculatePharmacokinetics = () => {
+    /*
+     * Live instead of a Calculate button. The old page mirrored kₑ into a
+     * read-only field as (0.693 / t½).toFixed(4) and then read that rounded
+     * text back for every calculation; that exact behaviour is kept, so the
+     * numbers are identical. The editable kₑ field it showed when t½ was blank
+     * could never be used (a blank t½ was rejected), so kₑ is now shown as a
+     * derived value. Invalid input shows the empty state instead of an alert.
+     */
+    const result = useMemo(() => {
         const t_half = parseFloat(halfLife);
         const D = parseFloat(dose);
         const tau = parseFloat(interval);
         const n = parseFloat(doses);
-        const ke = parseFloat(eliminationConstant);
 
         if (isNaN(t_half) || isNaN(D) || isNaN(tau) || isNaN(n) || t_half <= 0 || D <= 0 || tau <= 0 || n <= 0) {
-            alert('Please enter valid positive numbers');
-            return;
+            return null;
         }
 
-        // Calculate elimination constant if not provided
-        const Ke = ke || (0.693 / t_half);
+        // What the old read-only kₑ field held, and what the maths then used.
+        const ke = parseFloat((0.693 / t_half).toFixed(4));
+        const Ke = ke || 0.693 / t_half;
 
         // Steady state concentration factor
         const accumulationFactor = 1 / (1 - Math.exp(-Ke * tau));
-
         // Time to reach steady state (4-5 half-lives)
         const timeToSteady = t_half * 4.32;
-
         // Trough concentration approximation
         const trough = D * (Math.exp(-Ke * tau) / (1 - Math.exp(-Ke * tau)));
-
         // Peak concentration approximation
         const peak = D / (1 - Math.exp(-Ke * tau));
-
         // Accumulation ratio
         const accumulation = 1 / (1 - Math.exp(-Ke * tau));
 
-        setResult({
+        if (![accumulationFactor, timeToSteady, trough, peak, accumulation].every(Number.isFinite)) return null;
+
+        /*
+         * Amount in the body over the regimen: each IV bolus dose D decays as
+         * D·e^(−kₑ·t) and the doses add up (superposition). It uses the same kₑ,
+         * D and τ as the figures above, and levels off between the peak and
+         * trough lines. Two samples at each dose time draw the jump.
+         */
+        const chartDoses = Math.min(Math.max(Math.floor(n), 1), MAX_CHART_DOSES);
+        const amountAt = (t: number, given: number) => {
+            let total = 0;
+            for (let i = 0; i < given; i++) {
+                const dt = t - i * tau;
+                if (dt >= 0) total += D * Math.exp(-Ke * dt);
+            }
+            return total;
+        };
+        const chartData: { time: number; amount: number }[] = [];
+        for (let doseIndex = 0; doseIndex < chartDoses; doseIndex++) {
+            const start = doseIndex * tau;
+            chartData.push({ time: start, amount: amountAt(start, doseIndex) });
+            for (let s = 0; s <= SAMPLES_PER_INTERVAL; s++) {
+                const t = start + (tau * s) / SAMPLES_PER_INTERVAL;
+                chartData.push({ time: Number(t.toFixed(4)), amount: amountAt(t, doseIndex + 1) });
+            }
+        }
+
+        return {
             ke: Ke,
             steadyState: accumulationFactor,
             timeToSteady,
             accumulation,
             trough,
-            peak
-        });
+            peak,
+            chartData,
+            chartDoses,
+            chartClamped: Math.floor(n) > MAX_CHART_DOSES,
+        };
+    }, [halfLife, dose, interval, doses]);
+
+    const reset = () => {
+        setHalfLife("");
+        setDose("");
+        setInterval(DEFAULTS.interval);
+        setDoses(DEFAULTS.doses);
     };
-
-    const resetCalculator = () => {
-        setHalfLife('');
-        setDose('');
-        setInterval('24');
-        setDoses('5');
-        setEliminationConstant('');
-        setResult(null);
-    };
-
-    const exampleDrugs = [
-        { drug: 'Amoxicillin', halfLife: '1.3', dose: '500', interval: '8', comment: 'Short half-life' },
-        { drug: 'Metformin', halfLife: '6.2', dose: '500', interval: '12', comment: 'Medium half-life' },
-        { drug: 'Digoxin', halfLife: '36', dose: '0.125', interval: '24', comment: 'Long half-life' },
-        { drug: 'Warfarin', halfLife: '40', dose: '5', interval: '24', comment: 'Very long half-life' },
-        { drug: 'Aspirin', halfLife: '0.25', dose: '325', interval: '4', comment: 'Very short half-life' },
-    ];
-
-    const halfLifeInterpretation = [
-        { range: '< 4 hours', classification: 'Short', dosing: 'Multiple daily doses' },
-        { range: '4-24 hours', classification: 'Medium', dosing: 'Once or twice daily' },
-        { range: '24-48 hours', classification: 'Long', dosing: 'Once daily' },
-        { range: '> 48 hours', classification: 'Very Long', dosing: 'Loading dose required' },
-    ];
 
     return (
-        <section className="min-h-screen p-4 mt-20 max-w-7xl mx-auto">
+        <CalculatorShell
+            title="Drug Half-Life Calculator (Multiple Dose)"
+            subtitle="For a repeated dosing regimen, works out the elimination rate constant, how much the drug accumulates and how long it takes to reach steady state."
+            icon={Clock}
+            eyebrow="Pharmacokinetics"
+            aside={
+                <>
+                    <CalcAbout title="About this calculator">
+                        <p>
+                            When a drug is given again before the last dose has gone, it builds up until the
+                            amount eliminated in each dosing interval (τ, tau) equals the dose. That plateau is
+                            <strong> steady state</strong>. The half-life (t½) alone decides how long it
+                            takes to get there; the half-life and the interval together decide how high it
+                            builds.
+                        </p>
+                        <CalcList
+                            title="Use it when"
+                            items={[
+                                "Explaining why a drug takes days to reach its full effect",
+                                "Deciding whether a loading dose is worthwhile",
+                                "Comparing how different dosing intervals change accumulation",
+                                "Planning when to take a steady-state level",
+                            ]}
+                        />
+                        <CalcList
+                            tone="caution"
+                            title="Watch for"
+                            items={[
+                                "Assumes first-order elimination and a one-compartment model",
+                                "Peak and trough are amounts in the body (mg), not concentrations — divide by Vd for mg/L",
+                                "Doses are treated as IV boluses; oral absorption flattens the real curve",
+                                "Half-life changes with kidney or liver function",
+                            ]}
+                        />
+                    </CalcAbout>
 
-            <div className="max-w-7xl mx-auto  bg-gradient-to-br from-emerald-50 to-teal-50 p-5">
-                <div className="flex items-center mb-6">
-                    <Clock className="w-8 h-8 text-green-400 mr-3" />
-                    <div>
-                        <h2 className="text-2xl font-bold text-gray-800">Drug Half-Life Calculator (Multiple Dose)</h2>
-                        <p className="text-gray-600">Calculate pharmacokinetic parameters for multiple dosing regimens</p>
-                    </div>
-                </div>
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+                </>
+            }
+        >
+            <ResultCard
+                label="Time to steady state"
+                value={result ? result.timeToSteady.toFixed(1) : null}
+                unit="hours"
+                interpretation={
+                    result
+                        ? `Accumulation ratio ${result.accumulation.toFixed(2)} — steady-state peaks reach ${result.accumulation.toFixed(2)}× the first dose's peak`
+                        : undefined
+                }
+                empty="Enter the half-life and the dose, then pick the dosing interval."
+            />
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Input Section */}
-                    <div className="space-y-6">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-blue-50 rounded-xl p-6">
-                                <label className="block text-sm font-semibold text-gray-800 mb-2">
-                                    Half-Life (t½) hours
-                                </label>
-                                <input
-                                    type="number"
-                                    step="0.1"
-                                    min="0.1"
-                                    value={halfLife}
-                                    onChange={(e) => setHalfLife(e.target.value)}
-                                    className="w-full px-3 py-2 text-lg border-2 border-blue-300 rounded-lg focus:border-blue-400 focus:outline-none"
-                                    placeholder="e.g., 6"
-                                />
-                            </div>
+            <CalcSection title="Inputs">
+                <FieldGrid>
+                    <NumberField
+                        label="Half-life t½ (hours)"
+                        value={halfLife}
+                        onChange={setHalfLife}
+                        unit="h"
+                        step="0.1"
+                        min={0}
+                        placeholder="e.g. 6"
+                        error={positiveError(halfLife)}
+                        hint="From the drug monograph, e.g. 1–2 h for penicillins, 36 h for digoxin."
+                    />
+                    <NumberField
+                        label="Dose (mg)"
+                        value={dose}
+                        onChange={setDose}
+                        unit="mg"
+                        step="1"
+                        min={0}
+                        placeholder="e.g. 500"
+                        error={positiveError(dose)}
+                        hint="The amount given at every dose."
+                    />
+                    <SelectField
+                        label="Dosing interval τ (hours)"
+                        value={interval}
+                        onChange={setInterval}
+                        options={INTERVALS}
+                        hint="Time between doses."
+                    />
+                    <NumberField
+                        label="Number of doses"
+                        value={doses}
+                        onChange={setDoses}
+                        step="1"
+                        min={0}
+                        placeholder="e.g. 5"
+                        error={positiveError(doses)}
+                        hint="Sets the length of the regimen and of the chart."
+                    />
+                </FieldGrid>
 
-                            <div className="bg-green-50 rounded-xl p-6">
-                                <label className="block text-sm font-semibold text-gray-800 mb-2">
-                                    Dose (mg)
-                                </label>
-                                <input
-                                    type="number"
-                                    step="1"
-                                    min="1"
-                                    value={dose}
-                                    onChange={(e) => setDose(e.target.value)}
-                                    className="w-full px-3 py-2 text-lg border-2 border-green-300 rounded-lg focus:border-green-400 focus:outline-none"
-                                    placeholder="e.g., 500"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-purple-50 rounded-xl p-6">
-                                <label className="block text-sm font-semibold text-gray-800 mb-2">
-                                    Dosing Interval (hours)
-                                </label>
-                                <select
-                                    value={interval}
-                                    onChange={(e) => setInterval(e.target.value)}
-                                    className="w-full px-3 py-2 text-lg border-2 border-purple-300 rounded-lg focus:border-purple-400 focus:outline-none"
+                <div>
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">Try an example drug</p>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        {EXAMPLE_DRUGS.map((drug) => {
+                            const active =
+                                halfLife === drug.halfLife && dose === drug.dose && interval === drug.interval;
+                            return (
+                                <button
+                                    key={drug.drug}
+                                    type="button"
+                                    aria-pressed={active}
+                                    onClick={() => {
+                                        setHalfLife(drug.halfLife);
+                                        setDose(drug.dose);
+                                        setInterval(drug.interval);
+                                    }}
+                                    className={cn(
+                                        "min-h-[40px] rounded-xl border px-3 py-2.5 text-left transition-colors hover:bg-accent",
+                                        active ? "border-primary bg-primary/10" : "bg-background",
+                                    )}
                                 >
-                                    <option value="4">Q4H (6x daily)</option>
-                                    <option value="6">Q6H (4x daily)</option>
-                                    <option value="8">Q8H (3x daily)</option>
-                                    <option value="12">Q12H (2x daily)</option>
-                                    <option value="24">Q24H (1x daily)</option>
-                                    <option value="48">Q48H (Every 2 days)</option>
-                                </select>
-                            </div>
-
-                            <div className="bg-red-50 rounded-xl p-6">
-                                <label className="block text-sm font-semibold text-gray-800 mb-2">
-                                    Number of Doses
-                                </label>
-                                <input
-                                    type="number"
-                                    step="1"
-                                    min="1"
-                                    value={doses}
-                                    onChange={(e) => setDoses(e.target.value)}
-                                    className="w-full px-3 py-2 text-lg border-2 border-red-300 rounded-lg focus:border-red-400 focus:outline-none"
-                                    placeholder="e.g., 5"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6">
-                            <label className="block text-sm font-semibold text-gray-800 mb-2">
-                                Elimination Rate Constant (ke) 1/h
-                            </label>
-                            <input
-                                type="number"
-                                step="0.0001"
-                                min="0.0001"
-                                value={eliminationConstant}
-                                onChange={(e) => setEliminationConstant(e.target.value)}
-                                className="w-full px-3 py-2 text-lg border-2 border-gray-300 rounded-lg focus:border-gray-400 focus:outline-none"
-                                placeholder="Auto-calculated from half-life"
-                                readOnly={!!halfLife}
-                            />
-                            <p className="text-xs text-gray-600 mt-1">ke = 0.693 / t½</p>
-                        </div>
-
-                        {/* Plasma Concentration Curve */}
-                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6">
-                            <h3 className="font-bold text-gray-800 mb-4 text-center">Multiple Dose Plasma Concentration</h3>
-                            <div className="relative h-48">
-                                {/* Grid */}
-                                <div className="absolute inset-0">
-                                    {/* Horizontal grid lines */}
-                                    {[0, 25, 50, 75, 100].map(y => (
-                                        <div key={y} className="absolute w-full h-px bg-gray-300" style={{ top: `${100 - y}%` }} />
-                                    ))}
-                                    {/* Vertical grid lines */}
-                                    {[0, 25, 50, 75, 100].map(x => (
-                                        <div key={x} className="absolute h-full w-px bg-gray-300" style={{ left: `${x}%` }} />
-                                    ))}
-                                </div>
-
-                                {/* Axes */}
-                                <div className="absolute bottom-0 left-0 right-0 h-px bg-gray-800"></div>
-                                <div className="absolute left-0 top-0 bottom-0 w-px bg-gray-800"></div>
-
-                                {/* Concentration curve */}
-                                {result && (
-                                    <svg className="absolute inset-0 w-full h-full">
-                                        {/* Generate sawtooth pattern for multiple doses */}
-                                        {Array.from({ length: parseInt(doses) }).map((_, doseNum) => {
-                                            const startX = (doseNum * 20);
-                                            const peakY = 80 - (doseNum * 5); // Accumulating peaks
-                                            const troughY = 40 + (doseNum * 5); // Accumulating troughs
-
-                                            return (
-                                                <g key={doseNum}>
-                                                    {/* Exponential decay from peak to trough */}
-                                                    <path
-                                                        d={`M ${startX},${100 - peakY} Q ${startX + 5},${100 - (peakY + troughY) / 2} ${startX + 10},${100 - troughY}`}
-                                                        fill="none"
-                                                        stroke="#10b981"
-                                                        strokeWidth="2"
-                                                    />
-                                                    {/* Next dose administration */}
-                                                    {doseNum < parseInt(doses) - 1 && (
-                                                        <line
-                                                            x1={startX + 10}
-                                                            y1={100 - troughY}
-                                                            x2={startX + 20}
-                                                            y2={100 - (troughY - 10)}
-                                                            stroke="#3b82f6"
-                                                            strokeWidth="2"
-                                                        />
-                                                    )}
-                                                </g>
-                                            );
-                                        })}
-
-                                        {/* Steady state line */}
-                                        <line
-                                            x1="0"
-                                            y1="20"
-                                            x2="100"
-                                            y2="20"
-                                            stroke="#ef4444"
-                                            strokeWidth="1"
-                                            strokeDasharray="5,5"
-                                        />
-                                    </svg>
-                                )}
-
-                                {/* Labels */}
-                                <div className="absolute -bottom-6 left-0 text-xs text-gray-600">Time 0</div>
-                                <div className="absolute -bottom-6 right-0 text-xs text-gray-600">
-                                    {parseInt(doses) * parseInt(interval)} hours
-                                </div>
-                                <div className="absolute -left-8 top-0 text-xs text-gray-600 -rotate-90">Concentration</div>
-
-                                {/* Steady state label */}
-                                {result && (
-                                    <div className="absolute top-4 right-4">
-                                        <div className="bg-white px-2 py-1 rounded shadow text-xs font-bold text-red-600">
-                                            Steady State
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Legend */}
-                            <div className="mt-4 flex justify-center space-x-4">
-                                <div className="flex items-center">
-                                    <div className="w-3 h-3 bg-green-400 rounded-full mr-1"></div>
-                                    <span className="text-xs">Concentration</span>
-                                </div>
-                                <div className="flex items-center">
-                                    <div className="w-3 h-3 bg-blue-500 rounded-full mr-1"></div>
-                                    <span className="text-xs">Next Dose</span>
-                                </div>
-                                <div className="flex items-center">
-                                    <div className="w-3 h-3 bg-red-500 rounded-full mr-1 border border-dashed"></div>
-                                    <span className="text-xs">Steady State</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex gap-4">
-                            <button
-                                onClick={calculatePharmacokinetics}
-                                className="flex-1 bg-gradient-to-r from-green-400 to-emerald-500 hover:from-green-500 hover:to-emerald-600 text-white font-semibold py-3 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg"
-                            >
-                                Calculate PK Parameters
-                            </button>
-                            <button
-                                onClick={resetCalculator}
-                                className="px-6 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 rounded-xl transition-colors"
-                            >
-                                <RefreshCw className="w-5 h-5" />
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Results and Reference Section */}
-                    <div className="space-y-6">
-                        {/* Results Card */}
-                        {result && (
-                            <div className="bg-gradient-to-br from-green-50 to-blue-50 border-2 border-green-400 rounded-2xl p-6">
-                                <h3 className="text-xl font-bold text-gray-800 mb-4">Pharmacokinetic Analysis</h3>
-
-                                <div className="bg-white rounded-xl p-6 shadow-sm text-center mb-4">
-                                    <div className="text-sm font-semibold text-gray-600 mb-2">Elimination Rate Constant</div>
-                                    <div className="text-3xl font-bold text-green-400 mb-2">
-                                        {result.ke.toFixed(4)} h⁻¹
-                                    </div>
-                                    <div className="text-lg font-bold text-blue-600">
-                                        Half-Life: {halfLife} hours
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4 mb-4">
-                                    <div className="bg-blue-50 rounded-lg p-4">
-                                        <div className="text-xs font-semibold text-gray-600">Accumulation Ratio</div>
-                                        <div className="text-xl font-bold text-blue-600 mt-1">
-                                            {result.accumulation.toFixed(2)}
-                                        </div>
-                                    </div>
-                                    <div className="bg-green-50 rounded-lg p-4">
-                                        <div className="text-xs font-semibold text-gray-600">Time to Steady State</div>
-                                        <div className="text-xl font-bold text-green-600 mt-1">
-                                            {result.timeToSteady.toFixed(1)} hours
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-3">
-                                    <div className="bg-white rounded-lg p-4">
-                                        <div className="font-semibold text-gray-700 mb-1">Dosing Regimen</div>
-                                        <p className="text-gray-600">
-                                            {dose} mg every {interval} hours for {doses} doses
-                                        </p>
-                                    </div>
-
-                                    <div className="bg-purple-50 rounded-lg p-4">
-                                        <div className="font-semibold text-purple-800 mb-1">Key Formulas</div>
-                                        <div className="text-sm text-purple-700 space-y-1">
-                                            <div>ke = 0.693 / t½</div>
-                                            <div>Accumulation = 1 / (1 - e^(-ke × τ))</div>
-                                            <div>Steady State ≈ 4.32 × t½</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Half-Life Interpretation */}
-                        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-                            <div className="flex items-center mb-4">
-                                <Zap className="w-5 h-5 text-green-400 mr-2" />
-                                <h3 className="text-lg font-bold text-gray-800">Half-Life Interpretation Guide</h3>
-                            </div>
-
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="bg-gradient-to-r from-blue-50 to-green-50">
-                                            <th className="py-3 px-4 text-left font-semibold text-gray-700">Half-Life Range</th>
-                                            <th className="py-3 px-4 text-left font-semibold text-gray-700">Classification</th>
-                                            <th className="py-3 px-4 text-left font-semibold text-gray-700">Typical Dosing</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {halfLifeInterpretation.map((hl, index) => (
-                                            <tr key={index} className={index % 2 === 0 ? 'border-b border-gray-100' : 'border-b border-gray-100 bg-gray-50'}>
-                                                <td className="py-3 px-4 font-medium">{hl.range}</td>
-                                                <td className="py-3 px-4">
-                                                    <span className={`px-2 py-1 rounded text-xs font-bold ${hl.classification === 'Short' ? 'bg-blue-100 text-blue-800' :
-                                                        hl.classification === 'Medium' ? 'bg-green-100 text-green-800' :
-                                                            hl.classification === 'Long' ? 'bg-yellow-100 text-yellow-800' :
-                                                                'bg-red-100 text-red-800'
-                                                        }`}>
-                                                        {hl.classification}
-                                                    </span>
-                                                </td>
-                                                <td className="py-3 px-4 text-gray-600">{hl.dosing}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        {/* Example Drugs */}
-                        <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-2xl p-6">
-                            <h3 className="font-bold text-gray-800 mb-4">Example Drug Half-Lives</h3>
-                            <div className="space-y-3">
-                                {exampleDrugs.map((drug, index) => (
-                                    <button
-                                        key={index}
-                                        onClick={() => {
-                                            setHalfLife(drug.halfLife);
-                                            setDose(drug.dose);
-                                            setInterval(drug.interval);
-                                        }}
-                                        className="w-full bg-white rounded-lg p-4 hover:bg-yellow-50 transition-colors text-left"
-                                    >
-                                        <div className="flex justify-between items-center mb-2">
-                                            <div className="font-semibold text-gray-800">{drug.drug}</div>
-                                            <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold">
-                                                t½: {drug.halfLife}h
-                                            </div>
-                                        </div>
-                                        <div className="flex text-sm text-gray-600">
-                                            <div className="mr-4">
-                                                <span className="font-medium">Dose:</span> {drug.dose}mg
-                                            </div>
-                                            <div>
-                                                <span className="font-medium">Interval:</span> Q{drug.interval}H
-                                            </div>
-                                        </div>
-                                        <div className="text-xs text-gray-500 mt-1">{drug.comment}</div>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                                    <span className="flex items-center justify-between gap-2">
+                                        <span className="text-sm font-semibold text-foreground">{drug.drug}</span>
+                                        <span className="font-mono text-xs text-primary">t½ {drug.halfLife} h</span>
+                                    </span>
+                                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                                        {drug.dose} mg Q{drug.interval}H · {drug.comment}
+                                    </span>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
-            </div>
-        </section>
+
+                <Button variant="outline" onClick={reset} className="w-full">
+                    <RefreshCw />
+                    Reset
+                </Button>
+            </CalcSection>
+
+            {result && (
+                <CalcSection title="Working">
+                    <div>
+                        <ResultRow label="Half-life entered" value={halfLife} unit="hours" />
+                        <ResultRow
+                            label={`kₑ = 0.693 ÷ ${halfLife}`}
+                            value={result.ke.toFixed(4)}
+                            unit="h⁻¹"
+                        />
+                        <ResultRow
+                            label={`Accumulation = 1 ÷ (1 − e^(−${result.ke.toFixed(4)} × ${interval}))`}
+                            value={result.accumulation.toFixed(2)}
+                        />
+                        <ResultRow
+                            label={`Time to steady state = 4.32 × ${halfLife}`}
+                            value={result.timeToSteady.toFixed(1)}
+                            unit="hours"
+                        />
+                        <ResultRow
+                            label="Steady-state peak amount = dose × accumulation"
+                            value={formatSig(result.peak, 3)}
+                            unit="mg"
+                        />
+                        <ResultRow
+                            label="Steady-state trough amount = peak × e^(−kₑτ)"
+                            value={formatSig(result.trough, 3)}
+                            unit="mg"
+                        />
+                    </div>
+                    <p className="rounded-xl border border-border bg-muted/40 px-3.5 py-3 text-sm text-foreground">
+                        <span className="font-semibold">Dosing regimen: </span>
+                        {dose} mg every {interval} hours for {doses} doses
+                    </p>
+                </CalcSection>
+            )}
+
+            {result && (
+                <CalcSection
+                    title="Multiple-dose profile"
+                    description={`Amount of drug in the body (mg) over ${result.chartDoses} dose${result.chartDoses === 1 ? "" : "s"}, treating each dose as an IV bolus. Dashed lines: steady-state peak and trough.`}
+                >
+                    <div className="-ml-2 h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={result.chartData} margin={{ top: 10, right: 12, left: 4, bottom: 16 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                <XAxis
+                                    dataKey="time"
+                                    type="number"
+                                    domain={[0, "dataMax"]}
+                                    tick={{ fontSize: 11 }}
+                                    stroke="hsl(var(--muted-foreground))"
+                                    label={{ value: "Time (h)", position: "insideBottom", offset: -8, fontSize: 11 }}
+                                />
+                                <YAxis
+                                    tick={{ fontSize: 11 }}
+                                    stroke="hsl(var(--muted-foreground))"
+                                    width={48}
+                                    domain={[0, "auto"]}
+                                    tickFormatter={(value) => formatSig(Number(value), 3)}
+                                    label={{ value: "Amount (mg)", angle: -90, position: "insideLeft", offset: 12, fontSize: 11 }}
+                                />
+                                <Tooltip
+                                    formatter={(value) => [`${formatSig(Number(value), 3)} mg`, "In the body"]}
+                                    labelFormatter={(label) => `${label} h`}
+                                />
+                                <ReferenceLine
+                                    y={result.peak}
+                                    ifOverflow="extendDomain"
+                                    stroke="#DC2626"
+                                    strokeDasharray="5 5"
+                                    label={{ value: "SS peak", position: "insideTopRight", fontSize: 10, fill: "#DC2626" }}
+                                />
+                                <ReferenceLine
+                                    y={result.trough}
+                                    ifOverflow="extendDomain"
+                                    stroke="#D97706"
+                                    strokeDasharray="5 5"
+                                    label={{ value: "SS trough", position: "insideBottomRight", fontSize: 10, fill: "#B45309" }}
+                                />
+                                <Line
+                                    type="linear"
+                                    dataKey="amount"
+                                    stroke="#059669"
+                                    strokeWidth={2}
+                                    dot={false}
+                                    isAnimationActive={false}
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                    {result.chartClamped && (
+                        <p className="text-xs text-muted-foreground">
+                            The chart shows the first {MAX_CHART_DOSES} doses; the figures above do not depend on
+                            the number of doses.
+                        </p>
+                    )}
+                </CalcSection>
+            )}
+
+            <CalcSection title="Half-life interpretation guide">
+                <div className="overflow-x-auto">
+                    <table className="w-full min-w-[18rem] text-sm">
+                        <thead>
+                            <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                                <th className="py-2 pr-3 font-medium">Half-life range</th>
+                                <th className="py-2 pr-3 font-medium">Classification</th>
+                                <th className="py-2 font-medium">Typical dosing</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {HALF_LIFE_GUIDE.map((row) => (
+                                <tr key={row.range} className="border-b border-border/60 last:border-b-0">
+                                    <td className="py-2.5 pr-3 font-medium text-foreground">{row.range}</td>
+                                    <td className="py-2.5 pr-3">
+                                        <span className={cn("rounded px-2 py-1 text-xs font-bold", row.badge)}>
+                                            {row.classification}
+                                        </span>
+                                    </td>
+                                    <td className="py-2.5 text-muted-foreground">{row.dosing}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </CalcSection>
+
+            <FormulaNote>
+                <Formula>kₑ = 0.693 / t½</Formula>
+                <Formula>Accumulation = 1 / (1 − e^(−kₑ × τ))</Formula>
+                <Formula>Steady State ≈ 4.32 × t½</Formula>
+                <Formula>Peak = Dose / (1 − e^(−kₑτ))     Trough = Dose × e^(−kₑτ) / (1 − e^(−kₑτ))</Formula>
+                <p>
+                    kₑ is the elimination rate constant (h⁻¹) and τ the dosing interval (h). kₑ is rounded to
+                    four decimal places before the other figures are worked out. The accumulation ratio is how
+                    many times higher a steady-state peak is than the peak after the first dose.
+                </p>
+                <p>
+                    After 4.32 half-lives the drug is at about 95% of its steady-state level (1 − 0.5^4.32 ≈
+                    0.95). Peak and trough are amounts in the body; divide them by the volume of distribution
+                    to get concentrations.
+                </p>
+            </FormulaNote>
+
+            <CalcFaq
+                items={[
+                    {
+                        q: "Does giving the dose more often make steady state come sooner?",
+                        a: "No. Time to steady state depends only on the half-life. A shorter interval makes the plateau higher and flatter (larger accumulation ratio, smaller swing between peak and trough), but it still takes about 4–5 half-lives to get there.",
+                    },
+                    {
+                        q: "Why does the number of doses not change the results?",
+                        a: "The accumulation ratio, peak and trough describe the eventual steady state, which does not depend on how many doses are given. The number of doses only sets how much of the build-up the chart shows.",
+                    },
+                    {
+                        q: "When is a loading dose needed?",
+                        a: "When the half-life is long, reaching steady state by repeated dosing takes too long — digoxin (t½ ≈ 36 h) would take about a week. A loading dose reaches the target level at once, and maintenance doses then keep it there.",
+                    },
+                    {
+                        q: "What does an accumulation ratio of 1.00 mean?",
+                        a: "Almost nothing is left from one dose when the next is given, so the drug does not build up — each dose behaves like the first. That happens when the interval is many half-lives long, as with aspirin every 4 hours.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
     );
 }

@@ -1,50 +1,38 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import { useCallback, useId, useMemo, useState } from "react";
+import { Check, Copy, Filter, RefreshCw } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Button } from "@/components/ui/button";
 import {
-    Filter,
-    Calculator,
-    Activity,
-    Droplet,
-    Scale,
-    BookOpen,
-    RefreshCw,
-    Check,
-    Copy,
-    Sparkles,
-    ShieldCheck,
-    HelpCircle,
-    Zap,
-    ChevronDown,
-    ChevronUp,
-    SlidersHorizontal,
-    Stethoscope,
-    Ruler,
-    TrendingUp,
-    Pill,
-} from "lucide-react";
-import {
-    LineChart,
-    Line,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-} from "recharts";
+    CalculatorShell,
+    CalcSection,
+    FieldGrid,
+    NumberField,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    AdSlot,
+    ModeSwitch,
+    LabNotice,
+    type ResultTone,
+} from "@/components/calculators";
 
-// ─── STRICT TYPES & INTERFACES ───────────────────────────────────────
+type WeightMethod = "auto" | "actual" | "ibw" | "adjbw";
+type WeightUnit = "kg" | "lbs";
+type HeightUnit = "cm" | "in";
+type ScrUnit = "mg/dL" | "umol/L";
+type Sex = "male" | "female";
 
-export type WeightMethod = "auto" | "actual" | "ibw" | "adjbw";
-export type WeightUnit = "kg" | "lbs";
-export type HeightUnit = "cm" | "in";
-export type ScrUnit = "mg/dL" | "umol/L";
-
-export interface PatientPreset {
+interface PatientPreset {
     label: string;
     tag: string;
     age: string;
-    sex: "male" | "female";
+    sex: Sex;
     weight: string;
     weightUnit: WeightUnit;
     height: string;
@@ -53,20 +41,29 @@ export interface PatientPreset {
     scrUnit: ScrUnit;
 }
 
-export interface RenalTier {
+interface RenalTier {
     range: string;
     label: string;
-    badgeColor: string;
     dosingAdvice: string;
     isCurrent: boolean;
 }
 
-// ─── MAIN COMPONENT ──────────────────────────────────────────────────
+/*
+ * Input values unchanged. The old chips also printed an expected CrCl
+ * ("CrCl ~115", "~38", "~18") that the calculator does not produce for those
+ * inputs, so only the demographic part of each tag is kept.
+ */
+const SAMPLE_PATIENTS: PatientPreset[] = [
+    { label: "Young fit adult", tag: "M 30", age: "30", sex: "male", weight: "75", weightUnit: "kg", height: "180", heightUnit: "cm", scr: "0.9", scrUnit: "mg/dL" },
+    { label: "Elderly CKD", tag: "M 74", age: "74", sex: "male", weight: "78", weightUnit: "kg", height: "172", heightUnit: "cm", scr: "1.7", scrUnit: "mg/dL" },
+    { label: "Sarcopenic, low SCr", tag: "F 86", age: "86", sex: "female", weight: "48", weightUnit: "kg", height: "158", heightUnit: "cm", scr: "0.5", scrUnit: "mg/dL" },
+    { label: "Obese", tag: "F 54", age: "54", sex: "female", weight: "112", weightUnit: "kg", height: "165", heightUnit: "cm", scr: "1.4", scrUnit: "mg/dL" },
+    { label: "Severe CKD", tag: "M 79", age: "79", sex: "male", weight: "68", weightUnit: "kg", height: "170", heightUnit: "cm", scr: "2.8", scrUnit: "mg/dL" },
+];
 
 export default function CreatinineClearanceCalculator() {
-    // Input State
     const [age, setAge] = useState<string>("68");
-    const [sex, setSex] = useState<"male" | "female">("male");
+    const [sex, setSex] = useState<Sex>("male");
     const [weight, setWeight] = useState<string>("82");
     const [weightUnit, setWeightUnit] = useState<WeightUnit>("kg");
     const [height, setHeight] = useState<string>("175");
@@ -74,37 +71,22 @@ export default function CreatinineClearanceCalculator() {
     const [serumCreatinine, setSerumCreatinine] = useState<string>("1.3");
     const [scrUnit, setScrUnit] = useState<ScrUnit>("mg/dL");
 
-    // Advanced Options
     const [weightMethod, setWeightMethod] = useState<WeightMethod>("auto");
-    const [roundLowScr, setRoundLowScr] = useState<boolean>(true); // Sarcopenia correction
+    const [roundLowScr, setRoundLowScr] = useState<boolean>(true); // Sarcopenia floor
 
-    // UI States
-    const [showInstructions, setShowInstructions] = useState<boolean>(true);
-    const [showDetails, setShowDetails] = useState<boolean>(false);
     const [copied, setCopied] = useState<boolean>(false);
 
-    // Patient Archetypes
-    const samplePatients: PatientPreset[] = [
-        { label: "Young Fit Adult", tag: "30y, CrCl ~115", age: "30", sex: "male", weight: "75", weightUnit: "kg", height: "180", heightUnit: "cm", scr: "0.9", scrUnit: "mg/dL" },
-        { label: "Elderly CKD 3b", tag: "74y, CrCl ~38", age: "74", sex: "male", weight: "78", weightUnit: "kg", height: "172", heightUnit: "cm", scr: "1.7", scrUnit: "mg/dL" },
-        { label: "Sarcopenic Low SCr", tag: "86y, SCr 0.5", age: "86", sex: "female", weight: "48", weightUnit: "kg", height: "158", heightUnit: "cm", scr: "0.5", scrUnit: "mg/dL" },
-        { label: "Bariatric Obese", tag: "BMI 39 kg/m²", age: "54", sex: "female", weight: "112", weightUnit: "kg", height: "165", heightUnit: "cm", scr: "1.4", scrUnit: "mg/dL" },
-        { label: "Severe CKD G4", tag: "CrCl ~18 mL/min", age: "79", sex: "male", weight: "68", weightUnit: "kg", height: "170", heightUnit: "cm", scr: "2.8", scrUnit: "mg/dL" },
-    ];
-
-    // Numeric Normalizations
+    /* ── Numeric normalisation (unchanged) ─────────────────────────────────── */
     const numAge = parseFloat(age) || 0;
     const rawW = parseFloat(weight) || 0;
     const rawH = parseFloat(height) || 0;
     const rawScr = parseFloat(serumCreatinine) || 0;
 
-    // Normalized Weight in kg
     const weightKg = useMemo(() => {
         if (weightUnit === "lbs") return Math.round(rawW * 0.453592 * 10) / 10;
         return rawW;
     }, [rawW, weightUnit]);
 
-    // Normalized Height in cm & inches
     const heightCm = useMemo(() => {
         if (heightUnit === "in") return Math.round(rawH * 2.54 * 10) / 10;
         return rawH;
@@ -115,13 +97,13 @@ export default function CreatinineClearanceCalculator() {
         return rawH;
     }, [heightCm, rawH, heightUnit]);
 
-    // Normalized SCr in mg/dL
+    // SCr in mg/dL, rounded to 0.01 when converted from µmol/L
     const scrMgDl = useMemo(() => {
         if (scrUnit === "umol/L") return Math.round((rawScr / 88.4) * 100) / 100;
         return rawScr;
     }, [rawScr, scrUnit]);
 
-    // Sarcopenia-Corrected SCr
+    // Sarcopenia floor: SCr below 0.8 mg/dL is rounded up to 0.8 for Cockcroft-Gault
     const effectiveScr = useMemo(() => {
         if (roundLowScr && scrMgDl < 0.8 && scrMgDl > 0) {
             return 0.8;
@@ -129,7 +111,7 @@ export default function CreatinineClearanceCalculator() {
         return scrMgDl;
     }, [roundLowScr, scrMgDl]);
 
-    // Anthropometrics: IBW, AdjBW, BMI
+    /* ── Anthropometrics: IBW, AdjBW, BMI (unchanged) ─────────────────────── */
     const ibwDevine = useMemo(() => {
         if (heightInches <= 0) return 0;
         const base = sex === "male" ? 50.0 : 45.5;
@@ -149,7 +131,7 @@ export default function CreatinineClearanceCalculator() {
         return Math.round((weightKg / (heightM * heightM)) * 10) / 10;
     }, [heightCm, weightKg]);
 
-    // Auto-Weight Selection Rule
+    // Automatic dosing-weight rule
     const { autoRecommendedMethod, autoReason } = useMemo(() => {
         if (!weightKg || !ibwDevine) return { autoRecommendedMethod: "actual" as const, autoReason: "Actual weight" };
         if (weightKg < ibwDevine) {
@@ -170,7 +152,6 @@ export default function CreatinineClearanceCalculator() {
         };
     }, [weightKg, ibwDevine, bmi]);
 
-    // Effective Dosing Weight for CrCl
     const effectiveCrClWeight = useMemo(() => {
         const method = weightMethod === "auto" ? autoRecommendedMethod : weightMethod;
         if (method === "actual") return weightKg;
@@ -187,7 +168,7 @@ export default function CreatinineClearanceCalculator() {
         return `${effectiveCrClWeight} kg`;
     }, [weightMethod, autoRecommendedMethod, weightKg, ibwDevine, adjBwKg, effectiveCrClWeight]);
 
-    // ─── CLEARANCE & eGFR CALCULATIONS ──────────────────────────────────
+    /* ── Clearance, eGFR and staging (unchanged) ─────────────────────────── */
     const calculations = useMemo(() => {
         if (numAge <= 0 || effectiveCrClWeight <= 0 || effectiveScr <= 0) return null;
 
@@ -196,12 +177,7 @@ export default function CreatinineClearanceCalculator() {
         if (sex === "female") crcl *= 0.85;
         crcl = Math.round(crcl * 10) / 10;
 
-        // Unadjusted CrCl (using unrounded SCr)
-        let unroundedCrcl = ((140 - numAge) * effectiveCrClWeight) / (72 * scrMgDl);
-        if (sex === "female") unroundedCrcl *= 0.85;
-        unroundedCrcl = Math.round(unroundedCrcl * 10) / 10;
-
-        // 2. CKD-EPI 2021 Race-Free Equation (mL/min/1.73m²)
+        // 2. CKD-EPI 2021 race-free equation (mL/min/1.73 m²) — uses the measured SCr
         const kappa = sex === "female" ? 0.7 : 0.9;
         const alpha = sex === "female" ? -0.241 : -0.302;
         const minScr = Math.min(scrMgDl / kappa, 1);
@@ -211,39 +187,39 @@ export default function CreatinineClearanceCalculator() {
         let egfr = 142 * Math.pow(minScr, alpha) * Math.pow(maxScr, -1.200) * Math.pow(0.9938, numAge) * femaleCoeff;
         egfr = Math.round(egfr * 10) / 10;
 
-        // 3. KDIGO Staging
+        // 3. Staging (applied to the Cockcroft-Gault CrCl)
         let kdigoStage = "G1 (Normal / High)";
-        let stageColor = "text-emerald-800 bg-emerald-50 border-emerald-300";
+        let tone: ResultTone = "success";
         let clinicalDosingAdvice = "Standard dosing protocols for all renally eliminated agents.";
 
         if (crcl >= 90) {
             kdigoStage = "G1 (Normal or High ≥ 90 mL/min)";
-            stageColor = "bg-emerald-100 text-emerald-800 border-emerald-300";
+            tone = "success";
             clinicalDosingAdvice = "Normal renal clearance. Standard full-dose pharmacotherapy.";
         } else if (crcl >= 60) {
             kdigoStage = "G2 (Mildly Decreased: 60–89 mL/min)";
-            stageColor = "bg-blue-100 text-blue-800 border-blue-300";
+            tone = "success";
             clinicalDosingAdvice = "Mild clearance reduction. Routine monitoring; dose adjustments rarely required.";
         } else if (crcl >= 45) {
             kdigoStage = "G3a (Mild-to-Moderate: 45–59 mL/min)";
-            stageColor = "bg-yellow-100 text-yellow-800 border-yellow-300";
+            tone = "warning";
             clinicalDosingAdvice = "Moderate impairment. Dose reduction indicated for narrow-index renally cleared agents (e.g. Enoxaparin, DOACs, Aminoglycosides).";
         } else if (crcl >= 30) {
             kdigoStage = "G3b (Moderate-to-Severe: 30–44 mL/min)";
-            stageColor = "bg-orange-100 text-orange-800 border-orange-300";
+            tone = "warning";
             clinicalDosingAdvice = "Moderate-to-severe impairment. Significant dose reductions required. Metformin max 1000 mg/day.";
         } else if (crcl >= 15) {
             kdigoStage = "G4 (Severely Decreased: 15–29 mL/min)";
-            stageColor = "bg-rose-100 text-rose-800 border-rose-300";
+            tone = "danger";
             clinicalDosingAdvice = "Severe renal failure. Extended intervals / major dose reductions. Metformin contraindicated. Switch to level-guided dosing.";
         } else {
             kdigoStage = "G5 (Kidney Failure < 15 mL/min / ESRD)";
-            stageColor = "bg-purple-100 text-purple-800 border-purple-300";
+            tone = "danger";
             clinicalDosingAdvice = "End-stage renal disease (ESRD). Avoid nephrotoxic agents. Pulse / post-dialysis redosing required.";
         }
 
-        // 4. Lifespan CrCl vs Age Curve (Recharts)
-        const trajectoryData = [];
+        // 4. CrCl across ages 20–90 at the same weight and SCr
+        const trajectoryData: { age: number; clearance: number }[] = [];
         for (let a = 20; a <= 90; a += 5) {
             let cl = ((140 - a) * effectiveCrClWeight) / (72 * effectiveScr);
             if (sex === "female") cl *= 0.85;
@@ -253,53 +229,40 @@ export default function CreatinineClearanceCalculator() {
             });
         }
 
-        return {
-            crcl,
-            unroundedCrcl,
-            egfr,
-            kdigoStage,
-            stageColor,
-            clinicalDosingAdvice,
-            trajectoryData,
-        };
+        return { crcl, egfr, kdigoStage, tone, clinicalDosingAdvice, trajectoryData };
     }, [numAge, effectiveCrClWeight, effectiveScr, sex, scrMgDl]);
 
-    // Renal Dosing Adjustment Tiers
+    // Renal dose-adjustment tiers (unchanged)
     const renalTiers: RenalTier[] = useMemo(() => {
         const currentCrcl = calculations?.crcl ?? 100;
         return [
             {
                 range: "> 50 mL/min",
                 label: "Normal / Mild",
-                badgeColor: "text-emerald-700 bg-emerald-50",
                 dosingAdvice: "100% standard maintenance dose. Standard intervals.",
                 isCurrent: currentCrcl > 50,
             },
             {
                 range: "30 – 50 mL/min",
                 label: "Moderate Reduction",
-                badgeColor: "text-yellow-700 bg-yellow-50",
                 dosingAdvice: "Reduce dose by 25–50% or extend dosing interval (e.g. q12h -> q24h).",
                 isCurrent: currentCrcl >= 30 && currentCrcl <= 50,
             },
             {
                 range: "15 – 29 mL/min",
                 label: "Severe Reduction",
-                badgeColor: "text-orange-700 bg-orange-50",
                 dosingAdvice: "Reduce dose by 50–75% (e.g. Enoxaparin 1 mg/kg q24h, Cefepime 1g q24h).",
                 isCurrent: currentCrcl >= 15 && currentCrcl < 30,
             },
             {
                 range: "< 15 mL/min",
                 label: "ESRD / Dialysis",
-                badgeColor: "text-rose-700 bg-rose-50",
                 dosingAdvice: "Avoid renally cleared drugs if possible. Dose post-hemodialysis.",
                 isCurrent: currentCrcl < 15,
             },
         ];
     }, [calculations]);
 
-    // Load Preset
     const handleLoadPreset = (p: PatientPreset) => {
         setAge(p.age);
         setSex(p.sex);
@@ -312,7 +275,6 @@ export default function CreatinineClearanceCalculator() {
         setWeightMethod("auto");
     };
 
-    // Reset
     const handleReset = () => {
         setAge("68");
         setSex("male");
@@ -326,7 +288,7 @@ export default function CreatinineClearanceCalculator() {
         setRoundLowScr(true);
     };
 
-    // Copy Consult Note
+    // Consult note — text unchanged from the previous page.
     const handleCopyConsultNote = useCallback(() => {
         if (!calculations) return;
 
@@ -348,9 +310,13 @@ ${calculations.clinicalDosingAdvice}
 Guideline Standard: Cockcroft DW, Gault MH (Nephron 1976) & KDIGO 2024 Clinical Practice Guidelines.
 Generated: ${new Date().toLocaleString()}`;
 
-        navigator.clipboard.writeText(note);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2400);
+        try {
+            navigator.clipboard.writeText(note);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2400);
+        } catch {
+            // No clipboard in this context (insecure origin, old WebView).
+        }
     }, [
         calculations,
         numAge,
@@ -369,607 +335,360 @@ Generated: ${new Date().toLocaleString()}`;
         roundLowScr,
     ]);
 
+    /* ── Display-only validation ───────────────────────────────────────────── */
+    const positiveError = (raw: string, name: string) => {
+        if (raw.trim() === "") return undefined;
+        const n = parseFloat(raw);
+        return Number.isFinite(n) && n <= 0 ? `${name} must be greater than 0.` : undefined;
+    };
+    const ageError =
+        positiveError(age, "Age") ?? (numAge >= 140 ? "Cockcroft-Gault is not valid at age 140 or above." : undefined);
+
+    const activeMethod = weightMethod === "auto" ? autoRecommendedMethod : weightMethod;
+    const floorApplied = roundLowScr && scrMgDl < 0.8 && scrMgDl > 0;
+
     return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50/70 via-white to-green-50/70 p-3 sm:p-5 md:p-8 font-sans selection:bg-teal-500 selection:text-white">
-            <div className="max-w-7xl mx-auto space-y-6">
+        <CalculatorShell
+            title="Creatinine Clearance Calculator"
+            subtitle="Estimates creatinine clearance (Cockcroft-Gault) for renal drug dosing, with the CKD-EPI 2021 eGFR and the matching dose-adjustment tier."
+            icon={Filter}
+            eyebrow="Clinical & Hospital Pharmacy"
+            aside={
+                <>
+                    <CalcAbout title="About creatinine clearance">
+                        <p>
+                            Creatinine clearance (CrCl) estimates how fast the kidneys clear creatinine, and so
+                            how fast they clear renally eliminated drugs. The Cockcroft-Gault equation, in mL/min,
+                            is the one most drug labels and renal dosing tables were written against. The CKD-EPI
+                            eGFR (estimated glomerular filtration rate) is indexed to 1.73 m² and is used to stage
+                            chronic kidney disease.
+                        </p>
+                        <CalcList
+                            title="How to use it"
+                            items={[
+                                "Enter age, sex, weight, height and serum creatinine (SCr), in either unit",
+                                "Leave the dosing weight on Auto, or override it with actual, ideal or adjusted weight",
+                                "Read the CrCl, find the dose-adjustment tier, and copy the note if you need it",
+                            ]}
+                        />
+                        <CalcList
+                            tone="caution"
+                            title="Keep in mind"
+                            items={[
+                                "Cockcroft-Gault assumes stable (steady-state) kidney function. In acute kidney injury or a rapidly changing creatinine it can badly overestimate true filtration — use urine output and drug-level monitoring instead.",
+                                "Low creatinine from low muscle mass (elderly, frail, amputees) inflates CrCl; that is what the 0.8 mg/dL floor option is for.",
+                                "Check each drug's own label: some use CrCl bands that differ from the tiers here.",
+                            ]}
+                        />
+                    </CalcAbout>
 
-                {/* ─── HEADER ──────────────────────────────────────────────────────── */}
-                <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-blue-700 to-green-500 p-6 md:p-8 text-white shadow-xl">
-                    <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div className="flex items-start sm:items-center gap-4">
-                            <div className="rounded-2xl bg-white/20 p-3.5 backdrop-blur-md ring-1 ring-white/30 shadow-inner">
-                                <Filter className="h-8 w-8 md:h-10 md:w-10 text-white" />
-                            </div>
-                            <div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                                        Creatinine Clearance & Renal Dosing Suite
-                                    </h1>
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur-md">
-                                        <Sparkles className="h-3 w-3 text-yellow-300" /> Cockcroft-Gault & CKD-EPI
-                                    </span>
-                                </div>
-                                <p className="mt-1 text-sm md:text-base text-blue-100 font-medium">
-                                    Cockcroft-Gault CrCl, Devine/AdjBW obesity scaling, sarcopenia adjustments & KDIGO staging
-                                </p>
-                            </div>
-                        </div>
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+                </>
+            }
+        >
+            <ResultCard
+                label="Creatinine clearance (Cockcroft-Gault)"
+                value={calculations ? String(calculations.crcl) : null}
+                unit="mL/min"
+                interpretation={calculations?.kdigoStage}
+                tone={calculations?.tone ?? "neutral"}
+                empty="Enter age, weight, height and serum creatinine (all above 0) to calculate."
+            />
 
-                        <div className="flex flex-wrap items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setShowInstructions((prev) => !prev)}
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-3.5 py-2 text-xs md:text-sm font-medium text-white backdrop-blur-md transition hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/40"
-                            >
-                                <HelpCircle className="h-4 w-4" />
-                                {showInstructions ? "Hide Instructions" : "Clinical Guide"}
-                            </button>
-                        </div>
-                    </div>
+            <CalcSection title="Patient details">
+                <div className="space-y-2">
+                    <p className="text-[13px] font-medium text-foreground/90">Sex</p>
+                    <ModeSwitch<Sex>
+                        label="Sex"
+                        value={sex}
+                        onChange={setSex}
+                        options={[
+                            { value: "male", label: "Male", description: "Factor 1.00" },
+                            { value: "female", label: "Female", description: "Factor 0.85" },
+                        ]}
+                    />
+                </div>
+                <FieldGrid>
+                    <NumberField
+                        label="Age"
+                        value={age}
+                        onChange={setAge}
+                        unit="years"
+                        step="1"
+                        min={0}
+                        placeholder="e.g. 68"
+                        hint="Validated in adults (18 years and over)."
+                        error={ageError}
+                    />
+                    <NumberField
+                        label="Serum creatinine (SCr)"
+                        value={serumCreatinine}
+                        onChange={setSerumCreatinine}
+                        units={[
+                            { value: "mg/dL", label: "mg/dL" },
+                            { value: "umol/L", label: "µmol/L" },
+                        ]}
+                        unit={scrUnit}
+                        onUnitChange={(next) => setScrUnit(next as ScrUnit)}
+                        step="0.05"
+                        min={0}
+                        hint="Adult normal is about 0.6–1.2 mg/dL (53–106 µmol/L). 1 mg/dL = 88.4 µmol/L."
+                        error={positiveError(serumCreatinine, "Creatinine")}
+                    />
+                    <NumberField
+                        label="Body weight"
+                        value={weight}
+                        onChange={setWeight}
+                        units={["kg", "lbs"]}
+                        unit={weightUnit}
+                        onUnitChange={(next) => setWeightUnit(next as WeightUnit)}
+                        step="0.5"
+                        min={0}
+                        hint="Actual (total) body weight today."
+                        error={positiveError(weight, "Weight")}
+                    />
+                    <NumberField
+                        label="Height"
+                        value={height}
+                        onChange={setHeight}
+                        units={["cm", "in"]}
+                        unit={heightUnit}
+                        onUnitChange={(next) => setHeightUnit(next as HeightUnit)}
+                        step="0.5"
+                        min={0}
+                        hint="Needed for ideal and adjusted body weight."
+                        error={positiveError(height, "Height")}
+                    />
+                </FieldGrid>
 
-                    <div className="pointer-events-none absolute -right-12 -top-12 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
-                </header>
+                <Toggle
+                    checked={roundLowScr}
+                    onChange={setRoundLowScr}
+                    label="Round SCr below 0.8 up to 0.8 mg/dL"
+                    description="A common safety rule for elderly or low-muscle-mass patients, whose low creatinine would otherwise overstate clearance. Applies to Cockcroft-Gault only."
+                />
 
-                {/* ─── STEP-BY-STEP DIRECTIONS / CLINICAL GUIDE ─────────────────────── */}
-                {showInstructions && (
-                    <div className="rounded-2xl border border-blue-100 bg-white/90 p-4 sm:p-6 shadow-sm backdrop-blur-sm transition-all animate-in fade-in duration-300">
-                        <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
-                            <div className="flex items-center gap-2 text-blue-900 font-bold text-sm sm:text-base">
-                                <BookOpen className="h-5 w-5 text-blue-600" />
-                                <span>Renal Clearance Estimation & Dosing Workflow</span>
-                            </div>
-                            <span className="text-xs text-gray-500 font-medium">3-Step Protocol</span>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="flex items-start gap-3 rounded-xl bg-blue-50/60 p-3.5 border border-blue-100/70">
-                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-                                    1
-                                </div>
-                                <div className="text-xs sm:text-sm text-gray-700">
-                                    <strong className="block text-gray-900 font-semibold mb-0.5">Enter Patient Vitals & SCr</strong>
-                                    Input age, sex, weight, height, and serum creatinine. Select units (mg/dL or µmol/L).
-                                </div>
-                            </div>
-
-                            <div className="flex items-start gap-3 rounded-xl bg-green-50/60 p-3.5 border border-green-100/70">
-                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white">
-                                    2
-                                </div>
-                                <div className="text-xs sm:text-sm text-gray-700">
-                                    <strong className="block text-gray-900 font-semibold mb-0.5">Select Dosing Weight Method</strong>
-                                    Choose Auto-Selection (recommends AdjBW for BMI &gt; 30) or override with TBW / Devine IBW.
-                                </div>
-                            </div>
-
-                            <div className="flex items-start gap-3 rounded-xl bg-emerald-50/60 p-3.5 border border-emerald-100/70">
-                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">
-                                    3
-                                </div>
-                                <div className="text-xs sm:text-sm text-gray-700">
-                                    <strong className="block text-gray-900 font-semibold mb-0.5">Review Dosing Tiers & Copy Note</strong>
-                                    Check active renal adjustment tier, lifelong clearance decline curve, and export the EHR note.
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* ─── QUICK CLINICAL ARCHETYPES BAR ────────────────────────────────── */}
-                <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-md shadow-gray-200/50">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                            <Zap className="h-4 w-4 text-blue-600" />
-                            <span className="text-xs font-bold text-gray-800 uppercase tracking-wider">
-                                Quick Patient Archetypes (1-Click Presets)
-                            </span>
-                        </div>
-                        <span className="text-[11px] text-gray-400">Clinical Scenarios</span>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-                        {samplePatients.map((p) => (
+                <div>
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">Try an example patient</p>
+                    <div className="flex flex-wrap gap-2">
+                        {SAMPLE_PATIENTS.map((p) => (
                             <button
                                 key={p.label}
                                 type="button"
                                 onClick={() => handleLoadPreset(p)}
-                                className="group p-2.5 rounded-xl border border-gray-200 bg-gray-50/70 hover:bg-blue-50 hover:border-blue-300 text-left transition flex flex-col justify-between"
+                                className="min-h-[40px] rounded-full border bg-background px-3.5 py-2 text-xs font-medium hover:bg-accent active:bg-accent"
                             >
-                                <div className="font-bold text-xs text-gray-900 group-hover:text-blue-700">
-                                    {p.label}
-                                </div>
-                                <span className="text-[10px] text-gray-500 mt-0.5 font-medium">
-                                    {p.tag} ({p.sex === "male" ? "M" : "F"})
-                                </span>
+                                {p.label} · {p.tag}
                             </button>
                         ))}
                     </div>
                 </div>
 
-                {/* ─── MAIN WORKSPACE GRID: 12 COLS ─────────────────────────────────── */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <Button variant="outline" onClick={handleReset} className="w-full">
+                    <RefreshCw />
+                    Reset
+                </Button>
+            </CalcSection>
 
-                    {/* LEFT: PATIENT DATA & WEIGHT SELECTOR (5 COLS) */}
-                    <div className="lg:col-span-5 space-y-6">
+            <CalcSection title="Dosing weight" description="Which weight goes into the Cockcroft-Gault equation.">
+                <ModeSwitch<WeightMethod>
+                    label="Dosing weight"
+                    value={weightMethod}
+                    onChange={setWeightMethod}
+                    options={[
+                        { value: "auto", label: "Auto", description: "Picks by body size" },
+                        { value: "actual", label: "Actual (TBW)", description: `${weightKg} kg` },
+                        { value: "ibw", label: "Ideal (Devine IBW)", description: `${ibwDevine} kg` },
+                        { value: "adjbw", label: "Adjusted (AdjBW 40%)", description: `${adjBwKg} kg` },
+                    ]}
+                />
+                <LabNotice title={`Using: ${effectiveWeightLabel}`}>
+                    {weightMethod === "auto" ? autoReason : `Manual override. Auto would choose: ${autoReason}`}
+                </LabNotice>
+            </CalcSection>
 
-                        {/* CARD 1: PATIENT MEASUREMENTS */}
-                        <div className="rounded-2xl border border-gray-100 bg-white p-5 sm:p-6 shadow-md shadow-gray-200/50 space-y-4">
-                            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                                <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                                    <Stethoscope className="h-5 w-5 text-blue-600" />
-                                    1. Patient Vitals & Serum Creatinine
-                                </h2>
-                                <button
-                                    type="button"
-                                    onClick={handleReset}
-                                    className="text-xs text-gray-500 hover:text-blue-600 flex items-center gap-1 font-medium transition"
-                                >
-                                    <RefreshCw className="h-3.5 w-3.5" /> Reset
-                                </button>
-                            </div>
-
-                            <div className="space-y-3.5">
-                                {/* Age & Sex */}
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="rounded-xl border border-blue-200/70 bg-blue-50/30 p-3">
-                                        <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">
-                                            Age (Years)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            min="18"
-                                            max="120"
-                                            value={age}
-                                            onChange={(e) => setAge(e.target.value)}
-                                            placeholder="e.g. 68"
-                                            className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-900 focus:outline-none focus:border-blue-500"
-                                        />
-                                    </div>
-
-                                    <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-3">
-                                        <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">
-                                            Biological Sex
-                                        </label>
-                                        <div className="grid grid-cols-2 gap-1 bg-gray-200/70 p-0.5 rounded-lg">
-                                            <button
-                                                type="button"
-                                                onClick={() => setSex("male")}
-                                                className={`py-1 text-xs font-bold rounded-md transition ${sex === "male"
-                                                        ? "bg-white text-blue-700 shadow-xs"
-                                                        : "text-gray-600 hover:text-gray-900"
-                                                    }`}
-                                            >
-                                                Male (1.00)
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setSex("female")}
-                                                className={`py-1 text-xs font-bold rounded-md transition ${sex === "female"
-                                                        ? "bg-white text-blue-700 shadow-xs"
-                                                        : "text-gray-600 hover:text-gray-900"
-                                                    }`}
-                                            >
-                                                Female (0.85)
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Weight & Height */}
-                                <div className="grid grid-cols-2 gap-3">
-                                    {/* Weight */}
-                                    <div className="rounded-xl border border-blue-200/70 bg-blue-50/30 p-3">
-                                        <div className="flex items-center justify-between mb-1">
-                                            <label className="text-[11px] font-bold text-gray-700 uppercase flex items-center gap-1">
-                                                <Scale className="h-3 w-3 text-blue-600" /> Body Weight
-                                            </label>
-                                            <div className="inline-flex rounded bg-blue-100 p-0.5 text-[10px] font-bold">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setWeightUnit("kg")}
-                                                    className={`px-1.5 py-0.5 rounded ${weightUnit === "kg" ? "bg-white text-blue-700 shadow-xs" : "text-blue-600"}`}
-                                                >
-                                                    kg
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setWeightUnit("lbs")}
-                                                    className={`px-1.5 py-0.5 rounded ${weightUnit === "lbs" ? "bg-white text-blue-700 shadow-xs" : "text-blue-600"}`}
-                                                >
-                                                    lbs
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="relative">
-                                            <input
-                                                type="number"
-                                                step="0.5"
-                                                value={weight}
-                                                onChange={(e) => setWeight(e.target.value)}
-                                                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-900 focus:outline-none focus:border-blue-500"
-                                            />
-                                            <span className="absolute right-3 top-2 text-xs font-bold text-gray-400">
-                                                {weightUnit}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Height */}
-                                    <div className="rounded-xl border border-gray-200 bg-gray-50/40 p-3">
-                                        <div className="flex items-center justify-between mb-1">
-                                            <label className="text-[11px] font-bold text-gray-700 uppercase flex items-center gap-1">
-                                                <Ruler className="h-3 w-3 text-gray-600" /> Height
-                                            </label>
-                                            <div className="inline-flex rounded bg-gray-200 p-0.5 text-[10px] font-bold">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setHeightUnit("cm")}
-                                                    className={`px-1.5 py-0.5 rounded ${heightUnit === "cm" ? "bg-white text-gray-900 shadow-xs" : "text-gray-600"}`}
-                                                >
-                                                    cm
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setHeightUnit("in")}
-                                                    className={`px-1.5 py-0.5 rounded ${heightUnit === "in" ? "bg-white text-gray-900 shadow-xs" : "text-gray-600"}`}
-                                                >
-                                                    in
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="relative">
-                                            <input
-                                                type="number"
-                                                step="0.5"
-                                                value={height}
-                                                onChange={(e) => setHeight(e.target.value)}
-                                                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-900 focus:outline-none focus:border-blue-500"
-                                            />
-                                            <span className="absolute right-3 top-2 text-xs font-bold text-gray-400">
-                                                {heightUnit}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Serum Creatinine Input */}
-                                <div className="rounded-xl border border-teal-200/70 bg-teal-50/30 p-3">
-                                    <div className="flex items-center justify-between mb-1">
-                                        <label className="text-[11px] font-bold text-teal-950 uppercase flex items-center gap-1">
-                                            <Droplet className="h-3.5 w-3.5 text-teal-600" /> Serum Creatinine (SCr)
-                                        </label>
-                                        <div className="inline-flex rounded bg-teal-100 p-0.5 text-[10px] font-bold">
-                                            <button
-                                                type="button"
-                                                onClick={() => setScrUnit("mg/dL")}
-                                                className={`px-1 py-0.5 rounded ${scrUnit === "mg/dL" ? "bg-white text-teal-800 shadow-xs" : "text-teal-700"}`}
-                                            >
-                                                mg/dL
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setScrUnit("umol/L")}
-                                                className={`px-1 py-0.5 rounded ${scrUnit === "umol/L" ? "bg-white text-teal-800 shadow-xs" : "text-teal-700"}`}
-                                            >
-                                                µmol/L
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="relative">
-                                        <input
-                                            type="number"
-                                            step="0.05"
-                                            value={serumCreatinine}
-                                            onChange={(e) => setSerumCreatinine(e.target.value)}
-                                            className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-900 focus:outline-none focus:border-teal-500"
-                                        />
-                                        <span className="absolute right-3 top-2 text-xs font-bold text-gray-400">
-                                            {scrUnit}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* Sarcopenia Floor Toggle */}
-                                <div className="flex items-center justify-between rounded-xl bg-gray-50 p-3 border border-gray-200 text-xs">
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            id="sarcopeniaToggle"
-                                            checked={roundLowScr}
-                                            onChange={(e) => setRoundLowScr(e.target.checked)}
-                                            className="h-4 w-4 rounded text-blue-600 focus:ring-blue-500"
-                                        />
-                                        <label htmlFor="sarcopeniaToggle" className="text-gray-800 font-semibold cursor-pointer">
-                                            Sarcopenia Low-SCr Floor (Round SCr &lt; 0.8 to 0.8 mg/dL)
-                                        </label>
-                                    </div>
-                                    <span className="text-[10px] text-gray-400 font-mono">Elderly Safety</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* CARD 2: DOSING WEIGHT STRATEGY */}
-                        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-md shadow-gray-200/50 space-y-3">
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
-                                <SlidersHorizontal className="h-3.5 w-3.5 text-blue-600" />
-                                2. Dosing Weight Selection for Cockcroft-Gault
-                            </h3>
-
-                            <div className="grid grid-cols-2 gap-2 text-xs font-bold">
-                                {[
-                                    { id: "auto", name: "Auto-Heuristic", sub: "Clinical Best Practice" },
-                                    { id: "actual", name: "Actual TBW", sub: `${weightKg} kg` },
-                                    { id: "ibw", name: "Devine IBW", sub: `${ibwDevine} kg` },
-                                    { id: "adjbw", name: "AdjBW (40%)", sub: `${adjBwKg} kg` },
-                                ].map((w) => (
-                                    <button
-                                        key={w.id}
-                                        type="button"
-                                        onClick={() => setWeightMethod(w.id as WeightMethod)}
-                                        className={`p-2 rounded-xl border transition text-left ${weightMethod === w.id
-                                                ? "border-blue-600 bg-blue-50 text-blue-900 ring-1 ring-blue-500 font-extrabold"
-                                                : "border-gray-200 bg-gray-50/70 text-gray-700 hover:bg-gray-100"
-                                            }`}
-                                    >
-                                        <div>{w.name}</div>
-                                        <div className="text-[10px] font-normal text-gray-500">{w.sub}</div>
-                                    </button>
-                                ))}
-                            </div>
-
-                            <p className="text-[11px] text-gray-500 leading-snug pt-1">
-                                <strong>Active Basis:</strong> {effectiveWeightLabel} — {autoReason}
-                            </p>
-                        </div>
-
+            {calculations && (
+                <CalcSection title="Results & working">
+                    <div>
+                        <ResultRow
+                            label="CKD-EPI 2021 eGFR (for CKD staging)"
+                            value={calculations.egfr}
+                            unit="mL/min/1.73m²"
+                        />
+                        <ResultRow
+                            label={`SCr used${floorApplied ? " (floored from " + scrMgDl + ")" : ""}`}
+                            value={effectiveScr}
+                            unit="mg/dL"
+                        />
+                        <ResultRow label="Dosing weight used" value={effectiveCrClWeight} unit="kg" />
+                        <ResultRow label="Devine ideal body weight" value={ibwDevine} unit="kg" badge={activeMethod === "ibw" ? "used" : undefined} />
+                        <ResultRow label="Adjusted body weight (40%)" value={adjBwKg} unit="kg" badge={activeMethod === "adjbw" ? "used" : undefined} />
+                        <ResultRow label="Body mass index (BMI)" value={bmi} unit="kg/m²" />
+                        <ResultRow
+                            label="CrCl = (140 − age) × weight ÷ (72 × SCr)"
+                            value={`(140 − ${numAge}) × ${effectiveCrClWeight} ÷ (72 × ${effectiveScr})${sex === "female" ? " × 0.85" : ""}`}
+                        />
                     </div>
 
-                    {/* RIGHT: HERO CrCl OUTPUT & RENAL DOSING TIERS (7 COLS) */}
-                    <div className="lg:col-span-7 space-y-6">
-
-                        {/* HERO CrCl CARD */}
-                        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-green-500 p-6 text-white shadow-xl">
-                            <div className="flex items-center justify-between border-b border-white/20 pb-3 mb-4">
-                                <div className="flex items-center gap-2">
-                                    <Activity className="h-5 w-5 text-green-300" />
-                                    <span className="text-xs font-bold uppercase tracking-wider text-blue-100">
-                                        Creatinine Clearance & GFR Staging
-                                    </span>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={handleCopyConsultNote}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-white/20 px-3 py-1 text-xs font-semibold text-white backdrop-blur-md transition hover:bg-white/30"
-                                >
-                                    {copied ? (
-                                        <>
-                                            <Check className="h-3.5 w-3.5 text-green-300" />
-                                            <span>Copied to EHR!</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Copy className="h-3.5 w-3.5" />
-                                            <span>Copy Consult</span>
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-
-                            {calculations ? (
-                                <div className="space-y-4">
-                                    {/* Primary Output Numbers Grid */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        {/* Cockcroft-Gault CrCl */}
-                                        <div className="rounded-xl bg-white/15 p-4 backdrop-blur-md ring-1 ring-white/20 text-center">
-                                            <span className="text-[11px] font-bold text-blue-100 uppercase tracking-wider block mb-1">
-                                                Cockcroft-Gault CrCl (Drug Dosing)
-                                            </span>
-                                            <div className="text-4xl sm:text-5xl font-black text-white">
-                                                {calculations.crcl}{" "}
-                                                <span className="text-lg font-bold text-green-200">mL/min</span>
-                                            </div>
-                                            <span className="text-[10px] text-blue-100 block mt-1">
-                                                Basis: {effectiveWeightLabel}
-                                            </span>
-                                        </div>
-
-                                        {/* CKD-EPI eGFR */}
-                                        <div className="rounded-xl bg-white/10 p-4 backdrop-blur-sm border border-white/15 text-center">
-                                            <span className="text-[11px] font-bold text-blue-100 uppercase tracking-wider block mb-1">
-                                                CKD-EPI 2021 eGFR (CKD Staging)
-                                            </span>
-                                            <div className="text-3xl sm:text-4xl font-black text-white">
-                                                {calculations.egfr}{" "}
-                                                <span className="text-sm font-normal text-blue-100">mL/min/1.73m²</span>
-                                            </div>
-                                            <span className="text-[10px] text-green-200 block mt-1">
-                                                {calculations.kdigoStage}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Clinical Dosing Directive */}
-                                    <div className="rounded-xl bg-white/10 p-3.5 backdrop-blur-sm border border-white/10 text-xs text-blue-100 space-y-1">
-                                        <strong className="text-white block font-bold">Pharmacotherapy Recommendation:</strong>
-                                        <p className="leading-relaxed text-[11px]">{calculations.clinicalDosingAdvice}</p>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="py-10 text-center text-blue-100">
-                                    <Calculator className="h-12 w-12 mx-auto mb-2 opacity-60" />
-                                    <p className="font-medium text-sm">Enter patient parameters to compute clearance.</p>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* RENAL DOSING ADJUSTMENT TIERS */}
-                        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-md shadow-gray-200/50 space-y-3">
-                            <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
-                                    <Pill className="h-3.5 w-3.5 text-blue-600" />
-                                    Renal Dose Adjustment Tiers
-                                </h3>
-                                <span className="text-[10px] text-gray-400">Active Tier Highlighted</span>
-                            </div>
-
-                            <div className="space-y-2">
-                                {renalTiers.map((tier) => (
-                                    <div
-                                        key={tier.range}
-                                        className={`p-3 rounded-xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${tier.isCurrent
-                                                ? "border-blue-500 bg-blue-50/90 shadow-sm ring-1 ring-blue-400"
-                                                : "border-gray-200 bg-gray-50/50 opacity-70"
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <span className={`px-2 py-0.5 rounded font-bold text-xs ${tier.badgeColor}`}>
-                                                {tier.range}
-                                            </span>
-                                            <strong className="text-xs text-gray-900">{tier.label}</strong>
-                                            {tier.isCurrent && (
-                                                <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">
-                                                    Patient Tier
-                                                </span>
-                                            )}
-                                        </div>
-                                        <span className="text-xs text-gray-700 font-medium sm:text-right">
-                                            {tier.dosingAdvice}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* RECHARTS CrCl vs. AGE TRAJECTORY GRAPH */}
-                        {calculations && calculations.trajectoryData.length > 0 && (
-                            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-md shadow-gray-200/50 space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
-                                        <TrendingUp className="h-3.5 w-3.5 text-blue-600" />
-                                        CrCl Lifespan Decline Curve (Age 20–90)
-                                    </h3>
-                                    <span className="text-[10px] text-gray-400 font-mono">Assumes constant SCr & Wt</span>
-                                </div>
-
-                                <div className="h-56 w-full pt-2">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <LineChart
-                                            data={calculations.trajectoryData}
-                                            margin={{ top: 5, right: 20, left: 0, bottom: 20 }}
-                                        >
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                                            <XAxis
-                                                dataKey="age"
-                                                fontSize={11}
-                                                tickMargin={6}
-                                                label={{
-                                                    value: "Patient Age (Years)",
-                                                    position: "insideBottom",
-                                                    offset: -12,
-                                                    fontSize: 11,
-                                                    fontWeight: 600,
-                                                    fill: "#6b7280",
-                                                }}
-                                            />
-                                            <YAxis
-                                                fontSize={11}
-                                                width={40}
-                                                label={{
-                                                    value: "CrCl (mL/min)",
-                                                    angle: -90,
-                                                    position: "insideLeft",
-                                                    offset: 10,
-                                                    fontSize: 11,
-                                                    fontWeight: 600,
-                                                    fill: "#6b7280",
-                                                }}
-                                            />
-                                            <Tooltip
-                                                formatter={(value) => typeof value === "number" ? [`${value.toFixed(1)} mL/min`, "CrCl"] : ["N/A", "CrCl"]}
-                                                contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
-                                            />
-                                            <Line
-                                                type="monotone"
-                                                dataKey="clearance"
-                                                stroke="#2563eb"
-                                                strokeWidth={2.5}
-                                                dot={false}
-                                                activeDot={{ r: 5, strokeWidth: 0 }}
-                                            />
-                                        </LineChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* MANDATORY CLINICAL SAFETY WARNING */}
-                        <div className="rounded-2xl border border-blue-200/80 bg-gradient-to-r from-blue-50/80 via-white to-green-50/80 p-4 shadow-sm text-gray-700">
-                            <div className="flex items-start gap-2.5">
-                                <ShieldCheck className="h-4 w-4 text-blue-700 shrink-0 mt-0.5" />
-                                <div className="text-[11px] leading-relaxed">
-                                    <strong className="font-semibold text-gray-900 block mb-0.5">Clinical Pharmacokinetics Advisory:</strong>
-                                    Cockcroft-Gault assumes steady-state renal function. In acute kidney injury (AKI) or rapidly fluctuating serum creatinine, calculated CrCl will significantly overestimate true glomerular filtration. Use clinical urine output and Bayesian TDM in unstable patients.
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-
-                </div>
-
-                {/* ─── COLLAPSIBLE FORMULAS & EVIDENCE REFERENCE ────────────────────── */}
-                <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-md shadow-gray-200/50 space-y-3">
-                    <button
-                        type="button"
-                        onClick={() => setShowDetails(!showDetails)}
-                        className="w-full flex items-center justify-between text-xs font-bold text-blue-600 hover:text-blue-800 transition"
+                    <LabNotice
+                        tone={calculations.tone === "danger" ? "danger" : calculations.tone === "warning" ? "warning" : "info"}
+                        title="Dosing recommendation"
                     >
-                        <span className="flex items-center gap-2 text-sm">
-                            <BookOpen className="h-4 w-4 text-blue-600" />
-                            Pharmacokinetic Equations & Nephrology Reference (Cockcroft-Gault & CKD-EPI)
-                        </span>
-                        {showDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </button>
+                        {calculations.clinicalDosingAdvice}
+                    </LabNotice>
 
-                    {showDetails && (
-                        <div className="space-y-3 text-xs text-gray-600 pt-2 border-t border-gray-100 leading-relaxed">
-                            <div>
-                                <strong className="text-gray-900 block mb-0.5">1. Cockcroft-Gault Equation (1976):</strong>
-                                <code className="text-blue-700 bg-gray-100 p-1.5 rounded block text-[11px] font-mono">
-                                    CrCl (mL/min) = [(140 - Age) × Weight (kg)] / [72 × SCr (mg/dL)] × (0.85 if Female)
-                                </code>
-                            </div>
-                            <div>
-                                <strong className="text-gray-900 block mb-0.5">2. Devine Ideal Body Weight (IBW) & Adjusted Body Weight (AdjBW):</strong>
-                                <code className="text-blue-700 bg-gray-100 p-1.5 rounded block text-[11px] font-mono">
-                                    Male: IBW = 50.0 kg + 2.3 × (Height in inches - 60)
-                                    <br />
-                                    Female: IBW = 45.5 kg + 2.3 × (Height in inches - 60)
-                                    <br />
-                                    AdjBW (40%) = IBW + 0.4 × (Actual Weight - IBW)
-                                </code>
-                            </div>
-                            <div>
-                                <strong className="text-gray-900 block mb-0.5">3. CKD-EPI 2021 Race-Free Refit Equation:</strong>
-                                <p className="text-gray-600">
-                                    Inker LA, et al. New Creatinine- and Cystatin C-Based Equations to Estimate GFR without Race. N Engl J Med. 2021;385(19):1737-1749.
+                    <Button variant="outline" onClick={handleCopyConsultNote} className="w-full">
+                        {copied ? <Check /> : <Copy />}
+                        {copied ? "Consult note copied" : "Copy consult note"}
+                    </Button>
+                </CalcSection>
+            )}
+
+            <CalcSection title="Renal dose-adjustment tiers" description="General tiers by CrCl. The patient's tier is highlighted.">
+                <div className="space-y-2">
+                    {renalTiers.map((tier) => (
+                        <div
+                            key={tier.range}
+                            className={
+                                "rounded-xl border px-3.5 py-3 " +
+                                (tier.isCurrent ? "border-primary/60 bg-primary/10" : "border-border/80 bg-background")
+                            }
+                        >
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <p className="text-sm font-semibold text-foreground">
+                                    {tier.range} <span className="font-normal text-muted-foreground">· {tier.label}</span>
                                 </p>
+                                {tier.isCurrent && (
+                                    <span className="rounded-md bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
+                                        Patient tier
+                                    </span>
+                                )}
                             </div>
+                            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{tier.dosingAdvice}</p>
                         </div>
-                    )}
+                    ))}
                 </div>
+            </CalcSection>
 
-                {/* ─── FOOTER ──────────────────────────────────────────────────────── */}
-                <footer className="border-t border-gray-200 pt-6 pb-10 text-center text-xs text-gray-500 space-y-2">
-                    <p className="max-w-4xl mx-auto leading-relaxed">
-                        <strong>Renal Dosing Advisory:</strong> Compliant with FDA Guidance on Pharmacokinetics in Renal Impairment, KDIGO 2024 Clinical Practice Guidelines, and the 2021 CKD-EPI consensus.
-                    </p>
-                    <p className="text-gray-400">
-                        &copy; 2024–2026 Advanced Renal Pharmacotherapy & Creatinine Clearance Decision Support.
-                    </p>
-                </footer>
+            {calculations && calculations.trajectoryData.length > 0 && (
+                <CalcSection
+                    title="CrCl across ages 20–90"
+                    description="How Cockcroft-Gault falls with age if weight and creatinine stayed the same."
+                >
+                    <div className="h-64 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={calculations.trajectoryData} margin={{ top: 5, right: 12, left: 0, bottom: 20 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                <XAxis
+                                    dataKey="age"
+                                    fontSize={11}
+                                    tickMargin={6}
+                                    label={{ value: "Age (years)", position: "insideBottom", offset: -12, fontSize: 11, fill: "#6b7280" }}
+                                />
+                                <YAxis
+                                    fontSize={11}
+                                    width={44}
+                                    label={{ value: "CrCl (mL/min)", angle: -90, position: "insideLeft", offset: 10, fontSize: 11, fill: "#6b7280" }}
+                                />
+                                <Tooltip
+                                    formatter={(value) => (typeof value === "number" ? [`${value.toFixed(1)} mL/min`, "CrCl"] : ["N/A", "CrCl"])}
+                                    labelFormatter={(label) => `Age ${label}`}
+                                    contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "12px" }}
+                                />
+                                <Line type="monotone" dataKey="clearance" stroke="#2563eb" strokeWidth={2.5} dot={false} activeDot={{ r: 5, strokeWidth: 0 }} />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                </CalcSection>
+            )}
 
-            </div>
-        </section>
+            <FormulaNote>
+                <p className="font-medium text-foreground">1. Cockcroft-Gault (1976)</p>
+                <Formula>CrCl (mL/min) = [(140 − age) × weight (kg)] ÷ [72 × SCr (mg/dL)] × 0.85 if female</Formula>
+                <p className="font-medium text-foreground">2. Devine ideal body weight and adjusted body weight</p>
+                <Formula>
+                    Male IBW = 50.0 kg + 2.3 × (height in inches − 60)
+                    <br />
+                    Female IBW = 45.5 kg + 2.3 × (height in inches − 60)
+                    <br />
+                    AdjBW (40%) = IBW + 0.4 × (actual weight − IBW)
+                </Formula>
+                <p>
+                    IBW is never taken below 50 kg (male) or 45.5 kg (female). Auto uses actual weight when it is
+                    below IBW, adjusted weight when it is more than 120% of IBW, and IBW otherwise.
+                </p>
+                <p className="font-medium text-foreground">3. CKD-EPI 2021 (race-free)</p>
+                <Formula>
+                    eGFR = 142 × min(SCr/κ, 1)^α × max(SCr/κ, 1)^−1.200 × 0.9938^age × 1.012 if female
+                </Formula>
+                <p>
+                    κ = 0.7 (female) or 0.9 (male); α = −0.241 (female) or −0.302 (male). eGFR uses the measured
+                    SCr, not the 0.8 floor. µmol/L is divided by 88.4 and rounded to 0.01 mg/dL first. The stage
+                    shown on the result (G1–G5) is applied to the Cockcroft-Gault CrCl.
+                </p>
+                <p>
+                    References: Cockcroft DW, Gault MH. Nephron 1976. Inker LA, et al. New creatinine- and
+                    cystatin C-based equations to estimate GFR without race. N Engl J Med. 2021;385(19):1737-1749.
+                </p>
+            </FormulaNote>
+
+            <CalcFaq
+                items={[
+                    {
+                        q: "Should I use CrCl or eGFR for drug dosing?",
+                        a: "Most renal dose recommendations in drug labels were derived with Cockcroft-Gault CrCl in mL/min, so use it for dosing — especially for narrow-therapeutic-index drugs such as DOACs, aminoglycosides and enoxaparin. eGFR is indexed to 1.73 m² and is designed for staging chronic kidney disease.",
+                    },
+                    {
+                        q: "Which weight should go into Cockcroft-Gault?",
+                        a: "There is no single agreed answer. A common approach, used by Auto here, is actual weight if the patient weighs less than their ideal weight, ideal weight if they are near it, and adjusted weight (IBW + 40% of the excess) if they weigh more than 120% of ideal. Follow your institution's policy.",
+                    },
+                    {
+                        q: "Why round a low creatinine up to 0.8 mg/dL?",
+                        a: "Elderly and frail patients make little creatinine because they have little muscle, so a very low SCr can make CrCl look falsely high and lead to overdosing. Rounding up is a conservative habit, but it can also underestimate clearance — switch it off when you judge the low value to be genuine.",
+                    },
+                    {
+                        q: "Can I use this in acute kidney injury?",
+                        a: "Not reliably. Creatinine lags behind a sudden change in kidney function, so any estimating equation will be wrong until creatinine is stable again. Use urine output, repeated creatinine and, where available, drug-level monitoring.",
+                    },
+                    {
+                        q: "My lab reports creatinine in µmol/L — what do I do?",
+                        a: "Switch the unit next to the creatinine field to µmol/L. The calculator divides by 88.4 to get mg/dL, which both equations need.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
+    );
+}
+
+/** A full-width, thumb-sized checkbox row. */
+function Toggle({
+    checked,
+    onChange,
+    label,
+    description,
+}: {
+    checked: boolean;
+    onChange: (next: boolean) => void;
+    label: string;
+    description?: string;
+}) {
+    const id = useId();
+    return (
+        <label
+            htmlFor={id}
+            className="flex min-h-[48px] cursor-pointer items-start gap-3 rounded-xl border border-border/80 bg-background px-3.5 py-3 hover:bg-muted/50"
+        >
+            <input
+                id={id}
+                type="checkbox"
+                checked={checked}
+                onChange={(event) => onChange(event.target.checked)}
+                className="mt-0.5 h-5 w-5 shrink-0 accent-primary"
+            />
+            <span className="min-w-0">
+                <span className="block text-sm font-medium text-foreground">{label}</span>
+                {description && <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{description}</span>}
+            </span>
+        </label>
     );
 }

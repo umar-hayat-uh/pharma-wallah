@@ -53,11 +53,10 @@ export default function CalculationToolsPage() {
         aside={<StartHere />}
         meta={
           <FigureRow
-            columns={3}
+            columns={2}
             figures={[
               { value: HUB_TOOL_COUNT, label: "calculators in this index" },
-              { value: HUB_SUBJECTS.length, label: "syllabus subjects" },
-              { value: 0, label: "accounts needed to use any of them" },
+              { value: HUB_SUBJECTS.length, label: "syllabus subjects they are grouped under" },
             ]}
           />
         }

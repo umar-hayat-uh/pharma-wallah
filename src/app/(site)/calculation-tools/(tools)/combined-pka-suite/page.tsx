@@ -1,655 +1,530 @@
 "use client";
-import { useState, useEffect } from 'react';
+
+import { useMemo, useState } from "react";
+import { Activity, TrendingUp, BarChart, PieChart, Target, RefreshCw, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
-    Activity,
-    Calculator,
-    TrendingUp,
-    RefreshCw,
-    AlertCircle,
-    Zap,
-    Target,
-    LineChart,
-    PieChart,
-    BarChart
-} from 'lucide-react';
+    CalculatorShell,
+    CalcSection,
+    FieldGrid,
+    NumberField,
+    TextField,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    ModeSwitch,
+    AdSlot,
+    type ModeOption,
+} from "@/components/calculators";
 
-type CalculationMode = 'ka-to-pka' | 'pka-to-ka' | 'ionization' | 'ph-from-pka';
+type CalculationMode = "ka-to-pka" | "pka-to-ka" | "ionization" | "ph-from-pka";
 
-export default function pKaSuiteCalculator() {
-    const [mode, setMode] = useState<CalculationMode>('ka-to-pka');
-    const [ka, setKa] = useState<string>('1.8e-5');
-    const [pka, setPka] = useState<string>('4.74');
-    const [ph, setPh] = useState<string>('4.0');
-    const [concentration, setConcentration] = useState<string>('0.1');
-    const [result, setResult] = useState<number | null>(null);
-    const [ionizationPercent, setIonizationPercent] = useState<number | null>(null);
-    const [conjugateForm, setConjugateForm] = useState<string>('');
+const MODES: ModeOption<CalculationMode>[] = [
+    { value: "ka-to-pka", label: "Kₐ to pKₐ", description: "pKₐ = −log₁₀(Kₐ)", icon: TrendingUp },
+    { value: "pka-to-ka", label: "pKₐ to Kₐ", description: "Kₐ = 10^(−pKₐ)", icon: BarChart },
+    { value: "ionization", label: "Ionization", description: "% ionized at a pH", icon: PieChart },
+    { value: "ph-from-pka", label: "pH from pKₐ", description: "pH ≈ ½(pKₐ − log C)", icon: Target },
+];
+
+const SAMPLE_ACIDS = [
+    { name: "Acetic Acid", ka: "1.8e-5", pka: "4.74", type: "Weak acid", note: "Vinegar component" },
+    { name: "Aspirin", ka: "3.0e-4", pka: "3.52", type: "Weak acid", note: "Salicylic acid derivative" },
+    { name: "Ammonium Ion", ka: "5.6e-10", pka: "9.25", type: "Weak acid", note: "Conjugate acid of ammonia" },
+    { name: "Water", ka: "1.0e-14", pka: "14.00", type: "Very weak acid", note: "Autoionization" },
+];
+
+/* ── Formulas, bands and wording carried over unchanged ───────────────────── */
+
+function kaToPka(ka: string): number | null {
+    const kaValue = parseFloat(ka);
+    if (!isNaN(kaValue) && kaValue > 0) return -Math.log10(kaValue);
+    return null;
+}
+
+function pkaToKa(pka: string): number | null {
+    const pkaValue = parseFloat(pka);
+    if (!isNaN(pkaValue)) return Math.pow(10, -pkaValue);
+    return null;
+}
+
+function ionization(pka: string, ph: string) {
+    const pkaIon = parseFloat(pka);
+    const phIon = parseFloat(ph);
+    if (isNaN(pkaIon) || isNaN(phIon)) return null;
+    // Henderson-Hasselbalch: pH = pKa + log([A-]/[HA])
+    const ratio = Math.pow(10, phIon - pkaIon);
+    const percentIonized = (ratio / (1 + ratio)) * 100;
+    return {
+        ratio,
+        percentIonized,
+        conjugateForm: percentIonized > 50 ? "Deprotonated (A⁻)" : "Protonated (HA)",
+        pkaIon,
+        phIon,
+    };
+}
+
+function phFromPka(pka: string, concentration: string): number | null {
+    const pkaPh = parseFloat(pka);
+    const conc = parseFloat(concentration);
+    // For weak acid: pH = 1/2(pKa - log(C))
+    if (!isNaN(pkaPh) && !isNaN(conc) && conc > 0) return 0.5 * (pkaPh - Math.log10(conc));
+    return null;
+}
+
+const getAcidStrength = (pkaValue: number) => {
+    if (pkaValue < 0) return "Strong acid";
+    if (pkaValue < 4) return "Moderately strong acid";
+    if (pkaValue < 10) return "Weak acid";
+    if (pkaValue < 14) return "Very weak acid";
+    return "Extremely weak acid";
+};
+
+const getIonizationInterpretation = (percent: number) => {
+    if (percent < 10) return "Predominantly unionized";
+    if (percent < 40) return "Mostly unionized";
+    if (percent < 60) return "Approximately equal amounts";
+    if (percent < 90) return "Mostly ionized";
+    return "Predominantly ionized";
+};
+
+type View = {
+    label: string;
+    value: string;
+    interpretation: string;
+    working: { label: string; value: string }[];
+};
+
+export default function PKaSuiteCalculator() {
+    const [mode, setMode] = useState<CalculationMode>("ka-to-pka");
+    const [ka, setKa] = useState<string>("1.8e-5");
+    const [pka, setPka] = useState<string>("4.74");
+    const [ph, setPh] = useState<string>("4.0");
+    const [concentration, setConcentration] = useState<string>("0.1");
     const [showScientific, setShowScientific] = useState<boolean>(true);
 
-    const calculate = () => {
+    /*
+     * Derived from the current mode's inputs. The previous page stored the result
+     * in state from a useEffect and never cleared it, so invalid input (Kₐ = 0,
+     * C = 0) left the previous mode's number on screen, and the "Ionized form"
+     * box followed you into every other mode. Formulas, bands and precisions are
+     * unchanged; a non-finite result now shows a message instead of "Infinity".
+     */
+    const { view, ion, message } = useMemo((): {
+        view: View | null;
+        ion: ReturnType<typeof ionization>;
+        message: string;
+    } => {
         switch (mode) {
-            case 'ka-to-pka':
-                const kaValue = parseFloat(ka.includes('e') ? ka : ka) || parseFloat(ka);
-                if (!isNaN(kaValue) && kaValue > 0) {
-                    const calculatedPka = -Math.log10(kaValue);
-                    setResult(calculatedPka);
-                    setPka(calculatedPka.toFixed(2));
+            case "ka-to-pka": {
+                const result = kaToPka(ka);
+                if (result === null) return { view: null, ion: null, message: "Enter a Kₐ greater than 0, e.g. 1.8e-5." };
+                return {
+                    ion: null,
+                    message: "",
+                    view: {
+                        label: "pKₐ",
+                        value: result.toFixed(2),
+                        interpretation: getAcidStrength(result),
+                        working: [
+                            { label: "pKₐ = −log₁₀(Kₐ)", value: `−log₁₀(${parseFloat(ka)}) = ${result.toFixed(4)} ≈ ${result.toFixed(2)}` },
+                        ],
+                    },
+                };
+            }
+            case "pka-to-ka": {
+                const result = pkaToKa(pka);
+                if (result === null) return { view: null, ion: null, message: "Enter a pKₐ, e.g. 9.25." };
+                if (!Number.isFinite(result)) return { view: null, ion: null, message: "That pKₐ gives a Kₐ too large to show." };
+                const shown = showScientific ? result.toExponential(2) : result.toFixed(10);
+                return {
+                    ion: null,
+                    message: "",
+                    view: {
+                        label: "Kₐ",
+                        value: shown,
+                        interpretation: "Result calculated",
+                        working: [{ label: "Kₐ = 10^(−pKₐ)", value: `10^(−${parseFloat(pka)}) = ${shown}` }],
+                    },
+                };
+            }
+            case "ionization": {
+                const r = ionization(pka, ph);
+                if (r === null) return { view: null, ion: null, message: "Enter the pKₐ and the pH." };
+                if (!Number.isFinite(r.ratio) || isNaN(r.percentIonized)) {
+                    return { view: null, ion: null, message: "pH − pKₐ is too large to calculate — check the values." };
                 }
-                break;
-
-            case 'pka-to-ka':
-                const pkaValue = parseFloat(pka);
-                if (!isNaN(pkaValue)) {
-                    const calculatedKa = Math.pow(10, -pkaValue);
-                    setResult(calculatedKa);
-                    setKa(calculatedKa.toExponential(2));
-                }
-                break;
-
-            case 'ionization':
-                const pkaIon = parseFloat(pka);
-                const phIon = parseFloat(ph);
-                if (!isNaN(pkaIon) && !isNaN(phIon)) {
-                    // Henderson-Hasselbalch: pH = pKa + log([A-]/[HA])
-                    const ratio = Math.pow(10, phIon - pkaIon);
-                    const percentIonized = (ratio / (1 + ratio)) * 100;
-                    const percentUnionized = 100 - percentIonized;
-
-                    setResult(ratio);
-                    setIonizationPercent(percentIonized);
-                    setConjugateForm(percentIonized > 50 ? 'Deprotonated (A⁻)' : 'Protonated (HA)');
-                }
-                break;
-
-            case 'ph-from-pka':
-                const pkaPh = parseFloat(pka);
-                const conc = parseFloat(concentration);
-                if (!isNaN(pkaPh) && !isNaN(conc) && conc > 0) {
-                    // For weak acid: pH = 1/2(pKa - log(C))
-                    const calculatedPh = 0.5 * (pkaPh - Math.log10(conc));
-                    setResult(calculatedPh);
-                    setPh(calculatedPh.toFixed(2));
-                }
-                break;
+                return {
+                    ion: r,
+                    message: "",
+                    view: {
+                        label: "Ionization ratio [A⁻]/[HA]",
+                        value: r.ratio.toFixed(3),
+                        // `ionizationPercent ?` in the old page: exactly 0% fell through.
+                        interpretation: r.percentIonized ? getIonizationInterpretation(r.percentIonized) : "Result calculated",
+                        working: [
+                            {
+                                label: "[A⁻]/[HA] = 10^(pH − pKₐ)",
+                                value: `10^(${r.phIon} − ${r.pkaIon}) = 10^${(r.phIon - r.pkaIon).toFixed(2)} = ${r.ratio.toFixed(3)}`,
+                            },
+                            {
+                                label: "% ionized = ratio ÷ (1 + ratio) × 100",
+                                value: `${r.ratio.toFixed(3)} ÷ (1 + ${r.ratio.toFixed(3)}) × 100 = ${r.percentIonized.toFixed(1)}%`,
+                            },
+                            { label: "% unionized = 100 − % ionized", value: `${(100 - r.percentIonized).toFixed(1)}%` },
+                        ],
+                    },
+                };
+            }
+            case "ph-from-pka": {
+                const result = phFromPka(pka, concentration);
+                if (result === null) return { view: null, ion: null, message: "Enter the pKₐ and a concentration above 0." };
+                return {
+                    ion: null,
+                    message: "",
+                    view: {
+                        label: "pH",
+                        value: result.toFixed(2),
+                        interpretation: result < 7 ? "Acidic solution" : result > 7 ? "Basic solution" : "Neutral solution",
+                        working: [
+                            {
+                                label: "pH ≈ ½(pKₐ − log₁₀C)",
+                                value: `½ × (${parseFloat(pka)} − (${Math.log10(parseFloat(concentration)).toFixed(4)})) = ${result.toFixed(2)}`,
+                            },
+                        ],
+                    },
+                };
+            }
         }
+    }, [mode, ka, pka, ph, concentration, showScientific]);
+
+    /**
+     * The previous page wrote each computed value back into the shared fields
+     * (pKₐ from Kₐ, Kₐ from pKₐ, pH from the weak-acid mode), so it carried into
+     * the next mode. That hand-off happens here, on leaving a mode.
+     */
+    const changeMode = (next: CalculationMode) => {
+        if (mode === "ka-to-pka") {
+            const r = kaToPka(ka);
+            if (r !== null) setPka(r.toFixed(2));
+        } else if (mode === "pka-to-ka") {
+            const r = pkaToKa(pka);
+            if (r !== null) setKa(r.toExponential(2));
+        } else if (mode === "ph-from-pka") {
+            const r = phFromPka(pka, concentration);
+            if (r !== null) setPh(r.toFixed(2));
+        }
+        setMode(next);
+    };
+
+    const loadSample = (acid: (typeof SAMPLE_ACIDS)[number]) => {
+        setKa(acid.ka);
+        setPka(acid.pka);
+        setMode("ka-to-pka");
     };
 
     const resetCalculator = () => {
-        setKa('1.8e-5');
-        setPka('4.74');
-        setPh('4.0');
-        setConcentration('0.1');
-        setResult(null);
-        setIonizationPercent(null);
-        setConjugateForm('');
+        setKa("1.8e-5");
+        setPka("4.74");
+        setPh("4.0");
+        setConcentration("0.1");
     };
 
-    const sampleAcids = [
-        {
-            name: 'Acetic Acid',
-            ka: '1.8e-5',
-            pka: '4.74',
-            type: 'Weak acid',
-            note: 'Vinegar component'
-        },
-        {
-            name: 'Aspirin',
-            ka: '3.0e-4',
-            pka: '3.52',
-            type: 'Weak acid',
-            note: 'Salicylic acid derivative'
-        },
-        {
-            name: 'Ammonium Ion',
-            ka: '5.6e-10',
-            pka: '9.25',
-            type: 'Weak acid',
-            note: 'Conjugate acid of ammonia'
-        },
-        {
-            name: 'Water',
-            ka: '1.0e-14',
-            pka: '14.00',
-            type: 'Very weak acid',
-            note: 'Autoionization'
-        }
-    ];
+    const kaError = (() => {
+        if (ka.trim() === "") return undefined;
+        const v = parseFloat(ka);
+        return isNaN(v) || v <= 0 ? "Kₐ must be a number greater than 0." : undefined;
+    })();
+    const concError = (() => {
+        if (concentration === "") return undefined;
+        const v = parseFloat(concentration);
+        return isNaN(v) || v <= 0 ? "Must be greater than 0." : undefined;
+    })();
 
-    const loadSample = (index: number) => {
-        const acid = sampleAcids[index];
-        setKa(acid.ka);
-        setPka(acid.pka);
-        setMode('ka-to-pka');
-    };
-
-    const getAcidStrength = (pkaValue: number) => {
-        if (pkaValue < 0) return 'Strong acid';
-        if (pkaValue < 4) return 'Moderately strong acid';
-        if (pkaValue < 10) return 'Weak acid';
-        if (pkaValue < 14) return 'Very weak acid';
-        return 'Extremely weak acid';
-    };
-
-    const getIonizationInterpretation = (percent: number) => {
-        if (percent < 10) return 'Predominantly unionized';
-        if (percent < 40) return 'Mostly unionized';
-        if (percent < 60) return 'Approximately equal amounts';
-        if (percent < 90) return 'Mostly ionized';
-        return 'Predominantly ionized';
-    };
-
-    useEffect(() => {
-        calculate();
-    }, [mode, ka, pka, ph, concentration, showScientific]);
+    const pkaField = (hint: string) => (
+        <NumberField label="pKₐ" value={pka} onChange={setPka} step="0.01" placeholder="e.g. 4.74" hint={hint} />
+    );
 
     return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6">
-            <div className="max-w-6xl mx-auto">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6 md:mb-8">
-                    <div className="flex flex-col md:flex-row items-center justify-between">
-                        <div className="flex items-center mb-4 md:mb-0">
-                            <div className="bg-white/20 p-3 rounded-xl mr-4">
-                                <Activity className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-white">pKa Suite Calculator</h1>
-                                <p className="text-blue-100 mt-2">Complete acid-base ionization and pKa calculations</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-2 bg-white/20 px-4 py-2 rounded-lg">
-                            <Zap className="w-5 h-5 text-white" />
-                            <span className="text-white font-semibold">Acid-Base Chemistry</span>
-                        </div>
-                    </div>
-                </div>
+        <CalculatorShell
+            title="pKa Suite Calculator"
+            subtitle="Convert between Kₐ and pKₐ, find how ionized an acid is at a pH, and estimate the pH of a weak acid solution."
+            icon={Activity}
+            eyebrow="Pharmaceutical Chemistry"
+            aside={
+                <>
+                    <CalcAbout title="Acid–base principles">
+                        <p>
+                            Kₐ (the acid dissociation constant) measures how readily an acid gives up a
+                            proton; pKₐ is its negative logarithm, so a smaller pKₐ means a stronger acid.
+                        </p>
+                        <CalcList
+                            title="Kₐ and pKₐ"
+                            items={[
+                                "Kₐ = [H⁺][A⁻]/[HA]",
+                                "pKₐ = −log₁₀(Kₐ)",
+                                "Larger Kₐ = stronger acid",
+                                "Smaller pKₐ = stronger acid",
+                                "pKₐ = pH when [HA] = [A⁻]",
+                            ]}
+                        />
+                        <CalcList
+                            title="Ionization state"
+                            items={[
+                                "pH < pKₐ: predominantly HA",
+                                "pH = pKₐ: 50% ionized",
+                                "pH > pKₐ: predominantly A⁻",
+                                "Affects solubility",
+                                "Affects membrane permeability",
+                            ]}
+                        />
+                        <CalcList
+                            title="Applications"
+                            items={[
+                                "Buffer preparation",
+                                "Drug absorption prediction",
+                                "Protein structure",
+                                "Analytical method development",
+                                "Solubility optimization",
+                            ]}
+                        />
+                        <CalcList
+                            tone="caution"
+                            title="Limits"
+                            items={[
+                                "Ionization here is for a weak acid (HA ⇌ A⁻). For a weak base the ionized form is the protonated BH⁺, so the percentages swap",
+                                "pH ≈ ½(pKₐ − log C) assumes a weak acid much more concentrated than Kₐ; it fails for very dilute solutions",
+                            ]}
+                        />
+                    </CalcAbout>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Main Calculator Section */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
-                            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                                <Calculator className="w-6 h-6 md:w-7 md:h-7 mr-2" />
-                                pKa Suite Tools
-                            </h2>
-
-                            {/* Mode Selection */}
-                            <div className="mb-8">
-                                <label className="block text-lg font-semibold text-gray-800 mb-3">Calculation Mode</label>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <button
-                                        onClick={() => setMode('ka-to-pka')}
-                                        className={`p-4 rounded-xl transition-all ${mode === 'ka-to-pka' ?
-                                            'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-lg' :
-                                            'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                                    >
-                                        <div className="flex flex-col items-center">
-                                            <TrendingUp className="w-8 h-8 mb-2" />
-                                            <span className="font-semibold">Kₐ to pKₐ</span>
-                                            <span className="text-sm mt-1">pKₐ = -log₁₀(Kₐ)</span>
-                                        </div>
-                                    </button>
-
-                                    <button
-                                        onClick={() => setMode('pka-to-ka')}
-                                        className={`p-4 rounded-xl transition-all ${mode === 'pka-to-ka' ?
-                                            'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-lg' :
-                                            'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                                    >
-                                        <div className="flex flex-col items-center">
-                                            <BarChart className="w-8 h-8 mb-2" />
-                                            <span className="font-semibold">pKₐ to Kₐ</span>
-                                            <span className="text-sm mt-1">Kₐ = 10^(-pKₐ)</span>
-                                        </div>
-                                    </button>
-
-                                    <button
-                                        onClick={() => setMode('ionization')}
-                                        className={`p-4 rounded-xl transition-all ${mode === 'ionization' ?
-                                            'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-lg' :
-                                            'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                                    >
-                                        <div className="flex flex-col items-center">
-                                            <PieChart className="w-8 h-8 mb-2" />
-                                            <span className="font-semibold">Ionization</span>
-                                            <span className="text-sm mt-1">pH = pKₐ + log([A⁻]/[HA])</span>
-                                        </div>
-                                    </button>
-
-                                    <button
-                                        onClick={() => setMode('ph-from-pka')}
-                                        className={`p-4 rounded-xl transition-all ${mode === 'ph-from-pka' ?
-                                            'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-lg' :
-                                            'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                                    >
-                                        <div className="flex flex-col items-center">
-                                            <Target className="w-8 h-8 mb-2" />
-                                            <span className="font-semibold">pH from pKₐ</span>
-                                            <span className="text-sm mt-1">pH ≈ ½(pKₐ - logC)</span>
-                                        </div>
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Scientific Notation Toggle */}
-                            <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="font-semibold text-gray-800">Display Format</h3>
-                                    <button
-                                        onClick={() => setShowScientific(!showScientific)}
-                                        className={`px-4 py-2 rounded-lg transition-colors ${showScientific
-                                                ? 'bg-gradient-to-r from-blue-600 to-green-400 text-white'
-                                                : 'bg-gray-200 text-gray-700'
-                                            }`}
-                                    >
-                                        {showScientific ? 'Scientific Notation' : 'Decimal'}
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Input Fields Based on Mode */}
-                            <div className="space-y-6">
-                                {/* Kₐ Input */}
-                                {(mode === 'ka-to-pka' || mode === 'pka-to-ka') && (
-                                    <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6 border border-blue-200">
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                                            <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
-                                            Acid Dissociation Constant
-                                        </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                    Kₐ Value
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={ka}
-                                                    onChange={(e) => setKa(e.target.value)}
-                                                    className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
-                                                    placeholder="e.g., 1.8e-5 or 0.000018"
-                                                    disabled={mode === 'pka-to-ka'}
-                                                />
-                                                <div className="text-xs text-gray-500 mt-2">
-                                                    Enter as decimal or scientific notation
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                    pKₐ Value
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    step="0.01"
-                                                    value={pka}
-                                                    onChange={(e) => setPka(e.target.value)}
-                                                    className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
-                                                    placeholder="e.g., 4.74"
-                                                    disabled={mode === 'ka-to-pka'}
-                                                />
-                                                <div className="text-xs text-gray-500 mt-2">
-                                                    pKₐ = -log₁₀(Kₐ)
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Ionization State Input */}
-                                {mode === 'ionization' && (
-                                    <div className="space-y-6">
-                                        <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 border border-green-200">
-                                            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                                                <PieChart className="w-5 h-5 mr-2 text-green-600" />
-                                                Acid-Base Parameters
-                                            </h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                        pKₐ Value
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        step="0.01"
-                                                        value={pka}
-                                                        onChange={(e) => setPka(e.target.value)}
-                                                        className="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none"
-                                                        placeholder="e.g., 4.74"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                        pH
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        step="0.01"
-                                                        value={ph}
-                                                        onChange={(e) => setPh(e.target.value)}
-                                                        className="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none"
-                                                        placeholder="e.g., 4.0"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* pH from pKₐ Input */}
-                                {mode === 'ph-from-pka' && (
-                                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200">
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                                            <Target className="w-5 h-5 mr-2 text-purple-600" />
-                                            Weak Acid pH Calculation
-                                        </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                    pKₐ Value
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    step="0.01"
-                                                    value={pka}
-                                                    onChange={(e) => setPka(e.target.value)}
-                                                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none"
-                                                    placeholder="e.g., 4.74"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                    Concentration (M)
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    step="0.001"
-                                                    value={concentration}
-                                                    onChange={(e) => setConcentration(e.target.value)}
-                                                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none"
-                                                    placeholder="e.g., 0.1"
-                                                />
-                                                <div className="text-xs text-gray-500 mt-2">
-                                                    Molar concentration of weak acid
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Formula Display */}
-                                <div className="bg-gray-50 rounded-xl p-6">
-                                    <h3 className="font-semibold text-gray-800 mb-3">Formulas</h3>
-                                    <div className="space-y-4">
-                                        {mode === 'ka-to-pka' && (
-                                            <div className="p-4 bg-white rounded-lg border border-gray-300">
-                                                <div className="font-mono text-lg mb-2">pKₐ = -log₁₀(Kₐ)</div>
-                                                <div className="text-sm text-gray-600">
-                                                    Where Kₐ is the acid dissociation constant
-                                                </div>
-                                            </div>
-                                        )}
-                                        {mode === 'pka-to-ka' && (
-                                            <div className="p-4 bg-white rounded-lg border border-gray-300">
-                                                <div className="font-mono text-lg mb-2">Kₐ = 10^(-pKₐ)</div>
-                                                <div className="text-sm text-gray-600">
-                                                    Where pKₐ is the negative log of Kₐ
-                                                </div>
-                                            </div>
-                                        )}
-                                        {mode === 'ionization' && (
-                                            <div className="p-4 bg-white rounded-lg border border-gray-300">
-                                                <div className="font-mono text-lg mb-2">pH = pKₐ + log([A⁻]/[HA])</div>
-                                                <div className="text-sm text-gray-600">
-                                                    Henderson-Hasselbalch equation for weak acids
-                                                </div>
-                                            </div>
-                                        )}
-                                        {mode === 'ph-from-pka' && (
-                                            <div className="p-4 bg-white rounded-lg border border-gray-300">
-                                                <div className="font-mono text-lg mb-2">pH ≈ ½(pKₐ - log₁₀C)</div>
-                                                <div className="text-sm text-gray-600">
-                                                    Approximation for weak acid solution pH
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Sample Acids */}
-                                <div className="bg-white rounded-xl p-6 border border-gray-200">
-                                    <h3 className="font-semibold text-gray-800 mb-4">Example Acids</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                                        {sampleAcids.map((acid, index) => (
-                                            <button
-                                                key={index}
-                                                onClick={() => loadSample(index)}
-                                                className="bg-gradient-to-r from-blue-50 to-green-50 hover:from-blue-100 hover:to-green-100 border border-blue-200 rounded-lg p-4 text-left transition-all hover:shadow-md"
-                                            >
-                                                <div className="font-semibold text-blue-700">{acid.name}</div>
-                                                <div className="text-xs text-gray-600 mt-2">
-                                                    Kₐ: {acid.ka}<br />
-                                                    pKₐ: {acid.pka}<br />
-                                                    Type: {acid.type}
-                                                </div>
-                                                <div className="text-xs text-blue-600 mt-2">{acid.note}</div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Action Buttons */}
-                                <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                                    <button
-                                        onClick={calculate}
-                                        className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
-                                    >
-                                        Calculate
-                                    </button>
-                                    <button
-                                        onClick={resetCalculator}
-                                        className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center"
-                                    >
-                                        <RefreshCw className="w-5 h-5 mr-2" />
-                                        Reset
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Results Section */}
-                    <div className="space-y-6">
-                        {/* Main Result */}
-                        <div className="bg-gradient-to-br from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 text-white">
-                            <h2 className="text-2xl font-bold mb-6 flex items-center">
-                                <Activity className="w-7 h-7 mr-3" />
-                                {mode === 'ka-to-pka' ? 'pKₐ Result' :
-                                    mode === 'pka-to-ka' ? 'Kₐ Result' :
-                                        mode === 'ionization' ? 'Ionization Ratio' :
-                                            'pH Result'}
-                            </h2>
-
-                            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 mb-6">
-                                <div className="text-center">
-                                    <div className="text-sm font-semibold text-blue-100 mb-2">
-                                        Calculated Value
-                                    </div>
-                                    {result !== null ? (
-                                        <>
-                                            <div className="text-5xl md:text-6xl font-bold mb-2">
-                                                {mode === 'ka-to-pka' ? result.toFixed(2) :
-                                                    mode === 'pka-to-ka' ?
-                                                        (showScientific ? result.toExponential(2) : result.toFixed(10)) :
-                                                        mode === 'ionization' ? result.toFixed(3) :
-                                                            result.toFixed(2)}
-                                            </div>
-                                            <div className="text-2xl font-semibold">
-                                                {mode === 'ka-to-pka' ? 'pKₐ' :
-                                                    mode === 'pka-to-ka' ? 'Kₐ' :
-                                                        mode === 'ionization' ? '[A⁻]/[HA]' :
-                                                            'pH'}
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <div className="text-3xl font-bold text-blue-100">
-                                            Enter Values
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Additional Results */}
-                            {ionizationPercent !== null && (
-                                <div className="bg-white/10 rounded-lg p-4">
-                                    <div className="text-center">
-                                        <div className="text-sm font-semibold mb-1">Ionized Form</div>
-                                        <div className="text-2xl font-bold">{ionizationPercent.toFixed(1)}%</div>
-                                        <div className="text-xs mt-1 text-blue-100">
-                                            {conjugateForm}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Interpretation */}
-                        {result !== null && (
-                            <div className="bg-white rounded-2xl shadow-lg p-6">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                                    <AlertCircle className="w-5 h-5 mr-2 text-blue-600" />
-                                    Interpretation
-                                </h3>
-                                <div className="space-y-4">
-                                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                        <p className="text-sm text-gray-700">
-                                            {mode === 'ka-to-pka' ? getAcidStrength(result) :
-                                                mode === 'ionization' && ionizationPercent ? getIonizationInterpretation(ionizationPercent) :
-                                                    mode === 'ph-from-pka' ?
-                                                        (result < 7 ? 'Acidic solution' : result > 7 ? 'Basic solution' : 'Neutral solution') :
-                                                        'Result calculated'}
-                                        </p>
-                                    </div>
-
-                                    {mode === 'ionization' && ionizationPercent !== null && (
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-gray-600">Ionized (A⁻):</span>
-                                                <span className="font-semibold">{ionizationPercent.toFixed(1)}%</span>
-                                            </div>
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-gray-600">Unionized (HA):</span>
-                                                <span className="font-semibold">{(100 - ionizationPercent).toFixed(1)}%</span>
-                                            </div>
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-gray-600">Ratio [A⁻]/[HA]:</span>
-                                                <span className="font-semibold">{result.toFixed(3)}</span>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Ionization Visualization */}
-                        {mode === 'ionization' && ionizationPercent !== null && (
-                            <div className="bg-white rounded-2xl shadow-lg p-6">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4">Ionization Distribution</h3>
-                                <div className="h-48 relative">
-                                    <div className="absolute inset-0 flex items-center">
-                                        {/* Ionized bar */}
-                                        <div
-                                            className="h-32 bg-gradient-to-r from-blue-400 to-green-400 rounded-l-lg transition-all duration-500"
-                                            style={{ width: `${ionizationPercent}%` }}
-                                        >
-                                            <div className="absolute inset-0 flex items-center justify-center text-white font-bold">
-                                                A⁻
-                                            </div>
-                                        </div>
-                                        {/* Unionized bar */}
-                                        <div
-                                            className="h-32 bg-gradient-to-r from-purple-400 to-pink-400 rounded-r-lg transition-all duration-500"
-                                            style={{ width: `${100 - ionizationPercent}%` }}
-                                        >
-                                            <div className="absolute inset-0 flex items-center justify-center text-white font-bold">
-                                                HA
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="absolute -bottom-8 left-0 right-0 flex justify-between text-sm">
-                                        <div className="text-center">
-                                            <div className="font-semibold text-blue-600">Ionized</div>
-                                            <div>{ionizationPercent.toFixed(1)}%</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="font-semibold text-purple-600">Unionized</div>
-                                            <div>{(100 - ionizationPercent).toFixed(1)}%</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Acid Strength Guide */}
-                        <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-2xl shadow-lg p-6 border border-blue-200">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">Acid Strength Guide</h3>
-                            <div className="space-y-3 text-sm">
-                                <div className="p-3 bg-white/50 rounded-lg">
-                                    <div className="font-semibold text-red-700">Strong acids:</div>
-                                    <div className="text-gray-600 mt-1">pKₐ &lt; 0 (HCl, H₂SO₄)</div>
-                                </div>
-                                <div className="p-3 bg-white/50 rounded-lg">
-                                    <div className="font-semibold text-orange-700">Moderate acids:</div>
-                                    <div className="text-gray-600 mt-1">pKₐ 0-4 (Acetic acid)</div>
-                                </div>
-                                <div className="p-3 bg-white/50 rounded-lg">
-                                    <div className="font-semibold text-blue-700">Weak acids:</div>
-                                    <div className="text-gray-600 mt-1">pKₐ 4-10 (Ammonium)</div>
-                                </div>
-                                <div className="p-3 bg-white/50 rounded-lg">
-                                    <div className="font-semibold text-purple-700">Very weak:</div>
-                                    <div className="text-gray-600 mt-1">pKₐ  &lt; 10 (Water)</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Acid-Base Principles */}
-                <div className="mt-8 bg-white rounded-2xl shadow-lg p-6 md:p-8">
-                    <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6">Acid-Base Principles</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-blue-50 rounded-xl p-5">
-                            <h3 className="font-bold text-blue-700 mb-3">Kₐ and pKₐ</h3>
-                            <div className="space-y-2 text-sm text-gray-600">
-                                <p>• Kₐ = [H⁺][A⁻]/[HA]</p>
-                                <p>• pKₐ = -log₁₀(Kₐ)</p>
-                                <p>• Larger Kₐ = stronger acid</p>
-                                <p>• Smaller pKₐ = stronger acid</p>
-                                <p>• pKₐ = pH when [HA] = [A⁻]</p>
-                            </div>
-                        </div>
-                        <div className="bg-green-50 rounded-xl p-5">
-                            <h3 className="font-bold text-green-700 mb-3">Ionization State</h3>
-                            <div className="space-y-2 text-sm text-gray-600">
-                                <p>• pH &lt; pKₐ: Predominantly HA</p>
-                                <p>• pH = pKₐ: 50% ionized</p>
-                                <p>• pH &gt; pKₐ: Predominantly A⁻</p>
-                                <p>• Affects solubility</p>
-                                <p>• Affects membrane permeability</p>
-                            </div>
-                        </div>
-                        <div className="bg-purple-50 rounded-xl p-5">
-                            <h3 className="font-bold text-purple-700 mb-3">Applications</h3>
-                            <div className="space-y-2 text-sm text-gray-600">
-                                <p>• Buffer preparation</p>
-                                <p>• Drug absorption prediction</p>
-                                <p>• Protein structure</p>
-                                <p>• Analytical method development</p>
-                                <p>• Solubility optimization</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+                </>
+            }
+        >
+            <div className="space-y-2">
+                <p className="text-[13px] font-medium text-foreground/90">Calculation mode</p>
+                <ModeSwitch label="Calculation mode" value={mode} onChange={changeMode} options={MODES} />
             </div>
-        </section>
+
+            <ResultCard
+                label={view?.label ?? MODES.find((m) => m.value === mode)!.label}
+                value={view?.value ?? null}
+                interpretation={
+                    view
+                        ? ion
+                            ? `${view.interpretation} · ${ion.percentIonized.toFixed(1)}% ionized — ${ion.conjugateForm}`
+                            : view.interpretation
+                        : undefined
+                }
+                empty={message}
+                // Decimal Kₐ (10 dp) and large ratios are long; let them wrap on a phone.
+                className="[overflow-wrap:anywhere]"
+            />
+
+            <CalcSection title="Inputs">
+                {mode === "pka-to-ka" && (
+                    <div>
+                        <p className="mb-2 text-xs font-medium text-muted-foreground">Display format</p>
+                        <div className="flex flex-wrap gap-2">
+                            {[
+                                { label: "Scientific notation", value: true },
+                                { label: "Decimal", value: false },
+                            ].map((opt) => {
+                                const selected = showScientific === opt.value;
+                                return (
+                                    <button
+                                        key={opt.label}
+                                        type="button"
+                                        aria-pressed={selected}
+                                        onClick={() => setShowScientific(opt.value)}
+                                        className={
+                                            "inline-flex min-h-[40px] items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-medium transition-colors " +
+                                            (selected ? "border-primary bg-primary/10 text-primary" : "bg-background hover:bg-muted active:bg-accent")
+                                        }
+                                    >
+                                        {selected && <Check className="h-3.5 w-3.5" />}
+                                        {opt.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                <FieldGrid>
+                    {mode === "ka-to-pka" && (
+                        <TextField
+                            label="Kₐ (acid dissociation constant)"
+                            value={ka}
+                            onChange={setKa}
+                            placeholder="e.g. 1.8e-5 or 0.000018"
+                            hint="Enter as decimal or scientific notation (1.8e-5)."
+                            error={kaError}
+                            inputClassName="h-12 text-[17px] font-medium"
+                        />
+                    )}
+                    {mode === "pka-to-ka" && pkaField("From a data table, e.g. ammonium 9.25.")}
+                    {mode === "ionization" && (
+                        <>
+                            {pkaField("The acid's pKₐ.")}
+                            <NumberField
+                                label="pH"
+                                value={ph}
+                                onChange={setPh}
+                                step="0.01"
+                                placeholder="e.g. 4.0"
+                                hint="e.g. stomach 1–3, blood 7.4, small intestine 6–7.5."
+                            />
+                        </>
+                    )}
+                    {mode === "ph-from-pka" && (
+                        <>
+                            {pkaField("The weak acid's pKₐ.")}
+                            <NumberField
+                                label="Concentration (C)"
+                                value={concentration}
+                                onChange={setConcentration}
+                                unit="M"
+                                step="0.001"
+                                placeholder="e.g. 0.1"
+                                hint="Molar concentration of weak acid."
+                                error={concError}
+                            />
+                        </>
+                    )}
+                </FieldGrid>
+
+                <div>
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">Example acids (loads Kₐ → pKₐ)</p>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        {SAMPLE_ACIDS.map((acid) => {
+                            const selected = mode === "ka-to-pka" && ka === acid.ka;
+                            return (
+                                <button
+                                    key={acid.name}
+                                    type="button"
+                                    aria-pressed={selected}
+                                    onClick={() => loadSample(acid)}
+                                    className={
+                                        "rounded-xl border px-3.5 py-3 text-left transition-colors " +
+                                        (selected ? "border-primary bg-primary/10" : "bg-background hover:bg-muted active:bg-accent")
+                                    }
+                                >
+                                    <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                                        {selected && <Check className="h-3.5 w-3.5 text-primary" />}
+                                        {acid.name}
+                                    </span>
+                                    <span className="mt-1 block font-mono text-xs text-muted-foreground">
+                                        Kₐ {acid.ka} · pKₐ {acid.pka}
+                                    </span>
+                                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                                        {acid.type} — {acid.note}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                <Button variant="outline" onClick={resetCalculator} className="w-full">
+                    <RefreshCw />
+                    Reset
+                </Button>
+            </CalcSection>
+
+            {ion && (
+                <CalcSection title="Ionization distribution">
+                    <div
+                        className="flex h-12 w-full overflow-hidden rounded-xl text-sm font-bold text-white"
+                        role="img"
+                        aria-label={`${ion.percentIonized.toFixed(1)}% ionized, ${(100 - ion.percentIonized).toFixed(1)}% unionized`}
+                    >
+                        <div
+                            className="flex items-center justify-center bg-primary transition-[width] duration-500"
+                            style={{ width: `${ion.percentIonized}%` }}
+                        >
+                            {ion.percentIonized >= 12 && "A⁻"}
+                        </div>
+                        <div
+                            className="flex items-center justify-center bg-emerald-600 transition-[width] duration-500"
+                            style={{ width: `${100 - ion.percentIonized}%` }}
+                        >
+                            {100 - ion.percentIonized >= 12 && "HA"}
+                        </div>
+                    </div>
+                    <div>
+                        <ResultRow label="Ionized (A⁻)" value={`${ion.percentIonized.toFixed(1)}%`} />
+                        <ResultRow label="Unionized (HA)" value={`${(100 - ion.percentIonized).toFixed(1)}%`} />
+                        <ResultRow label="Ratio [A⁻]/[HA]" value={ion.ratio.toFixed(3)} />
+                        <ResultRow label="Predominant form" value={ion.conjugateForm} />
+                    </div>
+                </CalcSection>
+            )}
+
+            {view && (
+                <CalcSection title="Working" description="Your values substituted into the formula.">
+                    <div className="divide-y divide-border/70">
+                        {view.working.map((row) => (
+                            <div key={row.label} className="py-3 first:pt-0 last:pb-0">
+                                <p className="text-xs text-muted-foreground">{row.label}</p>
+                                <p className="mt-1 font-mono text-[13px] text-foreground [overflow-wrap:anywhere]">{row.value}</p>
+                            </div>
+                        ))}
+                    </div>
+                </CalcSection>
+            )}
+
+            <CalcSection title="Acid strength guide">
+                <div>
+                    <ResultRow label="Strong acids" value="pKₐ < 0" badge="HCl, H₂SO₄" badgeTone="destructive" />
+                    <ResultRow label="Moderate acids" value="pKₐ 0–4" badge="Acetic acid" badgeTone="warning" />
+                    <ResultRow label="Weak acids" value="pKₐ 4–10" badge="Ammonium" badgeTone="secondary" />
+                    <ResultRow label="Very weak" value="pKₐ > 10" badge="Water" badgeTone="outline" />
+                </div>
+            </CalcSection>
+
+            <FormulaNote>
+                <Formula>pKₐ = −log₁₀(Kₐ)</Formula>
+                <p>Where Kₐ is the acid dissociation constant.</p>
+                <Formula>Kₐ = 10^(−pKₐ)</Formula>
+                <p>Where pKₐ is the negative log of Kₐ.</p>
+                <Formula>pH = pKₐ + log([A⁻]/[HA]) → % ionized = ratio / (1 + ratio) × 100</Formula>
+                <p>Henderson–Hasselbalch equation for weak acids; [A⁻] is the ionized form, [HA] the unionized form.</p>
+                <Formula>pH ≈ ½(pKₐ − log₁₀C)</Formula>
+                <p>
+                    Approximation for weak acid solution pH, where C is the molar concentration. It assumes only a
+                    small fraction of the acid dissociates.
+                </p>
+            </FormulaNote>
+
+            <CalcFaq
+                items={[
+                    {
+                        q: "How do I type a very small Kₐ?",
+                        a: "Use e-notation: 1.8 × 10⁻⁵ is typed 1.8e-5. A plain decimal (0.000018) works too.",
+                    },
+                    {
+                        q: "Why does the pKₐ carry over between modes?",
+                        a: "Kₐ → pKₐ fills the pKₐ used by the other modes (rounded to 2 decimals), pKₐ → Kₐ fills the Kₐ, and the weak-acid pH fills the pH for the ionization mode — so you can chain the calculations.",
+                    },
+                    {
+                        q: "What does '% ionized' mean for a drug?",
+                        a: "For a weak acid it is the A⁻ fraction at that pH. The unionized HA form crosses lipid membranes, so a weak acid such as aspirin is better absorbed in the acidic stomach, where it is mostly unionized.",
+                    },
+                    {
+                        q: "Can I use this for a weak base?",
+                        a: "Use the pKₐ of the base's conjugate acid (BH⁺), and remember the ionized form of a base is the protonated one. The calculator's A⁻ percentage is then the unionized free base.",
+                    },
+                    {
+                        q: "Why does pH from pKₐ give nonsense for very dilute solutions?",
+                        a: "The ½(pKₐ − log C) shortcut ignores the water's own H⁺. At very low concentrations it can even predict a pH above 7 for an acid, which is impossible.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
     );
 }

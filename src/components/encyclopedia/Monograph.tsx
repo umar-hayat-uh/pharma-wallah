@@ -245,7 +245,7 @@ export default function Monograph({
 
   // ── Contents scroll-spy ──
   const rootRef = useRef<HTMLElement>(null);
-  const [active, setActive] = useState(sections[0]?.id);
+  const [active, setActive] = useState<string | undefined>(sections[0]?.id);
   useEffect(() => {
     const root = rootRef.current;
     if (!root || typeof IntersectionObserver === "undefined") return;
@@ -366,7 +366,7 @@ export default function Monograph({
 
           {/* Contents for screens without the rail */}
           {sections.length > 1 && (
-            <nav className="pw-enc-chips xl:hidden" aria-label="Monograph contents">
+            <nav className="pw-enc-chips" aria-label="Monograph contents">
               {sections.map((s) => (
                 <a key={s.id} href={`#enc-${s.id}`}>
                   <span>{num(s.id)}</span>
@@ -433,9 +433,9 @@ export default function Monograph({
               {ddi.length > 0 && (
                 <>
                   <div className="pw-enc-subhead">
-                    <h3>
+                    <h4>
                       Drug–drug <span className="pw-enc-count">{ddi.length} in the record</span>
-                    </h3>
+                    </h4>
                     {ddi.length > 12 && (
                       <label className="pw-enc-filter">
                         <Search className="h-3.5 w-3.5" aria-hidden="true" />
@@ -474,9 +474,9 @@ export default function Monograph({
               {food.length > 0 && (
                 <>
                   <div className="pw-enc-subhead">
-                    <h3>
+                    <h4>
                       Food <span className="pw-enc-count">{food.length}</span>
-                    </h3>
+                    </h4>
                   </div>
                   <ol className="pw-enc-food">
                     {food.map((f, i) => (
@@ -551,9 +551,9 @@ export default function Monograph({
               {experimental.length > 0 && (
                 <>
                   <div className="pw-enc-subhead">
-                    <h3>
+                    <h4>
                       Measured <span className="pw-enc-count">experimental</span>
-                    </h3>
+                    </h4>
                   </div>
                   <PropertyTable rows={experimental} />
                 </>
@@ -561,9 +561,9 @@ export default function Monograph({
               {calc.length > 0 && (
                 <>
                   <div className="pw-enc-subhead">
-                    <h3>
+                    <h4>
                       Predicted <span className="pw-enc-count">calculated</span>
-                    </h3>
+                    </h4>
                   </div>
                   <PropertyTable rows={calcAll ? calc : calc.slice(0, 8)} />
                   {calc.length > 8 && (
@@ -620,9 +620,9 @@ export default function Monograph({
               {articles.length > 0 && (
                 <>
                   <div className="pw-enc-subhead">
-                    <h3>
+                    <h4>
                       Articles <span className="pw-enc-count">{articles.length}</span>
-                    </h3>
+                    </h4>
                   </div>
                   <ol className="pw-enc-refs">
                     {articles.map((a, i) => (
@@ -642,9 +642,9 @@ export default function Monograph({
               {links.length > 0 && (
                 <>
                   <div className="pw-enc-subhead">
-                    <h3>
+                    <h4>
                       Links <span className="pw-enc-count">{links.length}</span>
-                    </h3>
+                    </h4>
                   </div>
                   <ul className="pw-enc-links">
                     {links.map((l, i) => (

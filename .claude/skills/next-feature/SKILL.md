@@ -47,7 +47,7 @@ current phase for that reason. High-value work here is usually *wiring*, not *bu
 ## Files Usually Involved
 - `.claude/ROADMAP.md`, `CLAUDE.md` §7
 - `src/lib/courses/registry.ts` (the current top item lives here)
-- `src/app/(site)/calculation-tools/CalculationToolsClient.tsx`
+- `src/app/(site)/calculation-tools/tool-index.ts`
 
 ## Security Checks
 When ranking, weight security debt honestly. Currently the two that matter:

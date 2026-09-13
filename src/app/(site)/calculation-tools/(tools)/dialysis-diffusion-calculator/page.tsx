@@ -132,7 +132,7 @@ export default function DialysisDiffusionCalculatorPage() {
   const cells = rows.map((row) => ({ time: row.cells.time ?? "", abs: row.cells.abs ?? "" }));
   const analysis = useMemo(
     () => analyseDiffusion({ a: intercept, b: slope, c1, v1, v2, timeUnit, axis, interpretation, rows: cells, show: submitted }),
-    [intercept, slope, c1, v1, v2, timeUnit, axis, interpretation, rows, submitted], // eslint-disable-line
+    [intercept, slope, c1, v1, v2, timeUnit, axis, interpretation, rows, submitted],
   );
   const { fit, vf } = analysis;
   const results = analysis.rows;
@@ -297,7 +297,7 @@ export default function DialysisDiffusionCalculatorPage() {
       result: fit
         ? rate
           ? { label: "Rate constant k = −slope (practical method)", value: formatSig(rate.k, 4), unit: rate.unit }
-          : { label: `Slope of ln(1 − B) vs time`, value: formatSig(fit.slope, 4), unit: perT }
+          : { label: `Slope of ln(1 − B) vs time`, value: num(fit.slope, 4), unit: perT }
         : { label: "Slope of ln(1 − B) vs time", value: "cannot be calculated" },
       warnings: [...(analysis.regressionError ? [analysis.regressionError] : []), ...analysis.warnings],
       sections: [
@@ -354,7 +354,7 @@ export default function DialysisDiffusionCalculatorPage() {
         : undefined,
     };
     return { data, regression, tableRows };
-  }, [analysis, axis, timeUnit, interpretation, unit, sample, intercept, slope, c1, v1, v2]); // eslint-disable-line
+  }, [analysis, axis, timeUnit, interpretation, unit, sample, intercept, slope, c1, v1, v2]);
 
   // ── Chart data ──
   const chart = useMemo(() => {
@@ -576,8 +576,8 @@ export default function DialysisDiffusionCalculatorPage() {
 
             <StatTiles
               tiles={[
-                { label: "Slope (m)", value: fit ? formatSig(fit.slope, 4) : "—", unit: fit ? perT : undefined },
-                { label: "Intercept (c)", value: fit ? formatSig(fit.intercept, 4) : "—", note: fit ? "ln(1 − B) at t = 0" : undefined },
+                { label: "Slope (m)", value: fit ? num(fit.slope, 4) : "—", unit: fit ? perT : undefined },
+                { label: "Intercept (c)", value: fit ? num(fit.intercept, 4) : "—", note: fit ? "ln(1 − B) at t = 0" : undefined },
                 { label: "R²", value: fit && fit.r2 !== null ? formatFixed(fit.r2, 4) : "—", note: fit && fit.r2 === null ? "undefined (SST = 0)" : undefined },
                 {
                   label: "k = −slope",
@@ -662,7 +662,7 @@ export default function DialysisDiffusionCalculatorPage() {
                 {rate && (
                   <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-green-50 p-4 sm:p-5">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Rate constant — k = −slope (practical method)</p>
-                    <p className="mt-2 overflow-x-auto whitespace-pre font-mono text-[13px] leading-relaxed text-foreground">
+                    <p className="mt-2 whitespace-pre-line break-words font-mono text-[13px] leading-relaxed text-foreground">
                       {`k = −${paren(fit.slope)} = ${num(rate.k)} ${rate.unit}\n`}
                       {axis === "min"
                         ? `k (s⁻¹) = k (min⁻¹) ÷ 60 = ${num(rate.k)} ÷ 60 = ${num(rate.kOther)} s⁻¹`

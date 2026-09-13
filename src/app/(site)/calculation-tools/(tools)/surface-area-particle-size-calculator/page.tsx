@@ -1,654 +1,572 @@
 "use client";
-import { useState } from 'react';
-import { Calculator, Grid3x3, Target, BarChart, TrendingUp, Percent, Circle, Box, Ruler, Layers, Scale } from 'lucide-react';
 
-interface SieveData {
-  mesh: number;
-  opening: number;
-  retained: string;
+import { useMemo, useState } from "react";
+import { Grid3x3, Layers, Plus, RefreshCw, Target, Trash2 } from "lucide-react";
+import {
+    CartesianGrid,
+    Line,
+    LineChart,
+    ReferenceLine,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from "recharts";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import {
+    CalculatorShell,
+    CalcSection,
+    FieldGrid,
+    NumberField,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    AdSlot,
+    ModeSwitch,
+    LabNotice,
+    type ResultTone,
+} from "@/components/calculators";
+import {
+    calculateFromLaser,
+    calculateFromSieve,
+    DEFAULT_LASER,
+    DEFAULT_SIEVE,
+    LASER_EXAMPLES,
+    SIEVE_EXAMPLES,
+    type CumulativePoint,
+    type Distribution,
+    type LaserRow,
+    type Method,
+    type SieveRow,
+} from "./_psd";
+
+const DEFAULT_DENSITY = "1.5";
+
+const DISTRIBUTION: Record<Distribution, { label: string; tone: ResultTone; badge: "success" | "warning" | "destructive" }> = {
+    narrow: { label: "Narrow", tone: "success", badge: "success" },
+    moderate: { label: "Moderate", tone: "warning", badge: "warning" },
+    broad: { label: "Broad", tone: "danger", badge: "destructive" },
+};
+
+/** Fixed decimals as the original showed, but never "NaN", "Infinity" or "-0.0". */
+function fmt(value: number, decimals: number): string {
+    if (!Number.isFinite(value)) return "—";
+    const text = value.toFixed(decimals);
+    return /^-0\.?0*$/.test(text) ? text.slice(1) : text;
 }
 
-interface ParticleSizeData {
-  size: string;
-  percentage: string;
+/** Which two points interpolateSize() used for a target — for the Working section only. */
+function bracketFor(data: CumulativePoint[], target: number) {
+    for (let i = 0; i < data.length - 1; i++) {
+        if (target >= data[i + 1].cumulative && target <= data[i].cumulative) {
+            return { upper: data[i], lower: data[i + 1] };
+        }
+    }
+    return null;
 }
+
+const chipClass =
+    "min-h-[40px] rounded-full border bg-background px-3 py-2 text-xs font-medium transition-colors hover:bg-muted active:bg-accent";
+
+const cellInput = "h-11 rounded-lg px-2.5 text-base font-medium";
 
 export default function SurfaceAreaParticleSizeCalculator() {
-  const [method, setMethod] = useState<'sieve' | 'laser'>('sieve');
-  const [sieveData, setSieveData] = useState<SieveData[]>([
-    { mesh: 20, opening: 850, retained: '0' },
-    { mesh: 40, opening: 425, retained: '5' },
-    { mesh: 60, opening: 250, retained: '15' },
-    { mesh: 80, opening: 180, retained: '25' },
-    { mesh: 100, opening: 150, retained: '20' },
-    { mesh: 200, opening: 75, retained: '15' },
-    { mesh: 0, opening: 0, retained: '20' }, // Pan
-  ]);
-  const [particleData, setParticleData] = useState<ParticleSizeData[]>([
-    { size: '1000', percentage: '5' },
-    { size: '500', percentage: '15' },
-    { size: '250', percentage: '25' },
-    { size: '125', percentage: '20' },
-    { size: '63', percentage: '15' },
-    { size: '0', percentage: '20' },
-  ]);
-  const [density, setDensity] = useState<string>('1.5');
-  const [results, setResults] = useState<{
-    d10: number;
-    d50: number;
-    d90: number;
-    meanDiameter: number;
-    specificSurfaceArea: number;
-    span: number;
-    distribution: 'narrow' | 'moderate' | 'broad';
-    cumulativeData: Array<{ size: number; cumulative: number }>;
-  } | null>(null);
+    const [method, setMethod] = useState<Method>("sieve");
+    const [sieveData, setSieveData] = useState<SieveRow[]>(DEFAULT_SIEVE);
+    const [particleData, setParticleData] = useState<LaserRow[]>(DEFAULT_LASER);
+    const [density, setDensity] = useState(DEFAULT_DENSITY);
 
-  const updateSieveData = (index: number, field: keyof SieveData, value: string) => {
-    const newData = [...sieveData];
-    newData[index] = { ...newData[index], [field]: value };
-    setSieveData(newData);
-  };
+    const densityNumber = parseFloat(density);
+    const densityNegative = !isNaN(densityNumber) && densityNumber < 0;
 
-  const updateParticleData = (index: number, field: keyof ParticleSizeData, value: string) => {
-    const newData = [...particleData];
-    newData[index] = { ...newData[index], [field]: value };
-    setParticleData(newData);
-  };
-
-  const addSieveRow = () => {
-    setSieveData([...sieveData, { mesh: 0, opening: 0, retained: '0' }]);
-  };
-
-  const addParticleRow = () => {
-    setParticleData([...particleData, { size: '0', percentage: '0' }]);
-  };
-
-  const calculateParticleSize = () => {
-    if (method === 'sieve') {
-      calculateFromSieve();
-    } else {
-      calculateFromLaser();
-    }
-  };
-
-  const calculateFromSieve = () => {
-    const validData = sieveData.filter(d => 
-      parseFloat(d.retained) >= 0 && parseFloat(d.retained) <= 100
+    /*
+     * Derived, not stored. The original computed only on "Calculate Particle
+     * Size" and left the previous result on screen when validation failed; the
+     * same functions now run on every edit, and a failed check shows its message.
+     */
+    const outcome = useMemo(
+        () => (method === "sieve" ? calculateFromSieve(sieveData, density) : calculateFromLaser(particleData, density)),
+        [method, sieveData, particleData, density],
     );
-    
-    if (validData.length < 2) {
-      alert('Please enter valid sieve analysis data');
-      return;
-    }
+    const result = outcome.ok ? outcome.result : null;
 
-    const totalRetained = validData.reduce((sum, d) => sum + parseFloat(d.retained), 0);
-    if (Math.abs(totalRetained - 100) > 5) {
-      alert(`Total retained should be ~100% (current: ${totalRetained.toFixed(1)}%)`);
-      return;
-    }
+    const updateSieve = (index: number, field: keyof SieveRow, value: string) =>
+        setSieveData((rows) => rows.map((row, i) => (i === index ? { ...row, [field]: value } : row)));
+    const updateLaser = (index: number, field: keyof LaserRow, value: string) =>
+        setParticleData((rows) => rows.map((row, i) => (i === index ? { ...row, [field]: value } : row)));
 
-    let cumulative = 0;
-    const cumulativeData = validData.map(d => {
-      cumulative += parseFloat(d.retained);
-      return {
-        size: d.opening,
-        cumulative: 100 - cumulative
-      };
-    });
+    const addRow = () => {
+        if (method === "sieve") setSieveData((rows) => [...rows, { mesh: "0", opening: "0", retained: "0" }]);
+        else setParticleData((rows) => [...rows, { size: "0", percentage: "0" }]);
+    };
+    const removeRow = (index: number) => {
+        if (method === "sieve") setSieveData((rows) => rows.filter((_, i) => i !== index));
+        else setParticleData((rows) => rows.filter((_, i) => i !== index));
+    };
 
-    const d10 = interpolateSize(cumulativeData, 10);
-    const d50 = interpolateSize(cumulativeData, 50);
-    const d90 = interpolateSize(cumulativeData, 90);
+    const loadExample = (type: "fine" | "coarse") => {
+        if (method === "sieve") setSieveData(SIEVE_EXAMPLES[type]);
+        else setParticleData(LASER_EXAMPLES[type]);
+    };
 
-    const meanDiameter = Math.sqrt(d10 * d90);
-    const span = (d90 - d10) / d50;
-    const densityValue = parseFloat(density) || 1;
-    const specificSurfaceArea = (6 / (densityValue * (d50 / 1000))) * 1000; // m²/kg
+    const reset = () => {
+        setSieveData(DEFAULT_SIEVE);
+        setParticleData(DEFAULT_LASER);
+        setDensity(DEFAULT_DENSITY);
+    };
 
-    let distribution: 'narrow' | 'moderate' | 'broad' = 'moderate';
-    if (span < 1) distribution = 'narrow';
-    else if (span > 2) distribution = 'broad';
+    const rows = method === "sieve" ? sieveData : particleData;
+    const percentOf = (row: SieveRow | LaserRow) => ("retained" in row ? row.retained : row.percentage);
+    const enteredTotal = rows.reduce((sum, row) => {
+        const value = parseFloat(percentOf(row));
+        return value >= 0 && value <= 100 ? sum + value : sum;
+    }, 0);
+    const totalOk = Math.abs(enteredTotal - 100) <= 5;
 
-    setResults({
-      d10,
-      d50,
-      d90,
-      meanDiameter,
-      specificSurfaceArea,
-      span,
-      distribution,
-      cumulativeData
-    });
-  };
-
-  const calculateFromLaser = () => {
-    const validData = particleData.filter(d => 
-      parseFloat(d.percentage) >= 0 && parseFloat(d.percentage) <= 100
+    const chartData = useMemo(
+        () =>
+            result
+                ? result.cumulativeData
+                      .filter((point) => Number.isFinite(point.size) && Number.isFinite(point.cumulative))
+                      // The original plotted log10(max(size, 1)); a log axis cannot show 0.
+                      .map((point) => ({ size: Math.max(point.size, 1), passing: point.cumulative }))
+                      .sort((a, b) => a.size - b.size)
+                : [],
+        [result],
     );
-    
-    if (validData.length < 2) {
-      alert('Please enter valid particle size distribution data');
-      return;
-    }
+    const chartMax = chartData.length ? Math.max(1000, ...chartData.map((point) => point.size)) : 1000;
 
-    const totalPercentage = validData.reduce((sum, d) => sum + parseFloat(d.percentage), 0);
-    if (Math.abs(totalPercentage - 100) > 5) {
-      alert(`Total percentage should be ~100% (current: ${totalPercentage.toFixed(1)}%)`);
-      return;
-    }
+    const reading = result ? DISTRIBUTION[result.distribution] : null;
+    const pctLabel = method === "sieve" ? "% retained" : "% by volume";
 
-    const sortedData = [...validData]
-      .map(d => ({ size: parseFloat(d.size), percentage: parseFloat(d.percentage) }))
-      .sort((a, b) => b.size - a.size);
+    return (
+        <CalculatorShell
+            title="Surface Area & Particle Size Analyzer"
+            subtitle="Turns sieve or laser-diffraction data into D10, D50, D90, span, mean diameter and specific surface area for a pharmaceutical powder."
+            icon={Grid3x3}
+            eyebrow="Pharmaceutics"
+            aside={
+                <>
+                    <CalcAbout title="About particle size analysis">
+                        <p>
+                            Particle size controls how fast a drug dissolves, how well a powder flows and
+                            how evenly it mixes. A distribution is summarised by a few cut points and a
+                            measure of its width.
+                        </p>
+                        <CalcList
+                            title="Key definitions"
+                            items={[
+                                "D10, D50, D90 — the particle size below which 10%, 50% and 90% of the particles fall (D50 is the median)",
+                                "Span — (D90 − D10) / D50, the width of the distribution",
+                                "Specific surface area — surface area per unit mass (m²/kg)",
+                            ]}
+                        />
+                        <CalcList
+                            title="Target ranges"
+                            items={[
+                                "Tablet formulation: D50 50–200 μm, span < 2.0",
+                                "Inhalation: D50 1–5 μm, narrow distribution",
+                            ]}
+                        />
+                        <CalcList
+                            title="Analysis methods"
+                            items={["Sieve analysis: mechanical, particles > 45 μm", "Laser diffraction: 0.1–3000 μm"]}
+                        />
+                        <CalcList
+                            tone="caution"
+                            title="Quality impact"
+                            items={[
+                                "Dissolution: smaller particles dissolve faster",
+                                "Bioavailability: particle size affects absorption",
+                                "Flowability: critical for manufacturing",
+                            ]}
+                        />
+                    </CalcAbout>
 
-    let cumulative = 0;
-    const cumulativeData = sortedData.map(d => {
-      cumulative += d.percentage;
-      return {
-        size: d.size,
-        cumulative: 100 - cumulative
-      };
-    });
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+                </>
+            }
+        >
+            <ModeSwitch
+                label="Measurement method"
+                value={method}
+                onChange={setMethod}
+                options={[
+                    { value: "sieve", label: "Sieve analysis", description: "% retained on each sieve", icon: Layers },
+                    { value: "laser", label: "Laser diffraction", description: "% by volume per size class", icon: Target },
+                ]}
+            />
 
-    const d10 = interpolateSize(cumulativeData, 10);
-    const d50 = interpolateSize(cumulativeData, 50);
-    const d90 = interpolateSize(cumulativeData, 90);
+            <ResultCard
+                label="D50 — median particle size"
+                value={result ? fmt(result.d50, 1) : null}
+                unit="μm"
+                interpretation={
+                    result && reading ? `${reading.label} distribution · span ${fmt(result.span, 2)}` : undefined
+                }
+                tone={reading?.tone ?? "neutral"}
+                empty={
+                    outcome.ok
+                        ? undefined
+                        : `${outcome.message}. ${
+                              method === "sieve"
+                                  ? "Adjust the % retained column below."
+                                  : "Adjust the % by volume column below."
+                          }`
+                }
+            />
 
-    const meanDiameter = sortedData.reduce((sum, d) => 
-      sum + (d.size * d.percentage), 0
-    ) / 100;
+            <CalcSection
+                title={method === "sieve" ? "Sieve analysis data" : "Particle size distribution"}
+                description={
+                    method === "sieve"
+                        ? "List sieves from the coarsest to the finest, ending with the pan (mesh 0, opening 0)."
+                        : "Enter each size class and the % of the sample volume in it. Rows are sorted by size for you."
+                }
+            >
+                <FieldGrid>
+                    <NumberField
+                        label="Particle density (g/cm³)"
+                        value={density}
+                        onChange={setDensity}
+                        unit="g/cm³"
+                        step="0.01"
+                        min={0.1}
+                        placeholder="1.5"
+                        hint="True density, needed for the surface area. Blank or 0 is treated as 1 g/cm³. Many drug powders are 1.2–1.6."
+                        error={densityNegative ? "Density cannot be negative." : undefined}
+                    />
+                </FieldGrid>
 
-    const span = (d90 - d10) / d50;
-    const densityValue = parseFloat(density) || 1;
-    const specificSurfaceArea = (6 / (densityValue * (d50 / 1000))) * 1000;
-
-    let distribution: 'narrow' | 'moderate' | 'broad' = 'moderate';
-    if (span < 1) distribution = 'narrow';
-    else if (span > 2) distribution = 'broad';
-
-    setResults({
-      d10,
-      d50,
-      d90,
-      meanDiameter,
-      specificSurfaceArea,
-      span,
-      distribution,
-      cumulativeData
-    });
-  };
-
-  const interpolateSize = (data: Array<{size: number, cumulative: number}>, target: number): number => {
-    for (let i = 0; i < data.length - 1; i++) {
-      const point1 = data[i];
-      const point2 = data[i + 1];
-      
-      if (target >= point2.cumulative && target <= point1.cumulative) {
-        const fraction = (target - point2.cumulative) / (point1.cumulative - point2.cumulative);
-        return point2.size + fraction * (point1.size - point2.size);
-      }
-    }
-    return data[0]?.size || 0;
-  };
-
-  const resetCalculator = () => {
-    setSieveData([
-      { mesh: 20, opening: 850, retained: '0' },
-      { mesh: 40, opening: 425, retained: '5' },
-      { mesh: 60, opening: 250, retained: '15' },
-      { mesh: 80, opening: 180, retained: '25' },
-      { mesh: 100, opening: 150, retained: '20' },
-      { mesh: 200, opening: 75, retained: '15' },
-      { mesh: 0, opening: 0, retained: '20' },
-    ]);
-    setParticleData([
-      { size: '1000', percentage: '5' },
-      { size: '500', percentage: '15' },
-      { size: '250', percentage: '25' },
-      { size: '125', percentage: '20' },
-      { size: '63', percentage: '15' },
-      { size: '0', percentage: '20' },
-    ]);
-    setDensity('1.5');
-    setResults(null);
-  };
-
-  const loadExample = (type: 'fine' | 'coarse' | 'bimodal') => {
-    if (method === 'sieve') {
-      if (type === 'fine') {
-        setSieveData([
-          { mesh: 60, opening: 250, retained: '2' },
-          { mesh: 80, opening: 180, retained: '8' },
-          { mesh: 100, opening: 150, retained: '20' },
-          { mesh: 200, opening: 75, retained: '40' },
-          { mesh: 325, opening: 45, retained: '20' },
-          { mesh: 0, opening: 0, retained: '10' },
-        ]);
-      } else if (type === 'coarse') {
-        setSieveData([
-          { mesh: 20, opening: 850, retained: '15' },
-          { mesh: 40, opening: 425, retained: '30' },
-          { mesh: 60, opening: 250, retained: '25' },
-          { mesh: 80, opening: 180, retained: '15' },
-          { mesh: 100, opening: 150, retained: '10' },
-          { mesh: 200, opening: 75, retained: '5' },
-          { mesh: 0, opening: 0, retained: '0' },
-        ]);
-      }
-    } else {
-      if (type === 'fine') {
-        setParticleData([
-          { size: '100', percentage: '5' },
-          { size: '50', percentage: '15' },
-          { size: '25', percentage: '30' },
-          { size: '10', percentage: '30' },
-          { size: '5', percentage: '15' },
-          { size: '1', percentage: '5' },
-        ]);
-      } else if (type === 'coarse') {
-        setParticleData([
-          { size: '1000', percentage: '10' },
-          { size: '500', percentage: '25' },
-          { size: '250', percentage: '30' },
-          { size: '125', percentage: '20' },
-          { size: '63', percentage: '10' },
-          { size: '0', percentage: '5' },
-        ]);
-      }
-    }
-  };
-
-  return (
-    <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 pt-20">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6 md:mb-8">
-          <div className="flex flex-col md:flex-row items-center justify-between">
-            <div className="flex items-center mb-4 md:mb-0">
-              <div className="bg-white/20 p-3 rounded-xl mr-4">
-                <Grid3x3 className="w-8 h-8 md:w-10 md:h-10 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-white">Surface Area & Particle Size Analyzer</h1>
-                <p className="text-blue-100 mt-2">Calculate D10, D50, D90, mean diameter, and specific surface area</p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => loadExample('fine')}
-                className="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-colors text-sm"
-              >
-                Fine Powder
-              </button>
-              <button
-                onClick={() => loadExample('coarse')}
-                className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm"
-              >
-                Coarse Granules
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Input Area */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
-              <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                <Ruler className="w-6 h-6 mr-2 text-blue-600" />
-                Particle Size Data Input
-              </h2>
-
-              {/* Method Selection */}
-              <div className="mb-8">
-                <div className="flex space-x-4 mb-6">
-                  <button
-                    onClick={() => setMethod('sieve')}
-                    className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                      method === 'sieve'
-                        ? 'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-md'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Sieve Analysis
-                  </button>
-                  <button
-                    onClick={() => setMethod('laser')}
-                    className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                      method === 'laser'
-                        ? 'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-md'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Laser Diffraction
-                  </button>
+                <div>
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">Try an example</p>
+                    <div className="flex flex-wrap gap-2">
+                        <button type="button" onClick={() => loadExample("fine")} className={chipClass}>
+                            Fine powder
+                        </button>
+                        <button type="button" onClick={() => loadExample("coarse")} className={chipClass}>
+                            Coarse granules
+                        </button>
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                        Examples replace the {method === "sieve" ? "sieve" : "laser diffraction"} table only.
+                    </p>
                 </div>
 
-                {/* Density Input */}
-                <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6 mb-6">
-                  <label className="block text-lg font-semibold text-gray-800 mb-3">
-                    <Scale className="inline w-5 h-5 mr-2" />
-                    Particle Density (g/cm³)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.1"
-                    value={density}
-                    onChange={(e) => setDensity(e.target.value)}
-                    className="w-full max-w-xs px-4 py-3 text-lg border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                    placeholder="1.5"
-                  />
-                  <p className="text-sm text-gray-600 mt-2">Required for surface area calculation.</p>
-                </div>
-
-                {/* Data Input Table */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                    {method === 'sieve' ? 'Sieve Analysis Data' : 'Particle Size Distribution'}
-                  </h3>
-
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="bg-gray-100">
-                          {method === 'sieve' ? (
+                <div className="space-y-2">
+                    <div
+                        className={cn(
+                            "grid gap-2 px-0.5 text-xs font-medium text-muted-foreground",
+                            method === "sieve" ? "grid-cols-[1fr_1fr_1fr_2.75rem]" : "grid-cols-[1fr_1fr_2.75rem]",
+                        )}
+                        aria-hidden="true"
+                    >
+                        {method === "sieve" ? (
                             <>
-                              <th className="py-3 px-4 text-left font-semibold text-gray-700">Sieve Mesh</th>
-                              <th className="py-3 px-4 text-left font-semibold text-gray-700">Opening (μm)</th>
-                              <th className="py-3 px-4 text-left font-semibold text-gray-700">% Retained</th>
+                                <span>Sieve mesh</span>
+                                <span>Opening (μm)</span>
+                                <span>% retained</span>
                             </>
-                          ) : (
+                        ) : (
                             <>
-                              <th className="py-3 px-4 text-left font-semibold text-gray-700">Size (μm)</th>
-                              <th className="py-3 px-4 text-left font-semibold text-gray-700">% by Volume</th>
+                                <span>Size (μm)</span>
+                                <span>% by volume</span>
                             </>
-                          )}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(method === 'sieve' ? sieveData : particleData).map((item, index) => {
-                          const sieveItem = item as SieveData;
-                          const particleItem = item as ParticleSizeData;
-                          return (
-                            <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
-                              {method === 'sieve' ? (
-                                <>
-                                  <td className="py-3 px-4">
-                                    <input
+                        )}
+                        <span />
+                    </div>
+
+                    {method === "sieve"
+                        ? sieveData.map((row, index) => (
+                              <div key={index} className="grid grid-cols-[1fr_1fr_1fr_2.75rem] items-center gap-2">
+                                  <Input
                                       type="number"
-                                      value={sieveItem.mesh}
-                                      onChange={(e) => updateSieveData(index, 'mesh', e.target.value)}
-                                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                                    />
-                                  </td>
-                                  <td className="py-3 px-4">
-                                    <input
+                                      inputMode="decimal"
+                                      value={row.mesh}
+                                      onChange={(event) => updateSieve(index, "mesh", event.target.value)}
+                                      aria-label={`Row ${index + 1} sieve mesh`}
+                                      className={cellInput}
+                                  />
+                                  <Input
                                       type="number"
+                                      inputMode="decimal"
                                       step="1"
-                                      value={sieveItem.opening}
-                                      onChange={(e) => updateSieveData(index, 'opening', e.target.value)}
-                                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                                    />
-                                  </td>
-                                  <td className="py-3 px-4">
-                                    <input
+                                      value={row.opening}
+                                      onChange={(event) => updateSieve(index, "opening", event.target.value)}
+                                      aria-label={`Row ${index + 1} opening in micrometres`}
+                                      className={cellInput}
+                                  />
+                                  <Input
                                       type="number"
+                                      inputMode="decimal"
                                       step="0.1"
-                                      value={sieveItem.retained}
-                                      onChange={(e) => updateSieveData(index, 'retained', e.target.value)}
-                                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                                    />
-                                  </td>
-                                </>
-                              ) : (
-                                <>
-                                  <td className="py-3 px-4">
-                                    <input
+                                      value={row.retained}
+                                      onChange={(event) => updateSieve(index, "retained", event.target.value)}
+                                      aria-label={`Row ${index + 1} percent retained`}
+                                      className={cellInput}
+                                  />
+                                  <RemoveButton index={index} onRemove={removeRow} />
+                              </div>
+                          ))
+                        : particleData.map((row, index) => (
+                              <div key={index} className="grid grid-cols-[1fr_1fr_2.75rem] items-center gap-2">
+                                  <Input
                                       type="number"
+                                      inputMode="decimal"
                                       step="1"
-                                      value={particleItem.size}
-                                      onChange={(e) => updateParticleData(index, 'size', e.target.value)}
-                                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                                    />
-                                  </td>
-                                  <td className="py-3 px-4">
-                                    <input
+                                      value={row.size}
+                                      onChange={(event) => updateLaser(index, "size", event.target.value)}
+                                      aria-label={`Row ${index + 1} size in micrometres`}
+                                      className={cellInput}
+                                  />
+                                  <Input
                                       type="number"
+                                      inputMode="decimal"
                                       step="0.1"
-                                      value={particleItem.percentage}
-                                      onChange={(e) => updateParticleData(index, 'percentage', e.target.value)}
-                                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                                    />
-                                  </td>
-                                </>
-                              )}
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                                      value={row.percentage}
+                                      onChange={(event) => updateLaser(index, "percentage", event.target.value)}
+                                      aria-label={`Row ${index + 1} percent by volume`}
+                                      className={cellInput}
+                                  />
+                                  <RemoveButton index={index} onRemove={removeRow} />
+                              </div>
+                          ))}
 
-                  <button
-                    onClick={method === 'sieve' ? addSieveRow : addParticleRow}
-                    className="mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                  >
-                    + Add Row
-                  </button>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  onClick={calculateParticleSize}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
-                >
-                  Calculate Particle Size
-                </button>
-                <button
-                  onClick={resetCalculator}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center"
-                >
-                  Reset Data
-                </button>
-              </div>
-            </div>
-
-            {/* Results Display */}
-            {results && (
-              <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                  <BarChart className="w-6 h-6 mr-2 text-green-600" />
-                  Particle Size Analysis Results
-                </h2>
-
-                {/* Key Parameters */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                  <div className="bg-gradient-to-br from-blue-50 to-cyan-100 rounded-xl p-6">
-                    <div className="text-sm font-semibold text-blue-700 mb-2">D50 (Median)</div>
-                    <div className="text-3xl font-bold text-blue-600">
-                      {results.d50.toFixed(1)} μm
+                    <div
+                        className={cn(
+                            "flex items-center justify-between rounded-lg px-3 py-2 text-sm",
+                            totalOk ? "bg-emerald-50 text-emerald-900" : "bg-amber-50 text-amber-900",
+                        )}
+                    >
+                        <span>Total {pctLabel} (rows between 0 and 100)</span>
+                        <span className="font-semibold tabular-nums">{enteredTotal.toFixed(1)}%</span>
                     </div>
-                    <div className="text-sm text-blue-600 mt-2">50% smaller</div>
-                  </div>
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl p-6">
-                    <div className="text-sm font-semibold text-green-700 mb-2">D10</div>
-                    <div className="text-3xl font-bold text-green-600">
-                      {results.d10.toFixed(1)} μm
-                    </div>
-                    <div className="text-sm text-green-600 mt-2">10% smaller</div>
-                  </div>
-                  <div className="bg-gradient-to-br from-purple-50 to-violet-100 rounded-xl p-6">
-                    <div className="text-sm font-semibold text-purple-700 mb-2">D90</div>
-                    <div className="text-3xl font-bold text-purple-600">
-                      {results.d90.toFixed(1)} μm
-                    </div>
-                    <div className="text-sm text-purple-600 mt-2">90% smaller</div>
-                  </div>
-                  <div className="bg-gradient-to-br from-orange-50 to-amber-100 rounded-xl p-6">
-                    <div className="text-sm font-semibold text-orange-700 mb-2">Mean</div>
-                    <div className="text-3xl font-bold text-orange-600">
-                      {results.meanDiameter.toFixed(1)} μm
-                    </div>
-                  </div>
+                    {!outcome.ok && <LabNotice tone="warning">{outcome.message}. It must be within 95–105%.</LabNotice>}
                 </div>
 
-                {/* Secondary Parameters */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6">
-                    <div className="text-sm font-semibold text-gray-700 mb-2">Specific Surface Area</div>
-                    <div className="text-2xl font-bold text-gray-600">
-                      {results.specificSurfaceArea.toFixed(1)} m²/kg
-                    </div>
-                  </div>
-                  <div className="bg-gradient-to-br from-yellow-50 to-amber-100 rounded-xl p-6">
-                    <div className="text-sm font-semibold text-yellow-700 mb-2">Span</div>
-                    <div className="text-2xl font-bold text-yellow-600">
-                      {results.span.toFixed(2)}
-                    </div>
-                  </div>
-                  <div className={`rounded-xl p-6 ${
-                    results.distribution === 'narrow'
-                      ? 'bg-gradient-to-br from-green-50 to-emerald-100'
-                      : results.distribution === 'moderate'
-                      ? 'bg-gradient-to-br from-yellow-50 to-amber-100'
-                      : 'bg-gradient-to-br from-red-50 to-rose-100'
-                  }`}>
-                    <div className="text-sm font-semibold text-gray-700 mb-2">Distribution</div>
-                    <div className={`text-2xl font-bold ${
-                      results.distribution === 'narrow' ? 'text-green-600' : results.distribution === 'moderate' ? 'text-yellow-600' : 'text-red-600'
-                    }`}>
-                      {results.distribution.toUpperCase()}
-                    </div>
-                  </div>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <Button variant="outline" onClick={addRow}>
+                        <Plus />
+                        Add row
+                    </Button>
+                    <Button variant="outline" onClick={reset}>
+                        <RefreshCw />
+                        Reset data
+                    </Button>
                 </div>
+            </CalcSection>
 
-                {/* Cumulative Distribution Chart */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Cumulative Distribution</h3>
-                  <div className="bg-gray-50 rounded-xl p-6">
-                    <div className="h-64 relative">
-                      <div className="absolute inset-0">
-                        {results.cumulativeData.map((point, index) => {
-                          const x = Math.log10(Math.max(point.size, 1)) / 3 * 100;
-                          const y = 100 - point.cumulative;
-                          return (
-                            <div
-                              key={index}
-                              className="absolute w-3 h-3 bg-blue-500 rounded-full -ml-1.5 -mt-1.5"
-                              style={{ left: `${x}%`, top: `${y}%` }}
-                            />
-                          );
-                        })}
-                        <svg className="absolute inset-0">
-                          <polyline
-                            points={results.cumulativeData.map(p => 
-                              `${Math.log10(Math.max(p.size, 1)) / 3 * 100},${100 - p.cumulative}`
-                            ).join(' ')}
-                            fill="none"
-                            stroke="#3b82f6"
-                            strokeWidth="2"
-                          />
-                        </svg>
-                      </div>
-                      <div className="absolute -left-10 top-0 bottom-0 flex flex-col justify-between text-xs text-gray-500">
-                        <span>100%</span><span>75%</span><span>50%</span><span>25%</span><span>0%</span>
-                      </div>
-                      <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-gray-500 mt-2">
-                        <span>1 μm</span><span>10 μm</span><span>100 μm</span><span>1000 μm</span>
-                      </div>
+            {result && reading && (
+                <CalcSection title="Results" description="Sizes in micrometres (μm).">
+                    <div>
+                        <ResultRow label="D10 — 10% are smaller" value={fmt(result.d10, 1)} unit="μm" />
+                        <ResultRow label="D50 — median, 50% are smaller" value={fmt(result.d50, 1)} unit="μm" />
+                        <ResultRow label="D90 — 90% are smaller" value={fmt(result.d90, 1)} unit="μm" />
+                        <ResultRow
+                            label={method === "sieve" ? "Mean diameter (geometric)" : "Mean diameter (volume-weighted)"}
+                            value={fmt(result.meanDiameter, 1)}
+                            unit="μm"
+                        />
+                        <ResultRow
+                            label="Specific surface area"
+                            value={densityNegative ? "—" : fmt(result.specificSurfaceArea, 1)}
+                            unit="m²/kg"
+                        />
+                        <ResultRow
+                            label="Span"
+                            value={fmt(result.span, 2)}
+                            badge={reading.label}
+                            badgeTone={reading.badge}
+                        />
                     </div>
-                  </div>
-                </div>
 
-                {/* Implications */}
-                <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Quality Implications</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div className="bg-white p-4 rounded-lg">
-                      <h4 className="font-semibold text-blue-700 mb-2">Dissolution Rate</h4>
-                      <p className="text-gray-600">
-                        D50 {results.d50.toFixed(0)} μm – {results.d50 < 50 ? 'Fast' : 'Moderate'} dissolution.
-                      </p>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div className="rounded-xl border border-border/80 bg-muted/40 p-3.5">
+                            <p className="text-xs font-medium text-muted-foreground">Dissolution rate</p>
+                            <p className="mt-1 text-sm font-medium text-foreground">
+                                D50 {fmt(result.d50, 0)} μm – {result.d50 < 50 ? "Fast" : "Moderate"} dissolution.
+                            </p>
+                        </div>
+                        <div className="rounded-xl border border-border/80 bg-muted/40 p-3.5">
+                            <p className="text-xs font-medium text-muted-foreground">Flowability</p>
+                            <p className="mt-1 text-sm font-medium text-foreground">
+                                Span {fmt(result.span, 2)} – {result.span < 1.5 ? "Good flow" : "May need glidant"}.
+                            </p>
+                        </div>
                     </div>
-                    <div className="bg-white p-4 rounded-lg">
-                      <h4 className="font-semibold text-green-700 mb-2">Flowability</h4>
-                      <p className="text-gray-600">
-                        Span {results.span.toFixed(2)} – {results.span < 1.5 ? 'Good flow' : 'May need glidant'}.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                </CalcSection>
             )}
-          </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Definitions */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-bold text-gray-800 mb-4">Key Definitions</h3>
-              <div className="space-y-3 text-sm">
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <h4 className="font-semibold text-blue-700 mb-1">D10, D50, D90</h4>
-                  <p className="text-gray-600">Particle size below which 10%, 50%, 90% of particles fall.</p>
-                </div>
-                <div className="p-3 bg-green-50 rounded-lg">
-                  <h4 className="font-semibold text-green-700 mb-1">Span</h4>
-                  <p className="text-gray-600">(D90 - D10) / D50 – measures distribution width.</p>
-                </div>
-                <div className="p-3 bg-purple-50 rounded-lg">
-                  <h4 className="font-semibold text-purple-700 mb-1">Specific Surface Area</h4>
-                  <p className="text-gray-600">Surface area per unit mass (m²/kg).</p>
-                </div>
-              </div>
-            </div>
+            {result && (
+                <CalcSection
+                    title="Cumulative distribution"
+                    description="Cumulative % finer than each size. Dashed lines mark 10%, 50% and 90%."
+                >
+                    <div className="h-64 w-full sm:h-72">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={chartData} margin={{ top: 10, right: 12, left: 4, bottom: 16 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                <XAxis
+                                    dataKey="size"
+                                    type="number"
+                                    scale="log"
+                                    domain={[1, chartMax]}
+                                    ticks={[1, 10, 100, 1000].filter((tick) => tick <= chartMax)}
+                                    allowDataOverflow
+                                    tick={{ fontSize: 11 }}
+                                    stroke="hsl(var(--muted-foreground))"
+                                    label={{ value: "Size (μm, log scale)", position: "insideBottom", offset: -8, fontSize: 11 }}
+                                />
+                                <YAxis
+                                    domain={[0, 100]}
+                                    ticks={[0, 25, 50, 75, 100]}
+                                    tick={{ fontSize: 11 }}
+                                    stroke="hsl(var(--muted-foreground))"
+                                    width={44}
+                                    label={{ value: "% finer", angle: -90, position: "insideLeft", offset: 12, fontSize: 11 }}
+                                />
+                                <Tooltip
+                                    formatter={(value) => [`${Number(value).toFixed(1)}%`, "Cumulative finer"]}
+                                    labelFormatter={(label) => `${label} μm`}
+                                />
+                                {[10, 50, 90].map((y) => (
+                                    <ReferenceLine key={y} y={y} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" />
+                                ))}
+                                <Line
+                                    type="linear"
+                                    dataKey="passing"
+                                    stroke="#2563EB"
+                                    strokeWidth={2}
+                                    dot={{ r: 3 }}
+                                    isAnimationActive={false}
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Sizes below 1 μm (such as the pan) are drawn at 1 μm.</p>
+                </CalcSection>
+            )}
 
-            {/* Target Ranges */}
-            <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-bold text-gray-800 mb-4">Target Ranges</h3>
-              <div className="space-y-3 text-sm">
-                <div className="p-3 bg-white rounded-lg">
-                  <h4 className="font-semibold text-blue-700 mb-1">Tablet Formulation</h4>
-                  <p>D50: 50–200 μm, Span &lt; 2.0</p>
-                </div>
-                <div className="p-3 bg-white rounded-lg">
-                  <h4 className="font-semibold text-green-700 mb-1">Inhalation</h4>
-                  <p>D50: 1–5 μm, narrow distribution</p>
-                </div>
-              </div>
-            </div>
+            {result && (
+                <CalcSection title="Working" description="Your numbers, plugged into each step.">
+                    <div className="-mx-4 overflow-x-auto sm:mx-0">
+                        <table className="w-full min-w-[20rem] border-collapse text-sm">
+                            <thead>
+                                <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                                    <th className="px-4 py-2 font-medium sm:pl-0">
+                                        {method === "sieve" ? "Opening (μm)" : "Size (μm), largest first"}
+                                    </th>
+                                    <th className="px-4 py-2 text-right font-medium sm:pr-0">Cumulative % finer</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {result.cumulativeData.map((point, index) => (
+                                    <tr key={index} className="border-b border-border/70">
+                                        <td className="px-4 py-2 tabular-nums sm:pl-0">{fmt(point.size, 0)}</td>
+                                        <td className="px-4 py-2 text-right tabular-nums sm:pr-0">{fmt(point.cumulative, 1)}%</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                        Cumulative % finer = 100 − running total of {pctLabel} ({result.rowsUsed} rows, total{" "}
+                        {result.total.toFixed(1)}%).
+                    </p>
 
-            {/* Methods */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-bold text-gray-800 mb-4">Analysis Methods</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-start">
-                  <Layers className="w-4 h-4 text-blue-600 mr-2 mt-0.5" />
-                  <span><strong>Sieve:</strong> Mechanical, &gt;45 μm</span>
-                </div>
-                <div className="flex items-start">
-                  <Target className="w-4 h-4 text-green-600 mr-2 mt-0.5" />
-                  <span><strong>Laser diffraction:</strong> 0.1–3000 μm</span>
-                </div>
-              </div>
-            </div>
+                    <div className="space-y-2">
+                        {([10, 50, 90] as const).map((target) => {
+                            const value = target === 10 ? result.d10 : target === 50 ? result.d50 : result.d90;
+                            const bracket = bracketFor(result.cumulativeData, target);
+                            return (
+                                <Formula key={target}>
+                                    D{target} ={" "}
+                                    {bracket
+                                        ? `${fmt(bracket.lower.size, 0)} + (${target} − ${fmt(bracket.lower.cumulative, 1)}) ÷ (${fmt(bracket.upper.cumulative, 1)} − ${fmt(bracket.lower.cumulative, 1)}) × (${fmt(bracket.upper.size, 0)} − ${fmt(bracket.lower.size, 0)})`
+                                        : "no row brackets this %, so the first size is used"}{" "}
+                                    = {fmt(value, 1)} μm
+                                </Formula>
+                            );
+                        })}
+                        <Formula>
+                            Span = ({fmt(result.d90, 1)} − {fmt(result.d10, 1)}) ÷ {fmt(result.d50, 1)} = {fmt(result.span, 2)}
+                        </Formula>
+                        <Formula>
+                            {method === "sieve"
+                                ? `Mean = √(${fmt(result.d10, 1)} × ${fmt(result.d90, 1)}) = ${fmt(result.meanDiameter, 1)} μm`
+                                : `Mean = Σ(size × %) ÷ 100 = ${fmt(result.meanDiameter, 1)} μm`}
+                        </Formula>
+                        <Formula>
+                            SSA = 6 ÷ ({result.density} × {fmt(result.d50, 1)} ÷ 1000) × 1000 ={" "}
+                            {densityNegative ? "—" : fmt(result.specificSurfaceArea, 1)} m²/kg
+                        </Formula>
+                    </div>
+                </CalcSection>
+            )}
 
-            {/* Quality Impact */}
-            <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-bold text-gray-800 mb-4">Quality Impact</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li>• Dissolution: smaller particles dissolve faster.</li>
-                <li>• Bioavailability: affects absorption.</li>
-                <li>• Flowability: critical for manufacturing.</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
+            <FormulaNote>
+                <Formula>Cumulative % finer = 100 − Σ % retained (from the coarsest sieve down)</Formula>
+                <Formula>Dx = S₂ + (x − C₂) ÷ (C₁ − C₂) × (S₁ − S₂)</Formula>
+                <Formula>Span = (D90 − D10) ÷ D50</Formula>
+                <Formula>Mean (sieve) = √(D10 × D90)   ·   Mean (laser) = Σ(size × %) ÷ 100</Formula>
+                <Formula>SSA = 6 ÷ (ρ × D50 ÷ 1000) × 1000  (m²/kg)</Formula>
+                <p>
+                    Dx is read off the cumulative curve by straight-line interpolation between the two
+                    rows that bracket x%: S₁ and C₁ are the size and cumulative % of the coarser row, S₂
+                    and C₂ of the finer row. ρ is particle density in g/cm³ and D50 is in μm. The surface
+                    area treats every particle as a sphere of diameter D50 (area-to-volume ratio 6/d).
+                </p>
+                <p>
+                    The distribution is read as narrow when span is below 1, broad above 2, and moderate
+                    in between. A span below 1.5 is read as good flow; a D50 below 50 μm as fast
+                    dissolution.
+                </p>
+            </FormulaNote>
+
+            <CalcFaq
+                items={[
+                    {
+                        q: "Why must the percentages add up to about 100%?",
+                        a: "Each row is a share of the whole sample, so together they should account for all of it. Up to 5% either way is accepted to allow for handling losses on the sieves; beyond that the calculator asks you to recheck the data.",
+                    },
+                    {
+                        q: "How do I enter the pan in a sieve analysis?",
+                        a: "Add it as the last row with mesh 0 and opening 0, and enter the % of powder collected in it. Without the pan the cumulative curve never reaches 0% finer and the total will be short.",
+                    },
+                    {
+                        q: "What is a good span?",
+                        a: "Smaller is more uniform. Below 1 is narrow; 1–2 is typical of milled or granulated material; above 2 is broad and more likely to segregate during mixing. Tablet granules usually aim for a span under 2.0.",
+                    },
+                    {
+                        q: "Which mean diameter is shown?",
+                        a: "For sieve data it is the geometric mean of D10 and D90. For laser diffraction it is the volume-weighted mean, each size multiplied by its % and divided by 100 — so the % column should total 100.",
+                    },
+                    {
+                        q: "Why is density needed?",
+                        a: "Specific surface area is area per unit mass. The same size of particle has less surface per gram when the material is denser, so the true (particle) density divides into the result.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
+    );
+}
+
+function RemoveButton({ index, onRemove }: { index: number; onRemove: (index: number) => void }) {
+    return (
+        <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onRemove(index)}
+            aria-label={`Remove row ${index + 1}`}
+            className="h-11 w-11 text-muted-foreground hover:text-destructive"
+        >
+            <Trash2 />
+        </Button>
+    );
 }

@@ -108,23 +108,32 @@ pages, confirm progress tracking records a visit, then batch the rest.
 
 ### Calculation tools
 - **Status:** 🟡 Partial
-- **Existing implementation:** 98 tool directories under
+- **Existing implementation:** 104 tool directories under
   `src/app/(site)/calculation-tools/(tools)/`, each a `"use client"` page. Hub with search and 10
-  categories (Physiology added 2026-09-13) driven by `allTools` + `categories` in
-  `CalculationToolsClient.tsx`. ✅ 2026-09-13: eight laboratory tools (theoretical/percentage
+  categories (Physiology added 2026-09-13) driven by `HUB_SUBJECTS` in `tool-index.ts`. ✅ 2026-09-13:
+  hub rebuilt as a server-rendered, searchable index (every tool with a one-line description of what it
+  computes; readable before hydration). ✅ 2026-09-13: eight laboratory tools (theoretical/percentage
   yield, percentage recovery, WBC/RBC count, density bottle, UV-Vis spectrum plotter, serial
-  dilution) built on the shared kit with a lab-record card (copy / PNG / print).
+  dilution) built on the shared kit with a lab-record card (copy / PNG / print). ✅ 2026-09-13: six
+  analytical-practical tools (calibration curve, dissolution, accuracy & % recovery, dialysis/diffusion,
+  cumulative drug release, partition/distribution coefficient) on the new `lab-analysis` layer — Recharts
+  graphs, practical-sheet methods, step-by-step workings, calibration hand-off between tools.
 - **Remaining work:**
   - Five tools (`AntagonismSimulator`, `EmaxModelCalculator`, `drug-half-life-calculator`,
     `OsmolarGapCalculator`, `OpioidConversionCalculator`) are **reachable only by typed URL on the
-    web** — add them to `allTools` and a `categories[].toolNames`, or to the clinical hub. All five
-    already ship in the Android app.
+    web** — add them to `tool-index.ts`, or to the clinical hub. All five already ship in the Android
+    app. Audited 2026-09-13: `OsmolarGapCalculator` is complete and correct (best to list);
+    `OpioidConversionCalculator` is **not clinically safe** (one ×3 IV factor for every opioid) — keep it
+    unlisted; `drug-half-life-calculator` is only partly working.
+  - **Formula faults found by the 2026-09-13 hub audit** — see CLAUDE.md §7 Known Issues 15.
   - Delete the dead legacy registry `src/app/api/calculators.tsx` (419 lines, zero importers).
-  - Migrate older tools to the shared kit (`src/components/calculators/`); most of the 98 are still
-    ~1200-line standalone files.
-- **Important files:** `src/app/(site)/calculation-tools/CalculationToolsClient.tsx`, `(tools)/<slug>/page.tsx`, `src/app/clinical/dose-calculators/page.tsx`
+  - 🔄 Migrate older tools to the shared kit (`src/components/calculators/`) — **85 of 104 done
+    (2026-09-13)**, each verified number-for-number against `5dbe98c`; 19 left (tracker Phase 2).
+    Migration keeps formulas, so the ~70 suspected faults it found are still live — tracker
+    "Suspected maths issues"; the clinical-only opioid tools and creatinine staging are the priority.
+- **Important files:** `src/app/(site)/calculation-tools/tool-index.ts`, `(tools)/<slug>/page.tsx`, `src/app/clinical/dose-calculators/page.tsx`
 - **Dependencies:** —
-- **Notes:** Adding a directory does **not** add a card on the web hub (`allTools` lists 87 of 98). Every tool carries the educational disclaimer from the `(tools)` layout (web) and `MobileShell` (APK) since 2026-09-13.
+- **Notes:** Adding a directory does **not** add a card on the web hub (`tool-index.ts` lists 93 of 104). Every tool carries the educational disclaimer from the `(tools)` layout (web) and `MobileShell` (APK) since 2026-09-13.
   Registry + category are both required. Six tools are intentionally clinical-hub-only, not
   orphans. **The Android app consumes these same files** — keep every tool free of `@/` imports
   and `fetch`, or it breaks offline. See `.claude/skills/android-app-capacitor/SKILL.md`.
@@ -251,8 +260,8 @@ pages, confirm progress tracking records a visit, then batch the rest.
 - **Status:** 🟡 Partial — done on Android, **still outstanding on the web**.
 - **Remaining work:** Add `AntagonismSimulator`, `EmaxModelCalculator`,
   `drug-half-life-calculator`, `OsmolarGapCalculator` and `OpioidConversionCalculator` to
-  `allTools` **and** a `categories[].toolNames`, or to `src/app/clinical/dose-calculators/page.tsx`.
-- **Important files:** `src/app/(site)/calculation-tools/CalculationToolsClient.tsx`
+  their subject in `src/app/(site)/calculation-tools/tool-index.ts`, or to `src/app/clinical/dose-calculators/page.tsx`.
+- **Important files:** `src/app/(site)/calculation-tools/tool-index.ts`
 - **Dependencies:** None
 - **Notes:** Small, safe, immediately visible. Good warm-up task. `mobile/app/_data/tool-registry.ts`
   already has correct display names and categories for all five — copy from there.

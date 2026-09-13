@@ -35,7 +35,7 @@ filter, a missing registry entry, or the wrong client**.
    does it have a TTL and a namespace matching `MEMORY.md` §4?
 6. **Error handling matches the repo.** `NextResponse.json({ error }, { status })`. Redis and
    external calls wrapped so they **fail open**. Auth **fails closed**.
-7. **Registry updated?** New calculator → `allTools` *and* a `categories[].toolNames`. New subject
+7. **Registry updated?** New calculator → an entry in its subject in `tool-index.ts`, slug matching a real page. New subject
    → `SUBJECTS`. New protected route → `PROTECTED_PATHS`.
 8. **Reuse.** Is this a fifth copy of something? The admin allowlist and the entry-type maps are
    already duplicated — do not add a third or fourth instance of anything.

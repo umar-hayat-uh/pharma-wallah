@@ -54,7 +54,7 @@ settings** or production renders no ad units.
 
 | Surface | File | Slot env var |
 | --- | --- | --- |
-| Calculator hub | `src/app/(site)/calculation-tools/CalculationToolsClient.tsx` | `_LIST` |
+| Calculator hub | `src/app/(site)/calculation-tools/HubCatalogue.tsx` | `_LIST` |
 | **Every calculator** | `src/app/(site)/calculation-tools/(tools)/layout.tsx` | `_CALCULATOR_FOOTER` |
 | Migrated calculators' `aside` | the tool page itself (the ones that pass `AdSlot` in `aside`) | `_CALCULATOR` |
 | Course subject listing | `src/app/(site)/courses/[subjectSlug]/page.tsx` | `_LIST` |

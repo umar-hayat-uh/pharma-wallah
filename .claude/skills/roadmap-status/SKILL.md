@@ -33,8 +33,8 @@ governing rule here is not bureaucratic — it is the actual failure mode:
 
    # Calculators: directories vs hub registry entries
    ls -d "src/app/(site)/calculation-tools/(tools)/"*/ | sed 's|.*/(tools)/||;s|/$||' | sort > /tmp/dirs
-   grep -oE 'link: "/calculation-tools/[^"]+"' "src/app/(site)/calculation-tools/CalculationToolsClient.tsx" \
-     | sed 's|link: "/calculation-tools/||;s|"$||' | sort -u > /tmp/reg
+   grep -oE 'slug: "[^"]+"' "src/app/(site)/calculation-tools/tool-index.ts" \
+     | sed 's|slug: "||;s|"$||' | sort -u > /tmp/reg
    comm -23 /tmp/dirs /tmp/reg    # exist but not on the hub
    comm -13 /tmp/dirs /tmp/reg    # on the hub but no page (broken links)
 
@@ -64,7 +64,7 @@ governing rule here is not bureaucratic — it is the actual failure mode:
 ## Files Usually Involved
 - `.claude/ROADMAP.md`, `CLAUDE.md` §7
 - `src/lib/courses/registry.ts`
-- `src/app/(site)/calculation-tools/CalculationToolsClient.tsx`
+- `src/app/(site)/calculation-tools/tool-index.ts`
 
 ## Security Checks
 Security debt belongs in the roadmap too, and must not be quietly downgraded. Currently tracked in

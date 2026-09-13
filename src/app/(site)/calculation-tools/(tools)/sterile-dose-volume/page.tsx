@@ -1,651 +1,398 @@
 "use client";
-import { useState, useEffect } from 'react';
-import {
-    Calculator,
-    Syringe,
-    Droplet,
-    Beaker,
-    Shield,
-    AlertCircle,
-    RefreshCw,
-    FlaskConical,
-    Scale,
-    Percent,
-    CheckCircle,
-    XCircle
-} from 'lucide-react';
 
-type ConcentrationUnit = 'mg/mL' | 'mcg/mL' | 'units/mL' | 'g/mL' | 'percent';
-type VolumeUnit = 'mL' | 'L' | 'mcl';
+import { useMemo, useState } from "react";
+import { RefreshCw, Syringe } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import {
+    CalculatorShell,
+    CalcSection,
+    FieldGrid,
+    NumberField,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    AdSlot,
+    LabNotice,
+    type ResultTone,
+} from "@/components/calculators";
+
+type ConcentrationUnit = "mg/mL" | "mcg/mL" | "units/mL" | "g/mL" | "percent";
+type VolumeUnit = "mL" | "L" | "mcl";
+
+/* ── Presets and unit tables (unchanged from the original calculator) ─────── */
+const SAMPLES = [
+    { name: "Vancomycin IV", desiredDose: "1000", desiredDoseUnit: "mg", concentration: "50", concentrationUnit: "mg/mL" as ConcentrationUnit, totalVolume: "250", notes: "Standard infusion" },
+    { name: "Insulin", desiredDose: "10", desiredDoseUnit: "units", concentration: "100", concentrationUnit: "units/mL" as ConcentrationUnit, totalVolume: "0.1", notes: "Subcutaneous" },
+    { name: "Heparin", desiredDose: "5000", desiredDoseUnit: "units", concentration: "1000", concentrationUnit: "units/mL" as ConcentrationUnit, totalVolume: "5", notes: "IV push" },
+    { name: "Epinephrine", desiredDose: "0.3", desiredDoseUnit: "mg", concentration: "1", concentrationUnit: "mg/mL" as ConcentrationUnit, totalVolume: "0.3", notes: "Anaphylaxis" },
+    { name: "Morphine", desiredDose: "4", desiredDoseUnit: "mg", concentration: "10", concentrationUnit: "mg/mL" as ConcentrationUnit, totalVolume: "0.4", notes: "IV push" },
+];
+
+const CONCENTRATION_UNITS = [
+    { value: "mg/mL", label: "mg/mL" },
+    { value: "mcg/mL", label: "mcg/mL" },
+    { value: "units/mL", label: "units/mL" },
+    { value: "g/mL", label: "g/mL" },
+    { value: "percent", label: "% (w/v)" },
+];
+
+const DOSE_UNITS = [
+    { value: "mg", label: "mg" },
+    { value: "mcg", label: "mcg" },
+    { value: "g", label: "g" },
+    { value: "units", label: "units" },
+];
+
+const VOLUME_UNITS: { value: VolumeUnit; label: string }[] = [
+    { value: "mL", label: "mL" },
+    { value: "L", label: "L" },
+    { value: "mcl", label: "μL" },
+];
+
+const DEFAULTS = { dose: "500", doseUnit: "mg", conc: "250", concUnit: "mg/mL" as ConcentrationUnit };
+
+/** Volume check bands — same order as the original, so the first match wins. */
+function safetyAssessment(volume: number): { tone: ResultTone; message: string } {
+    if (volume < 0.1) return { tone: "warning", message: "Very small volume - use insulin syringe for accuracy" };
+    if (volume > 10) return { tone: "warning", message: "Large volume - consider diluting or adjusting concentration" };
+    if (volume > 50) return { tone: "danger", message: "Excessive volume - review dose and concentration" };
+    return { tone: "success", message: "Volume within typical administration range" };
+}
+
+/** Pure version of the original calculateVolume(). */
+function computeVolume(desiredDose: string, concentration: string, concentrationUnit: ConcentrationUnit, volumeUnit: VolumeUnit, totalVolume: string) {
+    const dose = parseFloat(desiredDose);
+    const conc = parseFloat(concentration);
+
+    if (isNaN(dose) || isNaN(conc)) return { error: "Please enter valid numbers for dose and concentration" } as const;
+    if (conc <= 0) return { error: "Concentration must be greater than zero" } as const;
+    if (dose < 0) return { error: "Dose cannot be negative" } as const;
+
+    let volume = dose / conc;
+
+    // Handle percent concentration (w/v) - assuming % means g/100mL
+    let mgPerMl: number | null = null;
+    if (concentrationUnit === "percent") {
+        const gPerMl = conc / 100;
+        mgPerMl = gPerMl * 1000;
+        volume = dose / mgPerMl;
+    }
+
+    // Convert volume based on selected unit
+    let finalVolume = volume;
+    if (volumeUnit === "L") finalVolume = volume / 1000;
+    else if (volumeUnit === "mcl") finalVolume = volume * 1000;
+
+    let finalConcentration: number | null = null;
+    let totalVol: number | null = null;
+    if (totalVolume) {
+        const parsed = parseFloat(totalVolume);
+        if (!isNaN(parsed) && parsed > 0) {
+            totalVol = parsed;
+            finalConcentration = dose / parsed;
+        }
+    }
+
+    return { error: null, dose, conc, mgPerMl, volumeMl: volume, finalVolume, finalConcentration, totalVol } as const;
+}
 
 export default function SterileDoseVolumeCalculator() {
-    const [desiredDose, setDesiredDose] = useState<string>('500');
-    const [desiredDoseUnit, setDesiredDoseUnit] = useState<string>('mg');
-    const [concentration, setConcentration] = useState<string>('250');
-    const [concentrationUnit, setConcentrationUnit] = useState<ConcentrationUnit>('mg/mL');
-    const [calculatedVolume, setCalculatedVolume] = useState<number | null>(null);
-    const [volumeUnit, setVolumeUnit] = useState<VolumeUnit>('mL');
-    const [totalVolume, setTotalVolume] = useState<string>('');
-    const [finalConcentration, setFinalConcentration] = useState<number | null>(null);
-    const [isValid, setIsValid] = useState<boolean>(true);
-    const [validationMessage, setValidationMessage] = useState<string>('');
+    const [desiredDose, setDesiredDose] = useState(DEFAULTS.dose);
+    const [desiredDoseUnit, setDesiredDoseUnit] = useState(DEFAULTS.doseUnit);
+    const [concentration, setConcentration] = useState(DEFAULTS.conc);
+    const [concentrationUnit, setConcentrationUnit] = useState<ConcentrationUnit>(DEFAULTS.concUnit);
+    const [volumeUnit, setVolumeUnit] = useState<VolumeUnit>("mL");
+    const [totalVolume, setTotalVolume] = useState("");
 
-    // Sample sterile preparations
-    const samplePreparations = [
-        {
-            name: 'Vancomycin IV',
-            desiredDose: '1000',
-            desiredDoseUnit: 'mg',
-            concentration: '50',
-            concentrationUnit: 'mg/mL' as ConcentrationUnit,
-            totalVolume: '250',
-            notes: 'Standard infusion'
-        },
-        {
-            name: 'Insulin',
-            desiredDose: '10',
-            desiredDoseUnit: 'units',
-            concentration: '100',
-            concentrationUnit: 'units/mL' as ConcentrationUnit,
-            totalVolume: '0.1',
-            notes: 'Subcutaneous'
-        },
-        {
-            name: 'Heparin',
-            desiredDose: '5000',
-            desiredDoseUnit: 'units',
-            concentration: '1000',
-            concentrationUnit: 'units/mL' as ConcentrationUnit,
-            totalVolume: '5',
-            notes: 'IV push'
-        },
-        {
-            name: 'Epinephrine',
-            desiredDose: '0.3',
-            desiredDoseUnit: 'mg',
-            concentration: '1',
-            concentrationUnit: 'mg/mL' as ConcentrationUnit,
-            totalVolume: '0.3',
-            notes: 'Anaphylaxis'
-        },
-        {
-            name: 'Morphine',
-            desiredDose: '4',
-            desiredDoseUnit: 'mg',
-            concentration: '10',
-            concentrationUnit: 'mg/mL' as ConcentrationUnit,
-            totalVolume: '0.4',
-            notes: 'IV push'
-        }
-    ];
+    /*
+     * Derived, not stored. The original kept the volume in state, so after an
+     * invalid entry it went on showing the previous volume beside the error, and
+     * a sample's delayed recalculation could re-raise a stale error.
+     */
+    const result = useMemo(
+        () => computeVolume(desiredDose, concentration, concentrationUnit, volumeUnit, totalVolume),
+        [desiredDose, concentration, concentrationUnit, volumeUnit, totalVolume],
+    );
+    const ok = result.error === null ? result : null;
+    const safety = ok ? safetyAssessment(ok.finalVolume) : null;
+    const volumeLabel = VOLUME_UNITS.find((u) => u.value === volumeUnit)?.label ?? volumeUnit;
+    const concLabel = CONCENTRATION_UNITS.find((u) => u.value === concentrationUnit)?.label ?? concentrationUnit;
 
-    const concentrationUnits = [
-        { value: 'mg/mL', label: 'mg/mL' },
-        { value: 'mcg/mL', label: 'mcg/mL' },
-        { value: 'units/mL', label: 'units/mL' },
-        { value: 'g/mL', label: 'g/mL' },
-        { value: 'percent', label: '% (w/v)' }
-    ];
+    const doseNum = parseFloat(desiredDose);
+    const concNum = parseFloat(concentration);
+    const totalNum = parseFloat(totalVolume);
 
-    const doseUnits = [
-        { value: 'mg', label: 'mg' },
-        { value: 'mcg', label: 'mcg' },
-        { value: 'g', label: 'g' },
-        { value: 'units', label: 'units' }
-    ];
-
-    const volumeUnits = [
-        { value: 'mL', label: 'mL' },
-        { value: 'L', label: 'L' },
-        { value: 'mcl', label: 'μL' }
-    ];
-
-    const calculateVolume = () => {
-        // Validate inputs
-        const dose = parseFloat(desiredDose);
-        const conc = parseFloat(concentration);
-
-        if (isNaN(dose) || isNaN(conc)) {
-            setIsValid(false);
-            setValidationMessage('Please enter valid numbers for dose and concentration');
-            return;
-        }
-
-        if (conc <= 0) {
-            setIsValid(false);
-            setValidationMessage('Concentration must be greater than zero');
-            return;
-        }
-
-        if (dose < 0) {
-            setIsValid(false);
-            setValidationMessage('Dose cannot be negative');
-            return;
-        }
-
-        setIsValid(true);
-        setValidationMessage('');
-
-        let volume = dose / conc;
-
-        // Handle percent concentration (w/v) - assuming % means g/100mL
-        if (concentrationUnit === 'percent') {
-            const percentConc = conc; // percentage value
-            const gPer100mL = percentConc;
-            const gPerMl = gPer100mL / 100;
-            volume = dose / (gPerMl * 1000); // Convert dose in mg to g if needed
-        }
-
-        // Convert volume based on selected unit
-        let finalVolume = volume;
-        if (volumeUnit === 'L') {
-            finalVolume = volume / 1000;
-        } else if (volumeUnit === 'mcl') {
-            finalVolume = volume * 1000;
-        }
-
-        setCalculatedVolume(finalVolume);
-
-        // Calculate final concentration if total volume is provided
-        if (totalVolume) {
-            const totalVol = parseFloat(totalVolume);
-            if (!isNaN(totalVol) && totalVol > 0) {
-                const finalConc = dose / totalVol;
-                setFinalConcentration(finalConc);
-            } else {
-                setFinalConcentration(null);
-            }
-        } else {
-            setFinalConcentration(null);
-        }
+    const reset = () => {
+        setDesiredDose(DEFAULTS.dose);
+        setDesiredDoseUnit(DEFAULTS.doseUnit);
+        setConcentration(DEFAULTS.conc);
+        setConcentrationUnit(DEFAULTS.concUnit);
+        setVolumeUnit("mL");
+        setTotalVolume("");
     };
 
-    const resetCalculator = () => {
-        setDesiredDose('500');
-        setDesiredDoseUnit('mg');
-        setConcentration('250');
-        setConcentrationUnit('mg/mL');
-        setCalculatedVolume(null);
-        setVolumeUnit('mL');
-        setTotalVolume('');
-        setFinalConcentration(null);
-        setIsValid(true);
-        setValidationMessage('');
+    const loadSample = (sample: (typeof SAMPLES)[number]) => {
+        setDesiredDose(sample.desiredDose);
+        setDesiredDoseUnit(sample.desiredDoseUnit);
+        setConcentration(sample.concentration);
+        setConcentrationUnit(sample.concentrationUnit);
+        setTotalVolume(sample.totalVolume);
     };
-
-    const loadSample = (index: number) => {
-        const prep = samplePreparations[index];
-        setDesiredDose(prep.desiredDose);
-        setDesiredDoseUnit(prep.desiredDoseUnit);
-        setConcentration(prep.concentration);
-        setConcentrationUnit(prep.concentrationUnit);
-        setTotalVolume(prep.totalVolume);
-
-        // Trigger calculation
-        setTimeout(() => calculateVolume(), 100);
-    };
-
-    const getVolumeSafetyAssessment = (volume: number) => {
-        if (volume < 0.1) return {
-            level: 'warning',
-            message: 'Very small volume - use insulin syringe for accuracy',
-            icon: <AlertCircle className="w-5 h-5 text-yellow-600" />
-        };
-        if (volume > 10) return {
-            level: 'warning',
-            message: 'Large volume - consider diluting or adjusting concentration',
-            icon: <AlertCircle className="w-5 h-5 text-orange-600" />
-        };
-        if (volume > 50) return {
-            level: 'danger',
-            message: 'Excessive volume - review dose and concentration',
-            icon: <XCircle className="w-5 h-5 text-red-600" />
-        };
-        return {
-            level: 'safe',
-            message: 'Volume within typical administration range',
-            icon: <CheckCircle className="w-5 h-5 text-green-600" />
-        };
-    };
-
-    useEffect(() => {
-        calculateVolume();
-    }, [desiredDose, concentration, concentrationUnit, volumeUnit, totalVolume]);
 
     return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6">
-            <div className="max-w-6xl mx-auto">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6 md:mb-8">
-                    <div className="flex flex-col md:flex-row items-center justify-between">
-                        <div className="flex items-center mb-4 md:mb-0">
-                            <div className="bg-white/20 p-3 rounded-xl mr-4">
-                                <Syringe className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-white">Sterile Dose Volume Calculator</h1>
-                                <p className="text-blue-100 mt-2">Calculate injection volumes for sterile preparations</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-2 bg-white/20 px-4 py-2 rounded-lg">
-                            <Shield className="w-5 h-5 text-white" />
-                            <span className="text-white font-semibold">For Professional Use</span>
-                        </div>
-                    </div>
-                </div>
+        <CalculatorShell
+            title="Sterile Dose Volume Calculator"
+            subtitle="Works out how much of a sterile solution to draw up for a dose, and the concentration after dilution."
+            icon={Syringe}
+            eyebrow="Pharmaceutics"
+            aside={
+                <>
+                    <CalcAbout title="About this calculator">
+                        <p>
+                            Divide the dose you want by the strength of the vial or ampoule to get the
+                            volume to draw up. Optionally, enter a diluent volume to see the final
+                            concentration.
+                        </p>
+                        <CalcList
+                            title="Sterile preparation tips"
+                            items={[
+                                "Aseptic technique must be maintained",
+                                "Double-check calculations with another professional",
+                                "Label all preparations with drug, dose, concentration, and expiration",
+                                "Use appropriate syringe size for volume accuracy",
+                            ]}
+                        />
+                        <CalcList
+                            title="Volume conversion"
+                            items={["1 mL = 1000 μL", "1 L = 1000 mL", "1 teaspoon ≈ 5 mL"]}
+                        />
+                        <CalcList
+                            tone="caution"
+                            title="Check before you draw up"
+                            items={[
+                                "Dose and concentration must use the same amount unit (mg with mg/mL, units with units/mL) — the calculator does not convert between them",
+                                "% (w/v) assumes the dose is in mg",
+                                "The volume check is applied to the number in the unit you selected",
+                                "Always follow institutional protocols and manufacturer guidelines",
+                            ]}
+                        />
+                    </CalcAbout>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Main Calculator Section */}
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Input Section */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
-                            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                                <Calculator className="w-6 h-6 md:w-7 md:h-7 mr-2" />
-                                Volume Calculation
-                            </h2>
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+                </>
+            }
+        >
+            <ResultCard
+                label="Volume to administer"
+                value={ok ? ok.finalVolume.toFixed(ok.finalVolume < 0.1 ? 3 : 2) : null}
+                unit={volumeLabel}
+                interpretation={safety?.message}
+                tone={safety?.tone ?? "neutral"}
+                empty={result.error ?? undefined}
+            />
 
-                            <div className="space-y-6">
-                                {/* Desired Dose Input */}
-                                <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6 border border-blue-100">
-                                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                                        <Scale className="w-5 h-5 mr-2 text-blue-600" />
-                                        Desired Dose
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                Dose Value
-                                            </label>
-                                            <input
-                                                type="number"
-                                                step="0.001"
-                                                value={desiredDose}
-                                                onChange={(e) => setDesiredDose(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-colors"
-                                                placeholder="Enter dose"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                Unit
-                                            </label>
-                                            <select
-                                                value={desiredDoseUnit}
-                                                onChange={(e) => setDesiredDoseUnit(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none bg-white"
-                                            >
-                                                {doseUnits.map((unit) => (
-                                                    <option key={unit.value} value={unit.value}>
-                                                        {unit.label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
+            <CalcSection title="Dose and strength">
+                <FieldGrid>
+                    <NumberField
+                        label="Desired dose"
+                        value={desiredDose}
+                        onChange={setDesiredDose}
+                        units={DOSE_UNITS}
+                        unit={desiredDoseUnit}
+                        onUnitChange={setDesiredDoseUnit}
+                        step="0.001"
+                        placeholder="Enter dose"
+                        error={!isNaN(doseNum) && doseNum < 0 ? "Dose cannot be negative" : undefined}
+                        hint="The prescribed dose, in the same amount unit as the concentration."
+                    />
+                    <NumberField
+                        label="Concentration"
+                        value={concentration}
+                        onChange={setConcentration}
+                        units={CONCENTRATION_UNITS}
+                        unit={concentrationUnit}
+                        onUnitChange={(next) => setConcentrationUnit(next as ConcentrationUnit)}
+                        step="0.001"
+                        placeholder="Enter concentration"
+                        error={!isNaN(concNum) && concNum <= 0 ? "Concentration must be greater than zero" : undefined}
+                        hint={
+                            concentrationUnit === "percent"
+                                ? "Note: % concentration is calculated as g/100mL (w/v)"
+                                : "Concentration = amount of drug per mL (from the vial label)"
+                        }
+                    />
+                </FieldGrid>
 
-                                {/* Concentration Input */}
-                                <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 border border-green-100">
-                                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                                        <FlaskConical className="w-5 h-5 mr-2 text-green-600" />
-                                        Concentration
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                Concentration Value
-                                            </label>
-                                            <input
-                                                type="number"
-                                                step="0.001"
-                                                value={concentration}
-                                                onChange={(e) => setConcentration(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none transition-colors"
-                                                placeholder="Enter concentration"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                Unit
-                                            </label>
-                                            <select
-                                                value={concentrationUnit}
-                                                onChange={(e) => setConcentrationUnit(e.target.value as ConcentrationUnit)}
-                                                className="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none bg-white"
-                                            >
-                                                {concentrationUnits.map((unit) => (
-                                                    <option key={unit.value} value={unit.value}>
-                                                        {unit.label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <p className="text-sm text-gray-600 mt-3">
-                                        {concentrationUnit === 'percent' ?
-                                            'Note: % concentration is calculated as g/100mL (w/v)' :
-                                            'Concentration = amount of drug per mL'}
-                                    </p>
-                                </div>
-
-                                {/* Additional Options */}
-                                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                                        <Beaker className="w-5 h-5 mr-2 text-gray-600" />
-                                        Additional Options
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                Volume Unit
-                                            </label>
-                                            <div className="grid grid-cols-3 gap-2">
-                                                {volumeUnits.map((unit) => (
-                                                    <button
-                                                        key={unit.value}
-                                                        onClick={() => setVolumeUnit(unit.value as VolumeUnit)}
-                                                        className={`py-3 rounded-lg transition-all ${volumeUnit === unit.value ?
-                                                            'bg-gradient-to-r from-blue-600 to-green-400 text-white shadow-md' :
-                                                            'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                                            }`}
-                                                    >
-                                                        {unit.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                Total Dilution Volume (Optional)
-                                            </label>
-                                            <input
-                                                type="number"
-                                                step="0.001"
-                                                value={totalVolume}
-                                                onChange={(e) => setTotalVolume(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
-                                                placeholder="e.g., 250"
-                                            />
-                                            <p className="text-sm text-gray-500 mt-2">
-                                                Enter if you want to calculate final concentration
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Validation Message */}
-                                {!isValid && (
-                                    <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                                        <div className="flex items-center">
-                                            <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
-                                            <span className="text-red-700 font-semibold">{validationMessage}</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Action Buttons */}
-                                <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                                    <button
-                                        onClick={calculateVolume}
-                                        className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
-                                    >
-                                        <Calculator className="w-5 h-5 mr-2" />
-                                        Calculate Volume
-                                    </button>
-                                    <button
-                                        onClick={resetCalculator}
-                                        className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center"
-                                    >
-                                        <RefreshCw className="w-5 h-5 mr-2" />
-                                        Reset Calculator
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Sample Preparations */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
-                            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                                <Syringe className="w-6 h-6 md:w-7 md:h-7 mr-2" />
-                                Sample Sterile Preparations
-                            </h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {samplePreparations.map((prep, index) => (
-                                    <button
-                                        key={index}
-                                        onClick={() => loadSample(index)}
-                                        className="bg-gradient-to-r from-blue-50 to-green-50 hover:from-blue-100 hover:to-green-100 border-2 border-blue-100 rounded-xl p-4 text-left transition-all hover:border-blue-300 hover:shadow-md group"
-                                    >
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h3 className="font-bold text-blue-700 text-lg group-hover:text-blue-800">
-                                                {prep.name}
-                                            </h3>
-                                            <Droplet className="w-5 h-5 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        </div>
-                                        <div className="space-y-1 text-sm text-gray-600">
-                                            <div>Dose: {prep.desiredDose} {prep.desiredDoseUnit}</div>
-                                            <div>Concentration: {prep.concentration} {prep.concentrationUnit}</div>
-                                            <div>Total Volume: {prep.totalVolume} mL</div>
-                                            <div className="text-blue-600 font-medium mt-2">{prep.notes}</div>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Results Section */}
-                    <div className="space-y-6">
-                        {/* Volume Result Card */}
-                        <div className="bg-gradient-to-br from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 text-white">
-                            <h2 className="text-2xl font-bold mb-6 flex items-center">
-                                <Syringe className="w-7 h-7 mr-3" />
-                                Calculated Volume
-                            </h2>
-
-                            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 mb-6">
-                                <div className="text-center">
-                                    <div className="text-sm font-semibold text-blue-100 mb-2">
-                                        Volume to Administer
-                                    </div>
-                                    {calculatedVolume !== null ? (
-                                        <>
-                                            <div className="text-5xl md:text-6xl font-bold mb-2">
-                                                {calculatedVolume.toFixed(calculatedVolume < 0.1 ? 3 : 2)}
-                                            </div>
-                                            <div className="text-2xl font-semibold">
-                                                {volumeUnit}
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <div className="text-3xl font-bold text-blue-100">
-                                            Enter Values
-                                        </div>
+                <FieldGrid>
+                    <div className="space-y-1.5">
+                        <p className="text-[13px] font-medium text-foreground/90" id="sdv-volume-unit">
+                            Show volume in
+                        </p>
+                        <div role="group" aria-labelledby="sdv-volume-unit" className="grid grid-cols-3 gap-1 rounded-xl border bg-muted/60 p-1">
+                            {VOLUME_UNITS.map((unit) => (
+                                <button
+                                    key={unit.value}
+                                    type="button"
+                                    aria-pressed={volumeUnit === unit.value}
+                                    onClick={() => setVolumeUnit(unit.value)}
+                                    className={cn(
+                                        "h-10 rounded-lg text-sm font-semibold transition-colors",
+                                        volumeUnit === unit.value
+                                            ? "border border-primary/20 bg-card text-foreground shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground",
                                     )}
-                                </div>
-                            </div>
-
-                            {/* Formula */}
-                            <div className="bg-white/10 rounded-lg p-4">
-                                <div className="text-sm font-semibold mb-2">Formula Used</div>
-                                <div className="text-sm font-mono bg-black/20 p-2 rounded">
-                                    Volume = Desired Dose ÷ Concentration
-                                </div>
-                            </div>
+                                >
+                                    {unit.label}
+                                </button>
+                            ))}
                         </div>
+                        <p className="text-xs leading-relaxed text-muted-foreground">1 mL = 1000 μL; 1 L = 1000 mL.</p>
+                    </div>
+                    <NumberField
+                        label="Total dilution volume (optional)"
+                        value={totalVolume}
+                        onChange={setTotalVolume}
+                        unit="mL"
+                        step="0.001"
+                        placeholder="e.g., 250"
+                        error={totalVolume.trim() !== "" && !isNaN(totalNum) && totalNum <= 0 ? "Must be greater than zero to calculate a final concentration." : undefined}
+                        hint="Enter if you want to calculate final concentration"
+                    />
+                </FieldGrid>
 
-                        {/* Safety Assessment */}
-                        {calculatedVolume !== null && (
-                            <div className="bg-white rounded-2xl shadow-lg p-6">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                                    <Shield className="w-5 h-5 mr-2 text-blue-600" />
-                                    Safety Assessment
-                                </h3>
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                                        <div>
-                                            <div className="font-semibold text-gray-700">Volume Check</div>
-                                            <div className="text-sm text-gray-600">Based on calculated volume</div>
-                                        </div>
-                                        {getVolumeSafetyAssessment(calculatedVolume).icon}
-                                    </div>
-                                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                        <p className="text-sm text-gray-700">
-                                            {getVolumeSafetyAssessment(calculatedVolume).message}
-                                        </p>
-                                    </div>
+                <div>
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">Try an example</p>
+                    <div className="flex flex-wrap gap-2">
+                        {SAMPLES.map((sample) => (
+                            <button
+                                key={sample.name}
+                                type="button"
+                                onClick={() => loadSample(sample)}
+                                title={`${sample.desiredDose} ${sample.desiredDoseUnit} from ${sample.concentration} ${sample.concentrationUnit}, ${sample.totalVolume} mL`}
+                                className="min-h-[40px] rounded-full border bg-background px-3 py-2 text-left text-xs font-medium hover:bg-accent active:bg-accent"
+                            >
+                                {sample.name}
+                                <span className="ml-1.5 font-normal text-muted-foreground">{sample.notes}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
 
-                                    {/* Volume Guidelines */}
-                                    <div className="space-y-2">
-                                        <div className="flex items-center text-sm">
-                                            <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-                                            <span className="text-gray-600">0.1 - 10 mL: Typical range</span>
-                                        </div>
-                                        <div className="flex items-center text-sm">
-                                            <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
-                                            <span className="text-gray-600">&lt; 0.1 mL: Use insulin syringe</span>
-                                        </div>
-                                        <div className="flex items-center text-sm">
-                                            <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
-                                            <span className="text-gray-600">&gt; 50 mL: Review dose</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                <Button variant="outline" onClick={reset} className="w-full">
+                    <RefreshCw />
+                    Reset
+                </Button>
+            </CalcSection>
+
+            {ok && ok.finalConcentration !== null && (
+                <CalcSection title="Final concentration" description={`This is the concentration after adding the dose to ${totalVolume} mL of diluent.`}>
+                    <div>
+                        <ResultRow label={`After dilution in ${totalVolume} mL`} value={ok.finalConcentration.toFixed(2)} unit="mg/mL" />
+                    </div>
+                </CalcSection>
+            )}
+
+            {ok && (
+                <CalcSection title="Working" description="The numbers you entered, plugged into the formula.">
+                    <div>
+                        {ok.mgPerMl !== null ? (
+                            <>
+                                <ResultRow label={`${ok.conc}% (w/v) = ${ok.conc} g/100 mL`} value={+ok.mgPerMl.toFixed(6)} unit="mg/mL" />
+                                <ResultRow label={`Volume = ${ok.dose} ÷ ${+ok.mgPerMl.toFixed(6)}`} value={+ok.volumeMl.toFixed(6)} unit="mL" />
+                            </>
+                        ) : (
+                            <ResultRow label={`Volume = ${ok.dose} ÷ ${ok.conc} ${concLabel}`} value={+ok.volumeMl.toFixed(6)} unit="mL" />
                         )}
-
-                        {/* Final Concentration */}
-                        {finalConcentration !== null && (
-                            <div className="bg-white rounded-2xl shadow-lg p-6">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                                    <Percent className="w-5 h-5 mr-2 text-green-600" />
-                                    Final Concentration
-                                </h3>
-                                <div className="space-y-4">
-                                    <div className="text-center p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl">
-                                        <div className="text-4xl font-bold text-green-700 mb-2">
-                                            {finalConcentration.toFixed(2)}
-                                        </div>
-                                        <div className="text-lg font-semibold text-gray-700">
-                                            mg/mL in {totalVolume} mL
-                                        </div>
-                                        <div className="text-sm text-gray-600 mt-2">
-                                            After dilution
-                                        </div>
-                                    </div>
-                                    <div className="text-sm text-gray-600">
-                                        This is the concentration after adding the dose to {totalVolume} mL of diluent.
-                                    </div>
-                                </div>
-                            </div>
+                        {volumeUnit !== "mL" && (
+                            <ResultRow
+                                label={volumeUnit === "L" ? "Convert: mL ÷ 1000" : "Convert: mL × 1000"}
+                                value={ok.finalVolume.toFixed(ok.finalVolume < 0.1 ? 3 : 2)}
+                                unit={volumeLabel}
+                            />
                         )}
-
-                        {/* Quick Tips */}
-                        <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-2xl shadow-lg p-6 border border-blue-200">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                                <AlertCircle className="w-5 h-5 mr-2 text-blue-600" />
-                                Sterile Preparation Tips
-                            </h3>
-                            <ul className="space-y-3 text-sm text-gray-700">
-                                <li className="flex items-start">
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 mr-3"></div>
-                                    <span>Aseptic technique must be maintained</span>
-                                </li>
-                                <li className="flex items-start">
-                                    <div className="w-2 h-2 bg-green-500 rounded-full mt-1.5 mr-3"></div>
-                                    <span>Double-check calculations with another professional</span>
-                                </li>
-                                <li className="flex items-start">
-                                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5 mr-3"></div>
-                                    <span>Label all preparations with drug, dose, concentration, and expiration</span>
-                                </li>
-                                <li className="flex items-start">
-                                    <div className="w-2 h-2 bg-yellow-500 rounded-full mt-1.5 mr-3"></div>
-                                    <span>Use appropriate syringe size for volume accuracy</span>
-                                </li>
-                            </ul>
-                        </div>
-
-                        {/* Volume Conversion Helper */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">Volume Conversion</h3>
-                            <div className="space-y-3 text-sm">
-                                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                    <span className="text-gray-700">1 mL</span>
-                                    <span className="font-semibold text-blue-600">= 1000 μL</span>
-                                </div>
-                                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                    <span className="text-gray-700">1 L</span>
-                                    <span className="font-semibold text-green-600">= 1000 mL</span>
-                                </div>
-                                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                    <span className="text-gray-700">1 teaspoon</span>
-                                    <span className="font-semibold text-purple-600">≈ 5 mL</span>
-                                </div>
-                            </div>
-                        </div>
+                        {ok.finalConcentration !== null && ok.totalVol !== null && (
+                            <ResultRow label={`Final = ${ok.dose} ÷ ${ok.totalVol} mL`} value={ok.finalConcentration.toFixed(2)} unit="mg/mL" />
+                        )}
                     </div>
-                </div>
+                    {safety && (
+                        <LabNotice tone={safety.tone === "success" ? "info" : safety.tone === "danger" ? "danger" : "warning"} title="Volume check">
+                            {safety.message}. Guide: 0.1 - 10 mL typical range · &lt; 0.1 mL use insulin syringe · &gt; 50 mL review dose.
+                        </LabNotice>
+                    )}
+                </CalcSection>
+            )}
 
-                {/* Administration Guidelines */}
-                <div className="mt-8 bg-white rounded-2xl shadow-lg p-6 md:p-8">
-                    <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6">Administration Guidelines</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-blue-50 rounded-xl p-5 border border-blue-200">
-                            <h3 className="font-bold text-blue-700 mb-3 flex items-center">
-                                <Syringe className="w-5 h-5 mr-2" />
-                                Small Volumes (&lt; 1 mL)
-                            </h3>
-                            <ul className="space-y-2 text-sm text-gray-600">
-                                <li>• Use insulin syringes for accuracy</li>
-                                <li>• Minimum measurable volume: 0.01 mL</li>
-                                <li>• Consider dead space in syringe</li>
-                                <li>• Ideal for subcutaneous injections</li>
-                            </ul>
-                        </div>
-                        <div className="bg-green-50 rounded-xl p-5 border border-green-200">
-                            <h3 className="font-bold text-green-700 mb-3 flex items-center">
-                                <Beaker className="w-5 h-5 mr-2" />
-                                Medium Volumes (1-10 mL)
-                            </h3>
-                            <ul className="space-y-2 text-sm text-gray-600">
-                                <li>• Use standard 3-10 mL syringes</li>
-                                <li>• Suitable for IM injections</li>
-                                <li>• Check muscle size for IM administration</li>
-                                <li>• Divide large volumes between sites if needed</li>
-                            </ul>
-                        </div>
-                        <div className="bg-purple-50 rounded-xl p-5 border border-purple-200">
-                            <h3 className="font-bold text-purple-700 mb-3 flex items-center">
-                                <Droplet className="w-5 h-5 mr-2" />
-                                Large Volumes (&gt; 10 mL)
-                            </h3>
-                            <ul className="space-y-2 text-sm text-gray-600">
-                                <li>• Typically for IV infusion</li>
-                                <li>• Use appropriate IV bags/syringes</li>
-                                <li>• Consider infusion rate and time</li>
-                                <li>• Check for compatibility with diluent</li>
-                            </ul>
-                        </div>
-                    </div>
+            <CalcSection title="Administration guidelines">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <CalcList
+                        title="Small volumes (< 1 mL)"
+                        items={[
+                            "Use insulin syringes for accuracy",
+                            "Minimum measurable volume: 0.01 mL",
+                            "Consider dead space in syringe",
+                            "Ideal for subcutaneous injections",
+                        ]}
+                    />
+                    <CalcList
+                        title="Medium volumes (1-10 mL)"
+                        items={[
+                            "Use standard 3-10 mL syringes",
+                            "Suitable for IM injections",
+                            "Check muscle size for IM administration",
+                            "Divide large volumes between sites if needed",
+                        ]}
+                    />
+                    <CalcList
+                        title="Large volumes (> 10 mL)"
+                        items={[
+                            "Typically for IV infusion",
+                            "Use appropriate IV bags/syringes",
+                            "Consider infusion rate and time",
+                            "Check for compatibility with diluent",
+                        ]}
+                    />
                 </div>
+            </CalcSection>
 
-                {/* Disclaimer */}
-                <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-xl p-6">
-                    <div className="flex items-start">
-                        <AlertCircle className="w-5 h-5 text-yellow-600 mr-3 mt-0.5 flex-shrink-0" />
-                        <div className="text-sm text-gray-700">
-                            <p className="font-semibold text-yellow-700 mb-2">Important Disclaimer</p>
-                            <p>
-                                This calculator is for educational purposes only. All medication calculations should be
-                                verified by qualified healthcare professionals. Always follow institutional protocols,
-                                manufacturer guidelines, and professional standards when preparing and administering
-                                sterile medications.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+            <FormulaNote>
+                <Formula>Volume = Desired Dose ÷ Concentration</Formula>
+                <Formula>% (w/v): concentration in mg/mL = (% ÷ 100) × 1000</Formula>
+                <Formula>Final concentration = Desired Dose ÷ Total dilution volume</Formula>
+                <p>
+                    Example: 500 mg from a 250 mg/mL vial is 500 ÷ 250 = 2 mL. A 2% (w/v) solution holds
+                    2 g in 100 mL, i.e. 20 mg/mL, so 50 mg needs 50 ÷ 20 = 2.5 mL.
+                </p>
+                <p>
+                    Volumes under 0.1 are shown to 3 decimals, everything else to 2. The volume check uses
+                    the figure in the unit you chose.
+                </p>
+            </FormulaNote>
+
+            <CalcFaq
+                items={[
+                    {
+                        q: "My dose is in mcg but the vial is in mg/mL — what do I do?",
+                        a: "Convert one of them first so both use the same amount unit (1 mg = 1000 mcg), or pick the matching concentration unit. The calculator divides the two numbers as entered and does not convert between mg, mcg, g and units.",
+                    },
+                    {
+                        q: "How does % (w/v) work?",
+                        a: "A w/v percentage is grams per 100 mL, so 1% is 10 mg/mL. The calculator converts the percentage to mg/mL and divides your dose (in mg) by it.",
+                    },
+                    {
+                        q: "Why does the volume check change when I switch to μL?",
+                        a: "The check compares the displayed number with its bands (below 0.1, above 10). 2 mL shown as 2000 μL is flagged as large, and 500 mL shown as 0.5 L is flagged as typical — judge the volume in mL.",
+                    },
+                    {
+                        q: "What is the final concentration for?",
+                        a: "When a dose is added to a bag or syringe of diluent, the final concentration (dose ÷ total volume) is what goes on the label and what infusion rates are calculated from.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
     );
 }

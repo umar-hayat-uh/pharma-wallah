@@ -217,6 +217,47 @@ export default function IsotonicityCalculator() {
                 tone={TONICITY_TONE[result.tonicity]}
             />
 
+            <CalcSection title="Isotonicity results">
+                <div>
+                    <ResultRow
+                        label="Tonicity"
+                        value={result.tonicity.toUpperCase()}
+                        badge={TONICITY_NOTE[result.tonicity]}
+                        badgeTone={result.tonicity === "isotonic" ? "success" : result.tonicity === "hypotonic" ? "warning" : "destructive"}
+                    />
+                    <ResultRow label="Total NaCl equivalent, Σ(C × E)" value={`${fixed(result.naclEquivalent, 2)}%`} />
+                    <ResultRow label="NaCl to add" value={`${fixed(result.naclToAdd, 3)}%`} unit="per 100 mL" />
+                    <ResultRow label="Freezing point" value={`${fixed(result.freezingPoint, 2)}°C`} />
+                    <ResultRow label="Osmolality" value={fixed(result.osmolality, 0)} unit="mOsm/kg" />
+                </div>
+
+                <div>
+                    <p className="mb-8 text-sm font-medium text-foreground">Tonicity scale</p>
+                    <div className="relative h-4 rounded-full bg-gradient-to-r from-blue-400 via-emerald-400 to-red-400">
+                        <div
+                            className="absolute -bottom-1 -top-1 w-1 -translate-x-1/2 rounded-full bg-foreground"
+                            style={{ left: `${markerLeft}%` }}
+                        >
+                            <span
+                                className="absolute -top-6 text-xs font-semibold tabular-nums text-foreground"
+                                style={{
+                                    left: "50%",
+                                    // Keep the label inside the bar at either end.
+                                    transform: `translateX(${markerLeft < 10 ? "-10%" : markerLeft > 90 ? "-90%" : "-50%"})`,
+                                }}
+                            >
+                                {fixed(result.naclEquivalent, 2)}%
+                            </span>
+                        </div>
+                    </div>
+                    <div className="mt-2 flex justify-between gap-2 text-xs text-muted-foreground">
+                        <span>0% (Water)</span>
+                        <span className="text-center">0.9% (Isotonic)</span>
+                        <span className="text-right">1.8% (Hypertonic)</span>
+                    </div>
+                </div>
+            </CalcSection>
+
             <CalcSection
                 title="Formulation ingredients"
                 description="Each ingredient's concentration and E-value. Rows missing either value are left out of the total."
@@ -322,47 +363,6 @@ export default function IsotonicityCalculator() {
                     <RefreshCw />
                     Reset
                 </Button>
-            </CalcSection>
-
-            <CalcSection title="Isotonicity results">
-                <div>
-                    <ResultRow
-                        label="Tonicity"
-                        value={result.tonicity.toUpperCase()}
-                        badge={TONICITY_NOTE[result.tonicity]}
-                        badgeTone={result.tonicity === "isotonic" ? "success" : result.tonicity === "hypotonic" ? "warning" : "destructive"}
-                    />
-                    <ResultRow label="Total NaCl equivalent, Σ(C × E)" value={`${fixed(result.naclEquivalent, 2)}%`} />
-                    <ResultRow label="NaCl to add" value={`${fixed(result.naclToAdd, 3)}%`} unit="per 100 mL" />
-                    <ResultRow label="Freezing point" value={`${fixed(result.freezingPoint, 2)}°C`} />
-                    <ResultRow label="Osmolality" value={fixed(result.osmolality, 0)} unit="mOsm/kg" />
-                </div>
-
-                <div>
-                    <p className="mb-8 text-sm font-medium text-foreground">Tonicity scale</p>
-                    <div className="relative h-4 rounded-full bg-gradient-to-r from-blue-400 via-emerald-400 to-red-400">
-                        <div
-                            className="absolute -bottom-1 -top-1 w-1 -translate-x-1/2 rounded-full bg-foreground"
-                            style={{ left: `${markerLeft}%` }}
-                        >
-                            <span
-                                className="absolute -top-6 text-xs font-semibold tabular-nums text-foreground"
-                                style={{
-                                    left: "50%",
-                                    // Keep the label inside the bar at either end.
-                                    transform: `translateX(${markerLeft < 10 ? "-10%" : markerLeft > 90 ? "-90%" : "-50%"})`,
-                                }}
-                            >
-                                {fixed(result.naclEquivalent, 2)}%
-                            </span>
-                        </div>
-                    </div>
-                    <div className="mt-2 flex justify-between gap-2 text-xs text-muted-foreground">
-                        <span>0% (Water)</span>
-                        <span className="text-center">0.9% (Isotonic)</span>
-                        <span className="text-right">1.8% (Hypertonic)</span>
-                    </div>
-                </div>
             </CalcSection>
 
             <CalcSection title="Working" description="Each counted ingredient converted to % w/v and multiplied by its E-value.">

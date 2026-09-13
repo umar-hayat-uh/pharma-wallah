@@ -367,8 +367,8 @@ Traps that will otherwise be rediscovered painfully.
 6. **`src/app/api/` contains plain data modules, not just route handlers.** `calculators.tsx`,
    `data.tsx`, `semester-data.tsx`, `team-members.tsx`, `physiology-data.ts`, `biochemistry-data.ts`,
    `contex/ToasetContex.tsx`, `mcq-data/*.ts`. Only `semester-data`, `team-members`, and `mcq-data/*`
-   are imported. **`calculators.tsx` (419 lines) is dead** — the live tool registry is the
-   `allTools` array inside `src/app/(site)/calculation-tools/CalculationToolsClient.tsx`. Editing
+   are imported. **`calculators.tsx` (419 lines) is dead** — the live tool registry is
+   `HUB_SUBJECTS` in `src/app/(site)/calculation-tools/tool-index.ts`. Editing
    `calculators.tsx` changes nothing on screen.
 
 7. **Two incompatible course-subject data shapes.** `src/lib/courses/types.ts` defines `SubjectMeta`
@@ -381,14 +381,16 @@ Traps that will otherwise be rediscovered painfully.
    the correct `SubjectMeta` shape but still absent from the array. The markdown content for the
    unregistered subjects already ships in `public/content/`.
 
-9. **The calculator hub registry is hand-maintained and can drift.** 97 tool directories exist;
-   `allTools` lists **86** (verified 2026-09-13 — 78 before eight lab tools were added). Six of the difference are
-   intentionally linked from `src/app/clinical/dose-calculators/page.tsx`; the other five
+9. **The calculator hub registry is hand-maintained and can drift.** 104 tool directories exist;
+   `tool-index.ts` lists **93** (verified 2026-09-13 by cross-checking every slug against a
+   `page.tsx`). Six of the difference are
+   intentionally linked from `src/app/clinical/dose-calculators/page.tsx` (which links 9 tools; 3 are
+   also on the hub); the other five
    (`AntagonismSimulator`, `EmaxModelCalculator`, `drug-half-life-calculator`,
    `OsmolarGapCalculator`, `OpioidConversionCalculator`) are linked from **nowhere** on the web —
-   reachable only by typing the URL. Adding a directory does **not** add a card; you must add the
-   `allTools` entry *and* list the tool's name in the matching `categories[].toolNames` array, or
-   it renders in no category.
+   reachable only by typing the URL. Adding a directory does **not** add a row; add
+   `{ name, slug, desc }` to its subject in `tool-index.ts`. (Since the 2026-09-13 hub rebuild tools
+   are nested in their subject, so the old "in `allTools` but in no category" failure is gone.)
    **The Android app does not share this failure mode**: `mobile/app/_components/ToolHub.tsx`
    renders any generated slug that no category claims under an automatic "More Tools" group, so a
    tool can be mis-categorised there but never unreachable.
@@ -634,7 +636,7 @@ Traps that will otherwise be rediscovered painfully.
 
 47. **Hand-typed figures drift, and several already have.** Measured 2026-09-13: the `/spotting` hub
     hard-codes `lessonCount: 8` per category and "24+" total (real: 17 / 15 / 3 = 35); the calculator
-    hub prints `allTools.length` as "86+" (97 tools exist); every course unit's `readTime` is typed by
+    hub printed `allTools.length` as "86+" (97 tools existed — fixed 2026-09-13, the count is now derived); every course unit's `readTime` is typed by
     hand and understated up to 2.3× against its markdown. **Derive a count from the list it counts**
     (the landing page's `STATS` is the one place a number is deliberately a constant, and it is
     documented). New UI should use `Figure` from `@/components/page-kit`, which requires a label and
@@ -750,6 +752,111 @@ Traps that will otherwise be rediscovered painfully.
     `npx tsc --noEmit` then fails with `TS2307: Cannot find module '…/src/app/<route>/page.js'` from
     `.next/types/app/<route>/page.ts`. Not a source error. Delete that `.next/types/app/<route>`
     directory (or restart dev). Check the error's path before blaming — or crediting — a code change.
+
+65. **framer-motion reveals make a page look slow, not just animate it.** `initial={{opacity:0}}` /
+    `whileInView` render `opacity:0` into the server HTML, so nothing shows until the JS downloads and
+    hydrates. The old `/calculation-tools` shipped **97** hidden elements: with JavaScript disabled the
+    live page showed **0 of 78** tool links and an invisible h1 (measured 2026-09-13, CDP
+    `Emulation.setScriptExecutionDisabled`). On listing and index pages, render the content visible
+    and put motion on hover/focus. Check with that no-JS render, which is cheap and conclusive.
+    Also: a long list of `<Link>`s to dynamic routes prefetches every visible one; the hub sets
+    `prefetch={false}` and relies on the root `loading.tsx` for instant feedback.
+
+66. **The site header retracts while you scroll down** (`Header/index.tsx`: `retracted` once scrollY >
+    600, shown again on scroll-up). It is fixed at 60px tall when scrolled on phones and 64px from lg.
+    Any `position: sticky` element placed under it (`top: 60px`) shows a strip of scrolling content
+    above it while the header is hidden. The hub's rail follows the header: a `MutationObserver` on
+    the header element's own `style` attribute (it changes on toggle, not per frame — the progress
+    bar writes to a child) sets `data-header-hidden`, and CSS translates the rail up by the header
+    height with the header's 380 ms curve. Copy `HubCatalogue.tsx` rather than adding a scroll
+    listener. It selects the header by `header.fixed.top-0`, so update that selector if the header's
+    classes change.
+
+67. **The analytical-practical tools reproduce the Pharm-D practical sheets on purpose — do not
+    "correct" them to textbook formulas.** Dissolution corrects with CF = (Vs/V) × *previous corrected*
+    concentration (`dissolution-calculator/_dissolution.ts`); the standard Σ C·Vs correction exists only
+    as the labelled Method B in `cumulative-drug-release-calculator`. Dialysis uses
+    B = (C2/C1) × (1 + V2/V1) and ln(1 − B), where **B is not the calibration slope b** (both letters
+    appear on the page, deliberately labelled apart). Partition reports **1/(average log D), never 1/D**,
+    and shows [H+] beside the sheet's "1/[H+]" column. A user asked for exactly these; changing one
+    silently gives a student a number that no longer matches their sheet.
+
+68. **Two calibration-line spellings, one line.** The Calibration Curve Calculator writes Y = mX + c;
+    the four consumer tools write Y = a + bX. The hand-off maps **a = c (intercept), b = m (slope)** —
+    swapping them is the easy bug. It travels as `?a=&b=&unit=` (read once, in `CalibrationFields`' mount
+    effect — render only one `CalibrationFields` with `readFromUrl` per page) and as `localStorage`
+    `pw_lab_calibration_v1`, applied only when the student presses "Import saved calibration". Values
+    go through `precise()` (12 significant figures), never a display-rounded string.
+
+69. **`@/components/calculators/lab-analysis` (index) loads React UI.** A pure maths module that must run
+    in Node for a hand-check (`npx tsx`) imports `lab-analysis/math` and `lab-analysis/format`, and
+    `@/components/calculators/lab-math`, directly — not either barrel. The same applies to `numericError`,
+    which lives in `parts.tsx`.
+
+70. **Recharts 3 `ResponsiveContainer` logs "width(-1) and height(-1) of chart should be greater than 0"**
+    on its first render before it measures its box. `ChartPanel` passes `initialDimension` to silence it;
+    a raw `ResponsiveContainer` elsewhere needs the same. Harmless, but it pollutes a zero-warnings check.
+
+71. **With several sessions editing, the dev server serves transient broken chunks.** Symptoms seen
+    2026-09-13: `SyntaxError: Invalid or unexpected token @ …/chunks/app/layout.js:<line>`,
+    `ChunkLoadError: Loading chunk app/layout failed`, a page that renders but never hydrates (buttons
+    have no `__react*` keys, clicks do nothing), and a first load of a cold route whose mount effect's
+    state was lost to a Fast Refresh remount. **Re-run before debugging**: check hydration first
+    (`Object.keys(button).some(k => k.startsWith("__react"))`), and wait ~15 s after navigation. Every one
+    of these cleared on retry without a code change.
+
+72. **The `pharmacopedia` drugs live in three collections with no overlap** — `drugsdata` 4,681,
+    `drugsdata_0` 5,033, `drugsdata_1` 2,959 = **12,673** unique DrugBank IDs (measured 2026-09-13; the
+    old encyclopedia page claimed "17,430+"). Any query must cover all three *as one set*: paginating
+    each and concatenating returned un-ranked, skipping pages and a `total` from collection one only
+    ("aspirin" said 0 while showing 2). `/api/search` now uses one `$unionWith` aggregate that projects
+    to small fields before `$sort`/`$facet` and then hydrates the page by `_id`. No indexes exist beyond
+    `_id` (plus an unused text index on `drugsdata`), so every search is a collection scan — keep the
+    projection before the sort. Interaction lists hold ≤100 rows and products ≤5 per drug: they are
+    samples, so never print their sum as "N interactions/products".
+
+73. **`Number(null)` is `0`, not `NaN`.** A clamp written as `Number(param)` + `Number.isFinite` turns an
+    *omitted* query param into 0 and then into the minimum — `/api/search` without `limit` returned one
+    row. Test for `null`/empty first. Every earlier test passed `limit=10` explicitly, which hid it.
+
+74. **DrugBank prose carries markup you must clean, not render.** Citation markers seen in a 1,200-record
+    sample: `[A19399]`, `[A220318,L16408]`, `[A330, A259686]`, `[FDA Label]`, `[label,T116]`, `[MSDS]`,
+    `[PubChem]`, `[PMID: 8959472]`. A lower-case bracket is a drug mention (`[codeine]`, `[insulin
+    glargine]`) — linkable. Other brackets are content (`[Rat]` after an LD50, `[18F]`) and must stay.
+    Paragraphs may be split by a whitespace-only line (`\n \n`), bold lines are sub-headings.
+    `src/components/encyclopedia/prose.tsx` handles all of it without HTML injection. Also: the
+    calculated "Traditional IUPAC Name" is wrong in places (Morphine's reads "dexamethasone phosphate")
+    — the monograph omits that property.
+
+75. **British names the DrugBank synonyms do not cover:** only `aspirin`, `paracetamol` and `lignocaine`
+    of the common ones checked (salbutamol, adrenaline, frusemide, pethidine, rifampicin, glibenclamide,
+    thyroxine, hyoscine, ciclosporin all resolve through synonyms). `/api/search` aliases those three,
+    and ranks an exact synonym (90) above a name that merely contains the query (60), so "salbutamol"
+    opens Albuterol, not Levosalbutamol.
+
+76. **Calculator originals for before/after checks live at commit `5dbe98c`** — the user's `12adf1b` commit
+    captured half-verified migrations, so HEAD is not "before". Serve the original on a temporary route
+    `src/app/migration-before/<label>-<slug>/page.tsx` (outside `(site)`/`(tools)`: the mobile route
+    generator only scans `(tools)`), capture, and delete it at once — it would ship as a public page and
+    leaves a stale `.next/types` stub (gotcha 64). Several sessions share that parent: delete only your
+    own prefixed dirs.
+
+77. **Headless Chrome for parallel runs must use `--remote-debugging-port=0`** and read the port from
+    `<user-data-dir>/DevToolsActivePort`. A random port from a fixed range let one agent attach to
+    another agent's browser (a screenshot came back titled with the other agent's calculator). Also
+    wait ~300 ms after killing Chrome before removing its profile dir, or `rmSync` throws ENOTEMPTY.
+
+78. **Migrating a calculator must not change its numbers — and the originals are wrong in ~70 places.**
+    The migration rule is: identical outputs for identical inputs; a formula that looks wrong is
+    *reported* (tracker → "Suspected maths issues"), never silently fixed; a stale-state render bug
+    (value left over from earlier inputs) may be fixed if stated. So a migrated page is not a
+    corrected page. The worst live faults are in the clinical-only opioid tools and creatinine staging.
+
+79. **Lesson questions join the MCQ bank by an explicit table** (`src/lib/courses/lesson-questions.ts`),
+    not by unit number — the Organic Chemistry bank's units 3/4 are swapped relative to the course.
+    Registering a new subject needs a row there too, or `LessonCheckpoint` renders without questions
+    (degrades cleanly). "Mark as read" is the student's click only and never waits on the questions
+    (user decision); lesson sets are stored as `quiz_attempts` with quiz_id prefix `lesson:`.
 
 ---
 

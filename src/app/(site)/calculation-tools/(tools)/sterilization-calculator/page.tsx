@@ -1,293 +1,363 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { Clock, Thermometer, Shield, RefreshCw, Info, AlertTriangle, Activity, BookOpen } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+import { useMemo, useState } from "react";
+import { Clock, RefreshCw } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Button } from "@/components/ui/button";
+import {
+  CalculatorShell,
+  CalcSection,
+  FieldGrid,
+  NumberField,
+  SelectField,
+  ResultCard,
+  ResultRow,
+  FormulaNote,
+  Formula,
+  CalcAbout,
+  CalcList,
+  CalcFaq,
+  AdSlot,
+  LabNotice,
+  type ResultTone,
+} from "@/components/calculators";
+
+type Lethality = "COMPLETE" | "HIGH" | "MODERATE" | "PARTIAL";
+
+/* ── F₀ bands and wording (unchanged from the original page; [citation:n] tags dropped) ── */
+function classifyF0(f0Value: number): { lethality: Lethality; sterilizationLevel: string; description: string } {
+  if (f0Value >= 12) {
+    return {
+      lethality: "COMPLETE",
+      sterilizationLevel: "Commercial Sterility",
+      description: "12‑log reduction of C. botulinum spores (F₀ ≥12)",
+    };
+  }
+  if (f0Value >= 6) {
+    return {
+      lethality: "HIGH",
+      sterilizationLevel: "Medical Sterility",
+      description: "6‑log reduction of most pathogens (F₀ ≥6)",
+    };
+  }
+  if (f0Value >= 3) {
+    return {
+      lethality: "MODERATE",
+      sterilizationLevel: "Food Industry Standard",
+      description: "Suitable for canned foods (F₀ ≥3)",
+    };
+  }
+  return {
+    lethality: "PARTIAL",
+    sterilizationLevel: "Pasteurization Level",
+    description: "Reduces vegetative cells only (F₀ <3)",
+  };
+}
+
+const TONE: Record<Lethality, ResultTone> = {
+  COMPLETE: "success",
+  HIGH: "success",
+  MODERATE: "warning",
+  PARTIAL: "danger",
+};
+
+const Z_OPTIONS = [
+  { value: "10", label: "10°C (B. stearothermophilus)" },
+  { value: "12", label: "12°C (C. botulinum)" },
+  { value: "8", label: "8°C (Thermophiles)" },
+];
+
+const TREF_OPTIONS = [
+  { value: "121", label: "121°C (Standard)" },
+  { value: "115", label: "115°C" },
+  { value: "134", label: "134°C" },
+];
+
+const EXAMPLES = [
+  { name: "Autoclave 121°C · 15 min", T: "121", t: "15" },
+  { name: "Low-temp 115°C · 30 min", T: "115", t: "30" },
+  { name: "Flash 134°C · 3 min", T: "134", t: "3" },
+];
+
+/* F₀ per minute at z = 10 °C, as printed on the original page. */
+const F0_TABLE = [
+  { temp: "100", f0: "0.008", use: "Pasteurization" },
+  { temp: "110", f0: "0.077", use: "Low‑temp" },
+  { temp: "115", f0: "0.245", use: "Pharmaceuticals" },
+  { temp: "121", f0: "0.975", use: "Standard" },
+  { temp: "125", f0: "2.448", use: "HTST" },
+  { temp: "130", f0: "7.743", use: "Flash" },
+];
 
 export default function SterilizationCalculator() {
-    const [temperature, setTemperature] = useState<string>('121');
-    const [time, setTime] = useState<string>('');
-    const [zValue, setZValue] = useState<string>('10');
-    const [referenceTemp, setReferenceTemp] = useState<string>('121');
-    const [sterilizationResult, setSterilizationResult] = useState<{
-        f0Value: number;
-        lethality: string;
-        sterilizationLevel: string;
-        description: string;
-        color: string;
-        decimalReduction: number;
-    } | null>(null);
-    const [chartData, setChartData] = useState<any[]>([]);
-    const [showDetails, setShowDetails] = useState<boolean>(false);
+  const [temperature, setTemperature] = useState("121");
+  const [time, setTime] = useState("");
+  const [zValue, setZValue] = useState("10");
+  const [referenceTemp, setReferenceTemp] = useState("121");
 
-    const calculateSterilization = () => {
-        const T = parseFloat(temperature);
-        const t = parseFloat(time);
-        const Z = parseFloat(zValue);
-        const Tref = parseFloat(referenceTemp);
+  /*
+   * Derived live. The original recalculated in an effect only while every
+   * field was non-empty, so clearing the time left the previous F₀ on screen,
+   * and a zero time raised an alert(). Invalid input now simply shows no result
+   * (a stale-state fix). The formula and the bands are unchanged.
+   */
+  const result = useMemo(() => {
+    const T = parseFloat(temperature);
+    const t = parseFloat(time);
+    const Z = parseFloat(zValue);
+    const Tref = parseFloat(referenceTemp);
+    if (isNaN(T) || isNaN(t) || isNaN(Z) || isNaN(Tref) || t <= 0) return null;
 
-        if (isNaN(T) || isNaN(t) || isNaN(Z) || isNaN(Tref) || t <= 0) {
-            alert('Please enter valid positive numbers');
-            return;
-        }
+    const exponent = (T - Tref) / Z;
+    const lethalRate = Math.pow(10, exponent);
+    const f0Value = t * lethalRate;
+    if (!Number.isFinite(f0Value)) return null;
+    return { T, t, Z, Tref, exponent, lethalRate, f0Value, ...classifyF0(f0Value) };
+  }, [temperature, time, zValue, referenceTemp]);
 
-        const exponent = (T - Tref) / Z;
-        const f0Value = t * Math.pow(10, exponent);
-        const decimalReduction = t * Math.pow(10, (T - Tref) / 10);
+  // The original plotted the lethal rate 10^((T − Tref)/z) at every minute from 0 to 60.
+  const chartData = useMemo(() => {
+    if (!result) return [];
+    const data: { time: number; L: number }[] = [];
+    for (let m = 0; m <= 60; m += 1) data.push({ time: m, L: result.lethalRate });
+    return data;
+  }, [result]);
 
-        let lethality = '';
-        let sterilizationLevel = '';
-        let description = '';
-        let color = '';
+  const reset = () => {
+    setTemperature("121");
+    setTime("");
+    setZValue("10");
+    setReferenceTemp("121");
+  };
 
-        if (f0Value >= 12) {
-            lethality = 'COMPLETE';
-            sterilizationLevel = 'Commercial Sterility';
-            description = '12‑log reduction of C. botulinum spores (F₀ ≥12) [citation:2]';
-            color = 'text-green-600';
-        } else if (f0Value >= 6) {
-            lethality = 'HIGH';
-            sterilizationLevel = 'Medical Sterility';
-            description = '6‑log reduction of most pathogens (F₀ ≥6)';
-            color = 'text-blue-600';
-        } else if (f0Value >= 3) {
-            lethality = 'MODERATE';
-            sterilizationLevel = 'Food Industry Standard';
-            description = 'Suitable for canned foods (F₀ ≥3) [citation:4]';
-            color = 'text-yellow-600';
-        } else {
-            lethality = 'PARTIAL';
-            sterilizationLevel = 'Pasteurization Level';
-            description = 'Reduces vegetative cells only (F₀ <3)';
-            color = 'text-orange-600';
-        }
+  const timeValue = parseFloat(time);
+  const timeError =
+    time.trim() === "" ? undefined : isNaN(timeValue) ? "Enter a number." : timeValue <= 0 ? "Must be greater than zero." : undefined;
+  const tempError = temperature.trim() !== "" && isNaN(parseFloat(temperature)) ? "Enter a number." : undefined;
 
-        setSterilizationResult({
-            f0Value,
-            lethality,
-            sterilizationLevel,
-            description,
-            color,
-            decimalReduction
-        });
+  return (
+    <CalculatorShell
+      title="Sterilization (F₀) Calculator"
+      subtitle="Converts a heat-sterilisation hold time and temperature into F₀ — the equivalent minutes at the reference temperature."
+      icon={Clock}
+      eyebrow="Microbiology"
+      aside={
+        <>
+          <CalcAbout title="About the F₀ value">
+            <p>
+              F₀ is the equivalent exposure time, in minutes at 121°C, that produces the same lethal
+              effect as the actual time–temperature profile. It lets cycles run at different
+              temperatures be compared on one scale, because microbial kill rises logarithmically with
+              temperature.
+            </p>
+            <CalcList
+              title="Use it when"
+              items={[
+                "Comparing an autoclave cycle at 115°C or 134°C with the 121°C standard",
+                "Checking whether a hold time delivers the overkill target",
+                "Learning how the z-value changes the effect of temperature",
+              ]}
+            />
+            <CalcList
+              tone="caution"
+              title="Keep in mind"
+              items={[
+                "This treats the whole time as held at one temperature — heat-up and cool-down are ignored",
+                "Use the temperature at the coldest point of the load, not the chamber display",
+                "Overkill design in industry targets F₀ ≥ 12 min for a 10⁻⁶ sterility assurance level (SAL)",
+              ]}
+            />
+          </CalcAbout>
 
-        // Generate lethality rate curve
-        const data = [];
-        for (let t = 0; t <= 60; t += 1) {
-            data.push({ time: t, L: Math.pow(10, (T - Tref) / Z) });
-        }
-        setChartData(data);
-    };
+          <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+        </>
+      }
+    >
+      <ResultCard
+        label="F₀ value"
+        value={result ? result.f0Value.toFixed(2) : null}
+        unit="min"
+        interpretation={result ? `${result.sterilizationLevel} · ${result.lethality} lethality` : undefined}
+        tone={result ? TONE[result.lethality] : "neutral"}
+        empty="Enter the hold time in minutes (and check the temperature)."
+      />
 
-    useEffect(() => {
-        if (time && temperature && zValue && referenceTemp) calculateSterilization();
-    }, [temperature, time, zValue, referenceTemp]);
+      <CalcSection title="Process parameters">
+        <FieldGrid>
+          <NumberField
+            label="Temperature (T)"
+            value={temperature}
+            onChange={setTemperature}
+            unit="°C"
+            step="0.1"
+            error={tempError}
+            hint="Temperature held during exposure; autoclaves run 115–134°C."
+          />
+          <NumberField
+            label="Time (t)"
+            value={time}
+            onChange={setTime}
+            unit="min"
+            step="0.1"
+            placeholder="e.g. 15"
+            error={timeError}
+            hint="Hold time at that temperature."
+          />
+          <SelectField
+            label="z-value"
+            value={zValue}
+            onChange={setZValue}
+            options={Z_OPTIONS}
+            hint="°C rise that makes kill 10 times faster."
+          />
+          <SelectField
+            label="Reference temperature (Tref)"
+            value={referenceTemp}
+            onChange={setReferenceTemp}
+            options={TREF_OPTIONS}
+            hint="F₀ is defined at 121°C."
+          />
+        </FieldGrid>
 
-    const reset = () => {
-        setTemperature('121');
-        setTime('');
-        setZValue('10');
-        setReferenceTemp('121');
-        setSterilizationResult(null);
-    };
-
-    return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 pt-20">
-            <div className="max-w-7xl mx-auto">
-                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6">
-                    <div className="flex items-center">
-                        <div className="bg-white/20 p-3 rounded-xl mr-4">
-                            <Clock className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl md:text-3xl font-bold text-white">Sterilization (F₀) Calculator</h1>
-                            <p className="text-blue-100 mt-2">F₀ = t × 10^((T − 121)/z) </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Input Area */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h2 className="text-xl font-bold mb-6">Process Parameters</h2>
-
-                            <div className="grid grid-cols-2 gap-6">
-                                <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                                    <label className="text-sm font-semibold mb-2">Temperature (°C)</label>
-                                    <input type="number" step="0.1" value={temperature} onChange={(e) => setTemperature(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-red-200 rounded-lg" />
-                                </div>
-                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                                    <label className="text-sm font-semibold mb-2">Time (min)</label>
-                                    <input type="number" step="0.1" value={time} onChange={(e) => setTime(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg" />
-                                </div>
-                                <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                                    <label className="text-sm font-semibold mb-2">z‑value (°C)</label>
-                                    <select value={zValue} onChange={(e) => setZValue(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg">
-                                        <option value="10">10°C (B. stearothermophilus)</option>
-                                        <option value="12">12°C (C. botulinum)</option>
-                                        <option value="8">8°C (Thermophiles)</option>
-                                    </select>
-                                </div>
-                                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                                    <label className="text-sm font-semibold mb-2">Reference T (°C)</label>
-                                    <select value={referenceTemp} onChange={(e) => setReferenceTemp(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-green-200 rounded-lg">
-                                        <option value="121">121°C (Standard)</option>
-                                        <option value="115">115°C</option>
-                                        <option value="134">134°C</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                           {/* Lethality curve */}
-{chartData.length > 0 && (
-    <div className="mt-6 bg-gray-50 rounded-xl p-4">
-        <h3 className="text-lg font-bold text-gray-800 mb-4">
-            Lethality Rate L(t) = 10^((T - T_ref) / z)
-        </h3>
-        {/* Increased height from h-48 to h-64 for better visibility */}
-        <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-                <LineChart 
-                    data={chartData} 
-                    margin={{ top: 10, right: 30, left: 20, bottom: 30 }}
-                >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                    
-                    <XAxis 
-                        dataKey="time" 
-                        fontSize={12}
-                        tickMargin={10}
-                        label={{ value: "Time (min)", position: "insideBottom", offset: -20, fontSize: 14, fontWeight: 500 }} 
-                    />
-                    
-                    <YAxis 
-                        fontSize={12}
-                        tickFormatter={(value) => value.toLocaleString()} 
-                        label={{ 
-                            value: "Lethality Rate", 
-                            angle: -90, 
-                            position: "insideLeft", 
-                            style: { textAnchor: 'middle' },
-                            offset: 0,
-                            fontSize: 14,
-                            fontWeight: 500
-                        }} 
-                    />
-                    
-                    <Tooltip 
-                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                        formatter={(value) => [typeof value === 'number' && value !== undefined ? value.toFixed(4) : 'N/A', "L(t)"]}
-                    />
-                    
-                    <Line 
-                        type="monotone" 
-                        dataKey="L" 
-                        stroke="#10b981"  // Changed to green to distinguish from the Survivor curve
-                        strokeWidth={3} 
-                        dot={false}
-                        animationDuration={1000}
-                    />
-                </LineChart>
-            </ResponsiveContainer>
+        <div>
+          <p className="mb-2 text-xs font-medium text-muted-foreground">Try an example</p>
+          <div className="flex flex-wrap gap-2">
+            {EXAMPLES.map((ex) => (
+              <button
+                key={ex.name}
+                type="button"
+                onClick={() => {
+                  setTemperature(ex.T);
+                  setTime(ex.t);
+                  setZValue("10");
+                  setReferenceTemp("121");
+                }}
+                aria-pressed={temperature === ex.T && time === ex.t && zValue === "10" && referenceTemp === "121"}
+                className="min-h-[40px] rounded-full border bg-background px-3 py-2 text-xs font-medium active:bg-accent aria-pressed:border-primary aria-pressed:bg-primary/10"
+              >
+                {ex.name}
+              </button>
+            ))}
+          </div>
         </div>
-    </div>
-)}
 
-                            <div className="bg-blue-50 p-4 rounded-lg mt-4">
-                                <p className="text-sm font-mono">F₀ = t × 10^((T − 121)/10) </p>
-                                <p className="text-xs text-gray-600 mt-2">where z = 10°C for most spores, reference temperature 121°C</p>
-                            </div>
+        <Button variant="outline" onClick={reset} className="w-full">
+          <RefreshCw />
+          Reset
+        </Button>
+      </CalcSection>
 
-                            <div className="flex gap-4 mt-6">
-                                <button onClick={calculateSterilization}
-                                    className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 rounded-xl shadow-lg">
-                                    Calculate F₀
-                                </button>
-                                <button onClick={reset}
-                                    className="px-6 bg-gray-600 hover:bg-gray-700 text-white rounded-xl flex items-center">
-                                    <RefreshCw className="w-5 h-5 mr-2" /> Reset
-                                </button>
-                            </div>
-                        </div>
+      {result && (
+        <CalcSection title="Working">
+          <div>
+            <ResultRow label="Exponent (T − Tref) ÷ z" value={Number(result.exponent.toFixed(4))} />
+            <ResultRow label="Lethal rate L = 10^exponent" value={Number(result.lethalRate.toPrecision(4))} unit="per min" />
+            <ResultRow label="F₀ = t × L" value={result.f0Value.toFixed(2)} unit="min" badge={result.lethality} />
+          </div>
+          <Formula>
+            F₀ = {result.t} × 10^(({result.T} − {result.Tref}) ÷ {result.Z}) = {result.f0Value.toFixed(2)} min
+          </Formula>
+          <LabNotice tone={result.lethality === "PARTIAL" || result.lethality === "MODERATE" ? "warning" : "info"} title={result.sterilizationLevel}>
+            {result.description}
+          </LabNotice>
+        </CalcSection>
+      )}
 
-                        {/* Detailed Information */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <button onClick={() => setShowDetails(!showDetails)}
-                                className="flex items-center justify-between w-full text-left">
-                                <h3 className="text-lg font-bold text-gray-800 flex items-center">
-                                    <Info className="w-5 h-5 mr-2 text-blue-600" />
-                                    About F₀ Value
-                                </h3>
-                            </button>
-                            {showDetails && (
-                                <div className="mt-4 space-y-3 text-sm text-gray-600">
-                                    <p><span className="font-semibold">Definition:</span> F₀ is the equivalent exposure time (in minutes) at 121°C that produces the same lethal effect as the actual time‑temperature profile [citation:4].</p>
-                                    <p><span className="font-semibold">Significance:</span> F₀ allows comparison of sterilization cycles regardless of temperature variations. It accounts for the logarithmic relationship between temperature and microbial kill rate [citation:1][citation:5].</p>
-                                    <p><span className="font-semibold">Z‑value:</span> The temperature change required to alter the D‑value by a factor of 10. For B. stearothermophilus (sterility indicator), z = 10°C [citation:5][citation:9].</p>
-                                    <p><span className="font-semibold">Overkill design:</span> Pharmaceutical industry requires F₀ ≥ 12 minutes to ensure 10⁻⁶ sterility assurance level (SAL) [citation:9].</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+      {result && (
+        <CalcSection
+          title="Lethality rate"
+          description="L(t) = 10^((T − Tref) ÷ z) over 0–60 min. At a constant temperature the rate is flat; F₀ is the area under this line up to your hold time."
+        >
+          <div className="h-60 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 10, right: 12, left: 0, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis
+                  dataKey="time"
+                  tick={{ fontSize: 12 }}
+                  label={{ value: "Time (min)", position: "insideBottom", offset: -12, fontSize: 12 }}
+                />
+                <YAxis tick={{ fontSize: 12 }} width={48} tickFormatter={(value: number) => value.toLocaleString()} />
+                <Tooltip
+                  contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 13 }}
+                  formatter={(value) => [typeof value === "number" ? value.toFixed(4) : "N/A", "L(t)"]}
+                />
+                <Line type="monotone" dataKey="L" stroke="#10b981" strokeWidth={3} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </CalcSection>
+      )}
 
-                    {/* Results & Reference */}
-                    <div className="space-y-6">
-                        {sterilizationResult && (
-                            <div className="bg-gradient-to-br from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 text-white">
-                                <h2 className="text-2xl font-bold mb-4">F₀ Value</h2>
-                                <div className="bg-white/20 rounded-xl p-4 text-center">
-                                    <div className="text-5xl font-bold mb-2">{sterilizationResult.f0Value.toFixed(2)} min</div>
-                                    <div className="text-lg">{sterilizationResult.sterilizationLevel}</div>
-                                </div>
-                                <div className="bg-white/10 rounded-lg p-4 mt-4">
-                                    <p>{sterilizationResult.description}</p>
-                                </div>
-                            </div>
-                        )}
+      <CalcSection title="F₀ values per minute" description="Lethality of one minute at each temperature (z = 10°C).">
+        <div className="-mx-1 overflow-x-auto">
+          <table className="w-full min-w-[18rem] text-sm">
+            <thead>
+              <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                <th className="px-2 py-2 font-medium">Temp (°C)</th>
+                <th className="px-2 py-2 font-medium">F₀ (min)</th>
+                <th className="px-2 py-2 font-medium">Application</th>
+              </tr>
+            </thead>
+            <tbody>
+              {F0_TABLE.map((row) => (
+                <tr key={row.temp} className="border-b border-border/60 last:border-b-0">
+                  <td className="px-2 py-2.5 font-medium tabular-nums text-foreground">{row.temp}</td>
+                  <td className="px-2 py-2.5 font-mono tabular-nums text-foreground">{row.f0}</td>
+                  <td className="px-2 py-2.5 text-muted-foreground">{row.use}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CalcSection>
 
-                        {/* F₀ Reference Table */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                                <BookOpen className="w-5 h-5 mr-2 text-blue-600" />
-                                F₀ Values per Minute [citation:5]
-                            </h3>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="bg-gradient-to-r from-blue-50 to-green-50">
-                                            <th className="py-2 px-3 text-left">Temp (°C)</th>
-                                            <th className="py-2 px-3 text-left">F₀ (min)</th>
-                                            <th className="py-2 px-3 text-left">Application</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr><td>100</td><td>0.008</td><td>Pasteurization</td></tr>
-                                        <tr className="bg-gray-50"><td>110</td><td>0.077</td><td>Low‑temp</td></tr>
-                                        <tr><td>115</td><td>0.245</td><td>Pharmaceuticals</td></tr>
-                                        <tr className="bg-gray-50"><td>121</td><td>0.975</td><td>Standard</td></tr>
-                                        <tr><td>125</td><td>2.448</td><td>HTST</td></tr>
-                                        <tr className="bg-gray-50"><td>130</td><td>7.743</td><td>Flash</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+      <CalcSection title="Sterilization standards">
+        <div>
+          <ResultRow label="Overkill" value="F₀ ≥ 12" />
+          <ResultRow label="C. botulinum" value="F₀ ≥ 2.52" />
+          <ResultRow label="Medical" value="F₀ ≥ 8" />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Bands used for the result: ≥ 12 commercial sterility · 6–12 medical sterility · 3–6 food industry
+          standard · below 3 pasteurization level.
+        </p>
+      </CalcSection>
 
-                        {/* Standards */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-2">Sterilization Standards </h3>
-                            <div className="space-y-2 text-sm">
-                                <div className="p-2 bg-green-50 rounded"><span className="font-semibold">Overkill:</span> F₀ ≥ 12</div>
-                                <div className="p-2 bg-blue-50 rounded"><span className="font-semibold">C. botulinum:</span> F₀ ≥ 2.52</div>
-                                <div className="p-2 bg-yellow-50 rounded"><span className="font-semibold">Medical:</span> F₀ ≥ 8</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    );
+      <FormulaNote>
+        <Formula>F₀ = t × 10^((T − Tref) ÷ z)</Formula>
+        <p>
+          <strong>t</strong> = time at temperature (min), <strong>T</strong> = process temperature (°C),{" "}
+          <strong>Tref</strong> = reference temperature (121°C for F₀), <strong>z</strong> = the temperature
+          change that alters the D-value (decimal reduction time) by a factor of 10 — 10°C for the
+          sterility indicator <em>B. stearothermophilus</em>.
+        </p>
+        <p>
+          10^((T − Tref) ÷ z) is the lethal rate: how many minutes at the reference temperature one
+          minute at T is worth. At 131°C with z = 10, each minute counts as 10.
+        </p>
+      </FormulaNote>
+
+      <CalcFaq
+        items={[
+          {
+            q: "Why does 134°C for 3 minutes give a bigger F₀ than 121°C for 15?",
+            a: "Because kill rate rises ten-fold for every z degrees. With z = 10°C, 134°C is 1.3 z-values above 121°C, so each minute is worth about 20 minutes at 121°C — 3 minutes gives an F₀ near 60.",
+          },
+          {
+            q: "Which z-value should I choose?",
+            a: "10°C for most steam sterilisation work, as it describes Geobacillus (B.) stearothermophilus spores used as biological indicators. 12°C is sometimes used for C. botulinum in food processing; 8°C for some thermophiles.",
+          },
+          {
+            q: "Is F₀ the same as the log reduction?",
+            a: "No. F₀ is minutes of equivalent heating. Divide F₀ by the organism's D₁₂₁ value to get the number of log reductions it delivers — for spores with D₁₂₁ = 1 min, F₀ = 12 gives 12 logs.",
+          },
+          {
+            q: "Can I use this for a real cycle with heat-up and cool-down?",
+            a: "Only as an approximation. Validated cycles integrate the lethal rate over the whole measured temperature profile, minute by minute, from a probe in the load.",
+          },
+        ]}
+      />
+    </CalculatorShell>
+  );
 }

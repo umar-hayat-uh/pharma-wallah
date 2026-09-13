@@ -134,6 +134,22 @@ export async function GET(request: NextRequest) {
                     },
                     then: 100,
                   },
+                  // An exact synonym is the drug the reader meant: "salbutamol" is
+                  // Albuterol, not Levosalbutamol (which only contains the word).
+                  {
+                    case: {
+                      $anyElementTrue: [
+                        {
+                          $map: {
+                            input: { $ifNull: ["$syn", []] },
+                            as: "s",
+                            in: { $eq: [{ $toLower: "$$s" }, q.toLowerCase()] },
+                          },
+                        },
+                      ],
+                    },
+                    then: 90,
+                  },
                   { case: { $regexMatch: { input: "$name", regex: `^${escaped}`, options: "i" } }, then: 80 },
                   { case: { $regexMatch: { input: "$name", regex: escaped, options: "i" } }, then: 60 },
                 ],

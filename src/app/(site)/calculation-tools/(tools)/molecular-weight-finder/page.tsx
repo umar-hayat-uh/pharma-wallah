@@ -1,911 +1,520 @@
 "use client";
-import { useState, useEffect, useMemo } from 'react';
-import {
-    Calculator, Beaker, FlaskConical, Scale, Weight,
-    Search, Hash, AlertCircle, Atom, TestTube2,
-    TrendingUp, BarChart3, Database
-} from 'lucide-react';
 
-// Define element interface
-interface Element {
-    symbol: string;
-    name: string;
-    atomicNumber: number;
-    atomicWeight: number;
-    uncertainty?: number;
-    group: number;
-    period: number;
+import { useId, useMemo, useState } from "react";
+import { Atom, Grid3x3, RefreshCw, Search, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import {
+    CalculatorShell,
+    CalcSection,
+    ResultCard,
+    ResultRow,
+    FormulaNote,
+    Formula,
+    CalcAbout,
+    CalcList,
+    CalcFaq,
+    AdSlot,
+    LabNotice,
+} from "@/components/calculators";
+import { COMMON_FORMULAS, PERIODIC_TABLE, type Element } from "./_elements";
+import { calculateMolecularWeight } from "./_formula";
+
+const DEFAULT_FORMULA = "H2O";
+
+const SUBSCRIPT_DIGITS = "₀₁₂₃₄₅₆₇₈₉";
+
+/*
+ * Only a count that follows a symbol is a subscript. The digit straight after
+ * "(" in "(2NH4)SO4" is this tool's group multiplier and stays full size.
+ */
+const COUNT_PATTERN = /([A-Za-z)])(\d+)/g;
+
+/** "C8H10N4O2" → "C₈H₁₀N₄O₂", for plain-text places such as the result pill. */
+function toSubscriptText(formula: string): string {
+    return formula.replace(COUNT_PATTERN, (_match, before: string, digits: string) =>
+        before + digits.replace(/\d/g, (digit) => SUBSCRIPT_DIGITS[Number(digit)]),
+    );
 }
 
-// Periodic table data with atomic weights (IUPAC 2021 values)
-const PERIODIC_TABLE: Element[] = [
-    // Period 1
-    { symbol: 'H', name: 'Hydrogen', atomicNumber: 1, atomicWeight: 1.008, group: 1, period: 1 },
-    { symbol: 'He', name: 'Helium', atomicNumber: 2, atomicWeight: 4.0026, group: 18, period: 1 },
+/** The formula with real <sub> digits, for display in the page. */
+function FormulaText({ formula }: { formula: string }) {
+    const parts: React.ReactNode[] = [];
+    let last = 0;
+    formula.replace(COUNT_PATTERN, (match, before: string, digits: string, offset: number) => {
+        parts.push(<span key={`t${offset}`}>{formula.slice(last, offset) + before}</span>);
+        parts.push(<sub key={`s${offset}`}>{digits}</sub>);
+        last = offset + match.length;
+        return match;
+    });
+    parts.push(<span key="end">{formula.slice(last)}</span>);
+    return <>{parts}</>;
+}
 
-    // Period 2
-    { symbol: 'Li', name: 'Lithium', atomicNumber: 3, atomicWeight: 6.94, group: 1, period: 2 },
-    { symbol: 'Be', name: 'Beryllium', atomicNumber: 4, atomicWeight: 9.0122, group: 2, period: 2 },
-    { symbol: 'B', name: 'Boron', atomicNumber: 5, atomicWeight: 10.81, group: 13, period: 2 },
-    { symbol: 'C', name: 'Carbon', atomicNumber: 6, atomicWeight: 12.011, group: 14, period: 2 },
-    { symbol: 'N', name: 'Nitrogen', atomicNumber: 7, atomicWeight: 14.007, group: 15, period: 2 },
-    { symbol: 'O', name: 'Oxygen', atomicNumber: 8, atomicWeight: 15.999, group: 16, period: 2 },
-    { symbol: 'F', name: 'Fluorine', atomicNumber: 9, atomicWeight: 18.998, group: 17, period: 2 },
-    { symbol: 'Ne', name: 'Neon', atomicNumber: 10, atomicWeight: 20.180, group: 18, period: 2 },
+/* Element-group tints for the periodic table — unchanged from the original. */
+function groupColor(group: number): string {
+    if (group === 1) return "bg-red-100 border-red-300";
+    if (group === 2) return "bg-orange-100 border-orange-300";
+    if (group >= 3 && group <= 12) return "bg-yellow-100 border-yellow-300";
+    if (group === 13) return "bg-teal-100 border-teal-300";
+    if (group === 14) return "bg-green-100 border-green-300";
+    if (group === 15) return "bg-blue-100 border-blue-300";
+    if (group === 16) return "bg-indigo-100 border-indigo-300";
+    if (group === 17) return "bg-purple-100 border-purple-300";
+    if (group === 18) return "bg-gray-100 border-gray-300";
+    return "bg-gray-50 border-gray-200";
+}
 
-    // Period 3
-    { symbol: 'Na', name: 'Sodium', atomicNumber: 11, atomicWeight: 22.990, group: 1, period: 3 },
-    { symbol: 'Mg', name: 'Magnesium', atomicNumber: 12, atomicWeight: 24.305, group: 2, period: 3 },
-    { symbol: 'Al', name: 'Aluminum', atomicNumber: 13, atomicWeight: 26.982, group: 13, period: 3 },
-    { symbol: 'Si', name: 'Silicon', atomicNumber: 14, atomicWeight: 28.085, group: 14, period: 3 },
-    { symbol: 'P', name: 'Phosphorus', atomicNumber: 15, atomicWeight: 30.974, group: 15, period: 3 },
-    { symbol: 'S', name: 'Sulfur', atomicNumber: 16, atomicWeight: 32.06, group: 16, period: 3 },
-    { symbol: 'Cl', name: 'Chlorine', atomicNumber: 17, atomicWeight: 35.45, group: 17, period: 3 },
-    { symbol: 'Ar', name: 'Argon', atomicNumber: 18, atomicWeight: 39.948, group: 18, period: 3 },
-
-    // Period 4
-    { symbol: 'K', name: 'Potassium', atomicNumber: 19, atomicWeight: 39.098, group: 1, period: 4 },
-    { symbol: 'Ca', name: 'Calcium', atomicNumber: 20, atomicWeight: 40.078, group: 2, period: 4 },
-    { symbol: 'Sc', name: 'Scandium', atomicNumber: 21, atomicWeight: 44.956, group: 3, period: 4 },
-    { symbol: 'Ti', name: 'Titanium', atomicNumber: 22, atomicWeight: 47.867, group: 4, period: 4 },
-    { symbol: 'V', name: 'Vanadium', atomicNumber: 23, atomicWeight: 50.942, group: 5, period: 4 },
-    { symbol: 'Cr', name: 'Chromium', atomicNumber: 24, atomicWeight: 51.996, group: 6, period: 4 },
-    { symbol: 'Mn', name: 'Manganese', atomicNumber: 25, atomicWeight: 54.938, group: 7, period: 4 },
-    { symbol: 'Fe', name: 'Iron', atomicNumber: 26, atomicWeight: 55.845, group: 8, period: 4 },
-    { symbol: 'Co', name: 'Cobalt', atomicNumber: 27, atomicWeight: 58.933, group: 9, period: 4 },
-    { symbol: 'Ni', name: 'Nickel', atomicNumber: 28, atomicWeight: 58.693, group: 10, period: 4 },
-    { symbol: 'Cu', name: 'Copper', atomicNumber: 29, atomicWeight: 63.546, group: 11, period: 4 },
-    { symbol: 'Zn', name: 'Zinc', atomicNumber: 30, atomicWeight: 65.38, group: 12, period: 4 },
-    { symbol: 'Ga', name: 'Gallium', atomicNumber: 31, atomicWeight: 69.723, group: 13, period: 4 },
-    { symbol: 'Ge', name: 'Germanium', atomicNumber: 32, atomicWeight: 72.630, group: 14, period: 4 },
-    { symbol: 'As', name: 'Arsenic', atomicNumber: 33, atomicWeight: 74.922, group: 15, period: 4 },
-    { symbol: 'Se', name: 'Selenium', atomicNumber: 34, atomicWeight: 78.971, group: 16, period: 4 },
-    { symbol: 'Br', name: 'Bromine', atomicNumber: 35, atomicWeight: 79.904, group: 17, period: 4 },
-    { symbol: 'Kr', name: 'Krypton', atomicNumber: 36, atomicWeight: 83.798, group: 18, period: 4 },
-
-    // Period 5
-    { symbol: 'Rb', name: 'Rubidium', atomicNumber: 37, atomicWeight: 85.468, group: 1, period: 5 },
-    { symbol: 'Sr', name: 'Strontium', atomicNumber: 38, atomicWeight: 87.62, group: 2, period: 5 },
-    { symbol: 'Y', name: 'Yttrium', atomicNumber: 39, atomicWeight: 88.906, group: 3, period: 5 },
-    { symbol: 'Zr', name: 'Zirconium', atomicNumber: 40, atomicWeight: 91.224, group: 4, period: 5 },
-    { symbol: 'Nb', name: 'Niobium', atomicNumber: 41, atomicWeight: 92.906, group: 5, period: 5 },
-    { symbol: 'Mo', name: 'Molybdenum', atomicNumber: 42, atomicWeight: 95.95, group: 6, period: 5 },
-    { symbol: 'Tc', name: 'Technetium', atomicNumber: 43, atomicWeight: 98, group: 7, period: 5 },
-    { symbol: 'Ru', name: 'Ruthenium', atomicNumber: 44, atomicWeight: 101.07, group: 8, period: 5 },
-    { symbol: 'Rh', name: 'Rhodium', atomicNumber: 45, atomicWeight: 102.91, group: 9, period: 5 },
-    { symbol: 'Pd', name: 'Palladium', atomicNumber: 46, atomicWeight: 106.42, group: 10, period: 5 },
-    { symbol: 'Ag', name: 'Silver', atomicNumber: 47, atomicWeight: 107.87, group: 11, period: 5 },
-    { symbol: 'Cd', name: 'Cadmium', atomicNumber: 48, atomicWeight: 112.41, group: 12, period: 5 },
-    { symbol: 'In', name: 'Indium', atomicNumber: 49, atomicWeight: 114.82, group: 13, period: 5 },
-    { symbol: 'Sn', name: 'Tin', atomicNumber: 50, atomicWeight: 118.71, group: 14, period: 5 },
-    { symbol: 'Sb', name: 'Antimony', atomicNumber: 51, atomicWeight: 121.76, group: 15, period: 5 },
-    { symbol: 'Te', name: 'Tellurium', atomicNumber: 52, atomicWeight: 127.60, group: 16, period: 5 },
-    { symbol: 'I', name: 'Iodine', atomicNumber: 53, atomicWeight: 126.90, group: 17, period: 5 },
-    { symbol: 'Xe', name: 'Xenon', atomicNumber: 54, atomicWeight: 131.29, group: 18, period: 5 },
-
-    // Period 6
-    { symbol: 'Cs', name: 'Cesium', atomicNumber: 55, atomicWeight: 132.91, group: 1, period: 6 },
-    { symbol: 'Ba', name: 'Barium', atomicNumber: 56, atomicWeight: 137.33, group: 2, period: 6 },
-    { symbol: 'La', name: 'Lanthanum', atomicNumber: 57, atomicWeight: 138.91, group: 3, period: 6 },
-    { symbol: 'Ce', name: 'Cerium', atomicNumber: 58, atomicWeight: 140.12, group: 3, period: 6 },
-    { symbol: 'Pr', name: 'Praseodymium', atomicNumber: 59, atomicWeight: 140.91, group: 3, period: 6 },
-    { symbol: 'Nd', name: 'Neodymium', atomicNumber: 60, atomicWeight: 144.24, group: 3, period: 6 },
-    { symbol: 'Pm', name: 'Promethium', atomicNumber: 61, atomicWeight: 145, group: 3, period: 6 },
-    { symbol: 'Sm', name: 'Samarium', atomicNumber: 62, atomicWeight: 150.36, group: 3, period: 6 },
-    { symbol: 'Eu', name: 'Europium', atomicNumber: 63, atomicWeight: 151.96, group: 3, period: 6 },
-    { symbol: 'Gd', name: 'Gadolinium', atomicNumber: 64, atomicWeight: 157.25, group: 3, period: 6 },
-    { symbol: 'Tb', name: 'Terbium', atomicNumber: 65, atomicWeight: 158.93, group: 3, period: 6 },
-    { symbol: 'Dy', name: 'Dysprosium', atomicNumber: 66, atomicWeight: 162.50, group: 3, period: 6 },
-    { symbol: 'Ho', name: 'Holmium', atomicNumber: 67, atomicWeight: 164.93, group: 3, period: 6 },
-    { symbol: 'Er', name: 'Erbium', atomicNumber: 68, atomicWeight: 167.26, group: 3, period: 6 },
-    { symbol: 'Tm', name: 'Thulium', atomicNumber: 69, atomicWeight: 168.93, group: 3, period: 6 },
-    { symbol: 'Yb', name: 'Ytterbium', atomicNumber: 70, atomicWeight: 173.05, group: 3, period: 6 },
-    { symbol: 'Lu', name: 'Lutetium', atomicNumber: 71, atomicWeight: 174.97, group: 3, period: 6 },
-    { symbol: 'Hf', name: 'Hafnium', atomicNumber: 72, atomicWeight: 178.49, group: 4, period: 6 },
-    { symbol: 'Ta', name: 'Tantalum', atomicNumber: 73, atomicWeight: 180.95, group: 5, period: 6 },
-    { symbol: 'W', name: 'Tungsten', atomicNumber: 74, atomicWeight: 183.84, group: 6, period: 6 },
-    { symbol: 'Re', name: 'Rhenium', atomicNumber: 75, atomicWeight: 186.21, group: 7, period: 6 },
-    { symbol: 'Os', name: 'Osmium', atomicNumber: 76, atomicWeight: 190.23, group: 8, period: 6 },
-    { symbol: 'Ir', name: 'Iridium', atomicNumber: 77, atomicWeight: 192.22, group: 9, period: 6 },
-    { symbol: 'Pt', name: 'Platinum', atomicNumber: 78, atomicWeight: 195.08, group: 10, period: 6 },
-    { symbol: 'Au', name: 'Gold', atomicNumber: 79, atomicWeight: 196.97, group: 11, period: 6 },
-    { symbol: 'Hg', name: 'Mercury', atomicNumber: 80, atomicWeight: 200.59, group: 12, period: 6 },
-    { symbol: 'Tl', name: 'Thallium', atomicNumber: 81, atomicWeight: 204.38, group: 13, period: 6 },
-    { symbol: 'Pb', name: 'Lead', atomicNumber: 82, atomicWeight: 207.2, group: 14, period: 6 },
-    { symbol: 'Bi', name: 'Bismuth', atomicNumber: 83, atomicWeight: 208.98, group: 15, period: 6 },
-    { symbol: 'Po', name: 'Polonium', atomicNumber: 84, atomicWeight: 209, group: 16, period: 6 },
-    { symbol: 'At', name: 'Astatine', atomicNumber: 85, atomicWeight: 210, group: 17, period: 6 },
-    { symbol: 'Rn', name: 'Radon', atomicNumber: 86, atomicWeight: 222, group: 18, period: 6 },
-
-    // Period 7
-    { symbol: 'Fr', name: 'Francium', atomicNumber: 87, atomicWeight: 223, group: 1, period: 7 },
-    { symbol: 'Ra', name: 'Radium', atomicNumber: 88, atomicWeight: 226, group: 2, period: 7 },
-    { symbol: 'Ac', name: 'Actinium', atomicNumber: 89, atomicWeight: 227, group: 3, period: 7 },
-    { symbol: 'Th', name: 'Thorium', atomicNumber: 90, atomicWeight: 232.04, group: 3, period: 7 },
-    { symbol: 'Pa', name: 'Protactinium', atomicNumber: 91, atomicWeight: 231.04, group: 3, period: 7 },
-    { symbol: 'U', name: 'Uranium', atomicNumber: 92, atomicWeight: 238.03, group: 3, period: 7 },
-    { symbol: 'Np', name: 'Neptunium', atomicNumber: 93, atomicWeight: 237, group: 3, period: 7 },
-    { symbol: 'Pu', name: 'Plutonium', atomicNumber: 94, atomicWeight: 244, group: 3, period: 7 },
-    { symbol: 'Am', name: 'Americium', atomicNumber: 95, atomicWeight: 243, group: 3, period: 7 },
-    { symbol: 'Cm', name: 'Curium', atomicNumber: 96, atomicWeight: 247, group: 3, period: 7 },
-    { symbol: 'Bk', name: 'Berkelium', atomicNumber: 97, atomicWeight: 247, group: 3, period: 7 },
-    { symbol: 'Cf', name: 'Californium', atomicNumber: 98, atomicWeight: 251, group: 3, period: 7 },
-    { symbol: 'Es', name: 'Einsteinium', atomicNumber: 99, atomicWeight: 252, group: 3, period: 7 },
-    { symbol: 'Fm', name: 'Fermium', atomicNumber: 100, atomicWeight: 257, group: 3, period: 7 },
-    { symbol: 'Md', name: 'Mendelevium', atomicNumber: 101, atomicWeight: 258, group: 3, period: 7 },
-    { symbol: 'No', name: 'Nobelium', atomicNumber: 102, atomicWeight: 259, group: 3, period: 7 },
-    { symbol: 'Lr', name: 'Lawrencium', atomicNumber: 103, atomicWeight: 262, group: 3, period: 7 },
-    { symbol: 'Rf', name: 'Rutherfordium', atomicNumber: 104, atomicWeight: 267, group: 4, period: 7 },
-    { symbol: 'Db', name: 'Dubnium', atomicNumber: 105, atomicWeight: 268, group: 5, period: 7 },
-    { symbol: 'Sg', name: 'Seaborgium', atomicNumber: 106, atomicWeight: 269, group: 6, period: 7 },
-    { symbol: 'Bh', name: 'Bohrium', atomicNumber: 107, atomicWeight: 270, group: 7, period: 7 },
-    { symbol: 'Hs', name: 'Hassium', atomicNumber: 108, atomicWeight: 269, group: 8, period: 7 },
-    { symbol: 'Mt', name: 'Meitnerium', atomicNumber: 109, atomicWeight: 278, group: 9, period: 7 },
-    { symbol: 'Ds', name: 'Darmstadtium', atomicNumber: 110, atomicWeight: 281, group: 10, period: 7 },
-    { symbol: 'Rg', name: 'Roentgenium', atomicNumber: 111, atomicWeight: 282, group: 11, period: 7 },
-    { symbol: 'Cn', name: 'Copernicium', atomicNumber: 112, atomicWeight: 285, group: 12, period: 7 },
-    { symbol: 'Nh', name: 'Nihonium', atomicNumber: 113, atomicWeight: 286, group: 13, period: 7 },
-    { symbol: 'Fl', name: 'Flerovium', atomicNumber: 114, atomicWeight: 289, group: 14, period: 7 },
-    { symbol: 'Mc', name: 'Moscovium', atomicNumber: 115, atomicWeight: 289, group: 15, period: 7 },
-    { symbol: 'Lv', name: 'Livermorium', atomicNumber: 116, atomicWeight: 293, group: 16, period: 7 },
-    { symbol: 'Ts', name: 'Tennessine', atomicNumber: 117, atomicWeight: 294, group: 17, period: 7 },
-    { symbol: 'Og', name: 'Oganesson', atomicNumber: 118, atomicWeight: 294, group: 18, period: 7 },
-];
-
-// Create a map for quick element lookup
-const ELEMENT_MAP = new Map(PERIODIC_TABLE.map(elem => [elem.symbol, elem]));
-
-// Common molecular formulas for quick selection
-const COMMON_FORMULAS = [
-    { formula: 'H2O', name: 'Water' },
-    { formula: 'CO2', name: 'Carbon Dioxide' },
-    { formula: 'NaCl', name: 'Sodium Chloride' },
-    { formula: 'C6H12O6', name: 'Glucose' },
-    { formula: 'CH4', name: 'Methane' },
-    { formula: 'C2H5OH', name: 'Ethanol' },
-    { formula: 'C8H10N4O2', name: 'Caffeine' },
-    { formula: 'H2SO4', name: 'Sulfuric Acid' },
-    { formula: 'HCl', name: 'Hydrochloric Acid' },
-    { formula: 'NaOH', name: 'Sodium Hydroxide' },
-    { formula: 'NH3', name: 'Ammonia' },
-    { formula: 'CaCO3', name: 'Calcium Carbonate' },
-    { formula: 'C12H22O11', name: 'Sucrose' },
-    { formula: 'C3H8', name: 'Propane' },
-    { formula: 'C55H72MgN4O5', name: 'Chlorophyll a' },
-];
+const chipClass =
+    "min-h-[40px] rounded-full border bg-background px-3 py-2 text-xs font-medium transition-colors hover:bg-muted active:bg-accent";
 
 export default function MolecularWeightCalculator() {
-    // State variables
-    const [formula, setFormula] = useState('H2O');
-    const [result, setResult] = useState<{
-        molecularWeight: number;
-        composition: Array<{
-            element: Element;
-            count: number;
-            weightContribution: number;
-            percentComposition: number;
-        }>;
-        elementsCount: number;
-        molarMass: string;
-        error?: string;
-    } | null>(null);
+    const [formula, setFormula] = useState(DEFAULT_FORMULA);
+    const [searchElement, setSearchElement] = useState("");
+    const [showElements, setShowElements] = useState(false);
+    const formulaId = useId();
 
-    const [showPeriodicTable, setShowPeriodicTable] = useState(false);
-    const [searchElement, setSearchElement] = useState('');
-
-    /**
-     * Parse chemical formula and calculate molecular weight
+    /*
+     * Derived, not stored. The original computed on "Calculate" (and once on
+     * load); this is the same function, run on every keystroke.
      */
-    const calculateMolecularWeight = () => {
-        if (!formula.trim()) {
-            setResult({
-                molecularWeight: 0,
-                composition: [],
-                elementsCount: 0,
-                molarMass: '0 g/mol',
-                error: 'Please enter a chemical formula'
-            });
-            return;
-        }
+    const outcome = useMemo(() => calculateMolecularWeight(formula), [formula]);
+    // An empty group such as "()" parses to zero atoms; the original then
+    // printed 0.0000 g/mol and "Infinity mol". Treat it as "nothing to show".
+    const result = outcome.ok && outcome.molecularWeight > 0 ? outcome : null;
+    const error = outcome.ok ? (result ? undefined : "The formula contains no atoms.") : outcome.error;
+    const isEmpty = !formula.trim();
 
-        try {
-            const parsed = parseChemicalFormula(formula);
-
-            if (parsed.error) {
-                setResult({
-                    molecularWeight: 0,
-                    composition: [],
-                    elementsCount: 0,
-                    molarMass: '0 g/mol',
-                    error: parsed.error
-                });
-                return;
-            }
-
-            // Calculate molecular weight and composition
-            let molecularWeight = 0;
-            const composition: Array<{
-                element: Element;
-                count: number;
-                weightContribution: number;
-                percentComposition: number;
-            }> = [];
-
-            // FIXED: Use Array.from() instead of for...of for Map iteration
-            Array.from(parsed.elements.entries()).forEach(([symbol, count]) => {
-                const element = ELEMENT_MAP.get(symbol);
-                if (!element) {
-                    setResult({
-                        molecularWeight: 0,
-                        composition: [],
-                        elementsCount: 0,
-                        molarMass: '0 g/mol',
-                        error: `Unknown element: ${symbol}`
-                    });
-                    return;
-                }
-
-                const weightContribution = element.atomicWeight * count;
-                molecularWeight += weightContribution;
-
-                composition.push({
-                    element,
-                    count,
-                    weightContribution,
-                    percentComposition: 0 // Will calculate after total
-                });
-            });
-
-            // Calculate percentage composition
-            composition.forEach(item => {
-                item.percentComposition = (item.weightContribution / molecularWeight) * 100;
-            });
-
-            // Sort by atomic number
-            composition.sort((a, b) => a.element.atomicNumber - b.element.atomicNumber);
-
-            setResult({
-                molecularWeight,
-                composition,
-                elementsCount: parsed.elements.size,
-                molarMass: `${molecularWeight.toFixed(4)} g/mol`,
-                error: undefined
-            });
-
-        } catch (error) {
-            setResult({
-                molecularWeight: 0,
-                composition: [],
-                elementsCount: 0,
-                molarMass: '0 g/mol',
-                error: 'Invalid chemical formula format'
-            });
-        }
-    };
-
-    /**
-     * Parse chemical formula into element counts
-     * Supports parentheses and nested groups
-     */
-    const parseChemicalFormula = (formula: string) => {
-        const elements = new Map<string, number>();
-        let i = 0;
-        const n = formula.length;
-
-        const parseGroup = (multiplier: number = 1): Map<string, number> => {
-            const groupElements = new Map<string, number>();
-
-            while (i < n && formula[i] !== ')') {
-                if (formula[i] === '(') {
-                    i++; // Skip '('
-                    const groupMultiplier = parseNumber() || 1;
-                    const subGroupElements = parseGroup(groupMultiplier);
-
-                    // Merge subgroup elements
-                    // FIXED: Use Array.from() instead of for...of for Map iteration
-                    Array.from(subGroupElements.entries()).forEach(([symbol, count]) => {
-                        groupElements.set(symbol, (groupElements.get(symbol) || 0) + count);
-                    });
-                } else {
-                    // Parse element symbol
-                    if (i < n && /[A-Z]/.test(formula[i])) {
-                        let symbol = formula[i];
-                        i++;
-
-                        // Check for lowercase letters for element symbols like Na, Mg, etc.
-                        while (i < n && /[a-z]/.test(formula[i])) {
-                            symbol += formula[i];
-                            i++;
-                        }
-
-                        // Parse number after element
-                        const count = parseNumber() || 1;
-
-                        groupElements.set(symbol, (groupElements.get(symbol) || 0) + count);
-                    } else {
-                        return new Map(); // Invalid character
-                    }
-                }
-            }
-
-            if (i < n && formula[i] === ')') {
-                i++; // Skip ')'
-            }
-
-            // Apply multiplier to all elements in this group
-            const result = new Map<string, number>();
-            // FIXED: Use Array.from() instead of for...of for Map iteration
-            Array.from(groupElements.entries()).forEach(([symbol, count]) => {
-                result.set(symbol, count * multiplier);
-            });
-
-            return result;
-        };
-
-        const parseNumber = (): number | null => {
-            if (i >= n || !/\d/.test(formula[i])) {
-                return null;
-            }
-
-            let numStr = '';
-            while (i < n && /\d/.test(formula[i])) {
-                numStr += formula[i];
-                i++;
-            }
-
-            return parseInt(numStr, 10);
-        };
-
-        try {
-            // Parse the entire formula
-            while (i < n) {
-                if (formula[i] === '(') {
-                    i++; // Skip '('
-                    const groupMultiplier = parseNumber() || 1;
-                    const groupElements = parseGroup(groupMultiplier);
-
-                    // Merge into main elements map
-                    // FIXED: Use Array.from() instead of for...of for Map iteration
-                    Array.from(groupElements.entries()).forEach(([symbol, count]) => {
-                        elements.set(symbol, (elements.get(symbol) || 0) + count);
-                    });
-                } else {
-                    // Parse element symbol
-                    if (/[A-Z]/.test(formula[i])) {
-                        let symbol = formula[i];
-                        i++;
-
-                        while (i < n && /[a-z]/.test(formula[i])) {
-                            symbol += formula[i];
-                            i++;
-                        }
-
-                        const count = parseNumber() || 1;
-                        elements.set(symbol, (elements.get(symbol) || 0) + count);
-                    } else {
-                        return { elements, error: `Invalid character at position ${i}: ${formula[i]}` };
-                    }
-                }
-            }
-
-            return { elements, error: null };
-        } catch (error) {
-            return { elements: new Map(), error: 'Failed to parse formula' };
-        }
-    };
-
-    /**
-     * Reset calculator
-     */
-    const handleReset = () => {
-        setFormula('H2O');
-        setResult(null);
-        setSearchElement('');
-    };
-
-    /**
-     * Select a common formula
-     */
-    const selectCommonFormula = (commonFormula: string) => {
-        setFormula(commonFormula);
-    };
-
-    /**
-     * Format formula with subscripts for display
-     */
-    const formatFormulaWithSubscripts = (formula: string) => {
-        return formula.replace(/(\d+)/g, '<sub>$1</sub>');
-    };
-
-    /**
-     * Filter elements based on search
-     */
     const filteredElements = useMemo(() => {
         if (!searchElement.trim()) {
             return PERIODIC_TABLE.slice(0, 50); // Show first 50 elements by default
         }
-
         const search = searchElement.toLowerCase();
-        return PERIODIC_TABLE.filter(elem =>
-            elem.symbol.toLowerCase().includes(search) ||
-            elem.name.toLowerCase().includes(search)
+        return PERIODIC_TABLE.filter(
+            (elem) => elem.symbol.toLowerCase().includes(search) || elem.name.toLowerCase().includes(search),
         );
     }, [searchElement]);
 
-    // Calculate on initial load
-    useEffect(() => {
-        calculateMolecularWeight();
-    }, []);
+    const appendElement = (symbol: string) => setFormula((previous) => previous + symbol);
+
+    const reset = () => {
+        setFormula(DEFAULT_FORMULA);
+        setSearchElement("");
+    };
+
+    const totalAtoms = result ? result.composition.reduce((sum, item) => sum + item.count, 0) : 0;
 
     return (
-        <section id="molecular-weight-calculator-section" className='min-h-screen bg-gradient-to-br from-blue-50 to-green-50'>
-            <div className="mt-6 px-4 pb-12">
-                <div className="max-w-6xl mx-auto">
-                    {/* Header Section */}
-                    <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
-                        <div className="flex items-center justify-center mb-4">
-                            <Atom className="w-10 h-10 text-blue-600 mr-3" />
-                            <h1 className="text-3xl font-bold text-gray-800">
-                                Molecular Weight Calculator
-                            </h1>
-                        </div>
-                        <p className="text-gray-600 text-center">
-                            Calculate molecular weight from chemical formulas with element-by-element breakdown
+        <CalculatorShell
+            title="Molecular Weight Calculator"
+            subtitle="Type a chemical formula to get its molecular weight, with the mass and percentage each element contributes."
+            icon={Atom}
+            eyebrow="Pharmaceutical Chemistry"
+            aside={
+                <>
+                    <CalcAbout title="About molecular weight">
+                        <p>
+                            Molecular weight (MW) is the sum of the atomic weights of every atom in a
+                            molecule. It is expressed in atomic mass units (amu) or, per mole, in grams per
+                            mole (g/mol) — the same number either way.
                         </p>
-                    </div>
+                        <CalcList
+                            title="Use it when"
+                            items={[
+                                "Doing stoichiometric calculations",
+                                "Preparing solutions of a given molarity",
+                                "Working through analytical chemistry problems",
+                                "Checking the drug content of a pharmaceutical formulation",
+                            ]}
+                        />
+                        <CalcList
+                            title="How to type a formula"
+                            items={[
+                                "Element symbols with the first letter uppercase, the second lowercase: Na, Mg, Fe, Au",
+                                "A number after a symbol is its atom count: H2O, CO2, C6H12O6",
+                                "Write a repeated group with its count straight after the opening bracket: (2NH4)SO4",
+                                "No spaces, dots or charges",
+                            ]}
+                        />
+                        <CalcList
+                            tone="caution"
+                            title="Limitations"
+                            items={[
+                                "Isotopic variations are not considered — average atomic weights are used",
+                                "Hydrates need a separate calculation: add the water mass yourself",
+                                "Brackets with the count after them, such as Ca(OH)2 or (NH4)2SO4, are not read — expand them (CaO2H2)",
+                                "For ionic compounds the result is the formula weight",
+                            ]}
+                        />
+                        <p className="text-xs italic">Atomic weights: IUPAC 2021 standard values.</p>
+                    </CalcAbout>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Main Calculator Card */}
-                        <div className="lg:col-span-2 bg-white rounded-lg shadow-lg p-8">
-                            {/* Formula Input Section */}
-                            <div className="mb-6">
-                                <label className="block text-sm font-medium text-gray-700 mb-3">
-                                    Chemical Formula
-                                </label>
-                                <div className="flex gap-3">
-                                    <div className="flex-1 relative">
-                                        <input
-                                            type="text"
-                                            value={formula}
-                                            onChange={(e) => setFormula(e.target.value)}
-                                            placeholder="Enter chemical formula (e.g., H2O, C6H12O6)"
-                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none transition-colors font-mono text-lg"
-                                            onKeyPress={(e) => e.key === 'Enter' && calculateMolecularWeight()}
-                                        />
-                                        <div className="absolute right-3 top-3">
-                                            <Hash className="w-5 h-5 text-gray-400" />
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={calculateMolecularWeight}
-                                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center"
-                                    >
-                                        <Calculator className="w-5 h-5 mr-2" />
-                                        Calculate
-                                    </button>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-2">
-                                    Use element symbols (e.g., H, C, O, Na, Cl). Numbers indicate atom counts. Parentheses are supported.
-                                </p>
-                            </div>
+                    <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+                </>
+            }
+        >
+            <ResultCard
+                label="Molecular weight"
+                value={result ? result.molecularWeight.toFixed(4) : null}
+                unit="g/mol"
+                interpretation={
+                    result
+                        ? `${toSubscriptText(formula)} · ${result.elementsCount} unique element${result.elementsCount === 1 ? "" : "s"}`
+                        : undefined
+                }
+                empty={
+                    isEmpty
+                        ? "Type a chemical formula, such as H2O or C8H10N4O2, to see its molecular weight."
+                        : "Fix the formula below to see its molecular weight."
+                }
+            />
 
-                            {/* Quick Formula Buttons */}
-                            <div className="mb-6">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Common Formulas:
-                                </label>
-                                <div className="flex flex-wrap gap-2">
-                                    {COMMON_FORMULAS.map((item) => (
-                                        <button
-                                            key={item.formula}
-                                            onClick={() => selectCommonFormula(item.formula)}
-                                            className={`px-3 py-2 text-sm rounded-lg transition-colors ${formula === item.formula
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                }`}
-                                            title={item.name}
-                                        >
-                                            {item.formula}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+            <CalcSection title="Formula" description="Case matters: Co is cobalt, CO is carbon plus oxygen.">
+                <div className="space-y-1.5">
+                    <Label htmlFor={formulaId} className="text-[13px] font-medium text-foreground/90">
+                        Chemical formula
+                    </Label>
+                    {/* A local input rather than TextField: a formula must not be
+                        autocorrected or auto-capitalised by a phone keyboard. */}
+                    <Input
+                        id={formulaId}
+                        value={formula}
+                        onChange={(event) => setFormula(event.target.value)}
+                        placeholder="e.g. H2O, C6H12O6"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        maxLength={200}
+                        aria-invalid={error && !isEmpty ? true : undefined}
+                        aria-describedby={`${formulaId}-desc`}
+                        className={cn(
+                            "font-mono text-lg",
+                            error && !isEmpty && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/15",
+                        )}
+                    />
+                    <p
+                        id={`${formulaId}-desc`}
+                        className={cn(
+                            "text-xs leading-relaxed",
+                            error && !isEmpty ? "font-medium text-destructive" : "text-muted-foreground",
+                        )}
+                    >
+                        {error && !isEmpty
+                            ? error
+                            : "Element symbols followed by atom counts. Group repeats go straight after “(”, e.g. (2NH4)SO4."}
+                    </p>
+                </div>
 
-                            {/* Results Section */}
-                            {result && (
-                                <div className="mt-6">
-                                    {result.error ? (
-                                        <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
-                                            <div className="flex items-center">
-                                                <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
-                                                <p className="text-red-800 font-medium">{result.error}</p>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="bg-gradient-to-r from-blue-50 to-green-50 border-2 border-blue-400 rounded-lg p-6">
-                                            <h3 className="text-lg font-bold text-gray-800 mb-4 text-center">
-                                                Calculation Results
-                                            </h3>
-
-                                            {/* Molecular Formula Display */}
-                                            <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
-                                                <p className="text-sm text-gray-600 mb-1">Chemical Formula</p>
-                                                <p className="text-2xl font-bold text-blue-600 font-mono">
-                                                    {formula}
-                                                </p>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    Formula parsed successfully
-                                                </p>
-                                            </div>
-
-                                            {/* Main Results */}
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                                <div className="bg-white rounded-lg p-4 shadow-sm">
-                                                    <p className="text-sm text-gray-600 mb-1">Molecular Weight</p>
-                                                    <p className="text-3xl font-bold text-blue-600">
-                                                        {result.molecularWeight.toFixed(4)}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500 mt-1">g/mol</p>
-                                                </div>
-
-                                                <div className="bg-white rounded-lg p-4 shadow-sm">
-                                                    <p className="text-sm text-gray-600 mb-1">Molar Mass</p>
-                                                    <p className="text-2xl font-bold text-green-600">
-                                                        {result.molarMass}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500 mt-1">Exact value</p>
-                                                </div>
-
-                                                <div className="bg-white rounded-lg p-4 shadow-sm">
-                                                    <p className="text-sm text-gray-600 mb-1">Unique Elements</p>
-                                                    <p className="text-3xl font-bold text-purple-600">
-                                                        {result.elementsCount}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500 mt-1">Different elements in formula</p>
-                                                </div>
-                                            </div>
-
-                                            {/* Element Composition Table */}
-                                            <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
-                                                <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                                                    <BarChart3 className="w-4 h-4 mr-2" />
-                                                    Element Composition Breakdown
-                                                </h4>
-                                                <div className="overflow-x-auto">
-                                                    <table className="w-full text-sm">
-                                                        <thead>
-                                                            <tr className="bg-blue-50">
-                                                                <th className="py-2 px-3 text-left font-semibold text-gray-700">Element</th>
-                                                                <th className="py-2 px-3 text-left font-semibold text-gray-700">Symbol</th>
-                                                                <th className="py-2 px-3 text-left font-semibold text-gray-700">Atomic Weight</th>
-                                                                <th className="py-2 px-3 text-left font-semibold text-gray-700">Count</th>
-                                                                <th className="py-2 px-3 text-left font-semibold text-gray-700">Contribution</th>
-                                                                <th className="py-2 px-3 text-left font-semibold text-gray-700">% Composition</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {result.composition.map((item, index) => (
-                                                                <tr key={item.element.symbol} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                                                                    <td className="py-2 px-3 font-medium text-gray-800">{item.element.name}</td>
-                                                                    <td className="py-2 px-3">
-                                                                        <span className="font-bold text-blue-600">{item.element.symbol}</span>
-                                                                    </td>
-                                                                    <td className="py-2 px-3">{item.element.atomicWeight}</td>
-                                                                    <td className="py-2 px-3 font-semibold">{item.count}</td>
-                                                                    <td className="py-2 px-3">{item.weightContribution.toFixed(4)}</td>
-                                                                    <td className="py-2 px-3">
-                                                                        <div className="flex items-center">
-                                                                            <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                                                                                <div
-                                                                                    className="bg-green-400 h-2 rounded-full"
-                                                                                    style={{ width: `${Math.min(100, item.percentComposition)}%` }}
-                                                                                />
-                                                                            </div>
-                                                                            <span className="font-semibold">{item.percentComposition.toFixed(2)}%</span>
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
-                                                        </tbody>
-                                                        <tfoot>
-                                                            <tr className="bg-blue-50 font-bold">
-                                                                <td className="py-2 px-3" colSpan={3}>Total</td>
-                                                                <td className="py-2 px-3">
-                                                                    {result.composition.reduce((sum, item) => sum + item.count, 0)}
-                                                                </td>
-                                                                <td className="py-2 px-3">{result.molecularWeight.toFixed(4)}</td>
-                                                                <td className="py-2 px-3">100%</td>
-                                                            </tr>
-                                                        </tfoot>
-                                                    </table>
-                                                </div>
-                                            </div>
-
-                                            {/* Quick Calculations */}
-                                            <div className="bg-blue-50 rounded-lg p-4">
-                                                <p className="text-xs font-semibold text-blue-800 mb-2">🧪 Quick Calculations:</p>
-                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                                                    <div className="bg-white rounded p-2">
-                                                        <p className="font-semibold text-gray-600">1 mole</p>
-                                                        <p className="font-bold text-blue-600">{result.molecularWeight.toFixed(2)} g</p>
-                                                    </div>
-                                                    <div className="bg-white rounded p-2">
-                                                        <p className="font-semibold text-gray-600">10 mg</p>
-                                                        <p className="font-bold text-blue-600">
-                                                            {(10 / result.molecularWeight).toExponential(3)} mol
-                                                        </p>
-                                                    </div>
-                                                    <div className="bg-white rounded p-2">
-                                                        <p className="font-semibold text-gray-600">1 g</p>
-                                                        <p className="font-bold text-blue-600">
-                                                            {(1 / result.molecularWeight).toFixed(4)} mol
-                                                        </p>
-                                                    </div>
-                                                    <div className="bg-white rounded p-2">
-                                                        <p className="font-semibold text-gray-600">1 mM (1 L)</p>
-                                                        <p className="font-bold text-blue-600">
-                                                            {(result.molecularWeight * 0.001).toFixed(4)} g
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Action Buttons */}
-                            <div className="flex gap-4 mt-6">
-                                <button
-                                    onClick={calculateMolecularWeight}
-                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center"
-                                >
-                                    <Calculator className="w-5 h-5 mr-2" />
-                                    Calculate
-                                </button>
-                                <button
-                                    onClick={handleReset}
-                                    className="flex-1 bg-green-400 hover:bg-green-500 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-                                >
-                                    Reset
-                                </button>
-                                <button
-                                    onClick={() => setShowPeriodicTable(!showPeriodicTable)}
-                                    className="flex-1 bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-                                >
-                                    {showPeriodicTable ? 'Hide Table' : 'Show Periodic Table'}
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Sidebar - Information and Elements */}
-                        <div className="space-y-6">
-                            {/* How to Use */}
-                            <div className="bg-white rounded-lg shadow-lg p-6">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4">How to Use</h3>
-                                <div className="space-y-3">
-                                    <div className="p-3 bg-blue-50 rounded-lg">
-                                        <h4 className="text-sm font-semibold text-blue-800 mb-1">Basic Formulas</h4>
-                                        <p className="text-xs text-gray-600">
-                                            Enter element symbols followed by numbers: H2O, CO2, NaCl
-                                        </p>
-                                    </div>
-                                    <div className="p-3 bg-green-50 rounded-lg">
-                                        <h4 className="text-sm font-semibold text-green-800 mb-1">Parentheses</h4>
-                                        <p className="text-xs text-gray-600">
-                                            Use parentheses for groups: Ca(OH)2, (NH4)2SO4
-                                        </p>
-                                    </div>
-                                    <div className="p-3 bg-purple-50 rounded-lg">
-                                        <h4 className="text-sm font-semibold text-purple-800 mb-1">Element Symbols</h4>
-                                        <p className="text-xs text-gray-600">
-                                            First letter uppercase, second lowercase: Na, Mg, Fe, Au
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Common Elements */}
-                            <div className="bg-white rounded-lg shadow-lg p-6">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4">Common Elements</h3>
-                                <div className="grid grid-cols-4 gap-2">
-                                    {PERIODIC_TABLE.slice(0, 16).map((elem) => (
-                                        <div
-                                            key={elem.symbol}
-                                            className="p-2 border border-gray-200 rounded-lg text-center cursor-pointer hover:bg-blue-50 transition-colors"
-                                            onClick={() => {
-                                                // Append element to formula
-                                                setFormula(prev => prev + elem.symbol);
-                                            }}
-                                            title={elem.name}
-                                        >
-                                            <p className="text-xs font-semibold text-gray-600">{elem.symbol}</p>
-                                            <p className="text-xs text-gray-500">{elem.atomicWeight.toFixed(2)}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                                <p className="text-xs text-gray-500 mt-4">
-                                    Click to add element to formula
-                                </p>
-                            </div>
-
-                            {/* Element Search */}
-                            <div className="bg-white rounded-lg shadow-lg p-6">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4">Find Element</h3>
-                                <div className="relative mb-3">
-                                    <input
-                                        type="text"
-                                        value={searchElement}
-                                        onChange={(e) => setSearchElement(e.target.value)}
-                                        placeholder="Search element by symbol or name..."
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none text-sm"
-                                    />
-                                    <Search className="absolute right-3 top-2.5 w-4 h-4 text-gray-400" />
-                                </div>
-                                <div className="h-60 overflow-y-auto">
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {filteredElements.slice(0, 30).map((elem) => (
-                                            <div
-                                                key={elem.symbol}
-                                                className="p-2 border border-gray-200 rounded-lg text-center cursor-pointer hover:bg-green-50 transition-colors"
-                                                onClick={() => {
-                                                    setFormula(prev => prev + elem.symbol);
-                                                    setSearchElement('');
-                                                }}
-                                                title={`${elem.name} - ${elem.atomicWeight}`}
-                                            >
-                                                <p className="text-xs font-bold text-blue-600">{elem.symbol}</p>
-                                                <p className="text-xs text-gray-500 truncate" title={elem.name}>
-                                                    {elem.name}
-                                                </p>
-                                                <p className="text-xs font-semibold text-gray-700">
-                                                    {elem.atomicWeight.toFixed(2)}
-                                                </p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Quick Reference */}
-                            <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg shadow-lg p-6 border-2 border-blue-200">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4">Quick Reference</h3>
-                                <div className="space-y-3">
-                                    <div>
-                                        <p className="text-xs font-semibold text-gray-600">MW Calculation</p>
-                                        <p className="text-xs text-gray-500">
-                                            MW = Σ(atomic weight × atom count)
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-semibold text-gray-600">Molar Mass</p>
-                                        <p className="text-xs text-gray-500">
-                                            Mass of 1 mole in grams = MW in g/mol
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-semibold text-gray-600">% Composition</p>
-                                        <p className="text-xs text-gray-500">
-                                            (Element mass / Total mass) × 100%
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Periodic Table Display */}
-                    {showPeriodicTable && (
-                        <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-lg font-bold text-gray-800">Periodic Table</h3>
-                                <button
-                                    onClick={() => setShowPeriodicTable(false)}
-                                    className="text-sm text-gray-600 hover:text-gray-800"
-                                >
-                                    Close
-                                </button>
-                            </div>
-
-                            <div className="relative">
-                                {/* Simplified periodic table grid */}
-                                <div className="grid grid-cols-18 gap-1">
-                                    {/* Empty spaces for proper alignment */}
-                                    {Array.from({ length: 2 }).map((_, i) => (
-                                        <div key={`empty-${i}`} className="h-12"></div>
-                                    ))}
-
-                                    {/* Period 1 */}
-                                    <ElementCell element={PERIODIC_TABLE[0]} onClick={() => setFormula(prev => prev + 'H')} />
-                                    <div className="col-span-16"></div>
-                                    <ElementCell element={PERIODIC_TABLE[1]} onClick={() => setFormula(prev => prev + 'He')} />
-
-                                    {/* Period 2 */}
-                                    <ElementCell element={PERIODIC_TABLE[2]} onClick={() => setFormula(prev => prev + 'Li')} />
-                                    <ElementCell element={PERIODIC_TABLE[3]} onClick={() => setFormula(prev => prev + 'Be')} />
-                                    <div className="col-span-10"></div>
-                                    {PERIODIC_TABLE.slice(4, 10).map(elem => (
-                                        <ElementCell key={elem.symbol} element={elem} onClick={() => setFormula(prev => prev + elem.symbol)} />
-                                    ))}
-
-                                    {/* Period 3 */}
-                                    <ElementCell element={PERIODIC_TABLE[10]} onClick={() => setFormula(prev => prev + 'Na')} />
-                                    <ElementCell element={PERIODIC_TABLE[11]} onClick={() => setFormula(prev => prev + 'Mg')} />
-                                    <div className="col-span-10"></div>
-                                    {PERIODIC_TABLE.slice(12, 18).map(elem => (
-                                        <ElementCell key={elem.symbol} element={elem} onClick={() => setFormula(prev => prev + elem.symbol)} />
-                                    ))}
-                                </div>
-
-                                <p className="text-xs text-gray-500 mt-4 text-center">
-                                    Click any element to add it to your formula. Colors indicate element groups.
-                                </p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Additional Information */}
-                    <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">About Molecular Weight</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div>
-                                <h4 className="text-sm font-semibold text-gray-700 mb-2">What is Molecular Weight?</h4>
-                                <p className="text-xs text-gray-600">
-                                    Molecular weight (MW) is the sum of atomic weights of all atoms in a molecule.
-                                    It's expressed in atomic mass units (amu) or grams per mole (g/mol).
-                                </p>
-                            </div>
-                            <div>
-                                <h4 className="text-sm font-semibold text-gray-700 mb-2">Applications</h4>
-                                <ul className="text-xs text-gray-600 space-y-1">
-                                    <li>• Stoichiometric calculations</li>
-                                    <li>• Solution preparation (molarity)</li>
-                                    <li>• Analytical chemistry</li>
-                                    <li>• Pharmaceutical formulations</li>
-                                </ul>
-                            </div>
-                            <div>
-                                <h4 className="text-sm font-semibold text-gray-700 mb-2">Limitations</h4>
-                                <ul className="text-xs text-gray-600 space-y-1">
-                                    <li>• Isotopic variations not considered</li>
-                                    <li>• Average atomic weights used</li>
-                                    <li>• Hydrates require separate calculation</li>
-                                    <li>• Ionic compounds show formula weight</li>
-                                </ul>
-                            </div>
-                        </div>
+                <div>
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">Try an example</p>
+                    <div className="flex flex-wrap gap-2">
+                        {COMMON_FORMULAS.map((item) => (
+                            <button
+                                key={item.formula}
+                                type="button"
+                                onClick={() => setFormula(item.formula)}
+                                aria-pressed={formula === item.formula}
+                                className={cn(
+                                    chipClass,
+                                    formula === item.formula && "border-primary bg-primary/10 text-primary hover:bg-primary/10",
+                                )}
+                            >
+                                {item.name}
+                                <span className="ml-1.5 font-mono text-[11px] text-muted-foreground">{item.formula}</span>
+                            </button>
+                        ))}
                     </div>
                 </div>
-            </div>
-        </section>
+
+                <div>
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">Add a common element</p>
+                    <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+                        {PERIODIC_TABLE.slice(0, 16).map((elem) => (
+                            <button
+                                key={elem.symbol}
+                                type="button"
+                                onClick={() => appendElement(elem.symbol)}
+                                title={elem.name}
+                                aria-label={`Add ${elem.name} (${elem.symbol}), ${elem.atomicWeight}`}
+                                className="flex min-h-[48px] flex-col items-center justify-center rounded-xl border bg-background px-1 py-1.5 transition-colors hover:bg-primary/5 active:bg-accent"
+                            >
+                                <span className="text-sm font-semibold text-foreground">{elem.symbol}</span>
+                                <span className="font-mono text-[11px] text-muted-foreground">
+                                    {elem.atomicWeight.toFixed(2)}
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">Tap an element to add it to the end of the formula.</p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <Button
+                        variant="outline"
+                        onClick={() => setShowElements((previous) => !previous)}
+                        aria-expanded={showElements}
+                    >
+                        <Grid3x3 />
+                        {showElements ? "Hide element finder" : "Find any element"}
+                    </Button>
+                    <Button variant="outline" onClick={reset}>
+                        <RefreshCw />
+                        Reset
+                    </Button>
+                </div>
+
+                {showElements && (
+                    <ElementFinder
+                        search={searchElement}
+                        onSearch={setSearchElement}
+                        elements={filteredElements}
+                        onPick={(symbol, fromSearch) => {
+                            appendElement(symbol);
+                            if (fromSearch) setSearchElement("");
+                        }}
+                        onClose={() => setShowElements(false)}
+                    />
+                )}
+            </CalcSection>
+
+            {result && (
+                <CalcSection
+                    title="Element breakdown"
+                    description="Each element's atomic weight × atom count, and its share of the total mass."
+                >
+                    <p className="font-mono text-2xl font-semibold text-foreground">
+                        <FormulaText formula={formula} />
+                    </p>
+
+                    <div className="-mx-4 overflow-x-auto sm:mx-0">
+                        <table className="w-full min-w-[34rem] border-collapse text-sm">
+                            <thead>
+                                <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                                    <th className="px-4 py-2 font-medium sm:pl-0">Element</th>
+                                    <th className="px-3 py-2 text-right font-medium">Atomic weight</th>
+                                    <th className="px-3 py-2 text-right font-medium">Count</th>
+                                    <th className="px-3 py-2 text-right font-medium">Contribution</th>
+                                    <th className="px-4 py-2 font-medium sm:pr-0">% Composition</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {result.composition.map((item) => (
+                                    <tr key={item.element.symbol} className="border-b border-border/70">
+                                        <td className="px-4 py-2.5 sm:pl-0">
+                                            <span className="font-semibold text-primary">{item.element.symbol}</span>
+                                            <span className="ml-2 text-foreground">{item.element.name}</span>
+                                        </td>
+                                        <td className="px-3 py-2.5 text-right tabular-nums">{item.element.atomicWeight}</td>
+                                        <td className="px-3 py-2.5 text-right font-semibold tabular-nums">{item.count}</td>
+                                        <td className="px-3 py-2.5 text-right tabular-nums">
+                                            {item.weightContribution.toFixed(4)}
+                                        </td>
+                                        <td className="px-4 py-2.5 sm:pr-0">
+                                            <span className="flex items-center gap-2">
+                                                <span className="h-2 w-16 shrink-0 overflow-hidden rounded-full bg-muted">
+                                                    <span
+                                                        className="block h-full rounded-full bg-emerald-500"
+                                                        style={{ width: `${Math.min(100, item.percentComposition)}%` }}
+                                                    />
+                                                </span>
+                                                <span className="font-semibold tabular-nums">
+                                                    {item.percentComposition.toFixed(2)}%
+                                                </span>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                            <tfoot>
+                                <tr className="font-semibold">
+                                    <td className="px-4 py-2.5 sm:pl-0" colSpan={2}>
+                                        Total
+                                    </td>
+                                    <td className="px-3 py-2.5 text-right tabular-nums">{totalAtoms}</td>
+                                    <td className="px-3 py-2.5 text-right tabular-nums">
+                                        {result.molecularWeight.toFixed(4)}
+                                    </td>
+                                    <td className="px-4 py-2.5 sm:pr-0">100%</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div>
+                        <p className="mb-2 text-xs font-medium text-muted-foreground">Working</p>
+                        <Formula>
+                            MW ={" "}
+                            {result.composition
+                                .map((item) => `(${item.element.atomicWeight} × ${item.count})`)
+                                .join(" + ")}{" "}
+                            = {result.molecularWeight.toFixed(4)} g/mol
+                        </Formula>
+                    </div>
+
+                    <div>
+                        <ResultRow label="Molar mass" value={result.molarMass} />
+                        <ResultRow label="Unique elements" value={result.elementsCount} />
+                        <ResultRow label="Total atoms" value={totalAtoms} />
+                    </div>
+                </CalcSection>
+            )}
+
+            {result && (
+                <CalcSection title="Quick calculations" description="Common conversions using this molecular weight.">
+                    <div>
+                        <ResultRow label="Mass of 1 mole" value={`${result.molecularWeight.toFixed(2)} g`} />
+                        <ResultRow label="Moles in 10 mg" value={`${(10 / result.molecularWeight).toExponential(3)} mol`} />
+                        <ResultRow label="Moles in 1 g" value={`${(1 / result.molecularWeight).toFixed(4)} mol`} />
+                        <ResultRow
+                            label="Mass for 1 L of a 1 mM solution"
+                            value={`${(result.molecularWeight * 0.001).toFixed(4)} g`}
+                        />
+                    </div>
+                </CalcSection>
+            )}
+
+            <FormulaNote>
+                <Formula>MW = Σ (atomic weight × atom count)</Formula>
+                <Formula>% composition = (element mass ÷ total mass) × 100%</Formula>
+                <Formula>Mass of 1 mole in grams = MW in g/mol</Formula>
+                <p>
+                    Each element&apos;s contribution is its standard atomic weight multiplied by how many
+                    atoms of it the formula contains; the molecular weight is the sum of those
+                    contributions. Dividing one contribution by the total gives that element&apos;s share of
+                    the mass. Elements are listed by atomic number.
+                </p>
+            </FormulaNote>
+
+            <CalcFaq
+                items={[
+                    {
+                        q: "Is molecular weight the same as molar mass?",
+                        a: "Numerically, yes. Molecular weight is quoted in atomic mass units per molecule and molar mass in grams per mole, but the number is the same — water is 18.015 amu per molecule and 18.015 g/mol.",
+                    },
+                    {
+                        q: "How do I enter a hydrate such as CuSO4·5H2O?",
+                        a: "This tool does not read the hydrate dot. Calculate the anhydrous salt and the water separately (CuSO4, then H2O) and add five times the water's weight to the salt's.",
+                    },
+                    {
+                        q: "Why does Ca(OH)2 show an error?",
+                        a: "The parser reads a group's repeat count straight after the opening bracket, not after the closing one. Expand the group instead (CaO2H2), or write the count first: (2OH)Ca.",
+                    },
+                    {
+                        q: "Why does CO give a different answer from Co?",
+                        a: "Symbols are case-sensitive. Co is cobalt (58.933); CO is one carbon and one oxygen (28.010). Always start each symbol with a capital letter.",
+                    },
+                    {
+                        q: "Why do my textbook values differ slightly?",
+                        a: "Older textbooks use rounded or older atomic weights (for example Cl = 35.5 or S = 32.07). This calculator uses the IUPAC 2021 standard values, so the last decimal places can differ.",
+                    },
+                ]}
+            />
+        </CalculatorShell>
     );
 }
 
-// Helper component for element cell in periodic table
-function ElementCell({ element, onClick }: { element: Element; onClick: () => void }) {
-    // Determine color based on group
-    const getGroupColor = (group: number) => {
-        if (group === 1) return 'bg-red-100 border-red-300';
-        if (group === 2) return 'bg-orange-100 border-orange-300';
-        if (group >= 3 && group <= 12) return 'bg-yellow-100 border-yellow-300';
-        if (group === 13) return 'bg-teal-100 border-teal-300';
-        if (group === 14) return 'bg-green-100 border-green-300';
-        if (group === 15) return 'bg-blue-100 border-blue-300';
-        if (group === 16) return 'bg-indigo-100 border-indigo-300';
-        if (group === 17) return 'bg-purple-100 border-purple-300';
-        if (group === 18) return 'bg-gray-100 border-gray-300';
-        return 'bg-gray-50 border-gray-200';
-    };
+/** Search by symbol or name, plus the first three periods laid out as a periodic table. */
+function ElementFinder({
+    search,
+    onSearch,
+    elements,
+    onPick,
+    onClose,
+}: {
+    search: string;
+    onSearch: (value: string) => void;
+    elements: Element[];
+    onPick: (symbol: string, fromSearch: boolean) => void;
+    onClose: () => void;
+}) {
+    const searchId = useId();
 
     return (
-        <button
-            onClick={onClick}
-            className={`h-12 border rounded flex flex-col items-center justify-center p-1 hover:scale-105 transition-transform ${getGroupColor(element.group)}`}
-            title={`${element.name} (${element.symbol}) - ${element.atomicWeight}`}
-        >
-            <span className="text-xs font-bold">{element.symbol}</span>
-            <span className="text-[10px]">{element.atomicNumber}</span>
-            <span className="text-[8px] mt-0.5">{element.atomicWeight.toFixed(1)}</span>
-        </button>
+        <div className="space-y-4 rounded-xl border border-border/80 bg-muted/40 p-3 sm:p-4">
+            <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-foreground">Find an element</p>
+                <Button variant="ghost" size="sm" onClick={onClose}>
+                    <X />
+                    Close
+                </Button>
+            </div>
+
+            <div className="space-y-1.5">
+                <Label htmlFor={searchId} className="sr-only">
+                    Search element by symbol or name
+                </Label>
+                <div className="relative">
+                    <Input
+                        id={searchId}
+                        value={search}
+                        onChange={(event) => onSearch(event.target.value)}
+                        placeholder="Search by symbol or name…"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        className="pr-10"
+                    />
+                    <Search className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                </div>
+            </div>
+
+            <div className="max-h-64 overflow-y-auto">
+                {elements.length === 0 ? (
+                    <LabNotice>No element matches “{search}”.</LabNotice>
+                ) : (
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                        {elements.slice(0, 30).map((elem) => (
+                            <button
+                                key={elem.symbol}
+                                type="button"
+                                onClick={() => onPick(elem.symbol, true)}
+                                title={`${elem.name} - ${elem.atomicWeight}`}
+                                className="min-h-[48px] rounded-xl border bg-background px-1 py-1.5 text-center transition-colors hover:bg-emerald-50 active:bg-accent"
+                            >
+                                <span className="block text-sm font-bold text-primary">{elem.symbol}</span>
+                                <span className="block truncate text-xs text-muted-foreground">{elem.name}</span>
+                                <span className="block font-mono text-[11px] font-semibold text-foreground">
+                                    {elem.atomicWeight.toFixed(2)}
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <div>
+                <p className="mb-2 text-xs font-medium text-muted-foreground">Periodic table — periods 1 to 3</p>
+                <div className="-mx-3 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0">
+                    <div
+                        className="grid min-w-[40rem] gap-1"
+                        style={{ gridTemplateColumns: "repeat(18, minmax(0, 1fr))" }}
+                    >
+                        {PERIODIC_TABLE.slice(0, 18).map((elem) => (
+                            <button
+                                key={elem.symbol}
+                                type="button"
+                                onClick={() => onPick(elem.symbol, false)}
+                                title={`${elem.name} (${elem.symbol}) - ${elem.atomicWeight}`}
+                                style={{ gridColumnStart: elem.group, gridRowStart: elem.period }}
+                                className={cn(
+                                    "flex h-14 flex-col items-center justify-center rounded-md border p-0.5 text-slate-900 transition-transform hover:scale-105",
+                                    groupColor(elem.group),
+                                )}
+                            >
+                                <span className="text-xs font-bold leading-none">{elem.symbol}</span>
+                                <span className="mt-0.5 text-[11px] leading-none">{elem.atomicNumber}</span>
+                                <span className="mt-0.5 text-[11px] leading-none">{elem.atomicWeight.toFixed(1)}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                    Tap any element to add it to your formula. Colours indicate element groups.
+                </p>
+            </div>
+        </div>
     );
 }

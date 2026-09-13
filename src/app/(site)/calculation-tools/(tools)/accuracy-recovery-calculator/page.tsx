@@ -110,7 +110,7 @@ export default function AccuracyRecoveryCalculatorPage() {
 
   const cells = rows.map((row) => ({ theoretical: row.cells.theoretical ?? "", found: row.cells.found ?? "" }));
   const basic = useMemo(() => analyseBasic(theoretical, found, submitted), [theoretical, found, submitted]);
-  const replicates = useMemo(() => analyseReplicates(cells, submitted), [rows, submitted]); // eslint-disable-line
+  const replicates = useMemo(() => analyseReplicates(cells, submitted), [rows, submitted]);
   const rangeCheck = useMemo(() => analyseRange(lower, upper), [lower, upper]);
   const range = rangeCheck.range;
 
@@ -310,7 +310,7 @@ export default function AccuracyRecoveryCalculatorPage() {
       };
     }
     return null;
-  }, [summary, mode, trial, trials, stats, unit, sample, theoretical, found, lower, upper, range, warnings, replicates.notes]); // eslint-disable-line
+  }, [summary, mode, trial, trials, stats, unit, sample, theoretical, found, lower, upper, range, warnings, replicates.notes]);
 
   // ── Chart data (replicates only) ──
   const chart = useMemo(() => {

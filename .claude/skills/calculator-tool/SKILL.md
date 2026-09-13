@@ -13,20 +13,21 @@ the hub.
 ## Read First
 - The closest existing tool under `src/app/(site)/calculation-tools/(tools)/`. For a clinical
   bedside calculator, `bmi-calculator/page.tsx` is the cleanest reference.
-- `src/app/(site)/calculation-tools/CalculationToolsClient.tsx` — the hub registry.
+- `src/app/(site)/calculation-tools/tool-index.ts` — the hub registry (`HUB_SUBJECTS`).
 
 ## Architecture Context
 
 ```
 src/app/(site)/calculation-tools/
-  page.tsx                     server page, metadata only
-  CalculationToolsClient.tsx   ← THE REGISTRY: allTools[] + categories[]
+  page.tsx                     server page: hero, start-here card, app band
+  HubCatalogue.tsx             client island: search, subject rail, the index
+  tool-index.ts                ← THE REGISTRY: HUB_SUBJECTS[].tools[] = { name, slug, desc }
   (tools)/                     route group — adds no URL segment
     bmi-calculator/page.tsx    → /calculation-tools/bmi-calculator
     AnionGapCalculator/page.tsx→ /calculation-tools/AnionGapCalculator
 ```
 
-**97 tool directories exist; `allTools` lists 86** (2026-09-13). Six of the difference are deliberately linked
+**104 tool directories exist; `tool-index.ts` lists 93** (2026-09-13). Six of the difference are deliberately linked
 from `src/app/clinical/dose-calculators/page.tsx` instead (vancomycin-auc, tpn, renal-dosing-adjuster,
 OpioidMMECalculator, reconstitution-calculator, GeriatricDosingCalculator). **Five are linked from
 nowhere** — `AntagonismSimulator`, `EmaxModelCalculator`, `drug-half-life-calculator`,
@@ -75,21 +76,21 @@ export default function Page() {
 Existing tools commonly include: unit toggles, clinical presets, a copy-to-clipboard button, a
 reset, a formula/reference disclosure, and an interpretation band with clinical significance.
 
-### 2. Register it on the hub — **two edits, both required**
-In `src/app/(site)/calculation-tools/CalculationToolsClient.tsx`:
+### 2. Register it on the hub — one entry
+In `src/app/(site)/calculation-tools/tool-index.ts`, inside the right subject's `tools` array:
 ```ts
-// (a) add to allTools, under the right category comment block
-{ name: "Cockcroft-Gault Calculator", link: "/calculation-tools/cockcroft-gault-calculator" },
-
-// (b) add the SAME name string to the matching categories[].toolNames array
+{ name: "Cockcroft-Gault Calculator", slug: "cockcroft-gault-calculator", desc: "CrCl by Cockcroft–Gault from age, weight and SCr" },
 ```
-**Both are mandatory.** `allTools` alone makes it searchable but it renders in no category.
-The name strings must match **exactly** — they are the join key.
+Tools are nested in their subject, so a tool can no longer be registered without a category (the
+old `allTools` + `categories[].toolNames` join is gone). `desc` is shown **and searched**: say what
+the tool computes, from its code, in ≤ ~75 characters. Counts on the hub are derived — never type one.
+The slug must be a real `(tools)/<slug>/page.tsx`; check with the `comm` recipe in `roadmap-status`.
 
 Categories: `pharma-chem`, `unit-conversion`, `pharmaceutics`, biopharmaceutics/PK, pharmacology,
 pharmaceutical analysis, `physiology`, microbiology, pharmaceutical engineering, clinical & hospital
-pharmacy. A new category also needs an icon in `CAT_ICONS` (web) and `CATEGORY_ICONS` in
-`mobile/app/_components/ToolHub.tsx` (falls back to a generic icon if missing).
+pharmacy. A new subject on the web is just a new `HUB_SUBJECTS` entry (no icon — the hub is
+typographic); the app needs `CATEGORY_ICONS` in `mobile/app/_components/ToolHub.tsx` (falls back to a
+generic icon if missing).
 
 **(c) Android catalogue:** add the slug to `TOOL_NAMES` and a `CATEGORIES[].slugs` in
 `mobile/app/_data/tool-registry.ts` (optional `SHORT_NAME_OVERRIDES` for a long name). Forgetting
@@ -112,9 +113,28 @@ spectra), copy `(tools)/theoretical-yield-calculator/page.tsx`. The pattern:
 - A chart in the card: pass `figure.svg` as self-contained SVG (see `MEMORY.md` gotcha 36).
 - Big tools may split into underscore-prefixed siblings (`_math.ts`) in the same directory.
 
+### 2c. Analytical practicals — calibration lines, replicates, regression, graphs
+For a tool that turns absorbance readings into concentrations, averages replicates, fits a line or
+plots a practical's graph, copy `(tools)/calibration-curve-calculator/` and build on
+`@/components/calculators/lab-analysis` (see `.claude/PROJECT_MAP.md`). The pattern:
+- Maths in a pure `_<tool>.ts` that imports `lab-analysis/math` + `format` directly (gotcha 69), so it
+  can be hand-checked with `npx tsx`. Return `Checked<T>` — an explanation, never NaN/Infinity.
+- `CalibrationFields` for Y = a + bX (one per page reads the hand-off link; gotcha 68). `DataTable` for
+  rows (text inputs with a decimal keypad, so "0.2a" is caught), `CountStepper` for replicate count —
+  every visible replicate is required. `numericError` for signed values (`fieldError` rejects negatives).
+- Reproduce the method on the student's practical sheet exactly; an alternative method is a labelled
+  `ModeSwitch` option, never a silent substitute (gotcha 67). Show every unit conversion as a step.
+- Graphs: Recharts inside `ChartPanel` (ResponsiveContainer 100%/100% in a fixed-height box), colours from
+  `CHART`, `makeTooltip`, `ChartLegend` for ≥ 2 series, `niceAxis`/`tickLabel` for axes. The same data
+  goes to `chartSvg` for `LabReportData.figure`.
+- On screen: `StatTiles` + `ResultTable` + graph + `StepBlock` per row (or `FormulaNote` + `ReportSteps`).
+  Don't render the whole `LabReport` card — `LabActions` still gives Copy / PNG / Print from it.
+- Verify: Node hand-checks against an independent computation (e.g. covariance for a regression), then
+  CDP at 390 and 1440 (hydration, example, NaN/Infinity scan, overflow in `main`, tabs, Copy, Reset).
+
 ### 3. Clinical-only tools
 If the tool belongs to the clinical sub-brand rather than the student catalogue, link it from
-`src/app/clinical/dose-calculators/page.tsx` instead, and leave it out of `allTools`.
+`src/app/clinical/dose-calculators/page.tsx` instead, and leave it out of `tool-index.ts`.
 
 ### 4. Medical safety
 **Every tool already gets the "For educational purposes only" card** (`CalcDisclaimer`) — from
@@ -130,9 +150,32 @@ stays live, and a `FormulaNote` titled "Calculation Details" with one worked lin
 multiply a concentration (`%`) or a `q.s.` row (`MEMORY.md` gotcha 54). Convert a batch quantity
 only within its unit family.
 
+### 6. Migrating an old tool onto the kit (Phase 2 — 19 left, list in `.claude/redesign-tracker.md`)
+Proven on ~60 tools on 2026-09-13. The goal is **easier to use, identical numbers**.
+1. **Before numbers from the original, not HEAD.** `git show "5dbe98c:src/app/(site)/calculation-tools/(tools)/<slug>/page.tsx"`
+   into `src/app/migration-before/<label>-<slug>/page.tsx` (outside `(site)`/`(tools)`), load it on the dev
+   server, drive 3–10 input sets (typical, another unit/mode, an edge) clicking its Calculate button,
+   record every displayed number. **Delete that directory immediately** (gotcha 76).
+2. **Rebuild the page on the kit**, result-first: `CalculatorShell` (eyebrow = hub category) with
+   `aside` = `CalcAbout` + `AdSlot` last; `ModeSwitch` for methods; `ResultCard` with an `empty` hint;
+   inputs in `CalcSection`/`FieldGrid` with units, hints and errors; example chips + Reset; a
+   "Working" `ResultRow` list with the substitution; the old chart/table, responsive; `FormulaNote`;
+   `CalcFaq`. Results live via `useMemo`; never render NaN/Infinity/-0. Remove `pt-20` wrappers, emoji
+   headers, fake badges and any in-page disclaimer. Large tools: pure maths into `_math.ts`.
+3. **The maths is copied, not corrected.** Same constants, rounding and bands. A formula that looks
+   wrong goes into the tracker's "Suspected maths issues" list with evidence (gotcha 78). A stale value
+   left on screen from earlier inputs is a render bug and may be fixed — say so.
+4. **After numbers** from `/calculation-tools/<slug>` with the same inputs must match exactly; then
+   1440×900 and 390×844 (0 exceptions, `scrollWidth === innerWidth`, read the 390 screenshot) and
+   `npx tsc --noEmit | grep <slug>` empty. Parallel headless runs need `--remote-debugging-port=0` (gotcha 77).
+5. Tick the tool's row in the tracker (only one session edits the tracker at a time).
+Kit gaps met so far — build them locally in the page: tables (`overflow-x-auto`), chip radio groups
+(`aria-pressed`), checkboxes, range/CI bars, two result tiles side by side. `ResultCard` doesn't wrap
+long values and uppercases its label.
+
 ## Files Usually Involved
 - `src/app/(site)/calculation-tools/(tools)/<slug>/page.tsx`
-- `src/app/(site)/calculation-tools/CalculationToolsClient.tsx` ← the registry
+- `src/app/(site)/calculation-tools/tool-index.ts` ← the registry
 - `src/app/clinical/dose-calculators/page.tsx` (clinical hub)
 - `src/components/MedicalDisclaimerBanner.tsx`
 
@@ -169,8 +212,7 @@ mode in this app — verify the maths by hand against a published example.
 
 ## Common Failure Modes
 - **Adding the directory and expecting the card to appear.** Registry edit required.
-- **Adding to `allTools` but not to a `categories[].toolNames`** → invisible in every category.
-- **Name-string mismatch between the two arrays** → same result.
+- **A `slug` with no matching directory** → a 404 row on the hub. Only register a tool whose page renders.
 - **Editing `src/app/api/calculators.tsx`** — dead code, no effect.
 - **Renaming a tool directory** — breaks the URL and every existing link.
 - **Double unit conversion.**

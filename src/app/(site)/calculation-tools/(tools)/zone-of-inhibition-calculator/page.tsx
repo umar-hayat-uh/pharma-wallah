@@ -1,290 +1,354 @@
 "use client";
-import { useState } from 'react';
-import { Ruler, Info, RefreshCw, Eye, Circle, Shield, AlertTriangle, Beaker } from 'lucide-react';
+
+import { useMemo, useState } from "react";
+import { RefreshCw, Ruler } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  CalculatorShell,
+  CalcSection,
+  FieldGrid,
+  NumberField,
+  ResultCard,
+  ResultRow,
+  FormulaNote,
+  CalcAbout,
+  CalcList,
+  CalcFaq,
+  AdSlot,
+  TextField,
+  LabNotice,
+  type ResultTone,
+} from "@/components/calculators";
+
+type Susceptibility = "SUSCEPTIBLE" | "INTERMEDIATE" | "RESISTANT";
+
+/* ── Breakpoint bands and wording (unchanged from the original page) ──────── */
+function classifyZone(diameter: number): {
+  susceptibility: Susceptibility;
+  category: string;
+  interpretation: string;
+  recommendation: string;
+} {
+  if (diameter >= 20) {
+    return {
+      susceptibility: "SUSCEPTIBLE",
+      category: "High Sensitivity",
+      interpretation: "Organism shows excellent response to antibiotic (zone ≥20 mm)",
+      recommendation: "First-line treatment option recommended",
+    };
+  }
+  if (diameter >= 15 && diameter < 20) {
+    return {
+      susceptibility: "INTERMEDIATE",
+      category: "Moderate Sensitivity",
+      interpretation: "Organism shows intermediate response (15‑19 mm)",
+      recommendation: "Consider higher dose or combination therapy",
+    };
+  }
+  return {
+    susceptibility: "RESISTANT",
+    category: "Resistant",
+    interpretation: "Organism shows resistance to this antibiotic (<15 mm)",
+    recommendation: "Choose alternative antibiotic therapy",
+  };
+}
+
+const TONE: Record<Susceptibility, ResultTone> = {
+  SUSCEPTIBLE: "success",
+  INTERMEDIATE: "warning",
+  RESISTANT: "danger",
+};
+
+const SAMPLES = [
+  { name: "Penicillin vs S. aureus", antibiotic: "Penicillin", organism: "S. aureus", diameter: "32" },
+  { name: "Gentamicin vs E. coli", antibiotic: "Gentamicin", organism: "E. coli", diameter: "18" },
+  { name: "Vancomycin vs MRSA", antibiotic: "Vancomycin", organism: "MRSA", diameter: "15" },
+  { name: "Ciprofloxacin vs P. aeruginosa", antibiotic: "Ciprofloxacin", organism: "P. aeruginosa", diameter: "25" },
+];
+
+/* CLSI M100 reference rows, as printed on the original page. */
+const CLSI_ROWS = [
+  { drug: "Ampicillin", s: "17", i: "14‑16", r: "13" },
+  { drug: "Cefotaxime", s: "26", i: "23‑25", r: "22" },
+  { drug: "Ciprofloxacin", s: "21", i: "16‑20", r: "15" },
+  { drug: "Gentamicin", s: "15", i: "13‑14", r: "12" },
+  { drug: "Tetracycline", s: "19", i: "15‑18", r: "14" },
+];
+
+/**
+ * Deterministic lawn speckle. The original used Math.random() during render, so
+ * every re-render reshuffled the dots and the server and client HTML disagreed.
+ * Integer-only maths (no sin/cos) keeps Node and the browser byte-identical.
+ */
+const LAWN_DOTS: { cx: number; cy: number; r: number }[] = (() => {
+  let seed = 20260913;
+  const next = () => {
+    seed = (Math.imul(seed, 1103515245) + 12345) & 0x7fffffff;
+    return seed;
+  };
+  const dots: { cx: number; cy: number; r: number }[] = [];
+  while (dots.length < 140) {
+    const x = (next() % 9001) / 100 - 45; // −45 … 45
+    const y = (next() % 9001) / 100 - 45;
+    const r = (next() % 60) / 100 + 0.15;
+    if (x * x + y * y <= 45 * 45) dots.push({ cx: 50 + x, cy: 50 + y, r });
+  }
+  return dots;
+})();
+
+/**
+ * The Petri dish, drawn in SVG so it scales to any screen width. Zone size
+ * follows the original's rule — 3 px per mm on a 320 px dish, capped at
+ * 250 px — expressed as a fraction of the dish.
+ */
+function PetriDish({ diameter }: { diameter: number | null }) {
+  const zone = diameter !== null && diameter > 0 ? (Math.min(diameter * 3, 250) / 320) * 100 : 0;
+  return (
+    <svg viewBox="0 0 100 100" className="mx-auto block w-full max-w-[18rem]" role="img" aria-label={diameter ? `Petri dish with a ${diameter} mm zone of inhibition` : "Petri dish"}>
+      <circle cx="50" cy="50" r="49" fill="#cbd5e1" />
+      <circle cx="50" cy="50" r="45.5" fill="#fef3c7" />
+      <circle cx="50" cy="50" r="44" fill="#fee2e2" />
+      {LAWN_DOTS.map((d, i) => (
+        <circle key={i} cx={d.cx} cy={d.cy} r={d.r} fill="#b91c1c" opacity="0.22" />
+      ))}
+      {zone > 0 && (
+        <>
+          <circle cx="50" cy="50" r={zone / 2} fill="#eff6ff" stroke="#93c5fd" strokeWidth="1.2" />
+          <line x1={50 - zone / 2} y1="50" x2={50 + zone / 2} y2="50" stroke="#10b981" strokeWidth="0.8" strokeDasharray="1.5 1" />
+          <text x="50" y={50 - Math.max(zone / 2, 8) - 2} textAnchor="middle" fontSize="5" fontWeight="700" fill="#047857" fontFamily="inherit">
+            {diameter} mm
+          </text>
+        </>
+      )}
+      <line x1="2" y1="50" x2="98" y2="50" stroke="#64748b" strokeWidth="0.3" opacity="0.4" />
+      <line x1="50" y1="2" x2="50" y2="98" stroke="#64748b" strokeWidth="0.3" opacity="0.4" />
+      {/* Antibiotic disk — white filter paper, as on a real plate. */}
+      <circle cx="50" cy="50" r="5" fill="#ffffff" stroke="#94a3b8" strokeWidth="0.8" />
+      <text x="50" y="51.8" textAnchor="middle" fontSize="3.6" fontWeight="700" fill="#334155" fontFamily="inherit">
+        AB
+      </text>
+    </svg>
+  );
+}
 
 export default function ZoneOfInhibitionCalculator() {
-    const [zoneDiameter, setZoneDiameter] = useState<string>('');
-    const [antibioticName, setAntibioticName] = useState<string>('');
-    const [bacteriaType, setBacteriaType] = useState<string>('');
-    const [zoneResult, setZoneResult] = useState<{
-        interpretation: string;
-        susceptibility: string;
-        category: string;
-        mm: number;
-        recommendation: string;
-    } | null>(null);
+  const [zoneDiameter, setZoneDiameter] = useState("");
+  const [antibioticName, setAntibioticName] = useState("");
+  const [bacteriaType, setBacteriaType] = useState("");
 
-    const calculateZone = () => {
-        const diameter = parseFloat(zoneDiameter);
+  /*
+   * Live, instead of the old "Analyze Zone" button + alert(). The bands and all
+   * wording are exactly what the button produced for a positive diameter.
+   */
+  const result = useMemo(() => {
+    const diameter = parseFloat(zoneDiameter);
+    if (isNaN(diameter) || diameter <= 0) return null;
+    return { mm: diameter, ...classifyZone(diameter) };
+  }, [zoneDiameter]);
 
-        if (isNaN(diameter) || diameter <= 0) {
-            alert('Please enter a valid positive number for zone diameter');
-            return;
-        }
+  const reset = () => {
+    setZoneDiameter("");
+    setAntibioticName("");
+    setBacteriaType("");
+  };
 
-        let interpretation = '';
-        let susceptibility = '';
-        let category = '';
-        let recommendation = '';
+  const diameterValue = parseFloat(zoneDiameter);
+  const diameterError =
+    zoneDiameter.trim() === ""
+      ? undefined
+      : isNaN(diameterValue)
+        ? "Enter a number."
+        : diameterValue <= 0
+          ? "Must be greater than zero."
+          : undefined;
 
-        if (diameter >= 20) {
-            susceptibility = 'SUSCEPTIBLE';
-            category = 'High Sensitivity';
-            interpretation = 'Organism shows excellent response to antibiotic (zone ≥20 mm)';
-            recommendation = 'First-line treatment option recommended';
-        } else if (diameter >= 15 && diameter < 20) {
-            susceptibility = 'INTERMEDIATE';
-            category = 'Moderate Sensitivity';
-            interpretation = 'Organism shows intermediate response (15‑19 mm)';
-            recommendation = 'Consider higher dose or combination therapy';
-        } else {
-            susceptibility = 'RESISTANT';
-            category = 'Resistant';
-            interpretation = 'Organism shows resistance to this antibiotic (<15 mm)';
-            recommendation = 'Choose alternative antibiotic therapy';
-        }
+  const subject = [antibioticName.trim(), bacteriaType.trim()].filter(Boolean).join(" vs ");
 
-        setZoneResult({
-            interpretation,
-            susceptibility,
-            category,
-            mm: diameter,
-            recommendation
-        });
-    };
+  return (
+    <CalculatorShell
+      title="Zone of Inhibition Calculator"
+      subtitle="Reads a Kirby-Bauer disk diffusion zone diameter as susceptible, intermediate or resistant."
+      icon={Ruler}
+      eyebrow="Microbiology"
+      aside={
+        <>
+          <CalcAbout title="About disk diffusion">
+            <p>
+              In the Kirby-Bauer test, a paper disk containing an antibiotic is placed on agar spread
+              with the organism. The drug diffuses outwards, and where its concentration is high enough
+              the organism cannot grow — leaving a clear ring, the zone of inhibition. A wider zone
+              generally means a more susceptible organism.
+            </p>
+            <CalcList
+              title="Reading the result"
+              items={[
+                "Susceptible: effective therapy",
+                "Intermediate: possible with higher dose",
+                "Resistant: not effective",
+              ]}
+            />
+            <CalcList
+              tone="caution"
+              title="Keep in mind"
+              items={[
+                "This tool uses one general cut-off (≥20 mm S, 15–19 mm I, <15 mm R) for every drug",
+                "Real breakpoints are specific to each drug and organism — check CLSI M100 or EUCAST",
+                "Measure the full diameter across the disk, in mm, on a standardised 0.5 McFarland lawn",
+              ]}
+            />
+          </CalcAbout>
 
-    const resetCalculator = () => {
-        setZoneDiameter('');
-        setAntibioticName('');
-        setBacteriaType('');
-        setZoneResult(null);
-    };
+          <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+        </>
+      }
+    >
+      <ResultCard
+        label="Zone diameter"
+        value={result ? result.mm : null}
+        unit="mm"
+        interpretation={result ? `${result.susceptibility} · ${result.category}` : undefined}
+        tone={result ? TONE[result.susceptibility] : "neutral"}
+        empty="Enter the zone diameter in millimetres."
+      />
 
-    const sampleMeasurements = [
-        { name: 'Penicillin vs S. aureus', diameter: '32', status: 'Susceptible' },
-        { name: 'Gentamicin vs E. coli', diameter: '18', status: 'Intermediate' },
-        { name: 'Vancomycin vs MRSA', diameter: '15', status: 'Resistant' },
-        { name: 'Ciprofloxacin vs P. aeruginosa', diameter: '25', status: 'Susceptible' },
-    ];
+      <CalcSection title="Zone measurement">
+        <FieldGrid>
+          <NumberField
+            label="Zone diameter"
+            value={zoneDiameter}
+            onChange={setZoneDiameter}
+            unit="mm"
+            step="0.1"
+            placeholder="e.g. 25.5"
+            error={diameterError}
+            hint="Edge to edge of the clear zone, through the centre of the disk."
+          />
+          <TextField
+            label="Antibiotic name (optional)"
+            value={antibioticName}
+            onChange={setAntibioticName}
+            placeholder="e.g. Amoxicillin"
+          />
+          <TextField
+            label="Bacteria type (optional)"
+            value={bacteriaType}
+            onChange={setBacteriaType}
+            placeholder="e.g. S. aureus"
+          />
+        </FieldGrid>
 
-    return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 pt-20">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6 md:mb-8">
-                    <div className="flex flex-col md:flex-row items-center justify-between">
-                        <div className="flex items-center mb-4 md:mb-0">
-                            <div className="bg-white/20 p-3 rounded-xl mr-4">
-                                <Ruler className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-white">Zone of Inhibition Calculator</h1>
-                                <p className="text-blue-100 mt-2">Kirby‑Bauer disk diffusion susceptibility test </p>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-2 bg-white/20 px-4 py-2 rounded-lg">
-                            <Shield className="w-5 h-5 text-white" />
-                            <span className="text-white font-semibold">CLSI Standards</span>
-                        </div>
-                    </div>
-                </div>
+        <div>
+          <p className="mb-2 text-xs font-medium text-muted-foreground">Try an example measurement</p>
+          <div className="flex flex-wrap gap-2">
+            {SAMPLES.map((sample) => (
+              <button
+                key={sample.name}
+                type="button"
+                onClick={() => {
+                  setZoneDiameter(sample.diameter);
+                  setAntibioticName(sample.antibiotic);
+                  setBacteriaType(sample.organism);
+                }}
+                aria-pressed={zoneDiameter === sample.diameter && antibioticName === sample.antibiotic}
+                className="min-h-[40px] rounded-full border bg-background px-3 py-2 text-xs font-medium active:bg-accent aria-pressed:border-primary aria-pressed:bg-primary/10"
+              >
+                {sample.name} · {sample.diameter} mm
+              </button>
+            ))}
+          </div>
+        </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Input Area */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
-                            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                                <Eye className="w-6 h-6 mr-2 text-blue-600" />
-                                Zone Measurement
-                            </h2>
+        <Button variant="outline" onClick={reset} className="w-full">
+          <RefreshCw />
+          Reset
+        </Button>
+      </CalcSection>
 
-                            {/* Visual Petri Dish */}
-                            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 mb-6">
-                                <h3 className="font-bold text-gray-800 mb-4 text-center">Petri Dish Visualization</h3>
-                                <div className="relative flex items-center justify-center">
-                                    <div className="relative w-80 h-80">
-                                        {/* Petri dish outer circle */}
-                                        <div className="absolute inset-0 rounded-full border-8 border-gray-400 bg-gradient-to-b from-gray-200 to-gray-300 shadow-inner"></div>
+      {result && (
+        <CalcSection title="Interpretation">
+          <div>
+            {subject && <ResultRow label="Test" value={subject} />}
+            <ResultRow label="Zone diameter" value={result.mm} unit="mm" />
+            <ResultRow
+              label="Category"
+              value={result.category}
+              badge={result.susceptibility}
+              badgeTone={result.susceptibility === "SUSCEPTIBLE" ? "success" : result.susceptibility === "INTERMEDIATE" ? "warning" : "destructive"}
+            />
+          </div>
+          <LabNotice tone={result.susceptibility === "SUSCEPTIBLE" ? "info" : "warning"} title={result.interpretation}>
+            <strong>Recommendation:</strong> {result.recommendation}
+          </LabNotice>
+        </CalcSection>
+      )}
 
-                                        {/* Agar */}
-                                        <div className="absolute inset-4 rounded-full bg-gradient-to-br from-amber-100 to-amber-50 shadow-inner"></div>
+      <CalcSection title="Petri dish visualisation" description="Zone drawn to scale against a standard plate.">
+        <PetriDish diameter={result ? result.mm : null} />
+      </CalcSection>
 
-                                        {/* Bacteria lawn */}
-                                        <div className="absolute inset-6 rounded-full bg-gradient-to-br from-red-100 to-red-50 opacity-90">
-                                            {Array.from({ length: 200 }).map((_, i) => (
-                                                <div key={i} className="absolute rounded-full bg-red-700 opacity-20"
-                                                    style={{
-                                                        width: `${Math.random() * 4 + 1}px`,
-                                                        height: `${Math.random() * 4 + 1}px`,
-                                                        left: `${Math.random() * 100}%`,
-                                                        top: `${Math.random() * 100}%`,
-                                                    }} />
-                                            ))}
-                                        </div>
+      <CalcSection title="CLSI zone diameter breakpoints (mm)" description="Examples of drug-specific breakpoints for comparison.">
+        <div className="-mx-1 overflow-x-auto">
+          <table className="w-full min-w-[18rem] text-sm">
+            <thead>
+              <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                <th className="px-2 py-2 font-medium">Antibiotic</th>
+                <th className="px-2 py-2 font-medium">S (≥)</th>
+                <th className="px-2 py-2 font-medium">I</th>
+                <th className="px-2 py-2 font-medium">R (≤)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {CLSI_ROWS.map((row) => (
+                <tr key={row.drug} className="border-b border-border/60 last:border-b-0">
+                  <td className="px-2 py-2.5 font-medium text-foreground">{row.drug}</td>
+                  <td className="px-2 py-2.5 tabular-nums text-emerald-700">{row.s}</td>
+                  <td className="px-2 py-2.5 tabular-nums text-amber-700">{row.i}</td>
+                  <td className="px-2 py-2.5 tabular-nums text-red-700">{row.r}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-xs text-muted-foreground">Source: CLSI M100, 2023</p>
+      </CalcSection>
 
-                                        {/* Zone of inhibition */}
-                                        {zoneDiameter && (
-                                            <div className="absolute rounded-full bg-gradient-to-br from-blue-100 to-blue-50 border-4 border-blue-300 shadow-lg"
-                                                style={{
-                                                    width: `${Math.min(parseFloat(zoneDiameter) * 3, 250)}px`,
-                                                    height: `${Math.min(parseFloat(zoneDiameter) * 3, 250)}px`,
-                                                    left: '50%',
-                                                    top: '50%',
-                                                    transform: 'translate(-50%, -50%)',
-                                                }}>
-                                                <div className="absolute inset-0 rounded-full">
-                                                    {Array.from({ length: 8 }).map((_, i) => (
-                                                        <div key={i} className="absolute w-full h-1 bg-gradient-to-r from-transparent via-blue-200 to-transparent"
-                                                            style={{ transform: `rotate(${i * 22.5}deg)`, top: '50%' }} />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
+      <FormulaNote title="How the zone is read">
+        <p>
+          There is no formula to calculate — the zone diameter itself is compared with breakpoints. This
+          calculator uses one general set:
+        </p>
+        <div>
+          <ResultRow label="Susceptible (S)" value="≥ 20" unit="mm" />
+          <ResultRow label="Intermediate (I)" value="15 – 19" unit="mm" />
+          <ResultRow label="Resistant (R)" value="< 15" unit="mm" />
+        </div>
+        <p>
+          In practice, breakpoints differ by drug and organism because each antibiotic diffuses through
+          agar at a different rate and has a different achievable blood level. The CLSI table shows how
+          much they vary — gentamicin is susceptible from 15 mm, cefotaxime only from 26 mm.
+        </p>
+      </FormulaNote>
 
-                                        {/* Antibiotic disk */}
-                                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-gradient-to-br from-gray-800 to-black shadow-lg flex items-center justify-center border-4 border-gray-600">
-                                            <span className="text-white text-xs font-bold">AB</span>
-                                        </div>
-
-                                        {/* Measurement lines */}
-                                        <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-400 opacity-30"></div>
-                                        <div className="absolute left-1/2 top-0 h-full w-0.5 bg-gray-400 opacity-30"></div>
-
-                                        {/* Diameter label */}
-                                        {zoneDiameter && (
-                                            <div className="absolute top-1/2 left-1/2 transform -translate-y-1/2">
-                                                <div className="relative">
-                                                    <div className="absolute -left-8 -right-8 h-1 bg-green-400 opacity-50"></div>
-                                                    <div className="absolute left-1/2 -top-8 transform -translate-x-1/2 text-xs font-bold text-green-600">
-                                                        {zoneDiameter} mm
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Input Fields */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6 border border-blue-200">
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Zone Diameter (mm)
-                                    </label>
-                                    <input type="number" step="0.1" min="0.1" value={zoneDiameter}
-                                        onChange={(e) => setZoneDiameter(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg" 
-                                        placeholder="e.g., 25.5" />
-                                </div>
-                                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200">
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Antibiotic Name (optional)
-                                    </label>
-                                    <input type="text" value={antibioticName} onChange={(e) => setAntibioticName(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg" 
-                                        placeholder="e.g., Amoxicillin" />
-                                </div>
-                                <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-xl p-6 border border-green-200">
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Bacteria Type (optional)
-                                    </label>
-                                    <input type="text" value={bacteriaType} onChange={(e) => setBacteriaType(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-green-200 rounded-lg" 
-                                        placeholder="e.g., S. aureus" />
-                                </div>
-                            </div>
-
-                            {/* Sample Measurements */}
-                            <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-4 mb-6">
-                                <h3 className="font-semibold text-gray-800 mb-3">Example Measurements</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                    {sampleMeasurements.map((sample, idx) => (
-                                        <button key={idx} onClick={() => setZoneDiameter(sample.diameter)}
-                                            className="bg-white p-2 rounded-lg text-xs hover:bg-blue-100">
-                                            <div className="font-semibold">{sample.name}</div>
-                                            <div>{sample.diameter} mm · {sample.status}</div>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="flex flex-col sm:flex-row gap-4">
-                                <button onClick={calculateZone}
-                                    className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 px-6 rounded-xl shadow-lg">
-                                    Analyze Zone
-                                </button>
-                                <button onClick={resetCalculator}
-                                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white rounded-xl flex items-center justify-center">
-                                    <RefreshCw className="w-5 h-5 mr-2" /> Reset
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Results & Info */}
-                    <div className="space-y-6">
-                        {zoneResult && (
-                            <div className={`rounded-2xl shadow-xl p-6 text-white ${
-                                zoneResult.susceptibility === 'SUSCEPTIBLE' ? 'bg-gradient-to-br from-green-600 to-green-400' :
-                                zoneResult.susceptibility === 'INTERMEDIATE' ? 'bg-gradient-to-br from-yellow-600 to-yellow-400' :
-                                'bg-gradient-to-br from-red-600 to-red-400'
-                            }`}>
-                                <h2 className="text-2xl font-bold mb-4 flex items-center">
-                                    <Ruler className="w-7 h-7 mr-3" />
-                                    Result
-                                </h2>
-                                <div className="bg-white/20 rounded-xl p-4 text-center">
-                                    <div className="text-4xl font-bold mb-2">{zoneResult.susceptibility}</div>
-                                    <div className="text-lg">{zoneResult.category}</div>
-                                </div>
-                                <div className="bg-white/10 rounded-lg p-4 mt-4">
-                                    <p className="text-sm">{zoneResult.interpretation}</p>
-                                    <p className="text-sm mt-2"><strong>Recommendation:</strong> {zoneResult.recommendation}</p>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* CLSI Reference Table */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                                <Info className="w-5 h-5 mr-2 text-blue-600" />
-                                CLSI Zone Diameter Breakpoints (mm)
-                            </h3>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="bg-gradient-to-r from-blue-50 to-green-50">
-                                            <th className="py-2 px-3 text-left">Antibiotic</th>
-                                            <th className="py-2 px-3 text-left">S (≥)</th>
-                                            <th className="py-2 px-3 text-left">I</th>
-                                            <th className="py-2 px-3 text-left">R (≤)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr><td>Ampicillin</td><td>17</td><td>14‑16</td><td>13</td></tr>
-                                        <tr className="bg-gray-50"><td>Cefotaxime</td><td>26</td><td>23‑25</td><td>22</td></tr>
-                                        <tr><td>Ciprofloxacin</td><td>21</td><td>16‑20</td><td>15</td></tr>
-                                        <tr className="bg-gray-50"><td>Gentamicin</td><td>15</td><td>13‑14</td><td>12</td></tr>
-                                        <tr><td>Tetracycline</td><td>19</td><td>15‑18</td><td>14</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-2">Source: CLSI M100, 2023</p>
-                        </div>
-
-                        {/* Interpretation Guide */}
-                        <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-2xl shadow-lg p-6 border border-blue-200">
-                            <h3 className="text-lg font-bold text-gray-800 mb-2">Interpretation</h3>
-                            <div className="space-y-2 text-sm">
-                                <div className="flex items-center"><Circle className="w-3 h-3 fill-green-400 text-green-400 mr-2" /> Susceptible: Effective therapy</div>
-                                <div className="flex items-center"><Circle className="w-3 h-3 fill-yellow-400 text-yellow-400 mr-2" /> Intermediate: Possible with higher dose</div>
-                                <div className="flex items-center"><Circle className="w-3 h-3 fill-red-400 text-red-400 mr-2" /> Resistant: Not effective</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    );
+      <CalcFaq
+        items={[
+          {
+            q: "How do I measure the zone?",
+            a: "Hold the plate against a dark background and measure the diameter of the clear area, including the disk, to the nearest millimetre with a ruler or caliper. Measure from the back of the plate if the lid obscures the edge.",
+          },
+          {
+            q: "Why does my drug's CLSI breakpoint differ from the result here?",
+            a: "This calculator applies one general cut-off to every drug so students can learn the idea of S/I/R. Clinical reports must use the breakpoint for that specific drug–organism pair from the current CLSI M100 or EUCAST tables.",
+          },
+          {
+            q: "What makes a zone unreliable?",
+            a: "An inoculum that is too heavy or too light, agar that is not 4 mm deep, plates incubated too long, or disks that have lost potency. The lawn should be confluent and match a 0.5 McFarland standard.",
+          },
+          {
+            q: "What does a zone with colonies inside it mean?",
+            a: "Scattered colonies within the zone can indicate a mixed culture or resistant subpopulation. Re-check purity and, if they persist, treat the organism as resistant.",
+          },
+        ]}
+      />
+    </CalculatorShell>
+  );
 }

@@ -523,7 +523,7 @@ Generated: ${new Date().toLocaleString()}`;
                             label={
                                 calculations.isHypoglycemic
                                     ? "Correction dose — withheld (hypoglycaemia)"
-                                    : `Correction = (${currentBgNum} − ${targetBgNum}) ÷ ${calculations.activeISF.toFixed(1)}  ·  Δ ${isMmol ? bgDeltaShown.toFixed(1) : bgDeltaShown.toFixed(0)} ${glucoseUnit}`
+                                    : `Correction = (${currentBgNum} − ${targetBgNum}) ÷ ${calculations.activeISF.toFixed(1)}  ·  Δ ${bgDeltaShown.toFixed(0)} ${glucoseUnit}`
                             }
                             value={calculations.correctionDose.toFixed(1)}
                             unit="U"

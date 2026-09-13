@@ -11,12 +11,21 @@ import { Fragment } from "react";
  *  - Windows line breaks, blank-line paragraphs, "- " bullet lines
  */
 
-const CITATION = /\[(?:[A-Z]+\d+)(?:\s*,\s*[A-Z]+\d+)*\]/g;
+// Citation shapes measured over a 1,200-record sample (2026-09-13): "A19399",
+// "A220318,L16408", "A330, A259686", "FDA Label", "label,T116", "MSDS",
+// "PubChem", "PMID: 8959472". One marker may list several, in any mix.
+const CITE_TOKEN = String.raw`(?:[A-Z]+\d+|FDA [Ll]abel|[Ll]abel|MSDS|PubChem|PMID:?\s*\d+)`;
+const CITATION = new RegExp(String.raw`\[${CITE_TOKEN}(?:\s*,\s*${CITE_TOKEN})*\]`, "g");
+// DrugBank writes a mention of another drug as a lower-case name in brackets
+// ("[cloxacillin]", "[insulin glargine]"). Brackets that are not that shape —
+// "[Rat]" after an LD50, "[18F]" — stay as plain text, brackets included.
+const MENTION = /^[a-z][a-z0-9-]*(?: [a-z0-9-]+){0,2}$/;
 
 export function cleanText(text?: string): string {
   return (text ?? "")
     .replace(/\r\n?/g, "\n")
     .replace(CITATION, "")
+    .replace(/[ \t]{2,}/g, " ")
     .replace(/[ \t]+([.,;:])/g, "$1")
     .trim();
 }
@@ -27,7 +36,7 @@ export function plainText(text?: string): string {
     .replace(/\*\*|__/g, "")
     .replace(/(^|\s)_([^_]+)_/g, "$1$2")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/\[([^\]]+)\]/g, "$1")
+    .replace(/\[([^\]]+)\]/g, (m, inner: string) => (MENTION.test(inner) ? inner : m))
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -61,6 +70,7 @@ function Inline({ text, onDrug }: { text: string; onDrug?: (name: string) => voi
         const md = part.match(/^\[([^\]]+)\]\([^)]+\)$/);
         if (md) return <Fragment key={i}>{md[1]}</Fragment>;
         const mention = part.match(/^\[([^\]]+)\]$/);
+        if (mention && !MENTION.test(mention[1])) return <Fragment key={i}>{part}</Fragment>;
         if (mention) {
           const name = mention[1];
           return onDrug ? (
@@ -79,16 +89,16 @@ function Inline({ text, onDrug }: { text: string; onDrug?: (name: string) => voi
 
 /** Paragraphs, bold sub-headings and bullet lists, in reading order. */
 export function Prose({ text, onDrug }: { text?: string; onDrug?: (name: string) => void }) {
-  const blocks = cleanText(text).split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
+  const blocks = cleanText(text).split(/\n[ \t]*\n/).map((b) => b.trim()).filter(Boolean);
   return (
     <div className="pw-enc-prose">
       {blocks.map((block, i) => {
         const lines = block.split("\n").map((l) => l.trim()).filter(Boolean);
         if (lines.length === 1 && /^\*\*[^*]+\*\*:?$/.test(lines[0])) {
           return (
-            <h4 key={i} className="pw-enc-prose__sub">
+            <h5 key={i} className="pw-enc-prose__sub">
               {lines[0].replace(/\*\*/g, "").replace(/:$/, "")}
-            </h4>
+            </h5>
           );
         }
         if (lines.every((l) => /^[-*•]\s+/.test(l))) {

@@ -198,7 +198,7 @@ function regressionSection(kind: GraphKind, regression: Regression): LabReportSe
     title,
     rows: [
       { label: "Points (group log D values)", value: String(fit.n) },
-      { label: "Slope (m)", value: n6(fit.slope), unit: kind === "ph" ? "per pH unit" : "mol/L" },
+      { label: "Slope (m)", value: n6(fit.slope), unit: kind === "ph" ? "per pH unit" : "per (L/mol)" },
       { label: "Intercept (c)", value: n6(fit.intercept) },
       { label: "R²", value: fit.r2 === null ? "undefined (every log D identical)" : fit.r2.toFixed(4) },
     ],
