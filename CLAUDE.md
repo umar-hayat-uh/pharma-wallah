@@ -210,7 +210,7 @@ These are conventions **observed in the code**, not aspirations.
     **One documented exception:** the landing page (`src/components/Home/landing/`) uses **GSAP**
     for scroll pinning, scrubbing and the SVG plugins framer-motion has no equivalent for. GSAP is
     confined to that directory — nothing else in `src/` may import it, or a ~70 KB library lands on
-    all ~170 routes. **Second exception (2026-09-13, user request): `src/components/dashboard/`**,
+    all ~170 routes. **Third exception (2026-09-14, user request): `(tools)/serial-diluation/_useBenchMotion.ts`**, same lazy `import("gsap")` pattern, no ScrollTrigger. **Second exception (2026-09-13, user request): `src/components/dashboard/`**,
     which loads GSAP with a dynamic `import()` after first paint (`useDashboardMotion.ts`). The landing page also loads two scoped faces via `next/font` (JetBrains Mono
     for instrument labels, Caveat for marker annotations); Outfit remains the only site-wide face.
 14. **A page's bespoke CSS goes in a namespaced stylesheet next to its components**, imported by
@@ -243,6 +243,10 @@ These are conventions **observed in the code**, not aspirations.
 - Typography: the site is now single-typeface (**Outfit**, variable) across web and APK.
 
 ### Recently Completed
+- **Android launcher icon is now the PharmaWallah mark (2026-09-14)** — it was still Capacitor's "X"
+  in v1.0 and v1.1. Adaptive icon (white + mark + Android 13 monochrome layer) and legacy icons at all
+  densities; Capacitor's unused placeholder splash PNGs deleted. **Not in the published APK yet** —
+  needs the next release build. See the §8 entry.
 - **Android app v1.1 published (2026-09-13)** — signed APK rebuilt with today's calculator migrations and
   the six new lab tools, replacing `public/downloads/pharmawallah-calculators.apk` (installs as an update
   over 1.0). **Commit it with the version bumps and deploy.** Session 9c also moved 13 more tools onto
@@ -482,6 +486,95 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 
 > Newest first. Never paste source code here. Archive entries older than ~10 into
 > `.claude/history/YYYY-MM.md`.
+
+### 2026-09-14 — Android launcher icon replaced with the PharmaWallah mark
+
+Session `pharma-wallah-5d`.
+
+**Completed**
+- The user reported the app "is currently using capacitor icon" — confirmed: every
+  `mipmap-*/ic_launcher*.png` was Capacitor's blue "X" on a grid, and `cap sync` never replaces them.
+  Now the PharmaWallah mark (capsule over open book) on white: adaptive foreground at 5 densities,
+  a **monochrome** layer (Android 13 themed icons, new), legacy square and round icons for API 24–25.
+- Deleted Capacitor's unreferenced placeholders: 11 `drawable*/splash.png` (the "X" splash, unused since
+  the launch theme moved to `launch_screen.xml`), `drawable-v24/ic_launcher_foreground.xml` and
+  `drawable/ic_launcher_background.xml` (nothing references them; the adaptive icon uses the mipmap
+  PNG and `@color/ic_launcher_background`). No splash-screen plugin is installed.
+- The Android 12+ system splash and `launch_screen.xml` draw `@mipmap/ic_launcher`, so they show the
+  new mark without changes.
+
+**Files**
+- `android/app/src/main/res/mipmap-anydpi-v26/ic_launcher{,_round}.xml` — `<monochrome>` added.
+- `android/app/src/main/res/mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_launcher{,_round,_foreground}.png`
+  replaced; `ic_launcher_monochrome.png` new.
+- Deleted the 13 placeholder drawables above (staged with `git rm`).
+- Knowledge: `.claude/MEMORY.md` gotcha 80, `.claude/skills/android-app-capacitor/SKILL.md` ("Launcher
+  icon"), `.claude/ROADMAP.md`.
+
+**Architecture & Decisions**
+- **White ground, not the brand gradient**: the mark is blue + green, and it matches the "real app
+  icon on a white tile" already used by the header CTA and `/download`.
+- Source is `public/icons/icon-1.png` (largest copy of the mark), un-matted to alpha; sized by the
+  farthest opaque pixel (30 dp of the 33 dp safe radius), because the book's corners — not its width —
+  are what a circular mask clips. The generator was a throwaway script; the method and constants
+  are in the skill.
+- **No version bump and no release APK**: `mobile:build` snapshots the tree, and peers `pharma-wallah-4b`
+  (Serial Dose) and `-d0` (Rf value / TLC) are rewriting tools that ship in the app.
+
+**Verification**
+- All `res/**/*.xml` and the manifest parse.
+- `./gradlew assembleDebug` (JDK 21, existing synced assets) → **exit 0**. `aapt dump badging` →
+  `application-icon-*: res/mipmap-anydpi-v26/ic_launcher.xml`; resource table has `ic_launcher`,
+  `_round`, `_foreground`, `_monochrome` and no `drawable/splash`. The packaged PNGs were unzipped and
+  looked at on brandBlue at mdpi/xhdpi/xxxhdpi; the foreground was checked under circle, rounded-square
+  and squircle masks and the monochrome layer under a tint — nothing clipped.
+- **NOT verified:** the icon on a real launcher or emulator (no device); `npx tsc --noEmit` / web build
+  (no TypeScript or web file changed). No tests exist; lint is not configured.
+
+**Remaining**
+- **Build and publish the next APK** (bump to `versionCode 3` / `1.2`, `DownloadClient.tsx`) once peers
+  report a safe point — until then phones keep the Capacitor icon.
+
+**Next**
+- `npm run mobile:apk` after 4b and d0 finish, then install over v1.1 on a phone to see the icon.
+
+### 2026-09-14 — Serial Dose calculator (`serial-diluation`) redesigned: kit + shadcn + lazy GSAP bench rack
+
+Session `pharma-wallah-4b`.
+
+**Completed**
+- `/calculation-tools/serial-diluation` (hub: Pharmacology → "Serial Dose Calculator") rebuilt with top-design on the
+  calculator kit and shadcn primitives: result first (dose in the syringe, ±5% tone), three figures, inputs with
+  worked-example chips, a **bench rack** (stock beaker → tubes → syringe; liquid height = volume, colour depth =
+  log concentration), an editable step list, Copy/PNG/Print record (`LabActions`) plus the kept bench-sheet PDF,
+  Working, FAQ, CalcAbout + AdSlot. Emoji, the 800-line inline CSS and the print-only sheet are gone.
+- GSAP (dynamic import, this route only): a drop travels each transfer into the next tube, the syringe draws up,
+  the rack scrolls to follow on phones; runs on first view, ~0.5 s after the plan changes, and on Replay. Off under
+  reduced motion; nothing hidden before hydration.
+- Now stated on screen (numbers unchanged): the six-tube auto-plan cap and its shortfall, and "empty or 0 aliquot uses 1 mL".
+
+**Files**
+- `src/app/(site)/calculation-tools/(tools)/serial-diluation/` — `page.tsx` (rewritten); new `_math.ts` (maths copied
+  verbatim), `_report.ts`, `_pdf.ts`, `_BenchRack.tsx`, `_useBenchMotion.ts`.
+
+**Architecture & Decisions**
+- Maths untouched. Render-level fixes: tube inputs bind to the typed value (clearing no longer snaps to 0); PDF
+  writes "C0" (Helvetica had no subscript glyph) and drops the CDN fallback (jsPDF is installed); PDF button hidden in
+  the APK like the kit's Download card. Copy now uses the kit's record text instead of the old custom text.
+
+**Verification**
+- Before numbers from the live original (HEAD = `5dbe98c` for this file), 16 cases (4 presets, aliquot 0/empty/0.5,
+  stock too dilute, 6-tube cap, invalid, 1:1, odd factors, edit/add/remove tube, edits surviving an input change):
+  **359/359 displayed values identical** after the rewrite.
+- Headless Chrome 1440×900 and 390×844, reduced and full motion: 0 exceptions, `scrollWidth` = viewport, no NaN;
+  screenshots read. Motion sampled (arcs draw in sequence, drop moves, phone rack scrolls 0 → 224 px, replay after an
+  edit, added row slides in). Copy → full record; PDF → 10.8 KB `application/pdf`.
+- `npx tsc --noEmit` → 0 errors in this tool (the only source errors are in another session's in-progress
+  `src/components/calculators/tlc/spots.ts`).
+- **NOT verified:** `npm run build`, `npm run mobile:build` / the APK (left to `pharma-wallah-5d`'s v1.2 build), print dialog, real device.
+
+**Remaining**
+- Maths quirks recorded in the tracker (R7), not fixed.
 
 ### 2026-09-13 — Android app v1.1 published; 13 more calculators on the kit (9c's share of Phase 2)
 
@@ -1457,7 +1550,7 @@ Session `pharma-wallah-a8`, renamed `pharma-wallah-3d` after a machine reboot mi
 | Lint | `npm run lint` | **NOT AVAILABLE.** No ESLint config; the command opens an interactive setup prompt. Do not report lint as passing. |
 | Build | `npm run build` | **PASSES — re-verified 2026-09-12** with the dev server stopped, after the AdSense work (the first successful run since the PWA removal, the shadcn migration and the Outfit switch): exit 0, ~170 routes, middleware 81.8 kB, shared JS 87.8 kB. Stop `npm run dev` first — they share `.next` and corrupt each other (§7 Known Issue 10). **PASSES with a populated `.env`** — exit 0, ~170 routes emitted, middleware 81.8 kB, shared JS 87.8 kB. Only `/_not-found` is static; everything else is `ƒ` (dynamic, server-rendered on demand). **Without `.env` it FAILS**: `Missing environment variable: NEXT_PUBLIC_SUPABASE_URL` while collecting page data for `/api/admin/registrations`. Expected non-fatal warnings: the `@supabase/supabase-js` Edge-runtime `process.version` notice, the stale `caniuse-lite` Browserslist notice, and two webpack "Serializing big strings" cache notices. |
 | Mobile build | `npm run mobile:build` | **PASSES** — 109 static pages, 108 HTML files, 105 under `mobile/out/calculation-tools/`, shared JS 87.9 kB, CSS in two files **98,751 + 4,210 bytes**, 12 MB (re-measured 2026-09-13 by the v1.1 APK build, with 85 of 104 tools on the kit; 103,829 + 4,210 before). Independent of `.env` and safe to run while `npm run dev` is up (separate `mobile/.next`). **Also assert zero ad strings in `mobile/out`** — see `.claude/skills/adsense-monetization/SKILL.md`. A ~10 KB stylesheet is the silent Tailwind failure (gotcha 23). |
-| APK | `npm run mobile:apk` | **PASSES** (2026-09-13, v1.1 / versionCode 2) — signed V2 release APK, 5,922,832 B, copied to `public/downloads/`; same certificate as v1.0. Needs JDK 21 (auto-selected) and `android/keystore.properties`. Check `aapt dump badging` for the version and `apksigner verify --print-certs` for the certificate. |
+| APK | `npm run mobile:apk` | **PASSES** (2026-09-14, v1.2 / versionCode 3, built by `pharma-wallah-4b` — new launcher icon + redesigned Serial Dose tool) — signed V2 release APK, 5,945,495 B, copied to `public/downloads/`; same certificate as v1.0/v1.1. Needs JDK 21 (auto-selected) and `android/keystore.properties`. Check `aapt dump badging` for the version and `apksigner verify --print-certs` for the certificate. |
 | Tests | — | **No test infrastructure exists.** Never claim tests passed. |
 
 ---

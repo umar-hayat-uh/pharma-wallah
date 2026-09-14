@@ -858,7 +858,21 @@ Traps that will otherwise be rediscovered painfully.
     (degrades cleanly). "Mark as read" is the student's click only and never waits on the questions
     (user decision); lesson sets are stored as `quiz_attempts` with quiz_id prefix `lesson:`.
 
+80. **The Android launcher icon lives only in `android/app/src/main/res/mipmap-*`, and it is generated.**
+    `cap sync` never touches `res/`, so the Capacitor "X" placeholder shipped in v1.0 and v1.1 even
+    though the in-app splash was branded. Since 2026-09-14 the adaptive icon is the PharmaWallah mark
+    on white (`@color/ic_launcher_background` #FFFFFF), with a `monochrome` layer for Android 13 themed
+    icons; all PNGs come from `public/icons/icon-1.png` (the highest-resolution copy of the mark) — the
+    procedure is in the `android-app-capacitor` skill. The Android 12+ system splash
+    (`Theme.SplashScreen`) and `drawable/launch_screen.xml` both draw `@mipmap/ic_launcher`, so they
+    follow the icon automatically. **A changed icon reaches phones only with a new APK** — the APK in
+    `public/downloads/` is not rebuilt by editing `res/`.
+
 ---
+
+81. **A GSAP `fromTo` inside a timeline renders its *from* state when the timeline is built**, not when its
+    position is reached. On the Serial Dose rack that dimmed every later tube's concentration for seconds before
+    the drop arrived. Anything that must stay readable until its moment needs `immediateRender: false`.
 
 ## 9. Working preferences (observed)
 

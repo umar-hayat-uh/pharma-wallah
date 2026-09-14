@@ -303,8 +303,8 @@ pages, confirm progress tracking records a visit, then batch the rest.
   **zero secrets** and no external origin but the API base. Served locally and exercised.
 - **Remaining work:**
   - Install **JDK 21**, then `cd android && ./gradlew assembleDebug` to produce an APK.
-  - Replace the default Capacitor launcher icon and splash screen in
-    `android/app/src/main/res/` (PharmaWallah icons exist in `public/icons/`).
+  - ~~Replace the default Capacitor launcher icon and splash screen~~ — splash branded 2026-09-13,
+    launcher icon replaced 2026-09-14 (not in a published APK until the next release).
   - Decide on a signing key and a Play Store listing before any release build.
   - Optional: an iOS target (`@capacitor/ios`) — the same `mobile/out` bundle would work.
 - **Important files:** `mobile/README.md`, `mobile/next.config.mjs`,

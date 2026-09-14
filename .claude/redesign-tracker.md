@@ -279,7 +279,7 @@ own uncommitted edits** — do not touch without asking.
 | 49 | [ ] `ed50-td50-ld50-calculator` | 459 | hub | todo | C9 |
 | 50 | [ ] `dose-response-curve-generator` | 468 | hub | todo | C9 |
 | 51 | [ ] `animal-dose` | 1380 | hub | todo | C9 |
-| 52 | [ ] `serial-diluation` | 1920 | hub | todo | C10 |
+| 52 | [x] `serial-diluation` | 1920 | hub | done 2026-09-14 (4b, 359/359 values match) | C10 |
 | 53 | [x] `therapeutic-index-calculator` | 296 | hub | done (pre-existing) | — |
 | | **Pharmaceutical Analysis** — 8 tools | | | | |
 | 54 | [x] `percent-purity-calculator` | 245 | hub | done 2026-09-13 (3d/R3, before/after numbers match) | C10 |
@@ -415,7 +415,7 @@ the reboot). pharma-wallah-9c's 14 tools report their own list.
 
 ## R7 — Pharmacology (NOT migrated; before-capture only for animal-dose)
 - animal-dose: scales dose linearly by body weight (normalised mg/kg always = adult mg/kg) — standard human↔animal conversion uses BSA/Km factors (rodents ~6–12× more); formatter ignores requested decimals (≥1 → 3 dp; small values lose precision: "0.0001 mg" vs "0.13 µg"); volume-limit warning follows species preset, not entered weight.
-- serial-diluation (code reading only): auto-plan caps at 6 tubes → for ~10⁸-fold dilutions the remaining factor is silently dropped; empty/zero default aliquot silently becomes 1 mL.
+- serial-diluation (code reading only): auto-plan caps at 6 tubes → for ~10⁸-fold dilutions the remaining factor is silently dropped; empty/zero default aliquot silently becomes 1 mL. **Measured 2026-09-14 (4b):** planned volumes rounded to 4 dp, so prednisolone delivers 34.999 µg for 35 µg; `fmt` shows a 0.000001 mg target as "0 mg"; the stock-too-dilute summary prints "1:0×"; the ±5% band is the tool's own. The cap and the aliquot fallback are now stated on screen (numbers unchanged).
 
 ## R6 — Microbiology + Engineering (NOT migrated; before-captures saved)
 - **mixing-time-estimator (SERIOUS):** t = K × (D/d)² × (1/N) × 60 with N already in rev/s → every result 60× too long (1.5 m tank, 0.5 m impeller, 4 rps → 540 s instead of 9 s); power number jumps 0.7 → 5.0 at Re 10,000.

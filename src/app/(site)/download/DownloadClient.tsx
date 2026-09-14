@@ -16,8 +16,8 @@ import {
  * scripts/build-apk.sh.
  */
 const APK_URL = "/downloads/pharmawallah-calculators.apk";
-const APP_VERSION = "1.1";
-const APK_SIZE = "5.6 MB";
+const APP_VERSION = "1.2";
+const APK_SIZE = "5.7 MB";
 const MIN_ANDROID = "Android 7.0 or newer";
 
 const HIGHLIGHTS = [

@@ -136,6 +136,30 @@ Two traps, both of which fail *silently* with a successful build and an unstyled
 cat mobile/out/_next/static/css/*.css | wc -c      # ~96 KB healthy; ~10 KB means nothing was scanned
 ```
 
+## Launcher icon
+The icon is **not** produced by Capacitor or `cap sync` — it is the committed resources in
+`android/app/src/main/res/`: `mipmap-anydpi-v26/ic_launcher{,_round}.xml` (adaptive: white
+background colour, `ic_launcher_foreground`, `ic_launcher_monochrome`) plus per-density PNGs in
+`mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}` (×1, 1.5, 2, 3, 4).
+
+Regenerating from the brand mark (done 2026-09-14 with a throwaway Python + Pillow script; there is
+no numpy on this machine, so plain PIL pixel loops — ~3 s):
+1. Source `public/icons/icon-1.png` (1536×1024, mark ~536 px wide on flat off-white). Un-matte the
+   white: per pixel `d = max(255 − r, 255 − g, 255 − b)`, `alpha = clamp((d − 10)/60)`, and recover
+   the colour as `255 − (255 − c)/alpha`. Crop to the alpha bbox.
+2. **Size by radius, not width**: the book's corners are the farthest points, so scale the mark until
+   its farthest opaque pixel is **30 dp** from the centre of the 108 dp foreground canvas (safe circle is
+   33 dp). Resize in premultiplied mode (`RGBa`) to avoid dark fringes.
+3. `ic_launcher_monochrome.png` = the foreground's alpha on white (the system tints it).
+4. Legacy (API 24–25, `minSdk 24`): 48 dp canvas, a white rounded square (radius 9 dp) or circle inset
+   2 dp, mark at radius 19 dp (square) / 18 dp (round).
+5. Preview under circle, rounded-square and squircle masks before copying into `res/`.
+
+Verify without a release: `cd android && JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew
+assembleDebug` (uses the already-synced web assets, so it is safe while peers edit tools), then
+`aapt dump badging app/build/outputs/apk/debug/app-debug.apk | grep icon` and unzip `res/mipmap-*`
+to look at the packaged PNGs. Phones only see the new icon after the next signed APK.
+
 ## Releasing an APK
 `npm run mobile:apk` → `scripts/build-apk.sh`: preflights the JDK and `ANDROID_HOME`, warns about a
 missing signing key, then runs `mobile:build` → `cap sync` → `gradlew assembleRelease`.

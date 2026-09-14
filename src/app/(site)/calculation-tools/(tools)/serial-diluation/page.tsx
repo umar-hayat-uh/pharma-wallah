@@ -1,202 +1,122 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { FileDown, Minus, Play, Plus, RotateCcw, Syringe, Wand2 } from "lucide-react";
+import {
+  CalculatorShell,
+  CalcSection,
+  FieldGrid,
+  NumberField,
+  ResultCard,
+  FormulaNote,
+  Formula,
+  CalcAbout,
+  CalcList,
+  CalcFaq,
+  AdSlot,
+  LabActions,
+  LabNotice,
+  TextField,
+  fieldError,
+  IS_MOBILE_APP,
+} from "@/components/calculators";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import {
+  PRESETS,
+  autoPlanShortfall,
+  computeChain,
+  fmt,
+  fmtConc,
+  fmtUg,
+  isWithinTolerance,
+  parseDoseInputs,
+  parseStepEdit,
+  planAutoSteps,
+  round4,
+  type DilutionStep,
+  type DoseInputs,
+  type WorkedPreset,
+} from "./_math";
+import { buildReport, buildWarnings, signed, sourceName } from "./_report";
+import { downloadProtocolPdf } from "./_pdf";
+import { BenchRack } from "./_BenchRack";
+import { useBenchMotion } from "./_useBenchMotion";
 
-/* ============================================================
-   SERIAL DILUTION CALCULATOR & BENCH PROTOCOL
-   Mobile-Optimized • jsPDF Export • Printable Lab Worksheet
-   ============================================================ */
+/*
+ * SERIAL DOSE CALCULATOR — tablet → stock → tube chain → syringe.
+ *
+ * Redesigned on the calculator kit (2026-09-14). The maths lives in _math.ts,
+ * copied unchanged from the original page and checked number-for-number
+ * against it; this file is layout and state only. The bench rack
+ * (_BenchRack.tsx) is the page's one signature moment, with GSAP motion loaded
+ * lazily in _useBenchMotion.ts.
+ */
 
-// ---------- Types ----------
+const DEFAULTS: DoseInputs & { drugName: string; animalSubject: string } = {
+  drugName: "Carprofen",
+  animalSubject: "C57BL/6 Mouse (25g)",
+  adultDose: "25",
+  dissolveVol: "10",
+  targetDose: "0.009",
+  deliverVol: "0.1",
+  aliquotDefault: "1",
+};
 
-interface DilutionStep {
-  id: string;
-  stepNumber: number;
-  aliquot: number | string;
-  addDiluent: number | string;
-}
-
-interface ComputedRow {
-  kind: "stock" | "dilute";
-  stepNumber: number;
-  label: string;
-  aliquot: number;
-  addDiluent: number;
-  newTotalVol: number;
-  prevConc: number;
-  conc: number;
-  id: string;
-  dilutionFactor: number;
-}
-
-interface ComputedChain {
-  rows: ComputedRow[];
-  finalConc: number;
-  doseDelivered: number;
-  doseError: number;
-  totalDilutionFactor: number;
-}
-
-interface WorkedPreset {
-  label: string;
-  drug: string;
-  sub: string;
-  adultDose: string;
-  dissolveVol: string;
-  targetDose: string;
-  deliverVol: string;
-}
-
-// ---------- Formatting Helpers ----------
-
-function fmt(n: number, maxDp = 4): string {
-  if (!Number.isFinite(n)) return "—";
-  if (n === 0) return "0";
-  const abs = Math.abs(n);
-  let dp = maxDp;
-  if (abs >= 100) dp = 2;
-  else if (abs >= 10) dp = 3;
-  else if (abs >= 1) dp = 3;
-  return Number(n.toFixed(dp)).toString();
-}
-
-function fmtConc(n: number): string {
-  if (!Number.isFinite(n)) return "—";
-  if (n > 0 && n < 0.0001) return n.toExponential(3);
-  return fmt(n, 4);
-}
-
-function fmtUg(mg: number): string {
-  if (!Number.isFinite(mg)) return "—";
-  return `${fmt(mg * 1000, 2)} µg`;
-}
-
-function round4(n: number): number {
-  return Math.round(n * 10000) / 10000;
-}
-
-// ---------- Step Planning Algorithm ----------
-
-function autoPlanSteps(totalFactorNeeded: number, aliquotDefault: number): DilutionStep[] {
-  const steps: DilutionStep[] = [];
-  let remaining = totalFactorNeeded;
-  let guard = 0;
-
-  while (remaining > 1.0001 && guard < 6) {
-    guard++;
-    const stepFactor = remaining >= 10 ? 10 : remaining;
-    const newTotalVol = aliquotDefault * stepFactor;
-    const addDiluent = Math.max(0, newTotalVol - aliquotDefault);
-    steps.push({
-      id: `step-${guard}`,
-      stepNumber: guard,
-      aliquot: round4(aliquotDefault),
-      addDiluent: round4(addDiluent),
-    });
-    remaining = remaining / stepFactor;
-  }
-
-  if (steps.length === 0) {
-    steps.push({
-      id: "step-1",
-      stepNumber: 1,
-      aliquot: round4(aliquotDefault),
-      addDiluent: 0,
-    });
-  }
-  return steps;
-}
-
-// ---------- Presets ----------
-
-const PRESETS: WorkedPreset[] = [
-  {
-    label: "Mouse Analgesic",
-    drug: "Carprofen",
-    sub: "25 mg tab → 0.009 mg (9 µg) in 0.1 ml",
-    adultDose: "25",
-    dissolveVol: "10",
-    targetDose: "0.009",
-    deliverVol: "0.1",
-  },
-  {
-    label: "Rat Steroid",
-    drug: "Prednisolone",
-    sub: "20 mg tab → 0.035 mg (35 µg) in 0.2 ml",
-    adultDose: "20",
-    dissolveVol: "10",
-    targetDose: "0.035",
-    deliverVol: "0.2",
-  },
-  {
-    label: "Micro-Dose Sedative",
-    drug: "Diazepam",
-    sub: "10 mg tab → 0.002 mg (2 µg) in 0.05 ml",
-    adultDose: "10",
-    dissolveVol: "10",
-    targetDose: "0.002",
-    deliverVol: "0.05",
-  },
-  {
-    label: "Standard 1:10 Dilution",
-    drug: "Test Solute",
-    sub: "50 mg → 0.05 mg in 0.1 ml",
-    adultDose: "50",
-    dissolveVol: "10",
-    targetDose: "0.05",
-    deliverVol: "0.1",
-  },
-];
-
-// ============================================================
-
-export default function SerialDilutionCalculator() {
-  const [adultDose, setAdultDose] = useState<string>("25");
-  const [dissolveVol, setDissolveVol] = useState<string>("10");
-  const [targetDose, setTargetDose] = useState<string>("0.009");
-  const [deliverVol, setDeliverVol] = useState<string>("0.1");
-  const [aliquotDefault, setAliquotDefault] = useState<string>("1");
-  const [drugName, setDrugName] = useState<string>("Carprofen");
-  const [animalSubject, setAnimalSubject] = useState<string>("C57BL/6 Mouse (25g)");
-
+export default function SerialDoseCalculator() {
+  const [adultDose, setAdultDose] = useState(DEFAULTS.adultDose);
+  const [dissolveVol, setDissolveVol] = useState(DEFAULTS.dissolveVol);
+  const [targetDose, setTargetDose] = useState(DEFAULTS.targetDose);
+  const [deliverVol, setDeliverVol] = useState(DEFAULTS.deliverVol);
+  const [aliquotDefault, setAliquotDefault] = useState(DEFAULTS.aliquotDefault);
+  const [drugName, setDrugName] = useState(DEFAULTS.drugName);
+  const [animalSubject, setAnimalSubject] = useState(DEFAULTS.animalSubject);
+  // null = follow the auto-plan; an array once the student edits any tube.
   const [customSteps, setCustomSteps] = useState<DilutionStep[] | null>(null);
-  const [copied, setCopied] = useState<boolean>(false);
-  const [pdfLoading, setPdfLoading] = useState<boolean>(false);
-  const [showFormulas, setShowFormulas] = useState<boolean>(false);
+  const [pdfStatus, setPdfStatus] = useState<"" | "working" | "failed">("");
 
-  // Numbers
-  const nAdult = parseFloat(adultDose);
-  const nDissolve = parseFloat(dissolveVol);
-  const nTarget = parseFloat(targetDose);
-  const nDeliver = parseFloat(deliverVol);
-  const nAliquot = parseFloat(aliquotDefault) || 1;
+  const raw: DoseInputs = { adultDose, dissolveVol, targetDose, deliverVol, aliquotDefault };
+  const p = parseDoseInputs(raw);
 
-  const inputsValid =
-    nAdult > 0 && nDissolve > 0 && nTarget > 0 && nDeliver > 0 && nAliquot > 0;
-
-  const c0 = inputsValid ? nAdult / nDissolve : 0;
-  const requiredFinalConc = inputsValid ? nTarget / nDeliver : 0;
-  const totalFactorNeeded =
-    inputsValid && requiredFinalConc > 0 ? c0 / requiredFinalConc : 0;
-
-  const autoSteps = useMemo(() => {
-    if (!inputsValid || totalFactorNeeded <= 0) return [];
-    if (totalFactorNeeded < 1) return [];
-    return autoPlanSteps(totalFactorNeeded, nAliquot);
-  }, [inputsValid, totalFactorNeeded, nAliquot]);
-
+  const autoSteps = useMemo(
+    () => planAutoSteps(p),
+    // `p` is rebuilt every render; these are the values planAutoSteps reads.
+    [p.inputsValid, p.totalFactorNeeded, p.nAliquot],
+  );
   const steps = customSteps ?? autoSteps;
   const isCustomized = customSteps !== null;
 
-  // Step operations
+  const chain = useMemo(
+    () => computeChain(p, steps),
+    [p.inputsValid, p.c0, p.nDissolve, steps, p.nDeliver, p.nTarget, p.totalFactorNeeded],
+  );
+
+  const withinTolerance = isWithinTolerance(chain);
+  const stockTooDilute = p.inputsValid && p.totalFactorNeeded > 0 && p.totalFactorNeeded < 1;
+  // Only the auto-plan can run out of tubes; an edited chain is the student's own.
+  const shortfall = !isCustomized && p.inputsValid && p.totalFactorNeeded >= 1 ? autoPlanShortfall(p.totalFactorNeeded) : 1;
+
+  const warnings = useMemo(
+    () => buildWarnings(p, chain, { withinTolerance, stockTooDilute, shortfall }),
+    [chain, withinTolerance, stockTooDilute, shortfall, p.nTarget],
+  );
+
+  const report = useMemo(
+    () => (chain ? buildReport(raw, { drugName, animalSubject }, p, chain, withinTolerance, warnings) : null),
+    [chain, drugName, animalSubject, withinTolerance, warnings, adultDose, dissolveVol, targetDose, deliverVol, aliquotDefault],
+  );
+
+  /* ─── Step editing (same rules as the original page) ──────────────────── */
+
   const updateStep = useCallback(
     (id: string, field: "aliquot" | "addDiluent", value: string) => {
       const base = customSteps ?? autoSteps;
-      const parsed = value === "" ? "" : Math.max(0, parseFloat(value) || 0);
-      const next = base.map((s) => (s.id === id ? { ...s, [field]: parsed } : s));
-      setCustomSteps(next);
+      const parsed = parseStepEdit(value);
+      setCustomSteps(base.map((s) => (s.id === id ? { ...s, [field]: parsed } : s)));
     },
-    [customSteps, autoSteps]
+    [customSteps, autoSteps],
   );
 
   const addStep = useCallback(() => {
@@ -204,100 +124,19 @@ export default function SerialDilutionCalculator() {
     const nextNum = base.length + 1;
     setCustomSteps([
       ...base,
-      {
-        id: `step-${nextNum}-${Date.now()}`,
-        stepNumber: nextNum,
-        aliquot: nAliquot,
-        addDiluent: round4(nAliquot * 9),
-      },
+      { id: `step-${nextNum}-${Date.now()}`, stepNumber: nextNum, aliquot: p.nAliquot, addDiluent: round4(p.nAliquot * 9) },
     ]);
-  }, [customSteps, autoSteps, nAliquot]);
+  }, [customSteps, autoSteps, p.nAliquot]);
 
   const removeStep = useCallback(
     (id: string) => {
       const base = customSteps ?? autoSteps;
       if (base.length <= 1) return;
-      const filtered = base
-        .filter((s) => s.id !== id)
-        .map((s, idx) => ({ ...s, stepNumber: idx + 1 }));
-      setCustomSteps(filtered);
+      setCustomSteps(base.filter((s) => s.id !== id).map((s, idx) => ({ ...s, stepNumber: idx + 1 })));
     },
-    [customSteps, autoSteps]
+    [customSteps, autoSteps],
   );
 
-  const resetToAuto = useCallback(() => {
-    setCustomSteps(null);
-  }, []);
-
-  // Compute forward chain
-  const computedChain = useMemo<ComputedChain | null>(() => {
-    if (!inputsValid || c0 <= 0) return null;
-
-    const rows: ComputedRow[] = [];
-    let conc = c0;
-
-    rows.push({
-      kind: "stock",
-      stepNumber: 0,
-      label: "Stock (Tube 0)",
-      aliquot: 0,
-      addDiluent: nDissolve,
-      newTotalVol: nDissolve,
-      prevConc: c0,
-      conc: c0,
-      id: "stock-0",
-      dilutionFactor: 1,
-    });
-
-    for (let i = 0; i < steps.length; i++) {
-      const s = steps[i];
-      const aliquot = typeof s.aliquot === "number" ? s.aliquot : parseFloat(s.aliquot) || 0;
-      const addDiluent =
-        typeof s.addDiluent === "number" ? s.addDiluent : parseFloat(s.addDiluent) || 0;
-      const newTotalVol = aliquot + addDiluent;
-      const prevConc = conc;
-      const stepFactor = aliquot > 0 ? newTotalVol / aliquot : 0;
-      const newConc = newTotalVol > 0 && aliquot > 0 ? (prevConc * aliquot) / newTotalVol : 0;
-
-      conc = newConc;
-      rows.push({
-        kind: "dilute",
-        stepNumber: i + 1,
-        label: `Tube ${i + 1}`,
-        aliquot,
-        addDiluent,
-        newTotalVol,
-        prevConc,
-        conc: newConc,
-        id: s.id,
-        dilutionFactor: stepFactor,
-      });
-    }
-
-    const finalConc = conc;
-    const doseDelivered = Number.isFinite(finalConc) ? finalConc * nDeliver : 0;
-    const doseError =
-      Number.isFinite(doseDelivered) && nTarget > 0
-        ? ((doseDelivered - nTarget) / nTarget) * 100
-        : 0;
-
-    return {
-      rows,
-      finalConc,
-      doseDelivered,
-      doseError,
-      totalDilutionFactor: totalFactorNeeded,
-    };
-  }, [inputsValid, c0, nDissolve, steps, nDeliver, nTarget, totalFactorNeeded]);
-
-  const withinTolerance =
-    computedChain && Number.isFinite(computedChain.doseError)
-      ? Math.abs(computedChain.doseError) <= 5
-      : false;
-
-  const stockTooDilute = inputsValid && totalFactorNeeded > 0 && totalFactorNeeded < 1;
-
-  // Handlers
   const loadPreset = (ex: WorkedPreset) => {
     setDrugName(ex.drug);
     setAdultDose(ex.adultDose);
@@ -308,1614 +147,530 @@ export default function SerialDilutionCalculator() {
   };
 
   const handleReset = () => {
-    setDrugName("Carprofen");
-    setAdultDose("25");
-    setDissolveVol("10");
-    setTargetDose("0.009");
-    setDeliverVol("0.1");
-    setAliquotDefault("1");
+    setDrugName(DEFAULTS.drugName);
+    setAnimalSubject(DEFAULTS.animalSubject);
+    setAdultDose(DEFAULTS.adultDose);
+    setDissolveVol(DEFAULTS.dissolveVol);
+    setTargetDose(DEFAULTS.targetDose);
+    setDeliverVol(DEFAULTS.deliverVol);
+    setAliquotDefault(DEFAULTS.aliquotDefault);
     setCustomSteps(null);
   };
 
-  const handleCopy = useCallback(() => {
-    if (!computedChain) return;
-    const lines: string[] = [];
-    lines.push(`DILUTION PROTOCOL: ${drugName || "Target Compound"}`);
-    lines.push(`----------------------------------------`);
-    lines.push(`• Starting Tablet: ${fmt(nAdult)} mg in ${fmt(nDissolve)} ml (Stock C₀ = ${fmtConc(c0)} mg/ml)`);
-    lines.push(`• Target Dose    : ${fmt(nTarget)} mg (${fmtUg(nTarget)}) in ${fmt(nDeliver)} ml syringe`);
-    lines.push(`• Dilution Ratio : 1:${fmt(computedChain.totalDilutionFactor, 1)} fold`);
-    lines.push(``);
-    lines.push(`BENCH STEPS:`);
-    lines.push(`0. Stock: Dissolve ${fmt(nAdult)} mg in ${fmt(nDissolve)} ml diluent → ${fmtConc(c0)} mg/ml`);
-
-    computedChain.rows.forEach((r) => {
-      if (r.kind === "stock") return;
-      lines.push(
-        `${r.stepNumber}. Tube ${r.stepNumber}: Take ${fmt(r.aliquot)} ml of ${
-          r.stepNumber === 1 ? "Stock" : `Tube ${r.stepNumber - 1}`
-        }, add ${fmt(r.addDiluent)} ml diluent → ${fmtConc(r.conc)} mg/ml`
-      );
-    });
-
-    lines.push(``);
-    lines.push(`FINAL INJECTION:`);
-    lines.push(`• Draw ${fmt(nDeliver)} ml from Tube ${steps.length}`);
-    lines.push(`• Dose Delivered = ${fmt(computedChain.doseDelivered, 5)} mg (${fmtUg(computedChain.doseDelivered)})`);
-    lines.push(`• Accuracy: ${computedChain.doseError >= 0 ? "+" : ""}${fmt(computedChain.doseError, 2)}%`);
-
-    navigator.clipboard.writeText(lines.join("\n"));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [computedChain, drugName, nAdult, nDissolve, nTarget, nDeliver, c0, steps.length]);
-
-  // ---------- Dynamic jsPDF Generation ----------
-  const handleDownloadPdf = useCallback(async () => {
-    if (!computedChain) return;
-    setPdfLoading(true);
-
+  const handlePdf = async () => {
+    if (!chain) return;
+    setPdfStatus("working");
     try {
-      let jsPDFConstructor: any;
-
-      // 1. Try importing installed module
-      try {
-        const mod = await import("jspdf");
-        jsPDFConstructor = mod.jsPDF || (mod as any).default;
-      } catch {
-        // 2. Fallback: Load from CDN on the fly
-        if (typeof window !== "undefined" && !(window as any).jspdf) {
-          await new Promise<void>((resolve, reject) => {
-            const script = document.createElement("script");
-            script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-            script.onload = () => resolve();
-            script.onerror = () => reject(new Error("Failed to load jsPDF CDN"));
-            document.head.appendChild(script);
-          });
-        }
-        jsPDFConstructor = (window as any).jspdf?.jsPDF;
-      }
-
-      if (!jsPDFConstructor) {
-        throw new Error("jsPDF unavailable");
-      }
-
-      const doc = new jsPDFConstructor({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
-
-      const todayStr = new Date().toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-
-      // Top Banner (Royal Blue)
-      doc.setFillColor(37, 99, 235);
-      doc.rect(15, 12, 180, 18, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(13);
-      doc.text("SERIAL DILUTION & ANIMAL DOSE PROTOCOL", 20, 21);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8.5);
-      doc.text(`Generated: ${todayStr} | Pharmacology Bench Sheet`, 20, 26);
-
-      // Metadata Card
-      doc.setDrawColor(226, 232, 240);
-      doc.setFillColor(248, 250, 252);
-      doc.roundedRect(15, 34, 180, 26, 2, 2, "FD");
-
-      doc.setTextColor(15, 23, 42);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8.5);
-      doc.text("Drug / Compound:", 20, 40);
-      doc.text("Animal Subject:", 110, 40);
-      doc.text("Starting Solid:", 20, 46);
-      doc.text("Stock Solution:", 110, 46);
-      doc.text("Target Dose:", 20, 52);
-      doc.text("Syringe Volume:", 110, 52);
-
-      doc.setFont("helvetica", "normal");
-      doc.text(`${drugName || "Unspecified"}`, 52, 40);
-      doc.text(`${animalSubject || "Lab Animal"}`, 140, 40);
-      doc.text(`${fmt(nAdult)} mg`, 52, 46);
-      doc.text(`${fmt(nDissolve)} ml (C₀ = ${fmtConc(c0)} mg/ml)`, 140, 46);
-      doc.text(`${fmt(nTarget)} mg (${fmtUg(nTarget)})`, 52, 52);
-      doc.text(`${fmt(nDeliver)} ml`, 140, 52);
-
-      // Steps Table Header
-      let y = 66;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10.5);
-      doc.setTextColor(37, 99, 235);
-      doc.text("Stepwise Bench Instructions", 15, y);
-      y += 5;
-
-      doc.setFillColor(241, 245, 249);
-      doc.rect(15, y, 180, 7.5, "F");
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(7.5);
-      doc.setTextColor(51, 65, 85);
-      doc.text("Check", 18, y + 5);
-      doc.text("Tube / Step", 32, y + 5);
-      doc.text("Aliquot", 65, y + 5);
-      doc.text("Diluent", 92, y + 5);
-      doc.text("Total Vol", 120, y + 5);
-      doc.text("Concentration", 148, y + 5);
-      doc.text("Ratio", 175, y + 5);
-      y += 7.5;
-
-      // Table Rows
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(7.5);
-      computedChain.rows.forEach((r, idx) => {
-        if (idx % 2 === 1) {
-          doc.setFillColor(248, 250, 252);
-          doc.rect(15, y, 180, 7.5, "F");
-        }
-        doc.setTextColor(15, 23, 42);
-        doc.text("[  ]", 18, y + 5);
-
-        if (r.kind === "stock") {
-          doc.text("Stock (Tube 0)", 32, y + 5);
-          doc.text("—", 65, y + 5);
-          doc.text(`${fmt(nDissolve)} ml`, 92, y + 5);
-          doc.text(`${fmt(nDissolve)} ml`, 120, y + 5);
-          doc.text(`${fmtConc(c0)} mg/ml`, 148, y + 5);
-          doc.text("1:1", 175, y + 5);
-        } else {
-          doc.text(`Tube ${r.stepNumber}`, 32, y + 5);
-          doc.text(`${fmt(r.aliquot)} ml`, 65, y + 5);
-          doc.text(`${fmt(r.addDiluent)} ml`, 92, y + 5);
-          doc.text(`${fmt(r.newTotalVol)} ml`, 120, y + 5);
-          doc.text(`${fmtConc(r.conc)} mg/ml`, 148, y + 5);
-          doc.text(`1:${fmt(r.dilutionFactor, 1)}×`, 175, y + 5);
-        }
-        y += 7.5;
-      });
-
-      // Injection Syringe Callout
-      y += 5;
-      doc.setFillColor(236, 253, 245);
-      doc.setDrawColor(167, 243, 208);
-      doc.roundedRect(15, y, 180, 22, 2, 2, "FD");
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-      doc.setTextColor(5, 150, 105);
-      doc.text("[  ] Final Administration (Syringe Draw)", 20, y + 6);
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.setTextColor(30, 41, 59);
-      doc.text(
-        `• Draw exactly ${fmt(nDeliver)} ml from Tube ${steps.length} using a sterile precision syringe.`,
-        20,
-        y + 11.5
-      );
-      doc.text(
-        `• Delivered Dose: ${fmt(computedChain.doseDelivered, 5)} mg (${fmtUg(
-          computedChain.doseDelivered
-        )}) | Target: ${fmt(nTarget)} mg (${fmtUg(nTarget)})`,
-        20,
-        y + 16.5
-      );
-      doc.text(
-        `• Dose Match: ${computedChain.doseError >= 0 ? "+" : ""}${fmt(
-          computedChain.doseError,
-          2
-        )}% ${withinTolerance ? "(Within ±5% Tolerance)" : "(Review Volumes)"}`,
-        120,
-        y + 16.5
-      );
-
-      // Signatures
-      y += 32;
-      doc.setDrawColor(203, 213, 225);
-      doc.line(15, y, 90, y);
-      doc.line(105, y, 180, y);
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(7.5);
-      doc.setTextColor(100, 116, 139);
-      doc.text("Researcher / Student Signature & Date", 15, y + 4.5);
-      doc.text("Lab Instructor / Witness Sign-off", 105, y + 4.5);
-
-      const fileName = `${(drugName || "serial-dilution")
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, "-")}-protocol.pdf`;
-      doc.save(fileName);
+      await downloadProtocolPdf({ drugName, animalSubject }, p, chain, steps.length, withinTolerance);
+      setPdfStatus("");
     } catch (err) {
       console.error("PDF download failed:", err);
-      alert("Could not generate PDF. Please use the Print button to print or save as PDF.");
-    } finally {
-      setPdfLoading(false);
+      setPdfStatus("failed");
     }
-  }, [
-    computedChain,
-    drugName,
-    animalSubject,
-    nAdult,
-    nDissolve,
-    nTarget,
-    nDeliver,
-    c0,
-    steps.length,
-    withinTolerance,
-  ]);
+  };
+
+  /* ─── Motion ───────────────────────────────────────────────────────────── */
+
+  const rackRef = useRef<HTMLDivElement>(null);
+  const signature = chain
+    ? `${chain.rows.map((r) => `${r.aliquot}/${r.newTotalVol}`).join("|")}>${p.nDeliver}`
+    : "";
+  const motion = useBenchMotion(rackRef, signature);
+
+  // A tube the student adds slides in; a re-plan from typing does not.
+  const listRef = useRef<HTMLDivElement>(null);
+  const lastAdded = useRef<string | null>(null);
+  useEffect(() => {
+    if (!lastAdded.current) return;
+    motion.enter(listRef.current?.querySelector(`[data-step-id^="${lastAdded.current}"]`) ?? null);
+    lastAdded.current = null;
+  }, [steps, motion]);
+
+  const activePreset = PRESETS.find(
+    (ex) =>
+      ex.adultDose === adultDose && ex.dissolveVol === dissolveVol && ex.targetDose === targetDose && ex.deliverVol === deliverVol,
+  );
+
+  const lastTube = steps.length;
 
   return (
-    <div className="sd-wrapper">
-      <style dangerouslySetInnerHTML={{ __html: CSS }} />
+    <CalculatorShell
+      title="Serial Dose Calculator"
+      subtitle="Turn a human tablet into a dose small enough for a mouse or a rat: dissolve it, dilute it tube by tube, and draw the exact volume into the syringe."
+      icon={Syringe}
+      eyebrow="Pharmacology"
+      aside={
+        <>
+          <CalcAbout title="About serial dosing">
+            <p>
+              A 25 mg carprofen tablet holds nearly <strong>3,000 times</strong> the 9 µg a mouse needs. No balance weighs
+              9 µg reliably, so the tablet is dissolved into a stock and diluted in measurable steps until the volume you
+              can draw into a syringe carries exactly the dose.
+            </p>
+            <CalcList
+              title="Use it when"
+              items={[
+                "The animal dose is micrograms but the only form you have is a tablet or a weighed solid",
+                "You need a written bench protocol — tube, transfer, diluent — to follow and tick off in the lab",
+                "You want to check a chain you planned yourself: edit any tube and see the dose it would really deliver",
+              ]}
+            />
+            <CalcList
+              tone="caution"
+              title="What it does not do"
+              items={[
+                "It does not convert a human dose to an animal dose — work out the mg dose first (by body weight or surface area)",
+                "It assumes the tablet dissolves completely and evenly; filler, coating or poor solubility lowers the real stock",
+                "The ±5% check is this tool's accuracy band, not a regulatory limit. Pipetting error adds up down the chain",
+              ]}
+            />
+          </CalcAbout>
+          <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+        </>
+      }
+    >
+      {/* ─── The answer ─────────────────────────────────────────────────── */}
+      <div className="space-y-3">
+        <ResultCard
+          label="Dose in the syringe"
+          value={chain ? fmt(chain.doseDelivered, 5) : null}
+          unit="mg"
+          tone={chain ? (withinTolerance ? "success" : "warning") : "neutral"}
+          interpretation={
+            chain
+              ? `${fmtUg(chain.doseDelivered)} · ${signed(chain.doseError)}% vs the ${fmtConc(p.nTarget)} mg target — ${
+                  withinTolerance ? "within ±5%" : "adjust the volumes"
+                }`
+              : undefined
+          }
+          empty="Enter the tablet dose, the dissolving volume, the animal's dose and the syringe volume."
+        />
 
-      {/* ================= PRINT-ONLY BENCH WORKSHEET ================= */}
-      <section className="sd-print-sheet" aria-hidden="true">
-        <div className="sd-print-header">
-          <div>
-            <h1>LABORATORY BENCH PROTOCOL</h1>
-            <p>Serial Dilution &amp; Animal Dose Administration Sheet</p>
+        {chain && (
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <Figure label="Stock C₀" value={fmtConc(p.c0)} unit="mg/mL" />
+            <Figure label="Syringe C" value={fmtConc(p.requiredFinalConc)} unit="mg/mL" />
+            <Figure label="Dilution" value={`1:${fmt(p.totalFactorNeeded, 1)}×`} unit={`${lastTube} ${lastTube === 1 ? "tube" : "tubes"}`} />
           </div>
-          <div className="sd-print-meta-box">
-            <div><strong>Date:</strong> ____________________</div>
-            <div><strong>Student / Researcher:</strong> ____________________</div>
-            <div><strong>Hood / Bench #:</strong> ____________________</div>
+        )}
+      </div>
+
+      {/* ─── Inputs ─────────────────────────────────────────────────────── */}
+      <CalcSection title="Dose parameters" description="Every value updates the chain as you type.">
+        <div>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.16em] text-muted-foreground">Worked examples</p>
+            <Button variant="ghost" size="sm" onClick={handleReset} className="-mr-2 text-muted-foreground">
+              <RotateCcw />
+              Reset
+            </Button>
           </div>
-        </div>
-
-        <div className="sd-print-summary">
-          <div><strong>Compound:</strong> {drugName || "Unspecified"}</div>
-          <div><strong>Animal Subject:</strong> {animalSubject || "Lab Animal"}</div>
-          <div><strong>Tablet Dose:</strong> {fmt(nAdult)} mg</div>
-          <div><strong>Stock Vol:</strong> {fmt(nDissolve)} ml (C₀ = {fmtConc(c0)} mg/ml)</div>
-          <div><strong>Target Dose:</strong> {fmt(nTarget)} mg ({fmtUg(nTarget)})</div>
-          <div><strong>Syringe Vol:</strong> {fmt(nDeliver)} ml</div>
-        </div>
-
-        <h3 className="sd-print-section-title">Stepwise Bench Procedure</h3>
-        <table className="sd-print-table">
-          <thead>
-            <tr>
-              <th style={{ width: "35px" }}>Done</th>
-              <th>Step</th>
-              <th>Aliquot</th>
-              <th>Diluent</th>
-              <th>Total Vol</th>
-              <th>Concentration</th>
-              <th>Dilution Ratio</th>
-            </tr>
-          </thead>
-          <tbody>
-            {computedChain?.rows.map((r) => (
-              <tr key={`print-${r.id}`}>
-                <td style={{ textAlign: "center", fontSize: "14px" }}>☐</td>
-                <td>{r.kind === "stock" ? "Tube 0 (Stock)" : `Tube ${r.stepNumber}`}</td>
-                <td>{r.kind === "stock" ? "—" : `${fmt(r.aliquot)} ml`}</td>
-                <td>{fmt(r.addDiluent)} ml</td>
-                <td>{fmt(r.newTotalVol)} ml</td>
-                <td><strong>{fmtConc(r.conc)} mg/ml</strong></td>
-                <td>{r.kind === "stock" ? "Stock" : `1:${fmt(r.dilutionFactor, 1)}×`}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <div className="sd-print-final-box">
-          <div>☐ <strong>Final Injection Step:</strong> Draw exactly <strong>{fmt(nDeliver)} ml</strong> from Tube {steps.length} into the syringe.</div>
-          <div>• Delivered Dose: <strong>{fmt(computedChain?.doseDelivered || 0, 5)} mg</strong> ({fmtUg(computedChain?.doseDelivered || 0)}) | Accuracy: <strong>{fmt(computedChain?.doseError || 0, 2)}%</strong></div>
-        </div>
-
-        <div className="sd-print-signatures">
-          <div>
-            <div className="sd-print-line" />
-            <span>Student Signature &amp; Date</span>
-          </div>
-          <div>
-            <div className="sd-print-line" />
-            <span>Instructor / Verifier Signature</span>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= INTERACTIVE SCREEN UI ================= */}
-      <div className="sd-container">
-        {/* Top Bar */}
-        <header className="sd-topbar">
-          <div className="sd-brand">
-            <div className="sd-brand-badge">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
-                <path d="M10 2v7.31a2 2 0 0 1-.37 1.17l-5.26 7.89A2 2 0 0 0 6 21h12a2 2 0 0 0 1.63-2.63l-5.26-7.89A2 2 0 0 1 14 9.31V2" />
-                <path d="M8.5 2h7" />
-                <path d="M7 16h10" />
-              </svg>
-            </div>
-            <div>
-              <h1 className="sd-main-title">Serial Dilution Calculator</h1>
-              <p className="sd-main-sub">Stepwise animal dose preparation from tablet stock</p>
-            </div>
-          </div>
-
-          <div className="sd-actions">
-            <button
-              type="button"
-              className="sd-btn sd-btn--outline"
-              onClick={() => window.print()}
-              title="Print Lab Sheet"
-            >
-              🖨️ Print
-            </button>
-            <button
-              type="button"
-              className="sd-btn sd-btn--outline"
-              onClick={handleDownloadPdf}
-              disabled={!computedChain || pdfLoading}
-              title="Export formatted PDF"
-            >
-              {pdfLoading ? "Generating..." : "📄 Download PDF"}
-            </button>
-            <button
-              type="button"
-              className="sd-btn sd-btn--primary"
-              onClick={handleCopy}
-              disabled={!computedChain}
-            >
-              {copied ? "✓ Copied!" : "📋 Copy"}
-            </button>
-          </div>
-        </header>
-
-        {/* Presets Horizontal Strip */}
-        <div className="sd-presets-strip">
-          <span className="sd-presets-label">Presets:</span>
-          <div className="sd-presets-chips">
-            {PRESETS.map((p) => (
-              <button key={p.label} type="button" className="sd-chip" onClick={() => loadPreset(p)}>
-                <strong>{p.drug}</strong>
-                <span>{p.sub}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* 2-Column Responsive Workbench */}
-        <main className="sd-workbench">
-          {/* ----- LEFT: INPUTS ----- */}
-          <section className="sd-panel">
-            <div className="sd-panel-head">
-              <div className="sd-step-num">1</div>
-              <h2>Dose Parameters</h2>
-              <button type="button" className="sd-link-btn" onClick={handleReset}>
-                Reset
-              </button>
-            </div>
-
-            <div className="sd-input-stack">
-              <div className="sd-grid-row">
-                <div className="sd-field">
-                  <label>Compound / Drug</label>
-                  <input
-                    type="text"
-                    className="sd-text-input"
-                    value={drugName}
-                    onChange={(e) => setDrugName(e.target.value)}
-                    placeholder="e.g. Carprofen"
-                  />
-                </div>
-                <div className="sd-field">
-                  <label>Animal Model</label>
-                  <input
-                    type="text"
-                    className="sd-text-input"
-                    value={animalSubject}
-                    onChange={(e) => setAnimalSubject(e.target.value)}
-                    placeholder="e.g. Mouse (25g)"
-                  />
-                </div>
-              </div>
-
-              <div className="sd-grid-row">
-                <div className="sd-field">
-                  <label>Tablet Dose</label>
-                  <div className="sd-unit-input">
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      step="any"
-                      min="0"
-                      value={adultDose}
-                      onChange={(e) => setAdultDose(e.target.value)}
-                    />
-                    <span>mg</span>
-                  </div>
-                </div>
-
-                <div className="sd-field">
-                  <label>Dissolve In</label>
-                  <div className="sd-unit-input">
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      step="any"
-                      min="0.01"
-                      value={dissolveVol}
-                      onChange={(e) => setDissolveVol(e.target.value)}
-                    />
-                    <span>ml</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="sd-grid-row">
-                <div className="sd-field">
-                  <label>Animal Target Dose</label>
-                  <div className="sd-unit-input">
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      step="any"
-                      min="0"
-                      value={targetDose}
-                      onChange={(e) => setTargetDose(e.target.value)}
-                    />
-                    <span>mg</span>
-                  </div>
-                  {inputsValid && nTarget > 0 && (
-                    <span className="sd-sub-badge">{fmtUg(nTarget)}</span>
+          <div className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0">
+            {PRESETS.map((ex) => {
+              const active = ex === activePreset;
+              return (
+                <button
+                  key={ex.label}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => loadPreset(ex)}
+                  className={cn(
+                    "group min-w-[13.5rem] snap-start rounded-xl border px-3.5 py-2.5 text-left transition-[border-color,background-color,box-shadow] duration-300 ease-out-expo sm:min-w-0",
+                    "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/15",
+                    active
+                      ? "border-primary/60 bg-primary/[0.06] shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.35)]"
+                      : "border-border bg-background hover:border-foreground/25",
                   )}
-                </div>
-
-                <div className="sd-field">
-                  <label>Delivery (Syringe) Vol</label>
-                  <div className="sd-unit-input">
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      step="any"
-                      min="0.01"
-                      value={deliverVol}
-                      onChange={(e) => setDeliverVol(e.target.value)}
-                    />
-                    <span>ml</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="sd-field">
-                <label>Default Aliquot / Transfer</label>
-                <div className="sd-unit-input sd-unit-input--small">
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    step="any"
-                    min="0.01"
-                    value={aliquotDefault}
-                    onChange={(e) => setAliquotDefault(e.target.value)}
-                  />
-                  <span>ml</span>
-                </div>
-              </div>
-
-              {/* Summary Card */}
-              {inputsValid && c0 > 0 && (
-                <div className="sd-summary-box">
-                  <div className="sd-summary-item">
-                    <span>Stock Conc (C₀):</span>
-                    <strong>{fmtConc(c0)} mg/ml</strong>
-                  </div>
-                  <div className="sd-summary-item">
-                    <span>Target Syringe Conc:</span>
-                    <strong>{fmtConc(requiredFinalConc)} mg/ml</strong>
-                  </div>
-                  <div className="sd-summary-item">
-                    <span>Total Dilution Needed:</span>
-                    <strong>1:{fmt(totalFactorNeeded, 1)}×</strong>
-                  </div>
-                </div>
-              )}
-
-              {stockTooDilute && (
-                <div className="sd-warn-alert">
-                  ⚠️ Stock is already more dilute than target. Decrease dissolve volume.
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* ----- RIGHT: DILUTION SCHEME ----- */}
-          <section className="sd-panel">
-            <div className="sd-panel-head">
-              <div className="sd-step-num">2</div>
-              <h2>Dilution Plan</h2>
-              {isCustomized && (
-                <button type="button" className="sd-link-btn sd-link-btn--accent" onClick={resetToAuto}>
-                  Auto-Plan
+                >
+                  <span className="flex items-baseline justify-between gap-2">
+                    <span className="text-sm font-semibold tracking-[-0.01em] text-foreground">{ex.drug}</span>
+                    <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{ex.label}</span>
+                  </span>
+                  <span className="mt-0.5 block text-xs tabular-nums text-muted-foreground">{ex.sub.replace(/ ml\b/g, " mL")}</span>
                 </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <FieldGrid>
+          <TextField label="Compound / drug" value={drugName} onChange={setDrugName} placeholder="e.g. Carprofen" />
+          <TextField label="Animal model" value={animalSubject} onChange={setAnimalSubject} placeholder="e.g. Mouse (25 g)" />
+        </FieldGrid>
+
+        <FieldGrid>
+          <NumberField
+            label="Tablet dose"
+            value={adultDose}
+            onChange={setAdultDose}
+            unit="mg"
+            hint="The drug in the whole tablet or solid you dissolve."
+            error={fieldError(adultDose, { show: true })}
+          />
+          <NumberField
+            label="Dissolved in"
+            value={dissolveVol}
+            onChange={setDissolveVol}
+            unit="mL"
+            hint="Volume of diluent for the stock (Tube 0)."
+            error={fieldError(dissolveVol, { show: true })}
+          />
+          <NumberField
+            label="Target dose for the animal"
+            value={targetDose}
+            onChange={setTargetDose}
+            unit="mg"
+            hint={p.nTarget > 0 ? `= ${fmtUg(p.nTarget)}` : "The dose one animal receives."}
+            error={fieldError(targetDose, { show: true })}
+          />
+          <NumberField
+            label="Syringe volume"
+            value={deliverVol}
+            onChange={setDeliverVol}
+            unit="mL"
+            hint="The volume you will inject."
+            error={fieldError(deliverVol, { show: true })}
+          />
+        </FieldGrid>
+
+        <NumberField
+          label="Default transfer (aliquot)"
+          value={aliquotDefault}
+          onChange={setAliquotDefault}
+          unit="mL"
+          hint="Moved from each tube to the next when the plan is made. Empty or 0 uses 1 mL."
+          error={fieldError(aliquotDefault, { show: false, allowZero: true, required: false })}
+          className="sm:max-w-[calc(50%-0.5rem)]"
+        />
+      </CalcSection>
+
+      {/* ─── The bench ──────────────────────────────────────────────────── */}
+      <CalcSection
+        title="Bench plan"
+        description={
+          isCustomized
+            ? "Your edited chain. Every tube's concentration and the syringe dose follow your volumes."
+            : "Planned in 1:10 steps with the last step making up the remainder. Edit any volume to take over."
+        }
+      >
+        {!chain ? (
+          <p className="rounded-xl border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
+            Enter valid dose values to lay out the tubes.
+          </p>
+        ) : (
+          <>
+            <div className="flex flex-wrap items-center gap-2">
+              {isCustomized ? (
+                <>
+                  <Badge variant="warning">Edited by you</Badge>
+                  <Button variant="outline" size="sm" onClick={() => setCustomSteps(null)}>
+                    <Wand2 />
+                    Back to auto-plan
+                  </Button>
+                </>
+              ) : (
+                <Badge variant="secondary">Auto-plan</Badge>
               )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={motion.play}
+                disabled={!motion.ready}
+                className="ml-auto text-muted-foreground motion-reduce:hidden"
+              >
+                <Play />
+                Replay
+              </Button>
             </div>
 
-            {!inputsValid && (
-              <div className="sd-empty-box">
-                Enter valid dose values to generate step-by-step instructions.
-              </div>
-            )}
+            <BenchRack ref={rackRef} chain={chain} deliverVol={p.nDeliver} withinTolerance={withinTolerance} />
 
-            {inputsValid && computedChain && (
-              <>
-                {/* Horizontal Scrollable Tube Rack */}
-                <div className="sd-tube-pipeline" aria-label="Visual tube chain">
-                  <div className="sd-tube-item">
-                    <div className="sd-tube-flask">
-                      <span>{fmt(nDissolve)}ml</span>
-                    </div>
-                    <strong>Stock</strong>
-                    <small>{fmtConc(c0)} mg/ml</small>
-                  </div>
+            {warnings.map((w) => (
+              <LabNotice key={w} tone="warning">
+                {w}
+              </LabNotice>
+            ))}
 
-                  {computedChain.rows
-                    .filter((r) => r.kind === "dilute")
-                    .map((r) => (
-                      <React.Fragment key={`pip-${r.id}`}>
-                        <div className="sd-pipe-arrow">
-                          <span>{fmt(r.aliquot)}ml</span>
-                          →
-                        </div>
-                        <div className="sd-tube-item">
-                          <div className="sd-tube-vial">
-                            <span>{fmt(r.newTotalVol)}ml</span>
-                          </div>
-                          <strong>Tube {r.stepNumber}</strong>
-                          <small>{fmtConc(r.conc)} mg/ml</small>
-                        </div>
-                      </React.Fragment>
-                    ))}
+            <div ref={listRef} role="list" aria-label="Bench steps" className="overflow-hidden rounded-xl border">
+              <StepShell index="0" title="Stock solution" tag="Tube 0">
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Dissolve <strong className="font-semibold text-foreground">{fmt(p.nAdult)} mg</strong> in{" "}
+                  <strong className="font-semibold text-foreground">{fmt(p.nDissolve)} mL</strong> of diluent.
+                </p>
+                <ConcLine conc={p.c0} label="C₀" />
+              </StepShell>
 
-                  <div className="sd-pipe-arrow">
-                    <span>{fmt(nDeliver)}ml</span>
-                    →
-                  </div>
-                  <div className="sd-tube-item">
-                    <div className="sd-tube-syringe">💉</div>
-                    <strong>Syringe</strong>
-                    <small className="sd-text-accent">{fmt(computedChain.doseDelivered, 4)} mg</small>
-                  </div>
-                </div>
-
-                {/* Step Cards List */}
-                <div className="sd-steps-list">
-                  {/* Step 0: Stock */}
-                  <div className="sd-step-item sd-step-item--stock">
-                    <div className="sd-step-badge">0</div>
-                    <div className="sd-step-body">
-                      <div className="sd-step-header">
-                        <h4>Stock Solution</h4>
-                        <span className="sd-tag">Source</span>
+              {chain.rows
+                .filter((r) => r.kind === "dilute")
+                .map((r, i) => {
+                  const step = steps[i];
+                  return (
+                    <StepShell
+                      key={r.id}
+                      id={r.id}
+                      index={String(r.stepNumber)}
+                      title={`Tube ${r.stepNumber}`}
+                      tag={`1:${fmt(r.dilutionFactor, 1)}×`}
+                      action={
+                        steps.length > 1 ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeStep(r.id)}
+                            aria-label={`Remove tube ${r.stepNumber}`}
+                            className="-my-1.5 -mr-2 h-9 w-9 text-muted-foreground hover:text-destructive"
+                          >
+                            <Minus />
+                          </Button>
+                        ) : null
+                      }
+                    >
+                      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                        <VolumeInput
+                          label={`Take from ${sourceName(r.stepNumber)}`}
+                          value={step?.aliquot ?? r.aliquot}
+                          onChange={(v) => updateStep(r.id, "aliquot", v)}
+                        />
+                        <VolumeInput
+                          label="Add diluent"
+                          value={step?.addDiluent ?? r.addDiluent}
+                          onChange={(v) => updateStep(r.id, "addDiluent", v)}
+                        />
                       </div>
-                      <p>
-                        Dissolve <strong>{fmt(nAdult)} mg</strong> solid in <strong>{fmt(nDissolve)} ml</strong>{" "}
-                        diluent.
-                      </p>
-                      <div className="sd-conc-pill">
-                        C₀ = <strong>{fmtConc(c0)} mg/ml</strong>
-                      </div>
-                    </div>
-                  </div>
+                      <ConcLine conc={r.conc} label="C" total={r.newTotalVol} />
+                    </StepShell>
+                  );
+                })}
 
-                  {/* Dilution Tubes */}
-                  {computedChain.rows
-                    .filter((r) => r.kind === "dilute")
-                    .map((r) => (
-                      <div key={r.id} className="sd-step-item">
-                        <div className="sd-step-badge">{r.stepNumber}</div>
-                        <div className="sd-step-body">
-                          <div className="sd-step-header">
-                            <h4>Tube {r.stepNumber}</h4>
-                            <span className="sd-tag">1:{fmt(r.dilutionFactor, 1)}×</span>
-                          </div>
-
-                          <div className="sd-step-flow">
-                            Take
-                            <input
-                              type="number"
-                              inputMode="decimal"
-                              step="any"
-                              min="0"
-                              value={r.aliquot}
-                              onChange={(e) => updateStep(r.id, "aliquot", e.target.value)}
-                              className="sd-inline-val"
-                              aria-label="Aliquot ml"
-                            />
-                            ml from {r.stepNumber === 1 ? "Stock" : `Tube ${r.stepNumber - 1}`} and add
-                            <input
-                              type="number"
-                              inputMode="decimal"
-                              step="any"
-                              min="0"
-                              value={r.addDiluent}
-                              onChange={(e) => updateStep(r.id, "addDiluent", e.target.value)}
-                              className="sd-inline-val"
-                              aria-label="Diluent ml"
-                            />
-                            ml diluent (Total: <strong>{fmt(r.newTotalVol)} ml</strong>).
-                          </div>
-
-                          <div className="sd-conc-pill">
-                            Conc = <strong>{fmtConc(r.conc)} mg/ml</strong>
-                          </div>
-
-                          {steps.length > 1 && (
-                            <button
-                              type="button"
-                              className="sd-del-btn"
-                              onClick={() => removeStep(r.id)}
-                            >
-                              ✕ Remove Tube
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-
-                  {/* Final Syringe Card */}
-                  <div className="sd-step-item sd-step-item--final">
-                    <div className="sd-step-badge sd-step-badge--final">✓</div>
-                    <div className="sd-step-body">
-                      <div className="sd-step-header">
-                        <h4>Injection Administration</h4>
-                        <span className="sd-tag sd-tag--final">Syringe</span>
-                      </div>
-                      <p>
-                        Draw up <strong>{fmt(nDeliver)} ml</strong> from Tube {steps.length} into injection syringe.
-                      </p>
-
-                      <div className="sd-results-grid">
-                        <div className="sd-res-card">
-                          <span className="sd-res-label">Delivered Dose</span>
-                          <span className="sd-res-val">{fmt(computedChain.doseDelivered, 5)} mg</span>
-                          <span className="sd-res-sub">{fmtUg(computedChain.doseDelivered)}</span>
-                        </div>
-
-                        <div className="sd-res-card">
-                          <span className="sd-res-label">Target Dose</span>
-                          <span className="sd-res-val">{fmt(nTarget)} mg</span>
-                          <span className="sd-res-sub">{fmtUg(nTarget)}</span>
-                        </div>
-
-                        <div className={`sd-res-card ${withinTolerance ? "sd-res-card--ok" : "sd-res-card--warn"}`}>
-                          <span className="sd-res-label">Accuracy</span>
-                          <span className="sd-res-val">
-                            {computedChain.doseError >= 0 ? "+" : ""}
-                            {fmt(computedChain.doseError, 2)}%
-                          </span>
-                          <span className="sd-res-sub">
-                            {withinTolerance ? "✓ Within ±5%" : "⚠️ Adjust Volumes"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+              <StepShell index="✓" title="Into the syringe" tag={`${fmt(p.nDeliver)} mL`} final ok={withinTolerance}>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Draw exactly <strong className="font-semibold text-foreground">{fmt(p.nDeliver)} mL</strong> from{" "}
+                  {lastTube === 0 ? "the stock" : `Tube ${lastTube}`} into a sterile precision syringe.
+                </p>
+                <div className="grid grid-cols-1 gap-1.5 text-sm sm:grid-cols-3 sm:gap-2">
+                  <MiniStat label="Delivered" value={`${fmt(chain.doseDelivered, 5)} mg`} sub={fmtUg(chain.doseDelivered)} />
+                  <MiniStat label="Target" value={`${fmt(p.nTarget)} mg`} sub={fmtUg(p.nTarget)} />
+                  <MiniStat
+                    label="Match"
+                    value={`${signed(chain.doseError)}%`}
+                    sub={withinTolerance ? "Within ±5%" : "Adjust volumes"}
+                    tone={withinTolerance ? "ok" : "warn"}
+                  />
                 </div>
-
-                {/* Footer Controls */}
-                <div className="sd-panel-footer">
-                  <button type="button" className="sd-btn sd-btn--outline" onClick={addStep}>
-                    + Add Tube
-                  </button>
-                  <div className="sd-footer-actions">
-                    <button type="button" className="sd-btn sd-btn--outline" onClick={handleDownloadPdf}>
-                      📄 PDF
-                    </button>
-                    <button type="button" className="sd-btn sd-btn--primary" onClick={handleCopy}>
-                      {copied ? "✓ Copied!" : "📋 Copy"}
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </section>
-        </main>
-
-        {/* Compact Formula Accordion */}
-        <section className="sd-accordion">
-          <button
-            type="button"
-            className="sd-accordion-btn"
-            onClick={() => setShowFormulas((v) => !v)}
-          >
-            <span>📐 Dilution Formula Cheatsheet (C₁V₁ = C₂V₂)</span>
-            <span>{showFormulas ? "▲" : "▼"}</span>
-          </button>
-
-          {showFormulas && (
-            <div className="sd-accordion-body">
-              <div className="sd-cheatsheet-grid">
-                <div>
-                  <strong>1. Dilution Law:</strong>
-                  <code>C₁V₁ = C₂V₂</code>
-                  <p>Stock conc × aliquot vol = final conc × total vol.</p>
-                </div>
-                <div>
-                  <strong>2. Step Factor:</strong>
-                  <code>DF = V_total ÷ V_aliquot</code>
-                  <p>1 ml into 9 ml diluent gives a 10× dilution.</p>
-                </div>
-                <div>
-                  <strong>3. Delivered Dose:</strong>
-                  <code>Dose = C_final × V_syringe</code>
-                  <p>Multiply mg by 1000 to convert to micrograms (µg).</p>
-                </div>
-              </div>
+              </StepShell>
             </div>
-          )}
-        </section>
+
+            <Button
+              variant="outline"
+              onClick={() => {
+                lastAdded.current = `step-${steps.length + 1}-`;
+                addStep();
+              }}
+              className="w-full border-dashed sm:w-auto"
+            >
+              <Plus />
+              Add a tube
+            </Button>
+          </>
+        )}
+      </CalcSection>
+
+      {/* ─── Record ─────────────────────────────────────────────────────── */}
+      <LabActions report={report} onReset={handleReset} fileName={`${(drugName || "serial-dose").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-protocol`}>
+        {!IS_MOBILE_APP && (
+          <Button variant="outline" disabled={!chain || pdfStatus === "working"} onClick={handlePdf}>
+            <FileDown />
+            {pdfStatus === "working" ? "Preparing PDF…" : "Bench sheet PDF"}
+          </Button>
+        )}
+      </LabActions>
+      {pdfStatus === "failed" && (
+        <LabNotice tone="danger">The PDF could not be generated. Use Print and choose &ldquo;Save as PDF&rdquo; instead.</LabNotice>
+      )}
+
+      <FormulaNote title="Working">
+        {chain ? (
+          <>
+            <Formula>
+              C₀ = {fmt(p.nAdult)} mg ÷ {fmt(p.nDissolve)} mL = {fmtConc(p.c0)} mg/mL
+            </Formula>
+            <Formula>
+              C(syringe) = {fmt(p.nTarget)} mg ÷ {fmt(p.nDeliver)} mL = {fmtConc(p.requiredFinalConc)} mg/mL
+            </Formula>
+            <Formula>
+              Dilution needed = {fmtConc(p.c0)} ÷ {fmtConc(p.requiredFinalConc)} = 1:{fmt(p.totalFactorNeeded, 1)}×
+            </Formula>
+            {chain.rows
+              .filter((r) => r.kind === "dilute")
+              .map((r) => (
+                <Formula key={r.id}>
+                  Tube {r.stepNumber}: {fmtConc(r.prevConc)} × {fmt(r.aliquot)} ÷ ({fmt(r.aliquot)} + {fmt(r.addDiluent)}) ={" "}
+                  {fmtConc(r.conc)} mg/mL
+                </Formula>
+              ))}
+            <Formula>
+              Dose = {fmtConc(chain.finalConc)} mg/mL × {fmt(p.nDeliver)} mL = {fmt(chain.doseDelivered, 5)} mg (
+              {fmtUg(chain.doseDelivered)})
+            </Formula>
+          </>
+        ) : (
+          <p>Enter the dose parameters to see each step worked out.</p>
+        )}
+        <p>
+          <strong className="text-foreground">The rules.</strong> Dilution law C₁V₁ = C₂V₂: stock concentration × volume
+          taken = new concentration × total volume. Step dilution = total volume ÷ volume taken, so 1 mL into 9 mL of
+          diluent is 1:10. Dose = final concentration × syringe volume; × 1000 turns mg into µg.
+        </p>
+        <p>
+          <strong className="text-foreground">How the plan is made.</strong> While more than a 1:10 dilution remains, a
+          tube takes the default transfer and makes it up ten-fold; the last tube makes up only what is left. Volumes are
+          rounded to 4 decimal places, which is why a planned chain can land a hair off the target (35 µg shows as 34.999
+          µg). The plan stops at six tubes.
+        </p>
+      </FormulaNote>
+
+      <CalcFaq
+        items={[
+          {
+            q: "Why not just weigh out the tiny dose?",
+            a: "Because a 9 µg dose is far below what a lab balance can weigh accurately, and a fraction of a tablet is not evenly loaded with drug. Dissolving the whole tablet and diluting it in measured volumes turns an impossible weighing into a few ordinary pipetting steps.",
+          },
+          {
+            q: "Why 1:10 steps?",
+            a: "Ten-fold steps keep every transfer a comfortable, accurate volume (1 mL into 9 mL) and make each tube's concentration easy to check by eye. The final tube makes up only the remaining factor, so the syringe volume carries the exact dose.",
+          },
+          {
+            q: "Can I change a tube's volumes?",
+            a: "Yes. Edit the volume taken or the diluent in any tube and the whole chain — every later tube, the syringe dose and the ±5% check — recalculates from your numbers. \"Back to auto-plan\" discards your edits.",
+          },
+          {
+            q: "What does the ±5% check mean?",
+            a: "It compares the dose the syringe would actually deliver with the target you entered. Outside ±5%, the chain you have does not give the dose you asked for, usually because a tube's volumes were edited or the plan ran out of tubes.",
+          },
+          {
+            q: "Where does the target dose come from?",
+            a: "From the animal's mg/kg dose × its body weight, or a published animal dose. This calculator starts from that mg figure; it does not scale a human dose to an animal.",
+          },
+        ]}
+      />
+    </CalculatorShell>
+  );
+}
+
+/* ─── Local pieces ───────────────────────────────────────────────────────── */
+
+function Figure({ label, value, unit }: { label: string; value: string; unit: string }) {
+  return (
+    <div className="min-w-0 rounded-xl border border-border/80 bg-card px-3 py-2.5 sm:px-4 sm:py-3">
+      <p className="truncate font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground sm:text-[10.5px]">
+        {label}
+      </p>
+      <p className="mt-1 truncate text-base font-bold tabular-nums tracking-[-0.03em] text-foreground sm:text-xl">{value}</p>
+      <p className="truncate font-mono text-[10.5px] text-muted-foreground">{unit}</p>
+    </div>
+  );
+}
+
+function StepShell({
+  id,
+  index,
+  title,
+  tag,
+  action,
+  final = false,
+  ok = false,
+  children,
+}: {
+  id?: string;
+  index: string;
+  title: string;
+  tag: string;
+  action?: React.ReactNode;
+  final?: boolean;
+  ok?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      role="listitem"
+      data-step-id={id}
+      className={cn("flex gap-3 border-b px-3.5 py-3.5 last:border-b-0 sm:gap-4 sm:px-4", final && "bg-muted/40")}
+    >
+      <span
+        className={cn(
+          "mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full font-mono text-xs font-semibold tabular-nums",
+          final ? (ok ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900") : "bg-primary/10 text-primary",
+        )}
+        aria-hidden="true"
+      >
+        {index}
+      </span>
+      <div className="min-w-0 flex-1 space-y-2.5">
+        <div className="flex items-center gap-2">
+          <h3 className="text-[15px] font-semibold tracking-[-0.01em] text-foreground">{title}</h3>
+          <span className="rounded-md bg-foreground/[0.06] px-1.5 py-0.5 font-mono text-[10.5px] tabular-nums text-foreground/75">
+            {tag}
+          </span>
+          <span className="ml-auto">{action}</span>
+        </div>
+        {children}
       </div>
     </div>
   );
 }
 
-/* ============================================================
-   RESPONSIVE & PRINT STYLES
-   ============================================================ */
-
-const CSS = `
-:root {
-  --sd-bg: #F8FAFC;
-  --sd-card: #FFFFFF;
-  --sd-text: #0F172A;
-  --sd-text-muted: #475569;
-  --sd-text-light: #94A3B8;
-  --sd-border: #E2E8F0;
-  --sd-border-focus: #3B82F6;
-  --sd-blue: #2563EB;
-  --sd-teal: #0D9488;
-  --sd-emerald: #059669;
-  --sd-grad-main: linear-gradient(135deg, #2563EB 0%, #0D9488 50%, #059669 100%);
-  --sd-grad-soft: linear-gradient(135deg, rgba(37,99,235,0.06) 0%, rgba(5,150,105,0.06) 100%);
-  --sd-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.sd-wrapper {
-  background-color: var(--sd-bg);
-  color: var(--sd-text);
-  min-height: 100vh;
-  font-family: var(--font-outfit), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  padding: 16px 12px 48px;
-  -webkit-font-smoothing: antialiased;
-}
-
-@media (min-width: 640px) {
-  .sd-wrapper {
-    padding: 24px 16px 56px;
-  }
-}
-
-.sd-wrapper * {
-  box-sizing: border-box;
-}
-
-.sd-container {
-  max-width: 1080px;
-  margin: 0 auto;
-}
-
-/* ---------- Top Bar ---------- */
-.sd-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  background: var(--sd-card);
-  border: 1px solid var(--sd-border);
-  padding: 14px 16px;
-  border-radius: 12px;
-  box-shadow: var(--sd-shadow);
-  margin-bottom: 14px;
-}
-
-.sd-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.sd-brand-badge {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  background: var(--sd-grad-main);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
-}
-
-.sd-main-title {
-  font-size: 18px;
-  font-weight: 700;
-  margin: 0;
-  background: var(--sd-grad-main);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-@media (min-width: 640px) {
-  .sd-main-title {
-    font-size: 20px;
-  }
-}
-
-.sd-main-sub {
-  font-size: 12.5px;
-  color: var(--sd-text-muted);
-  margin: 2px 0 0;
-}
-
-.sd-actions {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-}
-@media (min-width: 640px) {
-  .sd-actions {
-    width: auto;
-  }
-}
-
-/* ---------- Buttons & Touch Targets ---------- */
-.sd-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  min-height: 42px;
-  padding: 8px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-  flex: 1;
-}
-@media (min-width: 640px) {
-  .sd-btn {
-    flex: initial;
-  }
-}
-
-.sd-btn--primary {
-  background: var(--sd-grad-main);
-  color: #fff;
-  border: none;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
-}
-.sd-btn--primary:hover {
-  opacity: 0.93;
-  transform: translateY(-1px);
-}
-.sd-btn--primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.sd-btn--outline {
-  background: #fff;
-  color: var(--sd-text);
-  border: 1px solid var(--sd-border);
-}
-.sd-btn--outline:hover {
-  background: var(--sd-bg);
-  border-color: var(--sd-blue);
-}
-
-.sd-link-btn {
-  background: none;
-  border: none;
-  color: var(--sd-text-muted);
-  font-size: 12px;
-  cursor: pointer;
-  text-decoration: underline;
-  margin-left: auto;
-  min-height: 36px;
-  display: inline-flex;
-  align-items: center;
-}
-.sd-link-btn--accent {
-  color: var(--sd-blue);
-  font-weight: 600;
-}
-
-/* ---------- Presets Strip ---------- */
-.sd-presets-strip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 4px;
-}
-
-.sd-presets-label {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--sd-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  flex-shrink: 0;
-}
-
-.sd-presets-chips {
-  display: flex;
-  gap: 8px;
-}
-
-.sd-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--sd-card);
-  border: 1px solid var(--sd-border);
-  border-radius: 20px;
-  padding: 6px 12px;
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  min-height: 36px;
-  transition: all 0.15s ease;
-}
-.sd-chip:hover {
-  border-color: var(--sd-emerald);
-  background: #F0FDF4;
-}
-.sd-chip strong {
-  color: var(--sd-emerald);
-}
-.sd-chip span {
-  color: var(--sd-text-muted);
-}
-
-/* ---------- Workbench Layout ---------- */
-.sd-workbench {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-}
-
-@media (min-width: 880px) {
-  .sd-workbench {
-    grid-template-columns: 360px 1fr;
-    gap: 20px;
-  }
-}
-
-.sd-panel {
-  background: var(--sd-card);
-  border: 1px solid var(--sd-border);
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: var(--sd-shadow);
-}
-@media (min-width: 640px) {
-  .sd-panel {
-    padding: 20px;
-  }
-}
-
-.sd-panel-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--sd-border);
-  margin-bottom: 14px;
-}
-
-.sd-step-num {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background: var(--sd-grad-main);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sd-panel-head h2 {
-  font-size: 15px;
-  font-weight: 700;
-  margin: 0;
-}
-
-/* ---------- Form Controls (Mobile Friendly) ---------- */
-.sd-input-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.sd-grid-row {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
-@media (min-width: 440px) {
-  .sd-grid-row {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.sd-field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.sd-field label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--sd-text-muted);
-}
-
-/* 16px font prevents iOS zoom on focus */
-.sd-text-input {
-  width: 100%;
-  min-height: 44px;
-  padding: 8px 10px;
-  border: 1px solid var(--sd-border);
-  border-radius: 8px;
-  font-size: 16px;
-  background: #fff;
-}
-.sd-text-input:focus {
-  outline: none;
-  border-color: var(--sd-border-focus);
-}
-
-.sd-unit-input {
-  display: flex;
-  align-items: center;
-  border: 1px solid var(--sd-border);
-  border-radius: 8px;
-  background: #fff;
-  min-height: 44px;
-  overflow: hidden;
-}
-.sd-unit-input input {
-  border: none;
-  width: 100%;
-  padding: 8px 10px;
-  font-size: 16px;
-  font-family: Consolas, monospace;
-}
-.sd-unit-input input:focus {
-  outline: none;
-}
-.sd-unit-input span {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--sd-text-muted);
-  background: var(--sd-bg);
-  padding: 12px 10px;
-  border-left: 1px solid var(--sd-border);
-}
-.sd-unit-input:focus-within {
-  border-color: var(--sd-border-focus);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
-}
-.sd-unit-input--small {
-  max-width: 150px;
-}
-
-.sd-sub-badge {
-  font-size: 11px;
-  color: var(--sd-emerald);
-  font-weight: 600;
-}
-
-/* Summary Box */
-.sd-summary-box {
-  background: var(--sd-grad-soft);
-  border: 1px solid rgba(13, 148, 136, 0.2);
-  border-radius: 8px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.sd-summary-item {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-}
-.sd-summary-item strong {
-  font-family: Consolas, monospace;
-  color: var(--sd-teal);
-}
-
-.sd-warn-alert {
-  background: #FFFBEB;
-  border: 1px solid #FDE68A;
-  color: #B45309;
-  font-size: 12px;
-  padding: 8px 10px;
-  border-radius: 6px;
-}
-
-/* ---------- Visual Tube Pipeline (Touch Reel) ---------- */
-.sd-tube-pipeline {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--sd-bg);
-  border: 1px solid var(--sd-border);
-  border-radius: 10px;
-  padding: 12px;
-  margin-bottom: 16px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.sd-tube-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  min-width: 68px;
-}
-
-.sd-tube-flask {
-  width: 32px;
-  height: 42px;
-  border: 2px solid var(--sd-blue);
-  border-radius: 4px 4px 10px 10px;
-  background: #EFF6FF;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 9px;
-  font-weight: 700;
-  color: var(--sd-blue);
-  margin-bottom: 4px;
-}
-
-.sd-tube-vial {
-  width: 24px;
-  height: 42px;
-  border: 2px solid var(--sd-teal);
-  border-radius: 4px 4px 10px 10px;
-  background: #F0FDFA;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 8.5px;
-  font-weight: 700;
-  color: var(--sd-teal);
-  margin-bottom: 4px;
-}
-
-.sd-tube-syringe {
-  font-size: 24px;
-  height: 42px;
-  display: flex;
-  align-items: center;
-  margin-bottom: 4px;
-}
-
-.sd-tube-item strong {
-  font-size: 11px;
-}
-.sd-tube-item small {
-  font-size: 10px;
-  color: var(--sd-text-muted);
-  font-family: Consolas, monospace;
-}
-.sd-text-accent {
-  color: var(--sd-emerald) !important;
-  font-weight: 700;
-}
-
-.sd-pipe-arrow {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-size: 10px;
-  color: var(--sd-text-light);
-  font-weight: 600;
-  flex-shrink: 0;
-}
-.sd-pipe-arrow span {
-  font-family: Consolas, monospace;
-  font-size: 9px;
-}
-
-/* ---------- Step Cards List ---------- */
-.sd-steps-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.sd-step-item {
-  display: flex;
-  gap: 12px;
-  border: 1px solid var(--sd-border);
-  border-radius: 10px;
-  padding: 14px;
-  background: #fff;
-}
-
-.sd-step-item--stock {
-  border-left: 4px solid var(--sd-blue);
-}
-.sd-step-item--final {
-  border-left: 4px solid var(--sd-emerald);
-  background: #FAFDFB;
-}
-
-.sd-step-badge {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--sd-bg);
-  border: 1.5px solid var(--sd-border);
-  font-size: 12px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.sd-step-badge--final {
-  background: var(--sd-emerald);
-  color: #fff;
-  border-color: var(--sd-emerald);
-}
-
-.sd-step-body {
-  flex: 1;
-}
-
-.sd-step-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
-}
-.sd-step-header h4 {
-  font-size: 13.5px;
-  font-weight: 700;
-  margin: 0;
-}
-
-.sd-tag {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: var(--sd-bg);
-  color: var(--sd-text-muted);
-}
-.sd-tag--final {
-  background: #ECFDF5;
-  color: var(--sd-emerald);
-}
-
-.sd-step-item p {
-  font-size: 13px;
-  margin: 0 0 6px;
-  line-height: 1.4;
-}
-
-.sd-step-flow {
-  font-size: 13px;
-  line-height: 1.8;
-  margin-bottom: 8px;
-}
-
-.sd-inline-val {
-  width: 64px;
-  min-height: 36px;
-  text-align: center;
-  border: 1px solid var(--sd-border);
-  border-bottom: 2px solid var(--sd-teal);
-  border-radius: 6px;
-  font-family: Consolas, monospace;
-  font-weight: 700;
-  font-size: 16px;
-  color: var(--sd-teal);
-  padding: 2px 4px;
-  margin: 0 4px;
-  background: #fff;
-}
-.sd-inline-val:focus {
-  outline: none;
-  background: #F0FDFA;
-}
-
-.sd-conc-pill {
-  display: inline-block;
-  font-family: Consolas, monospace;
-  font-size: 12px;
-  background: var(--sd-bg);
-  padding: 4px 8px;
-  border-radius: 4px;
-  color: var(--sd-text-muted);
-}
-.sd-conc-pill strong {
-  color: var(--sd-blue);
-}
-
-.sd-del-btn {
-  display: block;
-  margin-top: 8px;
-  font-size: 11.5px;
-  color: #DC2626;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px 0;
-  text-decoration: underline;
-}
-
-/* Results Grid */
-.sd-results-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-  margin-top: 10px;
-}
-@media (min-width: 480px) {
-  .sd-results-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-.sd-res-card {
-  background: #fff;
-  border: 1px solid var(--sd-border);
-  border-radius: 8px;
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-}
-
-.sd-res-label {
-  font-size: 10.5px;
-  color: var(--sd-text-muted);
-  text-transform: uppercase;
-  font-weight: 600;
-}
-.sd-res-val {
-  font-size: 15px;
-  font-weight: 700;
-  font-family: Consolas, monospace;
-  margin: 2px 0;
-}
-.sd-res-sub {
-  font-size: 11px;
-  color: var(--sd-text-light);
-}
-
-.sd-res-card--ok {
-  background: #ECFDF5;
-  border-color: #A7F3D0;
-}
-.sd-res-card--ok .sd-res-val {
-  color: var(--sd-emerald);
-}
-.sd-res-card--warn {
-  background: #FFFBEB;
-  border-color: #FDE68A;
-}
-.sd-res-card--warn .sd-res-val {
-  color: #B45309;
-}
-
-.sd-panel-footer {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid var(--sd-border);
-}
-@media (min-width: 480px) {
-  .sd-panel-footer {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
-}
-
-.sd-footer-actions {
-  display: flex;
-  gap: 8px;
-}
-
-/* ---------- Accordion ---------- */
-.sd-accordion {
-  margin-top: 16px;
-}
-
-.sd-accordion-btn {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--sd-card);
-  border: 1px solid var(--sd-border);
-  padding: 12px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--sd-text-muted);
-  cursor: pointer;
-  min-height: 44px;
-}
-.sd-accordion-btn:hover {
-  color: var(--sd-text);
-  border-color: var(--sd-blue);
-}
-
-.sd-accordion-body {
-  background: var(--sd-card);
-  border: 1px solid var(--sd-border);
-  border-top: none;
-  border-radius: 0 0 8px 8px;
-  padding: 14px;
-}
-
-.sd-cheatsheet-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-@media (min-width: 680px) {
-  .sd-cheatsheet-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-.sd-cheatsheet-grid strong {
-  display: block;
-  font-size: 12px;
-  margin-bottom: 4px;
-}
-.sd-cheatsheet-grid code {
-  display: block;
-  background: var(--sd-bg);
-  padding: 4px 6px;
-  border-radius: 4px;
-  font-family: Consolas, monospace;
-  font-size: 12px;
-  color: var(--sd-blue);
-  margin-bottom: 4px;
-}
-.sd-cheatsheet-grid p {
-  font-size: 11.5px;
-  color: var(--sd-text-muted);
-  margin: 0;
-}
-
-.sd-empty-box {
-  text-align: center;
-  padding: 32px 16px;
-  color: var(--sd-text-light);
-  font-size: 13px;
-}
-
-/* ================= PRINT WORKSHEET STYLES ================= */
-.sd-print-sheet {
-  display: none;
-}
-
-@media print {
-  /* Hide the screen app */
-  .sd-container, .sd-actions, .no-print {
-    display: none !important;
-  }
-  
-  .sd-wrapper {
-    background: #fff !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  /* Show the dedicated printable sheet */
-  .sd-print-sheet {
-    display: block !important;
-    color: #000 !important;
-    font-family: var(--font-outfit), -apple-system, BlinkMacSystemFont, Arial, sans-serif !important;
-    padding: 20px !important;
-    max-width: 100% !important;
-  }
-
-  .sd-print-header {
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 2px solid #000;
-    padding-bottom: 12px;
-    margin-bottom: 14px;
-  }
-  .sd-print-header h1 {
-    font-size: 18px;
-    margin: 0;
-    font-weight: 800;
-  }
-  .sd-print-header p {
-    font-size: 11px;
-    margin: 2px 0 0;
-    color: #444;
-  }
-  .sd-print-meta-box {
-    font-size: 11px;
-    line-height: 1.5;
-  }
-
-  .sd-print-summary {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    background: #f4f4f5;
-    padding: 10px;
-    border: 1px solid #ccc;
-    font-size: 11px;
-    margin-bottom: 16px;
-  }
-
-  .sd-print-section-title {
-    font-size: 13px;
-    font-weight: 700;
-    margin: 16px 0 8px;
-    text-transform: uppercase;
-  }
-
-  .sd-print-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 11px;
-    margin-bottom: 16px;
-  }
-  .sd-print-table th, .sd-print-table td {
-    border: 1px solid #aaa;
-    padding: 6px 8px;
-    text-align: left;
-  }
-  .sd-print-table th {
-    background: #e4e4e7;
-    font-weight: 700;
-  }
-
-  .sd-print-final-box {
-    border: 2px dashed #000;
-    padding: 10px 12px;
-    font-size: 11px;
-    line-height: 1.6;
-    margin-bottom: 24px;
-  }
-
-  .sd-print-signatures {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 36px;
-    padding-top: 10px;
-  }
-  .sd-print-signatures > div {
-    width: 45%;
-    font-size: 11px;
-  }
-  .sd-print-line {
-    border-bottom: 1px solid #000;
-    height: 20px;
-    margin-bottom: 4px;
-  }
+function VolumeInput({ label, value, onChange }: { label: string; value: number | string; onChange: (v: string) => void }) {
+  const id = useId();
+  return (
+    <div className="min-w-0 space-y-1">
+      <label htmlFor={id} className="block truncate text-xs text-muted-foreground">
+        {label}
+      </label>
+      <div className="relative">
+        <Input
+          id={id}
+          type="number"
+          inputMode="decimal"
+          step="any"
+          min={0}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-11 pr-10 text-[15px] font-medium"
+        />
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-mono text-xs text-muted-foreground">mL</span>
+      </div>
+    </div>
+  );
+}
+
+function ConcLine({ conc, label, total }: { conc: number; label: string; total?: number }) {
+  return (
+    <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
+      <span className="text-muted-foreground">
+        {label} = <strong className="font-semibold tabular-nums text-foreground">{fmtConc(conc)} mg/mL</strong>
+      </span>
+      {total !== undefined && (
+        <span className="font-mono text-xs tabular-nums text-muted-foreground">total {fmt(total)} mL</span>
+      )}
+    </p>
+  );
+}
+
+function MiniStat({ label, value, sub, tone }: { label: string; value: string; sub: string; tone?: "ok" | "warn" }) {
+  return (
+    <div
+      className={cn(
+        // A labelled row on a phone (three columns truncated the dose), a tile from sm.
+        "flex min-w-0 items-baseline gap-2 rounded-lg border bg-background px-2.5 py-2 sm:block",
+        tone === "ok" && "border-emerald-200 bg-emerald-50",
+        tone === "warn" && "border-amber-300 bg-amber-50",
+      )}
+    >
+      <p className="w-[4.75rem] shrink-0 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground sm:w-auto">{label}</p>
+      <p className="truncate font-semibold tabular-nums text-foreground">{value}</p>
+      <p className={cn("ml-auto truncate text-xs sm:ml-0", tone === "ok" ? "text-emerald-800" : tone === "warn" ? "text-amber-900" : "text-muted-foreground")}>
+        {sub}
+      </p>
+    </div>
+  );
 }
-`;

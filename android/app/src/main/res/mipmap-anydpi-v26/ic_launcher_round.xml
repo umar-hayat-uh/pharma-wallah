@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- PharmaWallah mark on white. The PNG layers are generated from public/icons/icon-1.png
+     (see .claude/skills/android-app-capacitor/SKILL.md, "Launcher icon"). The monochrome
+     layer is what Android 13+ tints when the user turns on themed icons. -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/ic_launcher_background"/>
     <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+    <monochrome android:drawable="@mipmap/ic_launcher_monochrome"/>
 </adaptive-icon>
