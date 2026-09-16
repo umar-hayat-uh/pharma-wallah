@@ -287,7 +287,9 @@ Supabase cache tables: `pubmed_cache`, `medlineplus_cache`, `clinicaltrials_cach
 | Landing page sections | `src/components/Home/landing/{Hero,Specimen,IndexSection,Sections,Chrome,Btn}.tsx`; marker annotations `Marks.tsx`; scroll timeline bar `Player.tsx` |
 | **Unused** home sections | `src/components/Home/{Hero,Features,Courses,Mentor,Companies,ContactForm}/` — replaced 2026-09-12, still on disk, rendered nowhere |
 | Home page promo strip | `src/components/Home/tournament/` (`OfficialLaunchBanner`, still rendered) |
-| Static pages | `src/app/(site)/{about-us,careers,faqs,privacy,terms,documentation,books-library,pw}/page.tsx` |
+| **About / the team (`/about-us`)** | `src/app/(site)/about-us/` — `page.tsx` (server) composes it, `RosterStage.tsx` is the opening character-select screen, `TeamRegister.tsx` the filtered ruled register, `_useAboutMotion.ts` every GSAP ScrollTrigger (mounted by `AboutMotion.tsx`), `about.css` the scoped `.pw-about` / `.pw-stage` styles |
+| **Team roster (data)** | `src/lib/team.ts` — one `ROSTER` array; groups, monograms, gradient angles, ids and counts are derived. Was `src/app/api/team-members.tsx` (deleted 2026-09-16) |
+| Static pages | `src/app/(site)/{careers,faqs,privacy,terms,documentation,books-library,pw}/page.tsx` |
 | Toast context (misfiled under api/) | `src/app/api/contex/ToasetContex.tsx` |
 | Shared types | `src/types/*.ts` |
 

@@ -874,6 +874,45 @@ Traps that will otherwise be rediscovered painfully.
     position is reached. On the Serial Dose rack that dimmed every later tube's concentration for seconds before
     the drop arrived. Anything that must stay readable until its moment needs `immediateRender: false`.
 
+82. **Replacing a whole CSS section by slicing between two comment banners silently deletes anything
+    else that lived inside it.** On 2026-09-16 the `/about-us` hero band was swapped for the roster
+    stage by replacing the text between `/* ══ Hero ═` and `/* ══ Role band ═`. The figure-strip rules
+    sat inside that band, so `.pw-about-figs` and its five children lost every rule and the figures
+    rendered as a column of loose text — and a follow-up edit to `margin-top: 3rem` then matched
+    nothing and no-op'd, with no error. **`tsc`, the build, 29 behavioural CDP assertions and three
+    screenshots all still passed**, because none of them photographed that strip or asserted its
+    geometry. The user spotted it. Two habits fix it: after editing a namespaced stylesheet, diff the
+    class names used in the TSX against the selectors in the CSS (a ten-line script — missing AND dead
+    both matter), and assert layout on **geometry** (`display`, `gridTemplateColumns`, whether items
+    share a top edge), not on an element merely existing.
+
+83. **`pkill -f "next dev"` kills the shell running it**, because the pattern matches that shell's own
+    command line. It looks like the build crashed (exit 144, no log written). Select the pid instead:
+    `ps -eo pid,args | grep -E 'node.*next.*dev|next-server' | grep -v grep`.
+
+84. **A ScrollTrigger `toggleClass` needs an `endTrigger` when the class must outlive its trigger.**
+    `trigger: stage, start: "bottom 70%"` with no end defaults to the stage's own `bottom top`, so the
+    class was removed again the moment the stage scrolled away and the /about-us chapter rail vanished
+    for the rest of the page. Pointing `endTrigger` at the page instead then kept the rail lit over the
+    site footer, where its ink ticks sat unreadable on the footer's links. It ends at the closing band.
+
+85. **`/about-us` is the fourth place GSAP is allowed** (user request, 2026-09-16) and the only
+    ScrollTrigger use outside the landing page. It is loaded with a dynamic
+    `Promise.all([import("gsap"), import("gsap/ScrollTrigger")])` after first paint, inside one
+    `gsap.context` + `matchMedia`, reverted on unmount. **Verified route-scoped**: shared JS stayed at
+    88 kB, `grep gsap` over both shared chunks returns 0, and `/about-us` first load is 111 kB —
+    lighter than `/calculation-tools`. The page also adds `html.pw-about-mounted { scroll-behavior:
+    auto }` while mounted, because `globals.css` smooth scrolling desynchronises every scrub
+    (gotcha 30a); in-page jumps therefore pass `behavior: "smooth"` explicitly.
+
+86. **The team roster lives in `src/lib/team.ts`**, not `src/app/api/team-members.tsx` (moved
+    2026-09-16, old file deleted). One `ROSTER` array of `{name, role, campus?}` is the only thing to
+    edit; the group each person is filed under, their monogram, their per-person gradient angle, their
+    anchor id, the campus count and the role list are all derived. A role missing from `ROLE_GROUP`
+    files the person under "Team" rather than dropping them. The old `imgSrc` field was **three stock
+    photographs shared between sixteen people** and was never rendered — if real portraits ever exist,
+    add a `photo` field.
+
 ## 9. Working preferences (observed)
 
 - Commit messages are short, lowercase, hyphenated subjects (`cology-calcs-added`, `fix-tournament-ui`,

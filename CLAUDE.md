@@ -210,7 +210,10 @@ These are conventions **observed in the code**, not aspirations.
     **One documented exception:** the landing page (`src/components/Home/landing/`) uses **GSAP**
     for scroll pinning, scrubbing and the SVG plugins framer-motion has no equivalent for. GSAP is
     confined to that directory — nothing else in `src/` may import it, or a ~70 KB library lands on
-    all ~170 routes. **Third exception (2026-09-14, user request): `(tools)/serial-diluation/_useBenchMotion.ts`**, same lazy `import("gsap")` pattern, no ScrollTrigger. **Second exception (2026-09-13, user request): `src/components/dashboard/`**,
+    all ~170 routes. **Fourth exception (2026-09-16, user request): `(site)/about-us/_useAboutMotion.ts`**,
+    lazy `import("gsap")` **+ `import("gsap/ScrollTrigger")`** — the only ScrollTrigger use outside the
+    landing page; verified route-scoped (shared bundle unchanged at 88 kB, `/about-us` first load 111 kB).
+    **Third exception (2026-09-14, user request): `(tools)/serial-diluation/_useBenchMotion.ts`**, same lazy `import("gsap")` pattern, no ScrollTrigger. **Second exception (2026-09-13, user request): `src/components/dashboard/`**,
     which loads GSAP with a dynamic `import()` after first paint (`useDashboardMotion.ts`). The landing page also loads two scoped faces via `next/font` (JetBrains Mono
     for instrument labels, Caveat for marker annotations); Outfit remains the only site-wide face.
 14. **A page's bespoke CSS goes in a namespaced stylesheet next to its components**, imported by
@@ -486,6 +489,99 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 
 > Newest first. Never paste source code here. Archive entries older than ~10 into
 > `.claude/history/YYYY-MM.md`.
+
+### 2026-09-16 — `/about-us` rebuilt: a roster intro screen, GSAP scroll choreography, the full team
+
+Session `pharma-wallah-78`.
+
+**Completed**
+- **`/about-us` rebuilt from scratch** (user: "make me a new about page where all the team members are
+  there… award type", then "make it more like an intro screen — have you seen the RE6 loading screen",
+  then "use proper scroll animations and gsap heavy page"). The page now opens on a **roster select
+  screen**: brand-navy stage, letterbox rails, grain/scanlines/vignette/beam, one member lit at
+  portrait scale with a HUD (entry code, group, role, campus), a full-bleed filmstrip of all 16, and a
+  dwell timer. It plays itself until the first interaction, then is driven by pointer, click or
+  ← → / Home / End with roving tabindex.
+- **All 16 team members are on the page twice**: on the stage, and in the **register** below — a
+  typeset ruled list (index code, monogram plate, name at display size, role, table-of-contents leader,
+  campus) grouped into five role groups with a filter that renumbers 01…n. Rows are not links, because
+  there is nothing to link to; the old page faked it with **48 dead social buttons with no accessible
+  name**, all removed.
+- **GSAP scroll choreography** (`_useAboutMotion.ts`, 8 pieces): the stage recedes on scrub; figures
+  count up; the role band's conveyor follows scroll velocity and direction; **the origin quote is read
+  out a word at a time, scrubbed to scroll**; the pillar index and the register deal in, batched; the
+  closing wordmark and grid parallax; a fixed chapter rail whose fill tracks the page and whose ticks
+  light per chapter.
+- **The page had no metadata at all** (it was `"use client"`, so it could not export any) — it now has
+  a title, description and canonical.
+- **Fabricated figures removed.** The old stats strip claimed "120+ study resources, 30+ course
+  modules, 4k+ students reached"; none was measured and none is derivable. Replaced by three figures
+  imported from the registries: 16 team (`TEAM.length`), 93 calculators (`HUB_TOOL_COUNT`), 22 units
+  (summed from `SUBJECTS`). Counts that cannot be derived are written in words.
+
+**Files**
+- New `src/lib/team.ts` — the roster, **moved out of `src/app/api/team-members.tsx`** (deleted; it was
+  a data module in the route tree, MEMORY gotcha 6, and the about page was its only importer). Group,
+  monogram, per-person gradient angle, id, campus count and role list are all derived from one
+  `ROSTER` array.
+- New under `src/app/(site)/about-us/`: `about.css` (namespaced `.pw-about`), `RosterStage.tsx`,
+  `TeamRegister.tsx`, `AboutMotion.tsx`, `_useAboutMotion.ts`. `page.tsx` rewritten as a **server
+  component**.
+- `CLAUDE.md` §6 rule 13 — GSAP's fourth documented exception.
+
+**Architecture & Decisions**
+- **The stage is the brand gradient under an 88%/74% navy scrim, not black.** The user's no-black-grounds
+  rule (§6 rule 15) and a cinematic select screen are in tension; the heavier scrim is how both are kept.
+  If the user wants true black, that is a rule change and their call.
+- **The closing band uses the same stage ground, not `BRAND_SURFACE`** — the site footer below is
+  already a brand gradient at that weight and the two ran together into one wash. The page now bookends
+  dark → bright → dark.
+- **No photographs.** `teamMembers.imgSrc` pointed at three stock portraits shared between sixteen
+  people; the field was dropped, monograms are derived from names. Add a `photo` field to `ROSTER` when
+  real portraits exist.
+- **Groups replace the old Production/Marketing split**, which filed the founder with the research
+  collectors. Mapping is role → group, with an unmapped role falling into a "Team" bucket that only
+  renders when it has members, so a new role can never make someone disappear.
+- Role typos fixed in the roster copy: "Collecter" → "Collector"; "third/second year representative" →
+  title case; "Jazil bin kashef" → "Jazil bin Kashef" (matching "Jalal bin Junaid").
+
+**Verification**
+- `npx tsc --noEmit` → **0 errors**.
+- `npm run build` (dev server stopped, `.next` cleared) → **exit 0**, 251 routes. `/about-us` is
+  **5.37 kB / 111 kB first load** — lighter than `/calculation-tools` (118 kB), `/courses` (145 kB) and
+  `/spotting` (141 kB). **Shared JS still 88 kB**, and `grep gsap` over both shared chunks returns
+  **0** — GSAP lives in its own 52 K + 44 K lazy chunks, so rule 13's concern does not apply.
+- Headless Chrome/CDP, **33 assertions, all passing**, at 1440×900 and 390×844, full motion and
+  reduced motion: no horizontal overflow at either width; 16 rows and 16 tiles; stage auto-advances
+  (Entry 01 → 02) and stops on choice; tile 12 selects Syed Tanzeel Ali; one `aria-selected`; ArrowRight
+  → Entry 13; roving tabindex = 1; the stage link jumps to a row and focuses it; **the quote scrubs
+  word-by-word (last word 0.14 → 1)**; the chapter rail switches on past the stage and off before the
+  footer; pillar and register rows all settle visible; filter → 6 rows renumbered 01–06 with nothing
+  left hidden; **0 console errors or exceptions in every run**.
+- Reduced motion: every CSS animation off, quote fully inked, no auto-advance, rail hidden, **nothing
+  left invisible**.
+- **JavaScript disabled**: every team name and the quote are in the server HTML.
+- Screenshots read at both widths for the stage, figures, origin, pillars, register and closing band.
+- **A regression got through and the user caught it**: swapping the hero CSS band for the stage deleted
+  the figure-strip rules that lived inside it, and the figures rendered as a column of loose text.
+  `tsc`, the build, 29 behavioural assertions and three screenshots all passed, because none of them
+  photographed that strip or asserted its geometry. Fixed, and two guards added: a class-name diff
+  between the TSX and the stylesheet (it now reports **0 missing, 0 dead**), and an assertion on the
+  strip's `display`, column count and shared top edge. MEMORY gotcha 82.
+- **NOT verified:** a real device or a real mobile browser; dark mode (the site still has no reachable
+  toggle, tracker F13); Lighthouse or real-network timing; scroll feel on a low-end phone. No tests
+  exist; lint is not configured.
+
+**Remaining**
+- The footer's placeholder phone number and `#` social links still stand (Known Issue 13) — the new
+  page deliberately adds no social links rather than repeating them.
+- `/mentor` and `/careers` are still the old framer-motion pages; `/about-us` now links to `/careers`.
+- The founding year is not recorded anywhere in the repo, so the page does not state one.
+
+**Next**
+- Ask the user whether "Romana Abbbas" is the correct spelling, and whether real team photographs exist.
+- Decide whether the stage may go darker than the 88% navy scrim: a true black ground would read more
+  like the reference the user gave, but it would break §6 rule 15, which is their own rule.
 
 ### 2026-09-14 — Android launcher icon replaced with the PharmaWallah mark
 
