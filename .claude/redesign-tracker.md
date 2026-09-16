@@ -152,7 +152,7 @@ AdSense placement (preserve; never inside an animated parent). `no-ads` = delibe
 ### P9 · Static pages — follows the Courses/hub language
 | Status | Page | File | Notes |
 | --- | --- | --- | --- |
-| [x] done | `/about-us` | rebuilt 2026-09-16 | **Not the P9 static-page language** — the user asked for an intro/character-select screen and a GSAP-heavy page, so it is its own treatment: a dark roster stage, a scrubbed word-by-word quote, a chapter rail. 31 CDP assertions pass; build 111 kB first load. Removed 3 fabricated figures and 48 dead social buttons |
+| [x] done | `/about-us` | rebuilt 2026-09-16 (twice) | **Now the P9 static-page language**: the GSAP roster-stage version was replaced the same day at the user's request by a simple page-kit page — hero, story, pillar cards, then leadership feature cards + flip cards under sticky group labels, 17 people, monograms only. CDP checks pass (hover flip verified by CSS only) |
 | [ ] todo | `/faqs` | (246) | |
 | [ ] todo | `/careers` | (206) | |
 | [ ] todo | `/mentor` | (343) | |

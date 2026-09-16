@@ -18,7 +18,7 @@ export const headerData: HeaderItem[] = [
       { label: "Prescription Reader", href: "/prescription-reader" },
       { label: "Books Library", href: "/books-library" },
       { label: "Antibiogram Simulator", href: "/antibiogram-simulator" },
-      { label: "Molecule Viewer", href: "/molecule-viewer" },
+      { label: "Molecular Lab", href: "/molecular-lab" },
     ],
   },
   { label: "Pharmacopedia", href: "/encyclopedia" },

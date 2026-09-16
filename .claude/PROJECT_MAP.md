@@ -207,7 +207,16 @@ Naming is inconsistent by design-drift: some directories are `kebab-case`, other
 | Antibiogram simulator | `src/app/(site)/antibiogram-simulator/page.tsx`, `src/components/AntibiogramSimulator.tsx` |
 | Compounding lab | `src/app/(site)/compounding-lab/page.tsx`, `src/components/ExtemporaneousCompoundingLab.tsx` |
 | ~~AI colony counting~~ | `src/app/api/scan-colonies/route.ts` — **no caller since 2026-09-16** (the CFU tool counts on the device); still called by APK v1.0–1.2 on phones. Unauthenticated, not rate-limited — see CLAUDE.md Known Issue 17 |
-| Molecule viewer (3Dmol/three) | `src/app/(site)/molecule-viewer/page.tsx`, `src/components/MoleculeViewer.tsx` |
+| Molecular Lab (was Molecule Viewer; `/molecule-viewer` 308-redirects via `next.config.mjs`) | `src/app/(site)/molecular-lab/page.tsx` → `src/components/molecular-lab/MolecularLab.tsx` |
+| — molecule graph, valence, formula, undo | `molecular-lab/{graph,history}.ts` |
+| — rings, aromaticity, functional groups, learning tasks, measurements | `molecular-lab/{groups,learning,measure}.ts` |
+| — OpenChemLib (SMILES/MOL in, 2D layout, 3D conformer, SMILES out, MCS) | `molecular-lab/chem-core.ts`, worker `chem.worker.ts` + `chem-tasks.ts`, client `chem.ts` |
+| — V2000 molfile read/write | `molecular-lab/molfile.ts` |
+| — 2D editor / drawing / export | `molecular-lab/{Editor2D.tsx,drawing.ts,export.ts}` |
+| — 3D view (3Dmol, npm) | `molecular-lab/{Viewer3D.tsx,model3d.ts}` |
+| — library (generated), PubChem/PDB, saved molecules | `molecular-lab/{library.ts,library-data.ts,pubchem.ts,storage.ts}`; generator `scripts/build-molecule-library.mts` |
+| — panels, pickers, compare | `molecular-lab/{panels,ElementPicker,LibraryPanel,ComparePanel,ui}.tsx`, `lab.css` |
+| — tests | `scripts/molecular-lab.test.mts` (+ `scripts/lib/ts-resolve.mjs`) |
 
 ---
 
@@ -289,8 +298,8 @@ Supabase cache tables: `pubmed_cache`, `medlineplus_cache`, `clinicaltrials_cach
 | Landing page sections | `src/components/Home/landing/{Hero,Specimen,IndexSection,Sections,Chrome,Btn}.tsx`; marker annotations `Marks.tsx`; scroll timeline bar `Player.tsx` |
 | **Unused** home sections | `src/components/Home/{Hero,Features,Courses,Mentor,Companies,ContactForm}/` — replaced 2026-09-12, still on disk, rendered nowhere |
 | Home page promo strip | `src/components/Home/tournament/` (`OfficialLaunchBanner`, still rendered) |
-| **About / the team (`/about-us`)** | `src/app/(site)/about-us/` — `page.tsx` (server) composes it, `RosterStage.tsx` is the opening character-select screen, `TeamRegister.tsx` the filtered ruled register, `_useAboutMotion.ts` every GSAP ScrollTrigger (mounted by `AboutMotion.tsx`), `about.css` the scoped `.pw-about` / `.pw-stage` styles |
-| **Team roster (data)** | `src/lib/team.ts` — one `ROSTER` array; groups, monograms, gradient angles, ids and counts are derived. Was `src/app/api/team-members.tsx` (deleted 2026-09-16) |
+| **About / the team (`/about-us`)** | `src/app/(site)/about-us/` — `page.tsx` (server: hero, story, pillars, leadership `LeadCard`s, grouped team), `FlipCard.tsx` (client flip card), `_Plate.tsx` (monogram, or a `photo` if the roster ever sets one) |
+| **Team roster (data)** | `src/lib/team.ts` — one `ROSTER` array; groups, monograms, gradient angles, ids and card descriptions (`ROLE_NOTE`) are derived. Was `src/app/api/team-members.tsx` (deleted 2026-09-16) |
 | Static pages | `src/app/(site)/{careers,faqs,privacy,terms,documentation,books-library,pw}/page.tsx` |
 | Toast context (misfiled under api/) | `src/app/api/contex/ToasetContex.tsx` |
 | Shared types | `src/types/*.ts` |

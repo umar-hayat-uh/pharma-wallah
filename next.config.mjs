@@ -26,6 +26,12 @@ const nextConfig = {
     ];
   },
 
+  // The Molecule Viewer became Molecular Lab (2026-09-16). Permanent, and
+  // query strings pass through, so old bookmarks and links keep working.
+  async redirects() {
+    return [{ source: "/molecule-viewer", destination: "/molecular-lab", permanent: true }];
+  },
+
   images: {
     unoptimized: true,
 

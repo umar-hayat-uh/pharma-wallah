@@ -46,6 +46,7 @@ a prescription reader, and a PWA shell.
 | `recharts` / `three` / `konva` | 3.7.0 / 0.185.1 / 9.3.22 | Charts / molecule viewer / canvas simulations |
 | `next-auth` | 4.24.13 | **Installed but never imported — dead dependency.** Auth is Supabase |
 | `@capacitor/core` / `cli` / `android` | **8.5.2** | Wraps `mobile/out` as an offline Android app |
+| `openchemlib` | **9.25.0** | Added 2026-09-16 (user choice). Cheminformatics for `/molecular-lab` only: SMILES/MOL parsing, 2D layout, 3D conformers + MMFF94, MCS. Lazy, in a Web Worker (§6 rule 18) |
 | `@techstark/opencv-js` | **4.12.0-release.1** | Added 2026-09-16 (user choice). OpenCV.js with embedded WASM, 10.8 MB — used **only** by the colony counter, emitted as a static asset (MEMORY gotcha 89) |
 
 Runtime: **Node v24.19.0**, **pnpm 10.28.1** (declared `packageManager`), npm 12.0.2.
@@ -59,6 +60,8 @@ npm run start    # next start
 npm run lint     # next lint    — NOT CONFIGURED, see Known Issues
 npx tsc --noEmit # type-check   — the only reliable static check today
 node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts   # 41 unit tests for two tools only
+node --test scripts/molecular-lab.test.mts                             # 21 unit tests, Molecular Lab
+node scripts/build-molecule-library.mts   # regenerate the Molecular Lab library from PubChem (network)
 ```
 
 ```bash
@@ -212,9 +215,8 @@ These are conventions **observed in the code**, not aspirations.
     **One documented exception:** the landing page (`src/components/Home/landing/`) uses **GSAP**
     for scroll pinning, scrubbing and the SVG plugins framer-motion has no equivalent for. GSAP is
     confined to that directory — nothing else in `src/` may import it, or a ~70 KB library lands on
-    all ~170 routes. **Fourth exception (2026-09-16, user request): `(site)/about-us/_useAboutMotion.ts`**,
-    lazy `import("gsap")` **+ `import("gsap/ScrollTrigger")`** — the only ScrollTrigger use outside the
-    landing page; verified route-scoped (shared bundle unchanged at 88 kB, `/about-us` first load 111 kB).
+    all ~170 routes. *(`/about-us` was a fourth exception for a few hours on 2026-09-16; the page was
+    rebuilt the same day without GSAP, so it no longer is.)*
     **Third exception (2026-09-14, user request): `(tools)/serial-diluation/_useBenchMotion.ts`**, same lazy `import("gsap")` pattern, no ScrollTrigger. **Second exception (2026-09-13, user request): `src/components/dashboard/`**,
     which loads GSAP with a dynamic `import()` after first paint (`useDashboardMotion.ts`). The landing page also loads two scoped faces via `next/font` (JetBrains Mono
     for instrument labels, Caveat for marker annotations); Outfit remains the only site-wide face.
@@ -231,6 +233,10 @@ These are conventions **observed in the code**, not aspirations.
 17. **OpenCV.js is confined to `src/components/calculators/colony/`** (2026-09-16, user choice over
     plain TypeScript). It is 10.8 MB: load it only through `colony/opencv.ts` (static asset + worker),
     never import it from anything another page loads.
+18. **OpenChemLib and 3Dmol are confined to `src/components/molecular-lab/`** (2026-09-16). Both are loaded
+    with dynamic `import()` (OpenChemLib inside `chem.worker.ts`, main-thread fallback in `chem-tasks.ts`);
+    nothing else may import them. Chemistry that can be computed from the graph (formula, weight, valence,
+    groups) is computed in `graph.ts`/`groups.ts`, never by an AI model and never by waiting for the library.
 
 ---
 
@@ -253,6 +259,17 @@ These are conventions **observed in the code**, not aspirations.
 - Typography: the site is now single-typeface (**Outfit**, variable) across web and APK.
 
 ### Recently Completed
+- **Molecular Lab (2026-09-16)** — `/molecule-viewer` became `/molecular-lab` (308 redirect): draw
+  molecules from scratch or open them from an 83-molecule PubChem-verified library, PubChem search or a
+  file; edit atoms, bonds, charges and hydrogens with undo/redo; 2D, 3D and split views kept in sync from
+  one molecule graph; formula/weight/validation, functional groups, 3D measurements, Learning and
+  Experiment modes, compare, export (PNG/SVG/MOL/SDF/SMILES/JSON), My Molecules + session restore, and a
+  phone layout with bottom sheets. Proteins open view-only. See the §8 entry and the `molecular-lab` skill.
+- **`/about-us` rebuilt simple (2026-09-16)** — replaces the same day's GSAP roster-stage version at the
+  user's request: page-kit hero, story, six "what we make" cards, and **20 team cards** in six groups
+  with `Reveal` scroll animations, then (same day) leadership feature cards + **flip cards** under
+  sticky group labels (no photos — added and removed at the user's request), and a 17-person roster in 4 groups
+  (Leadership, Research & content creation, Year representatives, Marketing). No GSAP, no stylesheet.
 - **TLC Rf Analyzer (2026-09-16)** — `/calculation-tools/rf-value-calculator` now calculates Rf from a
   photo of the plate, entirely on the device: rotate / crop / perspective, draggable baseline and
   solvent front, local spot detection with confirm/move/add/rename/delete, cm calibration, 2 or 3
@@ -400,8 +417,8 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
    `applyProgressEvent()` updates only `last_active_at`, `total_time_spent_min`, and `updated_at`.
    Either a Postgres trigger maintains them (the schema isn't in the repo, so this is unverified)
    or the dashboard's streak display is dead. ⚠ Verify in the Supabase dashboard.
-9. No test framework and no CI. The only tests are 41 `node --test` unit tests for the TLC and colony
-   tools (§1 commands). See `.claude/skills/testing-verification/SKILL.md`.
+9. No test framework and no CI. The only tests are 62 `node --test` unit tests for the TLC, colony and
+   Molecular Lab modules (§1 commands). See `.claude/skills/testing-verification/SKILL.md`.
 10. **`npm run build` and `npm run dev` fight over `.next`.** Running a production build while a dev
     server is up wipes dev's compiled chunks — the browser then 404s every
     `/_next/static/chunks/*.js` while `GET /` still returns 200, so the site renders as unstyled
@@ -528,6 +545,196 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 
 > Newest first. Never paste source code here. Archive entries older than ~10 into
 > `.claude/history/YYYY-MM.md`.
+
+### 2026-09-16 — Molecule Viewer → Molecular Lab (build, edit and explore molecules in 2D and 3D)
+
+Session `pharma-wallah-b9`, "follow protocol", user spec (62 sections).
+
+**Completed**
+- `/molecular-lab` replaces `/molecule-viewer` (permanent 308 redirect in `next.config.mjs`, query kept;
+  header menu, mega-menu meta and dashboard link renamed). The old 1,034-line `MoleculeViewer.tsx` is
+  removed; its features (PDB/PubChem/file import, cartoon, colour schemes, surfaces, residue labels,
+  distance, screenshot) live on in the lab's **view-only 3D mode**.
+- **Editor:** draw from a blank canvas (tap to place, tap an atom to grow a chain, drag between atoms),
+  elements from a searchable picker (common 10 + full 118-element periodic table), bonds
+  single/double/triple/aromatic/wedge/hash (tap a bond to cycle), rings 3–7 + benzene (free, spiro,
+  fused), groups (OH, NH₂, COOH, CHO, NO₂, CN, OCH₃, CH₃, Cl), charge ±, hydrogens ±/automatic, delete,
+  **break bond** (homolytic: hydrogens kept, reported as incomplete), move, box/multi select, clean-up
+  layout, undo/redo (one step per drag), contextual toolbars, keyboard shortcuts.
+- **Chemistry:** formula (Hill), molecular weight (IUPAC 2021 weights from the MW calculator's table),
+  counts, charge, fragments, SMILES; valence validation (valid / incomplete / potentially invalid) with
+  clickable atom issues and an Undo toast — never blocked, never auto-fixed; kekulisation of drawn
+  aromatic bonds; aromaticity and 19 functional groups with short explanations and highlighting.
+- **3D:** conformer generated in a Web Worker (OpenChemLib + MMFF94s+), or PubChem's own 3D record;
+  kept in step with the drawing by a structure key ("Updating 3D…", optional manual "Update 3D");
+  ball-and-stick / space-filling / stick / wireframe, labels, charges, selection and group highlights,
+  clickable atoms **and bonds**, distance/angle/dihedral (labelled with the coordinates' source),
+  rotate/zoom/center/reset/auto-rotate buttons, two-finger pinch + pan.
+- **Learning Mode** (tasks generated from the molecule, checked, answer on request), **Experiment
+  Mode**, **Compare** (side-by-side 2D/3D, MCS difference highlighted), **library** of 83 molecules in
+  11 categories, PubChem search by name/formula/CID, PDB IDs, file import (MOL/SDF/SMILES/JSON/PDB/CIF/
+  MOL2/XYZ), **export** PNG/SVG (2D), PNG (3D), MOL, 3D SDF, SMILES, project JSON, **My Molecules**
+  (localStorage), autosave + "Restore previous session?", deep links `?example=`, `?smiles=&name=`, `?cid=`.
+- **Responsive:** desktop three-pane + status bar; tablet one-column rail, drawer panel, icon top bar;
+  phone 2D/3D tabs, bottom bar (Select · Atom · Bond · Delete · More), bottom sheets, 44 px touch
+  targets on coarse pointers. Dark-mode tokens (navy, §6 rule 15).
+
+**Files**
+- New `src/components/molecular-lab/` (24 files — see PROJECT_MAP), `src/app/(site)/molecular-lab/page.tsx`
+  (server page with metadata). Deleted `src/app/(site)/molecule-viewer/page.tsx`, `src/components/MoleculeViewer.tsx`.
+- New `scripts/molecular-lab.test.mts`, `scripts/build-molecule-library.mts`, `scripts/lib/ts-resolve.mjs`.
+- `next.config.mjs` (redirect), `package.json` / `pnpm-lock.yaml` (`openchemlib@9.25.0`),
+  `Header/Navigation/{menuData,menuMeta}.tsx`, `dashboard/dashboard-data.ts`.
+- Knowledge: this file (§1, §6 rule 18, §7, §9), `.claude/{MEMORY (gotchas 98–105, testing), PROJECT_MAP,
+  ROADMAP, SKILLS}.md`, new skill `molecular-lab`, `testing-verification` skill.
+
+**Architecture & Decisions**
+- **One molecule graph** (`graph.ts`) is the only copy of the structure; 2D, 3D, panels and history all
+  derive from it. 3D coordinates are not stored on atoms but on a conformer tagged with the structure
+  key it was generated for.
+- **OpenChemLib** chosen by the user over RDKit.js / hand-written (it is the only single library here
+  that also generates 3D coordinates). It runs in a worker; formula, weight, valence and groups are the
+  lab's own deterministic code so the panel never waits for 1 MB of JS. **3Dmol** kept (it was the
+  existing renderer) but now bundled from npm instead of loaded from 3dmol.org.
+- Own V2000 reader/writer so a PubChem 3D record's coordinates map back to graph atoms.
+- **No server route**: PubChem and RCSB are called from the browser, as the old viewer did.
+- **Library is generated, never typed**: identity/formula/weight/SMILES from PubChem, drug classes only
+  from PubChem's MeSH Pharmacological Classification (drug list only), structural categories from the
+  lab's rules; the generator refuses to write if the lab disagrees with PubChem. Tetracycline and
+  atropine have no MeSH class on their records and sit in "Other" (gotcha 105).
+- Brand colours are the site's tokens (#1C7BD9 → #21B67A), not the spec's #2563EB/#4ADE80 — the spec
+  also says to follow the existing identity.
+- Pharmacological classes are shown in their own card, sourced, and hidden once the structure changes.
+- Not done, by decision: cloud save (needs a Supabase table), AI tutor (spec'd as optional/later),
+  progress tracking.
+
+**Verification**
+- `npx tsc --noEmit` → **0 errors**.
+- `node --test scripts/molecular-lab.test.mts` → **21 pass, 0 fail** (real OpenChemLib): drawing C/O/N,
+  C–C/C=C/C≡C, delete/break, charge and valence flags, undo/redo of every operation, kekulisation,
+  aromaticity **identical to OpenChemLib on all 83 library molecules**, every library formula/weight =
+  PubChem and SMILES + MOL round trips, stereo kept through layout/SMILES/3D, conformer mapping and bond
+  lengths (C–O 1.38–1.46 Å, H–O–H 100–110°), radicals in 3D, SDF import, bad input, learning tasks.
+  The TLC/colony files were not re-run (untouched).
+- `npm run build` in an **isolated copy** of the tree (the dev server on :3000 was not this session's
+  and was left running) → **exit 0**; `/molecular-lab` 59.5 kB / **148 kB first load**; shared JS
+  88.4 kB; OpenChemLib, `resources.<hash>.json` (1.35 MB) and 3Dmol (578 KB) in lazy chunks only.
+- Headless Chrome (CDP), dev **and** `next start`: desktop 1440×900 **44/44** (empty state, aspirin,
+  split view, atom/bond selection + context bar, charge + undo/redo, triple bond → warning → toast
+  undo, groups + highlight, PubChem MeSH card, 3D distance by clicking atoms, learning correct/wrong/
+  reveal, all six exports downloaded and parsed, save, blank canvas → CH₄ → C₂H₆ → C₂H₄ → C₂H₂, drag
+  to draw C–O, drag-move, Delete key, 12× undo / 7× redo, element search, 118-element table, PubChem
+  "metoprolol", PDB 1CRN view-only, reload → restore, dark mode, 308 redirect); phones 360/390/412
+  **23/23 each** (no overflow, bottom bar, element sheet, tap to build, bond cycling, context bar,
+  delete, undo, search, 3D tab, two-finger pinch without page scroll, More sheet, learning, info
+  sheet); tablet 768×1024 **9/9**; **0 console errors**. Worker and `window.Worker = undefined` fallback
+  both render 3D in production. Screenshots read (they caught a cropped 3D fit, truncated rail labels,
+  a tablet top bar overflow, a drawer covering the canvas, bond taps read as atom taps, duplicated
+  measurements — all fixed).
+- **NOT verified:** a real phone or tablet, iOS Safari, a real mouse/trackpad feel, screen readers,
+  large-molecule performance on a low-end device, the print/share paths, `npm run mobile:build` (the
+  lab is not in the APK). No test framework; lint is not configured.
+
+**Remaining**
+- Commit (not done — the protocol forbids it; note the new files were already **staged by someone
+  else** during the session).
+- "Open in Molecular Lab" link from `/encyclopedia` monographs (the lab already accepts `?smiles=`).
+- Cloud save and progress tracking — owner decisions.
+
+**Next**
+- Try the lab on a real phone (drawing, pinch, bottom sheets), then add the encyclopedia link.
+
+---
+
+### 2026-09-16 — `/about-us` roster edits, flip cards, team photos (top-design pass)
+
+Session `pharma-wallah-46`, follow-up requests on the page below.
+
+**Completed**
+- Roster (user): removed the Content strategy group and its three members (Abdul Wahab, Jalal bin
+  Junaid, Jazil bin Kashef) and Romana Abbbas; merged "Design & outreach" + "Digital marketing
+  ambassadors" into one **Marketing** group; added **Kashef Latif** (Research & Content Creator).
+  Team is now **18** in 4 groups (Saman Hamza added later, Research & Content Creator).
+- Photos: seven user-supplied photos/captioned stickers were added and then **all removed at the
+  user's request** the same session — every card shows its monogram again. The `photo` /
+  `photoStyle` support in `team.ts` and `_Plate.tsx` is kept for when real portraits exist.
+- Layout (top-design): leadership as two large feature cards (description visible, gradient hairline
+  on hover); every other group is a sticky numbered label column beside a grid of **flip cards** —
+  front: 72 px monogram plate, `NN.NN` code, name, role; back: brand surface with the role description.
+  Turns on hover (hover-capable devices only), keyboard `:focus-visible`, or tap (touch).
+
+**Files**
+- `src/lib/team.ts` (roster, `photo` + `photoStyle` on `RosterEntry`/`TeamMember`, groups);
+  `src/app/(site)/about-us/page.tsx` (Team section, `LeadCard`); new `FlipCard.tsx` (client),
+  `_Plate.tsx`. No image files remain (`public/images/team/` deleted).
+
+**Verification**
+- `npx tsc --noEmit` → 0 errors. CDP against the user's dev server (:3000), 1440 and 390: no overflow;
+  17 cards; 4 groups in order; 0 images after the removal; none left hidden after scrolling; keyboard focus
+  flips a card (`matrix3d(-1…)`) and blur turns it back; tap flips and a second tap unflips; 0 console
+  errors. Screenshots read. **Headless Chrome reports `hover: none`** (even with media emulation), so
+  mouse-hover flipping was verified only by reading the generated CSS rule, not by a hover.
+- **NOT run:** `npm run build` — the user's `next dev` was running on :3000 (Known Issue 10).
+
+### 2026-09-16 — `/about-us` rebuilt again: simple cards + scroll reveals; four new team members
+
+Session `pharma-wallah-46`.
+
+**Completed**
+- User: "make me new about us page, smooth simple page with scroll animations — current one is bad —
+  cards with description, no photo", plus four people in two groups. The GSAP roster-stage page (entry
+  below) is **replaced**: `PageHero` (display) with derived figures (20 team · 93 calculators · 22
+  units), an "Our story" split, six "What we make" link cards, **the team as cards grouped by role**
+  (monogram plate, name, role, a one-line description of what the role does), and a brand-surface
+  closing card (Contact / Work with us). Cards and headings lift in with the page kit's `Reveal`
+  (staggered 0/70/140 ms per row); cards lift on hover.
+- **New members** in `src/lib/team.ts`: Kinza Zafar, Farwah Perwaiz → role "Digital Marketing
+  Ambassador", new group **Digital marketing ambassadors**; Syeda Khoula, Neha Shah → role "Research &
+  Content Creator", filed in the existing research group, relabelled **Research & content creation**.
+  Team is now 20.
+
+**Files**
+- `src/app/(site)/about-us/page.tsx` — rewritten (server component, Tailwind + page kit only).
+- Deleted: `about.css`, `RosterStage.tsx`, `TeamRegister.tsx`, `AboutMotion.tsx`, `_useAboutMotion.ts`
+  (recoverable from `cfda61a`).
+- `src/lib/team.ts` — four roster lines, `marketing` group, two role mappings, `ROLE_NOTE` →
+  `TeamMember.description`; removed `TEAM_CAMPUS_COUNT` and `TEAM_ROLES` (only the old page read them).
+- Knowledge: this file (§6 rule 13, §7, §9, archive), `.claude/MEMORY.md` (85, 86, new 97),
+  `.claude/PROJECT_MAP.md`, `.claude/redesign-tracker.md`, `.claude/history/2026-09.md`.
+
+**Architecture & Decisions**
+- **Descriptions describe the role, not the person** — there are no verified bios; per-person copy
+  would be invented. A role without a `ROLE_NOTE` falls back to its group blurb, so no card is blank.
+- **Campuses are no longer printed.** The roster's default ("University of Karachi") was never in the
+  original team data, and nobody gave one for the four new members, so the page states nothing about it.
+- **No GSAP → §6 rule 13's fourth exception is gone.** Motion is `Reveal` (IntersectionObserver + CSS
+  transition): everything is visible in the server HTML, only below-fold blocks animate, reduced motion
+  shows everything at once.
+- Group order: Leadership, Content strategy, Research & content creation, Year representatives,
+  Design & outreach, Digital marketing ambassadors.
+
+**Verification**
+- `npx tsc --noEmit` → 0 errors. `npm run build` (dev stopped) → exit 0; `/about-us` **773 B / 106 kB**
+  first load (was 5.37 kB / 111 kB); shared JS 88.3 kB unchanged.
+- Headless Chrome/CDP on `next dev`, 1440×900, 390×844 and 390 reduced motion — **20/20 checks pass**:
+  no horizontal overflow; 20 cards, each with a description; six group headings in order; no list
+  bullets (gotcha 30b); 35 below-fold blocks hidden at load and 0 left after scrolling; 0 hidden under
+  reduced motion; JavaScript disabled → 20 cards, none hidden; 0 console errors.
+  Screenshots read: hero, story, pillars, leadership, research, marketing (both widths), closing.
+- Caught by screenshot and fixed: group blurbs rendered full ink — `/58` and `/62` are off Tailwind's
+  opacity scale and generate no class (gotcha 97).
+- **NOT verified:** a real device; dark mode (no reachable toggle, F13). No tests cover it; lint is not
+  configured.
+
+**Remaining**
+- `PageHero`'s lead uses `text-[#16181d]/62`, which generates nothing — every kit hero lead renders
+  full ink instead of muted. One-token fix in the shared kit; not changed here (affects every kit page).
+- Still open from the previous version: "Romana Abbbas" spelling; real campuses per member.
+- `package.json` / `pnpm-lock.yaml` gained `openchemlib@9.25.0` (unstaged, 17:10) — **not this
+  session**; left untouched.
+
+**Next**
+- Change `PageHero`'s `/62` to `/60` and re-screenshot the kit pages.
 
 ### 2026-09-16 — TLC Rf Analyzer; offline Colony Counter (OpenCV.js); Android app redesign; APK v1.3
 
@@ -661,7 +868,8 @@ Session `pharma-wallah-2a`. Three user requests, "follow protocol", built in thi
 
 ### 2026-09-16 — `/about-us` rebuilt: a roster intro screen, GSAP scroll choreography, the full team
 
-Session `pharma-wallah-78`.
+Session `pharma-wallah-78`. **Superseded the same day** by the simple card page above — the files
+named here are deleted (recoverable from `cfda61a`).
 
 **Completed**
 - **`/about-us` rebuilt from scratch** (user: "make me a new about page where all the team members are
@@ -1085,230 +1293,7 @@ Session `pharma-wallah-a8`, renamed `pharma-wallah-3d` after a machine reboot mi
 
 ---
 
-### 2026-09-13 — Six analytical-practical calculators + `lab-analysis` layer
-
-**Completed**
-- **Calibration Curve Calculator** (`calibration-curve-calculator`): 2–10 standards, textbook
-  least squares (ΣX, ΣY, ΣXY, ΣX², slope, intercept, SSE, SST, R²), unknown concentration, extrapolation
-  and duplicate warnings, scatter + regression line + unknown marker, 10 numbered steps.
-- **Dissolution Calculator** (`dissolution-calculator`): time table with 1–6 replicate columns,
-  X = (Y − a)/b × DF, the practical sheet's correction (CF = Vs/V × previous corrected concentration),
-  amount dissolved and % release, two graph tabs, a step block per time point.
-- **Accuracy & % Recovery Calculator** (`accuracy-recovery-calculator`): basic mode (% recovery,
-  % error, absolute error, |100 − %R|) and replicates mode (mean, sample SD, %RSD, mean % error, mean
-  absolute error, bar chart with a 100% reference line); optional acceptance range entered by the student.
-- **Dialysis Membrane / Diffusion Calculator** (`dialysis-diffusion-calculator`): C2 → C2/C1 → volume
-  factor 1 + V2/V1 → B → 1 − B → ln(1 − B) with the exact "1 − B must be greater than 0" error, regression
-  on minutes or seconds, k = −slope or "slope only" as a selectable interpretation.
-- **Cumulative Drug Release Calculator** (`cumulative-drug-release-calculator`): per-row sample volume,
-  Method A (practical sheet) and Method B (standard Σ C·Vs correction), selectable and labelled, graph
-  of % release / amount / concentration with an optional both-methods overlay.
-- **Partition / Distribution Coefficient Calculator** (`partition-coefficient-calculator`): any number
-  of pH groups and experimental groups, per-phase calibration, D = CoP/Caq, log D, average log D,
-  1/log D (kept separate from 1/D), [H+] and 1/[H+], pH vs log D and 1/[H+] vs log D with regression
-  only when it is appropriate.
-- **Calibration hand-off**: the calibration tool links to the four consumer tools with `?a=&b=&unit=`
-  and also saves the latest line to `localStorage` (`pw_lab_calibration_v1`) for "Import saved calibration".
-- Registered in the Android catalogue (`mobile/app/_data/tool-registry.ts`); the web hub entries in
-  `tool-index.ts` were added by the hub session (`pharma-wallah-2a`) by agreement.
-
-**Files**
-- New: `src/components/calculators/lab-analysis/{index.ts,math.ts,format.ts,figure.ts,calibration-store.ts,parts.tsx}`.
-- New: `src/app/(site)/calculation-tools/(tools)/{calibration-curve-calculator,dissolution-calculator,accuracy-recovery-calculator,dialysis-diffusion-calculator,cumulative-drug-release-calculator,partition-coefficient-calculator}/`
-  — each a `page.tsx` plus underscore-prefixed pure modules (`_calibration.ts`, `_dissolution.ts`,
-  `_accuracy.ts`, `_diffusion.ts`, `_release.ts` + `_steps.ts`, `_partition.ts` + `_report.ts` + `_parts.tsx`).
-- `mobile/app/_data/tool-registry.ts` — six names, category slugs, four short names, header counts.
-
-**Architecture & Decisions**
-- **The practical-sheet methods are reproduced, not "corrected"**: dissolution's previous-corrected-
-  concentration correction, dialysis's B = (C2/C1)(1 + V2/V1), partition's 1/(average log D). Where a
-  standard alternative exists (cumulative release Method B) it is a separate, labelled choice.
-- **Every visible replicate is required** — averaging only the filled readings would silently change a
-  student's divisor. Times must increase in entry order; nothing is silently sorted.
-- **No silent unit changes**: µg/mL → mg/mL conversions are printed as their own step; the dialysis
-  tool converts typed times when the entry unit is switched, and says so.
-- **The kit's `index.ts` was not touched** (another session owned it). The new layer is imported as
-  `@/components/calculators/lab-analysis`; pure modules import `lab-analysis/math` and `format` directly
-  because the index also loads React parts.
-- Recharts on screen, `chartSvg` (self-contained SVG) for the PNG/print figure from the same data. Chart
-  palette validated with the dataviz script; the unknown is a diamond and every multi-series graph has a
-  legend because amber/green sit in the CVD floor band.
-- Built by five sub-agents from a reference implementation (the calibration tool); every agent's maths was
-  hand-checked in Node and every page was driven in headless Chrome by this session.
-
-**Verification**
-- `npx tsc --noEmit` → **0 source errors** (42 TS2307 lines were stale `.next/types` stubs for another
-  session's deleted `migration-before/*` preview routes — gotcha 64).
-- Hand-checked in Node: calibration 2/4/6/8/10 µg/mL → m 0.06635, c −0.0005, R² 0.99991, unknown 0.452 →
-  6.8199 (matches an independent covariance fit); all-same X and SST = 0 guards. Dissolution
-  (0.61 + 0.828 + 0.58 + 0.737)/4 = 0.68875; 3-row Vs/V = 5/900 corrected 10 / 20.0556 / 30.1114.
-  Accuracy 492.5/500 → 98.5%; replicates 99 / 100.6 / 98.75 → mean 99.45, SD 1.00374, %RSD 1.00929.
-  Dialysis VF 301; Y 0.057 → B 0.365595, ln −0.455068; example k 0.0149633 min⁻¹. Cumulative 3-row
-  case A 2 / 4.2 / 6.42 mg vs B 2 / 4.2 / 6.6 mg. Partition D 0.512121, log D −0.290627,
-  [H+] at pH 4.5 = 3.16228 × 10⁻⁵; regression identical to covariance to 15 digits.
-- Headless Chrome/CDP on the dev server, all six at **390×844 and 1440×900**: hydrated, examples load,
-  charts 348px wide on a phone, **no NaN/Infinity, no horizontal overflow inside `main`, 0 exceptions**.
-  Exercised: empty Calculate (invalid fields flagged), non-numeric cells, graph tabs, method /
-  interpretation switches, Copy (2–10 KB records), step blocks, Reset, the `?a=&b=` hand-off on three
-  consumers, "Import saved calibration" after fitting a line, accuracy replicates (3 bars, 100% line,
-  single-trial SD message). Fixed during review: a Recharts −1×−1 size warning (`initialDimension`), ASCII
-  minus signs, "AU/µg/mL", table units forcing sideways scroll on phones, a clipped rate-constant line.
-- `npm run mobile:build` → **passed**: 108 HTML files, 105 under `calculation-tools/` (all six present),
-  CSS 103,829 + 4,210 B, 11 MB, **0** ad strings, **0** secrets.
-- **NOT verified:** `npm run build` (web — dev server running, Known Issue 10); the PNG download and the
-  print dialog (headless); a real device or the APK; dark mode. No tests exist; lint is not configured.
-
-**Remaining**
-- `npm run mobile:sync` before the next APK (`pharma-wallah-3d` is preparing v1.1 with these tools).
-- The site header's compact bar overflows at 390px (menu button right edge 395–411px) — header owner's file.
-
-**Next**
-- Link the related practicals from each other's "About" panels once students have used them.
-
----
-
-### 2026-09-13 — `/calculation-tools` rebuilt: fast, searchable index (top-design)
-
-**Completed**
-- **The hub is readable before any JavaScript runs.** The cause of "it takes time to load", measured
-  on the live site: every card, the title and the hero were rendered at `opacity:0` for framer-motion
-  to reveal (97 elements), so a phone showed a blank catalogue until ~280 KB of JS had downloaded and
-  hydrated. With scripts disabled, live showed **0 of 78** tool links; the new page shows **93 of 93**.
-- **New design, direction 01 "The Index" + 03 search** (the tracker's recommendation — the user asked
-  for top-design without naming one). Warm-white hero from the page kit: "Pharmacy calculations,
-  worked out." with the second line in a darkened brand gradient, a lead, the educational-use note, a
-  brand-surface **Common starting points** card (dilution, molarity, half-life, BSA, IV drip rate, each
-  with its relation), and derived figures. Then a **sticky rail** — search plus subject index (sidebar
-  with scroll-spy from lg; a sticky chip bar with the same input on phones) — and ten ruled subject
-  sections of index rows: `3.07`-style code, tool name, **a one-line description of what the tool
-  computes**, arrow. A brand-gradient Android band closes the page.
-- **Search**: matches name, description, subject and slug; folds subscripts and dashes (`c1v1` finds
-  C₁V₁); highlights matches; counts per subject; `/` focuses, Esc clears; designed empty state with a
-  route to `/contact`; the ad slot hides while there are no results (gotcha 30b).
-- **93 tools listed** (was 87): pharma-wallah-90/-fc's six new lab tools registered — Dissolution,
-  Cumulative Drug Release, Dialysis/Diffusion, Partition/Distribution Coefficient, Calibration Curve,
-  Accuracy & % Recovery — each only after its route returned 200.
-- **Every tool's description was written from its code**, by a sub-agent that read all 87 pages; that
-  audit found 14 formula/logic faults, recorded as §7 Known Issue 15 (not fixed — logic, ask first).
-- Rail follows the retracting site header (gotcha 66). Tracker F12 (hard-coded "86+", identical icon on
-  every card) fixed.
-
-**Files**
-- `src/app/(site)/calculation-tools/page.tsx` — rewritten as a server component (`PageHero`,
-  `FigureRow`, `StartHere`, `AppBand`); metadata unchanged.
-- New: `HubCatalogue.tsx` (client island: search, rail, scroll-spy, sections), `hub.css` (`.pw-hub`
-  namespace), `tool-index.ts` (`HUB_SUBJECTS`, `HUB_TOOL_COUNT`, `findTool`, `toolHref`, `START_HERE`).
-- Deleted: `CalculationToolsClient.tsx` (its data moved to `tool-index.ts`; the pre-rebuild version is
-  in `87d86c5`/`5dbe98c`).
-- Knowledge: `.claude/{MEMORY,ROADMAP,PROJECT_MAP,redesign-tracker}.md`; skills `calculator-tool`,
-  `implement-feature`, `code-review`, `adsense-monetization`, `roadmap-status`, `next-feature`,
-  `android-app-capacitor` (all pointed at the new registry).
-
-**Architecture & Decisions**
-- **Tools are nested inside their subject** — `{ name, slug, desc }` under `HUB_SUBJECTS[i].tools`.
-  The old flat `allTools` + `categories[].toolNames` name-string join (gotcha 9's "renders in no
-  category") cannot happen any more. Every count on the page is derived.
-- **No framer-motion, no entrance animation, no infinite loops, no per-row SVG** (a text arrow — 90
-  inline icons were ~40 KB of HTML). Motion is hover/focus transitions on the expo curve; reduced
-  motion keeps state changes and drops movement.
-- **`prefetch={false}` on every hub link**: ~93 dynamic routes, and the root `loading.tsx` already
-  answers a click instantly.
-- The data module is imported (not passed as props) by the client island, so the list is not
-  serialised twice into the RSC payload.
-- The rail tracks the header with a `MutationObserver` on the header's style attribute and a data
-  attribute + CSS transform — no scroll listener, no React re-render of 93 rows.
-- No brand-gradient card per tool; the gradient is kept to the two surfaces that should read as the
-  brand (start-here card, app band), per the no-black-grounds rule (§6 rule 15).
-- The five URL-only tools were **not** added (scope). The audit says `OsmolarGapCalculator` is ready
-  to list and `OpioidConversionCalculator` must stay unlisted (ROADMAP).
-
-**Verification**
-- `npx tsc --noEmit` → **0 errors** on the final run. (Mid-task runs showed errors in other sessions'
-  in-progress files — `dissolution-calculator/_dissolution.ts`, `encyclopedia/Monograph.tsx` — and
-  `TS6053` stale `.next/types` after the dev server was restarted; none in these files.)
-- Registry cross-check: all **93** slugs have a `(tools)/<slug>/page.tsx`, no duplicates; the 11
-  unlisted directories are exactly the 6 clinical-only + 5 URL-only tools.
-- HTML weight, live (old, production) vs dev (new): **276,620 → 183,242 bytes**, `opacity:0` **97 →
-  4** (the 4 are in the shared header/footer), inline SVG **147 → 57**, tool links 78 → 92 (93 after the
-  last registration). Dev HTML is heavier than production, so the real saving is larger.
-- Headless Chrome over CDP against the dev server, **1440×900 and 390×844**, reduced and full
-  motion: `scrollWidth` = viewport; real wheel scrolling past 600 px retracts the header and the rail
-  follows (rail top 0 on phone / 24 on desktop), scrolling up restores it (60 / 88); scroll-spy marks
-  the section in view; search `c1v1` → 1 row with `C₁V₁` highlighted; Esc restores all rows; no-match
-  shows the empty state with **0** ad slots; `/` focuses search; JS disabled → all tool links visible,
-  h1 opacity 1. **0 console errors / exceptions** from the page (one transient `SyntaxError` in the
-  shared layout chunk came from another session's mid-edit `Header/Logo` and was gone on re-run).
-  Screenshots read at both widths: hero, mid-index, search, empty state, closing band.
-- **NOT verified:** `npm run build` (the user's dev server was running — Known Issue 10), so no
-  production timing, Lighthouse or real-network measurement; no real phone; an ad rendering in the
-  placement (no slot IDs); dark mode (the site has no reachable toggle, F13). No tests exist; lint is
-  not configured.
-
-**Remaining**
-- `npm run build` with dev stopped, then a production Lighthouse run on `/calculation-tools`.
-- Known Issue 15 — decide which calculator formula faults to fix (each needs the user's OK).
-- List `OsmolarGapCalculator` on the hub if the user agrees.
-
-**Next**
-- Courses family (P2) on the same page kit, once its direction is chosen.
-
----
-
-### 2026-09-13 — Pharmacy-themed loading screen (website route loading + Android splash)
-
-**Completed**
-- **One shared loading mark, `PharmaLoader`**: the brand capsule from the logo with its green half as
-  a measuring vessel (sloshing meniscus, rising bubbles, graduation ticks, a gentle tilt) and a mono
-  procedure line — **WEIGH · DISSOLVE · MAKE UP TO VOLUME** — lighting one step at a time.
-- **Website**: new root `src/app/loading.tsx`, the Suspense fallback while any route segment loads
-  (main site and clinical; the dashboard has its own `loading.tsx` from `pharma-wallah-28`). It sits in
-  the page area under the header and stays invisible for 320 ms, so fast navigations flash nothing.
-- **Android app**: `StartupSplash` now shows the same capsule (white cap, green liquid) on brandBlue
-  instead of a stock calculator icon; the tagline count is derived from the generated slug list
-  (shows 98) instead of the stale hand-typed "97"; hold 1.1 s → 1.5 s so the procedure line reaches
-  its last step. Tagline raised to white/90 for contrast.
-- The user chose "Both" when asked which app. Both other active sessions were told about the new
-  files before work started, and when it finished.
-
-**Files**
-- New: `src/components/loading/PharmaLoader.tsx` (`PharmaLoader`, `LoaderSteps`),
-  `src/components/loading/pharma-loader.css`, `src/app/loading.tsx`.
-- `mobile/app/_components/StartupSplash.tsx`; `mobile/app/globals.css` (`.pw-splash__*` rules — bar
-  and sweep removed, entry animations without fill modes).
-
-**Architecture & Decisions**
-- **CSS-only, no hooks, plain classes** — it must animate before hydration (in both the SSR HTML and
-  the APK's static export) and the mobile Tailwind build only scans fixed globs, so no utility classes.
-- **No fake progress.** The level bobs and the steps cycle; nothing counts to 100%, because Next does
-  not know how far along a load is.
-- **Splash keeps solid brandBlue**, not the brand gradient: the native launch screen and the WebView
-  background are that blue, and a gradient would make the hand-off visible.
-- Reduced motion: static half-full capsule, all three steps readable, web loader shown at once.
-
-**Verification**
-- `npx tsc --noEmit` → **0 errors, whole repo** (after a stale `.next/types` stub from another
-  session's deleted temp route was removed — it had shown 2× TS2307; gotcha 64).
-- RSC payload of `/terms` contains the loader (`pw-loader-page`, "Loading page") — Next wired it as the
-  fallback. Rendered on a temporary route (since deleted) at 1440 and 390, motion and reduced motion:
-  level transform animating, bubbles, tilt; the Animations API showed the steps lit out of order
-  (`:nth-of-type` counted the separator dots) — fixed with modifier classes and re-sampled
-  (Weigh → Dissolve → Make up to volume). Real client navigations: 0 errors, loader never left behind.
-- `npm run mobile:build` → **passed**: 103 pages, CSS 114,820 B, **0** ad strings, **0** secrets.
-  Served `mobile/out`: splash on rgb(28,122,217) with "98 calculators · works offline", removed after
-  the hold, catalogue shows 98 tools.
-- **NOT verified:** the web loader appearing during a genuinely slow production navigation (dev-server
-  throttling stalled; it was verified by payload + direct render instead); `npm run build`; a real
-  device / Android WebView cold start; the APK was not compiled. No tests; lint not configured.
-
-**Remaining**
-- `npm run mobile:sync` before the next APK (pharma-wallah-a8 is preparing v1.1).
-
-**Next**
-- Watch a real phone cold start to tune `HOLD_MS` against the native launch screen.
-
----
-
-> Older entries are in `.claude/history/2026-09.md`: 2026-09-13 (dashboard rebuild, header app CTA +
+> Older entries are in `.claude/history/2026-09.md`: 2026-09-13 (six analytical-practical calculators, calculation-tools hub rebuild, loading screen, dashboard rebuild, header app CTA +
 > Master Formula, auth pages, redesign Phase 0, top-design landing page, eight laboratory tools) and
 > 2026-09-12 (ADME landing page, AdSense, Outfit, PWA removal, APK distribution, Android app,
 > bootstrap).
@@ -1324,10 +1309,10 @@ Session `pharma-wallah-a8`, renamed `pharma-wallah-3d` after a machine reboot mi
 | --- | --- | --- |
 | Type-check | `npx tsc --noEmit` | **PASSES — 0 errors** (2026-09-16). Any error you see is yours. The app project: `npx tsc --noEmit -p mobile/tsconfig.json` → 0 errors (needs a generated `mobile/app/_generated`, i.e. one `npm run mobile:build`). |
 | Lint | `npm run lint` | **NOT AVAILABLE.** No ESLint config; the command opens an interactive setup prompt. Do not report lint as passing. |
-| Build | `npm run build` | **PASSES — re-verified 2026-09-16**: exit 0 in ~2.5 min, 252 route lines, shared JS **88.3 kB**, middleware 81.9 kB; `/calculation-tools/rf-value-calculator` 184 kB and `/cfu-calculator` 183 kB first load; `.next/static/media/opencv.<hash>.js` 10.8 MB emitted as an asset. Same expected warnings as below. **Earlier (2026-09-12):** with the dev server stopped, after the AdSense work (the first successful run since the PWA removal, the shadcn migration and the Outfit switch): exit 0, ~170 routes, middleware 81.8 kB, shared JS 87.8 kB. Stop `npm run dev` first — they share `.next` and corrupt each other (§7 Known Issue 10). **PASSES with a populated `.env`** — exit 0, ~170 routes emitted, middleware 81.8 kB, shared JS 87.8 kB. Only `/_not-found` is static; everything else is `ƒ` (dynamic, server-rendered on demand). **Without `.env` it FAILS**: `Missing environment variable: NEXT_PUBLIC_SUPABASE_URL` while collecting page data for `/api/admin/registrations`. Expected non-fatal warnings: the `@supabase/supabase-js` Edge-runtime `process.version` notice, the stale `caniuse-lite` Browserslist notice, and two webpack "Serializing big strings" cache notices. |
+| Build | `npm run build` | **PASSES — re-verified 2026-09-16 after Molecular Lab** (in an isolated copy of the tree, dev server left up): exit 0, shared JS **88.4 kB**, middleware 81.9 kB, `/molecular-lab` 59.5 kB / 148 kB first load, `resources.<hash>.json` 1.35 MB in `static/media`. The build also prints several `Dynamic server usage` stack traces (tournament leaderboard, DailyMed, AMR routes) — logged by those handlers, non-fatal, not new. **Before that** (again after the simple `/about-us`: exit 0, shared JS 88.3 kB, `/about-us` 106 kB first load). Earlier the same day: exit 0 in ~2.5 min, 252 route lines, shared JS **88.3 kB**, middleware 81.9 kB; `/calculation-tools/rf-value-calculator` 184 kB and `/cfu-calculator` 183 kB first load; `.next/static/media/opencv.<hash>.js` 10.8 MB emitted as an asset. Same expected warnings as below. **Earlier (2026-09-12):** with the dev server stopped, after the AdSense work (the first successful run since the PWA removal, the shadcn migration and the Outfit switch): exit 0, ~170 routes, middleware 81.8 kB, shared JS 87.8 kB. Stop `npm run dev` first — they share `.next` and corrupt each other (§7 Known Issue 10). **PASSES with a populated `.env`** — exit 0, ~170 routes emitted, middleware 81.8 kB, shared JS 87.8 kB. Only `/_not-found` is static; everything else is `ƒ` (dynamic, server-rendered on demand). **Without `.env` it FAILS**: `Missing environment variable: NEXT_PUBLIC_SUPABASE_URL` while collecting page data for `/api/admin/registrations`. Expected non-fatal warnings: the `@supabase/supabase-js` Edge-runtime `process.version` notice, the stale `caniuse-lite` Browserslist notice, and two webpack "Serializing big strings" cache notices. |
 | Mobile build | `npm run mobile:build` | **PASSES (2026-09-16, ~2 min)** — 105 HTML files under `mobile/out/calculation-tools/`, home `/` 125 kB first load, shared JS 88.2 kB, CSS **113,194 bytes**, `mobile/out` 22 MB (OpenCV.js is 10.8 MB of it). Secret scan: use the JWT-shaped pattern (gotcha 90). **Earlier (v1.1):** 109 static pages, 108 HTML files, 105 under `mobile/out/calculation-tools/`, shared JS 87.9 kB, CSS in two files **98,751 + 4,210 bytes**, 12 MB (re-measured 2026-09-13 by the v1.1 APK build, with 85 of 104 tools on the kit; 103,829 + 4,210 before). Independent of `.env` and safe to run while `npm run dev` is up (separate `mobile/.next`). **Also assert zero ad strings in `mobile/out`** — see `.claude/skills/adsense-monetization/SKILL.md`. A ~10 KB stylesheet is the silent Tailwind failure (gotcha 23). |
 | APK | `npm run mobile:apk` | **PASSES (2026-09-16, v1.3 / versionCode 4, ~2.5 min)** — signed V2 release APK **9,347,799 B** (8.9 MB), same certificate SHA-256 `afe4c18e…5b03` as v1.2; published file byte-identical to the Gradle output. **Earlier:** (2026-09-14, v1.2 / versionCode 3, built by `pharma-wallah-4b` — new launcher icon + redesigned Serial Dose tool) — signed V2 release APK, 5,945,495 B, copied to `public/downloads/`; same certificate as v1.0/v1.1. Needs JDK 21 (auto-selected) and `android/keystore.properties`. Check `aapt dump badging` for the version and `apksigner verify --print-certs` for the certificate. |
-| Tests | `node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts` | **41 pass, 0 fail** (2026-09-16; 21 TLC + 20 colony, ~10 s). These cover two tools' pure modules only — there is no framework, no CI, and nothing else is tested. Report them by name. |
+| Tests | `node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts` · `node --test scripts/molecular-lab.test.mts` | **41 pass, 0 fail** (2026-09-16; 21 TLC + 20 colony, ~10 s) · **21 pass, 0 fail** (2026-09-16, Molecular Lab, ~12 s, real OpenChemLib). These cover three features' pure modules only — there is no framework, no CI, and nothing else is tested. Report them by name. |
 
 ---
 

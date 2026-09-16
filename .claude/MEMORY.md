@@ -317,10 +317,11 @@ nothing in production and a labelled placeholder in dev. `NEXT_PUBLIC_IS_MOBILE_
 
 ### Testing — almost none
 **No test framework and no CI.** No Jest, Vitest, Playwright, or Cypress; no test script in
-`package.json`; no `.github/`. The one exception (since 2026-09-14/16): two **`node --test`** files
-for pure calculator modules, run with Node 24's built-in TypeScript stripping —
-`node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts` (41 tests; the colony tests run
-the real OpenCV.js). They cover those two tools only; report them by name, never as "tests passed".
+`package.json`; no `.github/`. The one exception (since 2026-09-14/16): three **`node --test`** files
+for pure modules, run with Node 24's built-in TypeScript stripping —
+`node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts scripts/molecular-lab.test.mts`
+(62 tests; the colony tests run the real OpenCV.js, the Molecular Lab tests the real OpenChemLib). They
+cover those three features only; report them by name, never as "tests passed".
 
 **Therefore: never claim tests passed.** The only static checks available are `npx tsc --noEmit`
 (works, currently clean) and `npm run lint` (**does not work** — no ESLint config, the command
@@ -899,22 +900,23 @@ Traps that will otherwise be rediscovered painfully.
     for the rest of the page. Pointing `endTrigger` at the page instead then kept the rail lit over the
     site footer, where its ink ticks sat unreadable on the footer's links. It ends at the closing band.
 
-85. **`/about-us` is the fourth place GSAP is allowed** (user request, 2026-09-16) and the only
-    ScrollTrigger use outside the landing page. It is loaded with a dynamic
-    `Promise.all([import("gsap"), import("gsap/ScrollTrigger")])` after first paint, inside one
-    `gsap.context` + `matchMedia`, reverted on unmount. **Verified route-scoped**: shared JS stayed at
-    88 kB, `grep gsap` over both shared chunks returns 0, and `/about-us` first load is 111 kB —
-    lighter than `/calculation-tools`. The page also adds `html.pw-about-mounted { scroll-behavior:
-    auto }` while mounted, because `globals.css` smooth scrolling desynchronises every scrub
-    (gotcha 30a); in-page jumps therefore pass `behavior: "smooth"` explicitly.
+85. **`/about-us` no longer uses GSAP** (rebuilt 2026-09-16 as a simple card page with the page kit's
+    `Reveal`). It was briefly the fourth GSAP exception; that version is in `cfda61a`. Gotchas 82 and
+    84 describe that version's stylesheet and ScrollTrigger and apply to it only.
 
 86. **The team roster lives in `src/lib/team.ts`**, not `src/app/api/team-members.tsx` (moved
     2026-09-16, old file deleted). One `ROSTER` array of `{name, role, campus?}` is the only thing to
-    edit; the group each person is filed under, their monogram, their per-person gradient angle, their
-    anchor id, the campus count and the role list are all derived. A role missing from `ROLE_GROUP`
-    files the person under "Team" rather than dropping them. The old `imgSrc` field was **three stock
-    photographs shared between sixteen people** and was never rendered — if real portraits ever exist,
-    add a `photo` field.
+    edit; the group, monogram, gradient angle, anchor id and the card **description** are derived. The
+    description comes from `ROLE_NOTE` (what the role does — never a made-up personal bio), falling back
+    to the group blurb. A role missing from `ROLE_GROUP` files the person under "Team" rather than
+    dropping them. **A new role needs a `ROLE_GROUP` entry and a `ROLE_NOTE` entry.** `campus` defaults
+    to "University of Karachi", which was never in the original team data — the page does not print it.
+    Photos: `photo` (path under `public/images/team/`) + `photoStyle` — `"portrait"` is a pre-cropped
+    head-and-shoulders square shown `object-cover`; `"sticker"` is a whole captioned sticker shown
+    uncropped (`object-contain`). Crop/square the source with PIL **after compositing its alpha onto
+    white** — the pasted webp files are transparent and `convert("RGB")` turns that black. Pasted
+    images land in `~/Downloads/<uuid>.webp`. Flip cards: headless Chrome reports `hover: none`, so
+    test the flip with keyboard focus or touch, not a mouse move.
 
 87. **An OpenCV.js `Mat.data` / `data32S` / `data32F` is a view into the WASM heap, and it silently
     becomes empty when any later allocation grows the heap.** No error — loops over it just see length
@@ -975,6 +977,51 @@ Traps that will otherwise be rediscovered painfully.
     `screenToImage` (from `tlc/geometry.ts`), measuring the stage's **padding box** (`clientWidth`,
     `clientLeft`) — the 1 px border otherwise offsets every tap. Gesture code (pinch, wheel, tap slop)
     is duplicated between them; extract a shared hook before building a third.
+
+97. **Tailwind v3 opacity modifiers only work on the theme scale** (0, 5, 10 … 95, 100). An off-scale
+    value such as `text-[#16181d]/62` or `/58` generates **no class at all** — no warning, and the text
+    silently renders in the inherited full-strength colour. Found on `/about-us` 2026-09-16 by
+    screenshot; `PageHero`'s lead (`/62`) has the same fault on every kit page. Use a scale value, or
+    the arbitrary form `/[.62]`. Check the built CSS in `.next/static/css/` for the exact selector.
+
+98. **OpenChemLib's y axis already points down, like the screen** (its molfile writer negates it).
+    Negating y when building an OCL `Molecule` from screen coordinates mirrors every stereocentre —
+    L-alanine came back as D with no error. `molecular-lab/chem-core.ts` passes y through unchanged.
+
+99. **OpenChemLib does not kekulise bonds typed `cBondTypeDelocalized`.** A benzene built that way
+    reports C6H12. Molecular Lab's aromatic bonds are resolved to single/double by `kekulize()` in
+    `molecular-lab/graph.ts` before anything reaches OpenChemLib (`buildMolecule`).
+
+100. **`openchemlib/dist/resources.json` is not in the package's `exports`**, so webpack refuses the bare
+    specifier. `molecular-lab/chem-tasks.ts` uses a relative `new URL("../../../node_modules/…")`
+    (emitted as a static asset). The file (1.35 MB) is only needed by `ConformerGenerator` and the MMFF94
+    force field — fetched the first time 3D is shown, never for parsing, layout or SMILES.
+
+101. **`node --test` type stripping rejects constructor parameter properties** (`constructor(public code…)`)
+    and needs explicit `.ts` extensions. App modules import each other extensionlessly, so
+    `scripts/molecular-lab.test.mts` registers `scripts/lib/ts-resolve.mjs` (a resolve hook that adds
+    `.ts`) and imports the modules dynamically after it.
+
+102. **3Dmol quirks the lab works around (`molecular-lab/Viewer3D.tsx`):** two fingers only *zoom* (three
+    pan), so a capture-phase touch layer does pinch + two-finger pan itself; `zoomTo()` fits the view's
+    height, so a tall pane (split view, phones) crops the sides — `fitView` zooms out by `(w/h)^0.75`;
+    and the model must be refitted after the pane's first resize. Bonds are made clickable with
+    near-invisible cylinders (`opacity: 0.01`, `clickable: true`). Imported from npm (lazy chunk), not
+    from 3dmol.org as the old viewer did.
+
+103. **Never side-effect inside a React state updater.** StrictMode (dev) runs updaters twice: a
+    measurement recorded inside `setPicks(prev => …)` was added twice with the same `Date.now()` key
+    ("two children with the same key"). Compute from current state, then set.
+
+104. **A V2000 molfile without the chiral flag is read as relative stereo.** OpenChemLib gave L-alanine a
+    different ID code after a MOL round trip until `graphToMolfile` set the counts-line chiral flag when
+    wedges are drawn (always, for 3D SDF).
+
+105. **Molecular Lab library categories are data, not opinion.** `scripts/build-molecule-library.mts`
+    takes drug classes only from PubChem's MeSH Pharmacological Classification and looks them up only
+    for the drug list — MeSH files acetic acid under "Anti-Bacterial Agents". Tetracycline (CID
+    54675776) and atropine (CID 174174) have no MeSH class on those records, so they sit in "Other".
+    NSAIDs (naproxen, diclofenac) are not in "Analgesics" because MeSH does not list that term for them.
 
 ## 9. Working preferences (observed)
 

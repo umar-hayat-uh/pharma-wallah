@@ -349,7 +349,7 @@ export const REFERENCE_LINKS: StudyLink[] = [
   { label: "Drug encyclopedia", href: "/encyclopedia", icon: Pill, blurb: "Monographs" },
   { label: "Drug finder", href: "/drug-finder", icon: Search, blurb: "RxNorm lookup" },
   { label: "Prescription reader", href: "/prescription-reader", icon: ScanText, blurb: "Read a script" },
-  { label: "Molecule viewer", href: "/molecule-viewer", icon: Atom, blurb: "3D structures" },
+  { label: "Molecular Lab", href: "/molecular-lab", icon: Atom, blurb: "Build & view molecules" },
   { label: "Books library", href: "/books-library", icon: Library, blurb: "Reference texts" },
   { label: "Community", href: "/community", icon: MessagesSquare, blurb: "Ask & answer" },
 ];

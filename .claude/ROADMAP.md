@@ -183,10 +183,27 @@ pages, confirm progress tracking records a visit, then batch the rest.
 - **Notes:** The histology test's `SLIDE_DATA` is inline in the test page, separate from the lesson
   pages — adding a lesson does **not** add it to the test.
 
+### Molecular Lab
+- **Status:** ✅ Implemented (2026-09-16, session `pharma-wallah-b9`) — verified in headless Chrome at
+  1440/768/412/390/360 px and by 21 unit tests; **not** on a real phone.
+- **Existing implementation:** draw from scratch (atoms, bonds 1/2/3/aromatic/wedge/hash, rings, groups,
+  charge, hydrogens, break/delete, move, box select), undo/redo, 2D/3D/split with a generated or PubChem
+  conformer, formula/MW/counts/validation, functional groups, 3D distance/angle/dihedral, Learning and
+  Experiment modes, compare (MCS), 83-molecule PubChem-verified library + PubChem/PDB search, file
+  import, PNG/SVG/MOL/SDF/SMILES/JSON export, My Molecules + autosave/restore, phone layout with bottom
+  sheets. Proteins and large structures open view-only (the old viewer's features).
+- **Remaining work:** cloud save (needs a Supabase table — owner decision); an AI "Molecular Tutor"
+  that receives the graph as data (optional, spec'd as later); a link from `/encyclopedia` monographs
+  ("Open in Molecular Lab" — the page already accepts `?smiles=&name=` and `?cid=`); progress tracking
+  (`useTracker`) is not wired.
+- **Important files:** `src/components/molecular-lab/`, `scripts/build-molecule-library.mts`
+- **Dependencies:** `openchemlib` 9.25.0 (new), `3dmol` 2.5.5 (now bundled); PubChem and RCSB from the browser.
+
 ### Simulations
 - **Status:** ✅ Implemented
 - **Existing implementation:** 8 labs (titration, buffer, dilution, disk diffusion, UV, staining,
-  organic ID, lab guide) plus the antibiogram simulator, compounding lab, and molecule viewer.
+  organic ID, lab guide) plus the antibiogram simulator, compounding lab, and **Molecular Lab**
+  (`/molecular-lab`, 2026-09-16 — replaced the Molecule Viewer; see below).
   Canvas work via `konva`/`react-konva`, 3D via `three`/`3dmol`.
 - **Remaining work:** None outstanding. The simulations hub page has an under-construction branch —
   verify it is not shown for shipped labs.

@@ -20,10 +20,13 @@ tell your breakage from pre-existing breakage.
 - No Jest, Vitest, Playwright, Cypress, or any other framework.
 - No `test` script in `package.json`.
 - No `.github/` directory and no CI of any kind.
-- **The only tests** are two `node --test` files for pure calculator modules (2026-09-14/16):
+- **The only tests** are three `node --test` files for pure modules (2026-09-14/16):
   ```bash
   node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts   # 41 tests, ~10 s
+  node --test scripts/molecular-lab.test.mts                             # 21 tests, ~12 s
   ```
+  `molecular-lab.test.mts` imports extensionless app modules through `scripts/lib/ts-resolve.mjs`
+  (MEMORY gotcha 101) and runs the real OpenChemLib.
   They load `src/` TypeScript through Node 24's type stripping, which works only because the
   modules under test import each other with `import type` and explicit `.ts` specifiers are
   confined to the `.mts` test files (the root `tsconfig` does not include `.mts`). The colony tests

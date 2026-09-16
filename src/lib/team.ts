@@ -6,8 +6,8 @@
  * those (MEMORY.md gotcha 6). The old file's `imgSrc` field was dropped: it
  * pointed at three stock photographs (`/images/mentor/user{1,2,3}.png`) shared
  * between sixteen people, and the page has never rendered them. Monograms are
- * derived from the name instead — when real portraits exist, add a `photo`
- * field to ROSTER and render it in place of the plate.
+ * derived from the name instead; a person with a real portrait gets a `photo`
+ * (under `public/images/team/`), which the card shows in place of the plate.
  *
  * ROSTER is the part a maintainer edits: one line per person, the name and role
  * exactly as they should read on screen. Everything else the page shows — the
@@ -18,16 +18,27 @@
 
 export type TeamGroupId =
     | "leadership"
-    | "content"
     | "research"
     | "representatives"
-    | "outreach"
+    | "marketing"
     | "crew";
 
 /** The default campus. Only people who study elsewhere need an override. */
 const DEFAULT_CAMPUS = "University of Karachi";
 
-type RosterEntry = { name: string; role: string; campus?: string };
+type RosterEntry = {
+    name: string;
+    role: string;
+    campus?: string;
+    /** A portrait under `public/images/team/`, shown in place of the monogram plate. */
+    photo?: string;
+    /**
+     * "portrait" (default): a head-and-shoulders square, cropped to fill.
+     * "sticker": a whole captioned sticker, shown uncropped and larger so the
+     * caption stays readable (user request, 2026-09-16).
+     */
+    photoStyle?: "portrait" | "sticker";
+};
 
 /**
  * Every person, in the order they joined the project.
@@ -39,9 +50,6 @@ type RosterEntry = { name: string; role: string; campus?: string };
 const ROSTER: RosterEntry[] = [
     { name: "Shayan Hussain", role: "Founder & Project Team Lead" },
     { name: "Umar Hayat", role: "Co-Founder & Lead Software Engineer", campus: "SMIT" },
-    { name: "Abdul Wahab", role: "Co-Material Content Strategist", campus: "Hamdard University" },
-    { name: "Jalal bin Junaid", role: "Co-Material Content Strategist", campus: "Hamdard University" },
-    { name: "Jazil bin Kashef", role: "Co-Material Content Strategist" },
     { name: "Sumaiya Saeed", role: "Research & Content Collector" },
     { name: "Syed M. Ali", role: "Research & Content Collector" },
     { name: "Rumaisa Farooqui", role: "Research & Content Collector" },
@@ -49,10 +57,18 @@ const ROSTER: RosterEntry[] = [
     { name: "Saleem Ferozi", role: "Research & Content Collector" },
     { name: "Nawal Mirza", role: "Research & Content Collector" },
     { name: "Syed Tanzeel Ali", role: "Fourth Year Representative" },
-    { name: "Romana Abbbas", role: "Third Year Representative" },
     { name: "Abdul Rafay", role: "Second Year Representative" },
     { name: "Muhammad Salman", role: "Info-Graphics Creator" },
     { name: "Muhammad Dayyan", role: "Social Media Manager" },
+    // Added 2026-09-16 at the user's request. No campus was given for these
+    // six, so they take the default like everyone else; the page does not
+    // print campuses.
+    { name: "Kinza Zafar", role: "Digital Marketing Ambassador" },
+    { name: "Farwah Perwaiz", role: "Digital Marketing Ambassador" },
+    { name: "Syeda Khoula", role: "Research & Content Creator" },
+    { name: "Neha Shah", role: "Research & Content Creator" },
+    { name: "Kashef Latif", role: "Research & Content Creator" },
+    { name: "Saman Hamza", role: "Research & Content Creator" },
 ];
 
 /**
@@ -71,13 +87,8 @@ export const TEAM_GROUPS: { id: TeamGroupId; label: string; blurb: string }[] = 
         blurb: "Direction, engineering, and the last read before anything ships.",
     },
     {
-        id: "content",
-        label: "Content strategy",
-        blurb: "Decide what a unit has to cover, and the order it makes sense in.",
-    },
-    {
         id: "research",
-        label: "Research & content",
+        label: "Research & content creation",
         blurb: "Work through the syllabus and the sources, and write what lands on the page.",
     },
     {
@@ -86,9 +97,11 @@ export const TEAM_GROUPS: { id: TeamGroupId; label: string; blurb: string }[] = 
         blurb: "Carry back what each year is actually stuck on, paper by paper.",
     },
     {
-        id: "outreach",
-        label: "Design & outreach",
-        blurb: "Infographics, and getting the work in front of the students who need it.",
+        // One section since 2026-09-16 (user request): design, social media and
+        // the ambassadors were "Design & outreach" + "Digital marketing ambassadors".
+        id: "marketing",
+        label: "Marketing",
+        blurb: "Infographics, social channels and ambassadors — getting the work in front of the students who need it.",
     },
     { id: "crew", label: "Team", blurb: "Everyone else keeping the project moving." },
 ];
@@ -97,13 +110,43 @@ export const TEAM_GROUPS: { id: TeamGroupId; label: string; blurb: string }[] = 
 const ROLE_GROUP: Record<string, TeamGroupId> = {
     "founder & project team lead": "leadership",
     "co-founder & lead software engineer": "leadership",
-    "co-material content strategist": "content",
     "research & content collector": "research",
     "fourth year representative": "representatives",
     "third year representative": "representatives",
     "second year representative": "representatives",
-    "info-graphics creator": "outreach",
-    "social media manager": "outreach",
+    "info-graphics creator": "marketing",
+    "social media manager": "marketing",
+    "research & content creator": "research",
+    "digital marketing ambassador": "marketing",
+};
+
+/**
+ * The line under each person's name on the team cards: what the role does on
+ * this project. It describes the job, not the person — there are no verified
+ * bios, and a made-up one per student would be worse than none. A role with no
+ * entry here gets the group's blurb instead, so no card is ever blank.
+ */
+const ROLE_NOTE: Record<string, string> = {
+    "founder & project team lead":
+        "Started PharmaWallah, sets its direction, and gives everything a last read before it goes live.",
+    "co-founder & lead software engineer":
+        "Builds and runs the platform — the calculators, the course reader, the labs and the Android app.",
+    "research & content collector":
+        "Gathers notes, references and past-paper material, and checks them before they become a lesson.",
+    "research & content creator":
+        "Researches topics from the syllabus and writes them up as clear lesson content and questions.",
+    "fourth year representative":
+        "Speaks for final-year students — which papers, practicals and topics they need help with most.",
+    "third year representative":
+        "Brings the third year's questions and weak spots back to the team, subject by subject.",
+    "second year representative":
+        "Keeps the second year's courses and practicals on the list, and tells us what is missing.",
+    "info-graphics creator":
+        "Turns dense pharmacology and chemistry into diagrams and graphics that read at a glance.",
+    "social media manager":
+        "Runs PharmaWallah's social channels, so students hear when something new is published.",
+    "digital marketing ambassador":
+        "Represents PharmaWallah online and on campus, growing the community that uses it.",
 };
 
 /** First letters of the first two words: "Jalal bin Junaid" → "JB". */
@@ -137,6 +180,10 @@ export type TeamMember = {
     role: string;
     campus: string;
     group: TeamGroupId;
+    photo?: string;
+    photoStyle: "portrait" | "sticker";
+    /** What the role does here — the card's description line. */
+    description: string;
     initials: string;
     plateAngle: number;
 };
@@ -152,15 +199,24 @@ function idOf(name: string): string {
 }
 
 /** The roster, enriched and sorted into group order. */
-export const TEAM: TeamMember[] = ROSTER.map((entry) => ({
-    id: idOf(entry.name),
-    name: entry.name,
-    role: entry.role,
-    campus: entry.campus ?? DEFAULT_CAMPUS,
-    group: ROLE_GROUP[entry.role.toLowerCase()] ?? "crew",
-    initials: initialsOf(entry.name),
-    plateAngle: plateAngleOf(entry.name),
-})).sort((a, b) => (GROUP_ORDER.get(a.group) ?? 99) - (GROUP_ORDER.get(b.group) ?? 99));
+const GROUP_BLURB = new Map(TEAM_GROUPS.map((g) => [g.id, g.blurb]));
+
+export const TEAM: TeamMember[] = ROSTER.map((entry) => {
+    const key = entry.role.toLowerCase();
+    const group = ROLE_GROUP[key] ?? "crew";
+    return {
+        id: idOf(entry.name),
+        name: entry.name,
+        role: entry.role,
+        campus: entry.campus ?? DEFAULT_CAMPUS,
+        group,
+        photo: entry.photo,
+        photoStyle: entry.photoStyle ?? "portrait",
+        description: ROLE_NOTE[key] ?? GROUP_BLURB.get(group) ?? "",
+        initials: initialsOf(entry.name),
+        plateAngle: plateAngleOf(entry.name),
+    };
+}).sort((a, b) => (GROUP_ORDER.get(a.group) ?? 99) - (GROUP_ORDER.get(b.group) ?? 99));
 
 /** Members of one group, in roster order. */
 export function membersOf(group: TeamGroupId): TeamMember[] {
@@ -176,12 +232,3 @@ export const TEAM_SECTIONS = TEAM_GROUPS.map((group) => ({
     ...group,
     members: membersOf(group.id),
 })).filter((section) => section.members.length > 0);
-
-/** How many campuses the team spans — stated on the page, never typed by hand. */
-export const TEAM_CAMPUS_COUNT = new Set(TEAM.map((m) => m.campus)).size;
-
-/**
- * The distinct job titles on the roster, for the marquee band. Derived, so a
- * new role appears in the band the moment someone is added with it.
- */
-export const TEAM_ROLES: string[] = Array.from(new Set(TEAM.map((m) => m.role)));

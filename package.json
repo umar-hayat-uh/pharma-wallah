@@ -57,6 +57,7 @@
     "next-cloudinary": "^6.18.8",
     "next-mdx-remote": "^6.0.0",
     "next-themes": "^0.3.0",
+    "openchemlib": "9.25.0",
     "react": "^18",
     "react-dom": "^18",
     "react-hot-toast": "^2.4.1",

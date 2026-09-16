@@ -25,7 +25,7 @@ export const SUBMENU_ICONS: Record<string, React.ReactNode> = {
   "Prescription Reader": <FileSearch className="w-5 h-5" />,
   "Books Library": <Library className="w-5 h-5" />,
   "Antibiogram Simulator": <ShieldAlert className="w-5 h-5" />,
-  "Molecule Viewer": <Atom className="w-5 h-5" />,
+  "Molecular Lab": <Atom className="w-5 h-5" />,
   // ── Calculation Tools categories ──
   "Pharmaceutical Chemistry": <Beaker className="w-5 h-5" />,
   "Unit Conversion": <Scale className="w-5 h-5" />,
@@ -50,7 +50,7 @@ export const SUBMENU_COLORS: Record<string, { icon: string; bg: string; ring: st
   "Prescription Reader": { icon: "text-cyan-500", bg: "from-cyan-50 to-cyan-100/40", ring: "group-hover:border-cyan-200" },
   "Books Library": { icon: "text-emerald-500", bg: "from-emerald-50 to-emerald-100/40", ring: "group-hover:border-emerald-200" },
   "Antibiogram Simulator": { icon: "text-rose-500", bg: "from-rose-50 to-rose-100/40", ring: "group-hover:border-rose-200" },
-  "Molecule Viewer": { icon: "text-indigo-500", bg: "from-indigo-50 to-indigo-100/40", ring: "group-hover:border-indigo-200" },
+  "Molecular Lab": { icon: "text-indigo-500", bg: "from-indigo-50 to-indigo-100/40", ring: "group-hover:border-indigo-200" },
   // ── Calculation Tools categories ──
   "Pharmaceutical Chemistry": { icon: "text-violet-500", bg: "from-violet-50 to-violet-100/40", ring: "group-hover:border-violet-200" },
   "Unit Conversion": { icon: "text-slate-500", bg: "from-slate-50 to-slate-100/40", ring: "group-hover:border-slate-200" },
@@ -75,7 +75,7 @@ export const SUBMENU_DESCRIPTIONS: Record<string, string> = {
   "Prescription Reader": "Decipher and analyze Rx forms.",
   "Books Library": "Comprehensive textbook collection.",
   "Antibiogram Simulator": "Analyze resistance patterns.",
-  "Molecule Viewer": "Explore 3D chemical structures.",
+  "Molecular Lab": "Build, edit and explore molecules in 2D and 3D.",
   // ── Calculation Tools categories ──
   "Pharmaceutical Chemistry": "Solution prep, concentration & chemical analysis tools",
   "Unit Conversion": "Mass, volume, temperature & unit conversions",

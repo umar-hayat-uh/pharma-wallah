@@ -43,6 +43,7 @@ hard way in this codebase.
 | `progress-tracking` | Progress events, batching queue, dashboard, streaks | Tracking a new page, dashboard bugs, new event types | `.claude/skills/progress-tracking/` |
 | `tournament-system` | Entry codes, server-authoritative scoring, leaderboard, admin | Any tournament or admin work | `.claude/skills/tournament-system/` |
 | `spotting-lessons` | Histology/pathology/powder lessons, timed tests, AI grading | Adding slides or fixing a spotting test | `.claude/skills/spotting-lessons/` |
+| `molecular-lab` | The 2D/3D molecule editor: graph, valence, OpenChemLib worker, 3Dmol, library generation | Anything on `/molecular-lab` (formerly Molecule Viewer) | `.claude/skills/molecular-lab/` |
 | `clinical-and-external-apis` | The clinical sub-brand and its six external data sources | Clinical pages, drug/literature APIs, their caches | `.claude/skills/clinical-and-external-apis/` |
 | `ai-gemini-integration` | The four Gemini features, prompts, keys, cost control | Any AI route or prompt work | `.claude/skills/ai-gemini-integration/` |
 
