@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import {
     Download, WifiOff, Calculator, ShieldCheck, Smartphone,
-    CircleAlert, CheckCircle2, ArrowRight,
+    CircleAlert, CheckCircle2, ArrowRight, Camera,
 } from "lucide-react";
 
 /*
@@ -16,8 +16,14 @@ import {
  * scripts/build-apk.sh.
  */
 const APK_URL = "/downloads/pharmawallah-calculators.apk";
-const APP_VERSION = "1.2";
-const APK_SIZE = "5.7 MB";
+const APP_VERSION = "1.3";
+const APK_SIZE = "8.9 MB";
+/**
+ * Tools in this release: the length of mobile/app/_generated/tool-slugs.ts at
+ * build time. That file is generated and gitignored, so the web build cannot
+ * import it — update this with the version.
+ */
+const APP_TOOL_COUNT = 104;
 const MIN_ANDROID = "Android 7.0 or newer";
 
 const HIGHLIGHTS = [
@@ -28,8 +34,13 @@ const HIGHLIGHTS = [
     },
     {
         Icon: Calculator,
-        title: "All 97 calculators",
+        title: `All ${APP_TOOL_COUNT} calculators`,
         body: "Dosing, pharmacokinetics, formulation, analysis, microbiology and clinical tools — the full set.",
+    },
+    {
+        Icon: Camera,
+        title: "Camera tools, on the phone",
+        body: "Photograph a TLC plate for Rf values, or an agar plate to count colonies. The photo is analysed on your phone and never uploaded.",
     },
     {
         Icon: ShieldCheck,
@@ -62,7 +73,7 @@ export default function DownloadClient() {
                         </span>
 
                         <h1 className="mt-5 text-3xl md:text-5xl font-bold leading-tight">
-                            97 pharmacy calculators.
+                            {APP_TOOL_COUNT} pharmacy calculators.
                             <br />
                             <span className="text-brandGreen">Offline, on your phone.</span>
                         </h1>
@@ -91,7 +102,7 @@ export default function DownloadClient() {
 
             {/* ── What you get ─────────────────────────────────────────── */}
             <section className="max-w-5xl mx-auto px-5 py-14 md:py-20">
-                <div className="grid gap-6 md:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-2">
                     {HIGHLIGHTS.map(({ Icon, title, body }, index) => (
                         <motion.div
                             key={title}
@@ -155,7 +166,7 @@ export default function DownloadClient() {
                     {[
                         "Updates are manual for now — come back to this page to get a newer version.",
                         "The app contains the calculators only. Courses, MCQs, spotting and the tournament stay on the website.",
-                        "The CFU Calculator's photo-scanning step needs a connection; its manual entry works offline like everything else.",
+                        "Automatic colony counting and TLC spot detection are estimates — check every marker before you use the result.",
                         "iPhone is not supported yet. On iOS, use the website.",
                     ].map((line) => (
                         <li key={line} className="flex gap-3 text-slate-700">

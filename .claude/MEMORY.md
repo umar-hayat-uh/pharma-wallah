@@ -315,9 +315,12 @@ nothing in production and a labelled placeholder in dev. `NEXT_PUBLIC_IS_MOBILE_
 
 ## 7. Testing and deployment reality
 
-### Testing — there is none
-**No test infrastructure of any kind exists.** No Jest, Vitest, Playwright, or Cypress; no test
-script in `package.json`; no test files; no `.github/` and no CI.
+### Testing — almost none
+**No test framework and no CI.** No Jest, Vitest, Playwright, or Cypress; no test script in
+`package.json`; no `.github/`. The one exception (since 2026-09-14/16): two **`node --test`** files
+for pure calculator modules, run with Node 24's built-in TypeScript stripping —
+`node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts` (41 tests; the colony tests run
+the real OpenCV.js). They cover those two tools only; report them by name, never as "tests passed".
 
 **Therefore: never claim tests passed.** The only static checks available are `npx tsc --noEmit`
 (works, currently clean) and `npm run lint` (**does not work** — no ESLint config, the command
@@ -912,6 +915,66 @@ Traps that will otherwise be rediscovered painfully.
     files the person under "Team" rather than dropping them. The old `imgSrc` field was **three stock
     photographs shared between sixteen people** and was never rendered — if real portraits ever exist,
     add a `photo` field.
+
+87. **An OpenCV.js `Mat.data` / `data32S` / `data32F` is a view into the WASM heap, and it silently
+    becomes empty when any later allocation grows the heap.** No error — loops over it just see length
+    0. The colony detector found 0 colonies only when the plate circle was *supplied*, because the
+    plate finder it skipped had pre-grown the heap. Rule in `colony/detect.ts`: take `.slice()` copies
+    of anything used after another `new cv.Mat()`/OpenCV call, and re-fetch a view you write through
+    after each allocation. Values already written survive growth (the heap is copied).
+
+88. **`cv.watershed` does not flood on pixel values.** It prioritises pixels by the local colour
+    difference to their neighbours, so feeding it an inverted distance map (a near-constant gradient)
+    or a photo of flat-topped colonies lets one lobe swallow its neighbour. The colony detector keeps
+    OpenCV for the distance transform and components and floods the distance map itself (a max-heap
+    Meyer flood in `detect.ts`). Measured on the synthetic plates: pairs split 5/6 cleanly, versus
+    lopsided or missed splits with `cv.watershed`.
+
+89. **OpenCV.js ships as a static asset, not a bundled module.** `new URL("@techstark/opencv-js/dist/
+    opencv.js", import.meta.url)` in `colony/opencv.ts` makes webpack emit it to
+    `_next/static/media/opencv.<hash>.js` (10.8 MB, WASM embedded) — in both the web build and the APK
+    export. It is loaded only by the colony counter, via `importScripts` in the worker or a `<script>`
+    fallback; shared JS stayed 88 kB. Next **minifies** the file in production (10,872,779 → 10,789,404
+    B) and it still works — verified on `next start` and in the APK export. The Emscripten module object
+    is **thenable**: resolving a Promise with it recurses forever, so `waitForCv` resolves a wrapper and
+    deletes `then`. Keep OpenCV out of every other import path.
+
+90. **The APK secret scan's `eyJ` pattern false-positives on `opencv.<hash>.js`** — `eyJ` occurs inside
+    its base64 WASM. Use a JWT-shaped pattern (`eyJ[A-Za-z0-9_-]{10,}\.eyJ`) or exclude
+    `_next/static/media/opencv.*` and check `supabase\.co|UPSTASH` separately. Checked 2026-09-16: no
+    real secret.
+
+91. **Capacitor only opens the camera for `<input type="file" accept="image/*" capture>`** —
+    `BridgeWebChromeClient` tests `acceptTypes.contains("image/*")` exactly. A specific list
+    (`image/jpeg,image/png`) gets the file picker only. Both camera tools therefore render two inputs:
+    `image/*` + `capture="environment"` for "Take photo", the explicit list for the gallery. The
+    manifest declares no `CAMERA` permission, which is what lets Capacitor launch the camera intent
+    without a runtime prompt (it asks only when the permission is declared but not granted).
+
+92. **`pkill -f`/`pgrep -f` match the whole command line of the shell that runs them** (extends
+    gotcha 83): a pattern that appears *anywhere* in the same Bash call — including the `npx next
+    start -p 3217` that started the server three commands earlier — kills that shell (exit 144). Use a
+    bracketed pattern that cannot match itself (`pkill -f "http[.]server 8899"`) in a call that does not
+    also contain the literal, or kill by pid from `ss -ltnp`.
+
+93. **The user may restart `npm run dev` mid-session.** A dev server stopped at the start of a task was
+    back on :3000 an hour later, and a production build then 404'd all its chunks (Known Issue 10).
+    Check `ss -ltn | grep :3000` **immediately before** every `npm run build`, not once per session.
+
+94. **Unlayered rules in `mobile/app/globals.css` beat Tailwind utilities of equal specificity** (they
+    come after `@tailwind utilities`). `.pw-space { position: relative }` silently cancelled `sticky` on
+    the tool app bar. Custom classes there must not set properties a utility is expected to control;
+    put `relative`/`sticky` in the markup.
+
+95. **pnpm in the VS Code snap resolves a different store** (`~/snap/code/<rev>/.local/share/pnpm`)
+    and refuses to install. Pass the real one: `pnpm add <pkg> --store-dir
+    /home/umar-hayat/.local/share/pnpm/store/v10` (took 6 min, lockfile +8 lines).
+
+96. **Two image-tool stages share one view model but not one component.** `tlc/TLCStage.tsx` and
+    `colony/ColonyStage.tsx` both keep `ViewTransform` state and convert pointers once with
+    `screenToImage` (from `tlc/geometry.ts`), measuring the stage's **padding box** (`clientWidth`,
+    `clientLeft`) — the 1 px border otherwise offsets every tap. Gesture code (pinch, wheel, tap slop)
+    is duplicated between them; extract a shared hook before building a third.
 
 ## 9. Working preferences (observed)
 

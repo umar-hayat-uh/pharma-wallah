@@ -1,259 +1,449 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  Search,
-  X,
-  WifiOff,
-  ShieldCheck,
-  Beaker,
-  Scale,
-  Pill,
-  Activity,
-  HeartPulse,
-  Microscope,
-  Syringe,
-  FlaskRound,
-  Stethoscope,
-  Calculator,
-  ChevronRight,
-  Droplets,
-  type LucideIcon,
-} from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Camera, ChevronRight, Clock, Sparkle, Star, Trash2 } from "lucide-react";
+import { START_HERE } from "@/app/(site)/calculation-tools/tool-index";
 import { cn } from "@/lib/utils";
-import { CATEGORIES, TOOL_NAMES, ONLINE_ONLY_SLUGS, toolShortName } from "../_data/tool-registry";
-import { TOOL_SLUGS } from "../_generated/tool-slugs";
-
-type Group = { id: string; label: string; desc: string; slugs: string[] };
-
-/** Category icons mirror CAT_ICONS in the web hub so the two read as one product. */
-const CATEGORY_ICONS: Record<string, LucideIcon> = {
-  "pharma-chem": Beaker,
-  "unit-conversion": Scale,
-  pharmaceutics: Pill,
-  "biopharmaceutics-pharmacokinetics": Activity,
-  pharmacology: HeartPulse,
-  "pharmaceutical-analysis": Microscope,
-  microbiology: Syringe,
-  "pharmaceutical-engineering": FlaskRound,
-  "clinical-hospital-pharmacy": Stethoscope,
-  physiology: Droplets,
-  more: Calculator,
-};
+import { FEATURED, GROUPS, SLUG_SET, TOOL_BY_SLUG, TOTAL, searchTools, type AppGroup, type AppTool } from "../_data/catalogue";
+import { BottomNav, type HubView } from "./BottomNav";
+import { CategoryIcon, SectionTitle, ToolChip, ToolRow, styleFor, toolHref } from "./parts";
+import { SpaceHero } from "./SpaceHero";
+import { useLibrary } from "./useLibrary";
 
 /**
- * Groups for the grid. Any slug the build generated a route for but that no
- * category claims lands in "More Tools" — the drift guard described in
- * _data/tool-registry.ts, so a new calculator can never go missing in the app.
+ * The app's home screen, in three views reached from the bottom bar:
+ *
+ *   Home    space hero + search, Recent, the camera tools, category tiles,
+ *           common starting points, Saved
+ *   Browse  every category, then every tool grouped under sticky headings
+ *   Saved   starred tools and the recently opened list
+ *
+ * A category opens as its own list (#cat/<id>). Views live in the URL hash,
+ * so Android's back button steps back through them instead of leaving the app.
  */
-function buildGroups(): Group[] {
-  const shipped = new Set<string>(TOOL_SLUGS as readonly string[]);
-  const claimed = new Set(CATEGORIES.flatMap((category) => category.slugs));
-  const unclaimed = (TOOL_SLUGS as readonly string[]).filter((slug) => !claimed.has(slug));
 
-  const groups: Group[] = CATEGORIES.map((category) => ({
-    id: category.id,
-    label: category.label,
-    desc: category.desc,
-    slugs: category.slugs.filter((slug) => shipped.has(slug)),
-  })).filter((group) => group.slugs.length > 0);
+type Route = { view: HubView; category: string | null };
 
-  if (unclaimed.length > 0) {
-    groups.push({
-      id: "more",
-      label: "More Tools",
-      desc: "Recently added calculators",
-      slugs: unclaimed,
-    });
-  }
-
-  return groups;
+function parseHash(hash: string): Route {
+  const h = hash.replace(/^#/, "");
+  if (h.startsWith("cat/")) return { view: "browse", category: h.slice(4) };
+  if (h === "browse" || h === "saved") return { view: h, category: null };
+  return { view: "home", category: null };
 }
 
-/*
- * The search bar sticks directly under the app bar, which is 3.5rem tall plus
- * the Android status-bar inset. Section headings scroll to just below both.
- */
-const STICKY_TOP = "calc(3.5rem + env(safe-area-inset-top))";
+const FEATURE_COPY: Record<string, string> = {
+  "rf-value-calculator": "Photograph a TLC plate, mark the lines and spots, get every Rf.",
+  "cfu-calculator": "Photograph an agar plate, check the detected colonies, get CFU/mL.",
+};
 
-function ToolCard({ slug, icon: Icon }: { slug: string; icon: LucideIcon }) {
-  const needsInternet = ONLINE_ONLY_SLUGS.has(slug);
+const tools = (slugs: readonly string[]) => slugs.map((s) => TOOL_BY_SLUG.get(s)).filter((t): t is AppTool => !!t);
+
+export default function ToolHub() {
+  const [route, setRoute] = useState<Route>({ view: "home", category: null });
+  const [query, setQuery] = useState("");
+  const { recent, saved, toggleSaved, clearRecent } = useLibrary(SLUG_SET);
+
+  useEffect(() => {
+    const sync = () => setRoute(parseHash(window.location.hash));
+    sync();
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
+  }, []);
+
+  const go = useCallback((hash: string) => {
+    if (window.location.hash.replace(/^#/, "") === hash) return;
+    if (hash) window.location.hash = hash;
+    // A bare "#" would linger in the URL; push the clean path instead (back still returns here).
+    else window.history.pushState(null, "", window.location.pathname);
+    setRoute(parseHash(hash));
+    window.scrollTo({ top: 0 });
+  }, []);
+
+  const savedSet = useMemo(() => new Set(saved), [saved]);
+  const results = useMemo(() => searchTools(query), [query]);
+  const group = route.category ? GROUPS.find((g) => g.id === route.category) ?? null : null;
+
+  let body: React.ReactNode;
+  if (group) body = <CategoryView group={group} savedSet={savedSet} onToggleSaved={toggleSaved} onBack={() => window.history.back()} />;
+  else if (route.view === "browse") body = <BrowseView onOpen={(id) => go(`cat/${id}`)} savedSet={savedSet} onToggleSaved={toggleSaved} />;
+  else if (route.view === "saved")
+    body = <SavedView saved={tools(saved)} recent={tools(recent)} savedSet={savedSet} onToggleSaved={toggleSaved} onClearRecent={clearRecent} onBrowse={() => go("browse")} />;
+  else
+    body = (
+      <>
+        <SpaceHero total={TOTAL} query={query} onQuery={setQuery} />
+        {query.trim() ? (
+          <SearchResults query={query} results={results} savedSet={savedSet} onToggleSaved={toggleSaved} onClear={() => setQuery("")} />
+        ) : (
+          <HomeView recent={tools(recent)} saved={tools(saved)} onOpen={(id) => go(`cat/${id}`)} onBrowse={() => go("browse")} onSaved={() => go("saved")} />
+        )}
+      </>
+    );
 
   return (
-    <Link
-      href={`/calculation-tools/${slug}`}
-      className="group rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      title={TOOL_NAMES[slug] ?? slug}
-    >
-      <Card
-        className={cn(
-          "relative flex h-full min-h-[108px] flex-col items-start justify-between gap-3 rounded-2xl border-border/80 p-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.04)]",
-          "transition-[transform,background-color,border-color] duration-300 ease-out-expo",
-          "active:scale-[0.96] active:border-primary/40 active:bg-primary/5",
-        )}
-      >
-        {needsInternet && (
-          <WifiOff className="absolute right-2 top-2 h-3.5 w-3.5 text-amber-500" aria-label="Needs internet" />
-        )}
-
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
-          <Icon className="h-4 w-4" />
-        </span>
-
-        {/* Three lines is the most a 3-up phone card can hold without clipping. */}
-        <span className="line-clamp-3 text-[11.5px] font-semibold leading-[1.22] tracking-[-0.01em] text-foreground">
-          {toolShortName(slug)}
-        </span>
-      </Card>
-    </Link>
+    <div className="min-h-screen bg-[#f6f8fb] pb-[calc(env(safe-area-inset-bottom)+6rem)]">
+      {body}
+      <BottomNav view={group ? "browse" : route.view} onChange={(v) => go(v === "home" ? "" : v)} savedCount={saved.length} />
+    </div>
   );
 }
 
-export default function ToolHub() {
-  const [query, setQuery] = useState("");
-  const groups = useMemo(buildGroups, []);
+/* ── Home ────────────────────────────────────────────────────────────────── */
 
-  const visible = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (!needle) return groups;
-    return groups
-      .map((group) => ({
-        ...group,
-        // Match the full name, not the shortened card label.
-        slugs: group.slugs.filter(
-          (slug) =>
-            (TOOL_NAMES[slug] ?? slug).toLowerCase().includes(needle) ||
-            slug.toLowerCase().includes(needle),
-        ),
-      }))
-      .filter((group) => group.slugs.length > 0);
-  }, [groups, query]);
-
-  const total = groups.reduce((sum, group) => sum + group.slugs.length, 0);
-  const matches = visible.reduce((sum, group) => sum + group.slugs.length, 0);
+function HomeView({
+  recent,
+  saved,
+  onOpen,
+  onBrowse,
+  onSaved,
+}: {
+  recent: AppTool[];
+  saved: AppTool[];
+  onOpen: (id: string) => void;
+  onBrowse: () => void;
+  onSaved: () => void;
+}) {
+  const featured = tools(FEATURED);
+  const starts = START_HERE.map((s) => ({ ...s, tool: TOOL_BY_SLUG.get(s.slug) })).filter((s) => s.tool);
 
   return (
-    <div className="pb-14">
-      {/* The count as a figure, not a sentence — and the offline promise, which
-          is the reason this app exists at all. */}
-      <section className="border-b border-border/80 px-4 pb-5 pt-6">
-        <p className="flex items-center gap-2 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
-          Pharmacy calculators
-        </p>
-        <div className="mt-2 flex items-end justify-between gap-4">
-          <p className="text-[4.25rem] font-bold leading-[0.8] tracking-[-0.06em] tabular-nums text-foreground">
-            {total}
-            <span className="text-primary">.</span>
+    <div className="space-y-7 pt-6">
+      {recent.length > 0 && (
+        <section>
+          <SectionTitle
+            title="Continue where you left off"
+            action={
+              <button type="button" onClick={onSaved} className="text-xs font-medium text-primary">
+                History
+              </button>
+            }
+          />
+          <div className="pw-scroll-x flex gap-2.5 overflow-x-auto px-4 pb-1">
+            {recent.map((t, i) => (
+              <ToolChip key={t.slug} tool={t} index={i} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {featured.length > 0 && (
+        <section className="px-4">
+          <p className="mb-2.5 flex items-center gap-1.5 font-mono text-[10.5px] font-medium uppercase tracking-[0.16em] text-emerald-700">
+            <Sparkle className="h-3.5 w-3.5" />
+            New · camera tools
           </p>
-          <p className="mb-1 flex max-w-[11rem] items-start gap-1.5 text-right text-xs leading-snug text-muted-foreground">
-            <ShieldCheck className="mt-px h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
-            Every one works with no internet connection
-          </p>
+          <div className="grid gap-2.5">
+            {featured.map((t, i) => (
+              <Link
+                key={t.slug}
+                href={toolHref(t.slug)}
+                className="pw-rise pw-press relative flex items-center gap-3.5 overflow-hidden rounded-3xl p-4 text-white shadow-[0_14px_30px_-18px_rgba(15,23,42,0.7)]"
+                style={{
+                  ["--i" as string]: i,
+                  background:
+                    i === 0
+                      ? "linear-gradient(0deg, rgba(10,22,52,0.35), rgba(10,22,52,0.35)), linear-gradient(120deg, #4f46e5, #2563eb 55%, #0ea5e9)"
+                      : "linear-gradient(0deg, rgba(10,22,52,0.35), rgba(10,22,52,0.35)), linear-gradient(120deg, #15803d, #21b67a 50%, #2563eb)",
+                }}
+              >
+                <span className="pw-sheen" style={{ animationDelay: `${1.2 + i * 1.6}s` }} />
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/15 ring-1 ring-inset ring-white/25">
+                  <Camera className="h-6 w-6" />
+                </span>
+                <span className="relative min-w-0 flex-1">
+                  <span className="block text-[16px] font-bold leading-tight tracking-[-0.01em]">{t.name}</span>
+                  <span className="mt-1 block text-[12.5px] leading-snug text-white/90">{FEATURE_COPY[t.slug] ?? t.desc}</span>
+                </span>
+                <ChevronRight className="relative h-5 w-5 shrink-0 text-white/80" />
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section>
+        <SectionTitle
+          title="Browse by subject"
+          action={
+            <button type="button" onClick={onBrowse} className="text-xs font-medium text-primary">
+              All {TOTAL}
+            </button>
+          }
+        />
+        <div className="grid grid-cols-2 gap-2.5 px-4">
+          {GROUPS.map((g, i) => (
+            <CategoryTile key={g.id} group={g} index={i} onOpen={onOpen} />
+          ))}
         </div>
       </section>
 
-      <div
-        className="sticky z-40 border-b border-border/80 bg-background/90 px-4 pb-3 pt-3 backdrop-blur-md"
-        style={{ top: STICKY_TOP }}
-      >
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            inputMode="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={`Search ${total} calculators…`}
-            aria-label="Search calculators"
-            className="pl-10 pr-10 [&::-webkit-search-cancel-button]:hidden"
-          />
-          {query && (
-            <button
-              type="button"
-              onClick={() => setQuery("")}
-              aria-label="Clear search"
-              className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-muted-foreground active:bg-accent"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-
-        {query ? (
-          <p className="mt-2.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground" aria-live="polite">
-            {matches} {matches === 1 ? "match" : "matches"}
-          </p>
-        ) : (
-          /* Jump links into each category — the catalogue is ~10 screens long. */
-          <nav
-            aria-label="Categories"
-            className="-mx-4 mt-2.5 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          >
-            {groups.map((group) => (
-              <a
-                key={group.id}
-                href={`#${group.id}`}
-                className="shrink-0 rounded-full border border-border/80 bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-colors duration-300 ease-out-expo active:border-primary/40 active:bg-primary/10"
-              >
-                {group.label}
-                <span className="ml-1.5 tabular-nums text-muted-foreground">{group.slugs.length}</span>
-              </a>
+      {starts.length > 0 && (
+        <section>
+          <SectionTitle title="Common starting points" />
+          <ul className="mx-4 divide-y divide-border/70 overflow-hidden rounded-3xl border border-border/80 bg-card px-2">
+            {starts.map((s, i) => (
+              <li key={s.slug} className="pw-rise" style={{ ["--i" as string]: i }}>
+                <Link href={toolHref(s.slug)} className="pw-press flex items-center gap-3 px-1.5 py-3">
+                  <CategoryIcon category={s.tool!.category} size="sm" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[14px] font-semibold text-foreground">{s.label}</span>
+                    <span className="block truncate font-mono text-[11.5px] text-muted-foreground">{s.formula}</span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />
+                </Link>
+              </li>
             ))}
-          </nav>
-        )}
-      </div>
+          </ul>
+        </section>
+      )}
 
-      {visible.length === 0 ? (
-        <div className="px-4 py-16 text-center">
-          <p className="text-5xl font-bold tracking-[-0.04em] text-muted-foreground/25" aria-hidden="true">
-            0
-          </p>
-          <p className="mt-2 text-sm text-muted-foreground">No calculator matches “{query.trim()}”.</p>
-          <button
-            type="button"
-            onClick={() => setQuery("")}
-            className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary"
-          >
-            Show all {total}
-            <ChevronRight className="h-4 w-4" />
+      {saved.length > 0 && (
+        <section>
+          <SectionTitle
+            title="Saved"
+            action={
+              <button type="button" onClick={onSaved} className="text-xs font-medium text-primary">
+                See all
+              </button>
+            }
+          />
+          <div className="pw-scroll-x flex gap-2.5 overflow-x-auto px-4 pb-1">
+            {saved.map((t, i) => (
+              <ToolChip key={t.slug} tool={t} index={i} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <p className="px-6 text-center text-[11.5px] leading-relaxed text-muted-foreground">
+        Every calculator runs on this phone, with no internet connection. For educational purposes — check results against
+        your references.
+      </p>
+    </div>
+  );
+}
+
+function CategoryTile({ group, index, onOpen }: { group: AppGroup; index: number; onOpen: (id: string) => void }) {
+  const s = styleFor(group.id);
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(group.id)}
+      className="pw-rise pw-press relative flex min-h-[8.25rem] flex-col items-start overflow-hidden rounded-3xl border border-border/80 bg-card p-3.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.05)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      style={{ ["--i" as string]: index }}
+    >
+      {/* A soft wash of the category's hue in the corner. */}
+      <span
+        className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full opacity-[0.14]"
+        style={{ background: `radial-gradient(circle, ${s.to}, transparent 70%)` }}
+        aria-hidden="true"
+      />
+      <CategoryIcon category={group.id} />
+      <span className="mt-3 line-clamp-2 text-[13.5px] font-bold leading-[1.2] tracking-[-0.01em] text-foreground">{group.label}</span>
+      <span className="mt-auto pt-1.5 text-[11.5px] font-medium tabular-nums text-muted-foreground">
+        {group.tools.length} tool{group.tools.length === 1 ? "" : "s"}
+      </span>
+    </button>
+  );
+}
+
+/* ── Search ──────────────────────────────────────────────────────────────── */
+
+function SearchResults({
+  query,
+  results,
+  savedSet,
+  onToggleSaved,
+  onClear,
+}: {
+  query: string;
+  results: AppTool[];
+  savedSet: Set<string>;
+  onToggleSaved: (slug: string) => void;
+  onClear: () => void;
+}) {
+  return (
+    <section className="pt-5">
+      <p className="px-4 font-mono text-[10.5px] font-medium uppercase tracking-[0.16em] text-muted-foreground" aria-live="polite">
+        {results.length} {results.length === 1 ? "match" : "matches"}
+      </p>
+      {results.length === 0 ? (
+        <div className="px-6 py-14 text-center">
+          <p className="text-sm text-muted-foreground">No calculator matches “{query.trim()}”.</p>
+          <button type="button" onClick={onClear} className="mt-3 text-sm font-medium text-primary">
+            Clear the search
           </button>
         </div>
       ) : (
-        visible.map((group) => {
-          const Icon = CATEGORY_ICONS[group.id] ?? Calculator;
-          return (
-            <section
-              key={group.id}
-              id={group.id}
-              className="px-4 pt-7"
-              // Anchor jumps land below the app bar and the sticky search, not under them.
-              style={{ scrollMarginTop: `calc(${STICKY_TOP} + 7.5rem)` }}
-            >
-              <div className="flex items-end gap-3 border-b border-border/70 pb-2.5">
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-[17px] font-bold leading-tight tracking-[-0.02em]">{group.label}</h2>
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{group.desc}</p>
-                </div>
-                <Badge variant="secondary" className="shrink-0 font-mono tabular-nums">
-                  {String(group.slugs.length).padStart(2, "0")}
-                </Badge>
-              </div>
-
-              {/* Three across on a phone; wider screens get more columns. */}
-              <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
-                {group.slugs.map((slug) => (
-                  <ToolCard key={slug} slug={slug} icon={Icon} />
-                ))}
-              </div>
-            </section>
-          );
-        })
+        <ul className="mx-3 mt-2 rounded-3xl border border-border/80 bg-card p-1.5" key={query}>
+          {results.map((t, i) => (
+            <ToolRow key={t.slug} tool={t} index={i} saved={savedSet.has(t.slug)} onToggleSaved={onToggleSaved} />
+          ))}
+        </ul>
       )}
-    </div>
+    </section>
+  );
+}
+
+/* ── Browse & category ───────────────────────────────────────────────────── */
+
+function PageHeader({ title, subtitle, onBack, category }: { title: string; subtitle: string; onBack?: () => void; category?: string }) {
+  return (
+    <header className="pw-space relative rounded-b-[1.75rem] pb-5">
+      <div className="h-[env(safe-area-inset-top)]" />
+      <div aria-hidden="true">
+        <span className="pw-nebula right-[-25%] top-[-60%] h-44 w-44 bg-sky-400" />
+        <span className="pw-star left-[70%] top-[30%]" />
+        <span className="pw-star left-[86%] top-[62%]" style={{ animationDelay: "1.2s" }} />
+        <span className="pw-star left-[55%] top-[16%]" style={{ animationDelay: "2.1s" }} />
+      </div>
+      <div className="relative flex items-center gap-3 px-4 pt-3">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="Back"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/15 ring-1 ring-inset ring-white/20 active:scale-90"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+        )}
+        <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.18em] text-white/90">PharmaWallah</span>
+      </div>
+      <div className="relative mt-4 flex items-center gap-3 px-4">
+        {category && <CategoryIcon category={category} size="lg" />}
+        <div className="min-w-0">
+          <h1 className="text-[1.5rem] font-bold leading-tight tracking-[-0.03em]">{title}</h1>
+          <p className="mt-0.5 text-[13px] text-white/90">{subtitle}</p>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function BrowseView({
+  onOpen,
+  savedSet,
+  onToggleSaved,
+}: {
+  onOpen: (id: string) => void;
+  savedSet: Set<string>;
+  onToggleSaved: (slug: string) => void;
+}) {
+  return (
+    <>
+      <PageHeader title="Browse" subtitle={`${GROUPS.length} subjects · ${TOTAL} calculators`} />
+      <div className="grid grid-cols-2 gap-2.5 px-4 pt-5">
+        {GROUPS.map((g, i) => (
+          <CategoryTile key={g.id} group={g} index={i} onOpen={onOpen} />
+        ))}
+      </div>
+      <h2 className="mt-8 px-4 text-[15px] font-bold text-foreground">Every calculator</h2>
+      {GROUPS.map((g) => (
+        <section key={g.id} className="mt-3">
+          <div className="sticky top-[env(safe-area-inset-top)] z-10 flex items-center gap-2 bg-[#f6f8fb] px-4 py-2">
+            <span className="h-2 w-2 rounded-full" style={{ background: styleFor(g.id).from }} aria-hidden="true" />
+            <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{g.label}</h3>
+          </div>
+          <ul className="mx-3 rounded-3xl border border-border/80 bg-card p-1.5">
+            {g.tools.map((t) => (
+              <ToolRow key={t.slug} tool={t} saved={savedSet.has(t.slug)} onToggleSaved={onToggleSaved} />
+            ))}
+          </ul>
+        </section>
+      ))}
+    </>
+  );
+}
+
+function CategoryView({
+  group,
+  savedSet,
+  onToggleSaved,
+  onBack,
+}: {
+  group: AppGroup;
+  savedSet: Set<string>;
+  onToggleSaved: (slug: string) => void;
+  onBack: () => void;
+}) {
+  return (
+    <>
+      <PageHeader title={group.label} subtitle={`${group.tools.length} calculators · ${group.desc}`} onBack={onBack} category={group.id} />
+      <ul className="mx-3 mt-4 rounded-3xl border border-border/80 bg-card p-1.5" key={group.id}>
+        {group.tools.map((t, i) => (
+          <ToolRow key={t.slug} tool={t} index={i} saved={savedSet.has(t.slug)} onToggleSaved={onToggleSaved} />
+        ))}
+      </ul>
+    </>
+  );
+}
+
+/* ── Saved ───────────────────────────────────────────────────────────────── */
+
+function SavedView({
+  saved,
+  recent,
+  savedSet,
+  onToggleSaved,
+  onClearRecent,
+  onBrowse,
+}: {
+  saved: AppTool[];
+  recent: AppTool[];
+  savedSet: Set<string>;
+  onToggleSaved: (slug: string) => void;
+  onClearRecent: () => void;
+  onBrowse: () => void;
+}) {
+  return (
+    <>
+      <PageHeader title="Saved" subtitle="Your starred calculators and recent history, on this phone." />
+      <section className="pt-5">
+        <SectionTitle title={`Starred · ${saved.length}`} />
+        {saved.length === 0 ? (
+          <div className="mx-4 rounded-3xl border border-dashed border-border bg-card px-5 py-8 text-center">
+            <Star className="mx-auto h-7 w-7 text-amber-400" />
+            <p className="mt-2 text-sm font-semibold text-foreground">Nothing saved yet</p>
+            <p className="mt-1 text-xs text-muted-foreground">Tap the star on any calculator to keep it here.</p>
+            <button type="button" onClick={onBrowse} className="mt-4 text-sm font-medium text-primary">
+              Browse calculators
+            </button>
+          </div>
+        ) : (
+          <ul className="mx-3 rounded-3xl border border-border/80 bg-card p-1.5">
+            {saved.map((t, i) => (
+              <ToolRow key={t.slug} tool={t} index={i} saved={savedSet.has(t.slug)} onToggleSaved={onToggleSaved} />
+            ))}
+          </ul>
+        )}
+      </section>
+      <section className="pt-7">
+        <SectionTitle
+          title="Recently opened"
+          action={
+            recent.length > 0 && (
+              <button type="button" onClick={onClearRecent} className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                <Trash2 className="h-3.5 w-3.5" />
+                Clear
+              </button>
+            )
+          }
+        />
+        {recent.length === 0 ? (
+          <p className={cn("mx-4 flex items-center gap-2 text-sm text-muted-foreground")}>
+            <Clock className="h-4 w-4" />
+            Calculators you open will appear here.
+          </p>
+        ) : (
+          <ul className="mx-3 rounded-3xl border border-border/80 bg-card p-1.5">
+            {recent.map((t, i) => (
+              <ToolRow key={t.slug} tool={t} index={i} saved={savedSet.has(t.slug)} onToggleSaved={onToggleSaved} />
+            ))}
+          </ul>
+        )}
+      </section>
+    </>
   );
 }

@@ -107,12 +107,12 @@ export const TOOL_NAMES: Record<string, string> = {
   "law-absorbance-calculator": "Beer-Lambert Law Calculator",
   "uv-analyzer-tool": "UV-Vis Peak Analyzer",
   "chromatographic-resolution-calculator": "Chromatographic Resolution Calculator",
-  "rf-value-calculator": "Rf Value Calculator",
+  "rf-value-calculator": "TLC Rf Analyzer",
   "percent-purity-calculator": "Percent Purity Calculator",
   "ash-value-calculator": "Ash Value Calculator",
 
   // Microbiology
-  "cfu-calculator": "CFU Calculator",
+  "cfu-calculator": "Colony Counter & CFU Calculator",
   "sterilization-calculator": "Sterilization Calculator",
   "zone-of-inhibition-calculator": "Zone of Inhibition Calculator",
   DValueCalculator: "D-Value Calculator",
@@ -325,10 +325,12 @@ export const CATEGORIES: ToolCategory[] = [
 /**
  * Tools that cannot produce a result without a network connection. The home
  * screen and the tool shell badge these so a student offline in a lab knows
- * before tapping. Currently only the CFU Calculator, which posts a plate photo
- * to the Gemini-backed /api/scan-colonies route.
+ * before tapping. None today: the CFU calculator used to post plate photos to
+ * the Gemini-backed /api/scan-colonies route, but since 2026-09-16 it counts
+ * colonies on the device with bundled OpenCV.js. Kept for the next tool that
+ * genuinely needs the network.
  */
-export const ONLINE_ONLY_SLUGS = new Set<string>(["cfu-calculator"]);
+export const ONLINE_ONLY_SLUGS = new Set<string>([]);
 
 /**
  * Card labels for the home-screen grid. Full names like
@@ -338,6 +340,7 @@ export const ONLINE_ONLY_SLUGS = new Set<string>(["cfu-calculator"]);
  * the app bar once the tool is open, and search matches against it.
  */
 const SHORT_NAME_OVERRIDES: Record<string, string> = {
+  "cfu-calculator": "Colony Counter",
   "order-kinetics-calculator": "Zero vs First Order",
   "drug-excipient-compatibility-predictor": "Drug–Excipient Fit",
   "surface-area-particle-size-calculator": "Surface Area / Size",

@@ -28,6 +28,7 @@
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
     "@tailwindplus/elements": "^1.0.22",
+    "@techstark/opencv-js": "4.12.0-release.1",
     "@types/lodash": "^4.17.21",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.1",

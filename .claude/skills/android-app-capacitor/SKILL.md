@@ -51,12 +51,28 @@ against the categories and renders anything unclaimed under an automatic "More T
 is the opposite of the web hub's behaviour (`MEMORY.md` §8 gotcha 9), where forgetting to register
 a tool makes it unreachable.
 
-### Offline exception
-The **CFU Calculator** is the only tool that calls an API (`/api/scan-colonies`, Gemini). It is
-badged "Needs internet" on the home screen, short-circuits with an explanation when
-`navigator.onLine === false`, and its manual entry path still works. `SCAN_API_BASE` comes from
-`NEXT_PUBLIC_API_BASE_URL`, which is empty on the web (same-origin) and set to the production
-origin in `mobile/next.config.mjs`.
+### No tool needs the network (since v1.3, 2026-09-16)
+The CFU calculator used to post plate photos to `/api/scan-colonies` (Gemini) and was badged "Needs
+internet". It now counts colonies on the device with OpenCV.js, so `ONLINE_ONLY_SLUGS` in
+`tool-registry.ts` is empty; the badge code stays for a future tool that genuinely needs a
+connection. `NEXT_PUBLIC_API_BASE_URL` is still set in `mobile/next.config.mjs` but nothing in the
+app reads it now.
+
+### Camera tools
+`rf-value-calculator` (TLC) and `cfu-calculator` (colonies) take photos. Capacitor opens the camera
+only for `accept="image/*"` + `capture` (MEMORY gotcha 91); no `CAMERA` permission is declared, and
+none is needed. OpenCV.js (10.8 MB) is packaged as `assets/public/_next/static/media/opencv.<hash>.js`
+and loaded in a Web Worker (gotcha 89). Blob downloads do nothing in the WebView (gotcha 40), so both
+tools hide Download/Print in the app and keep Copy.
+
+### Home screen structure (redesigned 2026-09-16)
+No app bar on `/`: `SpaceHero` carries the brand and the search. `BottomNav` switches three views
+held in the URL hash (`""`, `#browse`, `#saved`, plus `#cat/<id>`) so Android's back button walks
+back through them. `useLibrary` keeps Recent (written by `MobileShell` when a tool opens) and Saved
+(the star in the tool app bar and in list rows) in localStorage. `_data/catalogue.ts` assembles the
+groups and borrows one-line descriptions from the web's `tool-index.ts`. Motion is CSS only in
+`globals.css` (`.pw-space`, `.pw-star`, `.pw-orbit`, `.pw-float`, `.pw-rise`), paused off-screen and
+off under reduced motion; the bottom bar is opaque (gotcha 51).
 
 ## Procedure
 
@@ -85,7 +101,8 @@ A calculator edit now has two consumers.
 
 ## Security Checks
 - [ ] **No secret in the bundle.** `next build mobile` loads env from `mobile/`, so the root `.env`
-      is never read. Verify: `grep -rl "eyJ\|supabase.co\|UPSTASH" mobile/out/ | wc -l` → must be 0.
+      is never read. Verify: `grep -rlE 'eyJ[A-Za-z0-9_-]{10,}\.eyJ|supabase\.co|UPSTASH' mobile/out/ | wc -l`
+      → must be 0. (A bare `eyJ` matches inside opencv.js's base64 WASM — gotcha 90.)
 - [ ] `NEXT_PUBLIC_API_BASE_URL` holds a **public origin only**, never a key.
 - [ ] Do not import anything from `@/lib/supabase*`, `@/lib/mongodb` or `@/lib/redis` into a
       calculator — it would pull server config into a client bundle that ships inside an APK.
@@ -93,10 +110,19 @@ A calculator edit now has two consumers.
 ## Validation
 ```bash
 npm run mobile:build
-find mobile/out/calculation-tools -name index.html | wc -l     # expect 90 (89 tools + hub)
+find mobile/out/calculation-tools -name index.html | wc -l     # expect 105 (104 tools + hub) as of v1.3
 grep -rohE 'https://[a-zA-Z0-9._/-]+' mobile/out/_next/static/chunks/ | sort -u
 #   ^ the only external origin should be the API base; anything else breaks offline use
-cd mobile/out && python3 -m http.server 8899   # then load / and a deep link
+cd mobile/out && python3 -m http.server 8899 --bind 127.0.0.1   # then load / and a deep link
+```
+**Airplane-mode check (how v1.3 was verified):** drive the served export in headless Chrome with
+`Fetch.enable({patterns:[{urlPattern:"*"}]})` and `Fetch.failRequest(..., "InternetDisconnected")`
+for every URL not on `http://127.0.0.1:8899` — the APK's own files stay reachable, everything else
+fails, exactly as on a phone with no signal. Assert the blocked list is empty and the tool still
+works end to end. (`Network.emulateNetworkConditions({offline:true})` is the wrong tool: it also
+blocks the local files, which on a phone are not network requests.) Stop the server with
+`pkill -f "http[.]server 8899"` (gotcha 92).
+```bash
 ```
 
 ## Deploying the web app with this in the repo

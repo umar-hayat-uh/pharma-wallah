@@ -135,15 +135,25 @@ TabsTrigger.displayName = "TabsTrigger";
 
 const TabsContent = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & { value: string }
->(({ className, value, ...props }, ref) => {
+  React.HTMLAttributes<HTMLDivElement> & {
+    value: string;
+    /**
+     * Keep the panel mounted (hidden) while inactive, as Radix's `forceMount`
+     * does — for a panel holding work the user would lose on unmount, such as
+     * the TLC analyzer's loaded plate.
+     */
+    forceMount?: boolean;
+  }
+>(({ className, value, forceMount, ...props }, ref) => {
   const ctx = useTabs("TabsContent");
-  if (ctx.value !== value) return null;
+  const active = ctx.value === value;
+  if (!active && !forceMount) return null;
 
   return (
     <div
       ref={ref}
       role="tabpanel"
+      hidden={!active}
       id={`${ctx.baseId}-panel-${value}`}
       aria-labelledby={`${ctx.baseId}-tab-${value}`}
       tabIndex={0}

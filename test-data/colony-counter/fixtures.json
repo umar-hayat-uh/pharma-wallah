@@ -1,0 +1,11 @@
+{
+  "$comment": "Development fixtures for the Colony Counter (src/components/calculators/colony). Synthetic plates are drawn by sample.ts from these parameters, so their colony positions are known exactly. They show the detector works on synthetic plates only - they are NOT validation data for real agar plates. Real photographs go in `photos` (see README.md).",
+  "synthetic": [
+    { "id": "synthetic-light-60", "variant": "light", "seed": 11, "count": 60, "touchingPairs": 6, "minPrecision": 0.95, "minRecall": 0.95 },
+    { "id": "synthetic-dark-60", "variant": "dark", "seed": 23, "count": 60, "touchingPairs": 6, "minPrecision": 0.95, "minRecall": 0.95 },
+    { "id": "synthetic-light-150", "variant": "light", "seed": 7, "count": 150, "touchingPairs": 15, "minPrecision": 0.95, "minRecall": 0.95 },
+    { "id": "synthetic-light-250", "variant": "light", "seed": 8, "size": 1400, "count": 250, "touchingPairs": 25, "minPrecision": 0.95, "minRecall": 0.95 },
+    { "id": "synthetic-dark-30", "variant": "dark", "seed": 9, "count": 30, "touchingPairs": 2, "minPrecision": 0.95, "minRecall": 0.9 }
+  ],
+  "photos": []
+}

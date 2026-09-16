@@ -128,8 +128,8 @@
 | One tool | `src/app/(site)/calculation-tools/(tools)/<tool-slug>/page.tsx` |
 | Clinical-only tool hub | `src/app/clinical/dose-calculators/page.tsx`, `src/app/clinical/calculators/page.tsx` |
 | **Dead legacy registry — do not edit** | `src/app/api/calculators.tsx` |
-| **Web-only wrapper for all 97 tools** | `src/app/(site)/calculation-tools/(tools)/layout.tsx` — never reaches the APK |
-| **Android app catalogue (all 97)** | `mobile/app/_data/tool-registry.ts` |
+| **Web-only wrapper for every tool** | `src/app/(site)/calculation-tools/(tools)/layout.tsx` — never reaches the APK |
+| **Android app catalogue (all 104)** | `mobile/app/_data/tool-registry.ts` |
 | **Shared calculator kit** | `src/components/calculators/` — shell, fields, result card, `AdSlot`, and the lab layer below |
 | Calculator disclaimer ("educational purposes only") | `src/components/calculators/CalcDisclaimer.tsx`, mounted only in `(tools)/layout.tsx` (web) and `mobile/app/_components/MobileShell.tsx` (APK) |
 | Master Formula Calculator (Dosage Form Lab) | `src/app/(site)/calculation-tools/(tools)/master-formula-calculator/` — `page.tsx` + pure `_scale.ts` (`%`/`q.s.` not scaled) |
@@ -137,6 +137,8 @@
 | **Site-wide redesign tracker** | `.claude/redesign-tracker.md` — every page and calculator, batch status, chosen directions, measured faults F1–F19 |
 | **Lab-record card (copy / PNG / print)** | `src/components/calculators/LabReport.tsx` (`LabReport`, `LabActions`, `reportToText`, `downloadReportPng`, `printReport`) |
 | **Analytical-practical layer** (calibration line, replicates, regression, graphs) | `src/components/calculators/lab-analysis/` — `math.ts` (`linearFit` with textbook sums, `concentrationFromAbsorbance`, `sampleSD`, `parseReplicates`), `format.ts` (typographic minus, equations), `figure.ts` (`chartSvg` for PNG/print), `calibration-store.ts` (hand-off: `?a=&b=&unit=` + `localStorage` `pw_lab_calibration_v1`), `parts.tsx` (`CalibrationFields`, `DataTable`, `ChartPanel`, `StepBlock`, `ReportSteps`, `ResultTable`, `CHART` palette). Not re-exported from the kit's `index.ts` |
+| **TLC Rf Analyzer** (`/calculation-tools/rf-value-calculator`, 2026-09-16) | Page `(tools)/rf-value-calculator/page.tsx` (tabs) + `_DistanceMode.tsx` (the original distance calculator, lazy). Analyzer in `src/components/calculators/tlc/`: pure `rf.ts` (`calculateRf`, `analyzePlate`), `geometry.ts` (screen↔image, homography), `spots.ts` (detector), `plate.ts` (plate finder), `sample.ts` (synthetic plate), `storage.ts` (IndexedDB saves), `canvas.ts` (decode/rotate/crop/warp/annotate), `detection.ts` + `detect.worker.ts`, `report.ts`; UI `TLCAnalyzer.tsx`, `TLCStage.tsx`, `TLCUploader.tsx`, `TLCResults.tsx`. Tests: `scripts/tlc-rf.test.mts` |
+| **Colony Counter & CFU Calculator** (`/calculation-tools/cfu-calculator`, 2026-09-16) | Page `(tools)/cfu-calculator/page.tsx`. `src/components/calculators/colony/`: `detect.ts` (OpenCV pipeline, pure — takes `cv`), `opencv.ts` (asset URL + thenable-safe `waitForCv`), `colony.worker.ts`, `client.ts` (worker → main-thread fallback), `cfu.ts` (CFU maths/format/parse), `sample.ts`, `validation.ts` (P/R/F1), `export.ts` (annotated PNG, text result), UI `ColonyCounter.tsx`, `ColonyStage.tsx`. Tests: `scripts/colony-counter.test.mts` + `test-data/colony-counter/fixtures.json`. Dev metrics panel: `?validate=1` |
 | Analytical-practical tools | `(tools)/{calibration-curve-calculator,dissolution-calculator,accuracy-recovery-calculator,dialysis-diffusion-calculator,cumulative-drug-release-calculator,partition-coefficient-calculator}/` — `page.tsx` + pure `_*.ts` maths; the calibration tool is the reference implementation |
 | Lab helpers | `lab-math.ts` (parsing, `fieldError`, sig figs, units, `calculatorHref`), `ModeSwitch.tsx`, `LabFields.tsx`, `chemistry.ts` (formula → molar mass), `hemocytometer.ts` |
 | **Reference lab tool** (copy this) | `(tools)/theoretical-yield-calculator/page.tsx` |
@@ -204,7 +206,7 @@ Naming is inconsistent by design-drift: some directories are `kebab-case`, other
 | Lab guide | `src/app/(site)/simulations/lab-guide/page.tsx` |
 | Antibiogram simulator | `src/app/(site)/antibiogram-simulator/page.tsx`, `src/components/AntibiogramSimulator.tsx` |
 | Compounding lab | `src/app/(site)/compounding-lab/page.tsx`, `src/components/ExtemporaneousCompoundingLab.tsx` |
-| **AI colony counting** | `src/app/api/scan-colonies/route.ts` |
+| ~~AI colony counting~~ | `src/app/api/scan-colonies/route.ts` — **no caller since 2026-09-16** (the CFU tool counts on the device); still called by APK v1.0–1.2 on phones. Unauthenticated, not rate-limited — see CLAUDE.md Known Issue 17 |
 | Molecule viewer (3Dmol/three) | `src/app/(site)/molecule-viewer/page.tsx`, `src/components/MoleculeViewer.tsx` |
 
 ---
@@ -250,7 +252,7 @@ Supabase cache tables: `pubmed_cache`, `medlineplus_cache`, `clinicaltrials_cach
 | Chat tutor | `src/app/api/chat/route.ts` | `@google/generative-ai` | `SYSTEM_PROMPT` at top; rebuilds alternating user/model history |
 | Prescription reader | `src/app/api/prescription-reader-v2/route.ts` | `ai` + `@ai-sdk/google` | `runtime = 'edge'`, `maxDuration = 60`, `streamText`, model `gemini-2.5-flash` |
 | Histology evaluation | `src/app/api/evaluate-histology/route.ts` | raw fetch | Grades free-text observations; **has a `NEXT_PUBLIC_GEMINI_API_KEY` fallback that should be removed** |
-| Colony counting | `src/app/api/scan-colonies/route.ts` | raw fetch | `GEMINI_MODEL` env override, defaults `gemini-2.5-flash` |
+| Colony counting (**orphaned**) | `src/app/api/scan-colonies/route.ts` | raw fetch | No web caller since 2026-09-16; old APKs only. `GEMINI_MODEL` env override |
 | Chat UI | `src/app/(site)/ai-guide/page.tsx`, `src/app/(site)/mentor/page.tsx` | — | |
 | Prescription UI | `src/app/(site)/prescription-reader/page.tsx` | — | |
 
@@ -321,9 +323,12 @@ exported. See `.claude/skills/android-app-capacitor/SKILL.md`.
 | Capacitor config (`webDir: mobile/out`) | `capacitor.config.ts` |
 | Native Android project | `android/` (committed; build output + copied assets gitignored) |
 | Mobile Next config (`output: "export"`) | `mobile/next.config.mjs` |
-| Mobile shell / app bar | `mobile/app/layout.tsx`, `mobile/app/_components/MobileShell.tsx` |
-| Home screen (search + categories) | `mobile/app/_components/ToolHub.tsx` |
-| Catalogue of all 89 tools | `mobile/app/_data/tool-registry.ts` |
+| Mobile shell / tool app bar (star, Recent) | `mobile/app/layout.tsx`, `mobile/app/_components/MobileShell.tsx` (no bar on the home screen) |
+| Home screen (hash views: home / `#browse` / `#saved` / `#cat/<id>`) | `mobile/app/_components/ToolHub.tsx`, `SpaceHero.tsx` (animated hero + search), `BottomNav.tsx`, `parts.tsx` (category icons/hues, `ToolRow`, `ToolChip`) |
+| Recent / Saved (localStorage) | `mobile/app/_components/useLibrary.ts` |
+| Assembled catalogue + search | `mobile/app/_data/catalogue.ts` (descriptions borrowed from `tool-index.ts`) |
+| Ambient motion (`.pw-space`, `.pw-star`, `.pw-rise`…) | `mobile/app/globals.css` |
+| Catalogue of every tool (names, categories) | `mobile/app/_data/tool-registry.ts` |
 | Route generator (re-exports the real tools) | `scripts/generate-mobile-routes.mjs` |
 | Generated, gitignored | `mobile/app/calculation-tools/<slug>/`, `mobile/app/_generated/`, `mobile/out/` |
 | shadcn/ui components | **none of its own** — `@/*` → `../src/*`, so the app uses `src/components/ui/` and `src/components/calculators/` |

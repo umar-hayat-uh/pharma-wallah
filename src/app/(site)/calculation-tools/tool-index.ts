@@ -139,7 +139,7 @@ export const HUB_SUBJECTS: HubSubject[] = [
       { name: "UV-Vis Peak Analyzer", slug: "uv-analyzer-tool", desc: "A260/A280 nucleic-acid purity ratio and molar absorptivity from a peak" },
       { name: "UV-Vis Spectrum Plotter", slug: "uv-spectrum-plotter", desc: "Plots a UV-Vis spectrum with λmax and peaks, or fits a calibration line" },
       { name: "Chromatographic Resolution Calculator", slug: "chromatographic-resolution-calculator", desc: "Resolution Rs from retention times and widths, or Purnell (N, k, α)" },
-      { name: "Rf Value Calculator", slug: "rf-value-calculator", desc: "Rf = compound distance ÷ solvent-front distance, for one or many spots" },
+      { name: "TLC Rf Analyzer", slug: "rf-value-calculator", desc: "Rf values from a TLC plate photo, on-device, or from measured distances" },
       { name: "Percent Purity Calculator", slug: "percent-purity-calculator", desc: "Titrimetric assay: % purity = V × N × E × D × 100 ÷ W, vs 98–102% limit" },
       { name: "Percentage Recovery Calculator", slug: "percentage-recovery-calculator", desc: "% recovery from initial and recovered amounts, or from C × V of each" },
       { name: "Ash Value Calculator", slug: "ash-value-calculator", desc: "Total, acid-insoluble or sulfated ash % = (W₃ − W₁) ÷ W₂ × 100" },
@@ -161,7 +161,7 @@ export const HUB_SUBJECTS: HubSubject[] = [
     label: "Microbiology",
     desc: "Microbial quantification, sterilization and antimicrobial testing",
     tools: [
-      { name: "CFU Calculator", slug: "cfu-calculator", desc: "CFU/mL = colonies × dilution factor ÷ volume plated, with AI plate scan" },
+      { name: "Colony Counter & CFU Calculator", slug: "cfu-calculator", desc: "Counts colonies in a plate photo on-device; CFU/mL from the verified count" },
       { name: "Sterilization Calculator", slug: "sterilization-calculator", desc: "F₀ = t × 10^((T − Tref)/z) for a hold at constant temperature" },
       { name: "Zone of Inhibition Calculator", slug: "zone-of-inhibition-calculator", desc: "Classes a disk-diffusion zone diameter as S, I or R by fixed cut-offs" },
       { name: "D-Value Calculator", slug: "DValueCalculator", desc: "D-value = exposure time ÷ log(N₀/N) from survivor counts" },

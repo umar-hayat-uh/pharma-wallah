@@ -150,7 +150,30 @@ stays live, and a `FormulaNote` titled "Calculation Details" with one worked lin
 multiply a concentration (`%`) or a `q.s.` row (`MEMORY.md` gotcha 54). Convert a batch quantity
 only within its unit family.
 
-### 6. Migrating an old tool onto the kit (Phase 2 — 19 left, list in `.claude/redesign-tracker.md`)
+### 5b. An image-analysis tool (photo in, measurement out)
+Two exist (2026-09-16): the TLC Rf Analyzer (`src/components/calculators/tlc/`) and the Colony
+Counter (`src/components/calculators/colony/`). Copy their split:
+1. **Pure modules, no DOM, `import type` only** — maths (`rf.ts`, `cfu.ts`), geometry, the detector,
+   a **synthetic-image generator with known ground truth** (`sample.ts`), and validation metrics.
+   Test them with `node --test scripts/<tool>.test.mts` (see `testing-verification`).
+2. **Everything stored in image pixels.** One stage component owns zoom/pan and converts pointers
+   once with `screenToImage` against the stage's padding box (MEMORY gotcha 96). Rf/counts must not
+   change with zoom — assert that in the browser test.
+3. **Heavy work in a Web Worker** via `new Worker(new URL("./x.worker.ts", import.meta.url))`, with
+   a main-thread fallback. Resize to a processing copy (TLC ≤ 650 k px, colonies ≤ 1600 px) and map
+   results back.
+4. **Detection is a suggestion.** Detected items start unconfirmed/removable; the result uses only
+   what the student kept. Never show a fake confidence score for classical CV.
+5. **Offline and private by construction:** no `fetch`, no API route, no CDN. A large library
+   (OpenCV.js) goes in as a `new URL(…)` static asset (MEMORY gotcha 89). Say on screen that the
+   image stays on the device.
+6. **Inputs:** a gallery input with the explicit type list and a camera input with exactly
+   `accept="image/*" capture="environment"` (gotcha 91). Hide Download/Print in the APK.
+7. **Verify** with a generated PNG of the synthetic image through the real file input, in headless
+   Chrome at 390 and 1440, with CPU throttling for timing, `window.Worker = undefined` for the
+   fallback, and the airplane-mode check from `android-app-capacitor`.
+
+### 6. Migrating an old tool onto the kit (Phase 2 — 17 left as of 2026-09-16, list in `.claude/redesign-tracker.md`)
 Proven on ~60 tools on 2026-09-13. The goal is **easier to use, identical numbers**.
 1. **Before numbers from the original, not HEAD.** `git show "5dbe98c:src/app/(site)/calculation-tools/(tools)/<slug>/page.tsx"`
    into `src/app/migration-before/<label>-<slug>/page.tsx` (outside `(site)`/`(tools)`), load it on the dev

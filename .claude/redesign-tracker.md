@@ -285,7 +285,7 @@ own uncommitted edits** — do not touch without asking.
 | 54 | [x] `percent-purity-calculator` | 245 | hub | done 2026-09-13 (3d/R3, before/after numbers match) | C10 |
 | 55 | [x] `chromatographic-resolution-calculator` | 249 | hub | done 2026-09-13 (3d/R3, before/after numbers match) | C10 |
 | 56 | [x] `uv-analyzer-tool` | 259 | hub | done 2026-09-13 (3d/R3, before/after numbers match) | C10 |
-| 57 | [x] `rf-value-calculator` | 265 | hub | done 2026-09-13 (3d/R3, before/after numbers match) | C10 |
+| 57 | [x] `rf-value-calculator` | 265 | hub | done 2026-09-13 (3d/R3, before/after numbers match); rebuilt 2026-09-16 as the TLC Rf Analyzer (photo tab + the migrated distance tab, maths unchanged) | C10 |
 | 58 | [x] `law-absorbance-calculator` | 327 | hub | done 2026-09-13 (3d/R3, before/after numbers match) | C11 |
 | 59 | [x] `ash-value-calculator` | 453 | hub | done 2026-09-13 (3d/R3, before/after numbers match) | C11 |
 | 60 | [x] `uv-spectrum-plotter` | 173 | hub | done (pre-existing) | — |
@@ -297,7 +297,7 @@ own uncommitted edits** — do not touch without asking.
 | 64 | [x] `LogReductionCalculator` | 233 | hub | done 2026-09-13 (3d/R3, before/after numbers match) | C11 |
 | 65 | [x] `zone-of-inhibition-calculator` | 289 | hub | done 2026-09-13 (3d/R3, before/after numbers match) | C11 |
 | 66 | [x] `sterilization-calculator` | 292 | hub | done 2026-09-13 (3d/R3, before/after numbers match) | C11 |
-| 67 | [ ] `cfu-calculator` | 673 | hub | todo | C12 |
+| 67 | [x] `cfu-calculator` | 673 | hub | rebuilt 2026-09-16 as the offline Colony Counter & CFU Calculator (new page on the kit, not a migration — see note in the maths-issue list) | C12 |
 | 68 | [x] `FValueCalculator` | 314 | hub | done (pre-existing) | — |
 | 69 | [x] `DValueCalculator` | 321 | hub | done (pre-existing) | — |
 | | **Pharmaceutical Engineering** — 4 tools | | | | |
@@ -334,11 +334,13 @@ own uncommitted edits** — do not touch without asking.
 | 97 | [x] `drug-half-life-calculator` | 432 | ORPHAN | done 2026-09-13 (3d/R2, before/after numbers match) | C17 |
 
 <!-- 97 tools at the start (104 after the six analytical-practical tools + master formula); 81 to migrate.
-     State at the 2026-09-13 safe stop: 85 of 104 on the kit. Still to migrate (19): animal-dose,
-     AntagonismSimulator, cfu-calculator, dose-response-curve-generator, drug-receptor-binding-affinity-tool,
+     State at the 2026-09-13 safe stop: 85 of 104 on the kit. Measured 2026-09-16 (pages not importing
+     @/components/calculators): 87 of 104 on the kit — serial-diluation (4b) and cfu-calculator are done.
+     Still to migrate (17): animal-dose,
+     AntagonismSimulator, dose-response-curve-generator, drug-receptor-binding-affinity-tool,
      drying-rate, ed50-td50-ld50-calculator, GeriatricDosingCalculator, heat-transfer-area,
      mixing-time-estimator, OpioidConversionCalculator, OpioidMMECalculator, osmolality-calculators (9c),
-     reconstitution-calculator, renal-dosing-adjuster, reynolds-number, serial-diluation, tpn,
+     reconstitution-calculator, renal-dosing-adjuster, reynolds-number, tpn,
      vancomycin-auc-calculator. Before-captures for animal-dose, R6's five and R5's four were taken but
      lived in a /tmp scratchpad — re-capture from 5dbe98c. -->
 
@@ -422,7 +424,7 @@ the reboot). pharma-wallah-9c's 14 tools report their own list.
 - **drying-rate (CRASH):** initial = final moisture → chart loop never terminates, page freezes; plotted "rate" is cumulative water removed; phase from fixed final-moisture cut-offs; final > initial → negative rates, no warning; stale result on invalid input.
 - heat-transfer-area: W/BTU/h selector relabels only (no conversion; area always m²-banded); stale result after alert.
 - reynolds-number: Blasius friction factor used in transitional 2000–4000 band; tiny inputs → "Re 0", f 973.38; alert fires on every keystroke for invalid values.
-- cfu-calculator: "CFU at different dilutions" chart multiplies the same count by each dilution (doesn't match caption; breaks log scale at 0); message "Too few colonies (>30)" should be <30; "Environmental air" limits row not selectable and "Air Monitoring" example graded against water limits.
+- cfu-calculator: "CFU at different dilutions" chart multiplies the same count by each dilution (doesn't match caption; breaks log scale at 0); message "Too few colonies (>30)" should be <30; "Environmental air" limits row not selectable and "Air Monitoring" example graded against water limits. **Resolved 2026-09-16 by the rebuild:** the chart and the sample-type limit bands (which had no stated source) were removed, and the count warnings now follow the <30 / >300 wording; CFU/mL = colonies ÷ (dilution × volume) is the same relation.
 
 ## R5 — Pharmacology (only EmaxModelCalculator migrated)
 - EmaxModelCalculator: bands compare absolute effect with fixed 50/80% instead of half the entered Emax (Emax 80 at C = EC₅₀ → "Below EC₅₀"); curves capped at 100%; Hill n ≤ 0 accepted.

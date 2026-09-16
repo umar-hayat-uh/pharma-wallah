@@ -15,16 +15,27 @@ tell your breakage from pre-existing breakage.
 
 ## Architecture Context — READ THIS BEFORE CLAIMING ANYTHING
 
-**There is no test infrastructure in this repository.**
+**There is no test framework and no CI in this repository.**
 
 - No Jest, Vitest, Playwright, Cypress, or any other framework.
 - No `test` script in `package.json`.
-- No test files anywhere.
 - No `.github/` directory and no CI of any kind.
+- **The only tests** are two `node --test` files for pure calculator modules (2026-09-14/16):
+  ```bash
+  node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts   # 41 tests, ~10 s
+  ```
+  They load `src/` TypeScript through Node 24's type stripping, which works only because the
+  modules under test import each other with `import type` and explicit `.ts` specifiers are
+  confined to the `.mts` test files (the root `tsconfig` does not include `.mts`). The colony tests
+  run the real OpenCV.js from `node_modules` against synthetic plates
+  (`test-data/colony-counter/fixtures.json`).
 
-**Therefore you must never write "tests pass", "all tests green", or "test suite clean."** Nothing
-would have run. If the user asks you to run the tests, tell them there are none and offer what is
-actually available.
+**Therefore never write "tests pass" or "test suite clean" about the repo.** Name what ran: "the 41
+TLC/colony unit tests pass". Nothing else in the codebase is covered.
+
+**Pattern for a new pure module:** keep it free of runtime imports (types only), write
+`scripts/<tool>.test.mts` with `node:test` + `node:assert/strict`, and import with the `.ts`
+extension.
 
 **`npm run lint` also does not work.** There is no `.eslintrc*` or `eslint.config.*` anywhere, so
 `next lint` drops into its interactive *"How would you like to configure ESLint?"* prompt and exits

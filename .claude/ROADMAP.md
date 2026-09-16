@@ -118,7 +118,15 @@ pages, confirm progress tracking records a visit, then batch the rest.
   analytical-practical tools (calibration curve, dissolution, accuracy & % recovery, dialysis/diffusion,
   cumulative drug release, partition/distribution coefficient) on the new `lab-analysis` layer — Recharts
   graphs, practical-sheet methods, step-by-step workings, calibration hand-off between tools.
+  ✅ 2026-09-16: **TLC Rf Analyzer** (`rf-value-calculator`) — Rf from a plate photo on the device
+  (rotate/crop/perspective, baseline/front lines, spot detection, cm calibration, saved analyses),
+  with the old distance calculator as a second tab. ✅ 2026-09-16: **Colony Counter & CFU
+  Calculator** (`cfu-calculator`) — OpenCV.js colony detection in a Web Worker, review with
+  add/remove/undo, CFU/mL from the verified count; replaces the Gemini photo scan. Both verified
+  offline in the APK build; 41 `node --test` unit tests.
 - **Remaining work:**
+  - Validate the colony counter and TLC detector on **real** plate photos (only synthetic fixtures
+    exist) — add them to `test-data/colony-counter/fixtures.json` with who counted them and how.
   - Five tools (`AntagonismSimulator`, `EmaxModelCalculator`, `drug-half-life-calculator`,
     `OsmolarGapCalculator`, `OpioidConversionCalculator`) are **reachable only by typed URL on the
     web** — add them to `tool-index.ts`, or to the clinical hub. All five already ship in the Android
@@ -128,7 +136,7 @@ pages, confirm progress tracking records a visit, then batch the rest.
   - **Formula faults found by the 2026-09-13 hub audit** — see CLAUDE.md §7 Known Issues 15.
   - Delete the dead legacy registry `src/app/api/calculators.tsx` (419 lines, zero importers).
   - 🔄 Migrate older tools to the shared kit (`src/components/calculators/`) — **85 of 104 done
-    (2026-09-13)**, each verified number-for-number against `5dbe98c`; 19 left (tracker Phase 2).
+    (2026-09-13)**, each verified number-for-number against `5dbe98c`; 17 left as of 2026-09-16 (tracker Phase 2).
     Migration keeps formulas, so the ~70 suspected faults it found are still live — tracker
     "Suspected maths issues"; the clinical-only opioid tools and creatinine staging are the priority.
 - **Important files:** `src/app/(site)/calculation-tools/tool-index.ts`, `(tools)/<slug>/page.tsx`, `src/app/clinical/dose-calculators/page.tsx`
@@ -183,7 +191,7 @@ pages, confirm progress tracking records a visit, then batch the rest.
 - **Remaining work:** None outstanding. The simulations hub page has an under-construction branch —
   verify it is not shown for shipped labs.
 - **Important files:** `src/app/(site)/simulations/`, `src/components/Simulations/`
-- **Dependencies:** `GEMINI_API_KEY` for `/api/scan-colonies` (colony counting)
+- **Dependencies:** None. (`/api/scan-colonies` has had no web caller since 2026-09-16.)
 
 ### Progress tracking & dashboard
 - **Status:** ✅ Implemented
@@ -228,8 +236,9 @@ pages, confirm progress tracking records a visit, then batch the rest.
 ### AI features
 - **Status:** ✅ Implemented
 - **Existing implementation:** Gemini chat tutor with a pharmacy-scoped system prompt and safety
-  steering; streaming prescription reader (edge runtime); histology observation grading; colony
-  counting.
+  steering; streaming prescription reader (edge runtime); histology observation grading. Colony
+  counting moved on-device (OpenCV.js) on 2026-09-16; its Gemini route `scan-colonies` is now called
+  only by APK v1.0–1.2 — delete it once those are retired (owner decision, CLAUDE.md Known Issue 17).
 - **Remaining work:** Remove the `NEXT_PUBLIC_GEMINI_API_KEY` fallback in
   `evaluate-histology/route.ts:17`. **None of the AI routes are rate limited or authenticated** —
   they are open, billable endpoints. See Phase 5.
@@ -290,28 +299,30 @@ pages, confirm progress tracking records a visit, then batch the rest.
 
 ---
 
-## Phase 4.5 — Android app 🟡
+## Phase 4.5 — Android app ✅ (distribution in-repo; Play Store not started)
 
 ### Offline calculators APK (Capacitor)
-- **Status:** 🟡 Bundle complete and verified; **APK never compiled** (no JDK on this machine).
+- **Status:** ✅ Released — **v1.3 (versionCode 4), 2026-09-16**, signed, published at
+  `public/downloads/pharmawallah-calculators.apk` (v1.1 2026-09-13, v1.2 2026-09-14 before it).
 - **Existing implementation:** `mobile/` — a second Next.js project root with `output: "export"`,
-  containing only the 89 calculators as generated one-line re-exports of the real tool files.
-  `capacitor.config.ts` (`webDir: mobile/out`) + `android/` native project. Home screen with
-  search and 9 categories in `mobile/app/_components/ToolHub.tsx`. App bar with a back button,
-  since the calculators contain no navigation of their own.
-- **Verified:** 94 static pages exported, 90 HTML files under `calculation-tools/`, 7.9 MB bundle,
-  **zero secrets** and no external origin but the API base. Served locally and exercised.
+  containing all 104 calculators as generated one-line re-exports of the real tool files.
+  `capacitor.config.ts` (`webDir: mobile/out`) + `android/` native project. ✅ 2026-09-16: home
+  screen redesigned — animated "space" hero with search, Recent and Saved (on the phone), the two
+  camera tools featured, colour-coded subject tiles, a bottom bar (Home / Browse / Saved) with
+  hash views so Android's back button works, and a star in each tool's app bar.
+- **Verified (v1.3):** 104 tool pages, both camera tools and the home screen driven in headless
+  Chrome with every non-local request failed (airplane mode) — 0 external requests; APK V2-signed
+  with the v1.0 certificate. **Not verified on a real phone.**
 - **Remaining work:**
-  - Install **JDK 21**, then `cd android && ./gradlew assembleDebug` to produce an APK.
-  - ~~Replace the default Capacitor launcher icon and splash screen~~ — splash branded 2026-09-13,
-    launcher icon replaced 2026-09-14 (not in a published APK until the next release).
-  - Decide on a signing key and a Play Store listing before any release build.
+  - Install v1.3 on a real phone: update over v1.2, camera capture in both camera tools, cold start.
+  - ~~Replace the default Capacitor launcher icon and splash screen~~ — done (v1.2 onward).
+  - A Play Store listing (signing key exists in `android/keystore.properties`).
   - Optional: an iOS target (`@capacitor/ios`) — the same `mobile/out` bundle would work.
 - **Important files:** `mobile/README.md`, `mobile/next.config.mjs`,
   `mobile/app/_data/tool-registry.ts`, `scripts/generate-mobile-routes.mjs`, `capacitor.config.ts`
-- **Dependencies:** A JDK. The Android SDK is already present at `~/Android/Sdk`.
-- **Notes:** The app is offline by construction — the whole bundle lives in the APK. The **only**
-  online-dependent tool is the CFU Calculator's optional photo scan, which is badged and gated.
+- **Dependencies:** JDK 21 (installed) and `~/Android/Sdk`.
+- **Notes:** The app is offline by construction — the whole bundle lives in the APK. Since v1.3 no
+  tool needs a connection (`ONLINE_ONLY_SLUGS` is empty); OpenCV.js (10.8 MB) ships inside it.
 
 ---
 
