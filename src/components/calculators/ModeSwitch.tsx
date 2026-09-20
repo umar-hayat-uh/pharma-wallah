@@ -51,7 +51,13 @@ export function ModeSwitch<T extends string>({
         role="radiogroup"
         aria-label={label}
         className={cn(
-          "grid gap-1 rounded-2xl border bg-muted/60 p-1",
+          // The track is deliberately tinted with the brand gradient at low
+          // alpha. A glass pane is only visible against something — on the old
+          // near-white `bg-muted/60` track the selected pill had nothing to
+          // refract and read as a flat white box.
+          "grid gap-1 rounded-2xl border border-white/70 p-1",
+          "bg-[linear-gradient(135deg,rgba(28,123,217,0.22)_0%,rgba(33,182,122,0.22)_100%)]",
+          "shadow-[inset_0_1px_3px_rgba(15,23,42,0.10)]",
           options.length === 2 && "grid-cols-2",
           options.length === 3 && "grid-cols-1 sm:grid-cols-3",
           options.length >= 4 && "grid-cols-2 lg:grid-cols-4",
@@ -88,11 +94,57 @@ export function ModeSwitch<T extends string>({
               )}
             >
               {selected && (
+                /*
+                 * Liquid glass on the selected segment (user request, 2026-09-20).
+                 *
+                 * backdrop-filter IS used here, and that does not break §6 rule 16:
+                 * the rule bans it on `position: fixed` elements, where the browser
+                 * re-blurs scrolling content every frame (MEMORY gotcha 51). This
+                 * pill is absolutely positioned inside normal flow over a static
+                 * parent, and is ~48px tall, so the filter resolves once per state
+                 * change rather than per scroll frame.
+                 *
+                 * The fill is left translucent on purpose: the brand-tinted track
+                 * has to read *through* the pane, otherwise it looks like a plain
+                 * white card. The two light layers animate `transform` only, are
+                 * clipped by the pill, and stop under prefers-reduced-motion.
+                 */
                 <motion.span
                   layoutId={`mode-pill-${groupId}`}
                   transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                  className="absolute inset-0 rounded-xl border border-blue-100 bg-card shadow-sm"
-                />
+                  className={cn(
+                    "absolute inset-0 overflow-hidden rounded-xl",
+                    // A real pane of glass: translucent fill, the backdrop blurred
+                    // and saturated behind it, a bright specular rim on the lit
+                    // edge and a soft drop shadow so it floats off the track.
+                    "bg-[linear-gradient(135deg,rgba(255,255,255,0.70)_0%,rgba(255,255,255,0.38)_52%,rgba(255,255,255,0.58)_100%)]",
+                    // Vibrancy comes from backdrop-saturate, not the blur — the
+                    // track behind is flat, so blur alone would be a no-op.
+                    "backdrop-blur-2xl backdrop-saturate-[1.8]",
+                    // Touch devices (phones, and the Android WebView in the APK)
+                    // drop the filter entirely and get the same look from a
+                    // pre-saturated fill. A backdrop-filter is the one effect
+                    // this project has already measured as a scroll-lag source
+                    // (MEMORY gotcha 51), and the APK has to hold 60fps on
+                    // low-end hardware.
+                    "[@media(hover:none)]:backdrop-filter-none",
+                    "[@media(hover:none)]:bg-[linear-gradient(135deg,rgba(255,255,255,0.78)_0%,rgba(226,241,252,0.52)_52%,rgba(228,247,239,0.70)_100%)]",
+                    "transform-gpu",
+                    "border border-white/90",
+                    "shadow-[0_10px_22px_-12px_rgba(15,23,42,0.55),0_2px_6px_-2px_rgba(15,23,42,0.18),inset_0_1px_0_rgba(255,255,255,0.98),inset_0_-1px_0_rgba(255,255,255,0.55)]",
+                  )}
+                >
+                  {/* Caustic pool — the light that gathers inside a lens. */}
+                  <span
+                    className="pointer-events-none absolute -inset-1/3 transform-gpu animate-calc-tide rounded-[50%] bg-[radial-gradient(closest-side,rgba(255,255,255,0.95),rgba(255,255,255,0)_70%)] will-change-transform motion-reduce:animate-none"
+                    aria-hidden="true"
+                  />
+                  {/* Specular highlight travelling across the pane. */}
+                  <span
+                    className="pointer-events-none absolute inset-y-0 w-2/5 transform-gpu animate-calc-sheen bg-[linear-gradient(90deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.95)_50%,rgba(255,255,255,0)_100%)] will-change-transform motion-reduce:animate-none"
+                    aria-hidden="true"
+                  />
+                </motion.span>
               )}
               <span className="relative flex items-center gap-2">
                 {Icon && (

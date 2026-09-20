@@ -61,6 +61,8 @@ npm run lint     # next lint    — NOT CONFIGURED, see Known Issues
 npx tsc --noEmit # type-check   — the only reliable static check today
 node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts   # 41 unit tests for two tools only
 node --test scripts/molecular-lab.test.mts                             # 21 unit tests, Molecular Lab
+node --test scripts/community.test.mts                                 # 19 unit tests, community pure layer
+node --test scripts/ai-guide.test.mts                                  # 34 unit tests, AI Guide pure layer
 node scripts/build-molecule-library.mts   # regenerate the Molecular Lab library from PubChem (network)
 ```
 
@@ -233,9 +235,15 @@ These are conventions **observed in the code**, not aspirations.
 17. **OpenCV.js is confined to `src/components/calculators/colony/`** (2026-09-16, user choice over
     plain TypeScript). It is 10.8 MB: load it only through `colony/opencv.ts` (static asset + worker),
     never import it from anything another page loads.
-18. **OpenChemLib and 3Dmol are confined to `src/components/molecular-lab/`** (2026-09-16). Both are loaded
+18. **OpenChemLib and 3Dmol live in `src/components/molecular-lab/`, with exactly one other consumer**
+    (2026-09-16; exception added 2026-09-20 at the user's request). Both are loaded
     with dynamic `import()` (OpenChemLib inside `chem.worker.ts`, main-thread fallback in `chem-tasks.ts`);
-    nothing else may import them. Chemistry that can be computed from the graph (formula, weight, valence,
+    nothing else may import them **except `src/components/encyclopedia/Structure3D.tsx`**, the drug card's
+    3D structure, which reuses `Viewer3D`, `chem.ts` and `model3d.ts` rather than re-implementing them.
+    That file is itself behind `next/dynamic` in `StructurePlate.tsx` and only mounts when the reader
+    presses "3D", so `/encyclopedia` first load stays at 113 kB and the shared chunks stay clean —
+    **verified by grepping the built shared chunks for both libraries (0 hits)**. Any *third* consumer
+    needs the same proof before it lands. Chemistry that can be computed from the graph (formula, weight, valence,
     groups) is computed in `graph.ts`/`groups.ts`, never by an AI model and never by waiting for the library.
 
 ---
@@ -259,6 +267,57 @@ These are conventions **observed in the code**, not aspirations.
 - Typography: the site is now single-typeface (**Outfit**, variable) across web and APK.
 
 ### Recently Completed
+- **`/pharmacy-counter` rebuilt as the Community Pharmacy Simulation Lab (2026-09-20)** — the old
+  1,529-line six-step click-through with XP, combos and a countdown is replaced by a counter a
+  student works at: fourteen gated stages (plus a ten-stage minor-ailment path), **ten clinical
+  checks the student performs rather than acknowledges** (the finding is unreadable until a verdict
+  is recorded), blocking findings that genuinely stop a supply, a shelf with batches and expiry that
+  depletes as you dispense, a label printer, eight counselling checkpoints, patient questions scored
+  on five dimensions, bench calculators, a reference desk, an intervention record, a till, and a
+  debrief that reports six competencies with a learning point on every error. Ten cases across six
+  tiers. Pure `data/` + `engine/` layer with **47 unit tests**. See the §8 entry and the
+  `pharmacy-counter` skill.
+- **Books Library removed, AI Guide rebuilt in its place (2026-09-20)** — the library linked scanned
+  copies of commercial textbooks (and 38 of its 39 links were `"#"` anyway); it is deleted, its 35
+  cover scans with it, and `/books-library` 308s to `/ai-guide`. The guide now streams answers, has
+  five study modes, saved conversations, stop/regenerate/copy, real markdown styling, page metadata,
+  and a panel pointing at the nine resources we actually own. **`/api/chat` is now rate limited,
+  validated and clamped** — it was the app's largest unauthenticated money exposure. See the §8 entry.
+- **Calculator kit migration COMPLETE (2026-09-20)** — all **104 of 104** tool pages import
+  `@/components/calculators`; `grep -rL "@/components/calculators" src/app/(site)/calculation-tools/(tools)/*/page.tsx`
+  returns nothing. The last 17 were migrated by session `pharma-wallah-86` with before/after CDP
+  captures on every tool — **every displayed number is identical** to the pre-migration page. Phase 2
+  of the redesign tracker is closed. The maths was copied, not corrected: ~10 further formula faults
+  were found, are **stated on screen** on the affected pages, and are listed in the tracker
+  (Known Issue 15 still applies).
+- **Liquid-glass result cards and mode tabs (2026-09-20, user request)** — `ResultCard` and
+  `ModeSwitch` in the shared kit, so it reaches all 104 calculators *and* the APK. Transform-only
+  light layers (`calc-sheen`, `calc-tide` in `tailwind.config.ts`), a specular rim, and a
+  brand-tinted `ModeSwitch` track so the selected pane reads as glass. Touch devices drop
+  `backdrop-filter` via `[@media(hover:none)]` and get the same look from a pre-saturated fill —
+  see MEMORY gotcha 51 and the note below.
+- **Disk Diffusion Lab rebuilt (2026-09-20)** — `/simulations/disk-diffusion` is now Theory (Principle ·
+  Materials · **illustrated nine-step Lab Guide** · Interpretation · Safety) plus a simulation the
+  student *performs*: standardise the inoculum, choose an agar depth, swab the plate with live coverage
+  scoring, place 4–6 disks under enforced 24 mm/15 mm rules, incubate, then **measure every zone with a
+  draggable calliper** before any diameter is revealed. Interpretive criteria are configurable data with
+  a stated source, and "no interpretive criteria" is a real answer. Mistakes explain themselves instead
+  of blocking. See the §8 entry and the `lab-simulation` skill.
+- **`/encyclopedia` redesigned again (2026-09-20)** — the user said the page was "bad", and asked for
+  **all** of the search's information "easy to understand and read" without feeling overwhelming, plus a
+  **3D structure in the drug card**. The full-screen brand cover is gone: the search is a bar that is
+  always on screen (hero band while idle, slim sticky control once searching, one input that is never
+  remounted). A record is now a **tabbed card** — eight sections, each tab printing how much it holds,
+  one section on screen at a time — and **nothing inside a section is folded, sliced or allow-listed any
+  more**. The structure plate carries a **2D ⇄ 3D switch**: the 3D conformer is generated on the device
+  from the record's own SMILES (OpenChemLib in a worker, 3Dmol to draw) and loads only on demand. See the
+  §8 entry for the six categories of data the old page was silently dropping.
+- **Community rebuilt as a Reddit-shaped, pharmacy-scoped system (2026-09-20)** — 12 pharmacy spaces,
+  posts in four kinds (discussion / question / link / image), nested comments to depth 8 with
+  collapse, hot/new/top/rising sorting, search and filters, saves, karma, join/leave, accepted
+  answers, reporting, and legacy-URL redirects. **Blocked on one owner action:** run
+  `supabase/migrations/20260920_community.sql` in the Supabase SQL editor — until then every
+  `/community` route shows its error boundary. See the §8 entry and the `community-system` skill.
 - **Molecular Lab (2026-09-16)** — `/molecule-viewer` became `/molecular-lab` (308 redirect): draw
   molecules from scratch or open them from an 83-molecule PubChem-verified library, PubChem search or a
   file; edit atoms, bonds, charges and hydrogens with undo/redo; 2D, 3D and split views kept in sync from
@@ -347,15 +406,6 @@ These are conventions **observed in the code**, not aspirations.
 - `de13a36 optimized-sci-fair-tournament` / `6626383 snake-game` — tournament hardening and games.
 
 ### In Progress
-- **Shared calculator UI kit migration — paused at a safe stop (2026-09-13).** `src/components/calculators/`
-  holds the kit (`CalculatorShell` / `CalcSection` / `FieldGrid`, `NumberField` / `SelectField`,
-  `ResultCard`, `FormulaNote`, `CalcAbout`, `AdSlot`, `ModeSwitch`, the lab-record and `lab-analysis`
-  layers). **87 of 104** tool pages import it (`grep -L @/components/calculators`, measured 2026-09-16). Every tool migrated
-  on 2026-09-13 was compared number-for-number with its original at commit **`5dbe98c`**. **17 remain**
-  — listed in `.claude/redesign-tracker.md` Phase 2, with the procedure in
-  `.claude/skills/calculator-tool/SKILL.md` ("Migrating an old tool"). Migration keeps the maths, so
-  the **suspected formula faults** the agents found are still live — see the tracker's
-  "Suspected maths issues" section and Known Issue 15.
 - **AdSense**: plumbing done, ad-unit IDs outstanding (Phase 4.6).
 
 ### Partially Implemented
@@ -388,6 +438,24 @@ exact steps — the content is already written and shipped in `public/content/`,
 existing dead assets into working pages at the lowest risk-per-value ratio in the repo.
 
 ### Known Issues
+19. **The pharmacy counter's clinical content has not been reviewed by a pharmacist.** The ten
+    cases, 31 medicine monographs, counselling points, interaction findings and dose ranges in
+    `src/components/Simulations/CommunityPharmacy/data/` were written as teaching values and are
+    internally consistent and unit-tested, but nobody qualified has read them. Every screen says
+    "educational use only" and names the limitation. **Owner action before this is used with
+    students:** have a pharmacist read `data/medicines.ts` and `data/scenarios.ts`.
+0c. **The Gemini API key is on the free tier: 5 requests per minute for the whole project.**
+   Measured 2026-09-20 against `/api/chat`; the 6th call in a minute returns `429 … quotaValue: "5"`
+   with a ~50 s retry delay. This is a **site-wide ceiling shared by every visitor**, not a per-user
+   limit, and it binds long before our own rate limits. `/api/chat` reports it as a 503 with "try
+   again in about a minute", but the AI Guide cannot carry real concurrent traffic until the owner
+   enables billing. **Owner decision.** The other three Gemini routes share the same quota.
+0b. **`interactions.total_count` is not a total, and neither are the products or synonym lists**
+   (measured 2026-09-20 across all three collections). `total_count` equals the stored
+   `drug_interactions` length on all 4,479 records that have it, and both cap at exactly **100**;
+   products cap at **5**, synonyms at **5**. `/encyclopedia` now says so on screen. Anything else that
+   reports these as totals (or sums them into a hero figure) would be wrong — the old hero's
+   "50k+ interactions, 100k+ products" was exactly that mistake.
 0. **Measured UI/logic faults from redesign Phase 0 live in `.claude/redesign-tracker.md` (F1–F19)**,
    each assigned to the batch that fixes it. The ones that are *logic*, and need the user's approval:
    the dashboard reads activity capped at 20 rows and buckets days in UTC (F9/F10); sign-in ignores
@@ -402,9 +470,13 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 3. **`NEXT_PUBLIC_GEMINI_API_KEY` is read as a fallback** in `src/app/api/evaluate-histology/route.ts:17`.
    Any `NEXT_PUBLIC_*` value is shipped to the browser. That variable is **not** in the current
    `.env` (so nothing is leaking today), but the fallback should be deleted so it cannot be.
-4. **The Supabase schema is not in the repo.** No `.sql`, no migrations directory. Tables, the
+4. **The Supabase schema is (almost entirely) not in the repo.** Tables, the
    `tournament_leaderboard_best` view, the `claim_tournament_attempt` RPC, and every RLS policy
    exist only in the Supabase dashboard. Code comments reference a `migration.sql` that is absent.
+   **One exception since 2026-09-20:** `supabase/migrations/20260920_community.sql` holds the whole
+   community schema, including its RLS policies — the only versioned SQL in the project. It is
+   **not applied**; the owner must paste it into the Supabase SQL editor (no `DATABASE_URL` exists
+   and PostgREST cannot run DDL, so no session can apply it).
 5. **`src/app/api/clinical/amr/route.ts:33` uses the browser client server-side** —
    `createClient()` (i.e. `createBrowserClient`) rather than `createServerSupabaseClient()`.
    It works because it is an anonymous read, but it is inconsistent and confusing.
@@ -417,8 +489,8 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
    `applyProgressEvent()` updates only `last_active_at`, `total_time_spent_min`, and `updated_at`.
    Either a Postgres trigger maintains them (the schema isn't in the repo, so this is unverified)
    or the dashboard's streak display is dead. ⚠ Verify in the Supabase dashboard.
-9. No test framework and no CI. The only tests are 62 `node --test` unit tests for the TLC, colony and
-   Molecular Lab modules (§1 commands). See `.claude/skills/testing-verification/SKILL.md`.
+9. No test framework and no CI. The only tests are 81 `node --test` unit tests for the TLC, colony,
+   Molecular Lab and community modules (§1 commands). See `.claude/skills/testing-verification/SKILL.md`.
 10. **`npm run build` and `npm run dev` fight over `.next`.** Running a production build while a dev
     server is up wipes dev's compiled chunks — the browser then 404s every
     `/_next/static/chunks/*.js` while `GET /` still returns 200, so the site renders as unstyled
@@ -545,6 +617,727 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 
 > Newest first. Never paste source code here. Archive entries older than ~10 into
 > `.claude/history/YYYY-MM.md`.
+
+### 2026-09-20 — `/pharmacy-counter` rebuilt as the Community Pharmacy Simulation Lab
+
+Session `pharma-wallah-4a`, "follow protocol" + a 34-section user specification. The old page was a
+single 1,529-line client component: six hard-coded cases, a six-step click-through (intake →
+transcribe → answer one DUR alert → pick a bottle → tick labels → answer a counselling MCQ), an XP
+bar, combo streak, level-up modal and a countdown that scored zero stars on timeout. It is replaced
+by a counter a student actually works at.
+
+**Completed**
+- **The whole community-pharmacy workflow, as fourteen gated stages**: arrival → receive →
+  assess → interpret → ten clinical safety checks → intervention → select → batch → quantity →
+  dispense → label → final verification → counsel → document → payment → debrief. A separate
+  ten-stage path for minor ailments: complaint → WWHAM → red flags → decision → product →
+  counsel → document → payment. Exactly **one primary action** is on screen at any moment.
+- **Ten clinical checks the student performs, rather than an alert they acknowledge.** Each check
+  lays out the evidence — the patient's recorded allergy *classes* beside the product's classes,
+  the current medicines' interaction tags beside the new item's, the prescribed dose beside the
+  usual range and this patient's weight and creatinine clearance — and asks for a verdict. **The
+  real finding is not readable until a verdict is on record.** Concern lists are identical in
+  every case, so the options never hint at which case this is.
+- **Blocking findings actually block.** A critical allergy or a contraindicated combination cannot
+  be dispensed past; the only way forward is to record an intervention (contact the prescriber, or
+  refuse). A standing banner says why, and the tray refuses to fill.
+- **Errors produce a professional review, not "Wrong!"** Ticking a verification line that is not
+  true is refused with what to re-check ("the tray holds 400/80 mg; the prescription says
+  800/160 mg"). Nothing is scored until the case is submitted, so a corrected mistake costs nothing.
+- **Ten cases across six tiers**, carrying the old page's clinical content forward and adding to it:
+  sulfa allergy on co-trimoxazole (with a look-alike 400/80 pack on the shelf), nitrate + PDE5,
+  clarithromycin + atorvastatin, a paediatric suspension dosed at 47 mg/kg/day against a 20–40
+  range, a four-finding warfarin case (co-trimoxazole, an NSAID, CKD-3 and an unadjusted renal
+  dose), a clean prescription where "no concern" is the right answer, a quantity that equals a pack
+  rather than the course, and three minor-ailment consultations including two referrals.
+- **A shelf with real inventory.** 31 products across ten bays, each with batches, expiry months,
+  reorder levels and prices. Dispensing depletes stock and it persists between cases. An expiry
+  dashboard opens with 3 expired / 31 expiring soon / 31 in date, and an expired batch can be
+  discarded.
+- **Label printer** with a live preview, auxiliary-label selection from the product's own warnings
+  mixed with plausible wrong ones, and directions checked against the prescription.
+- **Eight counselling checkpoints** per product, each mixing statements that belong with ones that
+  do not, feedback at the counter, then patient questions scored on accuracy, safety, communication,
+  professionalism and completeness — separately, so an answer can be right and still unprofessional.
+- **Bench calculators** (quantity, days' supply, weight-based dose, Clark's/Young's/BSA,
+  Cockcroft-Gault, BMI/BSA, C₁V₁, %w/v, drip rate, unit conversion), each showing its working and
+  returning nothing rather than a number it cannot justify.
+- **Reference desk, intervention record** (copy/print), **till**, **patient queue**, **drills** for
+  dispensing and counselling, **My performance** across cases, and **Continue your case** after a
+  reload.
+- **Debrief that teaches**: six competencies (ones the case did not exercise are left out, not
+  scored zero), every error with a `learningPoint`, what was done well, the full answer key, and the
+  case seed so a run can be reproduced and discussed with a tutor.
+
+**Files**
+- New `src/components/Simulations/CommunityPharmacy/` (34 files — see PROJECT_MAP): `types.ts`,
+  `data/{constants,medicines,patients,scenarios}.ts`,
+  `engine/{rng,dates,scenario,inventory,clinical,evidence,counselling,calculators,pos,flow,scoring}.ts`,
+  `useCounterMachine.ts`, `CommunityPharmacyLab.tsx`, `Chrome.tsx`, `StageView.tsx`,
+  `HomeScreen.tsx`, `Debrief.tsx`, `kit.tsx`, `environment/objects.tsx`, `modules/*` (7),
+  `pharmacy.css`, `index.ts`.
+- `src/app/(site)/pharmacy-counter/page.tsx` — now a **server** page with metadata (it had none),
+  resolving the pharmacy's date once and passing it down. Deleted `PharmacyCounterContent.tsx`.
+- New `scripts/pharmacy-counter.test.mts` (47 tests).
+- Knowledge: this file (§7, §8, §9), `.claude/MEMORY.md` (gotchas 137–141),
+  `.claude/PROJECT_MAP.md`, `.claude/SKILLS.md`, `.claude/redesign-tracker.md`, new skill
+  `pharmacy-counter`.
+
+**Architecture & Decisions**
+- **The model is pure and tested.** `data/` and `engine/` import no React and touch no DOM; every
+  number the student sees comes from a function there. Same split as the disk-diffusion lab, and the
+  reason 47 unit tests could be written at all.
+- **The answer key is gated in one place** — the `record-check` reducer case adds a finding's id to
+  `revealed`. Nothing else may read `scenario.findings` for display.
+- **Gamification removed, deliberately.** XP, levels, the combo streak, the star rating and the
+  countdown are gone: the specification asks for a professional environment and says not to reduce
+  the debrief to a score, and a timer on a safety check teaches the opposite of the lesson. Elapsed
+  time is reported, never counted down. **Reversible** if the user wants the game back, but it is a
+  product decision, not an oversight.
+- **Brand tokens over the spec's palette.** The spec names #2563EB/#4ADE80; the site's are
+  #1C7BD9/#21B67A, and the spec also says to use the PharmaWallah visual language. Same call the
+  Molecular Lab made (§8, 2026-09-16).
+- **No drags anywhere.** Everything is a button or an input, so the whole encounter is completable
+  from the keyboard and works on a phone. The disk-diffusion lab paid for the alternative twice
+  (gotchas 121, 122).
+- **Deterministic, not identical.** Shelf order, dialogue order and WWHAM order come from a seeded
+  mulberry32; the seed is printed in the debrief. No `Math.random()` anywhere.
+- **Phones get a different order, not a smaller copy**: the workstation is first, the patient is one
+  tap away on the bottom bar, the primary action is pinned above it, and the drawers are sheets.
+- **No new dependency, no API route, no AI call, no telemetry** beyond the two `useTracker` rows
+  (opened, completed) every learning surface writes. Nothing the student enters leaves the browser.
+
+**Verification**
+- `npx tsc --noEmit` → **0 errors** (whole repo).
+- `node --test scripts/pharmacy-counter.test.mts` → **47 pass, 0 fail** (~0.5 s): case-data
+  integrity (every finding's `concernId` exists in its check; every patient, product and decoy id
+  resolves; every medicine has all eight counselling topics with at least one right and one wrong
+  statement), quantities and PRN, the check grader's six outcomes including *right concern against
+  the wrong item*, blocking findings, all nine verification truths, label issues, month-based expiry,
+  inventory immutability, nine calculators against worked examples, counselling and red-flag
+  scoring, seeded reproducibility, stage gating, and the debrief.
+- `npm run build` → **exit 0** in an isolated copy of the tree (three peer dev servers were live —
+  gotcha 126). `/pharmacy-counter` **87.7 kB / 250 kB first load**; shared JS **88.5 kB** and
+  middleware **81.9 kB**, both unchanged. The usual `Dynamic server usage` traces (tournament,
+  DailyMed, AMR) are pre-existing.
+- Headless Chrome over CDP against an isolated dev server on :3222 — **173 assertions, 0 failures,
+  0 console errors** in every run: the full prescription workflow end to end at **1440, 768 and
+  390** (34 each, with touch emulation on the phone); the teaching paths at 1440 (22) — no finding
+  leaks before a verdict, the finding appears marked "You did not record this" and "Blocks supply"
+  once one is recorded, every finding needs its own decision, dispensing is refused while a blocker
+  is unresolved, the hold lifts after contacting the prescriber, and ticking an untrue line raises
+  "Review required", names the mismatch, avoids the word "wrong" and **refuses the tick**; the OTC
+  referral path at 1440 and 390 (14 each) — supplying to a patient who needed referral is reported
+  as critical and scores below 60%; accessibility and motion (11) — keyboard start, Enter on the
+  primary action, focus ring, 0 unlabelled buttons, dialog focus + Escape, no animation and nothing
+  invisible under `prefers-reduced-motion`; drills, reload-and-continue and the inventory drawer
+  (10).
+- **Screenshots were read at both widths, and caught four defects no assertion saw**: every stage
+  change popped a modal over the workstation (gotcha 139); the label preview rendered white-on-black
+  because `globals.css` styles every `pre` as a code block (gotcha 137); the primary action was red
+  for most of a difficult case; and the phone led with the patient card instead of the task.
+- **NOT verified:** a real phone or tablet; iOS Safari; screen readers (the markup was built for
+  them — roles, labels, `aria-current`, focus management — but no AT was run); dark mode (still
+  unreachable site-wide, tracker F13); print output; the APK (this page is not in it). `npm run
+  lint` does not run in this repo.
+
+**Remaining**
+- Commit (the protocol forbids it here). The tree also carries three peer sessions' work.
+- The clinical content is written for teaching and has not been reviewed by a pharmacist. Before
+  this is put in front of students, someone qualified should read `data/medicines.ts` and
+  `data/scenarios.ts` — see §7 Known Issues.
+- First load is 250 kB. The drawers (calculators, reference desk, inventory) could be
+  `next/dynamic`; not done, to avoid destabilising a verified build.
+
+**Next**
+- Have a pharmacist read the ten cases and the counselling points, then add cases 11+ — the scenario
+  format is data, so a new case is a patient, a prescription and its findings.
+
+### 2026-09-20 — Calculator kit migration finished (104/104); full validation sweep; liquid-glass kit
+
+Session `pharma-wallah-86`, "follow protocol". Three peer sessions were live in the same tree
+throughout (`-a1` encyclopedia, `-82` disk diffusion, `-2f` community, `-4a` pharmacy counter);
+file ownership was agreed by message before any shared file was touched.
+
+**Completed**
+- **The last 17 calculators migrated onto `@/components/calculators`**, closing Phase 2 of the
+  redesign tracker: `heat-transfer-area`, `reynolds-number`, `drying-rate`, `mixing-time-estimator`,
+  `AntagonismSimulator`, `drug-receptor-binding-affinity-tool`, `dose-response-curve-generator`,
+  `ed50-td50-ld50-calculator`, `OpioidConversionCalculator`, `OpioidMMECalculator`,
+  `GeriatricDosingCalculator`, `vancomycin-auc-calculator`, `tpn`, `osmolality-calculators`,
+  `reconstitution-calculator`, `animal-dose`, `renal-dosing-adjuster`.
+  **104 of 104 tool pages now import the kit** (measured, not assumed).
+- **Every migrated tool returns byte-identical numbers.** Before/after captured in headless Chrome
+  for 3–10 input sets per tool (86 comparisons in total), plus a Node harness for
+  `dose-response-curve-generator` that compared **5,134 curve values** against the original's
+  generator — 0 differences.
+- **Validation sweep over all 104 calculators** against a production build: 0 non-200, 0 hydration
+  failures, 0 page exceptions, 0 console errors, 0 horizontal overflow, at 1440×900 **and** 390×844.
+- **Liquid glass** on `ResultCard` and `ModeSwitch` (user request), reaching every calculator and
+  the APK; verified in the real `mobile/out` export at 390 px.
+
+**Files**
+- 17 tool pages under `src/app/(site)/calculation-tools/(tools)/`, plus new pure siblings:
+  `dose-response-curve-generator/_curves.ts`, `ed50-td50-ld50-calculator/_probit.ts`,
+  `OpioidMMECalculator/_mme.ts`, `GeriatricDosingCalculator/_geriatric.ts`,
+  `vancomycin-auc-calculator/_vanco.ts`, `tpn/_tpn.ts`, `osmolality-calculators/_osmolality.ts`,
+  `reconstitution-calculator/_recon.ts`, `animal-dose/_animal.ts`, `renal-dosing-adjuster/_renal.ts`.
+- `src/components/calculators/ResultCard.tsx`, `src/components/calculators/ModeSwitch.tsx`,
+  `tailwind.config.ts` (`calc-sheen`, `calc-tide` keyframes).
+- Knowledge: this file, `.claude/redesign-tracker.md` (17 rows ticked, Phase 2 closed, a new
+  maths-issue section), `.claude/MEMORY.md`, `.claude/PROJECT_MAP.md`, `.claude/ROADMAP.md`.
+
+**Architecture & Decisions**
+- **"Before" came from HEAD, not `5dbe98c`.** All 17 files were byte-identical between the two
+  (`git diff 5dbe98c HEAD -- <path>` empty for each), because no earlier session had touched them —
+  so the `migration-before/` temp-route dance (gotcha 76) was unnecessary and was skipped.
+- **The maths was copied, never corrected** (gotcha 78). ~10 further faults were found and are now
+  **stated on screen** on the page that carries them, with the number left unchanged — the worst are
+  the fentanyl-patch MME (25 mcg/h → 2500 MME), the inverted probit slope in the ED50 tool, and the
+  60× mixing time. Full list in the tracker.
+- **Render bugs fixed, and stated:** stale results left on screen after invalid input (3 tools), and
+  an **infinite loop in `drying-rate`** when initial = final moisture, which froze the tab.
+- **Big tools split into a pure `_x.ts` sibling**, so a 1,000–2,250 line page became a readable page
+  plus hand-checkable maths. `_recon.ts` and `_renal.ts` carry their drug databases (11 and 20 drugs)
+  extracted verbatim by script rather than retyped.
+- **Liquid glass:** transform-only layers on the compositor, never `backdrop-filter` on anything
+  fixed. `ModeSwitch` does use `backdrop-saturate` on desktop — a pixel-diff proved the vibrancy is
+  visible (max channel delta 91) and is *not* a no-op — but touch devices drop the filter entirely
+  and get the same look from a pre-saturated fill, so the APK pays nothing.
+
+**Verification**
+- `npx tsc --noEmit` → **0 errors**.
+- `npm run build` → **exit 0** in an isolated copy of the tree (peers agreed not to build in the
+  shared tree; Known Issue 10). Shared JS **88.5 kB**, middleware **81.9 kB**.
+- `npm run mobile:build` → **exit 0**; 108 HTML files, 106 entries under `mobile/out/calculation-tools/`,
+  CSS **84,243 + 4,210 bytes** (not the ~10 kB silent-Tailwind-failure size, gotcha 23).
+- Sweep of all 104 calculators against `next start`, at 1440×900 and 390×844: 104/104 HTTP 200,
+  hydrated, 0 exceptions, 0 console errors, 0 overflow. (`rf-value-calculator` has no `aria-live`
+  result card — it is the TLC photo analyzer with a bespoke stage, expected. One "undefined" hit in
+  `dialysis-diffusion-calculator` is legitimate prose: "ln(1 − B) is undefined".)
+- Glass verified in the **real APK export** served from `mobile/out` at 390 px:
+  `backdrop-filter: none`, pre-saturated fill, sheen still animating, 0 console errors, no overflow.
+- **NOT verified:** a real Android device or emulator; iOS; dark mode (still unreachable, F13); a
+  real mouse/trackpad feel; no APK was rebuilt or published (version still 1.3). Lint is not
+  configured. The 62 existing `node --test` files were not re-run — they cover TLC, colony and
+  Molecular Lab only, none of which this session touched.
+
+**APK v1.4 published (same session, user request)**
+- `versionCode 5` / `versionName "1.4"`; `npm run mobile:apk` → `BUILD SUCCESSFUL`, signed V2 release
+  APK **9,369,674 B (8.9 MB)**, copied to `public/downloads/pharmawallah-calculators.apk` and
+  **byte-identical** to the Gradle output (`cmp`).
+- Certificate SHA-256 `afe4c18e…5b03` — **identical to the committed v1.3**, so it installs as an
+  update rather than a new app.
+- Contains **104 tool pages** (`assets/public/calculation-tools/*/index.html`), i.e. every migrated
+  calculator plus the liquid-glass kit.
+- Ad-free confirmed: `adsbygoogle` / `ca-pub-` / `googlesyndication` → **0 files** in `mobile/out`;
+  `AdSlot` returns `null` under `IS_MOBILE_APP`, and 0 ad placeholders appear in the exported HTML.
+  (A bare `NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR` **string** appears in 104 bundles — that is the unset
+  env-var name, not an ad. Don't let it fail a naive grep.) Secret scan: 0 JWT-shaped, 0 service-role
+  or API keys.
+- `src/app/(site)/download/DownloadClient.tsx` → `APP_VERSION "1.4"`; `APK_SIZE` stays "8.9 MB";
+  `APP_TOOL_COUNT` already 104.
+
+**Remaining**
+- Commit (the protocol forbids it without the user asking) — this now includes the **binary**
+  `public/downloads/pharmawallah-calculators.apk` and the two version bumps, then deploy.
+- Install v1.4 over v1.3 on a real phone to confirm the update path and the glass on a real GPU.
+- Owner decisions: every item in the tracker's maths-issue sections, including this session's ~10.
+- The 5 orphan tools (`AntagonismSimulator`, `EmaxModelCalculator`, `drug-half-life-calculator`,
+  `OsmolarGapCalculator`, `OpioidConversionCalculator`) are now on the kit but still linked from
+  nowhere on the web — registering them in `tool-index.ts` is a one-line-each change, deliberately
+  not made here.
+- An APK release build would be needed to ship the glass to phones.
+
+**Next**
+- Decide the formula fixes, starting with the two opioid tools — they are the ones that can produce a
+  dangerous number.
+
+### 2026-09-20 — Disk Diffusion Lab rebuilt: illustrated Lab Guide + a simulation the student performs
+
+Session `pharma-wallah`, "follow protocol", user spec (20 sections).
+
+**Completed**
+- `/simulations/disk-diffusion` is now **one lab with two halves**, Theory and Simulation, sharing one
+  interpretation setting and linked both ways by "Try it in the simulation" buttons that open the exact
+  stage a passage describes. The old 1,339-line `DiskDiffusionSim.tsx` (tutorial slides → gated quiz →
+  7 watch-mostly steps) is replaced.
+- **Theory** has five sub-sections: Principle, Materials, **Lab Guide**, Interpretation, Safety & notes.
+  The Lab Guide is a **nine-step illustrated stepper** (prepare inoculum → Mueller-Hinton plate →
+  standardise turbidity → inoculate → apply disks → incubate → observe zones → measure → interpret),
+  each step with a drawn SVG diagram, explanation, practical note, prev/next, a jump rail and a progress
+  bar. The four pre-lab questions survive as an **optional** collapsible check (it no longer gates the
+  bench) and record a `quiz_attempts` row.
+- **The student now performs the experiment.** Ten explicit stages (`intro … completed`); a stage only
+  unlocks when its prerequisites are genuinely met, in both modes. Prepare and **standardise the
+  inoculum** against a turbidity standard; choose an **agar depth**; **swab the plate by dragging**
+  (or three orientation buttons + a rim pass) with live coverage scoring; **place 4–6 disks** by tap or
+  drag with 24 mm spacing and 15 mm edge rules enforced; **incubate** (door, load, temperature,
+  duration); watch the zones appear; **measure each zone yourself with a draggable calliper** and record
+  it; interpret; finish.
+- **Measurement is the student's, not the lab's.** The true diameter is never shown before a reading is
+  recorded. The calliper checks both length *and* whether the line passes through the disk centre, so
+  measuring a chord is caught and explained. Zoom 1–3×, nudge buttons and "centre on disk" are the
+  keyboard/touch route.
+- **Mistakes teach instead of blocking.** Heavy or light inoculum, thin or thick agar, a patchy lawn,
+  disks too close or too near the rim, an off-centre or wrong-edge measurement each produce a specific
+  explanation of what it does to the result — and the experiment continues.
+- **Interpretation is configuration, not doctrine.** Criteria live per antibiotic per organism group in
+  `data.ts`, with two selectable reporting systems (S/I/R and the increased-exposure wording). Every
+  place a category is shown names the system and carries a note that real interpretation depends on the
+  standard in force, the organism, the agent, the disk content and the conditions. Pairs with no
+  criteria report **"no interpretive criteria"** rather than inventing a threshold.
+- **Results dashboard** (conditions summary, plate ↔ table linked in both directions, category shown as
+  letter + wording + icon, never colour alone) and a **completion screen** scoring *technique*, not the
+  isolate's susceptibility. Restart and "Review lab guide" work without a reload.
+- Progress tracking wired for the first time (`useTracker`): an activity row on open and on completion,
+  a quiz attempt for the pre-lab check. The old `index.ts` claimed this existed; it never did.
+
+**Files**
+- New `src/components/Simulations/DiskDiffusion/`: `types.ts`, `data.ts`, `engine.ts`,
+  `useLabMachine.ts`, `illustrations.tsx`, `equipment.tsx`, `PetriDish.tsx`, `LabGuide.tsx`,
+  `PreLabCheck.tsx`, `TheorySection.tsx`, `stages.tsx`, `SimulationWorkspace.tsx`,
+  `MeasurementTool.tsx`, `ResultsDashboard.tsx`, `CompletionScreen.tsx`, `report.ts`,
+  `DiskDiffusionLab.tsx`; `index.ts` rewritten.
+- Deleted `DiskDiffusionSim.tsx` (replaced) and `diskDiffusionData.ts` (dead — exported only through an
+  `index.ts` nothing imported; its organisms, antibiotics and questions live on in `data.ts`).
+- `src/app/(site)/simulations/disk-diffusion/page.tsx` (metadata + new component),
+  `src/app/(site)/simulations/page.tsx` (hub card description — it promised "interpret CLSI
+  breakpoints", which is exactly the claim this rebuild stops making).
+- Knowledge: this file, `.claude/{MEMORY.md (gotchas 120–126), PROJECT_MAP.md, ROADMAP.md, SKILLS.md}`,
+  new skill `.claude/skills/lab-simulation/`.
+
+**Architecture & Decisions**
+- **The model is pure and separate.** `engine.ts` and `data.ts` import no React and touch no DOM, so
+  zone size, placement legality, lawn coverage and the technique score can be reasoned about — and one
+  day tested — without rendering. `useLabMachine.ts` owns every rule about what is allowed; the
+  components only present and dispatch.
+- **The plate is drawn in real millimetres.** `PetriDish` uses a viewBox where one user unit is one
+  millimetre, so "24 mm apart", the 15 mm margin and the 6 mm disk are the same numbers in the model,
+  in the geometry and under a ruler held to the screen. One exported conversion (`plateMmFromClient`)
+  serves both the SVG's own pointer events and the tray's drag-and-drop.
+- **Zones are deterministic but not identical run to run**: base diameter × inoculum factor × agar-depth
+  factor × coverage factor, plus a jitter hashed from (seed, organism, antibiotic). The seed is printed
+  in the summary and the PDF, so a result is reproducible. A base of 0 stays 0 — technique variation
+  never invents a zone out of intrinsic resistance.
+- **No new dependencies.** framer-motion, lucide-react, Tailwind brand tokens and jsPDF only; jsPDF is
+  now a lazy `import()`, so it is in its own chunk instead of the first load as it was before.
+- **Every drag has a non-drag route** (sweep buttons, tap-to-place, calliper nudge/centre), because a
+  lab is used on phones and a drag-only interface excludes keyboard and assistive-technology users.
+- Scoring is deliberately **technique, not susceptibility** — the old version's XP/grade rewarded
+  reaching the end, which implies a resistant isolate is a worse result than a susceptible one.
+
+**Verification**
+- `npx tsc --noEmit` → **0 errors in this lab.** The run also reports 4 errors in
+  `(tools)/OpioidMMECalculator/page.tsx:229-231` (a `Set` spread needing `downlevelIteration`, gotcha 37)
+  — another session's in-flight file, not this work, so tsc is **not** at the §9 zero baseline right now.
+- `npm run build` in an **isolated copy** of the tree (two peer `next dev` servers were running on the
+  shared root — see below) → **exit 0**, 277 route lines, shared JS **88.5 kB**, middleware 81.9 kB,
+  `/simulations/disk-diffusion` **49.1 kB / 241 kB first load**. jsPDF confirmed absent from the page
+  chunk and present in its own. Only the expected pre-existing warnings (Edge `process.version`,
+  stale `caniuse-lite`, webpack big-strings, and `buffer-lab`'s ambiguous `duration-[2000ms]` class).
+- Headless Chrome over CDP against an isolated dev server, **145 assertions, all passing**:
+  - **Theory 22/22** — five tabs; nine guide steps each with figure, heading and practical note;
+    Next disabled on the last step; Previous works; criteria table has a row per antibiotic and 17
+    dashes where a pair has no criteria; switching the reporting system changes the note and the
+    wording; the pre-lab check records all four answers with explanations.
+  - **Simulation 50/50 at 1440** — locked stages unreachable; Continue blocked at every gate; turbidity
+    disabled before the suspension exists; drag-to-swab paints the lawn; three sweeps + rim reach 100%;
+    four disks place; a disk 4 mm from a neighbour is refused **with the spacing explanation** and does
+    not land; one past the 15 mm margin is refused with the edge explanation; a legal fifth lands at the
+    plate centre; incubation gated on load-then-close-door; zones drawn; **the calliper reads exactly
+    25 mm for a 25 mm span** (geometry verified against the mm grid); an off-centre line is called out as
+    "a chord, not a diameter"; all five zones recorded; results table complete with criteria and source
+    note; completion screen; restart clears the bench.
+  - **Responsive 63/63** — phone 390 (touch), tablet 768 (touch), desktop reduced-motion. Full
+    experiment completed by **synthetic touch** on both touch widths; no horizontal overflow at any
+    stage at any width; the wide criteria table scrolls in its own box, not the page; swabbing does not
+    pan the page; reduced motion reveals the zones at once.
+  - **Accessibility 10/10** — every control in the tab order is labelled and shows a focus indicator;
+    the Lab Guide is keyboard reachable; **a confluent lawn is achievable with the keyboard alone**;
+    one h1; every `role="img"` SVG in the lab carries a title or label; categories carry letter +
+    wording + icon, not colour alone.
+  - **0 console errors and 0 exceptions in every run.**
+- Screenshots read at 1440, 768 and 390. They caught three things the assertions did not: the lawn
+  rendering as a visible grid of squares at the rim (the coverage cells — now softened with a blur),
+  the measured "20 mm" chip colliding with the calliper readout on the disk being measured (now hidden
+  while that disk is active), and calliper handles too small for a fingertip (now a 7 mm ≈ 46 px grab
+  ring). A copy bug was also caught by reading the screen: the growth summary said "the rest show
+  growth right up to the disk edge" when every disk had produced a zone.
+- **Five real defects were found and fixed during verification**, all by driving the page rather than by
+  reading it: the pre-lab check dropped all but one answer when several were answered in the same tick
+  (stale closure in a non-functional `setState`); the plate scrolled out of view because a sticky grid
+  item with `items-start` has no travel; tapping a disk in the tray selected then immediately
+  deselected it (pointerdown/click fighting); a tap near an existing disk grabbed it instead of
+  reporting the spacing error; and the growth copy above. See MEMORY gotchas 120–126.
+- **NOT verified:** a real phone or tablet, iOS Safari, a real screen reader, the print/PDF dialog
+  (the PDF path is exercised only as far as the lazy import), dark mode (still unreachable site-wide,
+  tracker F13), and signed-in progress tracking (no credentials — the `useTracker` calls are wired and
+  type-check, but no row was observed in Supabase). No test framework covers this lab; `npm run lint`
+  is not configured. The lab is web-only and is not in the APK.
+
+**Remaining**
+- Commit (not done — the protocol forbids it). Note the tree also holds two other sessions' uncommitted
+  work (the community system, encyclopedia, and 17 calculator migrations); only the files listed above
+  are this session's.
+- The same Theory + Lab Guide + performed-procedure shape would suit the other seven simulations; the
+  new `lab-simulation` skill records how.
+- Owner decision: whether the teaching criteria should be replaced with a licensed, citable table
+  before this is used for assessment rather than practice.
+
+**Next**
+- Try the lab on a real phone — the drag-to-swab and calliper drag are the two things synthetic touch
+  cannot really judge.
+
+---
+
+### 2026-09-20 — Books Library removed (copyright); AI Guide rebuilt as its replacement
+
+Session `7189144b`, "follow protocol". User: "remove Book library and replace with AI guide (already
+available) enhance it. Book library has issue of copyright and such".
+
+**Completed**
+- **`/books-library` is gone**, with its 39 entries and **35 scanned cover images (14 MB)**. It
+  linked Google-Drive copies of Tortora, Guyton, Ross & Wilson, Lippincott, Remington and the rest —
+  material we hold no licence to distribute, on a site that runs AdSense. Worth knowing for the
+  decision: **38 of the 39 "Read" buttons pointed at `"#"`** — only one book had a real link, so the
+  page was mostly non-functional as well as unlicensable. Everything is recoverable from git.
+- **`/books-library` → `/ai-guide` as a permanent 308** in `next.config.mjs`, so bookmarks, the
+  Android app's links and anything indexed land on the replacement rather than a 404.
+- **Navigation updated in five places.** Footer and MegaMenu already carried an "AI Guide" row, so
+  the Books row was removed there rather than relabelled (it would have duplicated); the header
+  menu and the dashboard's Reference links became "AI Guide" entries. The unrendered
+  `Home/Features` card was removed too, along with its fabricated "150+ Textbook Titles" ticker stat.
+- **The AI Guide was rebuilt to earn the promotion**, not merely inherit the link:
+  - **Answers stream.** Measured on a 3,414-character answer: first text at 6.7 s, complete at
+    10.2 s, in 17 chunks. The bounded win is honest — `gemini-2.5-flash` is a thinking model and
+    most of that 6.7 s is deliberation before any token exists.
+  - **Five study modes** — Explain, Quiz me, Compare, Calculate, Clinical — each with its own
+    starters and its own prompt directive. A mode crosses the wire as an **id**; the server maps it
+    to text, so a client can never supply prompt content.
+  - **Saved conversations** in localStorage: rename, delete, clear all, restore on reload, titled
+    from the first question. The UI states it is per-device and not synced.
+  - **Stop, Regenerate, Copy**, a thinking indicator, a streaming caret, and a partial answer kept
+    (and labelled) when a stream is cut short.
+  - **Markdown is actually styled now** — see the gotcha below.
+  - **A "Study material on PharmaWallah" panel** listing the nine real pages we own, and the line
+    "We don't host textbook scans — those aren't ours to give away." The same list is generated into
+    the system prompt, so the model recommends real routes instead of inventing them.
+  - **The prompt forbids reproducing textbook passages** or claiming to source a book — the
+    copyright concern encoded where it can actually bite.
+  - **The page has metadata for the first time.** It was `"use client"` from line 1, so it could
+    never export a title, description or canonical.
+
+**Security — `/api/chat` was the app's biggest money exposure and is now fixed**
+- It was **unauthenticated, un-rate-limited and unvalidated** (`Array.isArray` and nothing more) on
+  a paid Gemini endpoint. Now: anonymous **8 / 5 min by IP**, signed-in **30 / 5 min by user id**,
+  and the body is validated and clamped (30 turns, 8k chars per message, 24k total) **before** any
+  call is made. Unknown roles are dropped, so a client-supplied `system` turn cannot reach the model.
+- **The key is on the Gemini free tier — 5 requests per minute for the entire project** (measured,
+  not assumed). That ceiling binds long before our limits do; an upstream 429 now maps to a **503**
+  with "try again in about a minute" instead of a generic failure. **Owner decision: enable billing
+  if the guide is to carry the traffic the Books Library link used to send it.**
+
+**Files**
+- Deleted: `src/app/(site)/books-library/page.tsx`, `public/images/books/` (35 files).
+- New: `src/lib/ai-guide/{types,pure,modes,prompt,resources}.ts`;
+  `src/components/ai-guide/{AIGuideClient,Markdown}.tsx`, `{useChatStream,useThreads}.ts`,
+  `ai-guide.css`; `scripts/ai-guide.test.mts`.
+- Rewritten: `src/app/api/chat/route.ts`, `src/app/(site)/ai-guide/page.tsx` (now a server page).
+- Edited: `next.config.mjs` (1 redirect), `Layout/Footer`, `Layout/Header/MegaMenu`,
+  `Layout/Header/Navigation/menuData`, `dashboard/dashboard-data.ts`, `Home/Features/index.tsx`.
+- Knowledge: this file, `.claude/{MEMORY (127-130), PROJECT_MAP, ROADMAP}.md`, skill
+  `ai-gemini-integration` (its "none of the four routes is rate limited" line was now wrong).
+
+**Architecture & Decisions**
+- **The replacement is a tutor plus a signpost, not another reading room.** Rehosting the same books
+  elsewhere would carry the same problem; the guide explains in its own words and points at material
+  we own.
+- **Pure layer in `src/lib/ai-guide/`, UI in `src/components/ai-guide/`** — the shape the community
+  established. It is what makes the deterministic half testable at all.
+- **NDJSON, not plain text, for the stream.** Once the 200 header has gone out there is no other way
+  to report a mid-answer failure, and a quota or safety stop is exactly when that happens.
+- **`clientIpFrom()` is four lines duplicated from `tournament-redis`, deliberately.** That module
+  calls `Redis.fromEnv()` at module scope and throws without Upstash; `/api/chat` must keep working
+  on `GEMINI_API_KEY` alone, with rate limiting degrading to off like every other cache here.
+- **Thinking left on.** A `thinkingConfig` budget would cut the 6.7 s, but the installed SDK (0.24.1)
+  does not type one and less deliberation is the wrong trade for Calculate mode. Recorded in the
+  route so it is not "optimised" blindly.
+- **localStorage, not Supabase, for history** — a conversations table would need schema and RLS, and
+  the schema is not in this repo (Known Issue 4). Cloud sync is an owner decision.
+- `rehype-raw` is not used, so model output can never inject HTML; `javascript:`/`data:` hrefs
+  render as plain text; internal links become in-app `next/link` chips.
+
+**Verification**
+- `npx tsc --noEmit` → **0 errors** (whole repo, matching the §9 baseline).
+- `node --test scripts/ai-guide.test.mts` → **34 pass, 0 fail**: the clamps (including the
+  regression where a lone oversized question returned the whole array), Gemini's start-on-user and
+  alternation rules, NDJSON round-trip **with a chunk boundary deliberately split mid-JSON**,
+  markdown newlines surviving the framing, malformed lines skipped, mode-id rejection of injected
+  text, and an assertion that the prompt can never again name `/books-library`.
+- `npm run build` → **exit 0** in an isolated copy (a peer session owns `.next` on :3000 — Known
+  Issue 10). `/ai-guide` **9.7 kB / 150 kB first load**; **shared JS 88.5 kB, unchanged**;
+  `/books-library` absent from the route table.
+- **Headless Chrome (CDP), dev and `next start`: 28/28 desktop + 28/28 markdown-and-phone, 0 console
+  errors.** Driven for real: a live question end to end (question echoed, thinking indicator,
+  streamed answer, Copy, Regenerate), thread saved → reload → restored, rename and delete through
+  the rail with localStorage re-read to confirm, mode switching swapping the starter set, the
+  resource panel's 9 links all in-app, phone drawer open/close, and a wide table scrolling inside
+  its own box at 390 px with no page overflow.
+- **API exercised directly**: five malformed bodies all rejected **400 before any Gemini call**; the
+  anonymous limiter observed blocking at **429**; the upstream free-tier quota observed as a **503**
+  with the intended message.
+- **Screenshots read at 1440 and 390** — and they caught the one real defect assertions missed: the
+  empty state opened scrolled past its own heading, because the auto-scroll effect also fires on
+  mount (MEMORY gotcha 130). Fixed and re-verified.
+- **NOT verified:** a real phone or tablet; iOS Safari; screen readers; the signed-in path and its
+  30/5-min limiter (no test credentials — the anonymous path was exercised instead); behaviour on
+  Vercel's Edge/CDN; dark mode (still unreachable site-wide, tracker F13). Lint is not configured.
+
+**Remaining**
+- **Commit** (the protocol forbids it here). The tree also carries other sessions' uncommitted work
+  — community, encyclopedia, DiskDiffusion and several calculators — so commit selectively.
+- Owner decision: **Gemini billing**, given the 5/min project ceiling.
+- Cloud-synced chat history needs a Supabase table; not creatable from a session.
+- `src/components/community/` may share the dead-`prose` fault (gotcha 127) — unchecked, not mine.
+
+**Next**
+- Decide on Gemini billing, then open `/ai-guide` on a real phone and ask it a calculation.
+
+---
+
+### 2026-09-20 — `/encyclopedia` redesigned: the whole record, tabbed; 3D structure in the drug card
+
+Session `pharma-wallah-a1`, "follow protocol" + `top-design`. Two riders arrived mid-task and both
+shipped in this pass: **"show all the information that is given by the search … easy to understand and
+read and does not feel overwhelming"**, then **"add the 3d structure in the drug card"**.
+
+**Completed**
+- **The page is a tool again.** The old full-screen brand cover (display headline, lead, chips and four
+  figures) had to be scrolled past on every visit. The search is now a bar that is always present: it
+  sits inside the hero band while nothing has been searched and becomes a slim **sticky** control the
+  moment it has. It is **one input across both states**, never remounted, so focus survives the second
+  character; it follows the retracting site header via the `MutationObserver` trick (gotcha 66).
+- **A record is a tabbed card, not one endless scroll.** Eight sections — Overview, Pharmacology,
+  Kinetics, Interactions, Products, Chemistry, Classification, Names & references — each tab printing
+  what it holds ("Interactions 102", "Chemistry 26"), one on screen at a time. Above them a masthead
+  (name at display scale, status, identifier ledger) and an **At a glance** row of four one-sentence
+  answers, so something true is readable before any tab is opened.
+- **Six categories of data the old page dropped are now shown** (measured against the live database,
+  not assumed):
+  1. **Interactions: 12 → all 100.** The old page sliced to 12 behind "Show all".
+  2. **Predicted properties: 8 of an allow-listed 17 → all of them.** Seven kinds were being discarded
+     for ~8,700 records each — `Monoisotopic Weight`, `InChI`, `SMILES`, `Ghose Filter`, `Polarizability`,
+     `Refractivity`, `MDDR-Like Rule`.
+  3. **`classification.substituents` — never rendered at all.** 6,994 records hold them, up to 91 each.
+  4. **`properties.monoisotopic_mass` — never rendered.** 9,036 records hold it.
+  5. **`products[].approved` — never rendered.** 6,188 of 7,032 products in one collection are flagged.
+  6. **Alternative parents were cut at 16**; synonym `language`, and prose over 900 characters (behind
+     "Continue reading") are all shown in full now.
+- **3D structure in the drug card.** The plate has a 2D ⇄ 3D switch. 3D generates a conformer from the
+  record's own SMILES on the device (OpenChemLib in a Web Worker, 3Dmol to draw), with ball-and-stick /
+  stick / space-filling, hydrogens on/off, spin, zoom, fit and reset, and a line stating it is a
+  generated conformer, not a measured crystal structure. Biotech records (3,269 of 12,673 have no
+  SMILES) say *why* there is no structure instead of showing an empty box.
+- **"Open in Molecular Lab"** from every structure plate — the hand-off `CLAUDE.md` has wanted since
+  2026-09-16.
+- **Honest counts.** `interactions.total_count` was measured and is **not** a true total: it equals the
+  stored list length on all 4,479 records and caps at exactly 100. The page says "the import stores at
+  most 100 per drug, so DrugBank lists more" rather than implying completeness. Products say the same
+  about their cap of five, synonyms about theirs.
+
+**Files**
+- `src/components/encyclopedia/EncyclopediaClient.tsx`, `Monograph.tsx`, `encyclopedia.css` — rewritten.
+- New: `src/components/encyclopedia/StructurePlate.tsx` (2D/3D switch, lazy), `Structure3D.tsx`
+  (conformer + `Viewer3D`, the documented second consumer of OpenChemLib/3Dmol).
+- Unchanged: `prose.tsx`, `useDrugSearch.ts`, `EncyclopediaFigures.tsx`, `types.ts`,
+  `src/app/(site)/encyclopedia/page.tsx`, `src/app/api/search/route.ts`.
+- Knowledge: this file (§6 rule 18, §7, §8, §9), `.claude/MEMORY.md` (gotchas 115–118),
+  `.claude/PROJECT_MAP.md`, `.claude/SKILLS.md`, new skill `drug-encyclopedia`.
+
+**Architecture & Decisions**
+- **Tabs are how "everything" and "not overwhelming" are reconciled.** Progressive disclosure by
+  *section* rather than by truncation: the reader chooses what to read, but nothing is hidden from them
+  and every tab states its size up front.
+- **One field is still withheld, and the page says so.** DrugBank's "Traditional IUPAC Name" is wrong
+  for many drugs in this import (Morphine's reads "dexamethasone phosphate"). Showing it would mislead,
+  so Chemistry names it, explains it, and points at the reliable IUPAC Name. **Reversible in one line**
+  (`UNRELIABLE_KINDS` in `Monograph.tsx`) if the owner disagrees.
+- **3D reuses the lab's `Viewer3D`** rather than a second renderer, but strictly view-only — no picking,
+  measuring or editing. `Structure3D` owns one thing the lab does not: a hydrogens-off mode, done by
+  filtering the V2000 record (3Dmol cannot hide atoms in a parsed model).
+- **No new API route and no new package.** The 2D depiction is still NIH CACTUS; 3D is computed locally.
+
+**Verification**
+- `npx tsc --noEmit` → **0 errors** in an isolated copy of the tree at HEAD + these changes. In the
+  live tree it reports 2 errors, both in `heat-transfer-area` and `reynolds-number`, which session
+  `pharma-wallah-86` is mid-migration on — **not from this work**, confirmed by reverting only those two
+  files to HEAD in the isolated copy.
+- `npm run build` → **exit 0**. `/encyclopedia` **16.3 kB / 113 kB first load**; shared JS **88.5 kB**
+  (baseline 88.4 kB, unchanged). **OpenChemLib (1.09 MB) and 3Dmol (568 KB) grepped for in every shared
+  chunk: 0 hits** — both are lazy chunks, and `resources.<hash>.json` (1.35 MB) stays a lazy asset.
+- Headless Chrome (CDP), **dev and `next start`**: desktop 1440×900 **54/54**, phone 390×844 **21/21**,
+  0 console errors. Every tab count was asserted **against the API payload for that drug** (100
+  interactions, 25 property rows, 8 substituents, 5 alternative parents, 40 name/reference entries),
+  the 3,434-character toxicity field was measured on screen (3,292 chars rendered), the interaction
+  filter was driven with a term taken from the data, the 2D image was confirmed drawn (CACTUS 200 in
+  1.6 s) and the 3D canvas was confirmed **non-blank by decoding a screenshot of it** (ink 4.95 % of the
+  plate, 172 distinct colours). Reduced motion: nothing left invisible. Biotech (Adalimumab) degrades
+  with an explanation.
+- **Screenshots read at both widths**, and they caught three things assertions did not: the 3D stage was
+  squat (198 px tall inside a 1:1 frame → frame is now 3:4 in 3D mode, stage 311 px, molecule visibly
+  larger), `MMFF94s⁺` rendered as a stray glyph in Outfit (now plain text), and an attempt to anchor the
+  identifier ledger to the foot of the masthead put a 270 px hole in the middle of the column — reverted.
+- **Isolation:** all of the above ran in a copy of the tree under this session's scratchpad with
+  `node_modules` symlinked, on port 3007. **`.next` in the real tree was never touched**, so the two
+  peer sessions' dev servers were unaffected (Known Issue 10).
+- **NOT verified:** a real phone or tablet; iOS Safari; a real mouse/trackpad feel; screen readers;
+  conformer generation time on a low-end device; dark mode (still unreachable site-wide, tracker F13);
+  `/clinical/encyclopedia`, which is untouched and still runs the old `DrugSearch`/`DrugCard`. No test
+  framework covers this page; lint is not configured.
+
+**Remaining**
+- Commit (the protocol forbids it here). Note the working tree also carries two **other** sessions'
+  in-progress work — community, DiskDiffusion and five calculator tools — so commit selectively.
+- `/clinical/encyclopedia` could now reuse `Monograph` (tracker P12).
+- DrugBank licensing for an ad-supported site is still an owner decision (Known Issue 16).
+
+**Next**
+- Open a record on a real phone and try the 3D switch — pinch, spin, and how long the conformer takes.
+
+---
+
+### 2026-09-20 — Community rebuilt as a Reddit-shaped, pharmacy-scoped system
+
+Session `db8f4631`, "follow protocol". User: "enhance my community functionality by a mile… proper
+high end community functionality system", then "Like reddit", then "Should be related to pharmacy".
+Two decisions taken by the user up front: **full Reddit model in new tables** (over extending
+`questions`/`answers`, or a UI-only pass), and **posts with an optional Question type** (over pure
+Reddit, or staying strict Q&A).
+
+**Completed**
+- **`supabase/migrations/20260920_community.sql`** — the first SQL ever committed to this repo.
+  Eight `community_*` tables, 13 indexes, 8 triggers/functions, 24 RLS policies, 12 seeded pharmacy
+  spaces, and a non-destructive backfill of the existing Q&A. Idempotent and additive: `questions`,
+  `answers`, `votes` and `profiles` are read, never altered. **The owner must run it** — see Remaining.
+- **Spaces** (the "subreddits"), seeded from what a Pharm-D student actually studies: Pharmacology,
+  Pharmaceutics, Clinical Pharmacy, Pharmaceutical Chemistry, Pharmacognosy, Pharmaceutical Analysis,
+  Calculations, Hospital & Community Practice, Exams & Study, Career & Licensing, Lab & Spotting,
+  General. Each carries its own icon, accent, flair list and rules (the clinical ones carry
+  de-identification rules; Calculations requires showing working).
+- **Posts** in four kinds — discussion, question, link, image — with flair, tags, save, share,
+  report, edit, soft delete, pin and lock. A Question post additionally gets an **accepted answer**
+  (asker only) and an "Unanswered" feed filter.
+- **Nested comments** to depth 8, with collapse (taking the subtree with it), a clickable thread
+  line, inline reply, inline edit, soft delete that keeps replies readable, and top/new/old sorting.
+- **Feed**: hot / new / top / rising, `top` with a day–all-time range, plus filters for space, tag,
+  kind, unanswered and full-text search, infinite scroll with a keyboard-reachable Load-more, and a
+  card/compact density toggle remembered per reader. All feed state lives in the **URL**, so a sort
+  or a search is shareable and the back button steps through it.
+- **Karma**, member profiles with handles, join/leave spaces, a private Saved list, and a moderation
+  report queue with a fixed reason list.
+- **Legacy URLs keep working.** `/community/ask` and `/community/question/:id/answer` are 308s in
+  `next.config.mjs`; `/community/question/<old id>` is a server component that resolves the old id
+  through `community_posts.legacy_question_id` and forwards to the new post.
+
+**Files**
+- New: `supabase/migrations/20260920_community.sql`; `src/lib/community/{constants,types,pure,server}.ts`;
+  `src/app/api/community/**` (11 routes); `src/components/community/{kit,VoteControl,PostActions,PostCard,Feed,CommunityShell,CommentThread}.tsx`
+  and `components/community/pages/{CommunityHome,SpaceView,SpacesIndex,SavedView,Submit,PostView}.tsx`;
+  `src/hooks/useCommunityVote.ts`; `scripts/community.test.mts`.
+- Rewritten: `src/app/(site)/community/page.tsx`, `error.tsx`; new routes `s/[slug]`, `post/[id]`,
+  `submit`, `spaces`, `saved`; `question/[id]/page.tsx` became a redirect.
+- Appended: `src/lib/rateLimit.ts` (three community limiters). Edited: `next.config.mjs` (2 redirects).
+- Deleted: `src/components/community/ActionsMenu.tsx`, `src/hooks/useVote.ts` (both community-only,
+  zero importers after the rebuild).
+- Knowledge: this file, `.claude/{MEMORY (106–114), PROJECT_MAP, SKILLS}.md`, new skill
+  `community-system`.
+
+**Architecture & Decisions**
+- **The community owns its own member table.** Posts/comments/votes FK to `community_members`, not
+  `profiles`, because `profiles`' shape is not version-controlled and PostgREST embedding needs a
+  real FK. `ensureMember()` creates the row on a member's first write.
+- **The database owns every derived number** — score, up/down counts, karma, comment/post/member
+  counts, hot rank, comment depth. Triggers *recompute* rather than increment, so a double-fire or a
+  manual edit cannot drift a counter.
+- **Voting is server-authoritative** (§6 rule 4). The browser posts a direction; the `community_vote`
+  RPC decides cast/switch/toggle-off and returns the stored score, which the hook uses to overwrite
+  its own optimistic guess. The retired `useVote` trusted its arithmetic with no way back.
+- **Model B throughout** (MEMORY §3): anon client + cookies, RLS enforced. Unlike the rest of the
+  app, **these policies are in the repo**, in the migration.
+- **Soft delete** for posts and comments, so a thread does not collapse when one line is removed.
+- **Markdown via react-markdown with no `rehype-raw`**, so a member cannot inject HTML; links are
+  forced to `noopener` and non-http(s) hrefs are stripped; body images render as links, not embeds.
+- **Spaces are not user-creatable** — `community_spaces` has a read policy and no insert policy, so
+  even a crafted request cannot add one.
+- Not done, by decision: image uploads (no hosting — image posts take a URL), notifications,
+  a moderator UI (reports are read in the Supabase dashboard), and cross-posting.
+
+**Verification**
+- `npx tsc --noEmit` → **0 errors** (whole repo, after a peer session fixed 5 unrelated Recharts
+  errors of its own — see Notes).
+- `node --test scripts/community.test.mts` → **19 pass, 0 fail**: comment-tree nesting, sibling
+  ordering, accepted-answer float, orphan retention, deleted-comment blanking, viewer flags, link
+  scheme rejection (`javascript:`, `data:`, `vbscript:`, `file:`), tag normalisation, clamping,
+  UUID/sort/kind guards, PostgREST embed normalisation.
+- **The migration was run for real** against a throwaway **local Postgres 16** cluster
+  (`/usr/lib/postgresql/16/bin`, no network, no Docker), with `auth.users`/`auth.uid()` and the
+  legacy tables stubbed: applied clean, **run twice to prove idempotency** (no duplicate rows), and
+  the backfill verified — legacy tags routed to the right spaces, an email-derived display name
+  filled in, counters maintained by trigger. Behaviour tested: vote cast → switch → toggle-off
+  returning the right score each time, karma recomputed, depth capped at 8, `reply_count`,
+  cross-post reply refused, and the comment-tree RPC returning roots + all 13 descendants in one call.
+  **RLS was tested from a `nobypassrls` role** (a superuser silently bypasses RLS): cross-member
+  update and delete both affect 0 rows, a forged `user_id` insert raises a policy violation, another
+  member's votes are invisible, own insert succeeds.
+- **Four defects were caught during verification and fixed**, three of them only findable by
+  actually running things:
+  1. `round(double precision, int)` does not exist in Postgres — the hot-rank function failed on its
+     first real run. Arithmetic moved to `numeric`.
+  2. Backfilled scores produced **zero karma**, because karma only moves when the vote trigger
+     fires. The migration now ends with a karma recompute pass.
+  3. **The comment New/Old sorts did nothing.** The RPC uses `sort` only to choose *which* roots to
+     load; the tree builder then re-sorted by score unconditionally, so all three tabs rendered the
+     same order. `buildCommentTree` now takes the sort, with the accepted answer still pinned first.
+     Two regression tests cover it.
+  4. **A privilege hole: RLS is row-level, not column-level.** The `update` policies let a member
+     edit *their own row* — which through a direct PostgREST call (bypassing the route handlers
+     entirely) meant they could set their own `score`, `post_karma`, `view_count` or `is_pinned`.
+     Closed with BEFORE UPDATE guard triggers that restore every database-owned column from `OLD`
+     unless the session is privileged. Verified from a `nobypassrls` role: tampering is silently
+     reverted, while a legitimate title/body edit, the view-counter RPC and a real vote all still
+     work. See MEMORY gotcha 115 — **any new user-writable table needs the same treatment.**
+- `npm run build` → **exit 0** in an **isolated copy** of the tree (a peer session's `next dev` owns
+  `.next` on :3000 — Known Issue 10). All community pages and **11 API routes** emitted; shared JS
+  **88.5 kB** (baseline 88.4), middleware 81.9 kB unchanged. `next start` on :3100: `/community`,
+  `/submit`, `/spaces`, `/saved`, `/s/pharmacology` and `/post/<uuid>` all **200 with no server
+  exception**, and `/community/ask` forwards to `/community/submit?kind=question`.
+- **Community first-load JS is 219–228 kB**, against ~106 kB for a page-kit page — `react-markdown`
+  plus `remark-gfm` is most of it. Acceptable for the richest interactive surface on the site, but
+  it is the heaviest route family in the app; if it needs to come down, lazy-load the Markdown
+  renderer (bodies are the only thing that needs it) before touching anything else.
+- **Two self-inflicted verification traps caught and corrected mid-task**, worth knowing for the
+  next isolated build: an `rsync` without `--delete` left deleted page files in the build copy, so
+  an early run "verified" routes that no longer exist; and two builds briefly shared one `.next`,
+  which failed with `rm: cannot remove '.next/server/app'`. Sync with `--delete`, and never run two
+  builds against the same tree.
+- **NOT verified:** anything requiring the live database — no post, comment, vote, save, join or
+  report has been exercised end to end, because the migration is not applied and production reads
+  were blocked in this session. No browser/CDP pass, no screenshots, no phone, no dark mode. Lint is
+  not configured.
+
+**Remaining**
+- **The owner must run `supabase/migrations/20260920_community.sql` in the Supabase SQL editor.**
+  Until then every `/community` route renders its error boundary. Nothing else is blocking.
+- After applying it, walk one post end to end (post → comment → reply → vote → accept → save).
+- Image uploads, notifications and a moderator UI are open decisions.
+- The legacy `/api/qa/*` routes and `questions`/`answers`/`votes` tables are now unused by the UI —
+  delete once the community is proven in production.
+
+**Next**
+- Apply the migration, then exercise the flow signed in and confirm karma and counters move.
+
+---
 
 ### 2026-09-16 — Molecule Viewer → Molecular Lab (build, edit and explore molecules in 2D and 3D)
 
@@ -1307,12 +2100,12 @@ Session `pharma-wallah-a8`, renamed `pharma-wallah-3d` after a machine reboot mi
 
 | Check | Command | Baseline (last re-measured 2026-09-16) |
 | --- | --- | --- |
-| Type-check | `npx tsc --noEmit` | **PASSES — 0 errors** (2026-09-16). Any error you see is yours. The app project: `npx tsc --noEmit -p mobile/tsconfig.json` → 0 errors (needs a generated `mobile/app/_generated`, i.e. one `npm run mobile:build`). |
+| Type-check | `npx tsc --noEmit` | **PASSES — 0 errors, re-measured 2026-09-20** after the calculator migration finished (104/104 on the kit). The 4 transient errors a peer recorded in `(tools)/OpioidMMECalculator/page.tsx:229-231` were a `Set` spread needing `downlevelIteration` (gotcha 37) during that migration and are **fixed** — use `Array.from(...)`, not a spread, in this tsconfig. Any error you see now is yours. The app project: `npx tsc --noEmit -p mobile/tsconfig.json` → 0 errors (needs a generated `mobile/app/_generated`, i.e. one `npm run mobile:build`). |
 | Lint | `npm run lint` | **NOT AVAILABLE.** No ESLint config; the command opens an interactive setup prompt. Do not report lint as passing. |
-| Build | `npm run build` | **PASSES — re-verified 2026-09-16 after Molecular Lab** (in an isolated copy of the tree, dev server left up): exit 0, shared JS **88.4 kB**, middleware 81.9 kB, `/molecular-lab` 59.5 kB / 148 kB first load, `resources.<hash>.json` 1.35 MB in `static/media`. The build also prints several `Dynamic server usage` stack traces (tournament leaderboard, DailyMed, AMR routes) — logged by those handlers, non-fatal, not new. **Before that** (again after the simple `/about-us`: exit 0, shared JS 88.3 kB, `/about-us` 106 kB first load). Earlier the same day: exit 0 in ~2.5 min, 252 route lines, shared JS **88.3 kB**, middleware 81.9 kB; `/calculation-tools/rf-value-calculator` 184 kB and `/cfu-calculator` 183 kB first load; `.next/static/media/opencv.<hash>.js` 10.8 MB emitted as an asset. Same expected warnings as below. **Earlier (2026-09-12):** with the dev server stopped, after the AdSense work (the first successful run since the PWA removal, the shadcn migration and the Outfit switch): exit 0, ~170 routes, middleware 81.8 kB, shared JS 87.8 kB. Stop `npm run dev` first — they share `.next` and corrupt each other (§7 Known Issue 10). **PASSES with a populated `.env`** — exit 0, ~170 routes emitted, middleware 81.8 kB, shared JS 87.8 kB. Only `/_not-found` is static; everything else is `ƒ` (dynamic, server-rendered on demand). **Without `.env` it FAILS**: `Missing environment variable: NEXT_PUBLIC_SUPABASE_URL` while collecting page data for `/api/admin/registrations`. Expected non-fatal warnings: the `@supabase/supabase-js` Edge-runtime `process.version` notice, the stale `caniuse-lite` Browserslist notice, and two webpack "Serializing big strings" cache notices. |
-| Mobile build | `npm run mobile:build` | **PASSES (2026-09-16, ~2 min)** — 105 HTML files under `mobile/out/calculation-tools/`, home `/` 125 kB first load, shared JS 88.2 kB, CSS **113,194 bytes**, `mobile/out` 22 MB (OpenCV.js is 10.8 MB of it). Secret scan: use the JWT-shaped pattern (gotcha 90). **Earlier (v1.1):** 109 static pages, 108 HTML files, 105 under `mobile/out/calculation-tools/`, shared JS 87.9 kB, CSS in two files **98,751 + 4,210 bytes**, 12 MB (re-measured 2026-09-13 by the v1.1 APK build, with 85 of 104 tools on the kit; 103,829 + 4,210 before). Independent of `.env` and safe to run while `npm run dev` is up (separate `mobile/.next`). **Also assert zero ad strings in `mobile/out`** — see `.claude/skills/adsense-monetization/SKILL.md`. A ~10 KB stylesheet is the silent Tailwind failure (gotcha 23). |
-| APK | `npm run mobile:apk` | **PASSES (2026-09-16, v1.3 / versionCode 4, ~2.5 min)** — signed V2 release APK **9,347,799 B** (8.9 MB), same certificate SHA-256 `afe4c18e…5b03` as v1.2; published file byte-identical to the Gradle output. **Earlier:** (2026-09-14, v1.2 / versionCode 3, built by `pharma-wallah-4b` — new launcher icon + redesigned Serial Dose tool) — signed V2 release APK, 5,945,495 B, copied to `public/downloads/`; same certificate as v1.0/v1.1. Needs JDK 21 (auto-selected) and `android/keystore.properties`. Check `aapt dump badging` for the version and `apksigner verify --print-certs` for the certificate. |
-| Tests | `node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts` · `node --test scripts/molecular-lab.test.mts` | **41 pass, 0 fail** (2026-09-16; 21 TLC + 20 colony, ~10 s) · **21 pass, 0 fail** (2026-09-16, Molecular Lab, ~12 s, real OpenChemLib). These cover three features' pure modules only — there is no framework, no CI, and nothing else is tested. Report them by name. |
+| Build | `npm run build` | **PASSES — re-verified 2026-09-20 after the calculator migration finished** (isolated copy of the tree; peers had agreed not to build in the shared root): exit 0, shared JS **88.5 kB**, middleware **81.9 kB**. All 104 calculators then swept against `next start` at 1440×900 and 390×844 — 104/104 HTTP 200, hydrated, **0 exceptions, 0 console errors, 0 horizontal overflow**. **Also 2026-09-20 after the AI Guide rebuild** (isolated copy; the peer dev server on :3000 was left alone): exit 0, shared JS **88.5 kB** (unchanged), `/ai-guide` **9.7 kB / 150 kB first load**, `/books-library` no longer emitted. **Also 2026-09-20, after the Disk Diffusion Lab rebuild** (in an isolated copy of the tree — two peer `next dev` servers were running on the shared root and had already corrupted its `.next`, MEMORY gotcha 126): exit 0, **277 route lines**, shared JS **88.5 kB**, middleware 81.9 kB, `/simulations/disk-diffusion` 49.1 kB / **241 kB first load**; jsPDF confirmed absent from the page chunk and present in its own, so the report no longer rides in the first load. One extra expected warning: `buffer-lab`'s ambiguous `duration-[2000ms]` class. **Earlier the same day: PASSES — after the `/encyclopedia` redesign** (in an isolated copy of the tree, the peer sessions' dev servers left alone): exit 0, shared JS **88.5 kB**, `/encyclopedia` **16.3 kB / 113 kB first load**, `/molecular-lab` 60.2 kB / 149 kB. OpenChemLib (1.09 MB) and 3Dmol (568 KB) are lazy chunks only — grep the built shared chunks for both and expect **0 hits** before shipping any new 3D consumer. Two 404s on `/_vercel/insights` and `/_vercel/speed-insights` appear under `next start` locally; they come from `Analytics` / `SpeedInsights` in `src/app/layout.tsx` and only resolve on Vercel — not a defect. **Earlier: PASSES — 2026-09-16 after Molecular Lab** (in an isolated copy of the tree, dev server left up): exit 0, shared JS **88.4 kB**, middleware 81.9 kB, `/molecular-lab` 59.5 kB / 148 kB first load, `resources.<hash>.json` 1.35 MB in `static/media`. The build also prints several `Dynamic server usage` stack traces (tournament leaderboard, DailyMed, AMR routes) — logged by those handlers, non-fatal, not new. **Before that** (again after the simple `/about-us`: exit 0, shared JS 88.3 kB, `/about-us` 106 kB first load). Earlier the same day: exit 0 in ~2.5 min, 252 route lines, shared JS **88.3 kB**, middleware 81.9 kB; `/calculation-tools/rf-value-calculator` 184 kB and `/cfu-calculator` 183 kB first load; `.next/static/media/opencv.<hash>.js` 10.8 MB emitted as an asset. Same expected warnings as below. **Earlier (2026-09-12):** with the dev server stopped, after the AdSense work (the first successful run since the PWA removal, the shadcn migration and the Outfit switch): exit 0, ~170 routes, middleware 81.8 kB, shared JS 87.8 kB. Stop `npm run dev` first — they share `.next` and corrupt each other (§7 Known Issue 10). **PASSES with a populated `.env`** — exit 0, ~170 routes emitted, middleware 81.8 kB, shared JS 87.8 kB. Only `/_not-found` is static; everything else is `ƒ` (dynamic, server-rendered on demand). **Without `.env` it FAILS**: `Missing environment variable: NEXT_PUBLIC_SUPABASE_URL` while collecting page data for `/api/admin/registrations`. Expected non-fatal warnings: the `@supabase/supabase-js` Edge-runtime `process.version` notice, the stale `caniuse-lite` Browserslist notice, and two webpack "Serializing big strings" cache notices. |
+| Mobile build | `npm run mobile:build` | **PASSES (2026-09-20, ~2 min)** — after the calculator migration and the liquid-glass kit change: exit 0, **108 HTML files**, 106 entries under `mobile/out/calculation-tools/`, CSS **84,243 + 4,210 bytes**. The glass ships to the APK: `calcSheen`/`calcTide` and the `[@media(hover:none)]` phone path are all present in the exported CSS, and the export renders at 390 px with `backdrop-filter: none`. **Earlier (2026-09-16, ~2 min)** — 105 HTML files under `mobile/out/calculation-tools/`, home `/` 125 kB first load, shared JS 88.2 kB, CSS **113,194 bytes**, `mobile/out` 22 MB (OpenCV.js is 10.8 MB of it). Secret scan: use the JWT-shaped pattern (gotcha 90). **Earlier (v1.1):** 109 static pages, 108 HTML files, 105 under `mobile/out/calculation-tools/`, shared JS 87.9 kB, CSS in two files **98,751 + 4,210 bytes**, 12 MB (re-measured 2026-09-13 by the v1.1 APK build, with 85 of 104 tools on the kit; 103,829 + 4,210 before). Independent of `.env` and safe to run while `npm run dev` is up (separate `mobile/.next`). **Also assert zero ad strings in `mobile/out`** — see `.claude/skills/adsense-monetization/SKILL.md`. A ~10 KB stylesheet is the silent Tailwind failure (gotcha 23). |
+| APK | `npm run mobile:apk` | **PASSES (2026-09-20, v1.4 / versionCode 5, ~2 min)** — signed V2 release APK **9,369,674 B (8.9 MB)**, certificate SHA-256 `afe4c18e…5b03` **unchanged from v1.3**, so it installs as an update; published file byte-identical to the Gradle output; 104 tool pages inside. **Earlier (2026-09-16, v1.3 / versionCode 4, ~2.5 min)** — signed V2 release APK **9,347,799 B** (8.9 MB), same certificate SHA-256 `afe4c18e…5b03` as v1.2; published file byte-identical to the Gradle output. **Earlier:** (2026-09-14, v1.2 / versionCode 3, built by `pharma-wallah-4b` — new launcher icon + redesigned Serial Dose tool) — signed V2 release APK, 5,945,495 B, copied to `public/downloads/`; same certificate as v1.0/v1.1. Needs JDK 21 (auto-selected) and `android/keystore.properties`. Check `aapt dump badging` for the version and `apksigner verify --print-certs` for the certificate. |
+| Tests | `node --test scripts/pharmacy-counter.test.mts` · `node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts` · `node --test scripts/molecular-lab.test.mts` · `node --test scripts/community.test.mts` · `node --test scripts/ai-guide.test.mts` | **47 pass, 0 fail** (2026-09-20, Community Pharmacy pure layer, ~0.5 s — case-data integrity, the check grader, verification truths, labels, expiry, inventory, the calculators, scoring) · **41 pass, 0 fail** (2026-09-16; 21 TLC + 20 colony, ~10 s) · **21 pass, 0 fail** (2026-09-16, Molecular Lab, ~12 s, real OpenChemLib) · **19 pass, 0 fail** (2026-09-20, community pure layer, <1 s) · **34 pass, 0 fail** (2026-09-20, AI Guide pure layer — request clamps, Gemini history rules, NDJSON framing, study modes — <1 s). These cover six features' pure modules only — there is no framework, no CI, and nothing else is tested. Report them by name. **The community's SQL is verified separately** by running its migration twice against a throwaway local Postgres 16 and asserting RLS from a `nobypassrls` role — see the `community-system` skill. |
 
 ---
 

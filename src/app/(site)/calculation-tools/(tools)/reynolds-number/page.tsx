@@ -1,271 +1,384 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { Wind, Activity, Droplet, Gauge, AlertCircle, Info, BookOpen, RefreshCw } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+import { useMemo, useState } from "react";
+import { Wind } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ReferenceLine,
+  ResponsiveContainer,
+} from "recharts";
+import { Button } from "@/components/ui/button";
+import {
+  CalculatorShell,
+  CalcSection,
+  FieldGrid,
+  NumberField,
+  ResultCard,
+  ResultRow,
+  FormulaNote,
+  Formula,
+  CalcAbout,
+  CalcList,
+  CalcFaq,
+  AdSlot,
+  LabNotice,
+  type ResultTone,
+} from "@/components/calculators";
+
+/* ── Fluid property presets (values unchanged from the original page) ────── */
+const FLUID_PRESETS = [
+  { fluid: "Water (20°C)", short: "Water", density: "998", viscosity: "0.001002" },
+  { fluid: "Air (20°C)", short: "Air", density: "1.204", viscosity: "0.0000181" },
+  { fluid: "Ethanol", short: "Ethanol", density: "789", viscosity: "0.0012" },
+  { fluid: "Glycerin", short: "Glycerin", density: "1260", viscosity: "1.49" },
+  { fluid: "Oil (SAE 30)", short: "Oil", density: "920", viscosity: "0.29" },
+];
+
+/* ── Pure calculation — thresholds, correlations and rounding copied verbatim ── */
+interface ReynoldsResult {
+  re: number;
+  flowRegime: string;
+  description: string;
+  fFactor: number;
+  tone: ResultTone;
+}
+
+function computeReynolds(
+  densityRaw: string,
+  velocityRaw: string,
+  diameterRaw: string,
+  viscosityRaw: string,
+): ReynoldsResult | null {
+  const rho = parseFloat(densityRaw);
+  const v = parseFloat(velocityRaw);
+  const D = parseFloat(diameterRaw);
+  const mu = parseFloat(viscosityRaw);
+
+  if (
+    !Number.isFinite(rho) || !Number.isFinite(v) || !Number.isFinite(D) || !Number.isFinite(mu) ||
+    rho <= 0 || v <= 0 || D <= 0 || mu <= 0
+  ) {
+    return null;
+  }
+
+  const re = (rho * v * D) / mu;
+
+  // Bands, wording and the friction-factor correlations are the original's.
+  if (re < 2000) {
+    return {
+      re,
+      flowRegime: "LAMINAR FLOW",
+      description: "Smooth, predictable flow with parallel streamlines",
+      fFactor: 64 / re,
+      tone: "success",
+    };
+  }
+  if (re < 4000) {
+    return {
+      re,
+      flowRegime: "TRANSITIONAL FLOW",
+      description: "Unstable flow regime between laminar and turbulent",
+      fFactor: 0.316 / Math.pow(re, 0.25),
+      tone: "warning",
+    };
+  }
+  return {
+    re,
+    flowRegime: "TURBULENT FLOW",
+    description: "Chaotic flow with eddies and mixing",
+    fFactor: 0.316 / Math.pow(re, 0.25),
+    tone: "danger",
+  };
+}
+
+const formatRe = (re: number) => re.toLocaleString(undefined, { maximumFractionDigits: 0 });
 
 export default function ReynoldsNumberCalculator() {
-    const [density, setDensity] = useState<string>('1000');
-    const [velocity, setVelocity] = useState<string>('');
-    const [diameter, setDiameter] = useState<string>('');
-    const [viscosity, setViscosity] = useState<string>('0.001');
-    const [result, setResult] = useState<{
-        re: number;
-        flowRegime: string;
-        description: string;
-        color: string;
-        fFactor: number;
-    } | null>(null);
-    const [chartData, setChartData] = useState<any[]>([]);
-    const [showDetails, setShowDetails] = useState<boolean>(false);
+  const [density, setDensity] = useState("1000");
+  const [velocity, setVelocity] = useState("");
+  const [diameter, setDiameter] = useState("");
+  const [viscosity, setViscosity] = useState("0.001");
 
-    const fluidProperties = [
-        { fluid: 'Water (20°C)', density: '998', viscosity: '0.001002' },
-        { fluid: 'Air (20°C)', density: '1.204', viscosity: '0.0000181' },
-        { fluid: 'Ethanol', density: '789', viscosity: '0.0012' },
-        { fluid: 'Glycerin', density: '1260', viscosity: '1.49' },
-        { fluid: 'Oil (SAE 30)', density: '920', viscosity: '0.29' },
-    ];
+  const result = useMemo(
+    () => computeReynolds(density, velocity, diameter, viscosity),
+    [density, velocity, diameter, viscosity],
+  );
 
-    const calculateReynolds = () => {
-        const ρ = parseFloat(density);
-        const v = parseFloat(velocity);
-        const D = parseFloat(diameter);
-        const μ = parseFloat(viscosity);
+  // Re against a velocity sweep, as on the original: 0.1 m/s to 2v in steps of v/10.
+  const chartData = useMemo(() => {
+    if (!result) return [];
+    const rho = parseFloat(density);
+    const v = parseFloat(velocity);
+    const D = parseFloat(diameter);
+    const mu = parseFloat(viscosity);
+    const rows: { velocity: number; Re: number }[] = [];
+    for (let vel = 0.1; vel <= v * 2; vel += v / 10) {
+      rows.push({ velocity: vel, Re: (rho * vel * D) / mu });
+    }
+    return rows;
+  }, [result, density, velocity, diameter, viscosity]);
 
-        if (isNaN(ρ) || isNaN(v) || isNaN(D) || isNaN(μ) || ρ <= 0 || v <= 0 || D <= 0 || μ <= 0) {
-            alert('Please enter valid positive numbers');
-            return;
-        }
+  const positiveError = (raw: string, name: string) => {
+    if (raw.trim() === "") return undefined;
+    const n = parseFloat(raw);
+    if (!Number.isFinite(n)) return `Enter ${name} as a number.`;
+    return n <= 0 ? `${name} must be greater than 0.` : undefined;
+  };
 
-        const re = (ρ * v * D) / μ;
+  const reset = () => {
+    setDensity("1000");
+    setVelocity("");
+    setDiameter("");
+    setViscosity("0.001");
+  };
 
-        let flowRegime = '', description = '', color = '', fFactor = 0;
-        if (re < 2000) {
-            flowRegime = 'LAMINAR FLOW';
-            description = 'Smooth, predictable flow with parallel streamlines';
-            color = 'text-blue-600';
-            fFactor = 64 / re;
-        } else if (re < 4000) {
-            flowRegime = 'TRANSITIONAL FLOW';
-            description = 'Unstable flow regime between laminar and turbulent';
-            color = 'text-yellow-600';
-            fFactor = 0.316 / Math.pow(re, 0.25);
-        } else {
-            flowRegime = 'TURBULENT FLOW';
-            description = 'Chaotic flow with eddies and mixing';
-            color = 'text-red-600';
-            fFactor = 0.316 / Math.pow(re, 0.25);
-        }
+  return (
+    <CalculatorShell
+      title="Reynolds Number Calculator"
+      subtitle="Works out Re = ρvD/μ for pipe flow, names the flow regime and gives the Darcy friction factor for that regime."
+      icon={Wind}
+      eyebrow="Pharmaceutical Engineering"
+      aside={
+        <>
+          <CalcAbout title="About the Reynolds number">
+            <p>
+              Re compares inertial forces with viscous forces. Below about 2000 viscosity wins and the
+              flow stays in orderly layers; above about 4000 inertia wins and the flow breaks into
+              eddies. The regime decides pressure drop, heat transfer and how well a fluid mixes.
+            </p>
+            <CalcList
+              title="Use it when"
+              items={[
+                "Sizing pipework or choosing a pump duty",
+                "Deciding whether flow in a jacket or coil will mix well",
+                "Scaling a process up and needing to keep the same regime",
+              ]}
+            />
+            <CalcList
+              tone="caution"
+              title="Keep in mind"
+              items={[
+                "This is the pipe-flow Reynolds number, with D the internal diameter. Stirred tanks use the impeller form (ND²ρ/μ) instead.",
+                "The 2000/4000 boundaries are conventional, not sharp — transition depends on entry conditions and roughness.",
+                "μ here is the dynamic viscosity in Pa·s. If you have kinematic viscosity (m²/s), multiply by density first.",
+              ]}
+            />
+          </CalcAbout>
 
-        setResult({ re, flowRegime, description, color, fFactor });
+          <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+        </>
+      }
+    >
+      <ResultCard
+        label="Reynolds number (Re)"
+        value={result ? formatRe(result.re) : null}
+        unit="dimensionless"
+        interpretation={result ? result.flowRegime : undefined}
+        tone={result?.tone ?? "neutral"}
+        empty="Enter density, velocity, diameter and viscosity (all above 0) to find the flow regime."
+      />
 
-        // Generate Re vs velocity curve
-        const data = [];
-        for (let vel = 0.1; vel <= v * 2; vel += v / 10) {
-            data.push({ velocity: vel, Re: (ρ * vel * D) / μ });
-        }
-        setChartData(data);
-    };
+      {result && (
+        <LabNotice tone={result.re < 2000 ? "info" : result.re < 4000 ? "warning" : "danger"} title={result.flowRegime}>
+          {result.description}. Darcy friction factor f = {result.fFactor.toFixed(4)}.
+        </LabNotice>
+      )}
 
-    useEffect(() => {
-        if (velocity && diameter) calculateReynolds();
-    }, [density, velocity, diameter, viscosity]);
+      <CalcSection title="Flow parameters" description="Fluid properties and the pipe conditions.">
+        <FieldGrid>
+          <NumberField
+            label="Density ρ"
+            value={density}
+            onChange={setDensity}
+            unit="kg/m³"
+            step="0.001"
+            min={0}
+            placeholder="e.g. 1000"
+            hint="Water at 20 °C is 998 kg/m³."
+            error={positiveError(density, "Density")}
+          />
+          <NumberField
+            label="Velocity v"
+            value={velocity}
+            onChange={setVelocity}
+            unit="m/s"
+            step="0.01"
+            min={0}
+            placeholder="e.g. 2.5"
+            hint="Mean velocity across the pipe cross-section."
+            error={positiveError(velocity, "Velocity")}
+          />
+          <NumberField
+            label="Diameter D"
+            value={diameter}
+            onChange={setDiameter}
+            unit="m"
+            step="0.001"
+            min={0}
+            placeholder="e.g. 0.1"
+            hint="Internal diameter. 50 mm pipe = 0.05 m."
+            error={positiveError(diameter, "Diameter")}
+          />
+          <NumberField
+            label="Dynamic viscosity μ"
+            value={viscosity}
+            onChange={setViscosity}
+            unit="Pa·s"
+            step="0.000001"
+            min={0}
+            placeholder="e.g. 0.001"
+            hint="Water at 20 °C is about 0.001 Pa·s."
+            error={positiveError(viscosity, "Viscosity")}
+          />
+        </FieldGrid>
 
-    const reset = () => {
-        setDensity('1000');
-        setVelocity('');
-        setDiameter('');
-        setViscosity('0.001');
-        setResult(null);
-        setChartData([]);
-    };
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-[13px] font-medium text-foreground/90">Common fluids</span>
+          {FLUID_PRESETS.map((f) => (
+            <Button
+              key={f.fluid}
+              type="button"
+              variant="outline"
+              size="sm"
+              title={`ρ ${f.density} kg/m³ · μ ${f.viscosity} Pa·s`}
+              onClick={() => {
+                setDensity(f.density);
+                setViscosity(f.viscosity);
+              }}
+            >
+              {f.short}
+            </Button>
+          ))}
+          <Button type="button" variant="ghost" size="sm" onClick={reset}>
+            Reset
+          </Button>
+        </div>
+      </CalcSection>
 
-    return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 pt-20">
-            <div className="max-w-7xl mx-auto">
-                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6">
-                    <div className="flex items-center">
-                        <div className="bg-white/20 p-3 rounded-xl mr-4">
-                            <Wind className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl md:text-3xl font-bold text-white">Reynolds Number Calculator</h1>
-                            <p className="text-blue-100 mt-2">Re = ρ v D / μ </p>
-                        </div>
-                    </div>
-                </div>
+      {result && (
+        <CalcSection title="Working" description="The substitution behind the number.">
+          <div>
+            <ResultRow label="ρ × v × D" value={(parseFloat(density) * parseFloat(velocity) * parseFloat(diameter)).toPrecision(6)} />
+            <ResultRow label="÷ μ" value={parseFloat(viscosity)} unit="Pa·s" />
+            <ResultRow label="Reynolds number" value={formatRe(result.re)} badge={result.flowRegime.replace(" FLOW", "")} />
+            <ResultRow
+              label="Friction factor f"
+              value={result.fFactor.toFixed(4)}
+              unit={result.re < 2000 ? "64 / Re" : "0.316 / Re^0.25"}
+            />
+          </div>
+        </CalcSection>
+      )}
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h2 className="text-xl font-bold text-gray-800 mb-6">Flow Parameters</h2>
+      {chartData.length > 0 && (
+        <CalcSection
+          title="Reynolds number vs. velocity"
+          description="How the regime changes as the same fluid is pushed faster through the same pipe."
+        >
+          <div className="h-60 w-full sm:h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 8, right: 12, bottom: 24, left: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                <XAxis
+                  dataKey="velocity"
+                  fontSize={11}
+                  tickMargin={8}
+                  tickFormatter={(v: number) => v.toFixed(2)}
+                  label={{ value: "Velocity (m/s)", position: "insideBottom", offset: -14, fontSize: 11 }}
+                />
+                <YAxis
+                  fontSize={11}
+                  width={62}
+                  tickFormatter={(value: number) => value.toLocaleString()}
+                />
+                <Tooltip
+                  formatter={(value) => [Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 }), "Re"]}
+                  labelFormatter={(l) => `v = ${Number(l).toFixed(2)} m/s`}
+                />
+                <ReferenceLine y={2000} stroke="#f59e0b" strokeDasharray="4 3" />
+                <ReferenceLine y={4000} stroke="#ef4444" strokeDasharray="4 3" />
+                <Line type="monotone" dataKey="Re" stroke="#1C7BD9" strokeWidth={2.5} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Dashed lines mark the laminar/transitional boundary (Re 2000) and the transitional/turbulent
+            boundary (Re 4000).
+          </p>
+        </CalcSection>
+      )}
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200">
-                                    <label className="text-sm font-semibold mb-2">Density ρ (kg/m³)</label>
-                                    <input type="number" step="0.001" value={density} onChange={(e) => setDensity(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg" />
-                                </div>
-                                <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-xl p-4 border border-green-200">
-                                    <label className="text-sm font-semibold mb-2">Velocity v (m/s)</label>
-                                    <input type="number" step="0.01" value={velocity} onChange={(e) => setVelocity(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-green-200 rounded-lg" placeholder="e.g., 2.5" />
-                                </div>
-                                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
-                                    <label className="text-sm font-semibold mb-2">Diameter D (m)</label>
-                                    <input type="number" step="0.001" value={diameter} onChange={(e) => setDiameter(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg" placeholder="e.g., 0.1" />
-                                </div>
-                                <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl p-4 border border-orange-200">
-                                    <label className="text-sm font-semibold mb-2">Viscosity μ (Pa·s)</label>
-                                    <input type="number" step="0.000001" value={viscosity} onChange={(e) => setViscosity(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-orange-200 rounded-lg" />
-                                </div>
-                            </div>
+      <CalcSection title="Flow regime guide">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="py-2 pr-3 text-left font-medium text-muted-foreground">Regime</th>
+                <th className="py-2 pr-3 text-left font-medium text-muted-foreground">Reynolds number</th>
+                <th className="py-2 text-left font-medium text-muted-foreground">Friction factor used</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-border/60">
+                <td className="py-2 pr-3">Laminar</td>
+                <td className="py-2 pr-3 tabular-nums">Re &lt; 2000</td>
+                <td className="py-2 font-mono text-xs">f = 64 / Re</td>
+              </tr>
+              <tr className="border-b border-border/60">
+                <td className="py-2 pr-3">Transitional</td>
+                <td className="py-2 pr-3 tabular-nums">2000 – 4000</td>
+                <td className="py-2 font-mono text-xs">f = 0.316 / Re^0.25</td>
+              </tr>
+              <tr>
+                <td className="py-2 pr-3">Turbulent</td>
+                <td className="py-2 pr-3 tabular-nums">Re ≥ 4000</td>
+                <td className="py-2 font-mono text-xs">f = 0.316 / Re^0.25</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </CalcSection>
 
-                            {/* Fluid quick picks */}
-                            <div className="mt-4 bg-gray-50 rounded-xl p-4">
-                                <h3 className="font-semibold mb-3">Common Fluids</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                                    {fluidProperties.map((f, i) => (
-                                        <button key={i} onClick={() => { setDensity(f.density); setViscosity(f.viscosity); }}
-                                            className="bg-white p-2 rounded-lg text-xs hover:bg-blue-100">
-                                            {f.fluid.split(' ')[0]}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+      <FormulaNote title="How this is calculated">
+        <Formula>Re = (ρ × v × D) / μ</Formula>
+        <p>
+          <strong>ρ</strong> density (kg/m³), <strong>v</strong> mean velocity (m/s),
+          <strong> D</strong> internal diameter (m), <strong>μ</strong> dynamic viscosity (Pa·s). The
+          units cancel, so Re is dimensionless.
+        </p>
+        <p>
+          The friction factor is the Darcy f. In laminar flow it is exact: f = 64/Re. Above Re 2000
+          this tool uses the Blasius correlation f = 0.316·Re^−0.25, which was fitted for smooth pipes
+          in turbulent flow (roughly Re 4000 to 10⁵) — so treat the value in the transitional band, and
+          far above 10⁵, as indicative only.
+        </p>
+      </FormulaNote>
 
-                            {/* Re vs. Velocity chart */}
-                            {chartData.length > 0 && (
-                                <div className="mt-6 bg-gray-50 rounded-xl p-4">
-                                    <h3 className="text-lg font-bold text-gray-800 mb-4">Reynolds Number (Re) vs. Velocity</h3>
-                                    {/* Height increased to h-64 to accommodate labels */}
-                                    <div className="h-64">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <LineChart
-                                                data={chartData}
-                                                margin={{ top: 10, right: 30, left: 40, bottom: 40 }}
-                                            >
-                                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-
-                                                <XAxis
-                                                    dataKey="velocity"
-                                                    fontSize={12}
-                                                    tickMargin={10}
-                                                    label={{
-                                                        value: "Velocity (m/s)",
-                                                        position: "insideBottom",
-                                                        offset: -20,
-                                                        fontSize: 13,
-                                                        fontWeight: 600
-                                                    }}
-                                                />
-
-                                                <YAxis
-                                                    fontSize={12}
-                                                    width={60} // Added width to prevent large Re numbers from overlapping the label
-                                                    tickFormatter={(value) => value.toLocaleString()}
-                                                    label={{
-                                                        value: "Reynolds Number (Re)",
-                                                        angle: -90,
-                                                        position: "insideLeft",
-                                                        style: { textAnchor: 'middle' },
-                                                        offset: -25, // Pushes label further left
-                                                        fontSize: 13,
-                                                        fontWeight: 600
-                                                    }}
-                                                />
-
-                                                <Tooltip
-                                                    formatter={(value) => [value !== undefined ? value.toLocaleString() : '0', "Re"]}
-                                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                                />
-
-                                                <Line
-                                                    type="monotone"
-                                                    dataKey="Re"
-                                                    stroke="#ef4444" // Using red for Reynolds Number
-                                                    strokeWidth={3}
-                                                    dot={false}
-                                                />
-                                            </LineChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </div>
-                            )}
-                            <div className="bg-blue-50 p-4 rounded-lg mt-4">
-                                <p className="text-sm font-mono">Re = ρ v D / μ </p>
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row gap-4 mt-6">
-                                <button onClick={calculateReynolds}
-                                    className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 rounded-xl shadow-lg">
-                                    Calculate Re
-                                </button>
-                                <button onClick={reset}
-                                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white rounded-xl flex items-center justify-center">
-                                    <RefreshCw className="w-5 h-5 mr-2" /> Reset
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <button onClick={() => setShowDetails(!showDetails)}
-                                className="flex items-center justify-between w-full text-left">
-                                <h3 className="text-lg font-bold text-gray-800 flex items-center">
-                                    <Info className="w-5 h-5 mr-2 text-blue-600" />
-                                    About Reynolds Number
-                                </h3>
-                            </button>
-                            {showDetails && (
-                                <div className="mt-4 space-y-3 text-sm text-gray-600">
-                                    <p><span className="font-semibold">Definition:</span> Re is the ratio of inertial forces to viscous forces, indicating flow regime .</p>
-                                    <p><span className="font-semibold">Laminar (Re &lt; 2000):</span> Smooth, ordered flow.</p>
-                                    <p><span className="font-semibold">Transitional (2000 ≤ Re &lt; 4000):</span> Unstable, alternating between laminar and turbulent.</p>
-                                    <p><span className="font-semibold">Turbulent (Re ≥ 4000):</span> Chaotic, eddies, enhanced mixing.</p>
-                                    <p><span className="font-semibold">Applications:</span> Pipe sizing, heat transfer, mixing, scale‑up.</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="space-y-6">
-                        {result && (
-                            <div className="bg-gradient-to-br from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 text-white">
-                                <h2 className="text-2xl font-bold mb-4">Reynolds Number</h2>
-                                <div className="bg-white/20 rounded-xl p-4 text-center">
-                                    <div className="text-4xl font-bold mb-2">{result.re.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                                    <div className={`text-lg font-bold ${result.color}`}>{result.flowRegime}</div>
-                                </div>
-                                <div className="bg-white/10 rounded-lg p-4 mt-4">
-                                    <p>{result.description}</p>
-                                    <p className="text-sm mt-2">Friction factor f = {result.fFactor.toFixed(4)}</p>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">Flow Regime Guide</h3>
-                            <div className="space-y-2 text-sm">
-                                <div className="flex justify-between"><span>Laminar</span><span className="text-blue-600 font-semibold">Re &lt; 2000</span></div>
-                                <div className="flex justify-between"><span>Transitional</span><span className="text-yellow-600">2000–4000</span></div>
-                                <div className="flex justify-between"><span>Turbulent</span><span className="text-red-600">Re ≥ 4000</span></div>
-                            </div>
-                        </div>
-
-                        <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-2">Applications</h3>
-                            <ul className="list-disc list-inside text-sm space-y-1">
-                                <li>Pipe sizing</li>
-                                <li>Heat transfer coefficients</li>
-                                <li>Mixing equipment</li>
-                                <li>Scale‑up</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    );
+      <CalcFaq
+        items={[
+          {
+            q: "My viscosity is in centipoise — what do I enter?",
+            a: "Divide by 1000. Water is about 1 cP = 0.001 Pa·s. If you have kinematic viscosity in centistokes, convert to m²/s (÷10⁶) and multiply by the density to get Pa·s.",
+          },
+          {
+            q: "Why does the friction factor jump at Re 2000?",
+            a: "Because the correlation changes there. f = 64/Re is exact for laminar flow; Blasius is an empirical turbulent fit. The two do not meet smoothly, which mirrors the physical instability of the transition region.",
+          },
+          {
+            q: "Can I use this for a stirred tank?",
+            a: "No. A mixing vessel uses the impeller Reynolds number, Re = ND²ρ/μ, with N the impeller speed and D the impeller diameter. Use the Mixing Time Estimator for that.",
+          },
+          {
+            q: "What velocity should I use if I only know the flow rate?",
+            a: "Divide the volumetric flow rate (m³/s) by the pipe's cross-sectional area, πD²/4. A 0.1 m pipe has an area of 0.00785 m².",
+          },
+        ]}
+      />
+    </CalculatorShell>
+  );
 }

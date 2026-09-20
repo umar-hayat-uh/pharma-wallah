@@ -123,6 +123,16 @@ const config: Config = {
         "clinical-pulse": "clinicalPulse 3s ease-in-out infinite",
         /* A calculator result arriving — keyed on the value, so it replays each time the answer changes. */
         "calc-result": "calcResult 0.6s cubic-bezier(0.16, 1, 0.3, 1) both",
+        /*
+         * Liquid-glass on the result card (user request, 2026-09-20). Two
+         * transform-only layers, so they run on the compositor and cost no
+         * layout or paint: a specular highlight drifting across the gradient,
+         * and a slower "tide" swell behind it for depth. Deliberately NOT
+         * backdrop-filter — §6 rule 16 / MEMORY gotcha 51 — and these ship
+         * inside the APK, so they have to stay cheap on a low-end phone.
+         */
+        "calc-sheen": "calcSheen 9s cubic-bezier(0.45, 0, 0.55, 1) infinite",
+        "calc-tide": "calcTide 12s ease-in-out infinite",
       },
 
       keyframes: {
@@ -141,6 +151,14 @@ const config: Config = {
         calcResult: {
           "0%": { opacity: "0", transform: "translateY(6px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        calcSheen: {
+          "0%": { transform: "translate3d(-130%, 0, 0) skewX(-18deg)" },
+          "100%": { transform: "translate3d(230%, 0, 0) skewX(-18deg)" },
+        },
+        calcTide: {
+          "0%, 100%": { transform: "translate3d(-4%, 4%, 0) scale(1.15)" },
+          "50%": { transform: "translate3d(6%, -6%, 0) scale(1.3)" },
         },
         clinicalPulse: {
           "0%, 100%": { opacity: "0.6" },

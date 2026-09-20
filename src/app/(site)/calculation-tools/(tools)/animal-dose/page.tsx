@@ -1,146 +1,72 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
-
-/* ============================================================
-   PHARMACOLOGY BENCH CALCULATOR — WEIGHT-BASED ANIMAL DOSE
-   Formula: Animal Dose = (Adult Dose ÷ Adult Weight) × Animal Weight
-   ============================================================ */
-
-type WeightUnit = "kg" | "g" | "lbs" | "mg";
-type DoseUnit = "mg" | "g" | "mcg";
-
-interface AnimalPreset {
-  name: string;
-  defaultWeightG: number;
-  maxInjectVolMl: number;
-}
-
-const ANIMAL_PRESETS: AnimalPreset[] = [
-  { name: "Mouse (25g)", defaultWeightG: 25, maxInjectVolMl: 0.2 },
-  { name: "Rat (200g)", defaultWeightG: 200, maxInjectVolMl: 1.0 },
-  { name: "Guinea Pig (400g)", defaultWeightG: 400, maxInjectVolMl: 1.5 },
-  { name: "Rabbit (2kg)", defaultWeightG: 2000, maxInjectVolMl: 3.0 },
-];
-
-// Helper conversions
-function toGrams(val: number, unit: WeightUnit): number {
-  if (unit === "kg") return val * 1000;
-  if (unit === "g") return val;
-  if (unit === "lbs") return val * 453.59237;
-  if (unit === "mg") return val / 1000;
-  return val;
-}
-
-function doseToMg(val: number, unit: DoseUnit): number {
-  if (unit === "mg") return val;
-  if (unit === "g") return val * 1000;
-  if (unit === "mcg") return val / 1000;
-  return val;
-}
-
-function fmt(n: number, maxDp = 4): string {
-  if (!Number.isFinite(n)) return "—";
-  if (n === 0) return "0";
-  const abs = Math.abs(n);
-  let dp = maxDp;
-  if (abs >= 100) dp = 2;
-  else if (abs >= 10) dp = 3;
-  else if (abs >= 1) dp = 3;
-  return Number(n.toFixed(dp)).toString();
-}
-
-function fmtUg(mg: number): string {
-  if (!Number.isFinite(mg)) return "—";
-  return `${fmt(mg * 1000, 2)} µg`;
-}
-
-// ============================================================
+import { useCallback, useMemo, useState } from "react";
+import { Rat, Check, Copy } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  CalculatorShell,
+  CalcSection,
+  FieldGrid,
+  NumberField,
+  SelectField,
+  TextField,
+  ResultCard,
+  ResultRow,
+  FormulaNote,
+  Formula,
+  CalcAbout,
+  CalcList,
+  CalcFaq,
+  AdSlot,
+  LabNotice,
+} from "@/components/calculators";
+import {
+  ANIMAL_PRESETS,
+  calculateAnimalDose,
+  fmt,
+  fmtUg,
+  type DoseUnit,
+  type WeightUnit,
+} from "./_animal";
 
 export default function AnimalWeightDoseCalculator() {
-  // Drug & Model
-  const [drugName, setDrugName] = useState<string>("Paracetamol");
-  const [animalSpecies, setAnimalSpecies] = useState<string>("Mouse (25g)");
-
-  // Adult Reference
-  const [adultDoseVal, setAdultDoseVal] = useState<string>("500");
+  const [drugName, setDrugName] = useState("Paracetamol");
+  const [animalSpecies, setAnimalSpecies] = useState("Mouse (25g)");
+  const [adultDoseVal, setAdultDoseVal] = useState("500");
   const [adultDoseUnit, setAdultDoseUnit] = useState<DoseUnit>("mg");
-  const [adultWeightVal, setAdultWeightVal] = useState<string>("70");
+  const [adultWeightVal, setAdultWeightVal] = useState("70");
   const [adultWeightUnit, setAdultWeightUnit] = useState<WeightUnit>("kg");
-
-  // Animal Subject
-  const [animalWeightVal, setAnimalWeightVal] = useState<string>("25");
+  const [animalWeightVal, setAnimalWeightVal] = useState("25");
   const [animalWeightUnit, setAnimalWeightUnit] = useState<WeightUnit>("g");
+  const [stockConcVal, setStockConcVal] = useState("1.0");
+  const [copied, setCopied] = useState(false);
 
-  // Formulation / Stock
-  const [stockConcVal, setStockConcVal] = useState<string>("1.0");
+  const selectedPreset = useMemo(
+    () => ANIMAL_PRESETS.find((p) => p.name === animalSpecies) || ANIMAL_PRESETS[0],
+    [animalSpecies],
+  );
 
-  // UI state
-  const [copied, setCopied] = useState<boolean>(false);
-  const [pdfLoading, setPdfLoading] = useState<boolean>(false);
-  const [showFormulas, setShowFormulas] = useState<boolean>(false);
+  const calc = useMemo(
+    () =>
+      calculateAnimalDose(
+        adultDoseVal, adultDoseUnit, adultWeightVal, adultWeightUnit,
+        animalWeightVal, animalWeightUnit, stockConcVal, selectedPreset,
+      ),
+    [
+      adultDoseVal, adultDoseUnit, adultWeightVal, adultWeightUnit,
+      animalWeightVal, animalWeightUnit, stockConcVal, selectedPreset,
+    ],
+  );
 
-  // Active preset
-  const selectedPreset = useMemo(() => {
-    return ANIMAL_PRESETS.find((p) => p.name === animalSpecies) || ANIMAL_PRESETS[0];
-  }, [animalSpecies]);
-
-  // Numbers
-  const nAdultDoseRaw = parseFloat(adultDoseVal) || 0;
-  const nAdultWeightRaw = parseFloat(adultWeightVal) || 0;
-  const nAnimalWeightRaw = parseFloat(animalWeightVal) || 0;
-  const nStockConc = parseFloat(stockConcVal) || 0;
-
-  // Normalized to Grams & mg
-  const adultWeightInGrams = useMemo(() => {
-    return toGrams(nAdultWeightRaw, adultWeightUnit);
-  }, [nAdultWeightRaw, adultWeightUnit]);
-
-  const animalWeightInGrams = useMemo(() => {
-    return toGrams(nAnimalWeightRaw, animalWeightUnit);
-  }, [nAnimalWeightRaw, animalWeightUnit]);
-
-  const adultDoseInMg = useMemo(() => {
-    return doseToMg(nAdultDoseRaw, adultDoseUnit);
-  }, [nAdultDoseRaw, adultDoseUnit]);
-
-  const inputsValid =
-    adultDoseInMg > 0 && adultWeightInGrams > 0 && animalWeightInGrams > 0;
-
-  // Core Pharmacology Calculation:
-  // Step 1: Dose per gram = Adult Dose (mg) / Adult Weight (g)
-  // Step 2: Animal Dose (mg) = Dose per gram * Animal Weight (g)
-  const calculations = useMemo(() => {
-    if (!inputsValid) return null;
-
-    const dosePerGram = adultDoseInMg / adultWeightInGrams;
-    const animalDoseMg = dosePerGram * animalWeightInGrams;
-    const animalDoseMgPerKg = (animalDoseMg / animalWeightInGrams) * 1000;
-
-    const injectionVolMl = nStockConc > 0 ? animalDoseMg / nStockConc : 0;
-    const injectionVolUl = injectionVolMl * 1000;
-    const isOverVolume =
-      selectedPreset.maxInjectVolMl > 0 && injectionVolMl > selectedPreset.maxInjectVolMl;
-
-    return {
-      dosePerGram,
-      animalDoseMg,
-      animalDoseMgPerKg,
-      injectionVolMl,
-      injectionVolUl,
-      isOverVolume,
-    };
-  }, [inputsValid, adultDoseInMg, adultWeightInGrams, animalWeightInGrams, nStockConc, selectedPreset]);
-
-  // Preset Select
-  const handleSelectPreset = (preset: AnimalPreset) => {
-    setAnimalSpecies(preset.name);
-    setAnimalWeightVal(preset.defaultWeightG.toString());
+  const selectSpecies = (name: string) => {
+    setAnimalSpecies(name);
+    const p = ANIMAL_PRESETS.find((x) => x.name === name);
+    if (!p) return;
+    setAnimalWeightVal(String(p.defaultWeightG));
     setAnimalWeightUnit("g");
   };
 
-  // Reset
-  const handleReset = () => {
+  const reset = () => {
     setDrugName("Paracetamol");
     setAdultDoseVal("500");
     setAdultDoseUnit("mg");
@@ -152,1230 +78,269 @@ export default function AnimalWeightDoseCalculator() {
     setStockConcVal("1.0");
   };
 
-  // Copy Protocol
-  const handleCopy = useCallback(() => {
-    if (!calculations) return;
-    const lines: string[] = [];
-    lines.push(`PHARMACOLOGY WEIGHT-BASED DOSE CALCULATION`);
-    lines.push(`----------------------------------------`);
-    lines.push(`• Drug / Compound : ${drugName || "Target Compound"}`);
-    lines.push(`• Adult Reference : ${adultDoseVal} ${adultDoseUnit} for ${adultWeightVal} ${adultWeightUnit}`);
-    lines.push(`• Animal Model    : ${animalSpecies} (${animalWeightVal} ${animalWeightUnit})`);
-    lines.push(``);
-    lines.push(`CALCULATION STEPS:`);
-    lines.push(
-      `1. Adult Dose / Gram = ${fmt(adultDoseInMg)} mg ÷ ${fmt(adultWeightInGrams)} g = ${fmt(
-        calculations.dosePerGram,
-        6
-      )} mg/g`
-    );
-    lines.push(
-      `2. Animal Dose = ${fmt(calculations.dosePerGram, 6)} mg/g × ${fmt(
-        animalWeightInGrams
-      )} g = ${fmt(calculations.animalDoseMg, 4)} mg (${fmtUg(calculations.animalDoseMg)})`
-    );
-    lines.push(`3. Dose per Body Weight = ${fmt(calculations.animalDoseMgPerKg, 2)} mg/kg`);
-
-    if (nStockConc > 0) {
-      lines.push(``);
-      lines.push(`SYRINGE DRAW VOLUME:`);
-      lines.push(`• Stock Concentration : ${fmt(nStockConc)} mg/ml`);
-      lines.push(
-        `• Syringe Draw Volume : ${fmt(calculations.injectionVolMl, 4)} ml (${fmt(
-          calculations.injectionVolUl,
-          1
-        )} µl)`
-      );
-    }
-
-    navigator.clipboard.writeText(lines.join("\n"));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [
-    calculations,
-    drugName,
-    adultDoseVal,
-    adultDoseUnit,
-    adultWeightVal,
-    adultWeightUnit,
-    adultDoseInMg,
-    adultWeightInGrams,
-    animalSpecies,
-    animalWeightVal,
-    animalWeightUnit,
-    animalWeightInGrams,
-    nStockConc,
-  ]);
-
-  // PDF Export
-  const handleDownloadPdf = useCallback(async () => {
-    if (!calculations) return;
-    setPdfLoading(true);
-
+  // Protocol text is unchanged from the previous page.
+  const copyProtocol = useCallback(() => {
+    if (!calc) return;
+    const lines = [
+      "PHARMACOLOGY WEIGHT-BASED DOSE CALCULATION",
+      "----------------------------------------",
+      `• Drug / Compound : ${drugName || "Target Compound"}`,
+      `• Adult Reference : ${adultDoseVal} ${adultDoseUnit} for ${adultWeightVal} ${adultWeightUnit}`,
+      `• Animal Model    : ${animalSpecies} (${animalWeightVal} ${animalWeightUnit})`,
+      "",
+      "CALCULATION STEPS:",
+      `1. Adult Dose / Gram = ${fmt(calc.adultDoseInMg)} mg ÷ ${fmt(calc.adultWeightInGrams)} g = ${fmt(calc.dosePerGram, 6)} mg/g`,
+      `2. Animal Dose = ${fmt(calc.dosePerGram, 6)} mg/g × ${fmt(calc.animalWeightInGrams)} g = ${fmt(calc.animalDoseMg, 4)} mg (${fmtUg(calc.animalDoseMg)})`,
+      `3. Syringe Volume = ${fmt(calc.animalDoseMg, 4)} mg ÷ ${stockConcVal} mg/ml = ${fmt(calc.injectionVolMl, 4)} ml`,
+      "",
+      `NORMALISED DOSE : ${fmt(calc.animalDoseMgPerKg, 3)} mg/kg`,
+      `Generated: ${new Date().toLocaleString()}`,
+    ];
     try {
-      let jsPDFConstructor: any;
-      try {
-        const mod = await import("jspdf");
-        jsPDFConstructor = mod.jsPDF || (mod as any).default;
-      } catch {
-        if (typeof window !== "undefined" && !(window as any).jspdf) {
-          await new Promise<void>((resolve, reject) => {
-            const script = document.createElement("script");
-            script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-            script.onload = () => resolve();
-            script.onerror = () => reject(new Error("Failed to load jsPDF CDN"));
-            document.head.appendChild(script);
-          });
-        }
-        jsPDFConstructor = (window as any).jspdf?.jsPDF;
-      }
-
-      if (!jsPDFConstructor) throw new Error("jsPDF unavailable");
-
-      const doc = new jsPDFConstructor({ orientation: "portrait", unit: "mm", format: "a4" });
-      const today = new Date().toLocaleDateString();
-
-      // Top Banner
-      doc.setFillColor(37, 99, 235);
-      doc.rect(15, 12, 180, 18, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(13);
-      doc.text("WEIGHT-BASED ANIMAL DOSE PROTOCOL", 20, 21);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8.5);
-      doc.text(`Pharmacology Lab Worksheet | Date: ${today}`, 20, 26);
-
-      // Metadata Card
-      doc.setDrawColor(226, 232, 240);
-      doc.setFillColor(248, 250, 252);
-      doc.roundedRect(15, 34, 180, 26, 2, 2, "FD");
-
-      doc.setTextColor(15, 23, 42);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8.5);
-      doc.text("Drug / Compound:", 20, 41);
-      doc.text("Adult Reference Dose:", 20, 48);
-      doc.text("Adult Body Weight:", 20, 54);
-
-      doc.text("Animal Subject:", 110, 41);
-      doc.text("Animal Weight:", 110, 48);
-      doc.text("Stock Solution Conc:", 110, 54);
-
-      doc.setFont("helvetica", "normal");
-      doc.text(`${drugName || "Unspecified"}`, 60, 41);
-      doc.text(`${adultDoseVal} ${adultDoseUnit} (${fmt(adultDoseInMg)} mg)`, 60, 48);
-      doc.text(`${adultWeightVal} ${adultWeightUnit} (${fmt(adultWeightInGrams)} g)`, 60, 54);
-
-      doc.text(`${animalSpecies}`, 145, 41);
-      doc.text(`${animalWeightVal} ${animalWeightUnit} (${fmt(animalWeightInGrams)} g)`, 145, 48);
-      doc.text(`${fmt(nStockConc)} mg/ml`, 145, 54);
-
-      // Step-by-Step Box
-      let y = 68;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.setTextColor(37, 99, 235);
-      doc.text("Step-by-Step Calculation Breakdown", 15, y);
-      y += 6;
-
-      doc.setDrawColor(226, 232, 240);
-      doc.setFillColor(255, 255, 255);
-      doc.roundedRect(15, y, 180, 36, 2, 2, "FD");
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8.5);
-      doc.setTextColor(15, 23, 42);
-      doc.text("Step 1: Calculate Adult Dose per Gram of Body Weight", 20, y + 8);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(71, 85, 105);
-      doc.text(
-        `Rate = ${fmt(adultDoseInMg)} mg ÷ ${fmt(adultWeightInGrams)} g = ${fmt(calculations.dosePerGram, 6)} mg/g`,
-        20,
-        y + 14
-      );
-
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(15, 23, 42);
-      doc.text("Step 2: Multiply by Animal Body Weight in Grams", 20, y + 22);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(71, 85, 105);
-      doc.text(
-        `Animal Dose = ${fmt(calculations.dosePerGram, 6)} mg/g × ${fmt(animalWeightInGrams)} g = ${fmt(
-          calculations.animalDoseMg,
-          4
-        )} mg (${fmtUg(calculations.animalDoseMg)})`,
-        20,
-        y + 28
-      );
-
-      // Syringe Administration
-      y += 44;
-      doc.setFillColor(236, 253, 245);
-      doc.setDrawColor(167, 243, 208);
-      doc.roundedRect(15, y, 180, 24, 2, 2, "FD");
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9.5);
-      doc.setTextColor(5, 150, 105);
-      doc.text("[  ] Syringe Administration Instructions", 20, y + 7);
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8.5);
-      doc.setTextColor(30, 41, 59);
-      doc.text(
-        `• Target Animal Dose  : ${fmt(calculations.animalDoseMg, 4)} mg (${fmtUg(
-          calculations.animalDoseMg
-        )}) [${fmt(calculations.animalDoseMgPerKg, 2)} mg/kg]`,
-        20,
-        y + 13
-      );
-      doc.text(
-        `• Syringe Draw Volume : ${fmt(calculations.injectionVolMl, 4)} ml (${fmt(
-          calculations.injectionVolUl,
-          1
-        )} µl) from ${fmt(nStockConc)} mg/ml stock solution`,
-        20,
-        y + 18
-      );
-
-      // Signatures
-      y += 36;
-      doc.setDrawColor(203, 213, 225);
-      doc.line(15, y, 90, y);
-      doc.line(105, y, 180, y);
-
-      doc.setFontSize(7.5);
-      doc.setTextColor(100, 116, 139);
-      doc.text("Student / Researcher Signature & Date", 15, y + 4.5);
-      doc.text("Lab Instructor Sign-off", 105, y + 4.5);
-
-      doc.save(
-        `${(drugName || "animal-dose").toLowerCase().replace(/[^a-z0-9]/g, "-")}-protocol.pdf`
-      );
-    } catch (err) {
-      console.error(err);
-      alert("Could not generate PDF. Please use the Print button instead.");
-    } finally {
-      setPdfLoading(false);
+      navigator.clipboard.writeText(lines.join("\n"));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2400);
+    } catch {
+      // No clipboard permission (insecure context, old WebView).
     }
-  }, [
-    calculations,
-    drugName,
-    adultDoseVal,
-    adultDoseUnit,
-    adultDoseInMg,
-    adultWeightVal,
-    adultWeightUnit,
-    adultWeightInGrams,
-    animalSpecies,
-    animalWeightVal,
-    animalWeightUnit,
-    animalWeightInGrams,
-    nStockConc,
-  ]);
+  }, [calc, drugName, adultDoseVal, adultDoseUnit, adultWeightVal, adultWeightUnit, animalSpecies, animalWeightVal, animalWeightUnit, stockConcVal]);
 
   return (
-    <div className="apc-wrapper">
-      <style dangerouslySetInnerHTML={{ __html: CSS }} />
+    <CalculatorShell
+      title="Animal Weight-Based Dose Calculator"
+      subtitle="Scales a human reference dose down to a laboratory animal by body weight, and works out the syringe volume from the stock concentration."
+      icon={Rat}
+      eyebrow="Pharmacology"
+      aside={
+        <>
+          <CalcAbout title="About animal dosing">
+            <p>
+              A bench experiment starts from a known human dose and scales it to the animal model.
+              The simplest approach — the one used here — divides the dose by body weight and
+              multiplies by the animal&apos;s weight.
+            </p>
+            <CalcList
+              title="Use it when"
+              items={[
+                "Preparing a dosing schedule for a practical class",
+                "Working out how much to draw from a stock vial",
+                "Checking an injection volume against species limits",
+              ]}
+            />
+            <CalcList
+              tone="caution"
+              title="Keep in mind"
+              items={[
+                "This is linear weight scaling, not allometric body-surface-area scaling — see the note beside the result.",
+                "Injection volume limits are species- and route-specific; exceeding them causes pain and tissue damage.",
+                "Animal work requires ethics approval and trained supervision.",
+              ]}
+            />
+          </CalcAbout>
 
-      {/* ================= PRINT WORKSHEET ================= */}
-      <section className="apc-print-sheet" aria-hidden="true">
-        <div className="apc-print-header">
+          <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+        </>
+      }
+    >
+      <ResultCard
+        label="Target animal dose"
+        value={calc ? fmt(calc.animalDoseMg, 4) : null}
+        unit="mg"
+        interpretation={
+          calc
+            ? `${fmtUg(calc.animalDoseMg)} · normalised ${fmt(calc.animalDoseMgPerKg, 3)} mg/kg`
+            : undefined
+        }
+        tone={calc?.isOverVolume ? "danger" : "neutral"}
+        empty="Enter an adult dose, an adult weight and an animal weight, all above 0."
+      />
+
+      {/* Reported, not corrected — the maths is the original's. Recorded in
+          .claude/redesign-tracker.md. */}
+      <LabNotice tone="warning" title="Linear scaling, not allometric">
+        This tool scales strictly by body weight. Regulatory and published practice converts between
+        species by body <em>surface area</em>, using Km factors (human 37, rat 6, mouse 3) — a mouse
+        needs roughly 12× the human mg/kg dose, not the same one. The figure above will therefore be
+        far lower than a literature rodent dose. Use it to follow the weight-proportion method, not
+        to plan a study.
+      </LabNotice>
+
+      {calc?.isOverVolume && (
+        <LabNotice tone="danger" title="Injection volume exceeds the species limit">
+          {fmt(calc.injectionVolMl, 4)} mL is above the {selectedPreset.maxInjectVolMl} mL maximum
+          usually accepted for a {animalSpecies.split(" (")[0].toLowerCase()}. Use a more
+          concentrated stock, or split the dose between sites.
+        </LabNotice>
+      )}
+
+      <CalcSection title="Drug & adult reference" description="The human dose the animal dose is scaled from.">
+        <FieldGrid>
+          <TextField
+            label="Drug / compound name"
+            value={drugName}
+            onChange={setDrugName}
+            placeholder="e.g. Paracetamol"
+            hint="Recorded on the protocol only."
+          />
+          <NumberField
+            label="Adult dose"
+            value={adultDoseVal}
+            onChange={setAdultDoseVal}
+            units={["mg", "g", "mcg"]}
+            unit={adultDoseUnit}
+            onUnitChange={(v) => setAdultDoseUnit(v as DoseUnit)}
+            step="0.01"
+            min={0}
+            hint="The usual human dose."
+          />
+          <NumberField
+            label="Adult weight"
+            value={adultWeightVal}
+            onChange={setAdultWeightVal}
+            units={["kg", "g", "lbs"]}
+            unit={adultWeightUnit}
+            onUnitChange={(v) => setAdultWeightUnit(v as WeightUnit)}
+            step="0.1"
+            min={0}
+            hint="Conventionally a 70 kg adult."
+          />
+        </FieldGrid>
+      </CalcSection>
+
+      <CalcSection title="Animal model" description="Species sets the default body weight and the injection volume limit.">
+        <FieldGrid>
+          <SelectField
+            label="Animal species"
+            value={animalSpecies}
+            onChange={selectSpecies}
+            options={ANIMAL_PRESETS.map((p) => ({ value: p.name, label: p.name }))}
+            hint={`Max injection volume ${selectedPreset.maxInjectVolMl} mL`}
+          />
+          <NumberField
+            label="Animal body weight"
+            value={animalWeightVal}
+            onChange={setAnimalWeightVal}
+            units={["g", "kg", "mg"]}
+            unit={animalWeightUnit}
+            onUnitChange={(v) => setAnimalWeightUnit(v as WeightUnit)}
+            step="0.1"
+            min={0}
+            hint="Weigh the animal on the day."
+          />
+          <NumberField
+            label="Stock vial concentration"
+            value={stockConcVal}
+            onChange={setStockConcVal}
+            unit="mg/mL"
+            step="0.01"
+            min={0}
+            hint="Calculates the exact volume to draw into the syringe."
+          />
+        </FieldGrid>
+
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-[13px] font-medium text-foreground/90">Species</span>
+          {ANIMAL_PRESETS.map((p) => (
+            <Button key={p.name} type="button" variant="outline" size="sm" onClick={() => selectSpecies(p.name)}>
+              {p.name}
+            </Button>
+          ))}
+          <Button type="button" variant="ghost" size="sm" onClick={reset}>
+            Reset
+          </Button>
+        </div>
+      </CalcSection>
+
+      {calc && (
+        <CalcSection title="Working" description="The practical notebook steps.">
           <div>
-            <h1>PHARMACOLOGY BENCH DOSE PROTOCOL</h1>
-            <p>Direct Body Weight Proportionality Method</p>
+            <ResultRow
+              label="1. Dose per gram = adult dose ÷ adult weight"
+              value={`${fmt(calc.adultDoseInMg)} mg ÷ ${fmt(calc.adultWeightInGrams)} g = ${fmt(calc.dosePerGram, 6)}`}
+              unit="mg/g"
+            />
+            <ResultRow
+              label="2. Animal dose = dose/g × animal weight"
+              value={`${fmt(calc.dosePerGram, 6)} × ${fmt(calc.animalWeightInGrams)} g = ${fmt(calc.animalDoseMg, 4)}`}
+              unit="mg"
+            />
+            <ResultRow label="Animal dose in micrograms" value={fmtUg(calc.animalDoseMg)} />
+            <ResultRow label="Normalised dose" value={fmt(calc.animalDoseMgPerKg, 3)} unit="mg/kg" />
+            <ResultRow
+              label={`3. Syringe volume (${stockConcVal} mg/mL stock)`}
+              value={fmt(calc.injectionVolMl, 4)}
+              unit="mL"
+              badge={calc.isOverVolume ? `over ${selectedPreset.maxInjectVolMl} mL limit` : undefined}
+              badgeTone="destructive"
+            />
+            <ResultRow label="Syringe volume in microlitres" value={fmt(calc.injectionVolUl, 2)} unit="µL" />
           </div>
-          <div className="apc-print-meta">
-            <div><strong>Date:</strong> ____________________</div>
-            <div><strong>Student Name:</strong> ____________________</div>
-            <div><strong>Bench / Hood #:</strong> ____________________</div>
+
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <Button type="button" variant="outline" size="sm" onClick={copyProtocol}>
+              {copied ? <Check className="mr-1.5 h-4 w-4 text-emerald-600" /> : <Copy className="mr-1.5 h-4 w-4" />}
+              {copied ? "Copied" : "Copy protocol"}
+            </Button>
           </div>
+        </CalcSection>
+      )}
+
+      <CalcSection title="Species reference" description="Default weights and the injection volumes usually accepted.">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="py-2 pr-3 text-left font-medium text-muted-foreground">Species</th>
+                <th className="py-2 pr-3 text-left font-medium text-muted-foreground">Typical weight</th>
+                <th className="py-2 text-left font-medium text-muted-foreground">Max injection volume</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ANIMAL_PRESETS.map((p) => (
+                <tr key={p.name} className="border-b border-border/60 last:border-b-0">
+                  <td className="py-2 pr-3">{p.name.split(" (")[0]}</td>
+                  <td className="py-2 pr-3 tabular-nums">{p.defaultWeightG} g</td>
+                  <td className="py-2 tabular-nums">{p.maxInjectVolMl} mL</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+      </CalcSection>
 
-        <div className="apc-print-grid">
-          <div><strong>Drug:</strong> {drugName}</div>
-          <div><strong>Adult Reference:</strong> {adultDoseVal} {adultDoseUnit} / {adultWeightVal} {adultWeightUnit}</div>
-          <div><strong>Animal Subject:</strong> {animalSpecies} ({animalWeightVal} {animalWeightUnit})</div>
-          <div><strong>Stock Conc:</strong> {nStockConc} mg/ml</div>
-        </div>
+      <FormulaNote title="How this is calculated">
+        <p>Everything is converted to milligrams and grams first, then scaled in two steps:</p>
+        <Formula>dose per gram = adult dose (mg) / adult weight (g)</Formula>
+        <Formula>animal dose (mg) = dose per gram × animal weight (g)</Formula>
+        <p>The syringe volume follows from the stock concentration:</p>
+        <Formula>volume (mL) = animal dose (mg) / stock concentration (mg/mL)</Formula>
+        <p>
+          Weight conversions are 1 kg = 1000 g and 1 lb = 453.59237 g; dose conversions are
+          1 g = 1000 mg and 1 mcg = 0.001 mg. Because the scaling is linear, the normalised mg/kg
+          figure always equals the adult mg/kg — that is a property of the method, not a bug.
+        </p>
+      </FormulaNote>
 
-        <div className="apc-print-box">
-          <h3 style={{ margin: "0 0 8px 0", fontSize: "13px" }}>Calculation Derivation</h3>
-          <div>1. Rate = {fmt(adultDoseInMg)} mg ÷ {fmt(adultWeightInGrams)} g = <strong>{fmt(calculations?.dosePerGram || 0, 6)} mg/g</strong></div>
-          <div style={{ marginTop: "4px" }}>
-            2. Animal Dose = {fmt(calculations?.dosePerGram || 0, 6)} mg/g × {fmt(animalWeightInGrams)} g ={" "}
-            <strong>{fmt(calculations?.animalDoseMg || 0, 4)} mg</strong> ({fmtUg(calculations?.animalDoseMg || 0)})
-          </div>
-          <div style={{ marginTop: "4px" }}>
-            3. Syringe Volume = {fmt(calculations?.animalDoseMg || 0, 4)} mg ÷ {fmt(nStockConc)} mg/ml ={" "}
-            <strong>{fmt(calculations?.injectionVolMl || 0, 4)} ml</strong> ({fmt(calculations?.injectionVolUl || 0, 1)} µl)
-          </div>
-        </div>
-
-        <div className="apc-print-sign-row">
-          <div>
-            <div className="apc-print-line" />
-            <span>Student Signature</span>
-          </div>
-          <div>
-            <div className="apc-print-line" />
-            <span>Instructor Verification</span>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= INTERACTIVE SCREEN UI ================= */}
-      <div className="apc-container">
-        {/* Header */}
-        <header className="apc-topbar">
-          <div className="apc-brand">
-            <div className="apc-badge">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3">
-                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-              </svg>
-            </div>
-            <div>
-              <h1 className="apc-title">Pharmacology Animal Dose Calculator</h1>
-              <p className="apc-sub">Weight-based dose extrapolation from human adult reference</p>
-            </div>
-          </div>
-
-          <div className="apc-actions">
-            <button type="button" className="apc-btn apc-btn--outline" onClick={() => window.print()}>
-              🖨️ Print
-            </button>
-            <button
-              type="button"
-              className="apc-btn apc-btn--outline"
-              onClick={handleDownloadPdf}
-              disabled={!calculations || pdfLoading}
-            >
-              {pdfLoading ? "Generating..." : "📄 PDF"}
-            </button>
-            <button
-              type="button"
-              className="apc-btn apc-btn--primary"
-              onClick={handleCopy}
-              disabled={!calculations}
-            >
-              {copied ? "✓ Copied!" : "📋 Copy"}
-            </button>
-          </div>
-        </header>
-
-        {/* Animal Presets Strip */}
-        <div className="apc-presets-strip">
-          <span className="apc-presets-label">Presets:</span>
-          <div className="apc-presets-chips">
-            {ANIMAL_PRESETS.map((p) => (
-              <button
-                key={p.name}
-                type="button"
-                className={`apc-chip ${animalSpecies === p.name ? "apc-chip--active" : ""}`}
-                onClick={() => handleSelectPreset(p)}
-              >
-                <strong>{p.name.split(" ")[0]}</strong>
-                <span>({p.defaultWeightG}g)</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* 2-Column Grid */}
-        <main className="apc-grid">
-          {/* ================= LEFT: INPUTS ================= */}
-          <section className="apc-panel">
-            <div className="apc-panel-header">
-              <div className="apc-step-num">1</div>
-              <h2>Dose Inputs</h2>
-              <button type="button" className="apc-link-btn" onClick={handleReset}>
-                Reset
-              </button>
-            </div>
-
-            <div className="apc-stack">
-              <div className="apc-field">
-                <label>Drug / Compound Name</label>
-                <input
-                  type="text"
-                  className="apc-input"
-                  value={drugName}
-                  onChange={(e) => setDrugName(e.target.value)}
-                  placeholder="e.g. Paracetamol, Ibuprofen"
-                />
-              </div>
-
-              {/* Adult Reference */}
-              <div className="apc-subhead">1. Adult Reference</div>
-              <div className="apc-grid-row">
-                <div className="apc-field">
-                  <label>Adult Dose</label>
-                  <div className="apc-input-combo">
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      step="any"
-                      min="0"
-                      value={adultDoseVal}
-                      onChange={(e) => setAdultDoseVal(e.target.value)}
-                    />
-                    <select
-                      value={adultDoseUnit}
-                      onChange={(e) => setAdultDoseUnit(e.target.value as DoseUnit)}
-                    >
-                      <option value="mg">mg</option>
-                      <option value="g">g</option>
-                      <option value="mcg">µg</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="apc-field">
-                  <label>Adult Weight</label>
-                  <div className="apc-input-combo">
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      step="any"
-                      min="0.1"
-                      value={adultWeightVal}
-                      onChange={(e) => setAdultWeightVal(e.target.value)}
-                    />
-                    <select
-                      value={adultWeightUnit}
-                      onChange={(e) => setAdultWeightUnit(e.target.value as WeightUnit)}
-                    >
-                      <option value="kg">kg</option>
-                      <option value="g">g</option>
-                      <option value="lbs">lbs</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {inputsValid && (
-                <div className="apc-pill-stat">
-                  <span>Adult Rate:</span>
-                  <strong>{fmt(adultDoseInMg / (adultWeightInGrams / 1000), 2)} mg/kg</strong>
-                  <small>({fmt(adultDoseInMg / adultWeightInGrams, 6)} mg/g)</small>
-                </div>
-              )}
-
-              {/* Animal Subject */}
-              <div className="apc-subhead">2. Animal Subject</div>
-              <div className="apc-grid-row">
-                <div className="apc-field">
-                  <label>Animal Species</label>
-                  <select
-                    className="apc-select"
-                    value={animalSpecies}
-                    onChange={(e) => {
-                      const found = ANIMAL_PRESETS.find((p) => p.name === e.target.value);
-                      if (found) handleSelectPreset(found);
-                      else setAnimalSpecies(e.target.value);
-                    }}
-                  >
-                    {ANIMAL_PRESETS.map((p) => (
-                      <option key={p.name} value={p.name}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="apc-field">
-                  <label>Animal Body Weight</label>
-                  <div className="apc-input-combo">
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      step="any"
-                      min="0.001"
-                      value={animalWeightVal}
-                      onChange={(e) => setAnimalWeightVal(e.target.value)}
-                    />
-                    <select
-                      value={animalWeightUnit}
-                      onChange={(e) => setAnimalWeightUnit(e.target.value as WeightUnit)}
-                    >
-                      <option value="g">g</option>
-                      <option value="kg">kg</option>
-                      <option value="mg">mg</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stock Concentration */}
-              <div className="apc-subhead">3. Injection Setup</div>
-              <div className="apc-field">
-                <label>Stock Vial Concentration</label>
-                <div className="apc-input-combo apc-input-combo--small">
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    step="any"
-                    min="0.001"
-                    value={stockConcVal}
-                    onChange={(e) => setStockConcVal(e.target.value)}
-                  />
-                  <span className="apc-unit-static">mg/ml</span>
-                </div>
-                <small className="apc-hint">Calculates exact volume to draw into syringe.</small>
-              </div>
-            </div>
-          </section>
-
-          {/* ================= RIGHT: RESULTS & NOTEBOOK DERIVATION ================= */}
-          <section className="apc-panel">
-            <div className="apc-panel-header">
-              <div className="apc-step-num">2</div>
-              <h2>Extrapolated Animal Dose</h2>
-            </div>
-
-            {!inputsValid && (
-              <div className="apc-empty-state">
-                Enter adult dose, adult weight, and animal weight to compute the dose.
-              </div>
-            )}
-
-            {inputsValid && calculations && (
-              <div className="apc-results-wrapper">
-                {/* Hero Card */}
-                <div className="apc-hero-result">
-                  <span className="apc-hero-label">Target Animal Dose:</span>
-                  <div className="apc-hero-number">
-                    <strong>{fmt(calculations.animalDoseMg, 4)} mg</strong>
-                    <span className="apc-hero-micro">({fmtUg(calculations.animalDoseMg)})</span>
-                  </div>
-                  <span className="apc-hero-sub">
-                    Normalized: <strong>{fmt(calculations.animalDoseMgPerKg, 2)} mg/kg</strong> body weight
-                  </span>
-                </div>
-
-                {/* Syringe Injection Card */}
-                {nStockConc > 0 && (
-                  <div className="apc-syringe-box">
-                    <div className="apc-syringe-icon">💉</div>
-                    <div className="apc-syringe-info">
-                      <strong>Syringe Draw Volume:</strong>
-                      <div className="apc-syringe-readout">
-                        <span>{fmt(calculations.injectionVolMl, 4)} ml</span>
-                        <small>({fmt(calculations.injectionVolUl, 1)} µl)</small>
-                      </div>
-                      <p>
-                        Draw from <strong>{fmt(nStockConc)} mg/ml</strong> stock solution for this{" "}
-                        {animalWeightVal} {animalWeightUnit} animal.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Over-Volume Warning */}
-                {calculations.isOverVolume && (
-                  <div className="apc-warn-alert">
-                    ⚠️ <strong>Volume Warning:</strong> Calculated injection volume ({fmt(calculations.injectionVolMl, 3)} ml)
-                    exceeds standard limit ({selectedPreset.maxInjectVolMl} ml) for {selectedPreset.name}.
-                    Consider preparing a more concentrated stock solution.
-                  </div>
-                )}
-
-                {/* Step-by-Step Lab Notebook Working */}
-                <div className="apc-math-card">
-                  <h4>Step-by-Step Practical Notebook Working</h4>
-                  <ol className="apc-math-steps">
-                    <li>
-                      <strong>1. Divide Adult Dose by Adult Weight (in grams):</strong>
-                      <code>
-                        Dose/g = {fmt(adultDoseInMg)} mg ÷ {fmt(adultWeightInGrams)} g = {fmt(calculations.dosePerGram, 6)} mg/g
-                      </code>
-                    </li>
-                    <li>
-                      <strong>2. Multiply by Animal Weight (in grams):</strong>
-                      <code>
-                        Animal Dose = {fmt(calculations.dosePerGram, 6)} mg/g × {fmt(animalWeightInGrams)} g ={" "}
-                        {fmt(calculations.animalDoseMg, 4)} mg ({fmtUg(calculations.animalDoseMg)})
-                      </code>
-                    </li>
-                    {nStockConc > 0 && (
-                      <li>
-                        <strong>3. Calculate Syringe Volume ({fmt(nStockConc)} mg/ml Stock):</strong>
-                        <code>
-                          Volume = {fmt(calculations.animalDoseMg, 4)} mg ÷ {fmt(nStockConc)} mg/ml ={" "}
-                          {fmt(calculations.injectionVolMl, 4)} ml ({fmt(calculations.injectionVolUl, 1)} µl)
-                        </code>
-                      </li>
-                    )}
-                  </ol>
-                </div>
-              </div>
-            )}
-          </section>
-        </main>
-
-        {/* Quick Theory Accordion */}
-        <section className="apc-accordion">
-          <button
-            type="button"
-            className="apc-accordion-btn"
-            onClick={() => setShowFormulas((v) => !v)}
-          >
-            <span>📐 Practical Pharmacology Formula Reference</span>
-            <span>{showFormulas ? "▲" : "▼"}</span>
-          </button>
-
-          {showFormulas && (
-            <div className="apc-accordion-body">
-              <div className="apc-theory-grid">
-                <div>
-                  <strong>Direct Body Weight Ratio Formula:</strong>
-                  <code>Animal Dose = (Adult Dose ÷ Adult Weight) × Animal Weight</code>
-                  <p>
-                    Ensures both human and animal receive the same exact dose per gram of body weight (mg/g).
-                  </p>
-                </div>
-                <div>
-                  <strong>Formulation Syringe Volume:</strong>
-                  <code>Volume (ml) = Target Dose (mg) ÷ Stock Concentration (mg/ml)</code>
-                  <p>Multiply ml by 1000 to read in microliters (µl) for precision insulin/micropipette syringes.</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </section>
-      </div>
-    </div>
+      <CalcFaq
+        items={[
+          {
+            q: "Why is my calculated mouse dose so much lower than the published one?",
+            a: "Because this is linear weight scaling. Metabolic rate scales with roughly the ¾ power of body mass, not with mass itself, so a mouse clears a drug far faster per kilogram than a human. Converting by body surface area with Km factors (human 37, mouse 3) gives a mouse dose about 12× higher in mg/kg.",
+          },
+          {
+            q: "How do I convert properly by surface area?",
+            a: "Human equivalent dose (mg/kg) = animal dose (mg/kg) × (animal Km / human Km). Running it the other way, animal dose = human mg/kg × (37 / animal Km): 37/6 ≈ 6.2× for a rat, 37/3 ≈ 12.3× for a mouse.",
+          },
+          {
+            q: "What if the syringe volume is too large?",
+            a: "Raise the stock concentration so the same dose fits a smaller volume, or split the dose between injection sites if the protocol allows. The limits shown are conservative typical values — the accepted volume also depends on the route (IP tolerates more than IV or SC).",
+          },
+          {
+            q: "Why does the mg/kg figure never change?",
+            a: "Because linear scaling keeps the dose proportional to weight, so every animal receives the same mg/kg as the adult reference. It is shown so the number can be compared against literature mg/kg doses — where you will usually see the discrepancy described above.",
+          },
+        ]}
+      />
+    </CalculatorShell>
   );
 }
-
-/* ============================================================
-   RESPONSIVE & PRINT STYLES
-   ============================================================ */
-
-const CSS = `
-:root {
-  --apc-bg: #F8FAFC;
-  --apc-card: #FFFFFF;
-  --apc-text: #0F172A;
-  --apc-text-muted: #475569;
-  --apc-text-light: #94A3B8;
-  --apc-border: #E2E8F0;
-  --apc-border-focus: #3B82F6;
-  --apc-blue: #2563EB;
-  --apc-teal: #0D9488;
-  --apc-emerald: #059669;
-  --apc-grad-main: linear-gradient(135deg, #2563EB 0%, #0D9488 50%, #059669 100%);
-  --apc-grad-soft: linear-gradient(135deg, rgba(37,99,235,0.06) 0%, rgba(5,150,105,0.06) 100%);
-  --apc-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.apc-wrapper {
-  background-color: var(--apc-bg);
-  color: var(--apc-text);
-  min-height: 100vh;
-  font-family: var(--font-outfit), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  padding: 16px 12px 48px;
-  -webkit-font-smoothing: antialiased;
-}
-
-@media (min-width: 640px) {
-  .apc-wrapper {
-    padding: 24px 16px 56px;
-  }
-}
-
-.apc-wrapper * {
-  box-sizing: border-box;
-}
-
-.apc-container {
-  max-width: 1080px;
-  margin: 0 auto;
-}
-
-/* Topbar */
-.apc-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  background: var(--apc-card);
-  border: 1px solid var(--apc-border);
-  padding: 14px 16px;
-  border-radius: 12px;
-  box-shadow: var(--apc-shadow);
-  margin-bottom: 14px;
-}
-
-.apc-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.apc-badge {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  background: var(--apc-grad-main);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
-}
-
-.apc-title {
-  font-size: 18px;
-  font-weight: 700;
-  margin: 0;
-  background: var(--apc-grad-main);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-@media (min-width: 640px) {
-  .apc-title {
-    font-size: 20px;
-  }
-}
-
-.apc-sub {
-  font-size: 12.5px;
-  color: var(--apc-text-muted);
-  margin: 2px 0 0;
-}
-
-.apc-actions {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-}
-@media (min-width: 640px) {
-  .apc-actions {
-    width: auto;
-  }
-}
-
-/* Buttons */
-.apc-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  min-height: 42px;
-  padding: 8px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-  flex: 1;
-}
-@media (min-width: 640px) {
-  .apc-btn {
-    flex: initial;
-  }
-}
-
-.apc-btn--primary {
-  background: var(--apc-grad-main);
-  color: #fff;
-  border: none;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
-}
-.apc-btn--primary:hover {
-  opacity: 0.93;
-}
-.apc-btn--outline {
-  background: #fff;
-  color: var(--apc-text);
-  border: 1px solid var(--apc-border);
-}
-.apc-btn--outline:hover {
-  background: var(--apc-bg);
-  border-color: var(--apc-blue);
-}
-
-.apc-link-btn {
-  background: none;
-  border: none;
-  color: var(--apc-text-muted);
-  font-size: 12px;
-  cursor: pointer;
-  text-decoration: underline;
-  margin-left: auto;
-}
-
-/* Presets Strip */
-.apc-presets-strip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 4px;
-}
-
-.apc-presets-label {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--apc-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  flex-shrink: 0;
-}
-
-.apc-presets-chips {
-  display: flex;
-  gap: 8px;
-}
-
-.apc-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--apc-card);
-  border: 1px solid var(--apc-border);
-  border-radius: 20px;
-  padding: 6px 12px;
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  min-height: 36px;
-  transition: all 0.15s ease;
-}
-.apc-chip strong {
-  color: var(--apc-text);
-}
-.apc-chip span {
-  color: var(--apc-text-muted);
-}
-.apc-chip--active {
-  border-color: var(--apc-emerald);
-  background: #ECFDF5;
-}
-.apc-chip--active strong {
-  color: var(--apc-emerald);
-}
-
-/* Grid Layout */
-.apc-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-}
-@media (min-width: 860px) {
-  .apc-grid {
-    grid-template-columns: 380px 1fr;
-    gap: 20px;
-  }
-}
-
-.apc-panel {
-  background: var(--apc-card);
-  border: 1px solid var(--apc-border);
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: var(--apc-shadow);
-}
-@media (min-width: 640px) {
-  .apc-panel {
-    padding: 20px;
-  }
-}
-
-.apc-panel-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--apc-border);
-  margin-bottom: 14px;
-}
-
-.apc-step-num {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background: var(--apc-grad-main);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.apc-panel-header h2 {
-  font-size: 15px;
-  font-weight: 700;
-  margin: 0;
-}
-
-.apc-subhead {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--apc-blue);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-top: 4px;
-}
-
-/* Form Controls */
-.apc-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.apc-grid-row {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
-@media (min-width: 440px) {
-  .apc-grid-row {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.apc-field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.apc-field label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--apc-text-muted);
-}
-
-.apc-input, .apc-select {
-  width: 100%;
-  min-height: 44px;
-  padding: 8px 10px;
-  border: 1px solid var(--apc-border);
-  border-radius: 8px;
-  font-size: 16px;
-  background: #fff;
-}
-.apc-input:focus, .apc-select:focus {
-  outline: none;
-  border-color: var(--apc-border-focus);
-}
-
-.apc-input-combo {
-  display: flex;
-  align-items: center;
-  border: 1px solid var(--apc-border);
-  border-radius: 8px;
-  background: #fff;
-  min-height: 44px;
-  overflow: hidden;
-}
-.apc-input-combo input {
-  border: none;
-  width: 100%;
-  padding: 8px 10px;
-  font-size: 16px;
-  font-family: Consolas, monospace;
-}
-.apc-input-combo input:focus {
-  outline: none;
-}
-.apc-input-combo select, .apc-unit-static {
-  border: none;
-  background: var(--apc-bg);
-  padding: 12px 10px;
-  border-left: 1px solid var(--apc-border);
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--apc-text-muted);
-}
-.apc-input-combo--small {
-  max-width: 180px;
-}
-.apc-hint {
-  font-size: 11px;
-  color: var(--apc-text-light);
-}
-
-.apc-pill-stat {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px;
-  background: var(--apc-bg);
-  border: 1px solid var(--apc-border);
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-}
-.apc-pill-stat strong {
-  color: var(--apc-blue);
-  font-family: Consolas, monospace;
-}
-.apc-pill-stat small {
-  color: var(--apc-text-muted);
-}
-
-/* Results Box */
-.apc-results-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.apc-hero-result {
-  background: var(--apc-grad-soft);
-  border: 1px solid rgba(13, 148, 136, 0.25);
-  border-radius: 12px;
-  padding: 18px;
-  text-align: center;
-}
-.apc-hero-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--apc-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.apc-hero-number {
-  margin: 6px 0 4px;
-}
-.apc-hero-number strong {
-  font-size: 28px;
-  font-family: Consolas, monospace;
-  color: var(--apc-emerald);
-}
-.apc-hero-micro {
-  font-size: 16px;
-  color: var(--apc-teal);
-  margin-left: 8px;
-  font-family: Consolas, monospace;
-}
-.apc-hero-sub {
-  font-size: 12px;
-  color: var(--apc-text-muted);
-}
-
-/* Syringe Box */
-.apc-syringe-box {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  background: #ECFDF5;
-  border: 1px solid #A7F3D0;
-  border-radius: 10px;
-  padding: 12px 16px;
-}
-.apc-syringe-icon {
-  font-size: 28px;
-}
-.apc-syringe-info strong {
-  font-size: 12px;
-  color: var(--apc-emerald);
-}
-.apc-syringe-readout {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin: 2px 0;
-}
-.apc-syringe-readout span {
-  font-size: 20px;
-  font-weight: 700;
-  font-family: Consolas, monospace;
-  color: #065F46;
-}
-.apc-syringe-readout small {
-  font-size: 13px;
-  color: var(--apc-teal);
-  font-family: Consolas, monospace;
-}
-.apc-syringe-info p {
-  margin: 0;
-  font-size: 11.5px;
-  color: var(--apc-text-muted);
-}
-
-.apc-warn-alert {
-  background: #FFFBEB;
-  border: 1px solid #FDE68A;
-  color: #B45309;
-  font-size: 12px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  line-height: 1.4;
-}
-
-/* Math Steps */
-.apc-math-card {
-  background: var(--apc-bg);
-  border: 1px solid var(--apc-border);
-  border-radius: 10px;
-  padding: 14px;
-}
-.apc-math-card h4 {
-  font-size: 13px;
-  margin: 0 0 8px;
-}
-.apc-math-steps {
-  margin: 0;
-  padding-left: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 12px;
-}
-.apc-math-steps code {
-  display: block;
-  background: #fff;
-  border: 1px solid var(--apc-border);
-  padding: 5px 8px;
-  border-radius: 4px;
-  font-family: Consolas, monospace;
-  color: var(--apc-blue);
-  margin-top: 3px;
-}
-
-.apc-empty-state {
-  text-align: center;
-  padding: 36px 16px;
-  color: var(--apc-text-light);
-  font-size: 13px;
-}
-
-/* Accordion */
-.apc-accordion {
-  margin-top: 16px;
-}
-.apc-accordion-btn {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--apc-card);
-  border: 1px solid var(--apc-border);
-  padding: 12px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--apc-text-muted);
-  cursor: pointer;
-  min-height: 44px;
-}
-.apc-accordion-body {
-  background: var(--apc-card);
-  border: 1px solid var(--apc-border);
-  border-top: none;
-  border-radius: 0 0 8px 8px;
-  padding: 14px;
-}
-.apc-theory-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-@media (min-width: 640px) {
-  .apc-theory-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-.apc-theory-grid strong {
-  display: block;
-  font-size: 12px;
-  margin-bottom: 4px;
-}
-.apc-theory-grid code {
-  display: block;
-  background: var(--apc-bg);
-  padding: 4px 6px;
-  border-radius: 4px;
-  font-family: Consolas, monospace;
-  font-size: 11px;
-  color: var(--apc-blue);
-  margin-bottom: 4px;
-}
-.apc-theory-grid p {
-  font-size: 11.5px;
-  color: var(--apc-text-muted);
-  margin: 0;
-}
-
-/* ================= PRINT STYLES ================= */
-.apc-print-sheet {
-  display: none;
-}
-
-@media print {
-  .apc-container {
-    display: none !important;
-  }
-  .apc-wrapper {
-    background: #fff !important;
-    padding: 0 !important;
-  }
-  .apc-print-sheet {
-    display: block !important;
-    color: #000 !important;
-    padding: 20px !important;
-  }
-  .apc-print-header {
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 2px solid #000;
-    padding-bottom: 10px;
-    margin-bottom: 12px;
-  }
-  .apc-print-header h1 {
-    font-size: 16px;
-    margin: 0;
-  }
-  .apc-print-header p {
-    font-size: 11px;
-    margin: 2px 0 0;
-    color: #444;
-  }
-  .apc-print-meta {
-    font-size: 11px;
-    line-height: 1.5;
-  }
-  .apc-print-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    background: #f4f4f5;
-    padding: 10px;
-    font-size: 11px;
-    border: 1px solid #ccc;
-    margin-bottom: 14px;
-  }
-  .apc-print-box {
-    border: 1px solid #999;
-    padding: 12px;
-    font-size: 12px;
-    line-height: 1.6;
-    margin-bottom: 24px;
-  }
-  .apc-print-sign-row {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 40px;
-  }
-  .apc-print-sign-row > div {
-    width: 45%;
-    font-size: 11px;
-  }
-  .apc-print-line {
-    border-bottom: 1px solid #000;
-    height: 24px;
-    margin-bottom: 4px;
-  }
-}
-`;

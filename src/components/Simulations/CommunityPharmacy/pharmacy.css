@@ -1,0 +1,285 @@
+/* ============================================================
+   Community Pharmacy Simulation — bespoke surfaces
+   ============================================================
+
+   Namespaced on .pw-cph and imported only by CommunityPharmacyLab, per the
+   project rule that a page's own CSS never goes in globals.css.
+
+   Three things here exist to neutralise globals.css inside this page rather
+   than to edit it (MEMORY gotcha 30):
+     - the list reset, doubled to .pw-cph.pw-cph so it out-specifies
+       `ul:not(.prose ul)`, which is (0,1,2) — gotcha 60;
+     - an input background reset, because `input { background:#fff!important }`
+       repaints any tinted control;
+     - scroll-behaviour is left alone: this page has no scrubbed animation.
+
+   No `backdrop-filter` anywhere on a fixed element (§6 rule 16, gotcha 51):
+   the header and the dock are opaque.
+   ============================================================ */
+
+.pw-cph {
+  --cph-ink: #16181d;
+  --cph-muted: #5b6474;
+  --cph-line: #e3e8ef;
+  --cph-surface: #ffffff;
+  --cph-bg: #f6f8fb;
+  --cph-blue: #1c7bd9;
+  --cph-green: #21b67a;
+  --cph-counter: linear-gradient(180deg, #fdfefe 0%, #eef2f7 100%);
+  --cph-shelf: linear-gradient(180deg, #f3f6fa 0%, #e6ecf4 100%);
+  --cph-ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  background: var(--cph-bg);
+  color: var(--cph-ink);
+}
+
+/* globals.css puts bullets, padding and a fixed grey on every list on the
+   site. Doubling the class beats `ul:not(.prose ul)`. */
+.pw-cph.pw-cph ul,
+.pw-cph.pw-cph ol {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+  color: inherit;
+}
+.pw-cph.pw-cph li {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  color: inherit;
+}
+
+/* globals.css styles EVERY `pre` on the site as a dark code block
+   (`bg-gray-900 text-gray-100 p-4 rounded-lg`). The dispensing label and the
+   intervention record are paper, not code — without this they render as white
+   text on near-black, which is both unreadable and against the no-black-grounds
+   rule. `.pw-cph pre` is (0,1,1) and beats the bare `pre` at (0,0,1). */
+.pw-cph pre {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+  overflow: visible;
+}
+
+/* globals.css forces a white background on every input with !important. */
+.pw-cph input,
+.pw-cph select,
+.pw-cph textarea {
+  background-color: transparent !important;
+}
+.pw-cph .cph-field input,
+.pw-cph .cph-field select,
+.pw-cph .cph-field textarea {
+  background-color: #fff !important;
+}
+
+/* ── The environment ─────────────────────────────────────────────────────── */
+
+/* The shelf wall behind the counter. Bays are drawn, not photographed. */
+.pw-cph .cph-shelf {
+  background: var(--cph-shelf);
+  border: 1px solid var(--cph-line);
+  border-radius: 18px;
+}
+
+.pw-cph .cph-bay {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--cph-line);
+  border-radius: 12px;
+  transition: transform 220ms var(--cph-ease), box-shadow 220ms var(--cph-ease), border-color 220ms var(--cph-ease);
+}
+.pw-cph .cph-bay:hover,
+.pw-cph .cph-bay:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px -14px rgba(15, 23, 42, 0.45);
+  border-color: rgba(28, 123, 217, 0.4);
+}
+/* The shelf edge — a 3px lip under each bay, so a row of bays reads as a shelf
+   rather than as a row of cards. */
+.pw-cph .cph-bay::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: -4px;
+  height: 3px;
+  border-radius: 0 0 6px 6px;
+  background: linear-gradient(180deg, #d8e0ea, #c3cdda);
+}
+
+/* The counter itself: a lit surface with a front edge. */
+.pw-cph .cph-counter {
+  background: var(--cph-counter);
+  border: 1px solid var(--cph-line);
+  border-radius: 20px;
+  box-shadow: inset 0 1px 0 #fff, 0 18px 40px -32px rgba(15, 23, 42, 0.55);
+}
+
+/* The workstation monitor. The bezel is what makes the panel read as a
+   terminal on the counter rather than as another card. */
+.pw-cph .cph-monitor {
+  background: #fff;
+  border: 1px solid var(--cph-line);
+  border-radius: 18px;
+  box-shadow: 0 1px 0 #fff inset, 0 24px 50px -38px rgba(15, 23, 42, 0.6);
+}
+.pw-cph .cph-monitor-bar {
+  border-bottom: 1px solid var(--cph-line);
+  background: linear-gradient(180deg, #fbfdff, #f3f6fa);
+  border-radius: 18px 18px 0 0;
+}
+
+/* The dispensing tray: a shallow dish with a rim. */
+.pw-cph .cph-tray {
+  background: linear-gradient(180deg, #f8fbff 0%, #eaf1f8 100%);
+  border: 1px solid #d5dfea;
+  border-radius: 16px;
+  box-shadow: inset 0 2px 6px rgba(15, 23, 42, 0.07), inset 0 -1px 0 #fff;
+}
+
+/* A pack sitting in the tray. */
+.pw-cph .cph-pack {
+  border-radius: 8px;
+  box-shadow: 0 6px 14px -8px rgba(15, 23, 42, 0.5);
+  animation: cph-drop 320ms var(--cph-ease) both;
+}
+@keyframes cph-drop {
+  from { transform: translateY(-14px) scale(0.96); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+/* The printed label — paper, with a perforated top edge. */
+.pw-cph .cph-label {
+  background: #fffef8;
+  border: 1px solid #e6e2d2;
+  border-radius: 6px;
+  box-shadow: 0 10px 22px -18px rgba(15, 23, 42, 0.6);
+  font-variant-numeric: tabular-nums;
+}
+.pw-cph .cph-label::before {
+  content: "";
+  display: block;
+  height: 6px;
+  margin: -1px -1px 8px;
+  border-radius: 6px 6px 0 0;
+  background: repeating-linear-gradient(90deg, #e6e2d2 0 4px, transparent 4px 8px);
+}
+
+/* The prescription, as paper on the counter. */
+.pw-cph .cph-rx {
+  background: #fffdf6;
+  border: 1px solid #ece5d3;
+  border-radius: 10px;
+  box-shadow: 0 14px 30px -24px rgba(15, 23, 42, 0.6);
+}
+.pw-cph .cph-rx-hand {
+  font-family: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  font-style: italic;
+  letter-spacing: 0.01em;
+  color: #26303f;
+}
+
+/* ── Chrome ──────────────────────────────────────────────────────────────── */
+
+/* Fixed bars are opaque — no backdrop-filter, which was measured as the
+   site's main scroll-lag source. */
+/* `--cph-top` is written by the shell as the site header shows and retracts,
+   so this bar sits directly under it instead of scrolling behind it. */
+.pw-cph .cph-bar {
+  background: #ffffff;
+  border-bottom: 1px solid var(--cph-line);
+}
+.pw-cph header.cph-bar {
+  top: var(--cph-top, 0px);
+  transition: top 380ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.pw-cph .cph-dock {
+  background: #ffffff;
+  border: 1px solid var(--cph-line);
+  box-shadow: 0 18px 44px -28px rgba(15, 23, 42, 0.6);
+}
+
+/* The one primary action. It pulses once when the stage changes, so the eye
+   finds it without the page animating continuously. */
+.pw-cph .cph-primary {
+  animation: cph-attention 620ms var(--cph-ease) 1;
+}
+@keyframes cph-attention {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.025); }
+  100% { transform: scale(1); }
+}
+
+/* A stage marker on the rail. */
+.pw-cph .cph-step-line {
+  background: linear-gradient(90deg, var(--cph-blue), var(--cph-green));
+}
+
+/* Patient speech at the consultation window. */
+.pw-cph .cph-speech {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--cph-line);
+  border-radius: 14px;
+  border-top-left-radius: 2px;
+}
+
+/* ── Motion ──────────────────────────────────────────────────────────────── */
+
+.pw-cph .cph-enter {
+  animation: cph-enter 260ms var(--cph-ease) both;
+}
+@keyframes cph-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* The patient walking up to the counter. Transform/opacity only. */
+.pw-cph .cph-arrive {
+  animation: cph-arrive 420ms var(--cph-ease) both;
+}
+@keyframes cph-arrive {
+  from { opacity: 0; transform: translateX(-18px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pw-cph .cph-enter,
+  .pw-cph .cph-arrive,
+  .pw-cph .cph-pack,
+  .pw-cph .cph-primary {
+    animation: none !important;
+  }
+  .pw-cph .cph-bay {
+    transition: none;
+  }
+}
+
+/* ── Phone ───────────────────────────────────────────────────────────────── */
+
+/* Room for the bottom navigation and the sticky action above it — the two
+   together are about 130px, so the last card still clears them. */
+@media (max-width: 1279px) {
+  .pw-cph .cph-page {
+    padding-bottom: 10.5rem;
+  }
+}
+
+/* A bottom sheet. Height is capped so the handle is always reachable. */
+.pw-cph .cph-sheet {
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -18px 44px -26px rgba(15, 23, 42, 0.6);
+  max-height: 86vh;
+  animation: cph-sheet 280ms var(--cph-ease) both;
+}
+@keyframes cph-sheet {
+  from { transform: translateY(14px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-cph .cph-sheet { animation: none; }
+}

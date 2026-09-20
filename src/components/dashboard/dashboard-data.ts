@@ -1,6 +1,6 @@
 import {
-  BookOpen, Calculator, FileText, FlaskConical, Layers, Library, Microscope, MessagesSquare,
-  Pill, ScanText, Search, Atom, type LucideIcon,
+  BookOpen, Calculator, FileText, FlaskConical, Layers, Microscope, MessagesSquare,
+  Pill, ScanText, Search, Sparkles, Atom, type LucideIcon,
 } from "lucide-react";
 import { SUBJECTS } from "@/lib/courses/registry";
 import type { CourseUnit, SubjectMeta } from "@/lib/courses/types";
@@ -350,7 +350,7 @@ export const REFERENCE_LINKS: StudyLink[] = [
   { label: "Drug finder", href: "/drug-finder", icon: Search, blurb: "RxNorm lookup" },
   { label: "Prescription reader", href: "/prescription-reader", icon: ScanText, blurb: "Read a script" },
   { label: "Molecular Lab", href: "/molecular-lab", icon: Atom, blurb: "Build & view molecules" },
-  { label: "Books library", href: "/books-library", icon: Library, blurb: "Reference texts" },
+  { label: "AI Guide", href: "/ai-guide", icon: Sparkles, blurb: "Ask a pharmacy tutor" },
   { label: "Community", href: "/community", icon: MessagesSquare, blurb: "Ask & answer" },
 ];
 

@@ -135,10 +135,18 @@ pages, confirm progress tracking records a visit, then batch the rest.
     unlisted; `drug-half-life-calculator` is only partly working.
   - **Formula faults found by the 2026-09-13 hub audit** — see CLAUDE.md §7 Known Issues 15.
   - Delete the dead legacy registry `src/app/api/calculators.tsx` (419 lines, zero importers).
-  - 🔄 Migrate older tools to the shared kit (`src/components/calculators/`) — **85 of 104 done
-    (2026-09-13)**, each verified number-for-number against `5dbe98c`; 17 left as of 2026-09-16 (tracker Phase 2).
-    Migration keeps formulas, so the ~70 suspected faults it found are still live — tracker
-    "Suspected maths issues"; the clinical-only opioid tools and creatinine staging are the priority.
+  - ✅ Migrate older tools to the shared kit (`src/components/calculators/`) — **COMPLETE 2026-09-20,
+    104 of 104**, each verified number-for-number against its pre-migration page. Tracker Phase 2 is
+    closed. Verify with
+    `grep -rL "@/components/calculators" "src/app/(site)/calculation-tools/(tools)"/*/page.tsx` (empty).
+  - 🔄 **Decide the calculator formula fixes — now the top calculator item.** Migration kept every
+    formula, so ~80 suspected faults are still live (the 2026-09-13 batch plus ~10 more found on
+    2026-09-20). They are *stated on screen* on the affected pages but not corrected. Priority order:
+    `OpioidConversionCalculator` (fentanyl patch read as mg → 2500 MME) and `OpioidMMECalculator`
+    (tramadol/hydromorphone factors, patch rate divided by frequency), then
+    `ed50-td50-ld50-calculator` (inverted probit slope, ED50 = LD50, no TD50), then
+    `creatinine-calculator` staging and `mixing-time-estimator` (60×). Tracker →
+    "Suspected maths issues". **Owner decision: this is logic work, not migration.**
 - **Important files:** `src/app/(site)/calculation-tools/tool-index.ts`, `(tools)/<slug>/page.tsx`, `src/app/clinical/dose-calculators/page.tsx`
 - **Dependencies:** —
 - **Notes:** Adding a directory does **not** add a card on the web hub (`tool-index.ts` lists 93 of 104). Every tool carries the educational disclaimer from the `(tools)` layout (web) and `MobileShell` (APK) since 2026-09-13.
@@ -193,9 +201,10 @@ pages, confirm progress tracking records a visit, then batch the rest.
   import, PNG/SVG/MOL/SDF/SMILES/JSON export, My Molecules + autosave/restore, phone layout with bottom
   sheets. Proteins and large structures open view-only (the old viewer's features).
 - **Remaining work:** cloud save (needs a Supabase table — owner decision); an AI "Molecular Tutor"
-  that receives the graph as data (optional, spec'd as later); a link from `/encyclopedia` monographs
-  ("Open in Molecular Lab" — the page already accepts `?smiles=&name=` and `?cid=`); progress tracking
-  (`useTracker`) is not wired.
+  that receives the graph as data (optional, spec'd as later); progress tracking (`useTracker`) is not
+  wired. ✅ **Done 2026-09-20:** the `/encyclopedia` hand-off — every structure plate now carries
+  "Open in Molecular Lab" (`?smiles=&name=`), and the drug card renders its own lazy 3D conformer by
+  reusing `Viewer3D`/`chem.ts`/`model3d.ts` (CLAUDE.md §6 rule 18's one documented exception).
 - **Important files:** `src/components/molecular-lab/`, `scripts/build-molecule-library.mts`
 - **Dependencies:** `openchemlib` 9.25.0 (new), `3dmol` 2.5.5 (now bundled); PubChem and RCSB from the browser.
 
@@ -205,8 +214,24 @@ pages, confirm progress tracking records a visit, then batch the rest.
   organic ID, lab guide) plus the antibiogram simulator, compounding lab, and **Molecular Lab**
   (`/molecular-lab`, 2026-09-16 — replaced the Molecule Viewer; see below).
   Canvas work via `konva`/`react-konva`, 3D via `three`/`3dmol`.
-- **Remaining work:** None outstanding. The simulations hub page has an under-construction branch —
-  verify it is not shown for shipped labs.
+  **Disk diffusion was rebuilt on 2026-09-20** as the reference shape for the rest: a pure model
+  (`engine.ts`) and stage machine separated from presentation, a Theory section with an illustrated
+  nine-step Lab Guide, a procedure the student performs (standardise, swab, place disks under enforced
+  spacing, incubate, **measure the zones with a calliper**), configurable interpretive criteria that
+  name their source, and a completion screen scored on technique. See `.claude/skills/lab-simulation/`.
+- **The pharmacy counter is now a simulation too (2026-09-20).** `/pharmacy-counter` was rebuilt as
+  the **Community Pharmacy Simulation Lab** in the same shape: pure `data/` + `engine/` layer,
+  a stage machine (`engine/flow.ts`), presentation separated out, and **47 unit tests**. Fourteen
+  gated stages plus a ten-stage minor-ailment path, ten clinical checks the student performs, an
+  inventory that depletes, a label printer, counselling and a competency debrief. Ten cases.
+  See `.claude/skills/pharmacy-counter/SKILL.md`.
+  **Still single files:** titration, buffer, dilution, UV, staining, organic ID, lab guide,
+  antibiogram simulator, compounding lab.
+- **Remaining work:** the other **seven labs are still single 600–1,600-line files** and are still
+  mostly watch-and-click — converting them to the disk-diffusion shape is the outstanding work here,
+  highest value first (titration and staining are the most used). The simulations hub page has an
+  under-construction branch — verify it is not shown for shipped labs. None of the simulations is
+  covered by a test, and only disk diffusion records progress via `useTracker`.
 - **Important files:** `src/app/(site)/simulations/`, `src/components/Simulations/`
 - **Dependencies:** None. (`/api/scan-colonies` has had no web caller since 2026-09-16.)
 
@@ -257,20 +282,41 @@ pages, confirm progress tracking records a visit, then batch the rest.
   counting moved on-device (OpenCV.js) on 2026-09-16; its Gemini route `scan-colonies` is now called
   only by APK v1.0–1.2 — delete it once those are retired (owner decision, CLAUDE.md Known Issue 17).
 - **Remaining work:** Remove the `NEXT_PUBLIC_GEMINI_API_KEY` fallback in
-  `evaluate-histology/route.ts:17`. **None of the AI routes are rate limited or authenticated** —
-  they are open, billable endpoints. See Phase 5.
+  `evaluate-histology/route.ts:17`. **`/api/chat` was rate limited, validated and clamped on
+  2026-09-20** and is now the pattern to copy; the other three remain open, billable endpoints.
+  See Phase 5. Separately, the key is on the **free tier — 5 requests/min for the whole project**
+  (measured), which is a product ceiling, not just a security one: enabling billing is an owner
+  decision (CLAUDE.md §7 Known Issue 0c).
 - **Important files:** `src/app/api/{chat,prescription-reader-v2,evaluate-histology,scan-colonies}/route.ts`
 - **Dependencies:** `GEMINI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`
 
-### Q&A community
-- **Status:** ✅ Implemented
-- **Existing implementation:** Ask, answer, vote, tag filtering, pagination with clamped limits,
-  per-user vote highlighting, author profiles via a `profiles` join.
-- **Remaining work:** ⚠ **Needs verification** — this is the only feature relying on RLS, and the
-  policies are not in the repo. Confirm in the Supabase dashboard that `questions`, `answers`,
-  `votes`, and `profiles` have policies that prevent editing others' rows.
-- **Important files:** `src/app/api/qa/`, `src/app/(site)/community/`, `src/hooks/useVote.ts`
-- **Dependencies:** Supabase RLS policies (external)
+### Community (Reddit-shaped) — replaced the flat Q&A on 2026-09-20
+- **Status:** 🟡 Built, **not yet live** — blocked on one owner action.
+- **Existing implementation:** 12 pharmacy spaces; posts in four kinds (discussion / question /
+  link / image) with flair, tags, save, share, report, edit, soft delete, pin, lock; nested comments
+  to depth 8 with collapse and inline reply/edit; accepted answers on Question posts; hot / new /
+  top / rising feeds with range, space, tag, kind, unanswered and search filters; infinite scroll;
+  card/compact density; karma; join/leave spaces; a private Saved list; a moderation report queue.
+  Voting is server-authoritative via the `community_vote` RPC.
+- **Remaining work:** 🔴 **The owner must run `supabase/migrations/20260920_community.sql` in the
+  Supabase SQL editor.** Nothing else blocks it; until then every `/community` route renders its
+  error boundary. Afterwards, walk one post end to end (post → comment → reply → vote → accept →
+  save) and confirm karma and counters move. Open decisions: image uploads (none today — image
+  posts take a URL), notifications, a moderator UI.
+- **Important files:** `supabase/migrations/20260920_community.sql`, `src/lib/community/`,
+  `src/app/api/community/`, `src/components/community/`, `src/hooks/useCommunityVote.ts`,
+  `scripts/community.test.mts`
+- **Dependencies:** the migration above. **Unlike every other feature, its RLS policies ARE in the
+  repo** — they ship in that file.
+
+### Legacy Q&A (data retained, UI retired)
+- **Status:** 🟤 Superseded
+- **Existing implementation:** `questions`, `answers`, `votes` tables and `/api/qa/*` routes are
+  untouched and still functional; the migration *copies* them into the community tables rather than
+  moving them, so the change is reversible.
+- **Remaining work:** delete `/api/qa/*` and the three tables once the community is proven in
+  production. Nothing in the UI calls them any more.
+- **Important files:** `src/app/api/qa/`
 
 ---
 
@@ -408,13 +454,18 @@ pages, confirm progress tracking records a visit, then batch the rest.
   than driving it to zero.
 
 ### Rate-limit and gate the AI routes
-- **Status:** ⚪ Not Started
-- **Remaining work:** `/api/chat`, `/api/prescription-reader-v2`, `/api/evaluate-histology`,
-  `/api/scan-colonies` are unauthenticated, unthrottled, and cost money per call. Apply the
-  existing Upstash limiter pattern; consider requiring a session.
-- **Important files:** those four routes, `src/lib/tournament-redis.ts` (`checkRateLimit` helper)
+- **Status:** 🟡 Partially Implemented — 1 of 4 done
+- **Done (2026-09-20):** `/api/chat` — anonymous 8/5 min by IP, signed-in 30/5 min by user id, body
+  validated and clamped (30 turns, 8k chars each, 24k total) **before** any Gemini call, unknown
+  roles dropped, upstream quota surfaced as a 503. It is the reference implementation; copy it.
+- **Remaining work:** `/api/prescription-reader-v2`, `/api/evaluate-histology`, `/api/scan-colonies`
+  are still unauthenticated, unthrottled, and cost money per call. Image payloads make the first
+  two the more expensive of the three — bound their input size as well as their rate.
+- **Important files:** those three routes; `src/app/api/chat/route.ts` (the pattern),
+  `src/lib/rateLimit.ts` (`checkLimit`, fails open)
 - **Dependencies:** Upstash
-- **Notes:** Highest-risk open issue in the app after the missing schema.
+- **Notes:** Was the highest-risk open issue after the missing schema; the chat route was the most
+  exposed of the four because it is linked from the home page for signed-out visitors.
 
 ### Make the build env-independent
 - **Status:** ⚪ Not Started

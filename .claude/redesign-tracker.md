@@ -15,7 +15,7 @@ Started 2026-09-13 by session `pharma-wallah-f6`. Status values: `todo` · `dire
 | 0.2 Shared page kit | **done** 2026-09-13 | `src/components/page-kit/` — not yet used by any page |
 | 0.3 Mockup directions | **waiting for the user** | Published: https://claude.ai/code/artifact/34024bf6-5a9b-4ebe-ac03-592176f77609 (source: session scratchpad, not in repo). No family may roll out before its direction is chosen |
 | 1 Pages | **in progress** — P1 hub, P7 dashboard and P8 auth done; the rest wait for a direction | |
-| 2 Calculators | **in progress** 2026-09-13 — session `pharma-wallah-3d` (was `-a8` before the reboot) owns all remaining tools except 14 Pharm-Chem/Pharmaceutics ones held by `pharma-wallah-9c` (was `-4d`); F16 fixed in `CalculatorShell`. Originals for before/after checks: commit `5dbe98c` | Do not start a batch without checking with 3d |
+| 2 Calculators | **done** 2026-09-20 — all 104 tool pages import `@/components/calculators` (measured, 0 remaining). Last 17 migrated by session `pharma-wallah-86`; before/after numbers identical on every tool. Was: in progress 2026-09-13 — session `pharma-wallah-3d` (was `-a8` before the reboot) owns all remaining tools except 14 Pharm-Chem/Pharmaceutics ones held by `pharma-wallah-9c` (was `-4d`); F16 fixed in `CalculatorShell`. Originals for before/after checks: commit `5dbe98c` | Do not start a batch without checking with 3d |
 
 ## Chosen directions
 
@@ -171,12 +171,12 @@ AdSense placement (preserve; never inside an animated parent). `no-ads` = delibe
 | [x] done 2026-09-13 | `/encyclopedia` | `components/encyclopedia/*` | direct user request ("update the UI with top-design"), no mockup round; reference-desk cover + result index + monograph reader; search API rebuilt |
 | [ ] todo | `/molecule-viewer` | `components/MoleculeViewer.tsx` | 3Dmol canvas labels stay Arial (by decision) |
 | [ ] todo | `/prescription-reader` | (333) | AI tool — no-ads |
-| [ ] todo | `/pharmacy-counter` | dynamic component | |
+| [x] done | `/pharmacy-counter` | `components/Simulations/CommunityPharmacy/` (34 files) | 2026-09-20 — rebuilt as the Community Pharmacy Simulation Lab: 14-stage workflow, 10 student-performed checks, inventory/expiry, label printer, counselling, debrief. Server page w/ metadata. Pure engine + 47 unit tests. No ads |
 | [ ] todo | `/compounding-lab` | `components/ExtemporaneousCompoundingLab.tsx` | |
 | [ ] todo | `/antibiogram-simulator` | `components/AntibiogramSimulator.tsx` | |
 | [ ] todo | `/adr-detective` | (945) | |
-| [ ] todo | `/ai-guide` | (381) | AI tool — no-ads |
-| [ ] todo | `/books-library` | (1665) | |
+| [x] done | `/ai-guide` | `components/ai-guide/` + `lib/ai-guide/` | 2026-09-20 — rebuilt: streaming, study modes, saved threads, real markdown styling, server page w/ metadata. No ads |
+| — removed | ~~`/books-library`~~ | — | 2026-09-20 — deleted (textbook copyright); 308s to `/ai-guide` |
 | [ ] todo | `/flash-cards` | (3216) | |
 | [ ] todo | `/flash-cards/sample` | (456) | |
 | [ ] todo | `/pw` quiz | `components/PharmaWallahQuiz.tsx` | |
@@ -259,7 +259,7 @@ own uncommitted edits** — do not touch without asking.
 | 31 | [x] `sterile-dose-volume` | 650 | hub | done 2026-09-13 (9c, before/after numbers match) | C6 |
 | 32 | [x] `surface-area-particle-size-calculator` | 653 | hub | done 2026-09-13 (9c, before/after numbers match) | C6 |
 | 33 | [x] `osmolarity-calculators` | 1092 | hub | done 2026-09-13 (9c, before/after numbers match) | C6 |
-| 34 | [ ] `osmolality-calculators` | 1196 | hub | todo | C7 |
+| 34 | [x] `osmolality-calculators` | 1196 | hub | done 2026-09-20 (86, before/after numbers match) | C7 |
 | 35 | [x] `relative-density-bottle-calculator` | 504 | hub | done (pre-existing) | — |
 | | **Biopharmaceutics & Pharmacokinetics** — 12 tools | | | | |
 | 36 | [x] `volume-distribution-calculator` | 247 | hub | done 2026-09-13 (3d/R2, before/after numbers match) | C7 |
@@ -275,10 +275,10 @@ own uncommitted edits** — do not touch without asking.
 | 46 | [x] `AccumulationIndexCalculator` | 249 | hub | done (pre-existing) | — |
 | 47 | [x] `MeanResidenceTimeCalculator` | 262 | hub | done (pre-existing) | — |
 | | **Pharmacology** — 6 tools | | | | |
-| 48 | [ ] `drug-receptor-binding-affinity-tool` | 386 | hub | todo | C9 |
-| 49 | [ ] `ed50-td50-ld50-calculator` | 459 | hub | todo | C9 |
-| 50 | [ ] `dose-response-curve-generator` | 468 | hub | todo | C9 |
-| 51 | [ ] `animal-dose` | 1380 | hub | todo | C9 |
+| 48 | [x] `drug-receptor-binding-affinity-tool` | 386 | hub | done 2026-09-20 (86, before/after numbers match) | C9 |
+| 49 | [x] `ed50-td50-ld50-calculator` | 459 | hub | done 2026-09-20 (86, before/after numbers match) | C9 |
+| 50 | [x] `dose-response-curve-generator` | 468 | hub | done 2026-09-20 (86, before/after numbers match) | C9 |
+| 51 | [x] `animal-dose` | 1380 | hub | done 2026-09-20 (86, before/after numbers match) | C9 |
 | 52 | [x] `serial-diluation` | 1920 | hub | done 2026-09-14 (4b, 359/359 values match) | C10 |
 | 53 | [x] `therapeutic-index-calculator` | 296 | hub | done (pre-existing) | — |
 | | **Pharmaceutical Analysis** — 8 tools | | | | |
@@ -301,10 +301,10 @@ own uncommitted edits** — do not touch without asking.
 | 68 | [x] `FValueCalculator` | 314 | hub | done (pre-existing) | — |
 | 69 | [x] `DValueCalculator` | 321 | hub | done (pre-existing) | — |
 | | **Pharmaceutical Engineering** — 4 tools | | | | |
-| 70 | [ ] `heat-transfer-area` | 223 | hub | todo | C12 |
-| 71 | [ ] `drying-rate` | 264 | hub | todo | C12 |
-| 72 | [ ] `reynolds-number` | 270 | hub | todo | C12 |
-| 73 | [ ] `mixing-time-estimator` | 318 | hub | todo | C12 |
+| 70 | [x] `heat-transfer-area` | 223 | hub | done 2026-09-20 (86, before/after numbers match) | C12 |
+| 71 | [x] `drying-rate` | 264 | hub | done 2026-09-20 (86, before/after numbers match) | C12 |
+| 72 | [x] `reynolds-number` | 270 | hub | done 2026-09-20 (86, before/after numbers match) | C12 |
+| 73 | [x] `mixing-time-estimator` | 318 | hub | done 2026-09-20 (86, before/after numbers match) | C12 |
 | | **Clinical & Hospital Pharmacy** — 13 tools | | | | |
 | 74 | [x] `AnionGapCalculator` | 218 | hub | done 2026-09-13 (a8/A14, before/after numbers match) | C13 |
 | 75 | [x] `iv-drip-rate-calculator` | 679 | hub | done 2026-09-13 (a8/A14, before/after numbers match) | C13 |
@@ -320,31 +320,54 @@ own uncommitted edits** — do not touch without asking.
 | 85 | [x] `CorrectedCalciumCalculator` | 241 | hub | done (pre-existing) | — |
 | 86 | [x] `gfr-calculator` | 488 | hub | done (pre-existing) | — |
 | | **Clinical-only (linked from /clinical/dose-calculators)** — 6 tools | | | | |
-| 87 | [ ] `OpioidMMECalculator` | 883 | clinical | todo | C15 |
-| 88 | [ ] `GeriatricDosingCalculator` | 1050 | clinical | todo | C15 |
-| 89 | [ ] `vancomycin-auc-calculator` | 1163 | clinical | todo | C15 |
-| 90 | [ ] `tpn` | 1175 | clinical | todo | C15 |
-| 91 | [ ] `reconstitution-calculator` | 1315 | clinical | todo | C15 |
-| 92 | [ ] `renal-dosing-adjuster` | 2249 | clinical | todo | C16 |
+| 87 | [x] `OpioidMMECalculator` | 883 | clinical | done 2026-09-20 (86, before/after numbers match) | C15 |
+| 88 | [x] `GeriatricDosingCalculator` | 1050 | clinical | done 2026-09-20 (86, before/after numbers match) | C15 |
+| 89 | [x] `vancomycin-auc-calculator` | 1163 | clinical | done 2026-09-20 (86, before/after numbers match) | C15 |
+| 90 | [x] `tpn` | 1175 | clinical | done 2026-09-20 (86, before/after numbers match) | C15 |
+| 91 | [x] `reconstitution-calculator` | 1315 | clinical | done 2026-09-20 (86, before/after numbers match) | C15 |
+| 92 | [x] `renal-dosing-adjuster` | 2249 | clinical | done 2026-09-20 (86, before/after numbers match) | C16 |
 | | **Orphans (linked from nowhere on the web)** — 5 tools | | | | |
 | 93 | [x] `EmaxModelCalculator` | 225 | ORPHAN | done 2026-09-13 (3d/R5, before/after numbers match) | C16 |
-| 94 | [ ] `AntagonismSimulator` | 268 | ORPHAN | todo | C16 |
+| 94 | [x] `AntagonismSimulator` | 268 | ORPHAN | done 2026-09-20 (86, before/after numbers match) | C16 |
 | 95 | [x] `OsmolarGapCalculator` | 371 | ORPHAN | done 2026-09-13 (9c, before/after numbers match) | C16 |
-| 96 | [ ] `OpioidConversionCalculator` | 382 | ORPHAN | todo | C16 |
+| 96 | [x] `OpioidConversionCalculator` | 382 | ORPHAN | done 2026-09-20 (86, before/after numbers match) | C16 |
 | 97 | [x] `drug-half-life-calculator` | 432 | ORPHAN | done 2026-09-13 (3d/R2, before/after numbers match) | C17 |
 
-<!-- 97 tools at the start (104 after the six analytical-practical tools + master formula); 81 to migrate.
-     State at the 2026-09-13 safe stop: 85 of 104 on the kit. Measured 2026-09-16 (pages not importing
-     @/components/calculators): 87 of 104 on the kit — serial-diluation (4b) and cfu-calculator are done.
-     Still to migrate (17): animal-dose,
-     AntagonismSimulator, dose-response-curve-generator, drug-receptor-binding-affinity-tool,
-     drying-rate, ed50-td50-ld50-calculator, GeriatricDosingCalculator, heat-transfer-area,
-     mixing-time-estimator, OpioidConversionCalculator, OpioidMMECalculator, osmolality-calculators (9c),
-     reconstitution-calculator, renal-dosing-adjuster, reynolds-number, tpn,
-     vancomycin-auc-calculator. Before-captures for animal-dose, R6's five and R5's four were taken but
-     lived in a /tmp scratchpad — re-capture from 5dbe98c. -->
+<!-- 97 tools at the start (104 after the six analytical-practical tools + master formula).
+     COMPLETE 2026-09-20: all 104 `(tools)/*/page.tsx` import @/components/calculators —
+     `grep -rL "@/components/calculators" src/app/(site)/calculation-tools/(tools)/*/page.tsx` returns nothing.
+     The final 17 were migrated by session pharma-wallah-86 on 2026-09-20. For those 17 the "before"
+     capture came from HEAD, not 5dbe98c: all 17 files were byte-identical between the two
+     (`git diff 5dbe98c HEAD -- <path>` empty), because no earlier session had touched them. -->
 
 ## Suspected maths issues found during Phase 2 (NOT fixed — owner decision; fixing is logic work)
+
+### 2026-09-20 — session `pharma-wallah-86`, the final 17 tools
+
+Every item below is **preserved exactly** in the migrated page (identical inputs → identical outputs)
+and **stated on screen** so a student cannot take the number at face value. Fixing any of them is
+logic work and needs the owner's decision.
+
+| Tool | Fault | Evidence |
+| --- | --- | --- |
+| `OpioidConversionCalculator` | Transdermal fentanyl read as mg, not mcg/h: a 25 mcg/h patch → **2500 MME** (published equivalent ≈ 60 mg oral morphine/day). No cross-tolerance reduction anywhere. | CDP: fentanyl/td 25 → MME 2500.0, converted 2500.00 |
+| `OpioidMMECalculator` | Tramadol ×0.1 (CDC 2022: 0.2); oral hydromorphone ×4 (CDC 2022: 5). Rotating **to** a fentanyl patch divides the mcg/h rate by the dosing frequency, halving/quartering a continuous rate. | registry constants; preset E tramadol 101.3 mg/day |
+| `ed50-td50-ld50-calculator` | `probitTransform` returns the upper-tail deviate for every p — p<0.5 lands above probit 5, **inverting the fitted slope** (real data → slope −2.25). χ² (222.71) and the CI inherit the error. `ed50 = ld50` (ED50 is the LD50). **No TD50 at all**, despite the name. | CDP: 4 dose groups → "Probit = 8.51 + -2.25 × log(Dose)" |
+| `AntagonismSimulator` | Non-competitive `1 − [B]/([B]+KdB)` and uncompetitive `KdB/(KdB+[B])` are algebraically identical → both modes return the same number. True uncompetitive antagonism also shifts EC₅₀ left; not modelled. | CDP: both modes 41.7% / 1.00× |
+| `mixing-time-estimator` | Speed is labelled rps and Re uses rps, but the time correlation multiplies by 60 as though rpm → **time 60× too long**. | CDP: D 2 m, d 0.7 m, N 2 rps → 980 s (t = K(D/d)²/N gives 16.3 s) |
+| `heat-transfer-area` | The W / BTU-h selector only relabels the ΔT field; the area is always Q/(U·ΔT) in SI and reported in m². | CDP: switching the unit changes no result |
+| `drying-rate` | Phase is read from the **final** moisture content alone, not the critical moisture content. Accepts X₁ < X₂ and reports a negative drying rate. | CDP: X₁ 0.1 / X₂ 0.3 → −0.200 kg/m²·h |
+| `osmolality-calculators` | Serum osmolar gap is `calculated − calculated` = **always 0** except in the ethanol mode; "Measured Value" mode returns the standard formula; urine "Direct Input" returns sodium × 2; urine:plasma ratio always divides by a hard-coded 290; blood "Standard Calculation" ignores haematocrit entirely. | CDP: gap 0.0 in standard/measured; blood calculated 290 at Hct 45 and 55 |
+| `animal-dose` | Linear body-weight scaling, not allometric (BSA/Km). A mouse needs ≈12× the human mg/kg; this returns the same mg/kg by construction. | CDP: normalised mg/kg identical across mouse/rat/rabbit |
+| `reynolds-number` | Blasius (0.316·Re^−0.25) is applied across the **transitional** band 2000–4000 and far above 10⁵, outside its fitted range. | code + CDP f = 0.0427 at Re 3000 |
+| `GeriatricDosingCalculator`, `vancomycin-auc-calculator`, `tpn`, `reconstitution-calculator`, `renal-dosing-adjuster`, `drug-receptor-binding-affinity-tool`, `dose-response-curve-generator` | No maths faults found. Each was hand-checked end to end against its own formula (see the session's work-log entry). | — |
+
+**Render bugs fixed during this migration** (numbers unchanged; allowed by the migration rule and
+stated here): a stale result left on screen after invalid input on `heat-transfer-area`,
+`drug-receptor-binding-affinity-tool` and `ed50-td50-ld50-calculator`; and an **infinite loop** in
+`drying-rate` when initial = final moisture (`mc -= (X1 − X2)/20` with a zero step), which froze the
+tab — now guarded, and identical for every X₁ > X₂ input.
+
 
 Found by the migration agents while comparing each original (`5dbe98c`) with its migrated page.
 Migration keeps the maths byte-identical, so **every item below is still live on the site and in

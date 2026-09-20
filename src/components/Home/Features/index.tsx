@@ -12,7 +12,6 @@ import {
   ArrowRight,
   GraduationCap,
   Brain,
-  Library,
   Scan,
   Layers,
   FlaskConical,
@@ -44,7 +43,6 @@ const tickerItems = [
   { value: "2,000+", label: "Drug Entries" },
   { value: "500+", label: "Study Resources" },
   { value: "1,200+", label: "Flashcards" },
-  { value: "150+", label: "Textbook Titles" },
   { value: "300+", label: "Lab Specimens" },
   { value: "80+", label: "Calc Tools" },
   { value: "24/7", label: "AI Guide" },
@@ -73,15 +71,7 @@ const groups = [
         link: "/encyclopedia",
       },
       {
-        num: "03", groupName: "BOOKS LIBRARY", key: "Books Library", tag: "Reading",
-        Icon: Library,
-        desc: "Essential pharmacy textbooks and reference manuals online — bookmark and search across all titles.",
-        stat: "150+", statLabel: "Titles",
-        highlights: ["Standard Texts", "Ref Manuals", "Bookmarks", "Full Search"],
-        link: "/books-library",
-      },
-      {
-        num: "04", groupName: "FLASHCARDS", key: "Flashcards", tag: "New",
+        num: "03", groupName: "FLASHCARDS", key: "Flashcards", tag: "New",
         Icon: Layers,
         desc: "Master drug mechanisms with spaced-repetition flashcards. Proven memory system for long-term retention.",
         stat: "1,200+", statLabel: "Cards",
@@ -95,7 +85,7 @@ const groups = [
     label: "Practice & Assessment",
     items: [
       {
-        num: "05", groupName: "MCQ BANK", key: "MCQ Bank", tag: "Editor's Pick",
+        num: "04", groupName: "MCQ BANK", key: "MCQ Bank", tag: "Editor's Pick",
         Icon: FileText,
         desc: "Thousands of exam-ready MCQs with detailed explanations, subject filters, and performance analytics.",
         stat: "10,000+", statLabel: "Questions",
@@ -103,7 +93,7 @@ const groups = [
         link: "/mcqs-bank",
       },
       {
-        num: "06", groupName: "CALC TOOLS", key: "Calculation Tools", tag: "Practical",
+        num: "05", groupName: "CALC TOOLS", key: "Calculation Tools", tag: "Practical",
         Icon: Calculator,
         desc: "Interactive calculators for dosage, formulation, alligation, and pharmacokinetics — built for clinical accuracy.",
         stat: "80+", statLabel: "Calculators",
@@ -111,7 +101,7 @@ const groups = [
         link: "/calculation-tools",
       },
       {
-        num: "07", groupName: "SLIDE SPOTTING", key: "Slide Spotting", tag: "Visual",
+        num: "06", groupName: "SLIDE SPOTTING", key: "Slide Spotting", tag: "Visual",
         Icon: Microscope,
         desc: "Identify microscopic slides and pharmaceutical specimens interactively with self-test mode.",
         stat: "300+", statLabel: "Specimens",
@@ -119,7 +109,7 @@ const groups = [
         link: "/spotting",
       },
       {
-        num: "08", groupName: "LAB SIMULATIONS", key: "Lab Simulations", tag: "New",
+        num: "07", groupName: "LAB SIMULATIONS", key: "Lab Simulations", tag: "New",
         Icon: FlaskConical,
         desc: "Virtual pharmacy lab — perform titrations, staining, dilutions, and more in a risk-free interactive environment.",
         stat: "7+", statLabel: "Simulations",
@@ -134,7 +124,7 @@ const groups = [
     label: "AI-Powered",
     items: [
       {
-        num: "09", groupName: "AI GUIDE", key: "Expert AI Guide", tag: "AI-Powered",
+        num: "08", groupName: "AI GUIDE", key: "Expert AI Guide", tag: "AI-Powered",
         Icon: Bot,
         desc: "Intelligent companion trained on pharmacy curricula. Answers complex questions, explains concepts step-by-step, plans your study sessions.",
         stat: "24/7", statLabel: "Available",

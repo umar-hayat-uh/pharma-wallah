@@ -81,6 +81,11 @@ export function ResultCard({
     <div
       className={cn(
         "relative overflow-hidden rounded-2xl px-5 pb-5 pt-6 text-white shadow-lg shadow-slate-950/10 sm:px-6 sm:pb-6",
+        // The lens edge: a bright inset rim along the lit top edge and a faint
+        // one below, so the card reads as a pane of glass rather than a
+        // flat gradient block.
+        "shadow-[0_10px_30px_-12px_rgba(2,12,27,0.45),inset_0_1px_0_rgba(255,255,255,0.28),inset_0_-1px_0_rgba(255,255,255,0.10)]",
+        "ring-1 ring-inset ring-white/15",
         className,
       )}
       // The brand surface, not ink (user's rule, 2026-09-13). Small text on it
@@ -88,9 +93,28 @@ export function ResultCard({
       style={{ background: BRAND_SURFACE }}
       aria-live="polite"
     >
-      <span className={cn("absolute inset-x-0 top-0 h-1", styles.rule)} aria-hidden="true" />
+      {/*
+       * Liquid glass (user request, 2026-09-20). Two transform-only layers
+       * *behind* the content — a slow swell and a specular highlight drifting
+       * across it — so the card reads like light moving over water without
+       * touching the text contrast the BRAND_SURFACE scrim was computed for.
+       *
+       * Deliberately no backdrop-filter: §6 rule 16 / MEMORY gotcha 51. These
+       * animate `transform` only, so they stay on the compositor, and they ship
+       * inside the APK, where a repainting layer would be felt immediately.
+       */}
+      <span
+        className="pointer-events-none absolute -inset-1/4 z-0 transform-gpu animate-calc-tide rounded-[50%] bg-[radial-gradient(closest-side,rgba(255,255,255,0.14),rgba(255,255,255,0)_70%)] will-change-transform motion-reduce:animate-none"
+        aria-hidden="true"
+      />
+      <span
+        className="pointer-events-none absolute inset-y-0 z-0 w-1/3 transform-gpu animate-calc-sheen bg-[linear-gradient(90deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.16)_50%,rgba(255,255,255,0)_100%)] will-change-transform motion-reduce:animate-none"
+        aria-hidden="true"
+      />
 
-      <div className="flex items-start justify-between gap-3">
+      <span className={cn("absolute inset-x-0 top-0 z-10 h-1", styles.rule)} aria-hidden="true" />
+
+      <div className="relative z-10 flex items-start justify-between gap-3">
         <p className="flex min-w-0 items-center gap-2 font-mono text-[10.5px] font-medium uppercase tracking-[0.16em] text-white/90">
           <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", styles.dot)} aria-hidden="true" />
           <span className="truncate">{label}</span>
@@ -100,7 +124,7 @@ export function ResultCard({
 
       {/* Keyed on the value, so the figure settles in again every time the
           answer changes — the eye is drawn to what just moved. */}
-      <p key={String(value)} className="mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-1 animate-calc-result motion-reduce:animate-none">
+      <p key={String(value)} className="relative z-10 mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-1 animate-calc-result motion-reduce:animate-none">
         <span className="text-[2.75rem] font-bold leading-none tracking-[-0.045em] tabular-nums sm:text-6xl">
           {value}
         </span>
@@ -108,7 +132,7 @@ export function ResultCard({
       </p>
 
       {interpretation && (
-        <p className="mt-4">
+        <p className="relative z-10 mt-4">
           <span
             className={cn(
               "inline-flex max-w-full items-center rounded-lg px-2.5 py-1.5 text-sm font-medium leading-snug",

@@ -173,12 +173,19 @@ Counter (`src/components/calculators/colony/`). Copy their split:
    Chrome at 390 and 1440, with CPU throttling for timing, `window.Worker = undefined` for the
    fallback, and the airplane-mode check from `android-app-capacitor`.
 
-### 6. Migrating an old tool onto the kit (Phase 2 — 17 left as of 2026-09-16, list in `.claude/redesign-tracker.md`)
+### 6. Migrating an old tool onto the kit (Phase 2 — **COMPLETE 2026-09-20, 104/104**; kept as the procedure for any new legacy page)
 Proven on ~60 tools on 2026-09-13. The goal is **easier to use, identical numbers**.
-1. **Before numbers from the original, not HEAD.** `git show "5dbe98c:src/app/(site)/calculation-tools/(tools)/<slug>/page.tsx"`
-   into `src/app/migration-before/<label>-<slug>/page.tsx` (outside `(site)`/`(tools)`), load it on the dev
-   server, drive 3–10 input sets (typical, another unit/mode, an edge) clicking its Calculate button,
-   record every displayed number. **Delete that directory immediately** (gotcha 76).
+1. **Before numbers from the original.** First check whether HEAD *is* the original:
+   `git diff 5dbe98c HEAD -- "src/app/(site)/calculation-tools/(tools)/<slug>/page.tsx"`. If that is
+   empty, no session has touched the file and you can capture straight from the live page — this was
+   true for all 17 tools finished on 2026-09-20 (MEMORY gotcha 132). Only if it differs do you need
+   `git show "5dbe98c:<path>"` into `src/app/migration-before/<label>-<slug>/page.tsx` (outside
+   `(site)`/`(tools)`), and you must **delete that directory immediately** (gotcha 76). Either way,
+   drive 3–10 input sets (typical, another unit/mode, an edge) and record every displayed number.
+   Prefer the tool's own presets as input sets: one click each, and they exercise the real bands.
+   Where the output is a *chart* rather than a figure (`dose-response-curve-generator`), transcribe
+   the original generator into a scratch `.mts`, import the extracted `_x.ts`, and deep-compare the
+   arrays — 5,134 values compared, 0 differences, is a far stronger check than a screenshot.
 2. **Rebuild the page on the kit**, result-first: `CalculatorShell` (eyebrow = hub category) with
    `aside` = `CalcAbout` + `AdSlot` last; `ModeSwitch` for methods; `ResultCard` with an `empty` hint;
    inputs in `CalcSection`/`FieldGrid` with units, hints and errors; example chips + Reset; a

@@ -1,50 +1,39 @@
 // ============================================================
-//  PharmaWallah — Simulations Module
-//  src/components/simulations/index.ts
+//  PharmaWallah — Disk Diffusion Lab
+//  Kirby-Bauer antibiotic susceptibility test
 // ============================================================
+//
+//  Route: /simulations/disk-diffusion
+//
+//  The lab is split so the experiment can be reasoned about without rendering
+//  anything:
+//
+//    types.ts        shared types
+//    data.ts         organisms, antibiotic panel, interpretive criteria, guide prose
+//    engine.ts       the pure model — zones, placement rules, coverage, scoring
+//    useLabMachine   the stage machine and every rule about what is allowed
+//
+//  Presentation:
+//
+//    DiskDiffusionLab    the page shell: Theory | Simulation, mode, tracking
+//    TheorySection       Principle · Materials · Lab Guide · Interpretation · Safety
+//    LabGuide            the illustrated nine-step walk-through
+//    illustrations       the Lab Guide's SVG diagrams
+//    SimulationWorkspace the bench: layout, plate interaction, timed processes
+//    stages              one control panel per stage
+//    PetriDish           the plate, drawn in real millimetres
+//    equipment           bottle, swab, turbidity tubes, incubator, culture plate
+//    MeasurementTool     the calliper the student measures with
+//    ResultsDashboard    results table linked to the finished plate
+//    CompletionScreen    technique score, checklist and what to carry forward
+//    report.ts           the jsPDF lab report (jspdf is imported lazily)
+//
+//  Progress tracking goes through `useTracker()` in the shell — an activity row
+//  when the lab is opened and when an experiment completes, and a quiz attempt
+//  for the pre-lab check. Never a raw fetch to /api/progress.
 
-export { default as DiskDiffusionSim } from './DiskDiffusionSim';
-export * from './diskDiffusionData';
-
-// ============================================================
-//  INTEGRATION GUIDE
-// ============================================================
-//
-//  1. ROUTE
-//     File: app/simulations/disk-diffusion/page.tsx  (already created)
-//     URL:  /simulations/disk-diffusion
-//
-//  2. NAVBAR LINK (add to your semester-data.ts or header nav)
-//     {
-//       label: 'Lab Simulations',
-//       href: '/simulations',
-//       icon: 'BeakerIcon',
-//     }
-//
-//  3. SPOTTING CENTRE CARD (SpottingHubPage.tsx)
-//     Add a card linking to /simulations/disk-diffusion
-//     with title "Antibiotic Susceptibility Test" and
-//     category "Microbiology Lab"
-//
-//  4. REQUIRED PACKAGES
-//     npm install jspdf
-//     (html2canvas not needed — report is drawn natively with jsPDF)
-//
-//  5. TRACKER INTEGRATION
-//     The component calls useTracker() internally.
-//     trackActivity() fires on each step completion.
-//     trackQuiz() fires when the quiz is finished.
-//
-//  6. ADDING MORE SIMULATIONS
-//     Follow the same pattern:
-//       - Create [name]Data.ts   (data + types)
-//       - Create [Name]Sim.tsx   (component)
-//       - Add page at app/simulations/[name]/page.tsx
-//       - Export from this index.ts
-//
-//  7. FUTURE SIMULATIONS TO BUILD
-//     - Gram Staining Simulation
-//     - Blood Agar Hemolysis Patterns
-//     - Minimum Inhibitory Concentration (MIC) Broth Dilution
-//     - Urease / Catalase / Oxidase Biochemical Tests
-// ============================================================
+export { default as DiskDiffusionLab } from "./DiskDiffusionLab";
+export { default as LabGuide } from "./LabGuide";
+export * from "./data";
+export * from "./engine";
+export * from "./types";

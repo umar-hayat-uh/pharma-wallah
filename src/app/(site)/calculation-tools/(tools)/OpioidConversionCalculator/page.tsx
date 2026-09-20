@@ -1,383 +1,398 @@
 "use client";
-import { useState, useEffect } from 'react';
-import {
-    Pill,
-    Calculator,
-    Activity,
-    RefreshCw,
-    AlertCircle,
-    Scale,
-    ArrowRight
-} from 'lucide-react';
 
-type Opioid = 'morphine' | 'hydromorphone' | 'oxycodone' | 'fentanyl' | 'methadone' | 'codeine';
-type Route = 'oral' | 'iv' | 'sc' | 'td' | 'pr';
+import { useMemo, useState } from "react";
+import { Pill, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  CalculatorShell,
+  CalcSection,
+  FieldGrid,
+  NumberField,
+  SelectField,
+  ResultCard,
+  ResultRow,
+  FormulaNote,
+  Formula,
+  CalcAbout,
+  CalcList,
+  CalcFaq,
+  AdSlot,
+  LabNotice,
+  type ResultTone,
+} from "@/components/calculators";
+
+type Opioid = "morphine" | "hydromorphone" | "oxycodone" | "fentanyl" | "methadone" | "codeine";
+type Route = "oral" | "iv" | "sc" | "td" | "pr";
 
 interface OpioidInfo {
-    name: string;
-    routes: Route[];
-    conversionFactor: number; // to oral morphine equivalent (OME) in mg
-    notes?: string;
+  name: string;
+  routes: Route[];
+  /** Conversion factor to oral morphine equivalent (OME), in mg. */
+  conversionFactor: number;
 }
 
-const opioidData: Record<Opioid, OpioidInfo> = {
-    morphine: {
-        name: 'Morphine',
-        routes: ['oral', 'iv', 'sc'],
-        conversionFactor: 1, // oral morphine is reference
-    },
-    hydromorphone: {
-        name: 'Hydromorphone',
-        routes: ['oral', 'iv', 'sc'],
-        conversionFactor: 5, // 1 mg oral hydromorphone = 5 mg oral morphine
-    },
-    oxycodone: {
-        name: 'Oxycodone',
-        routes: ['oral'],
-        conversionFactor: 1.5, // 1 mg oral oxycodone = 1.5 mg oral morphine
-    },
-    fentanyl: {
-        name: 'Fentanyl',
-        routes: ['iv', 'td'],
-        conversionFactor: 100, // 0.1 mg IV fentanyl = 10 mg morphine? Actually complex: transdermal conversion is different. We'll simplify: 100 mcg/hr patch ~ 2-4 mg/hr oral morphine? Better to use specific conversions.
-        // For simplicity, we'll use approximate: 100 mcg IV fentanyl = 10 mg IV morphine, but oral morphine equivalence is tricky.
-        // We'll implement a more accurate approach later.
-    },
-    methadone: {
-        name: 'Methadone',
-        routes: ['oral', 'iv'],
-        conversionFactor: 4, // varies widely; simplified
-    },
-    codeine: {
-        name: 'Codeine',
-        routes: ['oral'],
-        conversionFactor: 0.15, // 1 mg codeine = 0.15 mg morphine
-    },
+/* ── Conversion table — values copied verbatim from the pre-migration page ── */
+const OPIOID_DATA: Record<Opioid, OpioidInfo> = {
+  morphine: { name: "Morphine", routes: ["oral", "iv", "sc"], conversionFactor: 1 },
+  hydromorphone: { name: "Hydromorphone", routes: ["oral", "iv", "sc"], conversionFactor: 5 },
+  oxycodone: { name: "Oxycodone", routes: ["oral"], conversionFactor: 1.5 },
+  fentanyl: { name: "Fentanyl", routes: ["iv", "td"], conversionFactor: 100 },
+  methadone: { name: "Methadone", routes: ["oral", "iv"], conversionFactor: 4 },
+  codeine: { name: "Codeine", routes: ["oral"], conversionFactor: 0.15 },
 };
 
+/** Route factors relative to the oral route for the same drug. */
+const ROUTE_FACTOR: Record<Route, number> = {
+  oral: 1,
+  iv: 3,
+  sc: 3,
+  td: 1,
+  pr: 1,
+};
+
+const ROUTE_LABEL: Record<Route, string> = {
+  oral: "Oral",
+  iv: "Intravenous",
+  sc: "Subcutaneous",
+  td: "Transdermal",
+  pr: "Rectal",
+};
+
+const OPIOID_OPTIONS = (Object.keys(OPIOID_DATA) as Opioid[]).map((k) => ({
+  value: k,
+  label: OPIOID_DATA[k].name,
+}));
+
+interface ConversionResult {
+  mme: number;
+  convertedDose: number;
+  interpretation: string;
+  tone: ResultTone;
+  fromFactor: number;
+  toFactor: number;
+  fromRouteMult: number;
+  toRouteMult: number;
+}
+
+function computeConversion(
+  fromDose: string,
+  fromOpioid: Opioid,
+  fromRoute: Route,
+  toOpioid: Opioid,
+  toRoute: Route,
+): ConversionResult | null {
+  const dose = parseFloat(fromDose);
+  if (!Number.isFinite(dose) || dose <= 0) return null;
+
+  const fromFactor = OPIOID_DATA[fromOpioid].conversionFactor;
+  const toFactor = OPIOID_DATA[toOpioid].conversionFactor;
+
+  const mme = dose * fromFactor * ROUTE_FACTOR[fromRoute];
+  const convertedDose = mme / (toFactor * ROUTE_FACTOR[toRoute]);
+
+  let interpretation = "";
+  let tone: ResultTone = "neutral";
+  if (convertedDose < 1) {
+    interpretation = "Very low dose; verify calculation";
+    tone = "warning";
+  } else if (convertedDose > 200) {
+    interpretation = "High dose; caution with tolerance";
+    tone = "danger";
+  } else {
+    interpretation = "Dose within typical range";
+    tone = "neutral";
+  }
+
+  return {
+    mme,
+    convertedDose,
+    interpretation,
+    tone,
+    fromFactor,
+    toFactor,
+    fromRouteMult: ROUTE_FACTOR[fromRoute],
+    toRouteMult: ROUTE_FACTOR[toRoute],
+  };
+}
+
 export default function OpioidConversionCalculator() {
-    const [fromOpioid, setFromOpioid] = useState<Opioid>('morphine');
-    const [fromRoute, setFromRoute] = useState<Route>('oral');
-    const [fromDose, setFromDose] = useState<string>('10');
-    const [toOpioid, setToOpioid] = useState<Opioid>('hydromorphone');
-    const [toRoute, setToRoute] = useState<Route>('oral');
-    const [mme, setMme] = useState<number | null>(null);
-    const [convertedDose, setConvertedDose] = useState<number | null>(null);
-    const [interpretation, setInterpretation] = useState<string>('');
+  const [fromOpioid, setFromOpioid] = useState<Opioid>("morphine");
+  const [fromRoute, setFromRoute] = useState<Route>("oral");
+  const [fromDose, setFromDose] = useState("10");
+  const [toOpioid, setToOpioid] = useState<Opioid>("hydromorphone");
+  const [toRoute, setToRoute] = useState<Route>("oral");
 
-    // Route conversion factors (relative to oral for same drug)
-    const routeFactor: Record<Route, number> = {
-        oral: 1,
-        iv: 3, // IV morphine is ~3x oral
-        sc: 3,
-        td: 1, // transdermal conversion depends on drug; we'll handle separately
-        pr: 1,
-    };
+  const result = useMemo(
+    () => computeConversion(fromDose, fromOpioid, fromRoute, toOpioid, toRoute),
+    [fromDose, fromOpioid, fromRoute, toOpioid, toRoute],
+  );
 
-    const calculateConversion = () => {
-        const dose = parseFloat(fromDose);
-        if (isNaN(dose) || dose <= 0) {
-            setMme(null);
-            setConvertedDose(null);
-            setInterpretation('');
-            return;
-        }
+  // Transdermal fentanyl is prescribed in micrograms per hour, but the dose box
+  // is a plain milligram figure multiplied by 100 — so a 25 mcg/h patch is read
+  // as 25 mg and returns 2500 MME. Flagged, not corrected (migration rule).
+  const fentanylPatchFault = fromOpioid === "fentanyl" && fromRoute === "td" && result !== null;
 
-        // Get base conversion factors
-        const fromFactor = opioidData[fromOpioid].conversionFactor;
-        const toFactor = opioidData[toOpioid].conversionFactor;
+  const changeFromOpioid = (value: string) => {
+    const next = value as Opioid;
+    setFromOpioid(next);
+    if (!OPIOID_DATA[next].routes.includes(fromRoute)) setFromRoute(OPIOID_DATA[next].routes[0]);
+  };
+  const changeToOpioid = (value: string) => {
+    const next = value as Opioid;
+    setToOpioid(next);
+    if (!OPIOID_DATA[next].routes.includes(toRoute)) setToRoute(OPIOID_DATA[next].routes[0]);
+  };
 
-        // Route adjustments
-        const fromRouteMult = fromRoute === 'td' ? 1 : routeFactor[fromRoute];
-        const toRouteMult = toRoute === 'td' ? 1 : routeFactor[toRoute];
+  const reset = () => {
+    setFromOpioid("morphine");
+    setFromRoute("oral");
+    setFromDose("10");
+    setToOpioid("hydromorphone");
+    setToRoute("oral");
+  };
 
-        // Calculate MME (oral morphine equivalent)
-        // First convert from dose to oral morphine using fromFactor and route
-        // For non-oral routes, we need to adjust to oral equivalent for that drug
-        // Simplified: MME = dose * fromFactor * (fromRouteMult / 1) ? Actually, fromFactor is for oral. If fromRoute is IV, the dose is more potent, so MME = dose * (fromFactor / routeFactor[oral]) * routeFactor[fromRoute]? This gets messy.
-        // Let's define: oral morphine equivalent = dose * (fromFactor) * (routeFactor[fromRoute] / routeFactor[oral]) but routeFactor[oral]=1. So MME = dose * fromFactor * routeFactor[fromRoute].
+  return (
+    <CalculatorShell
+      title="Opioid Conversion Calculator"
+      subtitle="Converts a dose of one opioid to its oral morphine equivalent and then to an equivalent dose of another opioid and route."
+      icon={Pill}
+      eyebrow="Pharmacology"
+      aside={
+        <>
+          <CalcAbout title="About opioid conversion">
+            <p>
+              Switching between opioids goes through a common currency: the oral morphine equivalent
+              (OME, or MME per day). The starting dose is converted to morphine, then out again to the
+              target drug — and the result is then reduced for incomplete cross-tolerance before it is
+              ever prescribed.
+            </p>
+            <CalcList
+              title="Use it when"
+              items={[
+                "Learning how equianalgesic tables are applied",
+                "Understanding why the oral and parenteral doses of the same opioid differ threefold",
+                "Seeing how a total daily MME is built up",
+              ]}
+            />
+            <CalcList
+              tone="caution"
+              title="Keep in mind"
+              items={[
+                "This calculator has known defects — read the warnings on the page. Do not use it for patient care.",
+                "Equianalgesic tables are approximations derived from single-dose studies in opioid-naive subjects.",
+                "Methadone conversion is non-linear and dose-dependent; no single ratio is safe across the range.",
+              ]}
+            />
+          </CalcAbout>
 
-        const mmeCalc = dose * fromFactor * routeFactor[fromRoute];
-        setMme(mmeCalc);
+          <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+        </>
+      }
+    >
+      {/* Deliberately the first thing on the page: this tool is known to produce
+          unsafe numbers and the migration did not change its arithmetic. */}
+      <LabNotice tone="danger" title="Educational demonstration only — not safe for clinical use">
+        This calculator reproduces a simplified equianalgesic model with known defects, listed below.
+        It applies <strong>no reduction for incomplete cross-tolerance</strong>, which real practice
+        requires (commonly 25–50%, and more when rotating to methadone). Every opioid rotation must be
+        checked against a current institutional protocol and a pharmacist or prescriber.
+      </LabNotice>
 
-        // Convert MME to target opioid and route
-        const targetDose = mmeCalc / (toFactor * routeFactor[toRoute]);
-        setConvertedDose(targetDose);
+      <ResultCard
+        label={`${OPIOID_DATA[toOpioid].name} · ${ROUTE_LABEL[toRoute].toLowerCase()}`}
+        value={result ? result.convertedDose.toFixed(2) : null}
+        unit="mg"
+        interpretation={result ? result.interpretation : undefined}
+        tone={result?.tone ?? "neutral"}
+        empty="Enter a dose above 0 to convert."
+      />
 
-        // Interpretation
-        if (targetDose < 1) setInterpretation('Very low dose; verify calculation');
-        else if (targetDose > 200) setInterpretation('High dose; caution with tolerance');
-        else setInterpretation('Dose within typical range');
-    };
+      {fentanylPatchFault && (
+        <LabNotice tone="danger" title="Transdermal fentanyl is not converted correctly">
+          A transdermal fentanyl dose is prescribed in <strong>micrograms per hour</strong>, but this
+          page treats the number as milligrams and multiplies by 100. The {fromDose} you entered is
+          being read as {fromDose} mg, giving {result?.mme.toFixed(1)} MME — for a 25 mcg/h patch the
+          published equivalent is roughly 60 mg oral morphine a day, not{" "}
+          {result?.mme.toFixed(0)}. The figure above is left exactly as the previous version of this
+          page calculated it; ignore it.
+        </LabNotice>
+      )}
 
-    const resetCalculator = () => {
-        setFromOpioid('morphine');
-        setFromRoute('oral');
-        setFromDose('10');
-        setToOpioid('hydromorphone');
-        setToRoute('oral');
-        setMme(null);
-        setConvertedDose(null);
-        setInterpretation('');
-    };
+      <CalcSection title="Convert from">
+        <FieldGrid>
+          <SelectField label="Opioid" value={fromOpioid} onChange={changeFromOpioid} options={OPIOID_OPTIONS} />
+          <SelectField
+            label="Route"
+            value={fromRoute}
+            onChange={(v) => setFromRoute(v as Route)}
+            options={OPIOID_DATA[fromOpioid].routes.map((r) => ({ value: r, label: ROUTE_LABEL[r] }))}
+          />
+          <NumberField
+            label="Dose"
+            value={fromDose}
+            onChange={setFromDose}
+            unit="mg"
+            step="0.01"
+            min={0}
+            placeholder="e.g. 10"
+            hint={
+              fromOpioid === "fentanyl" && fromRoute === "td"
+                ? "Note: patches are dosed in mcg/h, but this field is treated as mg — see the warning above."
+                : "Single dose, in milligrams."
+            }
+            error={
+              fromDose.trim() !== "" && (!Number.isFinite(parseFloat(fromDose)) || parseFloat(fromDose) <= 0)
+                ? "Dose must be greater than 0."
+                : undefined
+            }
+          />
+        </FieldGrid>
+      </CalcSection>
 
-    const sampleConversions = [
-        { name: 'Morphine to Hydromorphone', from: 'morphine', fromRoute: 'oral', dose: '30', to: 'hydromorphone', toRoute: 'oral' },
-        { name: 'Oxycodone to Morphine', from: 'oxycodone', fromRoute: 'oral', dose: '20', to: 'morphine', toRoute: 'oral' },
-        { name: 'IV to Oral Morphine', from: 'morphine', fromRoute: 'iv', dose: '5', to: 'morphine', toRoute: 'oral' },
-    ];
+      <CalcSection title="Convert to">
+        <FieldGrid>
+          <SelectField label="Opioid" value={toOpioid} onChange={changeToOpioid} options={OPIOID_OPTIONS} />
+          <SelectField
+            label="Route"
+            value={toRoute}
+            onChange={(v) => setToRoute(v as Route)}
+            options={OPIOID_DATA[toOpioid].routes.map((r) => ({ value: r, label: ROUTE_LABEL[r] }))}
+          />
+        </FieldGrid>
 
-    const loadSample = (index: number) => {
-        const sample = sampleConversions[index];
-        setFromOpioid(sample.from as Opioid);
-        setFromRoute(sample.fromRoute as Route);
-        setFromDose(sample.dose);
-        setToOpioid(sample.to as Opioid);
-        setToRoute(sample.toRoute as Route);
-    };
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-[13px] font-medium text-foreground/90">Try an example</span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setFromOpioid("morphine");
+              setFromRoute("oral");
+              setFromDose("30");
+              setToOpioid("oxycodone");
+              setToRoute("oral");
+            }}
+          >
+            Morphine 30 mg → oxycodone
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setFromOpioid("morphine");
+              setFromRoute("iv");
+              setFromDose("10");
+              setToOpioid("morphine");
+              setToRoute("oral");
+            }}
+          >
+            IV → oral morphine
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={reset}>
+            Reset
+          </Button>
+        </div>
+      </CalcSection>
 
-    useEffect(() => {
-        calculateConversion();
-    }, [fromOpioid, fromRoute, fromDose, toOpioid, toRoute]);
+      {result && (
+        <CalcSection title="Working" description="Every step of the conversion, so the arithmetic can be checked.">
+          <div>
+            <ResultRow
+              label={`${OPIOID_DATA[fromOpioid].name} ${ROUTE_LABEL[fromRoute].toLowerCase()} dose`}
+              value={parseFloat(fromDose)}
+              unit="mg"
+            />
+            <ResultRow label="× drug factor to oral morphine" value={result.fromFactor} />
+            <ResultRow label={`× route factor (${ROUTE_LABEL[fromRoute].toLowerCase()})`} value={result.fromRouteMult} />
+            <ResultRow label="= oral morphine equivalent (MME)" value={result.mme.toFixed(1)} unit="mg" />
+            <ResultRow label={`÷ drug factor for ${OPIOID_DATA[toOpioid].name}`} value={result.toFactor} />
+            <ResultRow label={`÷ route factor (${ROUTE_LABEL[toRoute].toLowerCase()})`} value={result.toRouteMult} />
+            <ResultRow
+              label={`= ${OPIOID_DATA[toOpioid].name} ${ROUTE_LABEL[toRoute].toLowerCase()} dose`}
+              value={result.convertedDose.toFixed(2)}
+              unit="mg"
+            />
+            <ResultRow
+              label="Cross-tolerance reduction applied"
+              value="None"
+              badge="not applied"
+              badgeTone="destructive"
+            />
+          </div>
+        </CalcSection>
+      )}
 
-    // Update available routes when opioid changes
-    useEffect(() => {
-        // Ensure selected route is valid for the opioid
-        const validFromRoutes = opioidData[fromOpioid].routes;
-        if (!validFromRoutes.includes(fromRoute)) {
-            setFromRoute(validFromRoutes[0]);
-        }
-    }, [fromOpioid]);
+      <CalcSection
+        title="Conversion factors used"
+        description="Multipliers to oral morphine equivalent, as implemented on this page."
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="py-2 pr-3 text-left font-medium text-muted-foreground">Opioid</th>
+                <th className="py-2 pr-3 text-left font-medium text-muted-foreground">Factor to oral morphine</th>
+                <th className="py-2 text-left font-medium text-muted-foreground">Routes offered</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(Object.keys(OPIOID_DATA) as Opioid[]).map((k) => (
+                <tr key={k} className="border-b border-border/60 last:border-b-0">
+                  <td className="py-2 pr-3">{OPIOID_DATA[k].name}</td>
+                  <td className="py-2 pr-3 tabular-nums">× {OPIOID_DATA[k].conversionFactor}</td>
+                  <td className="py-2 text-muted-foreground">
+                    {OPIOID_DATA[k].routes.map((r) => ROUTE_LABEL[r]).join(", ")}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          Route factors: oral ×1, intravenous ×3, subcutaneous ×3, transdermal ×1, rectal ×1. The
+          fentanyl factor of 100 is an intravenous mcg-to-mg style ratio and is not valid for a patch.
+        </p>
+      </CalcSection>
 
-    useEffect(() => {
-        const validToRoutes = opioidData[toOpioid].routes;
-        if (!validToRoutes.includes(toRoute)) {
-            setToRoute(validToRoutes[0]);
-        }
-    }, [toOpioid]);
+      <FormulaNote title="How this is calculated">
+        <p>The dose is taken to oral morphine and back out again:</p>
+        <Formula>MME = dose × drug factor × route factor</Formula>
+        <Formula>target dose = MME / (target drug factor × target route factor)</Formula>
+        <p>
+          The interpretation band is read off the converted dose: below 1 mg it warns the figure is
+          very low, above 200 mg it warns about tolerance, and anything between is called typical.
+        </p>
+        <p>
+          <strong>What is missing.</strong> Real practice reduces the calculated dose by roughly
+          25–50% for incomplete cross-tolerance, uses dose-dependent ratios for methadone rather than
+          a single factor of 4, and converts transdermal fentanyl from mcg/h using a separate table.
+          None of that is implemented here. These are faults in the original tool, preserved so the
+          migration changes no numbers, and recorded in the project&apos;s issue tracker.
+        </p>
+      </FormulaNote>
 
-    return (
-        <section className="min-h-screen bg-gradient-to-br from-teal-50 to-purple-50 p-4 md:p-6">
-            <div className="max-w-6xl mx-auto">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-teal-600 to-purple-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6 md:mb-8">
-                    <div className="flex flex-col md:flex-row items-center justify-between">
-                        <div className="flex items-center mb-4 md:mb-0">
-                            <div className="bg-white/20 p-3 rounded-xl mr-4">
-                                <Pill className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-white">Opioid Conversion Calculator</h1>
-                                <p className="text-purple-100 mt-2">Convert between opioids using equianalgesic ratios</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-2 bg-white/20 px-4 py-2 rounded-lg">
-                            <Scale className="w-5 h-5 text-white" />
-                            <span className="text-white font-semibold">Pain Management</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Main Calculator */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
-                            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                                <Calculator className="w-6 h-6 md:w-7 md:h-7 mr-2" />
-                                Conversion Parameters
-                            </h2>
-
-                            <div className="space-y-6">
-                                {/* From Section */}
-                                <div className="bg-gradient-to-r from-teal-50 to-purple-50 rounded-xl p-6 border border-teal-200">
-                                    <h3 className="font-semibold text-gray-800 mb-4">From</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Opioid</label>
-                                            <select
-                                                value={fromOpioid}
-                                                onChange={(e) => setFromOpioid(e.target.value as Opioid)}
-                                                className="w-full px-4 py-3 border-2 border-teal-200 rounded-lg focus:border-teal-500"
-                                            >
-                                                {Object.entries(opioidData).map(([key, data]) => (
-                                                    <option key={key} value={key}>{data.name}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Route</label>
-                                            <select
-                                                value={fromRoute}
-                                                onChange={(e) => setFromRoute(e.target.value as Route)}
-                                                className="w-full px-4 py-3 border-2 border-teal-200 rounded-lg focus:border-teal-500"
-                                            >
-                                                {opioidData[fromOpioid].routes.map(route => (
-                                                    <option key={route} value={route}>{route.toUpperCase()}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Dose (mg)</label>
-                                            <input
-                                                type="number"
-                                                step="0.1"
-                                                value={fromDose}
-                                                onChange={(e) => setFromDose(e.target.value)}
-                                                className="w-full px-4 py-3 border-2 border-teal-200 rounded-lg focus:border-teal-500"
-                                                placeholder="e.g., 10"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* To Section */}
-                                <div className="bg-gradient-to-r from-teal-50 to-purple-50 rounded-xl p-6 border border-purple-200">
-                                    <h3 className="font-semibold text-gray-800 mb-4 flex items-center">
-                                        <ArrowRight className="w-5 h-5 mr-2" />
-                                        To
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Opioid</label>
-                                            <select
-                                                value={toOpioid}
-                                                onChange={(e) => setToOpioid(e.target.value as Opioid)}
-                                                className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg focus:border-purple-500"
-                                            >
-                                                {Object.entries(opioidData).map(([key, data]) => (
-                                                    <option key={key} value={key}>{data.name}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Route</label>
-                                            <select
-                                                value={toRoute}
-                                                onChange={(e) => setToRoute(e.target.value as Route)}
-                                                className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg focus:border-purple-500"
-                                            >
-                                                {opioidData[toOpioid].routes.map(route => (
-                                                    <option key={route} value={route}>{route.toUpperCase()}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Sample Conversions */}
-                                <div className="bg-white rounded-xl p-6 border border-gray-200">
-                                    <h3 className="font-semibold text-gray-800 mb-4">Sample Conversions</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        {sampleConversions.map((sample, index) => (
-                                            <button
-                                                key={index}
-                                                onClick={() => loadSample(index)}
-                                                className="bg-gradient-to-r from-teal-50 to-purple-50 hover:from-teal-100 hover:to-purple-100 border border-teal-200 rounded-lg p-3 text-center transition-all hover:shadow-md"
-                                            >
-                                                <div className="font-semibold text-teal-700 text-sm">{sample.name}</div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Action Buttons */}
-                                <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                                    <button
-                                        onClick={calculateConversion}
-                                        className="flex-1 bg-gradient-to-r from-teal-600 to-purple-400 hover:from-teal-700 hover:to-purple-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
-                                    >
-                                        Convert
-                                    </button>
-                                    <button
-                                        onClick={resetCalculator}
-                                        className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center"
-                                    >
-                                        <RefreshCw className="w-5 h-5 mr-2" />
-                                        Reset
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Results Section */}
-                    <div className="space-y-6">
-                        <div className="bg-gradient-to-br from-teal-600 to-purple-400 rounded-2xl shadow-xl p-6 md:p-8 text-white">
-                            <h2 className="text-2xl font-bold mb-6 flex items-center">
-                                <Activity className="w-7 h-7 mr-3" />
-                                Results
-                            </h2>
-
-                            <div className="space-y-4">
-                                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-5">
-                                    <div className="text-sm font-semibold text-teal-100 mb-1">Oral Morphine Equivalent</div>
-                                    {mme !== null ? (
-                                        <div className="text-3xl font-bold">{mme.toFixed(1)} mg</div>
-                                    ) : (
-                                        <div className="text-xl font-bold text-teal-100">Enter Dose</div>
-                                    )}
-                                </div>
-
-                                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-5">
-                                    <div className="text-sm font-semibold text-teal-100 mb-1">Converted Dose</div>
-                                    {convertedDose !== null ? (
-                                        <>
-                                            <div className="text-5xl font-bold mb-2">
-                                                {convertedDose.toFixed(2)}
-                                            </div>
-                                            <div className="text-xl">
-                                                mg {opioidData[toOpioid].name} ({toRoute.toUpperCase()})
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <div className="text-xl font-bold text-teal-100">Enter Values</div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {interpretation && (
-                                <div className="mt-4 bg-white/10 rounded-lg p-4 text-center">
-                                    <div className="text-sm font-semibold mb-1">Note</div>
-                                    <div className="text-lg font-bold">{interpretation}</div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Safety Warning */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6 border-2 border-amber-200">
-                            <h3 className="text-lg font-bold text-amber-800 mb-4 flex items-center">
-                                <AlertCircle className="w-5 h-5 mr-2 text-amber-600" />
-                                Safety Information
-                            </h3>
-                            <p className="text-sm text-gray-700">
-                                Equianalgesic ratios are approximations. Always consider individual patient factors, tolerance, and concomitant medications. Reduce dose by 25-50% when rotating opioids due to incomplete cross-tolerance. Monitor closely.
-                            </p>
-                        </div>
-
-                        {/* Quick Reference */}
-                        <div className="bg-gradient-to-r from-teal-50 to-purple-50 rounded-2xl shadow-lg p-6 border border-teal-200">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">Approximate Ratios (oral)</h3>
-                            <ul className="space-y-2 text-sm">
-                                <li className="flex justify-between"><span>Morphine</span><span>1</span></li>
-                                <li className="flex justify-between"><span>Hydromorphone</span><span>5 (1 mg = 5 mg morphine)</span></li>
-                                <li className="flex justify-between"><span>Oxycodone</span><span>1.5</span></li>
-                                <li className="flex justify-between"><span>Codeine</span><span>0.15</span></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Educational Note */}
-                <div className="mt-8 bg-white rounded-2xl shadow-lg p-6 md:p-8">
-                    <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6">Clinical Pearls</h2>
-                    <ul className="list-disc list-inside text-gray-600 space-y-2">
-                        <li>Always use the lowest effective dose.</li>
-                        <li>Consider renal/hepatic impairment.</li>
-                        <li>Fentanyl patch conversion is complex; use specific guidelines.</li>
-                        <li>Methadone has variable half-life and QT prolongation risk.</li>
-                    </ul>
-                </div>
-            </div>
-        </section>
-    );
+      <CalcFaq
+        items={[
+          {
+            q: "Can I use this to rotate a patient's opioid?",
+            a: "No. It applies no cross-tolerance reduction, mishandles transdermal fentanyl and uses a single fixed ratio for methadone. Use your institution's equianalgesic protocol and have the calculation checked independently.",
+          },
+          {
+            q: "Why is IV morphine three times oral morphine?",
+            a: "First-pass metabolism. Roughly a third of an oral morphine dose survives to the systemic circulation, so 10 mg IV is about as potent as 30 mg by mouth. That is the route factor of 3 used here for IV and subcutaneous.",
+          },
+          {
+            q: "Why is methadone singled out as unsafe to convert?",
+            a: "Its conversion ratio rises with the morphine dose being switched from — it can be 4:1 at low doses and 20:1 or more at high ones — and it has a long, variable half-life that causes accumulation over days. A single fixed factor, as used here, is unsafe at any dose.",
+          },
+          {
+            q: "What is MME used for besides rotation?",
+            a: "Total daily MME is the standard measure of a patient's overall opioid burden. Guidelines set review thresholds against it — for example reassessing the plan above 50 MME a day and avoiding or carefully justifying 90 MME a day.",
+          },
+        ]}
+      />
+    </CalculatorShell>
+  );
 }

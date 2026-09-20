@@ -41,9 +41,13 @@ hard way in this codebase.
 | `calculator-tool` | Add/fix one of the 97 calculators and register it on the hub | Any calculation-tools work | `.claude/skills/calculator-tool/` |
 | `course-content-system` | Subject registry, units, lesson markdown, the 9 unregistered subjects | Courses, units, MCQ subject coverage | `.claude/skills/course-content-system/` |
 | `progress-tracking` | Progress events, batching queue, dashboard, streaks | Tracking a new page, dashboard bugs, new event types | `.claude/skills/progress-tracking/` |
+| `community-system` | The Reddit-shaped community: schema, RLS, triggers, server-authoritative voting, local SQL verification | Any community change; "add a space"; comment ordering; voting | `.claude/skills/community-system/` |
 | `tournament-system` | Entry codes, server-authoritative scoring, leaderboard, admin | Any tournament or admin work | `.claude/skills/tournament-system/` |
+| `lab-simulation` | Build or upgrade an interactive lab under `/simulations`: pure model, stage machine, illustrated Lab Guide, a procedure the student performs | Any simulation work; "the sim just animates" | `.claude/skills/lab-simulation/` |
+| `pharmacy-counter` | The Community Pharmacy Simulation Lab at `/pharmacy-counter`: the fourteen-stage workflow, the ten checks that never reveal their own answer, blocking findings, inventory and expiry, scoring | Anything under `src/components/Simulations/CommunityPharmacy/`; adding a case, a medicine or a check | `.claude/skills/pharmacy-counter/` |
 | `spotting-lessons` | Histology/pathology/powder lessons, timed tests, AI grading | Adding slides or fixing a spotting test | `.claude/skills/spotting-lessons/` |
 | `molecular-lab` | The 2D/3D molecule editor: graph, valence, OpenChemLib worker, 3Dmol, library generation | Anything on `/molecular-lab` (formerly Molecule Viewer) | `.claude/skills/molecular-lab/` |
+| `drug-encyclopedia` | `/encyclopedia`: the DrugBank search desk and the tabbed drug record — capped list fields, the 3D structure card, the chunk proof | Anything under `src/components/encyclopedia/` or `/api/search`; "show more drug data"; the 3D structure | `.claude/skills/drug-encyclopedia/` |
 | `clinical-and-external-apis` | The clinical sub-brand and its six external data sources | Clinical pages, drug/literature APIs, their caches | `.claude/skills/clinical-and-external-apis/` |
 | `ai-gemini-integration` | The four Gemini features, prompts, keys, cost control | Any AI route or prompt work | `.claude/skills/ai-gemini-integration/` |
 
@@ -75,6 +79,8 @@ Most real tasks use three. Typical stacks:
 | "Change the homepage hero / add a landing section" | `landing-page-motion` → `frontend-ui-conventions` → `testing-verification` |
 | "Put ads on the encyclopedia pages" | `adsense-monetization` → `frontend-ui-conventions` → `android-app-capacitor` (if a calculator is involved) |
 | "Add a clinical interaction checker" | `implement-feature` → `clinical-and-external-apis` → `api-route-conventions` → `caching-and-ratelimiting` |
+| "Redesign the encyclopedia / show more drug data" | `drug-encyclopedia` → `top-design` → `frontend-ui-conventions` → `testing-verification` |
+| "Add a pharmacy counter case / a new medicine" | `pharmacy-counter` → `frontend-ui-conventions` → `testing-verification` |
 | "Improve the AI tutor" | `ai-gemini-integration` → `security-review` (it is an unthrottled paid endpoint) |
 
 **Always finish with `testing-verification`** — this repo has no tests and a broken lint command,

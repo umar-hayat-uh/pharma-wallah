@@ -21,12 +21,12 @@ const simulations = [
   {
     title: 'Disk Diffusion (Kirby‑Bauer)',
     description:
-      'Master antibiotic susceptibility testing. Pour agar, inoculate, apply disks, incubate, measure zones of inhibition, interpret CLSI breakpoints, and generate a professional lab report.',
+      'An illustrated lab guide plus the full bench: standardise the inoculum, pour and inoculate a Mueller‑Hinton plate, apply antibiotic disks, incubate, then measure the zones of inhibition yourself and interpret them against configurable criteria.',
     href: '/simulations/disk-diffusion',
     icon: Beaker,
     gradient: 'from-blue-600 to-green-400',
     image: '🧫',
-    tags: ['Microbiology', 'CLSI', 'Antibiotics'],
+    tags: ['Microbiology', 'Susceptibility', 'Antibiotics'],
     comingSoon: false,
   },
   {

@@ -16,7 +16,7 @@ export const headerData: HeaderItem[] = [
       { label: "Compounding Lab", href: "/compounding-lab" },
       { label: "ADR Detective", href: "/adr-detective" },
       { label: "Prescription Reader", href: "/prescription-reader" },
-      { label: "Books Library", href: "/books-library" },
+      { label: "AI Guide", href: "/ai-guide" },
       { label: "Antibiogram Simulator", href: "/antibiogram-simulator" },
       { label: "Molecular Lab", href: "/molecular-lab" },
     ],

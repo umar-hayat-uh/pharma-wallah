@@ -130,7 +130,9 @@
 | **Dead legacy registry — do not edit** | `src/app/api/calculators.tsx` |
 | **Web-only wrapper for every tool** | `src/app/(site)/calculation-tools/(tools)/layout.tsx` — never reaches the APK |
 | **Android app catalogue (all 104)** | `mobile/app/_data/tool-registry.ts` |
-| **Shared calculator kit** | `src/components/calculators/` — shell, fields, result card, `AdSlot`, and the lab layer below |
+| **Shared calculator kit** | `src/components/calculators/` — shell, fields, result card, `AdSlot`, and the lab layer below. **All 104 tool pages import it** (complete 2026-09-20) |
+| Liquid-glass surfaces | `src/components/calculators/ResultCard.tsx` and `ModeSwitch.tsx` — transform-only `animate-calc-sheen` / `animate-calc-tide` layers behind the content; keyframes are in `tailwind.config.ts`. `ModeSwitch` uses `backdrop-saturate` on fine pointers only and a pre-saturated fill under `[@media(hover:none)]`. Reaches the APK, which re-exports the real tool pages |
+| Pure maths siblings (`_x.ts` next to a large tool page) | `dose-response-curve-generator/_curves.ts` (Hill curves), `ed50-td50-ld50-calculator/_probit.ts` (probit regression), `OpioidMMECalculator/_mme.ts`, `GeriatricDosingCalculator/_geriatric.ts`, `vancomycin-auc-calculator/_vanco.ts` (1-compartment PK + dose optimiser), `tpn/_tpn.ts` (admixture engine), `osmolality-calculators/_osmolality.ts` (5 calculators), `reconstitution-calculator/_recon.ts` (11-drug database), `animal-dose/_animal.ts`, `renal-dosing-adjuster/_renal.ts` (20-drug database + CrCl/CKD-EPI/KDIGO). Each is DOM-free and hand-checkable with `node` |
 | Calculator disclaimer ("educational purposes only") | `src/components/calculators/CalcDisclaimer.tsx`, mounted only in `(tools)/layout.tsx` (web) and `mobile/app/_components/MobileShell.tsx` (APK) |
 | Master Formula Calculator (Dosage Form Lab) | `src/app/(site)/calculation-tools/(tools)/master-formula-calculator/` — `page.tsx` + pure `_scale.ts` (`%`/`q.s.` not scaled) |
 | **Shared page kit** (non-calculator pages) | `src/components/page-kit/` — `PageHero`/`Trail`, `PageSection`, `Figure`/`FigureRow`, `EmptyState`/`ErrorState`/`LoadingState`, `Eyebrow`, `Reveal` (2026-09-13; not yet used by a page) |
@@ -202,8 +204,27 @@ Naming is inconsistent by design-drift: some directories are `kebab-case`, other
 | Hub | `src/app/(site)/simulations/page.tsx` |
 | Titration / buffer / UV / staining / organic-ID | `src/app/(site)/simulations/<lab>/page.tsx` |
 | Dilution lab | `src/components/Simulations/DilutionLab/DilutionLabSim.tsx` |
-| Disk diffusion | `src/components/Simulations/DiskDiffusion/{DiskDiffusionSim.tsx,diskDiffusionData.ts}` |
+| Disk diffusion lab (Theory + simulation) | `src/app/(site)/simulations/disk-diffusion/page.tsx` → `src/components/Simulations/DiskDiffusion/DiskDiffusionLab.tsx` |
+| — pure model: zones, placement rules, coverage, technique score | `DiskDiffusion/{engine.ts,data.ts,types.ts}` |
+| — stage machine and every rule about what is allowed | `DiskDiffusion/useLabMachine.ts` |
+| — Theory: Principle · Materials · Lab Guide · Interpretation · Safety | `DiskDiffusion/{TheorySection,LabGuide,illustrations,PreLabCheck}.tsx` |
+| — bench: layout, plate interaction, incubation and growth timers | `DiskDiffusion/{SimulationWorkspace,stages,PetriDish,equipment}.tsx` |
+| — measurement, results, completion, PDF | `DiskDiffusion/{MeasurementTool,ResultsDashboard,CompletionScreen}.tsx`, `report.ts` |
 | Lab guide | `src/app/(site)/simulations/lab-guide/page.tsx` |
+| **Community Pharmacy Simulation Lab** | `/pharmacy-counter` → `src/components/Simulations/CommunityPharmacy/` |
+| ↳ page (server, metadata, resolves the pharmacy's date) | `src/app/(site)/pharmacy-counter/page.tsx` |
+| ↳ shell (three zones, persistence, tracking) | `CommunityPharmacy/CommunityPharmacyLab.tsx` |
+| ↳ state machine (the whole encounter) | `CommunityPharmacy/useCounterMachine.ts` |
+| ↳ stage order + gating | `CommunityPharmacy/engine/flow.ts` |
+| ↳ the answer key (cases and their findings) | `CommunityPharmacy/data/scenarios.ts` |
+| ↳ shelf catalogue, patients, fixed vocabulary | `CommunityPharmacy/data/{medicines,patients,constants}.ts` |
+| ↳ pure model (checks, quantities, verification, labels, scoring) | `CommunityPharmacy/engine/*.ts` |
+| ↳ what a check shows (evidence, never the answer) | `CommunityPharmacy/engine/evidence.ts` |
+| ↳ screens | `CommunityPharmacy/{HomeScreen,StageView,Debrief,Chrome}.tsx` |
+| ↳ workflow modules | `CommunityPharmacy/modules/{Patient,Prescription,Checks,Dispensing,Counselling,Otc,Support}Module*.tsx` |
+| ↳ drawn pharmacy (packs, shelves, equipment) | `CommunityPharmacy/environment/objects.tsx` |
+| ↳ bespoke surfaces (namespaced `.pw-cph`) | `CommunityPharmacy/pharmacy.css` |
+| ↳ tests | `scripts/pharmacy-counter.test.mts` |
 | Antibiogram simulator | `src/app/(site)/antibiogram-simulator/page.tsx`, `src/components/AntibiogramSimulator.tsx` |
 | Compounding lab | `src/app/(site)/compounding-lab/page.tsx`, `src/components/ExtemporaneousCompoundingLab.tsx` |
 | ~~AI colony counting~~ | `src/app/api/scan-colonies/route.ts` — **no caller since 2026-09-16** (the CFU tool counts on the device); still called by APK v1.0–1.2 on phones. Unauthenticated, not rate-limited — see CLAUDE.md Known Issue 17 |
@@ -258,29 +279,62 @@ Supabase cache tables: `pubmed_cache`, `medlineplus_cache`, `clinicaltrials_cach
 
 | Feature | Route | SDK | Notes |
 | --- | --- | --- | --- |
-| Chat tutor | `src/app/api/chat/route.ts` | `@google/generative-ai` | `SYSTEM_PROMPT` at top; rebuilds alternating user/model history |
+| Chat tutor | `src/app/api/chat/route.ts` | `@google/generative-ai` | **Streams NDJSON; rate limited; input clamped** (2026-09-20). Prompt in `src/lib/ai-guide/prompt.ts`, clamps + history rules in `src/lib/ai-guide/pure.ts` |
 | Prescription reader | `src/app/api/prescription-reader-v2/route.ts` | `ai` + `@ai-sdk/google` | `runtime = 'edge'`, `maxDuration = 60`, `streamText`, model `gemini-2.5-flash` |
 | Histology evaluation | `src/app/api/evaluate-histology/route.ts` | raw fetch | Grades free-text observations; **has a `NEXT_PUBLIC_GEMINI_API_KEY` fallback that should be removed** |
 | Colony counting (**orphaned**) | `src/app/api/scan-colonies/route.ts` | raw fetch | No web caller since 2026-09-16; old APKs only. `GEMINI_MODEL` env override |
-| Chat UI | `src/app/(site)/ai-guide/page.tsx`, `src/app/(site)/mentor/page.tsx` | — | |
+| Chat UI | `src/app/(site)/ai-guide/page.tsx` (server, metadata) → `src/components/ai-guide/AIGuideClient.tsx` | — | Study modes, saved threads, streaming, stop/regenerate/copy |
+| Chat UI internals | `src/components/ai-guide/{Markdown,useChatStream,useThreads}.tsx/.ts`, `ai-guide.css` | — | Markdown styling is bespoke — `prose*` generates nothing here (MEMORY gotcha 127) |
+| Chat pure layer | `src/lib/ai-guide/{pure,modes,prompt,resources,types}.ts` | — | Tested by `scripts/ai-guide.test.mts` (34) |
+| Mentor page | `src/app/(site)/mentor/page.tsx` | — | Static; does not call `/api/chat` |
 | Prescription UI | `src/app/(site)/prescription-reader/page.tsx` | — | |
 
 ---
 
-## Q&A community
+## Community (Reddit-shaped)
+
+Rebuilt 2026-09-20; replaced the flat Q&A. Schema is **not** applied automatically —
+`supabase/migrations/20260920_community.sql` must be run in the Supabase SQL editor.
 
 | Piece | File |
 | --- | --- |
-| Question list | `src/app/(site)/community/page.tsx` |
-| Ask | `src/app/(site)/community/ask/page.tsx` |
-| Question detail / answer | `src/app/(site)/community/question/[id]/page.tsx`, `[id]/answer/page.tsx` |
-| UI | `src/components/community/` |
+| Schema + RLS + seed + backfill | `supabase/migrations/20260920_community.sql` |
+| Feed page | `src/app/(site)/community/page.tsx` → `src/components/community/pages/CommunityHome.tsx` |
+| Space | `src/app/(site)/community/s/[slug]/page.tsx` → `pages/SpaceView.tsx` |
+| Post + thread | `src/app/(site)/community/post/[id]/page.tsx` → `pages/PostView.tsx` |
+| Composer | `src/app/(site)/community/submit/page.tsx` → `pages/Submit.tsx` |
+| Spaces index | `src/app/(site)/community/spaces/page.tsx` → `pages/SpacesIndex.tsx` |
+| Saved | `src/app/(site)/community/saved/page.tsx` → `pages/SavedView.tsx` |
+| Legacy redirects | `community/ask/`, `community/question/[id]/`, `.../answer/` (resolve via `legacy_question_id`) |
+| Shell / rails | `src/components/community/CommunityShell.tsx` |
+| Feed list | `src/components/community/Feed.tsx`, `PostCard.tsx` |
+| Nested comments | `src/components/community/CommentThread.tsx` |
+| Vote rail | `src/components/community/VoteControl.tsx` |
+| Save / share / report / menu | `src/components/community/PostActions.tsx` |
+| Icons, avatar, markdown, time | `src/components/community/kit.tsx` |
+| Vote hook (server-authoritative) | `src/hooks/useCommunityVote.ts` |
+| Pure logic (tested) | `src/lib/community/pure.ts` |
+| Server helpers (`ensureMember`) | `src/lib/community/server.ts` |
+| Types / limits | `src/lib/community/types.ts`, `constants.ts` |
+| Feed + create API | `src/app/api/community/posts/route.ts` |
+| Post read/edit/delete | `src/app/api/community/posts/[id]/route.ts` |
+| Comments | `src/app/api/community/posts/[id]/comments/route.ts`, `comments/[id]/route.ts` |
+| Vote | `src/app/api/community/vote/route.ts` (calls the `community_vote` RPC) |
+| Save / accept answer | `posts/[id]/save/route.ts`, `posts/[id]/accept/route.ts` |
+| Spaces / membership | `spaces/route.ts`, `membership/route.ts` |
+| Report / me | `report/route.ts`, `me/route.ts` |
+| Tests | `scripts/community.test.mts` (17) |
+| Authorization | **RLS-enforced (Model B)** — anon/user client only. Policies ARE in the repo, in the migration |
+| Tables | `community_members`, `_spaces`, `_posts`, `_comments`, `_votes`, `_saves`, `_memberships`, `_reports` |
+
+### Legacy Q&A (data kept, UI gone)
+
+| Piece | File |
+| --- | --- |
 | Questions API | `src/app/api/qa/questions/route.ts`, `questions/[id]/route.ts` |
-| Answers API | `src/app/api/qa/answers/route.ts` |
-| Votes API | `src/app/api/qa/votes/route.ts` |
-| Vote hook | `src/hooks/useVote.ts` |
-| Authorization | **RLS-enforced** — anon/user client only. Policies live in Supabase, not here |
-| Tables | `questions`, `answers`, `votes`, `profiles` |
+| Answers / votes API | `src/app/api/qa/answers/route.ts`, `votes/route.ts` |
+| Tables | `questions`, `answers`, `votes`, `profiles` — **untouched**, copied into the new tables |
+| Status | No UI calls these any more. Kept so the backfill is reversible; delete once the community is proven in production |
 
 ---
 
@@ -289,7 +343,7 @@ Supabase cache tables: `pubmed_cache`, `medlineplus_cache`, `clinicaltrials_cach
 | Piece | File |
 | --- | --- |
 | Drug search API (Mongo `pharmacopedia`, 3 collections as one set) | `src/app/api/search/route.ts` (limiter `drugSearchLimiter` in `src/lib/rateLimit.ts`) |
-| Encyclopedia `/encyclopedia` | `src/app/(site)/encyclopedia/page.tsx` (server: metadata, URL params, streamed figures) → `src/components/encyclopedia/` — `EncyclopediaClient.tsx` (cover, search, result index, URL state), `Monograph.tsx`, `prose.tsx` (DrugBank text cleaner), `useDrugSearch.ts`, `EncyclopediaFigures.tsx` (server, daily-cached counts), `types.ts`, `encyclopedia.css` |
+| Encyclopedia `/encyclopedia` | `src/app/(site)/encyclopedia/page.tsx` (server: metadata, URL params, streamed figures) → `src/components/encyclopedia/` — `EncyclopediaClient.tsx` (always-present search bar + result ledger + URL state), `Monograph.tsx` (the **tabbed** drug card: masthead, at-a-glance, eight sections), `StructurePlate.tsx` (2D ⇄ 3D switch, lazy-loads the 3D), `Structure3D.tsx` (conformer from SMILES + the lab's `Viewer3D` — the **only** consumer of OpenChemLib/3Dmol outside `molecular-lab/`, §6 rule 18), `prose.tsx` (DrugBank text cleaner), `useDrugSearch.ts`, `EncyclopediaFigures.tsx` (server, daily-cached counts), `types.ts`, `encyclopedia.css` |
 | Autocomplete | `src/app/api/autocomplete/route.ts`, `src/components/AutocompleteSearch.tsx` |
 | Drug finder UI | `src/app/(site)/drug-finder/page.tsx` (self-contained — it does **not** use `DrugSearch`/`DrugCard`, which only `/clinical/encyclopedia` imports) |
 | Contact form → Resend | `src/app/api/contact/route.ts`, `src/app/contact/page.tsx`, `src/components/Home/ContactForm/` |
@@ -300,7 +354,7 @@ Supabase cache tables: `pubmed_cache`, `medlineplus_cache`, `clinicaltrials_cach
 | Home page promo strip | `src/components/Home/tournament/` (`OfficialLaunchBanner`, still rendered) |
 | **About / the team (`/about-us`)** | `src/app/(site)/about-us/` — `page.tsx` (server: hero, story, pillars, leadership `LeadCard`s, grouped team), `FlipCard.tsx` (client flip card), `_Plate.tsx` (monogram, or a `photo` if the roster ever sets one) |
 | **Team roster (data)** | `src/lib/team.ts` — one `ROSTER` array; groups, monograms, gradient angles, ids and card descriptions (`ROLE_NOTE`) are derived. Was `src/app/api/team-members.tsx` (deleted 2026-09-16) |
-| Static pages | `src/app/(site)/{careers,faqs,privacy,terms,documentation,books-library,pw}/page.tsx` |
+| Static pages | `src/app/(site)/{careers,faqs,privacy,terms,documentation,pw}/page.tsx` |
 | Toast context (misfiled under api/) | `src/app/api/contex/ToasetContex.tsx` |
 | Shared types | `src/types/*.ts` |
 

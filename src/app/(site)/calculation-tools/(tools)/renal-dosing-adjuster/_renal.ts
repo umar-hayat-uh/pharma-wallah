@@ -1,0 +1,1209 @@
+/**
+ * Renal dosing: the drug database, the clearance equations and the KDIGO bands.
+ *
+ * The database and every formula below are copied verbatim from the
+ * pre-migration page, so the numbers and the recommendations this tool reports
+ * are unchanged. Pulled out of the page so they can be hand-checked and so the
+ * page itself stays readable.
+ */
+
+export type DrugCategory =
+    | "All"
+    | "Antibiotics"
+    | "Antivirals & Antifungals"
+    | "Anticoagulants"
+    | "Cardiovascular"
+    | "Endocrine & Diabetes"
+    | "Neurology & Analgesics"
+    | "Rheumatology & Gout";
+
+export interface DoseAdjustmentTier {
+    crclRangeLabel: string;
+    minCrCl: number;
+    maxCrCl: number;
+    dose: string;
+    interval: string;
+    notes?: string;
+    status: "safe" | "caution" | "contraindicated" | "monitored";
+}
+
+export interface RenalDrug {
+    id: string;
+    name: string;
+    genericName?: string;
+    brandName?: string;
+    category: DrugCategory;
+    indication: string;
+    usualDose: string;
+    adjustments: DoseAdjustmentTier[];
+    dialysisGuidance?: {
+        hemodialysis?: string;
+        crrt?: string;
+        peritoneal?: string;
+    };
+    clinicalPearls?: string[];
+    criticalWarning?: string;
+    reference: string;
+    source: string;
+    link?: string;
+    lastReviewed: string;
+}
+
+export interface PatientScenario {
+    label: string;
+    desc: string;
+    age: string;
+    sex: "male" | "female";
+    weight: string;
+    weightUnit: "kg" | "lbs";
+    height: string;
+    heightUnit: "cm" | "in";
+    scr: string;
+    scrUnit: "mg/dL" | "umol/L";
+}
+
+// ─── COMPREHENSIVE CLINICAL DRUG DATABASE (2024–2026 EVIDENCE) ──────
+
+
+export const renalDrugsDatabase: RenalDrug[] = [
+    {
+        id: "vancomycin",
+        name: "Vancomycin",
+        brandName: "Vancocin",
+        category: "Antibiotics",
+        indication: "Severe Gram-positive infections, MRSA bacteremia, endocarditis",
+        usualDose: "15–20 mg/kg IV q8–12h (Max 2 g/dose). Target AUC/MIC: 400–600 mg·h/L",
+        adjustments: [
+            {
+                crclRangeLabel: "CrCl ≥ 50 mL/min",
+                minCrCl: 50,
+                maxCrCl: 9999,
+                dose: "15–20 mg/kg (actual body weight)",
+                interval: "Every 8 to 12 hours",
+                notes: "Loading dose 25–35 mg/kg (max 3 g) recommended in critically ill. Monitor AUC-guided dosing.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl 30–49 mL/min",
+                minCrCl: 30,
+                maxCrCl: 49.9,
+                dose: "15 mg/kg",
+                interval: "Every 24 hours",
+                notes: "AUC-guided dosing or trough level monitoring (15–20 mcg/mL for severe MRSA) required.",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl 15–29 mL/min",
+                minCrCl: 15,
+                maxCrCl: 29.9,
+                dose: "15 mg/kg",
+                interval: "Every 24 to 48 hours",
+                notes: "Check pre-dose serum trough level before redosing.",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl < 15 mL/min",
+                minCrCl: 0,
+                maxCrCl: 14.9,
+                dose: "15–20 mg/kg loading dose, then level-guided",
+                interval: "Redose when level < 15–20 mcg/mL",
+                notes: "Pulse dosing: Redose only after checking random serum vancomycin concentration.",
+                status: "monitored",
+            },
+        ],
+        dialysisGuidance: {
+            hemodialysis: "15–25 mg/kg loading dose; redose 5–10 mg/kg after HD when serum level < 15–20 mcg/mL (High-flux dialyzers remove 30–50%).",
+            crrt: "20–25 mg/kg loading dose, then 10–15 mg/kg IV q24–48h or continuous infusion with AUC monitoring.",
+            peritoneal: "1–2 g IP loading dose, then 30 mg/kg IP every 3–5 days or 15–30 mg/L in each dialysate bag.",
+        },
+        clinicalPearls: [
+            "Calculate actual body weight for loading dose, but monitor trough/AUC closely in morbidly obese patients.",
+            "Co-administration with Piperacillin-Tazobactam increases acute kidney injury (AKI) incidence significantly.",
+        ],
+        criticalWarning: "High risk of nephrotoxicity with AUC > 650 mg·h/L or concurrent loop diuretics/aminoglycosides.",
+        reference: "Rybak MJ, et al. ASHP/IDSA/PIDS/SIDP Consensus Guidelines. Am J Health-Syst Pharm. 2020;77(11):835-864.",
+        source: "ASHP/IDSA Guidelines",
+        link: "https://academic.oup.com/ajhp/article/77/11/835/5810200",
+        lastReviewed: "2024 Q4",
+    },
+    {
+        id: "pip-tazo",
+        name: "Piperacillin / Tazobactam",
+        brandName: "Zosyn",
+        category: "Antibiotics",
+        indication: "Nosocomial pneumonia, intra-abdominal infections, complicated UTI",
+        usualDose: "3.375 g – 4.5 g IV q6h (or 3.375 g q8h extended 4-hour infusion)",
+        adjustments: [
+            {
+                crclRangeLabel: "CrCl ≥ 50 mL/min",
+                minCrCl: 50,
+                maxCrCl: 9999,
+                dose: "3.375 g – 4.5 g",
+                interval: "Every 6 hours (or 3.375 g q8h over 4h)",
+                notes: "Extended 4-hour infusions optimize pharmacokinetic/pharmacodynamic (PK/PD) target attainment.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl 20–49 mL/min",
+                minCrCl: 20,
+                maxCrCl: 49.9,
+                dose: "3.375 g",
+                interval: "Every 6 hours (or 2.25 g q6h)",
+                notes: "For nosocomial pneumonia: maintain 3.375 g q6h.",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl < 20 mL/min",
+                minCrCl: 0,
+                maxCrCl: 19.9,
+                dose: "2.25 g",
+                interval: "Every 8 hours (or 2.25 g q6h for nosocomial pneumonia)",
+                notes: "Monitor for accumulation and hematologic/neurologic toxicities.",
+                status: "caution",
+            },
+        ],
+        dialysisGuidance: {
+            hemodialysis: "2.25 g IV q8h; give supplemental 0.75 g post-dialysis on HD days.",
+            crrt: "3.375 g IV q8h (extended 4h infusion preferred) or 4.5 g q8h for severe Pseudomonas.",
+        },
+        clinicalPearls: [
+            "Contains 2.79 mEq (64 mg) of sodium per gram of piperacillin; observe sodium/fluid balance.",
+        ],
+        reference: "Zosyn (piperacillin and tazobactam) US FDA Prescribing Information. Pfizer Inc.",
+        source: "FDA Label",
+        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2021/050684s088lbl.pdf",
+        lastReviewed: "2024 Q3",
+    },
+    {
+        id: "meropenem",
+        name: "Meropenem",
+        brandName: "Merrem",
+        category: "Antibiotics",
+        indication: "Complicated intra-abdominal infections, meningitis, multidrug-resistant sepsis",
+        usualDose: "1 g IV q8h (2 g IV q8h for meningitis or resistant Pseudomonas)",
+        adjustments: [
+            {
+                crclRangeLabel: "CrCl ≥ 50 mL/min",
+                minCrCl: 50,
+                maxCrCl: 9999,
+                dose: "1 g (or 2 g for meningitis)",
+                interval: "Every 8 hours",
+                notes: "Standard extended 3-hour infusion optimizes time above MIC (>40% fT>MIC).",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl 26–49 mL/min",
+                minCrCl: 26,
+                maxCrCl: 49.9,
+                dose: "1 g",
+                interval: "Every 12 hours",
+                notes: "Dose may be increased for high-MIC pathogens under ID consultation.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl 10–25 mL/min",
+                minCrCl: 10,
+                maxCrCl: 25.9,
+                dose: "500 mg",
+                interval: "Every 12 hours",
+                notes: "Reduced dose to prevent central nervous system toxicity/seizures.",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl < 10 mL/min",
+                minCrCl: 0,
+                maxCrCl: 9.9,
+                dose: "500 mg",
+                interval: "Every 24 hours",
+                notes: "High risk of accumulation.",
+                status: "caution",
+            },
+        ],
+        dialysisGuidance: {
+            hemodialysis: "500 mg IV q24h; on dialysis days, administer dose immediately after HD session.",
+            crrt: "1 g IV q8–12h (or 1 g q8h extended 3h infusion depending on effluent rate).",
+        },
+        clinicalPearls: [
+            "Significantly reduces serum valproic acid levels (up to 80% decrease within 24h), precipitating breakthrough seizures.",
+        ],
+        criticalWarning: "Co-administration with valproic acid / divalproex is generally contraindicated.",
+        reference: "Meropenem prescribing information. US FDA & Sanford Guide to Antimicrobial Therapy.",
+        source: "FDA / Sanford",
+        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2020/050706s039lbl.pdf",
+        lastReviewed: "2024 Q4",
+    },
+    {
+        id: "cefepime",
+        name: "Cefepime",
+        brandName: "Maxipime",
+        category: "Antibiotics",
+        indication: "Febrile neutropenia, hospital-acquired pneumonia, urosepsis",
+        usualDose: "1 g – 2 g IV q8–12h",
+        adjustments: [
+            {
+                crclRangeLabel: "CrCl > 60 mL/min",
+                minCrCl: 60.1,
+                maxCrCl: 9999,
+                dose: "2 g (severe/neutropenia) or 1 g",
+                interval: "Every 8 to 12 hours",
+                notes: "Standard dosing for normal clearance.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl 30–60 mL/min",
+                minCrCl: 30,
+                maxCrCl: 60,
+                dose: "2 g (severe) or 1 g",
+                interval: "Every 12 to 24 hours",
+                notes: "2 g q12h for febrile neutropenia or severe sepsis.",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl 11–29 mL/min",
+                minCrCl: 11,
+                maxCrCl: 29.9,
+                dose: "1 g (or 2 g for severe infections)",
+                interval: "Every 24 hours",
+                notes: "Strict renal adjustment required to avoid cefepime-induced neurotoxicity.",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl ≤ 10 mL/min",
+                minCrCl: 0,
+                maxCrCl: 10.9,
+                dose: "500 mg (or 1 g for severe infections)",
+                interval: "Every 24 hours",
+                notes: "High risk of nonconvulsive status epilepticus if overdosed.",
+                status: "contraindicated",
+            },
+        ],
+        dialysisGuidance: {
+            hemodialysis: "1 g initial loading dose on Day 1, then 500 mg IV q24h (administer dose after HD).",
+            crrt: "1 g to 2 g IV q12h depending on continuous dialysis flow rate.",
+        },
+        clinicalPearls: [
+            "Cefepime neurotoxicity presents as altered mental status, myoclonus, confusion, and triphasic EEG waves without fever.",
+        ],
+        criticalWarning: "FDA Safety Alert: Neurotoxicity risk in unadjusted renal impairment. Always calculate CrCl accurately.",
+        reference: "Cefepime US FDA Label & FDA Drug Safety Communication regarding neurotoxicity.",
+        source: "FDA Safety Alert",
+        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2022/050679s044lbl.pdf",
+        lastReviewed: "2024 Q3",
+    },
+    {
+        id: "ceftriaxone",
+        name: "Ceftriaxone",
+        brandName: "Rocephin",
+        category: "Antibiotics",
+        indication: "Community-acquired pneumonia, meningitis, pyelonephritis, gonorrhea",
+        usualDose: "1 g – 2 g IV/IM q24h (2 g q12h for bacterial meningitis)",
+        adjustments: [
+            {
+                crclRangeLabel: "CrCl ≥ 10 mL/min",
+                minCrCl: 10,
+                maxCrCl: 9999,
+                dose: "1 g – 2 g",
+                interval: "Every 24 hours (No renal adjustment needed)",
+                notes: "Dual elimination (biliary and renal). No dosage reduction necessary in pure renal impairment.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl < 10 mL/min with Hepatic Impairment",
+                minCrCl: 0,
+                maxCrCl: 9.9,
+                dose: "Max 2 g / day",
+                interval: "Every 24 hours",
+                notes: "Only adjust if concurrent severe liver disease is present; do not exceed 2 g/day.",
+                status: "safe",
+            },
+        ],
+        dialysisGuidance: {
+            hemodialysis: "No supplemental dose or schedule change needed after HD (not significantly dialyzable).",
+            crrt: "1 g – 2 g IV q24h (standard dosing).",
+        },
+        clinicalPearls: [
+            "Do NOT mix with calcium-containing IV solutions (e.g., Lactated Ringer's) due to risk of fatal ceftriaxone-calcium precipitation in lungs/kidneys.",
+        ],
+        reference: "Rocephin (ceftriaxone) US FDA Prescribing Information. Genentech USA.",
+        source: "FDA Label",
+        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2021/050585s068lbl.pdf",
+        lastReviewed: "2024 Q2",
+    },
+    {
+        id: "gentamicin",
+        name: "Gentamicin",
+        brandName: "Garamycin",
+        category: "Antibiotics",
+        indication: "Gram-negative bacteremia, synergy in enterococcal endocarditis",
+        usualDose: "5–7 mg/kg IV once daily (Hartford Nomogram) or 1.5–2 mg/kg q8h",
+        adjustments: [
+            {
+                crclRangeLabel: "CrCl ≥ 60 mL/min",
+                minCrCl: 60,
+                maxCrCl: 9999,
+                dose: "5–7 mg/kg (using adjusted weight if obese)",
+                interval: "Every 24 hours",
+                notes: "Obtain 6–14 hour random serum concentration and plot on Hartford Nomogram.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl 40–59 mL/min",
+                minCrCl: 40,
+                maxCrCl: 59.9,
+                dose: "5–7 mg/kg",
+                interval: "Every 36 hours",
+                notes: "Extended interval strategy with therapeutic drug monitoring.",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl 20–39 mL/min",
+                minCrCl: 20,
+                maxCrCl: 39.9,
+                dose: "5–7 mg/kg",
+                interval: "Every 48 hours",
+                notes: "Alternative: traditional dosing (1–1.5 mg/kg) with peak/trough monitoring.",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl < 20 mL/min",
+                minCrCl: 0,
+                maxCrCl: 19.9,
+                dose: "2 mg/kg loading dose, then monitor levels",
+                interval: "Level-guided (redose when trough < 1 mcg/mL)",
+                notes: "High risk of ototoxicity and tubular nephrotoxicity. Avoid extended-interval nomogram.",
+                status: "contraindicated",
+            },
+        ],
+        dialysisGuidance: {
+            hemodialysis: "1.5–2 mg/kg loading dose; administer 1–1.5 mg/kg post-dialysis after each HD session.",
+            crrt: "2–3 mg/kg loading dose, then 1.5–2 mg/kg q24–48h with daily peak/trough monitoring.",
+        },
+        clinicalPearls: [
+            "Use Ideal Body Weight (IBW) or Adjusted Body Weight (AdjBW = IBW + 0.4*(TBW - IBW)) for dosing calculations.",
+        ],
+        criticalWarning: "Irreversible vestibular/auditory ototoxicity and acute tubular necrosis with sustained troughs > 2 mcg/mL.",
+        reference: "Nicolau DP, et al. Antimicrob Agents Chemother. 1995;39(3):650-655.",
+        source: "Hartford Nomogram",
+        link: "https://journals.asm.org/doi/10.1128/AAC.39.3.650",
+        lastReviewed: "2024 Q4",
+    },
+    {
+        id: "ciprofloxacin",
+        name: "Ciprofloxacin",
+        brandName: "Cipro",
+        category: "Antibiotics",
+        indication: "Complicated UTI, pyelonephritis, intra-abdominal infections, anthrax",
+        usualDose: "400 mg IV q8–12h or 500–750 mg PO q12h",
+        adjustments: [
+            {
+                crclRangeLabel: "CrCl ≥ 50 mL/min",
+                minCrCl: 50,
+                maxCrCl: 9999,
+                dose: "400 mg IV q8–12h or 500–750 mg PO q12h",
+                interval: "Every 8 to 12 hours",
+                notes: "Standard dosing.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl 30–49 mL/min",
+                minCrCl: 30,
+                maxCrCl: 49.9,
+                dose: "400 mg IV q12h or 250–500 mg PO q12h",
+                interval: "Every 12 hours",
+                notes: "Reduce frequency or oral strength.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl 5–29 mL/min",
+                minCrCl: 5,
+                maxCrCl: 29.9,
+                dose: "200–400 mg IV q18–24h or 250–500 mg PO q24h",
+                interval: "Every 18 to 24 hours",
+                notes: "Monitor renal function and QT interval.",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl < 5 mL/min",
+                minCrCl: 0,
+                maxCrCl: 4.9,
+                dose: "200–400 mg IV q24h or 250 mg PO q24h",
+                interval: "Every 24 hours",
+                notes: "Give dose post-dialysis on hemodialysis days.",
+                status: "caution",
+            },
+        ],
+        dialysisGuidance: {
+            hemodialysis: "200–400 mg IV q24h or 250–500 mg PO q24h (administer post-HD on dialysis days).",
+            crrt: "400 mg IV q12h for Pseudomonas/severe infections; otherwise 200–400 mg q12–24h.",
+        },
+        clinicalPearls: [
+            "Oral bioavailability is >70%; oral absorption is severely impaired by dairy, calcium, iron, and multivalent antacids.",
+        ],
+        reference: "Cipro (ciprofloxacin) US FDA Prescribing Information. Bayer Healthcare.",
+        source: "FDA Label",
+        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2017/019537s086lbl.pdf",
+        lastReviewed: "2024 Q1",
+    },
+    {
+        id: "levofloxacin",
+        name: "Levofloxacin",
+        brandName: "Levaquin",
+        category: "Antibiotics",
+        indication: "Pneumonia, complicated UTI, pyelonephritis, skin infections",
+        usualDose: "500 mg – 750 mg IV/PO once daily",
+        adjustments: [
+            {
+                crclRangeLabel: "CrCl ≥ 50 mL/min",
+                minCrCl: 50,
+                maxCrCl: 9999,
+                dose: "500 mg – 750 mg",
+                interval: "Every 24 hours",
+                notes: "Standard dosing based on indication.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl 20–49 mL/min",
+                minCrCl: 20,
+                maxCrCl: 49.9,
+                dose: "750 mg q48h (or initial 500 mg then 250 mg q24h)",
+                interval: "Every 24 to 48 hours",
+                notes: "If starting 750 mg regimen: 750 mg initial, then 750 mg q48h.",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl < 20 mL/min",
+                minCrCl: 0,
+                maxCrCl: 19.9,
+                dose: "750 mg initial, then 500 mg q48h (or 500 mg initial, then 250 mg q48h)",
+                interval: "Every 48 hours",
+                notes: "No supplemental dose needed post-dialysis.",
+                status: "caution",
+            },
+        ],
+        dialysisGuidance: {
+            hemodialysis: "750 mg initial, then 500 mg q48h (or 500 mg initial, then 250 mg q48h). Not removed by HD.",
+            crrt: "Initial 500–750 mg loading dose, then 250–500 mg q24h.",
+        },
+        clinicalPearls: [
+            "Levofloxacin is predominantly excreted unchanged renally (~80%), making dose adjustment mandatory to avoid CNS toxicities.",
+        ],
+        criticalWarning: "Boxed warnings for tendinitis, tendon rupture, peripheral neuropathy, and CNS toxicities.",
+        reference: "Levaquin (levofloxacin) US FDA Prescribing Information. Janssen Pharmaceuticals.",
+        source: "FDA Label",
+        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2016/020634s067,020635s071,021721s032lbl.pdf",
+        lastReviewed: "2024 Q2",
+    },
+    {
+        id: "bactrim",
+        name: "Trimethoprim / Sulfamethoxazole",
+        brandName: "Bactrim DS / Septra",
+        category: "Antibiotics",
+        indication: "Pneumocystis jirovecii (PJP), Stenotrophomonas, MRSA skin infections, UTI",
+        usualDose: "1–2 DS tabs PO q12h (or 10–20 mg/kg/day TMP IV for PJP treatment)",
+        adjustments: [
+            {
+                crclRangeLabel: "CrCl > 30 mL/min",
+                minCrCl: 30.1,
+                maxCrCl: 9999,
+                dose: "Standard dose (1 DS tab q12h or 100% IV dose)",
+                interval: "Every 12 hours",
+                notes: "Standard dosing for normal kidney function.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl 15–30 mL/min",
+                minCrCl: 15,
+                maxCrCl: 30,
+                dose: "50% of standard dose (1 SS tab q12h or 1 DS tab q24h)",
+                interval: "Every 12 to 24 hours",
+                notes: "Monitor serum potassium (TMP blocks amiloride-sensitive sodium channels in distal nephron).",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl < 15 mL/min",
+                minCrCl: 0,
+                maxCrCl: 14.9,
+                dose: "Use NOT recommended unless benefits outweigh risks",
+                interval: "50% dose q24h with intensive monitoring",
+                notes: "Trimethoprim inhibits tubular creatinine secretion, artificially elevating serum Cr without dropping true GFR.",
+                status: "contraindicated",
+            },
+        ],
+        dialysisGuidance: {
+            hemodialysis: "50% of standard dose administered after each HD session (both components moderately dialyzed).",
+            crrt: "5–10 mg/kg/day TMP component divided q12h with frequent potassium and level monitoring.",
+        },
+        clinicalPearls: [
+            "Causes benign, pseudo-elevation of serum creatinine due to competitive inhibition of organic cation transporters (OCT2).",
+            "High incidence of hyperkalemia, especially in combination with ACE inhibitors or ARBs.",
+        ],
+        reference: "Bactrim (sulfamethoxazole and trimethoprim) US FDA Prescribing Information.",
+        source: "FDA Label",
+        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2021/017377s077,018449s060lbl.pdf",
+        lastReviewed: "2024 Q3",
+    },
+    {
+        id: "nitrofurantoin",
+        name: "Nitrofurantoin",
+        brandName: "Macrobid / Macrodantin",
+        category: "Antibiotics",
+        indication: "Treatment and prophylaxis of uncomplicated lower cystitis (E. coli, enterococci)",
+        usualDose: "Macrobid: 100 mg PO BID x 5 days (Macrodantin: 50–100 mg QID)",
+        adjustments: [
+            {
+                crclRangeLabel: "CrCl ≥ 60 mL/min",
+                minCrCl: 60,
+                maxCrCl: 9999,
+                dose: "100 mg PO BID",
+                interval: "Every 12 hours",
+                notes: "Standard therapeutic duration: 5 days for acute cystitis.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl 30–59 mL/min",
+                minCrCl: 30,
+                maxCrCl: 59.9,
+                dose: "100 mg PO BID (short-course uncomplicated UTI)",
+                interval: "Every 12 hours",
+                notes: "AGS Beers Criteria & IDSA: Safe for short-course (≤5 days) in uncomplicated lower UTI if CrCl ≥ 30 mL/min.",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl < 30 mL/min",
+                minCrCl: 0,
+                maxCrCl: 29.9,
+                dose: "CONTRAINDICATED",
+                interval: "Do not use",
+                notes: "Inadequate urinary drug concentration leads to treatment failure + increased risk of peripheral neuropathy and pulmonary toxicity.",
+                status: "contraindicated",
+            },
+        ],
+        dialysisGuidance: {
+            hemodialysis: "CONTRAINDICATED in ESRD/HD.",
+            crrt: "Contraindicated / Ineffective due to poor urinary excretion.",
+        },
+        clinicalPearls: [
+            "Ineffective for pyelonephritis or systemic bacteremia because it achieves negligible systemic tissue/blood levels.",
+        ],
+        criticalWarning: "Contraindicated in CrCl < 30 mL/min or term pregnancy (weeks 38-42) due to hemolytic anemia risk.",
+        reference: "2023 American Geriatrics Society Beers Criteria & US FDA Macrobid Package Insert.",
+        source: "AGS Beers / FDA",
+        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2021/020064s027lbl.pdf",
+        lastReviewed: "2024 Q4",
+    },
+    {
+        id: "acyclovir",
+        name: "Acyclovir",
+        brandName: "Zovirax",
+        category: "Antivirals & Antifungals",
+        indication: "HSV encephalitis, severe mucocutaneous HSV, disseminated VZV",
+        usualDose: "5–10 mg/kg IV q8h (or 200–800 mg PO 3–5x/day)",
+        adjustments: [
+            {
+                crclRangeLabel: "CrCl > 50 mL/min",
+                minCrCl: 50.1,
+                maxCrCl: 9999,
+                dose: "5–10 mg/kg (or 10 mg/kg for encephalitis)",
+                interval: "Every 8 hours",
+                notes: "Maintain vigorous IV hydration to prevent intratubular crystal precipitation.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl 25–50 mL/min",
+                minCrCl: 25,
+                maxCrCl: 50,
+                dose: "5–10 mg/kg",
+                interval: "Every 12 hours",
+                notes: "Infuse slowly over at least 1 hour.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl 10–24 mL/min",
+                minCrCl: 10,
+                maxCrCl: 24.9,
+                dose: "5–10 mg/kg",
+                interval: "Every 24 hours",
+                notes: "Reduce frequency to avoid neurotoxicity (hallucinations, tremors, encephalopathy).",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl < 10 mL/min",
+                minCrCl: 0,
+                maxCrCl: 9.9,
+                dose: "2.5–5 mg/kg",
+                interval: "Every 24 hours",
+                notes: "High risk of crystallization and CNS accumulation.",
+                status: "caution",
+            },
+        ],
+        dialysisGuidance: {
+            hemodialysis: "2.5–5 mg/kg IV q24h; administer dose immediately following hemodialysis session (approx 60% removed during 6h HD).",
+            crrt: "5–7.5 mg/kg IV q12–24h with aggressive monitoring.",
+        },
+        clinicalPearls: [
+            "Always co-prescribe adequate intravenous fluids (e.g., 0.9% Normal Saline) to maintain urine output > 100 mL/h.",
+            "Use Ideal Body Weight (IBW) in obese patients to prevent acute overdosing.",
+        ],
+        criticalWarning: "Acute renal injury via intratubular acyclovir crystallization if infused rapidly without hydration.",
+        reference: "Acyclovir US FDA Prescribing Information. GlaxoSmithKline / FDA.",
+        source: "FDA Label",
+        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2019/018603s040lbl.pdf",
+        lastReviewed: "2024 Q3",
+    },
+    {
+        id: "fluconazole",
+        name: "Fluconazole",
+        brandName: "Diflucan",
+        category: "Antivirals & Antifungals",
+        indication: "Candidemia, cryptococcal meningitis, mucosal candidiasis",
+        usualDose: "200–400 mg IV/PO q24h (Loading dose: 400–800 mg on Day 1)",
+        adjustments: [
+            {
+                crclRangeLabel: "CrCl > 50 mL/min",
+                minCrCl: 50.1,
+                maxCrCl: 9999,
+                dose: "100% of standard dose (200–400 mg)",
+                interval: "Every 24 hours",
+                notes: "Single day 1 loading dose of double the maintenance dose recommended.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl 21–50 mL/min",
+                minCrCl: 21,
+                maxCrCl: 50,
+                dose: "50% of standard dose (100–200 mg)",
+                interval: "Every 24 hours",
+                notes: "Full loading dose on Day 1, followed by 50% maintenance.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl 11–20 mL/min",
+                minCrCl: 11,
+                maxCrCl: 20.9,
+                dose: "25% to 50% of standard dose (50–100 mg)",
+                interval: "Every 24 hours",
+                notes: "Full loading dose on Day 1.",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl ≤ 10 mL/min",
+                minCrCl: 0,
+                maxCrCl: 10.9,
+                dose: "25% of standard dose (50–100 mg)",
+                interval: "Every 24 to 48 hours",
+                notes: "Monitor liver function enzymes and QTc.",
+                status: "caution",
+            },
+        ],
+        dialysisGuidance: {
+            hemodialysis: "100% regular dose administered after each HD session (hemodialysis clears ~50% of systemic drug in 3 hours).",
+            crrt: "400–800 mg IV loading dose, then 200–400 mg IV q24h (cleared substantially by CRRT).",
+        },
+        clinicalPearls: [
+            "80% excreted unchanged by the kidneys; excellent urinary tract penetration makes it the antifungal of choice for Candida cystitis.",
+        ],
+        reference: "Diflucan (fluconazole) US FDA Prescribing Information. Pfizer Inc.",
+        source: "FDA Label",
+        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2019/019949s064lbl.pdf",
+        lastReviewed: "2024 Q4",
+    },
+    {
+        id: "apixaban",
+        name: "Apixaban",
+        brandName: "Eliquis",
+        category: "Anticoagulants",
+        indication: "Nonvalvular Atrial Fibrillation (NVAF) stroke prevention, DVT/PE treatment",
+        usualDose: "NVAF: 5 mg PO BID. (DVT/PE: 10 mg BID x 7 days, then 5 mg BID)",
+        adjustments: [
+            {
+                crclRangeLabel: "Standard Dose (CrCl ≥ 15 mL/min with < 2 dose-reduction criteria)",
+                minCrCl: 15,
+                maxCrCl: 9999,
+                dose: "5 mg PO",
+                interval: "Every 12 hours (BID)",
+                notes: "Reduce to 2.5 mg BID ONLY if patient meets ≥ 2 of: Age ≥ 80 yrs, Weight ≤ 60 kg, or Serum Creatinine ≥ 1.5 mg/dL.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "Dose-Reduction Criteria Met (≥2 of Age ≥80, Wt ≤60kg, SCr ≥1.5)",
+                minCrCl: 15,
+                maxCrCl: 9999,
+                dose: "2.5 mg PO",
+                interval: "Every 12 hours (BID)",
+                notes: "Validated in ARISTOTLE trial to lower major bleeding risk while maintaining stroke protection.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "ESRD on Maintenance Hemodialysis (US FDA Labeling)",
+                minCrCl: 0,
+                maxCrCl: 14.9,
+                dose: "5 mg PO BID (or 2.5 mg BID if Age ≥ 80 or Weight ≤ 60 kg)",
+                interval: "Every 12 hours (BID)",
+                notes: "FDA approved for HD based on PK data; European guidelines (EMA) suggest avoiding if CrCl < 15 mL/min.",
+                status: "monitored",
+            },
+        ],
+        dialysisGuidance: {
+            hemodialysis: "5 mg BID (or 2.5 mg BID if age ≥80 OR wt ≤60 kg). Not significantly dialyzable.",
+            crrt: "Data limited; cautiously consider 2.5 mg BID or unfractionated heparin bridge.",
+        },
+        clinicalPearls: [
+            "Only 27% renal elimination (lowest renal dependence among modern DOACs).",
+            "CrCl alone does NOT trigger dose reduction in AFib unless accompanied by age ≥ 80 or weight ≤ 60 kg.",
+        ],
+        criticalWarning: "Boxed warning: Premature discontinuation increases risk of thrombotic events. Epidural/spinal hematoma risk.",
+        reference: "Eliquis (apixaban) US FDA Prescribing Information. Bristol-Myers Squibb / Pfizer.",
+        source: "FDA Label / ARISTOTLE",
+        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2023/202155s036lbl.pdf",
+        lastReviewed: "2024 Q4",
+    },
+    {
+        id: "rivaroxaban",
+        name: "Rivaroxaban",
+        brandName: "Xarelto",
+        category: "Anticoagulants",
+        indication: "NVAF stroke prophylaxis, DVT/PE treatment, CAD/PAD vascular protection",
+        usualDose: "NVAF: 20 mg PO once daily with evening meal (DVT/PE: 15 mg BID x21d then 20 mg daily)",
+        adjustments: [
+            {
+                crclRangeLabel: "CrCl > 50 mL/min",
+                minCrCl: 50.1,
+                maxCrCl: 9999,
+                dose: "20 mg PO once daily with food",
+                interval: "Every 24 hours (with dinner)",
+                notes: "Food co-administration increases absorption bioavailability of 15mg/20mg tablets to ~100%.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl 15–50 mL/min",
+                minCrCl: 15,
+                maxCrCl: 50,
+                dose: "15 mg PO once daily with food",
+                interval: "Every 24 hours (with dinner)",
+                notes: "DVT/PE Treatment: Avoid if CrCl < 30 mL/min per package insert.",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl < 15 mL/min",
+                minCrCl: 0,
+                maxCrCl: 14.9,
+                dose: "AVOID USE / Contraindicated",
+                interval: "Do not use",
+                notes: "Significant drug bioaccumulation and excessive bleeding risks.",
+                status: "contraindicated",
+            },
+        ],
+        dialysisGuidance: {
+            hemodialysis: "Avoid use in hemodialysis (high protein binding > 95%, not dialyzable; unproven benefit-risk profile).",
+            crrt: "Avoid use; transition to unfractionated heparin.",
+        },
+        clinicalPearls: [
+            "36% eliminated unchanged by kidneys. 20 mg and 15 mg tablets must always be taken with a substantial meal.",
+        ],
+        criticalWarning: "Avoid in patients with CrCl < 15 mL/min due to lack of clinical safety trial data.",
+        reference: "Xarelto (rivaroxaban) US FDA Prescribing Information. Janssen Pharmaceuticals.",
+        source: "FDA Label",
+        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2023/022406s041lbl.pdf",
+        lastReviewed: "2024 Q3",
+    },
+    {
+        id: "enoxaparin",
+        name: "Enoxaparin",
+        brandName: "Lovenox",
+        category: "Anticoagulants",
+        indication: "VTE prophylaxis, acute DVT/PE treatment, acute coronary syndromes (NSTEMI/STEMI)",
+        usualDose: "DVT Tx: 1 mg/kg SC q12h (or 1.5 mg/kg q24h). Prophylaxis: 40 mg SC q24h (or 30 mg SC q12h)",
+        adjustments: [
+            {
+                crclRangeLabel: "CrCl ≥ 30 mL/min",
+                minCrCl: 30,
+                maxCrCl: 9999,
+                dose: "Standard Dosing (Tx: 1 mg/kg q12h; Prophylaxis: 40 mg q24h)",
+                interval: "Every 12 to 24 hours",
+                notes: "Standard dosing.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl < 30 mL/min (Severe Renal Impairment)",
+                minCrCl: 0,
+                maxCrCl: 29.9,
+                dose: "Treatment: 1 mg/kg SC once daily. Prophylaxis: 30 mg SC once daily",
+                interval: "Every 24 hours (q24h)",
+                notes: "Dosing frequency reduced to every 24 hours. Monitor peak anti-Xa activity (target 0.5–1.0 IU/mL for q12h, 1.0–2.0 for q24h) 4 hours post-dose.",
+                status: "caution",
+            },
+        ],
+        dialysisGuidance: {
+            hemodialysis: "Avoid in ESRD on HD due to unpredictable bioaccumulation and major hemorrhage. Unfractionated heparin (UFH) preferred.",
+            crrt: "Use with caution with daily anti-Xa monitoring, or switch to UFH.",
+        },
+        clinicalPearls: [
+            "Bioaccumulates significantly when CrCl < 30 mL/min. Unfractionated heparin (UFH) is safer in acute kidney failure.",
+        ],
+        criticalWarning: "Epidural or spinal hematomas causing long-term or permanent paralysis in neuraxial anesthesia.",
+        reference: "Lovenox (enoxaparin sodium) US FDA Prescribing Information. Sanofi-Aventis.",
+        source: "FDA Label",
+        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2023/020164s129lbl.pdf",
+        lastReviewed: "2024 Q4",
+    },
+    {
+        id: "metformin",
+        name: "Metformin",
+        brandName: "Glucophage",
+        category: "Endocrine & Diabetes",
+        indication: "Type 2 Diabetes Mellitus glycemic management",
+        usualDose: "500 mg – 1000 mg PO BID (Max 2000–2550 mg/day)",
+        adjustments: [
+            {
+                crclRangeLabel: "eGFR / CrCl ≥ 60 mL/min",
+                minCrCl: 60,
+                maxCrCl: 9999,
+                dose: "500 mg – 1000 mg PO BID (Max 2000–2550 mg/day)",
+                interval: "Every 12 hours (with meals)",
+                notes: "Monitor eGFR at least annually.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "eGFR / CrCl 45–59 mL/min",
+                minCrCl: 45,
+                maxCrCl: 59.9,
+                dose: "Max 1500–2000 mg/day in divided doses",
+                interval: "Every 12 hours",
+                notes: "Monitor renal function every 3 to 6 months.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "eGFR / CrCl 30–44 mL/min",
+                minCrCl: 30,
+                maxCrCl: 44.9,
+                dose: "Max 500–1000 mg/day. DO NOT initiate new therapy",
+                interval: "Every 24 hours (with evening meal)",
+                notes: "If already on therapy, reduce maximum dose by 50%. Assess risk/benefit balance closely.",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "eGFR / CrCl < 30 mL/min",
+                minCrCl: 0,
+                maxCrCl: 29.9,
+                dose: "CONTRAINDICATED",
+                interval: "Discontinue immediately",
+                notes: "High risk of fatal Metformin-Associated Lactic Acidosis (MALA).",
+                status: "contraindicated",
+            },
+        ],
+        dialysisGuidance: {
+            hemodialysis: "CONTRAINDICATED. (However, hemodialysis effectively removes metformin and corrects acidosis during MALA overdose emergencies).",
+            crrt: "CONTRAINDICATED.",
+        },
+        clinicalPearls: [
+            "Withhold metformin at the time of or prior to iodinated contrast imaging in patients with eGFR 30–60 mL/min or liver disease; re-evaluate eGFR 48 hours post-procedure.",
+        ],
+        criticalWarning: "Boxed Warning: Metformin-associated lactic acidosis (MALA) is a medical emergency with high mortality (>30%).",
+        reference: "FDA Drug Safety Communication: FDA revises warnings regarding use of metformin in certain patients with reduced kidney function.",
+        source: "FDA Safety Alert / ADA",
+        link: "https://www.fda.gov/drugs/drug-safety-and-availability/fda-drug-safety-communication-fda-revises-warnings-regarding-use-diabetes-medicine-metformin-certain",
+        lastReviewed: "2024 Q3",
+    },
+    {
+        id: "gabapentin",
+        name: "Gabapentin",
+        brandName: "Neurontin",
+        category: "Neurology & Analgesics",
+        indication: "Postherpetic neuralgia, neuropathic pain, partial onset seizures",
+        usualDose: "300 mg – 600 mg PO TID (Max 1800–3600 mg/day in normal kidney function)",
+        adjustments: [
+            {
+                crclRangeLabel: "CrCl ≥ 60 mL/min",
+                minCrCl: 60,
+                maxCrCl: 9999,
+                dose: "300 mg – 1200 mg TID (Max 3600 mg/day)",
+                interval: "Three times daily (TID)",
+                notes: "Standard titration.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl 30–59 mL/min",
+                minCrCl: 30,
+                maxCrCl: 59.9,
+                dose: "200 mg – 700 mg BID (Max 1400 mg/day)",
+                interval: "Twice daily (BID)",
+                notes: "Titrate slowly to avoid excessive sedation and ataxia.",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl 15–29 mL/min",
+                minCrCl: 15,
+                maxCrCl: 29.9,
+                dose: "200 mg – 700 mg once daily (Max 700 mg/day)",
+                interval: "Once daily (QD)",
+                notes: "Administer at bedtime.",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl < 15 mL/min",
+                minCrCl: 0,
+                maxCrCl: 14.9,
+                dose: "100 mg – 300 mg once daily (Max 300 mg/day)",
+                interval: "Once daily (or every other day)",
+                notes: "Dose proportionate to measured CrCl.",
+                status: "monitored",
+            },
+        ],
+        dialysisGuidance: {
+            hemodialysis: "100–300 mg post-dialysis maintenance dose after every 4 hours of HD, with initial loading dose 300–400 mg.",
+            crrt: "200–300 mg PO q24h.",
+        },
+        clinicalPearls: [
+            "Gabapentin is eliminated 100% renally without metabolic breakdown. Overdosing causes severe myoclonus, sedation, and coma.",
+        ],
+        criticalWarning: "Respiratory depression risk increased when combined with opioids or central depressants.",
+        reference: "Neurontin (gabapentin) US FDA Prescribing Information. Pfizer / Viatris.",
+        source: "FDA Label",
+        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2020/020235s068,020882s051,021129s049lbl.pdf",
+        lastReviewed: "2024 Q4",
+    },
+    {
+        id: "allopurinol",
+        name: "Allopurinol",
+        brandName: "Zyloprim",
+        category: "Rheumatology & Gout",
+        indication: "Gout flare prevention, hyperuricemia, tumor lysis syndrome",
+        usualDose: "100 mg – 300 mg PO once daily (titrated to target serum urate < 6 mg/dL; max 800 mg/day)",
+        adjustments: [
+            {
+                crclRangeLabel: "CrCl > 50 mL/min",
+                minCrCl: 50.1,
+                maxCrCl: 9999,
+                dose: "Start 100 mg/day; titrate upward gradually by 100 mg/month",
+                interval: "Every 24 hours",
+                notes: "ACR 2020 Guidelines: Starting dose ≤ 100 mg/day is strongly recommended for all patients to avoid Allopurinol Hypersensitivity Syndrome (AHS).",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl 20–50 mL/min",
+                minCrCl: 20,
+                maxCrCl: 50,
+                dose: "Start ≤ 50–100 mg/day; titrate upward gradually (Max 200–300 mg/day)",
+                interval: "Every 24 hours",
+                notes: "Safe to titrate above historical thresholds if serum urate remains > 6 mg/dL with careful monitoring for rash/AHS.",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl 10–19 mL/min",
+                minCrCl: 10,
+                maxCrCl: 19.9,
+                dose: "Start 50 mg/day or 100 mg every other day (Max 100 mg/day)",
+                interval: "Every 24 to 48 hours",
+                notes: "Active metabolite oxypurinol is renally eliminated and accumulates in CKD.",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl < 10 mL/min",
+                minCrCl: 0,
+                maxCrCl: 9.9,
+                dose: "50 mg every 48 to 72 hours (or 50 mg post-HD)",
+                interval: "Every 48 to 72 hours",
+                notes: "Monitor closely for skin eruptions, eosinophilia, and liver function changes.",
+                status: "caution",
+            },
+        ],
+        dialysisGuidance: {
+            hemodialysis: "50–100 mg PO administered immediately after each HD session (oxypurinol is dialyzable).",
+            crrt: "100 mg PO q24h with serum urate monitoring.",
+        },
+        clinicalPearls: [
+            "Test HLA-B*5801 allele prior to initiation in patients of Southeast Asian, African American, or Han Chinese descent.",
+            "Allopurinol Hypersensitivity Syndrome (AHS: DRESS / Stevens-Johnson syndrome) is significantly higher in renal impairment.",
+        ],
+        reference: "FitzGerald JD, et al. 2020 American College of Rheumatology Guideline for the Management of Gout. Arthritis Care Res. 2020;72(6):744-760.",
+        source: "ACR 2020 Guidelines",
+        link: "https://onlinelibrary.wiley.com/doi/10.1002/art.41247",
+        lastReviewed: "2024 Q4",
+    },
+    {
+        id: "colchicine",
+        name: "Colchicine",
+        brandName: "Colcrys",
+        category: "Rheumatology & Gout",
+        indication: "Acute gout flare treatment and prophylaxis, Familial Mediterranean Fever",
+        usualDose: "Acute Flare: 1.2 mg PO at first sign, then 0.6 mg 1 hour later (1.8 mg total). Prophylaxis: 0.6 mg daily or BID",
+        adjustments: [
+            {
+                crclRangeLabel: "CrCl ≥ 50 mL/min",
+                minCrCl: 50,
+                maxCrCl: 9999,
+                dose: "Flare: 1.2 mg then 0.6 mg 1h later. Prophylaxis: 0.6 mg once or twice daily",
+                interval: "As indicated",
+                notes: "Standard dosing.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl 30–49 mL/min",
+                minCrCl: 30,
+                maxCrCl: 49.9,
+                dose: "Flare: Standard dose, but do NOT repeat course within 14 days. Prophylaxis: 0.3 mg daily",
+                interval: "Every 24 hours",
+                notes: "Observe for neuromyopathy and diarrhea.",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl 15–29 mL/min",
+                minCrCl: 15,
+                maxCrCl: 29.9,
+                dose: "Flare: Standard dose, but do NOT repeat within 14 days. Prophylaxis: 0.3 mg every other day",
+                interval: "Every 48 hours",
+                notes: "High risk of colchicine toxicity (rhabdomyolysis, bone marrow suppression).",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl < 15 mL/min / Dialysis",
+                minCrCl: 0,
+                maxCrCl: 14.9,
+                dose: "Prophylaxis CONTRAINDICATED. Flare: 0.3 mg single dose max, do NOT repeat within 14 days",
+                interval: "Single dose only",
+                notes: "Severe life-threatening toxicity reported in ESRD/dialysis patients.",
+                status: "contraindicated",
+            },
+        ],
+        dialysisGuidance: {
+            hemodialysis: "Not dialyzable (large volume of distribution). Prophylaxis is contraindicated. Acute flare: Max 0.3 mg single dose.",
+            crrt: "Avoid unless absolute necessity; monitor for severe neuromyopathy.",
+        },
+        clinicalPearls: [
+            "Co-administration of colchicine with strong CYP3A4 inhibitors (clarithromycin, ketoconazole) or P-gp inhibitors in renal impairment is CONTRAINDICATED and has caused fatal overdoses.",
+        ],
+        criticalWarning: "Fatal toxicity can occur in patients with renal impairment receiving standard doses with CYP3A4/P-gp inhibitors.",
+        reference: "Colcrys (colchicine) US FDA Prescribing Information. Takeda Pharmaceuticals.",
+        source: "FDA Label",
+        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2014/022352s016lbl.pdf",
+        lastReviewed: "2024 Q3",
+    },
+    {
+        id: "digoxin",
+        name: "Digoxin",
+        brandName: "Lanoxin",
+        category: "Cardiovascular",
+        indication: "Heart failure with reduced ejection fraction (HFrEF), Atrial fibrillation rate control",
+        usualDose: "0.125 mg – 0.25 mg PO/IV once daily (Target serum trough: 0.5–0.9 ng/mL for HF)",
+        adjustments: [
+            {
+                crclRangeLabel: "CrCl ≥ 50 mL/min",
+                minCrCl: 50,
+                maxCrCl: 9999,
+                dose: "0.125 mg – 0.25 mg PO once daily",
+                interval: "Every 24 hours",
+                notes: "Monitor serum digoxin trough levels 7–14 days after initiation.",
+                status: "safe",
+            },
+            {
+                crclRangeLabel: "CrCl 30–49 mL/min",
+                minCrCl: 30,
+                maxCrCl: 49.9,
+                dose: "0.125 mg PO once daily (or 0.0625 mg daily)",
+                interval: "Every 24 hours",
+                notes: "Target therapeutic trough: 0.5–0.9 ng/mL for HF (higher levels increase all-cause mortality).",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl 10–29 mL/min",
+                minCrCl: 10,
+                maxCrCl: 29.9,
+                dose: "0.0625 mg PO daily or 0.125 mg every other day",
+                interval: "Every 24 to 48 hours",
+                notes: "Monitor potassium, magnesium, and ECG for digitalis toxicity / arrhythmias.",
+                status: "caution",
+            },
+            {
+                crclRangeLabel: "CrCl < 10 mL/min",
+                minCrCl: 0,
+                maxCrCl: 9.9,
+                dose: "0.0625 mg PO 2 to 3 times per week",
+                interval: "Every 48 to 72 hours",
+                notes: "Very long half-life in anuria (~3.5 to 5 days).",
+                status: "monitored",
+            },
+        ],
+        dialysisGuidance: {
+            hemodialysis: "0.0625 mg PO given 2–3 times weekly after HD sessions. Not cleared by hemodialysis (tissue distribution Vd ~500 L).",
+            crrt: "0.0625 mg to 0.125 mg PO/IV q24–48h with frequent serum trough monitoring.",
+        },
+        clinicalPearls: [
+            "Hypokalemia and hypomagnesemia sensitize the myocardium to digitalis toxicity, triggering ventricular arrhythmias even at normal serum levels.",
+        ],
+        criticalWarning: "Narrow therapeutic index (HF target 0.5–0.9 ng/mL). Toxicity manifests as nausea, xanthopsia (yellow halos), and AV block.",
+        reference: "Lanoxin (digoxin) US FDA Prescribing Information. Covis Pharma / AHA/ACC Guidelines.",
+        source: "FDA / AHA Guidelines",
+        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2016/020405s011lbl.pdf",
+        lastReviewed: "2024 Q4",
+    },
+];
+
+// ─── ANTHROPOMETRIC & RENAL CLEARANCE EQUATIONS ─────────────────────
+
+
+export function calculateIBW(heightInches: number, sex: "male" | "female"): number {
+    const base = sex === "male" ? 50.0 : 45.5;
+    const diff = heightInches - 60;
+    const ibw = base + 2.3 * diff;
+    return Math.max(ibw, sex === "male" ? 50 : 45.5);
+}
+
+export function calculateAdjBW(actualKg: number, ibwKg: number): number {
+    return ibwKg + 0.4 * (actualKg - ibwKg);
+}
+
+export function calculateBMI(weightKg: number, heightCm: number): number {
+    if (heightCm <= 0) return 0;
+    const heightM = heightCm / 100;
+    return Math.round((weightKg / (heightM * heightM)) * 10) / 10;
+}
+
+export function calculateCrCl(
+    age: number,
+    weightKg: number,
+    scrMgDl: number,
+    sex: "male" | "female"
+): number {
+    if (age <= 0 || weightKg <= 0 || scrMgDl <= 0) return 0;
+    let crcl = ((140 - age) * weightKg) / (72 * scrMgDl);
+    if (sex === "female") crcl *= 0.85;
+    return Math.round(crcl * 10) / 10;
+}
+
+export function calculateCKDEPI2021(
+    age: number,
+    scrMgDl: number,
+    sex: "male" | "female"
+): number {
+    if (age <= 0 || scrMgDl <= 0) return 0;
+    const kappa = sex === "female" ? 0.7 : 0.9;
+    const alpha = sex === "female" ? -0.241 : -0.302;
+    const minRatio = Math.min(scrMgDl / kappa, 1);
+    const maxRatio = Math.max(scrMgDl / kappa, 1);
+    const sexMultiplier = sex === "female" ? 1.012 : 1.0;
+
+    const egfr =
+        142 *
+        Math.pow(minRatio, alpha) *
+        Math.pow(maxRatio, -1.2) *
+        Math.pow(0.9938, age) *
+        sexMultiplier;
+
+    return Math.round(egfr * 10) / 10;
+}
+
+export function getKDIGOStage(egfr: number): {
+    stage: string;
+    description: string;
+    badgeStyle: string;
+} {
+    if (egfr >= 90) return { stage: "G1", description: "Normal or High (≥ 90 mL/min/1.73m²)", badgeStyle: "bg-emerald-100 text-emerald-800 border-emerald-300" };
+    if (egfr >= 60) return { stage: "G2", description: "Mildly Decreased (60–89 mL/min/1.73m²)", badgeStyle: "bg-teal-100 text-teal-800 border-teal-300" };
+    if (egfr >= 45) return { stage: "G3a", description: "Mild to Moderate (45–59 mL/min/1.73m²)", badgeStyle: "bg-amber-100 text-amber-800 border-amber-300" };
+    if (egfr >= 30) return { stage: "G3b", description: "Moderate to Severe (30–44 mL/min/1.73m²)", badgeStyle: "bg-orange-100 text-orange-800 border-orange-300" };
+    if (egfr >= 15) return { stage: "G4", description: "Severely Decreased (15–29 mL/min/1.73m²)", badgeStyle: "bg-rose-100 text-rose-800 border-rose-300" };
+    return { stage: "G5", description: "Kidney Failure / ESRD (< 15 mL/min/1.73m²)", badgeStyle: "bg-red-100 text-red-900 border-red-300 font-black" };
+}
+
+// ─── MAIN COMPONENT ─────────────────────────────────────────────────
+

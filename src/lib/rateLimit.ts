@@ -52,3 +52,45 @@ export const drugSearchLimiter = redis
       prefix: "ratelimit:drugs:search",
     })
   : null;
+
+/**
+ * Community writes (posts, comments, reports). Keyed by user id — every write
+ * route authenticates first, so there is always one. Tuned to allow a real
+ * conversation (a burst of replies) while stopping a script from flooding a
+ * thread.
+ */
+export const communityWriteLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(12, "60 s"),
+      analytics: true,
+      prefix: "ratelimit:community:write",
+    })
+  : null;
+
+/**
+ * Voting is far chattier than posting — a member scrolling a feed and voting as
+ * they go is normal behaviour, so this is deliberately generous. It exists to
+ * stop automated vote manipulation, not to pace a reader.
+ */
+export const communityVoteLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(60, "60 s"),
+      analytics: true,
+      prefix: "ratelimit:community:vote",
+    })
+  : null;
+
+/**
+ * Anonymous feed reads. The community is public, so an unauthenticated scraper
+ * could otherwise walk every post; keyed by IP for signed-out readers.
+ */
+export const communityReadLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(60, "10 s"),
+      analytics: true,
+      prefix: "ratelimit:community:read",
+    })
+  : null;

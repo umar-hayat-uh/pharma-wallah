@@ -29,7 +29,26 @@ const nextConfig = {
   // The Molecule Viewer became Molecular Lab (2026-09-16). Permanent, and
   // query strings pass through, so old bookmarks and links keep working.
   async redirects() {
-    return [{ source: "/molecule-viewer", destination: "/molecular-lab", permanent: true }];
+    return [
+      { source: "/molecule-viewer", destination: "/molecular-lab", permanent: true },
+      // The Q&A pages became the community (2026-09-20). These two mappings are
+      // static, so they belong here as real 308s rather than as server
+      // components — a `redirect()` in a prerendered page ships a 1-second
+      // meta-refresh instead. The third legacy route,
+      // /community/question/<id>, needs a database lookup to find the post that
+      // old id became, so it stays a server component.
+      { source: "/community/ask", destination: "/community/submit?kind=question", permanent: true },
+      {
+        source: "/community/question/:id/answer",
+        destination: "/community/question/:id",
+        permanent: true,
+      },
+      // The Books Library was removed on 2026-09-20: it linked scanned copies
+      // of commercial textbooks we hold no licence to distribute. The AI Guide
+      // took over its job — explaining a topic and pointing at material we own
+      // — so old links, bookmarks and any indexed page land there.
+      { source: "/books-library", destination: "/ai-guide", permanent: true },
+    ];
   },
 
   images: {

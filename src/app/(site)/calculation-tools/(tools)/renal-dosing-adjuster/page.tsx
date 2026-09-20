@@ -1,1416 +1,214 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useCallback, useMemo, useState } from "react";
+import { Activity, Check, Copy, ExternalLink, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
-    Search,
-    Calculator,
-    Droplet,
-    User,
-    ExternalLink,
-    Info,
-    AlertTriangle,
-    Copy,
-    Check,
-    BookOpen,
-    ShieldAlert,
-    Activity,
-    SlidersHorizontal,
-    ChevronDown,
-    ChevronUp,
-    HeartPulse,
-    Pill,
-    Stethoscope,
-    RefreshCw,
-    Sparkles,
-    HelpCircle,
-    ShieldCheck,
-    Scale,
-    Zap,
-} from "lucide-react";
+  CalculatorShell,
+  CalcSection,
+  FieldGrid,
+  NumberField,
+  SelectField,
+  ResultCard,
+  ResultRow,
+  FormulaNote,
+  Formula,
+  CalcAbout,
+  CalcList,
+  CalcFaq,
+  AdSlot,
+  ModeSwitch,
+  LabNotice,
+  type ResultTone,
+} from "@/components/calculators";
+import {
+  renalDrugsDatabase,
+  calculateAdjBW,
+  calculateBMI,
+  calculateCKDEPI2021,
+  calculateCrCl,
+  calculateIBW,
+  getKDIGOStage,
+  type DrugCategory,
+  type PatientScenario,
+} from "./_renal";
 
-// ─── TYPES & INTERFACES ─────────────────────────────────────────────
+type WeightMethod = "auto" | "actual" | "ibw" | "adjbw";
 
-type DrugCategory =
-    | "All"
-    | "Antibiotics"
-    | "Antivirals & Antifungals"
-    | "Anticoagulants"
-    | "Cardiovascular"
-    | "Endocrine & Diabetes"
-    | "Neurology & Analgesics"
-    | "Rheumatology & Gout";
-
-interface DoseAdjustmentTier {
-    crclRangeLabel: string;
-    minCrCl: number;
-    maxCrCl: number;
-    dose: string;
-    interval: string;
-    notes?: string;
-    status: "safe" | "caution" | "contraindicated" | "monitored";
-}
-
-interface RenalDrug {
-    id: string;
-    name: string;
-    genericName?: string;
-    brandName?: string;
-    category: DrugCategory;
-    indication: string;
-    usualDose: string;
-    adjustments: DoseAdjustmentTier[];
-    dialysisGuidance?: {
-        hemodialysis?: string;
-        crrt?: string;
-        peritoneal?: string;
-    };
-    clinicalPearls?: string[];
-    criticalWarning?: string;
-    reference: string;
-    source: string;
-    link?: string;
-    lastReviewed: string;
-}
-
-interface PatientScenario {
-    label: string;
-    desc: string;
-    age: string;
-    sex: "male" | "female";
-    weight: string;
-    weightUnit: "kg" | "lbs";
-    height: string;
-    heightUnit: "cm" | "in";
-    scr: string;
-    scrUnit: "mg/dL" | "umol/L";
-}
-
-// ─── COMPREHENSIVE CLINICAL DRUG DATABASE (2024–2026 EVIDENCE) ──────
-
-const renalDrugsDatabase: RenalDrug[] = [
-    {
-        id: "vancomycin",
-        name: "Vancomycin",
-        brandName: "Vancocin",
-        category: "Antibiotics",
-        indication: "Severe Gram-positive infections, MRSA bacteremia, endocarditis",
-        usualDose: "15–20 mg/kg IV q8–12h (Max 2 g/dose). Target AUC/MIC: 400–600 mg·h/L",
-        adjustments: [
-            {
-                crclRangeLabel: "CrCl ≥ 50 mL/min",
-                minCrCl: 50,
-                maxCrCl: 9999,
-                dose: "15–20 mg/kg (actual body weight)",
-                interval: "Every 8 to 12 hours",
-                notes: "Loading dose 25–35 mg/kg (max 3 g) recommended in critically ill. Monitor AUC-guided dosing.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl 30–49 mL/min",
-                minCrCl: 30,
-                maxCrCl: 49.9,
-                dose: "15 mg/kg",
-                interval: "Every 24 hours",
-                notes: "AUC-guided dosing or trough level monitoring (15–20 mcg/mL for severe MRSA) required.",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl 15–29 mL/min",
-                minCrCl: 15,
-                maxCrCl: 29.9,
-                dose: "15 mg/kg",
-                interval: "Every 24 to 48 hours",
-                notes: "Check pre-dose serum trough level before redosing.",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl < 15 mL/min",
-                minCrCl: 0,
-                maxCrCl: 14.9,
-                dose: "15–20 mg/kg loading dose, then level-guided",
-                interval: "Redose when level < 15–20 mcg/mL",
-                notes: "Pulse dosing: Redose only after checking random serum vancomycin concentration.",
-                status: "monitored",
-            },
-        ],
-        dialysisGuidance: {
-            hemodialysis: "15–25 mg/kg loading dose; redose 5–10 mg/kg after HD when serum level < 15–20 mcg/mL (High-flux dialyzers remove 30–50%).",
-            crrt: "20–25 mg/kg loading dose, then 10–15 mg/kg IV q24–48h or continuous infusion with AUC monitoring.",
-            peritoneal: "1–2 g IP loading dose, then 30 mg/kg IP every 3–5 days or 15–30 mg/L in each dialysate bag.",
-        },
-        clinicalPearls: [
-            "Calculate actual body weight for loading dose, but monitor trough/AUC closely in morbidly obese patients.",
-            "Co-administration with Piperacillin-Tazobactam increases acute kidney injury (AKI) incidence significantly.",
-        ],
-        criticalWarning: "High risk of nephrotoxicity with AUC > 650 mg·h/L or concurrent loop diuretics/aminoglycosides.",
-        reference: "Rybak MJ, et al. ASHP/IDSA/PIDS/SIDP Consensus Guidelines. Am J Health-Syst Pharm. 2020;77(11):835-864.",
-        source: "ASHP/IDSA Guidelines",
-        link: "https://academic.oup.com/ajhp/article/77/11/835/5810200",
-        lastReviewed: "2024 Q4",
-    },
-    {
-        id: "pip-tazo",
-        name: "Piperacillin / Tazobactam",
-        brandName: "Zosyn",
-        category: "Antibiotics",
-        indication: "Nosocomial pneumonia, intra-abdominal infections, complicated UTI",
-        usualDose: "3.375 g – 4.5 g IV q6h (or 3.375 g q8h extended 4-hour infusion)",
-        adjustments: [
-            {
-                crclRangeLabel: "CrCl ≥ 50 mL/min",
-                minCrCl: 50,
-                maxCrCl: 9999,
-                dose: "3.375 g – 4.5 g",
-                interval: "Every 6 hours (or 3.375 g q8h over 4h)",
-                notes: "Extended 4-hour infusions optimize pharmacokinetic/pharmacodynamic (PK/PD) target attainment.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl 20–49 mL/min",
-                minCrCl: 20,
-                maxCrCl: 49.9,
-                dose: "3.375 g",
-                interval: "Every 6 hours (or 2.25 g q6h)",
-                notes: "For nosocomial pneumonia: maintain 3.375 g q6h.",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl < 20 mL/min",
-                minCrCl: 0,
-                maxCrCl: 19.9,
-                dose: "2.25 g",
-                interval: "Every 8 hours (or 2.25 g q6h for nosocomial pneumonia)",
-                notes: "Monitor for accumulation and hematologic/neurologic toxicities.",
-                status: "caution",
-            },
-        ],
-        dialysisGuidance: {
-            hemodialysis: "2.25 g IV q8h; give supplemental 0.75 g post-dialysis on HD days.",
-            crrt: "3.375 g IV q8h (extended 4h infusion preferred) or 4.5 g q8h for severe Pseudomonas.",
-        },
-        clinicalPearls: [
-            "Contains 2.79 mEq (64 mg) of sodium per gram of piperacillin; observe sodium/fluid balance.",
-        ],
-        reference: "Zosyn (piperacillin and tazobactam) US FDA Prescribing Information. Pfizer Inc.",
-        source: "FDA Label",
-        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2021/050684s088lbl.pdf",
-        lastReviewed: "2024 Q3",
-    },
-    {
-        id: "meropenem",
-        name: "Meropenem",
-        brandName: "Merrem",
-        category: "Antibiotics",
-        indication: "Complicated intra-abdominal infections, meningitis, multidrug-resistant sepsis",
-        usualDose: "1 g IV q8h (2 g IV q8h for meningitis or resistant Pseudomonas)",
-        adjustments: [
-            {
-                crclRangeLabel: "CrCl ≥ 50 mL/min",
-                minCrCl: 50,
-                maxCrCl: 9999,
-                dose: "1 g (or 2 g for meningitis)",
-                interval: "Every 8 hours",
-                notes: "Standard extended 3-hour infusion optimizes time above MIC (>40% fT>MIC).",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl 26–49 mL/min",
-                minCrCl: 26,
-                maxCrCl: 49.9,
-                dose: "1 g",
-                interval: "Every 12 hours",
-                notes: "Dose may be increased for high-MIC pathogens under ID consultation.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl 10–25 mL/min",
-                minCrCl: 10,
-                maxCrCl: 25.9,
-                dose: "500 mg",
-                interval: "Every 12 hours",
-                notes: "Reduced dose to prevent central nervous system toxicity/seizures.",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl < 10 mL/min",
-                minCrCl: 0,
-                maxCrCl: 9.9,
-                dose: "500 mg",
-                interval: "Every 24 hours",
-                notes: "High risk of accumulation.",
-                status: "caution",
-            },
-        ],
-        dialysisGuidance: {
-            hemodialysis: "500 mg IV q24h; on dialysis days, administer dose immediately after HD session.",
-            crrt: "1 g IV q8–12h (or 1 g q8h extended 3h infusion depending on effluent rate).",
-        },
-        clinicalPearls: [
-            "Significantly reduces serum valproic acid levels (up to 80% decrease within 24h), precipitating breakthrough seizures.",
-        ],
-        criticalWarning: "Co-administration with valproic acid / divalproex is generally contraindicated.",
-        reference: "Meropenem prescribing information. US FDA & Sanford Guide to Antimicrobial Therapy.",
-        source: "FDA / Sanford",
-        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2020/050706s039lbl.pdf",
-        lastReviewed: "2024 Q4",
-    },
-    {
-        id: "cefepime",
-        name: "Cefepime",
-        brandName: "Maxipime",
-        category: "Antibiotics",
-        indication: "Febrile neutropenia, hospital-acquired pneumonia, urosepsis",
-        usualDose: "1 g – 2 g IV q8–12h",
-        adjustments: [
-            {
-                crclRangeLabel: "CrCl > 60 mL/min",
-                minCrCl: 60.1,
-                maxCrCl: 9999,
-                dose: "2 g (severe/neutropenia) or 1 g",
-                interval: "Every 8 to 12 hours",
-                notes: "Standard dosing for normal clearance.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl 30–60 mL/min",
-                minCrCl: 30,
-                maxCrCl: 60,
-                dose: "2 g (severe) or 1 g",
-                interval: "Every 12 to 24 hours",
-                notes: "2 g q12h for febrile neutropenia or severe sepsis.",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl 11–29 mL/min",
-                minCrCl: 11,
-                maxCrCl: 29.9,
-                dose: "1 g (or 2 g for severe infections)",
-                interval: "Every 24 hours",
-                notes: "Strict renal adjustment required to avoid cefepime-induced neurotoxicity.",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl ≤ 10 mL/min",
-                minCrCl: 0,
-                maxCrCl: 10.9,
-                dose: "500 mg (or 1 g for severe infections)",
-                interval: "Every 24 hours",
-                notes: "High risk of nonconvulsive status epilepticus if overdosed.",
-                status: "contraindicated",
-            },
-        ],
-        dialysisGuidance: {
-            hemodialysis: "1 g initial loading dose on Day 1, then 500 mg IV q24h (administer dose after HD).",
-            crrt: "1 g to 2 g IV q12h depending on continuous dialysis flow rate.",
-        },
-        clinicalPearls: [
-            "Cefepime neurotoxicity presents as altered mental status, myoclonus, confusion, and triphasic EEG waves without fever.",
-        ],
-        criticalWarning: "FDA Safety Alert: Neurotoxicity risk in unadjusted renal impairment. Always calculate CrCl accurately.",
-        reference: "Cefepime US FDA Label & FDA Drug Safety Communication regarding neurotoxicity.",
-        source: "FDA Safety Alert",
-        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2022/050679s044lbl.pdf",
-        lastReviewed: "2024 Q3",
-    },
-    {
-        id: "ceftriaxone",
-        name: "Ceftriaxone",
-        brandName: "Rocephin",
-        category: "Antibiotics",
-        indication: "Community-acquired pneumonia, meningitis, pyelonephritis, gonorrhea",
-        usualDose: "1 g – 2 g IV/IM q24h (2 g q12h for bacterial meningitis)",
-        adjustments: [
-            {
-                crclRangeLabel: "CrCl ≥ 10 mL/min",
-                minCrCl: 10,
-                maxCrCl: 9999,
-                dose: "1 g – 2 g",
-                interval: "Every 24 hours (No renal adjustment needed)",
-                notes: "Dual elimination (biliary and renal). No dosage reduction necessary in pure renal impairment.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl < 10 mL/min with Hepatic Impairment",
-                minCrCl: 0,
-                maxCrCl: 9.9,
-                dose: "Max 2 g / day",
-                interval: "Every 24 hours",
-                notes: "Only adjust if concurrent severe liver disease is present; do not exceed 2 g/day.",
-                status: "safe",
-            },
-        ],
-        dialysisGuidance: {
-            hemodialysis: "No supplemental dose or schedule change needed after HD (not significantly dialyzable).",
-            crrt: "1 g – 2 g IV q24h (standard dosing).",
-        },
-        clinicalPearls: [
-            "Do NOT mix with calcium-containing IV solutions (e.g., Lactated Ringer's) due to risk of fatal ceftriaxone-calcium precipitation in lungs/kidneys.",
-        ],
-        reference: "Rocephin (ceftriaxone) US FDA Prescribing Information. Genentech USA.",
-        source: "FDA Label",
-        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2021/050585s068lbl.pdf",
-        lastReviewed: "2024 Q2",
-    },
-    {
-        id: "gentamicin",
-        name: "Gentamicin",
-        brandName: "Garamycin",
-        category: "Antibiotics",
-        indication: "Gram-negative bacteremia, synergy in enterococcal endocarditis",
-        usualDose: "5–7 mg/kg IV once daily (Hartford Nomogram) or 1.5–2 mg/kg q8h",
-        adjustments: [
-            {
-                crclRangeLabel: "CrCl ≥ 60 mL/min",
-                minCrCl: 60,
-                maxCrCl: 9999,
-                dose: "5–7 mg/kg (using adjusted weight if obese)",
-                interval: "Every 24 hours",
-                notes: "Obtain 6–14 hour random serum concentration and plot on Hartford Nomogram.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl 40–59 mL/min",
-                minCrCl: 40,
-                maxCrCl: 59.9,
-                dose: "5–7 mg/kg",
-                interval: "Every 36 hours",
-                notes: "Extended interval strategy with therapeutic drug monitoring.",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl 20–39 mL/min",
-                minCrCl: 20,
-                maxCrCl: 39.9,
-                dose: "5–7 mg/kg",
-                interval: "Every 48 hours",
-                notes: "Alternative: traditional dosing (1–1.5 mg/kg) with peak/trough monitoring.",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl < 20 mL/min",
-                minCrCl: 0,
-                maxCrCl: 19.9,
-                dose: "2 mg/kg loading dose, then monitor levels",
-                interval: "Level-guided (redose when trough < 1 mcg/mL)",
-                notes: "High risk of ototoxicity and tubular nephrotoxicity. Avoid extended-interval nomogram.",
-                status: "contraindicated",
-            },
-        ],
-        dialysisGuidance: {
-            hemodialysis: "1.5–2 mg/kg loading dose; administer 1–1.5 mg/kg post-dialysis after each HD session.",
-            crrt: "2–3 mg/kg loading dose, then 1.5–2 mg/kg q24–48h with daily peak/trough monitoring.",
-        },
-        clinicalPearls: [
-            "Use Ideal Body Weight (IBW) or Adjusted Body Weight (AdjBW = IBW + 0.4*(TBW - IBW)) for dosing calculations.",
-        ],
-        criticalWarning: "Irreversible vestibular/auditory ototoxicity and acute tubular necrosis with sustained troughs > 2 mcg/mL.",
-        reference: "Nicolau DP, et al. Antimicrob Agents Chemother. 1995;39(3):650-655.",
-        source: "Hartford Nomogram",
-        link: "https://journals.asm.org/doi/10.1128/AAC.39.3.650",
-        lastReviewed: "2024 Q4",
-    },
-    {
-        id: "ciprofloxacin",
-        name: "Ciprofloxacin",
-        brandName: "Cipro",
-        category: "Antibiotics",
-        indication: "Complicated UTI, pyelonephritis, intra-abdominal infections, anthrax",
-        usualDose: "400 mg IV q8–12h or 500–750 mg PO q12h",
-        adjustments: [
-            {
-                crclRangeLabel: "CrCl ≥ 50 mL/min",
-                minCrCl: 50,
-                maxCrCl: 9999,
-                dose: "400 mg IV q8–12h or 500–750 mg PO q12h",
-                interval: "Every 8 to 12 hours",
-                notes: "Standard dosing.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl 30–49 mL/min",
-                minCrCl: 30,
-                maxCrCl: 49.9,
-                dose: "400 mg IV q12h or 250–500 mg PO q12h",
-                interval: "Every 12 hours",
-                notes: "Reduce frequency or oral strength.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl 5–29 mL/min",
-                minCrCl: 5,
-                maxCrCl: 29.9,
-                dose: "200–400 mg IV q18–24h or 250–500 mg PO q24h",
-                interval: "Every 18 to 24 hours",
-                notes: "Monitor renal function and QT interval.",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl < 5 mL/min",
-                minCrCl: 0,
-                maxCrCl: 4.9,
-                dose: "200–400 mg IV q24h or 250 mg PO q24h",
-                interval: "Every 24 hours",
-                notes: "Give dose post-dialysis on hemodialysis days.",
-                status: "caution",
-            },
-        ],
-        dialysisGuidance: {
-            hemodialysis: "200–400 mg IV q24h or 250–500 mg PO q24h (administer post-HD on dialysis days).",
-            crrt: "400 mg IV q12h for Pseudomonas/severe infections; otherwise 200–400 mg q12–24h.",
-        },
-        clinicalPearls: [
-            "Oral bioavailability is >70%; oral absorption is severely impaired by dairy, calcium, iron, and multivalent antacids.",
-        ],
-        reference: "Cipro (ciprofloxacin) US FDA Prescribing Information. Bayer Healthcare.",
-        source: "FDA Label",
-        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2017/019537s086lbl.pdf",
-        lastReviewed: "2024 Q1",
-    },
-    {
-        id: "levofloxacin",
-        name: "Levofloxacin",
-        brandName: "Levaquin",
-        category: "Antibiotics",
-        indication: "Pneumonia, complicated UTI, pyelonephritis, skin infections",
-        usualDose: "500 mg – 750 mg IV/PO once daily",
-        adjustments: [
-            {
-                crclRangeLabel: "CrCl ≥ 50 mL/min",
-                minCrCl: 50,
-                maxCrCl: 9999,
-                dose: "500 mg – 750 mg",
-                interval: "Every 24 hours",
-                notes: "Standard dosing based on indication.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl 20–49 mL/min",
-                minCrCl: 20,
-                maxCrCl: 49.9,
-                dose: "750 mg q48h (or initial 500 mg then 250 mg q24h)",
-                interval: "Every 24 to 48 hours",
-                notes: "If starting 750 mg regimen: 750 mg initial, then 750 mg q48h.",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl < 20 mL/min",
-                minCrCl: 0,
-                maxCrCl: 19.9,
-                dose: "750 mg initial, then 500 mg q48h (or 500 mg initial, then 250 mg q48h)",
-                interval: "Every 48 hours",
-                notes: "No supplemental dose needed post-dialysis.",
-                status: "caution",
-            },
-        ],
-        dialysisGuidance: {
-            hemodialysis: "750 mg initial, then 500 mg q48h (or 500 mg initial, then 250 mg q48h). Not removed by HD.",
-            crrt: "Initial 500–750 mg loading dose, then 250–500 mg q24h.",
-        },
-        clinicalPearls: [
-            "Levofloxacin is predominantly excreted unchanged renally (~80%), making dose adjustment mandatory to avoid CNS toxicities.",
-        ],
-        criticalWarning: "Boxed warnings for tendinitis, tendon rupture, peripheral neuropathy, and CNS toxicities.",
-        reference: "Levaquin (levofloxacin) US FDA Prescribing Information. Janssen Pharmaceuticals.",
-        source: "FDA Label",
-        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2016/020634s067,020635s071,021721s032lbl.pdf",
-        lastReviewed: "2024 Q2",
-    },
-    {
-        id: "bactrim",
-        name: "Trimethoprim / Sulfamethoxazole",
-        brandName: "Bactrim DS / Septra",
-        category: "Antibiotics",
-        indication: "Pneumocystis jirovecii (PJP), Stenotrophomonas, MRSA skin infections, UTI",
-        usualDose: "1–2 DS tabs PO q12h (or 10–20 mg/kg/day TMP IV for PJP treatment)",
-        adjustments: [
-            {
-                crclRangeLabel: "CrCl > 30 mL/min",
-                minCrCl: 30.1,
-                maxCrCl: 9999,
-                dose: "Standard dose (1 DS tab q12h or 100% IV dose)",
-                interval: "Every 12 hours",
-                notes: "Standard dosing for normal kidney function.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl 15–30 mL/min",
-                minCrCl: 15,
-                maxCrCl: 30,
-                dose: "50% of standard dose (1 SS tab q12h or 1 DS tab q24h)",
-                interval: "Every 12 to 24 hours",
-                notes: "Monitor serum potassium (TMP blocks amiloride-sensitive sodium channels in distal nephron).",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl < 15 mL/min",
-                minCrCl: 0,
-                maxCrCl: 14.9,
-                dose: "Use NOT recommended unless benefits outweigh risks",
-                interval: "50% dose q24h with intensive monitoring",
-                notes: "Trimethoprim inhibits tubular creatinine secretion, artificially elevating serum Cr without dropping true GFR.",
-                status: "contraindicated",
-            },
-        ],
-        dialysisGuidance: {
-            hemodialysis: "50% of standard dose administered after each HD session (both components moderately dialyzed).",
-            crrt: "5–10 mg/kg/day TMP component divided q12h with frequent potassium and level monitoring.",
-        },
-        clinicalPearls: [
-            "Causes benign, pseudo-elevation of serum creatinine due to competitive inhibition of organic cation transporters (OCT2).",
-            "High incidence of hyperkalemia, especially in combination with ACE inhibitors or ARBs.",
-        ],
-        reference: "Bactrim (sulfamethoxazole and trimethoprim) US FDA Prescribing Information.",
-        source: "FDA Label",
-        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2021/017377s077,018449s060lbl.pdf",
-        lastReviewed: "2024 Q3",
-    },
-    {
-        id: "nitrofurantoin",
-        name: "Nitrofurantoin",
-        brandName: "Macrobid / Macrodantin",
-        category: "Antibiotics",
-        indication: "Treatment and prophylaxis of uncomplicated lower cystitis (E. coli, enterococci)",
-        usualDose: "Macrobid: 100 mg PO BID x 5 days (Macrodantin: 50–100 mg QID)",
-        adjustments: [
-            {
-                crclRangeLabel: "CrCl ≥ 60 mL/min",
-                minCrCl: 60,
-                maxCrCl: 9999,
-                dose: "100 mg PO BID",
-                interval: "Every 12 hours",
-                notes: "Standard therapeutic duration: 5 days for acute cystitis.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl 30–59 mL/min",
-                minCrCl: 30,
-                maxCrCl: 59.9,
-                dose: "100 mg PO BID (short-course uncomplicated UTI)",
-                interval: "Every 12 hours",
-                notes: "AGS Beers Criteria & IDSA: Safe for short-course (≤5 days) in uncomplicated lower UTI if CrCl ≥ 30 mL/min.",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl < 30 mL/min",
-                minCrCl: 0,
-                maxCrCl: 29.9,
-                dose: "CONTRAINDICATED",
-                interval: "Do not use",
-                notes: "Inadequate urinary drug concentration leads to treatment failure + increased risk of peripheral neuropathy and pulmonary toxicity.",
-                status: "contraindicated",
-            },
-        ],
-        dialysisGuidance: {
-            hemodialysis: "CONTRAINDICATED in ESRD/HD.",
-            crrt: "Contraindicated / Ineffective due to poor urinary excretion.",
-        },
-        clinicalPearls: [
-            "Ineffective for pyelonephritis or systemic bacteremia because it achieves negligible systemic tissue/blood levels.",
-        ],
-        criticalWarning: "Contraindicated in CrCl < 30 mL/min or term pregnancy (weeks 38-42) due to hemolytic anemia risk.",
-        reference: "2023 American Geriatrics Society Beers Criteria & US FDA Macrobid Package Insert.",
-        source: "AGS Beers / FDA",
-        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2021/020064s027lbl.pdf",
-        lastReviewed: "2024 Q4",
-    },
-    {
-        id: "acyclovir",
-        name: "Acyclovir",
-        brandName: "Zovirax",
-        category: "Antivirals & Antifungals",
-        indication: "HSV encephalitis, severe mucocutaneous HSV, disseminated VZV",
-        usualDose: "5–10 mg/kg IV q8h (or 200–800 mg PO 3–5x/day)",
-        adjustments: [
-            {
-                crclRangeLabel: "CrCl > 50 mL/min",
-                minCrCl: 50.1,
-                maxCrCl: 9999,
-                dose: "5–10 mg/kg (or 10 mg/kg for encephalitis)",
-                interval: "Every 8 hours",
-                notes: "Maintain vigorous IV hydration to prevent intratubular crystal precipitation.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl 25–50 mL/min",
-                minCrCl: 25,
-                maxCrCl: 50,
-                dose: "5–10 mg/kg",
-                interval: "Every 12 hours",
-                notes: "Infuse slowly over at least 1 hour.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl 10–24 mL/min",
-                minCrCl: 10,
-                maxCrCl: 24.9,
-                dose: "5–10 mg/kg",
-                interval: "Every 24 hours",
-                notes: "Reduce frequency to avoid neurotoxicity (hallucinations, tremors, encephalopathy).",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl < 10 mL/min",
-                minCrCl: 0,
-                maxCrCl: 9.9,
-                dose: "2.5–5 mg/kg",
-                interval: "Every 24 hours",
-                notes: "High risk of crystallization and CNS accumulation.",
-                status: "caution",
-            },
-        ],
-        dialysisGuidance: {
-            hemodialysis: "2.5–5 mg/kg IV q24h; administer dose immediately following hemodialysis session (approx 60% removed during 6h HD).",
-            crrt: "5–7.5 mg/kg IV q12–24h with aggressive monitoring.",
-        },
-        clinicalPearls: [
-            "Always co-prescribe adequate intravenous fluids (e.g., 0.9% Normal Saline) to maintain urine output > 100 mL/h.",
-            "Use Ideal Body Weight (IBW) in obese patients to prevent acute overdosing.",
-        ],
-        criticalWarning: "Acute renal injury via intratubular acyclovir crystallization if infused rapidly without hydration.",
-        reference: "Acyclovir US FDA Prescribing Information. GlaxoSmithKline / FDA.",
-        source: "FDA Label",
-        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2019/018603s040lbl.pdf",
-        lastReviewed: "2024 Q3",
-    },
-    {
-        id: "fluconazole",
-        name: "Fluconazole",
-        brandName: "Diflucan",
-        category: "Antivirals & Antifungals",
-        indication: "Candidemia, cryptococcal meningitis, mucosal candidiasis",
-        usualDose: "200–400 mg IV/PO q24h (Loading dose: 400–800 mg on Day 1)",
-        adjustments: [
-            {
-                crclRangeLabel: "CrCl > 50 mL/min",
-                minCrCl: 50.1,
-                maxCrCl: 9999,
-                dose: "100% of standard dose (200–400 mg)",
-                interval: "Every 24 hours",
-                notes: "Single day 1 loading dose of double the maintenance dose recommended.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl 21–50 mL/min",
-                minCrCl: 21,
-                maxCrCl: 50,
-                dose: "50% of standard dose (100–200 mg)",
-                interval: "Every 24 hours",
-                notes: "Full loading dose on Day 1, followed by 50% maintenance.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl 11–20 mL/min",
-                minCrCl: 11,
-                maxCrCl: 20.9,
-                dose: "25% to 50% of standard dose (50–100 mg)",
-                interval: "Every 24 hours",
-                notes: "Full loading dose on Day 1.",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl ≤ 10 mL/min",
-                minCrCl: 0,
-                maxCrCl: 10.9,
-                dose: "25% of standard dose (50–100 mg)",
-                interval: "Every 24 to 48 hours",
-                notes: "Monitor liver function enzymes and QTc.",
-                status: "caution",
-            },
-        ],
-        dialysisGuidance: {
-            hemodialysis: "100% regular dose administered after each HD session (hemodialysis clears ~50% of systemic drug in 3 hours).",
-            crrt: "400–800 mg IV loading dose, then 200–400 mg IV q24h (cleared substantially by CRRT).",
-        },
-        clinicalPearls: [
-            "80% excreted unchanged by the kidneys; excellent urinary tract penetration makes it the antifungal of choice for Candida cystitis.",
-        ],
-        reference: "Diflucan (fluconazole) US FDA Prescribing Information. Pfizer Inc.",
-        source: "FDA Label",
-        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2019/019949s064lbl.pdf",
-        lastReviewed: "2024 Q4",
-    },
-    {
-        id: "apixaban",
-        name: "Apixaban",
-        brandName: "Eliquis",
-        category: "Anticoagulants",
-        indication: "Nonvalvular Atrial Fibrillation (NVAF) stroke prevention, DVT/PE treatment",
-        usualDose: "NVAF: 5 mg PO BID. (DVT/PE: 10 mg BID x 7 days, then 5 mg BID)",
-        adjustments: [
-            {
-                crclRangeLabel: "Standard Dose (CrCl ≥ 15 mL/min with < 2 dose-reduction criteria)",
-                minCrCl: 15,
-                maxCrCl: 9999,
-                dose: "5 mg PO",
-                interval: "Every 12 hours (BID)",
-                notes: "Reduce to 2.5 mg BID ONLY if patient meets ≥ 2 of: Age ≥ 80 yrs, Weight ≤ 60 kg, or Serum Creatinine ≥ 1.5 mg/dL.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "Dose-Reduction Criteria Met (≥2 of Age ≥80, Wt ≤60kg, SCr ≥1.5)",
-                minCrCl: 15,
-                maxCrCl: 9999,
-                dose: "2.5 mg PO",
-                interval: "Every 12 hours (BID)",
-                notes: "Validated in ARISTOTLE trial to lower major bleeding risk while maintaining stroke protection.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "ESRD on Maintenance Hemodialysis (US FDA Labeling)",
-                minCrCl: 0,
-                maxCrCl: 14.9,
-                dose: "5 mg PO BID (or 2.5 mg BID if Age ≥ 80 or Weight ≤ 60 kg)",
-                interval: "Every 12 hours (BID)",
-                notes: "FDA approved for HD based on PK data; European guidelines (EMA) suggest avoiding if CrCl < 15 mL/min.",
-                status: "monitored",
-            },
-        ],
-        dialysisGuidance: {
-            hemodialysis: "5 mg BID (or 2.5 mg BID if age ≥80 OR wt ≤60 kg). Not significantly dialyzable.",
-            crrt: "Data limited; cautiously consider 2.5 mg BID or unfractionated heparin bridge.",
-        },
-        clinicalPearls: [
-            "Only 27% renal elimination (lowest renal dependence among modern DOACs).",
-            "CrCl alone does NOT trigger dose reduction in AFib unless accompanied by age ≥ 80 or weight ≤ 60 kg.",
-        ],
-        criticalWarning: "Boxed warning: Premature discontinuation increases risk of thrombotic events. Epidural/spinal hematoma risk.",
-        reference: "Eliquis (apixaban) US FDA Prescribing Information. Bristol-Myers Squibb / Pfizer.",
-        source: "FDA Label / ARISTOTLE",
-        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2023/202155s036lbl.pdf",
-        lastReviewed: "2024 Q4",
-    },
-    {
-        id: "rivaroxaban",
-        name: "Rivaroxaban",
-        brandName: "Xarelto",
-        category: "Anticoagulants",
-        indication: "NVAF stroke prophylaxis, DVT/PE treatment, CAD/PAD vascular protection",
-        usualDose: "NVAF: 20 mg PO once daily with evening meal (DVT/PE: 15 mg BID x21d then 20 mg daily)",
-        adjustments: [
-            {
-                crclRangeLabel: "CrCl > 50 mL/min",
-                minCrCl: 50.1,
-                maxCrCl: 9999,
-                dose: "20 mg PO once daily with food",
-                interval: "Every 24 hours (with dinner)",
-                notes: "Food co-administration increases absorption bioavailability of 15mg/20mg tablets to ~100%.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl 15–50 mL/min",
-                minCrCl: 15,
-                maxCrCl: 50,
-                dose: "15 mg PO once daily with food",
-                interval: "Every 24 hours (with dinner)",
-                notes: "DVT/PE Treatment: Avoid if CrCl < 30 mL/min per package insert.",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl < 15 mL/min",
-                minCrCl: 0,
-                maxCrCl: 14.9,
-                dose: "AVOID USE / Contraindicated",
-                interval: "Do not use",
-                notes: "Significant drug bioaccumulation and excessive bleeding risks.",
-                status: "contraindicated",
-            },
-        ],
-        dialysisGuidance: {
-            hemodialysis: "Avoid use in hemodialysis (high protein binding > 95%, not dialyzable; unproven benefit-risk profile).",
-            crrt: "Avoid use; transition to unfractionated heparin.",
-        },
-        clinicalPearls: [
-            "36% eliminated unchanged by kidneys. 20 mg and 15 mg tablets must always be taken with a substantial meal.",
-        ],
-        criticalWarning: "Avoid in patients with CrCl < 15 mL/min due to lack of clinical safety trial data.",
-        reference: "Xarelto (rivaroxaban) US FDA Prescribing Information. Janssen Pharmaceuticals.",
-        source: "FDA Label",
-        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2023/022406s041lbl.pdf",
-        lastReviewed: "2024 Q3",
-    },
-    {
-        id: "enoxaparin",
-        name: "Enoxaparin",
-        brandName: "Lovenox",
-        category: "Anticoagulants",
-        indication: "VTE prophylaxis, acute DVT/PE treatment, acute coronary syndromes (NSTEMI/STEMI)",
-        usualDose: "DVT Tx: 1 mg/kg SC q12h (or 1.5 mg/kg q24h). Prophylaxis: 40 mg SC q24h (or 30 mg SC q12h)",
-        adjustments: [
-            {
-                crclRangeLabel: "CrCl ≥ 30 mL/min",
-                minCrCl: 30,
-                maxCrCl: 9999,
-                dose: "Standard Dosing (Tx: 1 mg/kg q12h; Prophylaxis: 40 mg q24h)",
-                interval: "Every 12 to 24 hours",
-                notes: "Standard dosing.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl < 30 mL/min (Severe Renal Impairment)",
-                minCrCl: 0,
-                maxCrCl: 29.9,
-                dose: "Treatment: 1 mg/kg SC once daily. Prophylaxis: 30 mg SC once daily",
-                interval: "Every 24 hours (q24h)",
-                notes: "Dosing frequency reduced to every 24 hours. Monitor peak anti-Xa activity (target 0.5–1.0 IU/mL for q12h, 1.0–2.0 for q24h) 4 hours post-dose.",
-                status: "caution",
-            },
-        ],
-        dialysisGuidance: {
-            hemodialysis: "Avoid in ESRD on HD due to unpredictable bioaccumulation and major hemorrhage. Unfractionated heparin (UFH) preferred.",
-            crrt: "Use with caution with daily anti-Xa monitoring, or switch to UFH.",
-        },
-        clinicalPearls: [
-            "Bioaccumulates significantly when CrCl < 30 mL/min. Unfractionated heparin (UFH) is safer in acute kidney failure.",
-        ],
-        criticalWarning: "Epidural or spinal hematomas causing long-term or permanent paralysis in neuraxial anesthesia.",
-        reference: "Lovenox (enoxaparin sodium) US FDA Prescribing Information. Sanofi-Aventis.",
-        source: "FDA Label",
-        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2023/020164s129lbl.pdf",
-        lastReviewed: "2024 Q4",
-    },
-    {
-        id: "metformin",
-        name: "Metformin",
-        brandName: "Glucophage",
-        category: "Endocrine & Diabetes",
-        indication: "Type 2 Diabetes Mellitus glycemic management",
-        usualDose: "500 mg – 1000 mg PO BID (Max 2000–2550 mg/day)",
-        adjustments: [
-            {
-                crclRangeLabel: "eGFR / CrCl ≥ 60 mL/min",
-                minCrCl: 60,
-                maxCrCl: 9999,
-                dose: "500 mg – 1000 mg PO BID (Max 2000–2550 mg/day)",
-                interval: "Every 12 hours (with meals)",
-                notes: "Monitor eGFR at least annually.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "eGFR / CrCl 45–59 mL/min",
-                minCrCl: 45,
-                maxCrCl: 59.9,
-                dose: "Max 1500–2000 mg/day in divided doses",
-                interval: "Every 12 hours",
-                notes: "Monitor renal function every 3 to 6 months.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "eGFR / CrCl 30–44 mL/min",
-                minCrCl: 30,
-                maxCrCl: 44.9,
-                dose: "Max 500–1000 mg/day. DO NOT initiate new therapy",
-                interval: "Every 24 hours (with evening meal)",
-                notes: "If already on therapy, reduce maximum dose by 50%. Assess risk/benefit balance closely.",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "eGFR / CrCl < 30 mL/min",
-                minCrCl: 0,
-                maxCrCl: 29.9,
-                dose: "CONTRAINDICATED",
-                interval: "Discontinue immediately",
-                notes: "High risk of fatal Metformin-Associated Lactic Acidosis (MALA).",
-                status: "contraindicated",
-            },
-        ],
-        dialysisGuidance: {
-            hemodialysis: "CONTRAINDICATED. (However, hemodialysis effectively removes metformin and corrects acidosis during MALA overdose emergencies).",
-            crrt: "CONTRAINDICATED.",
-        },
-        clinicalPearls: [
-            "Withhold metformin at the time of or prior to iodinated contrast imaging in patients with eGFR 30–60 mL/min or liver disease; re-evaluate eGFR 48 hours post-procedure.",
-        ],
-        criticalWarning: "Boxed Warning: Metformin-associated lactic acidosis (MALA) is a medical emergency with high mortality (>30%).",
-        reference: "FDA Drug Safety Communication: FDA revises warnings regarding use of metformin in certain patients with reduced kidney function.",
-        source: "FDA Safety Alert / ADA",
-        link: "https://www.fda.gov/drugs/drug-safety-and-availability/fda-drug-safety-communication-fda-revises-warnings-regarding-use-diabetes-medicine-metformin-certain",
-        lastReviewed: "2024 Q3",
-    },
-    {
-        id: "gabapentin",
-        name: "Gabapentin",
-        brandName: "Neurontin",
-        category: "Neurology & Analgesics",
-        indication: "Postherpetic neuralgia, neuropathic pain, partial onset seizures",
-        usualDose: "300 mg – 600 mg PO TID (Max 1800–3600 mg/day in normal kidney function)",
-        adjustments: [
-            {
-                crclRangeLabel: "CrCl ≥ 60 mL/min",
-                minCrCl: 60,
-                maxCrCl: 9999,
-                dose: "300 mg – 1200 mg TID (Max 3600 mg/day)",
-                interval: "Three times daily (TID)",
-                notes: "Standard titration.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl 30–59 mL/min",
-                minCrCl: 30,
-                maxCrCl: 59.9,
-                dose: "200 mg – 700 mg BID (Max 1400 mg/day)",
-                interval: "Twice daily (BID)",
-                notes: "Titrate slowly to avoid excessive sedation and ataxia.",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl 15–29 mL/min",
-                minCrCl: 15,
-                maxCrCl: 29.9,
-                dose: "200 mg – 700 mg once daily (Max 700 mg/day)",
-                interval: "Once daily (QD)",
-                notes: "Administer at bedtime.",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl < 15 mL/min",
-                minCrCl: 0,
-                maxCrCl: 14.9,
-                dose: "100 mg – 300 mg once daily (Max 300 mg/day)",
-                interval: "Once daily (or every other day)",
-                notes: "Dose proportionate to measured CrCl.",
-                status: "monitored",
-            },
-        ],
-        dialysisGuidance: {
-            hemodialysis: "100–300 mg post-dialysis maintenance dose after every 4 hours of HD, with initial loading dose 300–400 mg.",
-            crrt: "200–300 mg PO q24h.",
-        },
-        clinicalPearls: [
-            "Gabapentin is eliminated 100% renally without metabolic breakdown. Overdosing causes severe myoclonus, sedation, and coma.",
-        ],
-        criticalWarning: "Respiratory depression risk increased when combined with opioids or central depressants.",
-        reference: "Neurontin (gabapentin) US FDA Prescribing Information. Pfizer / Viatris.",
-        source: "FDA Label",
-        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2020/020235s068,020882s051,021129s049lbl.pdf",
-        lastReviewed: "2024 Q4",
-    },
-    {
-        id: "allopurinol",
-        name: "Allopurinol",
-        brandName: "Zyloprim",
-        category: "Rheumatology & Gout",
-        indication: "Gout flare prevention, hyperuricemia, tumor lysis syndrome",
-        usualDose: "100 mg – 300 mg PO once daily (titrated to target serum urate < 6 mg/dL; max 800 mg/day)",
-        adjustments: [
-            {
-                crclRangeLabel: "CrCl > 50 mL/min",
-                minCrCl: 50.1,
-                maxCrCl: 9999,
-                dose: "Start 100 mg/day; titrate upward gradually by 100 mg/month",
-                interval: "Every 24 hours",
-                notes: "ACR 2020 Guidelines: Starting dose ≤ 100 mg/day is strongly recommended for all patients to avoid Allopurinol Hypersensitivity Syndrome (AHS).",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl 20–50 mL/min",
-                minCrCl: 20,
-                maxCrCl: 50,
-                dose: "Start ≤ 50–100 mg/day; titrate upward gradually (Max 200–300 mg/day)",
-                interval: "Every 24 hours",
-                notes: "Safe to titrate above historical thresholds if serum urate remains > 6 mg/dL with careful monitoring for rash/AHS.",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl 10–19 mL/min",
-                minCrCl: 10,
-                maxCrCl: 19.9,
-                dose: "Start 50 mg/day or 100 mg every other day (Max 100 mg/day)",
-                interval: "Every 24 to 48 hours",
-                notes: "Active metabolite oxypurinol is renally eliminated and accumulates in CKD.",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl < 10 mL/min",
-                minCrCl: 0,
-                maxCrCl: 9.9,
-                dose: "50 mg every 48 to 72 hours (or 50 mg post-HD)",
-                interval: "Every 48 to 72 hours",
-                notes: "Monitor closely for skin eruptions, eosinophilia, and liver function changes.",
-                status: "caution",
-            },
-        ],
-        dialysisGuidance: {
-            hemodialysis: "50–100 mg PO administered immediately after each HD session (oxypurinol is dialyzable).",
-            crrt: "100 mg PO q24h with serum urate monitoring.",
-        },
-        clinicalPearls: [
-            "Test HLA-B*5801 allele prior to initiation in patients of Southeast Asian, African American, or Han Chinese descent.",
-            "Allopurinol Hypersensitivity Syndrome (AHS: DRESS / Stevens-Johnson syndrome) is significantly higher in renal impairment.",
-        ],
-        reference: "FitzGerald JD, et al. 2020 American College of Rheumatology Guideline for the Management of Gout. Arthritis Care Res. 2020;72(6):744-760.",
-        source: "ACR 2020 Guidelines",
-        link: "https://onlinelibrary.wiley.com/doi/10.1002/art.41247",
-        lastReviewed: "2024 Q4",
-    },
-    {
-        id: "colchicine",
-        name: "Colchicine",
-        brandName: "Colcrys",
-        category: "Rheumatology & Gout",
-        indication: "Acute gout flare treatment and prophylaxis, Familial Mediterranean Fever",
-        usualDose: "Acute Flare: 1.2 mg PO at first sign, then 0.6 mg 1 hour later (1.8 mg total). Prophylaxis: 0.6 mg daily or BID",
-        adjustments: [
-            {
-                crclRangeLabel: "CrCl ≥ 50 mL/min",
-                minCrCl: 50,
-                maxCrCl: 9999,
-                dose: "Flare: 1.2 mg then 0.6 mg 1h later. Prophylaxis: 0.6 mg once or twice daily",
-                interval: "As indicated",
-                notes: "Standard dosing.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl 30–49 mL/min",
-                minCrCl: 30,
-                maxCrCl: 49.9,
-                dose: "Flare: Standard dose, but do NOT repeat course within 14 days. Prophylaxis: 0.3 mg daily",
-                interval: "Every 24 hours",
-                notes: "Observe for neuromyopathy and diarrhea.",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl 15–29 mL/min",
-                minCrCl: 15,
-                maxCrCl: 29.9,
-                dose: "Flare: Standard dose, but do NOT repeat within 14 days. Prophylaxis: 0.3 mg every other day",
-                interval: "Every 48 hours",
-                notes: "High risk of colchicine toxicity (rhabdomyolysis, bone marrow suppression).",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl < 15 mL/min / Dialysis",
-                minCrCl: 0,
-                maxCrCl: 14.9,
-                dose: "Prophylaxis CONTRAINDICATED. Flare: 0.3 mg single dose max, do NOT repeat within 14 days",
-                interval: "Single dose only",
-                notes: "Severe life-threatening toxicity reported in ESRD/dialysis patients.",
-                status: "contraindicated",
-            },
-        ],
-        dialysisGuidance: {
-            hemodialysis: "Not dialyzable (large volume of distribution). Prophylaxis is contraindicated. Acute flare: Max 0.3 mg single dose.",
-            crrt: "Avoid unless absolute necessity; monitor for severe neuromyopathy.",
-        },
-        clinicalPearls: [
-            "Co-administration of colchicine with strong CYP3A4 inhibitors (clarithromycin, ketoconazole) or P-gp inhibitors in renal impairment is CONTRAINDICATED and has caused fatal overdoses.",
-        ],
-        criticalWarning: "Fatal toxicity can occur in patients with renal impairment receiving standard doses with CYP3A4/P-gp inhibitors.",
-        reference: "Colcrys (colchicine) US FDA Prescribing Information. Takeda Pharmaceuticals.",
-        source: "FDA Label",
-        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2014/022352s016lbl.pdf",
-        lastReviewed: "2024 Q3",
-    },
-    {
-        id: "digoxin",
-        name: "Digoxin",
-        brandName: "Lanoxin",
-        category: "Cardiovascular",
-        indication: "Heart failure with reduced ejection fraction (HFrEF), Atrial fibrillation rate control",
-        usualDose: "0.125 mg – 0.25 mg PO/IV once daily (Target serum trough: 0.5–0.9 ng/mL for HF)",
-        adjustments: [
-            {
-                crclRangeLabel: "CrCl ≥ 50 mL/min",
-                minCrCl: 50,
-                maxCrCl: 9999,
-                dose: "0.125 mg – 0.25 mg PO once daily",
-                interval: "Every 24 hours",
-                notes: "Monitor serum digoxin trough levels 7–14 days after initiation.",
-                status: "safe",
-            },
-            {
-                crclRangeLabel: "CrCl 30–49 mL/min",
-                minCrCl: 30,
-                maxCrCl: 49.9,
-                dose: "0.125 mg PO once daily (or 0.0625 mg daily)",
-                interval: "Every 24 hours",
-                notes: "Target therapeutic trough: 0.5–0.9 ng/mL for HF (higher levels increase all-cause mortality).",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl 10–29 mL/min",
-                minCrCl: 10,
-                maxCrCl: 29.9,
-                dose: "0.0625 mg PO daily or 0.125 mg every other day",
-                interval: "Every 24 to 48 hours",
-                notes: "Monitor potassium, magnesium, and ECG for digitalis toxicity / arrhythmias.",
-                status: "caution",
-            },
-            {
-                crclRangeLabel: "CrCl < 10 mL/min",
-                minCrCl: 0,
-                maxCrCl: 9.9,
-                dose: "0.0625 mg PO 2 to 3 times per week",
-                interval: "Every 48 to 72 hours",
-                notes: "Very long half-life in anuria (~3.5 to 5 days).",
-                status: "monitored",
-            },
-        ],
-        dialysisGuidance: {
-            hemodialysis: "0.0625 mg PO given 2–3 times weekly after HD sessions. Not cleared by hemodialysis (tissue distribution Vd ~500 L).",
-            crrt: "0.0625 mg to 0.125 mg PO/IV q24–48h with frequent serum trough monitoring.",
-        },
-        clinicalPearls: [
-            "Hypokalemia and hypomagnesemia sensitize the myocardium to digitalis toxicity, triggering ventricular arrhythmias even at normal serum levels.",
-        ],
-        criticalWarning: "Narrow therapeutic index (HF target 0.5–0.9 ng/mL). Toxicity manifests as nausea, xanthopsia (yellow halos), and AV block.",
-        reference: "Lanoxin (digoxin) US FDA Prescribing Information. Covis Pharma / AHA/ACC Guidelines.",
-        source: "FDA / AHA Guidelines",
-        link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2016/020405s011lbl.pdf",
-        lastReviewed: "2024 Q4",
-    },
+const PATIENT_SCENARIOS: PatientScenario[] = [
+  { label: "Normal CrCl", desc: "CrCl ~105", age: "35", sex: "male", weight: "75", weightUnit: "kg", height: "178", heightUnit: "cm", scr: "0.9", scrUnit: "mg/dL" },
+  { label: "Moderate CKD", desc: "CrCl ~42", age: "68", sex: "male", weight: "84", weightUnit: "kg", height: "176", heightUnit: "cm", scr: "1.6", scrUnit: "mg/dL" },
+  { label: "Severe CKD G4", desc: "CrCl ~22", age: "74", sex: "female", weight: "62", weightUnit: "kg", height: "160", heightUnit: "cm", scr: "2.1", scrUnit: "mg/dL" },
+  { label: "ESRD / Dialysis", desc: "CrCl ~8", age: "60", sex: "male", weight: "70", weightUnit: "kg", height: "172", heightUnit: "cm", scr: "6.5", scrUnit: "mg/dL" },
+  { label: "Elderly Sarcopenic", desc: "CrCl ~28", age: "84", sex: "female", weight: "48", weightUnit: "kg", height: "155", heightUnit: "cm", scr: "1.1", scrUnit: "mg/dL" },
 ];
 
-// ─── ANTHROPOMETRIC & RENAL CLEARANCE EQUATIONS ─────────────────────
+const CATEGORIES: DrugCategory[] = [
+  "All",
+  "Antibiotics",
+  "Antivirals & Antifungals",
+  "Anticoagulants",
+  "Cardiovascular",
+  "Endocrine & Diabetes",
+  "Neurology & Analgesics",
+  "Rheumatology & Gout",
+];
 
-function calculateIBW(heightInches: number, sex: "male" | "female"): number {
-    const base = sex === "male" ? 50.0 : 45.5;
-    const diff = heightInches - 60;
-    const ibw = base + 2.3 * diff;
-    return Math.max(ibw, sex === "male" ? 50 : 45.5);
-}
-
-function calculateAdjBW(actualKg: number, ibwKg: number): number {
-    return ibwKg + 0.4 * (actualKg - ibwKg);
-}
-
-function calculateBMI(weightKg: number, heightCm: number): number {
-    if (heightCm <= 0) return 0;
-    const heightM = heightCm / 100;
-    return Math.round((weightKg / (heightM * heightM)) * 10) / 10;
-}
-
-function calculateCrCl(
-    age: number,
-    weightKg: number,
-    scrMgDl: number,
-    sex: "male" | "female"
-): number {
-    if (age <= 0 || weightKg <= 0 || scrMgDl <= 0) return 0;
-    let crcl = ((140 - age) * weightKg) / (72 * scrMgDl);
-    if (sex === "female") crcl *= 0.85;
-    return Math.round(crcl * 10) / 10;
-}
-
-function calculateCKDEPI2021(
-    age: number,
-    scrMgDl: number,
-    sex: "male" | "female"
-): number {
-    if (age <= 0 || scrMgDl <= 0) return 0;
-    const kappa = sex === "female" ? 0.7 : 0.9;
-    const alpha = sex === "female" ? -0.241 : -0.302;
-    const minRatio = Math.min(scrMgDl / kappa, 1);
-    const maxRatio = Math.max(scrMgDl / kappa, 1);
-    const sexMultiplier = sex === "female" ? 1.012 : 1.0;
-
-    const egfr =
-        142 *
-        Math.pow(minRatio, alpha) *
-        Math.pow(maxRatio, -1.2) *
-        Math.pow(0.9938, age) *
-        sexMultiplier;
-
-    return Math.round(egfr * 10) / 10;
-}
-
-function getKDIGOStage(egfr: number): {
-    stage: string;
-    description: string;
-    badgeStyle: string;
-} {
-    if (egfr >= 90) return { stage: "G1", description: "Normal or High (≥ 90 mL/min/1.73m²)", badgeStyle: "bg-emerald-100 text-emerald-800 border-emerald-300" };
-    if (egfr >= 60) return { stage: "G2", description: "Mildly Decreased (60–89 mL/min/1.73m²)", badgeStyle: "bg-teal-100 text-teal-800 border-teal-300" };
-    if (egfr >= 45) return { stage: "G3a", description: "Mild to Moderate (45–59 mL/min/1.73m²)", badgeStyle: "bg-amber-100 text-amber-800 border-amber-300" };
-    if (egfr >= 30) return { stage: "G3b", description: "Moderate to Severe (30–44 mL/min/1.73m²)", badgeStyle: "bg-orange-100 text-orange-800 border-orange-300" };
-    if (egfr >= 15) return { stage: "G4", description: "Severely Decreased (15–29 mL/min/1.73m²)", badgeStyle: "bg-rose-100 text-rose-800 border-rose-300" };
-    return { stage: "G5", description: "Kidney Failure / ESRD (< 15 mL/min/1.73m²)", badgeStyle: "bg-red-100 text-red-900 border-red-300 font-black" };
-}
-
-// ─── MAIN COMPONENT ─────────────────────────────────────────────────
+const STATUS_TONE: Record<string, ResultTone> = {
+  safe: "success",
+  monitored: "neutral",
+  caution: "warning",
+  contraindicated: "danger",
+};
 
 export default function RenalDosingAdjuster() {
-    // Patient Form States
-    const [age, setAge] = useState<string>("68");
-    const [sex, setSex] = useState<"male" | "female">("male");
-    const [weightInput, setWeightInput] = useState<string>("84");
-    const [weightUnit, setWeightUnit] = useState<"kg" | "lbs">("kg");
-    const [heightInput, setHeightInput] = useState<string>("176");
-    const [heightUnit, setHeightUnit] = useState<"cm" | "in">("cm");
-    const [scrInput, setScrInput] = useState<string>("1.6");
-    const [scrUnit, setScrUnit] = useState<"mg/dL" | "umol/L">("mg/dL");
+  const [age, setAge] = useState("68");
+  const [sex, setSex] = useState<"male" | "female">("male");
+  const [weightInput, setWeightInput] = useState("84");
+  const [weightUnit, setWeightUnit] = useState<"kg" | "lbs">("kg");
+  const [heightInput, setHeightInput] = useState("176");
+  const [heightUnit, setHeightUnit] = useState<"cm" | "in">("cm");
+  const [scrInput, setScrInput] = useState("1.6");
+  const [scrUnit, setScrUnit] = useState<"mg/dL" | "umol/L">("mg/dL");
+  const [weightMethod, setWeightMethod] = useState<WeightMethod>("auto");
+  const [selectedDrugId, setSelectedDrugId] = useState("vancomycin");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<DrugCategory>("All");
+  const [copied, setCopied] = useState(false);
 
-    // Weight Calculation Method: "auto" | "actual" | "ibw" | "adjbw"
-    const [weightMethod, setWeightMethod] = useState<"auto" | "actual" | "ibw" | "adjbw">("auto");
+  const numAge = parseFloat(age) || 0;
+  const rawWeight = parseFloat(weightInput) || 0;
+  const rawHeight = parseFloat(heightInput) || 0;
+  const rawScr = parseFloat(scrInput) || 0;
 
-    // Drug Selection & Search States
-    const [selectedDrugId, setSelectedDrugId] = useState<string>("vancomycin");
-    const [searchTerm, setSearchTerm] = useState<string>("");
-    const [selectedCategory, setSelectedCategory] = useState<DrugCategory>("All");
-    const [copiedNote, setCopiedNote] = useState<boolean>(false);
-    const [showFormulas, setShowFormulas] = useState<boolean>(false);
-    const [showInstructions, setShowInstructions] = useState<boolean>(true);
+  const weightKg = useMemo(
+    () => (weightUnit === "lbs" ? Math.round(rawWeight * 0.45359237 * 10) / 10 : rawWeight),
+    [rawWeight, weightUnit],
+  );
+  const heightInches = useMemo(
+    () => (heightUnit === "cm" ? rawHeight / 2.54 : rawHeight),
+    [rawHeight, heightUnit],
+  );
+  const heightCm = useMemo(
+    () => (heightUnit === "in" ? rawHeight * 2.54 : rawHeight),
+    [rawHeight, heightUnit],
+  );
+  const scrMgDl = useMemo(
+    () => (scrUnit === "umol/L" ? Math.round((rawScr / 88.4) * 100) / 100 : rawScr),
+    [rawScr, scrUnit],
+  );
 
-    // Pre-configured Patient Profiles
-    const patientScenarios: PatientScenario[] = [
-        { label: "Normal CrCl", desc: "CrCl ~105", age: "35", sex: "male", weight: "75", weightUnit: "kg", height: "178", heightUnit: "cm", scr: "0.9", scrUnit: "mg/dL" },
-        { label: "Moderate CKD", desc: "CrCl ~42", age: "68", sex: "male", weight: "84", weightUnit: "kg", height: "176", heightUnit: "cm", scr: "1.6", scrUnit: "mg/dL" },
-        { label: "Severe CKD G4", desc: "CrCl ~22", age: "74", sex: "female", weight: "62", weightUnit: "kg", height: "160", heightUnit: "cm", scr: "2.1", scrUnit: "mg/dL" },
-        { label: "ESRD / Dialysis", desc: "CrCl ~8", age: "60", sex: "male", weight: "70", weightUnit: "kg", height: "172", heightUnit: "cm", scr: "6.5", scrUnit: "mg/dL" },
-        { label: "Elderly Sarcopenic", desc: "CrCl ~28", age: "84", sex: "female", weight: "48", weightUnit: "kg", height: "155", heightUnit: "cm", scr: "1.1", scrUnit: "mg/dL" },
-    ];
+  const ibwKg = useMemo(
+    () => (heightInches <= 0 ? 0 : Math.round(calculateIBW(heightInches, sex) * 10) / 10),
+    [heightInches, sex],
+  );
+  const adjBwKg = useMemo(
+    () => (weightKg <= 0 || ibwKg <= 0 ? 0 : Math.round(calculateAdjBW(weightKg, ibwKg) * 10) / 10),
+    [weightKg, ibwKg],
+  );
+  const bmi = useMemo(() => calculateBMI(weightKg, heightCm), [weightKg, heightCm]);
 
-    // Standardized Unit Normalizations
-    const numAge = parseFloat(age) || 0;
-    const rawWeight = parseFloat(weightInput) || 0;
-    const rawHeight = parseFloat(heightInput) || 0;
-    const rawScr = parseFloat(scrInput) || 0;
-
-    const weightKg = useMemo(() => {
-        if (weightUnit === "lbs") return Math.round(rawWeight * 0.45359237 * 10) / 10;
-        return rawWeight;
-    }, [rawWeight, weightUnit]);
-
-    const heightInches = useMemo(() => {
-        if (heightUnit === "cm") return rawHeight / 2.54;
-        return rawHeight;
-    }, [rawHeight, heightUnit]);
-
-    const heightCm = useMemo(() => {
-        if (heightUnit === "in") return rawHeight * 2.54;
-        return rawHeight;
-    }, [rawHeight, heightUnit]);
-
-    const scrMgDl = useMemo(() => {
-        if (scrUnit === "umol/L") return Math.round((rawScr / 88.4) * 100) / 100;
-        return rawScr;
-    }, [rawScr, scrUnit]);
-
-    // Anthropometrics
-    const ibwKg = useMemo(() => {
-        if (heightInches <= 0) return 0;
-        return Math.round(calculateIBW(heightInches, sex) * 10) / 10;
-    }, [heightInches, sex]);
-
-    const adjBwKg = useMemo(() => {
-        if (weightKg <= 0 || ibwKg <= 0) return 0;
-        return Math.round(calculateAdjBW(weightKg, ibwKg) * 10) / 10;
-    }, [weightKg, ibwKg]);
-
-    const bmi = useMemo(() => calculateBMI(weightKg, heightCm), [weightKg, heightCm]);
-
-    // Auto Weight Heuristic
-    const { autoRecommendedMethod, autoReason } = useMemo(() => {
-        if (!weightKg || !ibwKg) return { autoRecommendedMethod: "actual" as const, autoReason: "Standard weight" };
-        if (weightKg < ibwKg) {
-            return {
-                autoRecommendedMethod: "actual" as const,
-                autoReason: "Underweight (TBW < IBW): Actual total body weight recommended to prevent underdosing.",
-            };
-        }
-        if (weightKg > 1.2 * ibwKg) {
-            return {
-                autoRecommendedMethod: "adjbw" as const,
-                autoReason: `Patient is >120% of IBW (BMI ${bmi} kg/m²). Adjusted Body Weight (AdjBW 40%) recommended to avoid overdosing.`,
-            };
-        }
-        return {
-            autoRecommendedMethod: "ibw" as const,
-            autoReason: "Normal Weight: Ideal Body Weight (IBW) standard for Cockcroft-Gault estimation.",
-        };
-    }, [weightKg, ibwKg, bmi]);
-
-    const effectiveWeightUsed = useMemo(() => {
-        const method = weightMethod === "auto" ? autoRecommendedMethod : weightMethod;
-        if (method === "actual") return weightKg;
-        if (method === "ibw") return ibwKg || weightKg;
-        if (method === "adjbw") return adjBwKg || weightKg;
-        return weightKg;
-    }, [weightMethod, autoRecommendedMethod, weightKg, ibwKg, adjBwKg]);
-
-    const effectiveWeightLabel = useMemo(() => {
-        const method = weightMethod === "auto" ? autoRecommendedMethod : weightMethod;
-        if (method === "actual") return `Actual TBW (${weightKg} kg)`;
-        if (method === "ibw") return `Ideal Body Weight (${ibwKg} kg)`;
-        if (method === "adjbw") return `Adjusted Body Weight (${adjBwKg} kg)`;
-        return `${effectiveWeightUsed} kg`;
-    }, [weightMethod, autoRecommendedMethod, weightKg, ibwKg, adjBwKg, effectiveWeightUsed]);
-
-    // CrCl & eGFR
-    const calculatedCrCl = useMemo(() => {
-        if (!numAge || !effectiveWeightUsed || !scrMgDl) return null;
-        return calculateCrCl(numAge, effectiveWeightUsed, scrMgDl, sex);
-    }, [numAge, effectiveWeightUsed, scrMgDl, sex]);
-
-    const calculatedEGFR = useMemo(() => {
-        if (!numAge || !scrMgDl) return null;
-        return calculateCKDEPI2021(numAge, scrMgDl, sex);
-    }, [numAge, scrMgDl, sex]);
-
-    const kdigoStage = useMemo(() => {
-        if (calculatedEGFR === null) return null;
-        return getKDIGOStage(calculatedEGFR);
-    }, [calculatedEGFR]);
-
-    // Drug Filtering
-    const categories: DrugCategory[] = [
-        "All",
-        "Antibiotics",
-        "Antivirals & Antifungals",
-        "Anticoagulants",
-        "Cardiovascular",
-        "Endocrine & Diabetes",
-        "Neurology & Analgesics",
-        "Rheumatology & Gout",
-    ];
-
-    const filteredDrugs = useMemo(() => {
-        return renalDrugsDatabase.filter((drug) => {
-            const matchesCategory =
-                selectedCategory === "All" || drug.category === selectedCategory;
-            const searchLower = searchTerm.toLowerCase().trim();
-            const matchesSearch =
-                !searchLower ||
-                drug.name.toLowerCase().includes(searchLower) ||
-                (drug.brandName && drug.brandName.toLowerCase().includes(searchLower)) ||
-                drug.indication.toLowerCase().includes(searchLower) ||
-                drug.category.toLowerCase().includes(searchLower);
-            return matchesCategory && matchesSearch;
-        });
-    }, [searchTerm, selectedCategory]);
-
-    const selectedDrug = useMemo(() => {
-        return renalDrugsDatabase.find((d) => d.id === selectedDrugId) || renalDrugsDatabase[0];
-    }, [selectedDrugId]);
-
-    // Recommendation Matching
-    const currentRecommendation = useMemo(() => {
-        if (!selectedDrug || calculatedCrCl === null) return null;
-        for (const tier of selectedDrug.adjustments) {
-            if (calculatedCrCl >= tier.minCrCl && calculatedCrCl <= tier.maxCrCl) {
-                return tier;
-            }
-        }
-        return selectedDrug.adjustments[0];
-    }, [selectedDrug, calculatedCrCl]);
-
-    // Load Scenario
-    const handleLoadScenario = (sc: PatientScenario) => {
-        setAge(sc.age);
-        setSex(sc.sex);
-        setWeightInput(sc.weight);
-        setWeightUnit(sc.weightUnit);
-        setHeightInput(sc.height);
-        setHeightUnit(sc.heightUnit);
-        setScrInput(sc.scr);
-        setScrUnit(sc.scrUnit);
+  const { autoRecommendedMethod, autoReason } = useMemo(() => {
+    if (!weightKg || !ibwKg) {
+      return { autoRecommendedMethod: "actual" as const, autoReason: "Standard weight basis." };
+    }
+    if (weightKg < ibwKg) {
+      return {
+        autoRecommendedMethod: "actual" as const,
+        autoReason: "Underweight (TBW < IBW): Actual total body weight recommended.",
+      };
+    }
+    if (weightKg > 1.2 * ibwKg) {
+      return {
+        autoRecommendedMethod: "adjbw" as const,
+        autoReason: `Obese (BMI ${bmi} kg/m²; TBW > 120% IBW): Adjusted Body Weight recommended to prevent clearance overestimation.`,
+      };
+    }
+    return {
+      autoRecommendedMethod: "ibw" as const,
+      autoReason: "Normal Weight: Ideal Body Weight (IBW) standard for Cockcroft-Gault estimation.",
     };
+  }, [weightKg, ibwKg, bmi]);
 
-    // Copy Chart Note Handler
-    const handleCopyChartNote = useCallback(() => {
-        if (!selectedDrug || calculatedCrCl === null || !currentRecommendation) return;
+  const resolvedMethod = weightMethod === "auto" ? autoRecommendedMethod : weightMethod;
 
-        const noteText = `=== CLINICAL RENAL DOSING CONSULTATION NOTE ===
+  const effectiveWeightUsed = useMemo(() => {
+    if (resolvedMethod === "actual") return weightKg;
+    if (resolvedMethod === "ibw") return ibwKg || weightKg;
+    if (resolvedMethod === "adjbw") return adjBwKg || weightKg;
+    return weightKg;
+  }, [resolvedMethod, weightKg, ibwKg, adjBwKg]);
+
+  const effectiveWeightLabel = useMemo(() => {
+    if (resolvedMethod === "actual") return `Actual TBW (${weightKg} kg)`;
+    if (resolvedMethod === "ibw") return `Ideal Body Weight (${ibwKg} kg)`;
+    if (resolvedMethod === "adjbw") return `Adjusted Body Weight (${adjBwKg} kg)`;
+    return `${effectiveWeightUsed} kg`;
+  }, [resolvedMethod, weightKg, ibwKg, adjBwKg, effectiveWeightUsed]);
+
+  const calculatedCrCl = useMemo(
+    () => calculateCrCl(numAge, effectiveWeightUsed, scrMgDl, sex),
+    [numAge, effectiveWeightUsed, scrMgDl, sex],
+  );
+  const calculatedEGFR = useMemo(
+    () => calculateCKDEPI2021(numAge, scrMgDl, sex),
+    [numAge, scrMgDl, sex],
+  );
+  const kdigoStage = useMemo(() => getKDIGOStage(calculatedEGFR), [calculatedEGFR]);
+
+  const filteredDrugs = useMemo(
+    () =>
+      renalDrugsDatabase.filter((drug) => {
+        const matchesCategory = selectedCategory === "All" || drug.category === selectedCategory;
+        const searchLower = searchTerm.toLowerCase().trim();
+        const matchesSearch =
+          !searchLower ||
+          drug.name.toLowerCase().includes(searchLower) ||
+          (drug.brandName && drug.brandName.toLowerCase().includes(searchLower)) ||
+          drug.indication.toLowerCase().includes(searchLower) ||
+          drug.category.toLowerCase().includes(searchLower);
+        return matchesCategory && matchesSearch;
+      }),
+    [searchTerm, selectedCategory],
+  );
+
+  const selectedDrug = useMemo(
+    () => renalDrugsDatabase.find((d) => d.id === selectedDrugId) || renalDrugsDatabase[0],
+    [selectedDrugId],
+  );
+
+  const currentRecommendation = useMemo(() => {
+    if (!selectedDrug) return null;
+    for (const tier of selectedDrug.adjustments) {
+      if (calculatedCrCl >= tier.minCrCl && calculatedCrCl <= tier.maxCrCl) return tier;
+    }
+    return selectedDrug.adjustments[0];
+  }, [selectedDrug, calculatedCrCl]);
+
+  const loadScenario = (sc: PatientScenario) => {
+    setAge(sc.age);
+    setSex(sc.sex);
+    setWeightInput(sc.weight);
+    setWeightUnit(sc.weightUnit);
+    setHeightInput(sc.height);
+    setHeightUnit(sc.heightUnit);
+    setScrInput(sc.scr);
+    setScrUnit(sc.scrUnit);
+  };
+
+  const reset = () => {
+    loadScenario(PATIENT_SCENARIOS[1]);
+    setWeightMethod("auto");
+    setSelectedDrugId("vancomycin");
+    setSearchTerm("");
+    setSelectedCategory("All");
+  };
+
+  // Chart note text is unchanged from the previous page.
+  const copyChartNote = useCallback(() => {
+    if (!selectedDrug || !currentRecommendation) return;
+    const noteText = `=== CLINICAL RENAL DOSING CONSULTATION NOTE ===
 PATIENT BIOMETRICS:
 - Age: ${numAge} yrs | Biological Sex: ${sex.toUpperCase()}
 - Weight: ${weightKg} kg (TBW) | IBW: ${ibwKg} kg | AdjBW: ${adjBwKg} kg | BMI: ${bmi} kg/m²
@@ -1434,817 +232,405 @@ OFFICIAL REFERENCE:
 - Verified Review: ${selectedDrug.lastReviewed}
 
 DISCLAIMER: Clinical decision support tool. Verify with official FDA package inserts and institutional guidelines before prescribing.`;
+    try {
+      navigator.clipboard.writeText(noteText);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2600);
+    } catch {
+      // No clipboard permission (insecure context, old WebView).
+    }
+  }, [
+    selectedDrug, currentRecommendation, numAge, sex, weightKg, ibwKg, adjBwKg, bmi,
+    scrMgDl, rawScr, scrUnit, calculatedCrCl, effectiveWeightLabel, calculatedEGFR, kdigoStage,
+  ]);
 
-        navigator.clipboard.writeText(noteText);
-        setCopiedNote(true);
-        setTimeout(() => setCopiedNote(false), 2600);
-    }, [
-        selectedDrug,
-        calculatedCrCl,
-        currentRecommendation,
-        numAge,
-        sex,
-        weightKg,
-        ibwKg,
-        adjBwKg,
-        bmi,
-        scrMgDl,
-        rawScr,
-        scrUnit,
-        effectiveWeightLabel,
-        calculatedEGFR,
-        kdigoStage,
-    ]);
+  return (
+    <CalculatorShell
+      title="Renal Dosing Adjuster"
+      subtitle="Pairs Cockcroft-Gault creatinine clearance and CKD-EPI 2021 eGFR with evidence-based dose tiers for 20 renally cleared medicines."
+      icon={Activity}
+      eyebrow="Clinical & Hospital Pharmacy"
+      aside={
+        <>
+          <CalcAbout title="About renal dose adjustment">
+            <p>
+              Most renally cleared drugs are labelled against creatinine clearance bands, not eGFR.
+              This tool calculates both, then reads the dose tier the patient&apos;s CrCl falls into
+              for the selected medicine.
+            </p>
+            <CalcList
+              title="Use it when"
+              items={[
+                "Checking whether a drug needs a renal dose reduction",
+                "Comparing Cockcroft-Gault CrCl against CKD-EPI eGFR and KDIGO stage",
+                "Looking up dialysis or CRRT guidance for a medicine",
+              ]}
+            />
+            <CalcList
+              tone="caution"
+              title="Keep in mind"
+              items={[
+                "Both equations assume a stable creatinine — neither is valid in acute kidney injury.",
+                "Dose tiers come from FDA labelling and are a starting point, not a substitute for the current package insert.",
+                "Creatinine reflects muscle mass, so a frail patient's clearance is easily overestimated.",
+              ]}
+            />
+          </CalcAbout>
 
-    return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50/70 via-white to-green-50/70 p-3 sm:p-5 md:p-8 font-sans selection:bg-teal-500 selection:text-white">
-            <div className="max-w-7xl mx-auto space-y-6">
+          <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+        </>
+      }
+    >
+      <LabNotice tone="warning" title="Clinical decision support — verify before prescribing">
+        Confirm every recommendation against the official FDA package insert and your institution&apos;s
+        guidelines. This tool does not know the indication, the severity of infection, or the
+        patient&apos;s other medicines.
+      </LabNotice>
 
-                {/* ─── HEADER ──────────────────────────────────────────────────────── */}
-                <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-blue-700 to-green-500 p-6 md:p-8 text-white shadow-xl">
-                    <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div className="flex items-start sm:items-center gap-4">
-                            <div className="rounded-2xl bg-white/20 p-3.5 backdrop-blur-md ring-1 ring-white/30 shadow-inner">
-                                <Stethoscope className="h-8 w-8 md:h-10 md:w-10 text-white" />
-                            </div>
-                            <div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                                        Renal Dosing Adjuster
-                                    </h1>
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur-md">
-                                        <Sparkles className="h-3 w-3 text-yellow-300" /> FDA / KDIGO Aligned
-                                    </span>
-                                </div>
-                                <p className="mt-1 text-sm md:text-base text-blue-100 font-medium">
-                                    Cockcroft-Gault CrCl & CKD-EPI 2021 eGFR paired with evidence-based dose tier adjustments
-                                </p>
-                            </div>
-                        </div>
+      <ResultCard
+        label="Cockcroft-Gault CrCl"
+        value={calculatedCrCl > 0 ? calculatedCrCl : null}
+        unit="mL/min"
+        interpretation={
+          calculatedCrCl > 0
+            ? `${effectiveWeightLabel} · CKD-EPI eGFR ${calculatedEGFR} (${kdigoStage.stage})`
+            : undefined
+        }
+        tone={calculatedCrCl >= 60 ? "success" : calculatedCrCl >= 30 ? "warning" : "danger"}
+        empty="Enter age, weight, height and a serum creatinine, all above 0."
+      />
 
-                        <div className="flex flex-wrap items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setShowInstructions((prev) => !prev)}
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-3.5 py-2 text-xs md:text-sm font-medium text-white backdrop-blur-md transition hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/40"
-                            >
-                                <HelpCircle className="h-4 w-4" />
-                                {showInstructions ? "Hide Instructions" : "Clinical Guide"}
-                            </button>
-                        </div>
-                    </div>
+      {currentRecommendation && (
+        <LabNotice
+          tone={
+            currentRecommendation.status === "contraindicated"
+              ? "danger"
+              : currentRecommendation.status === "caution"
+                ? "warning"
+                : "info"
+          }
+          title={`${selectedDrug.name} — ${currentRecommendation.crclRangeLabel}`}
+        >
+          <span className="block">
+            <strong>Dose:</strong> {currentRecommendation.dose} · <strong>Interval:</strong>{" "}
+            {currentRecommendation.interval}
+          </span>
+          {currentRecommendation.notes && <span className="mt-1 block">{currentRecommendation.notes}</span>}
+        </LabNotice>
+      )}
 
-                    {/* Background decorative glow */}
-                    <div className="pointer-events-none absolute -right-12 -top-12 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
-                </header>
+      {selectedDrug.criticalWarning && (
+        <LabNotice tone="danger" title="Critical clinical warning">
+          {selectedDrug.criticalWarning}
+        </LabNotice>
+      )}
 
-                {/* ─── STEP-BY-STEP DIRECTIONS / CLINICAL GUIDE ─────────────────────── */}
-                {showInstructions && (
-                    <div className="rounded-2xl border border-blue-100 bg-white/90 p-4 sm:p-6 shadow-sm backdrop-blur-sm transition-all animate-in fade-in duration-300">
-                        <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
-                            <div className="flex items-center gap-2 text-blue-900 font-bold text-sm sm:text-base">
-                                <BookOpen className="h-5 w-5 text-blue-600" />
-                                <span>Directions of Use & Renal Dosing Protocol</span>
-                            </div>
-                            <span className="text-xs text-gray-500 font-medium">3-Step Workflow</span>
-                        </div>
+      <CalcSection title="Patient biometrics" description="Cockcroft-Gault needs a stable serum creatinine.">
+        <FieldGrid>
+          <NumberField label="Age" value={age} onChange={setAge} unit="years" step="1" min={0} />
+          <SelectField
+            label="Biological sex"
+            value={sex}
+            onChange={(v) => setSex(v as "male" | "female")}
+            options={[
+              { value: "male", label: "Male" },
+              { value: "female", label: "Female (×0.85)" },
+            ]}
+          />
+          <NumberField
+            label="Total body weight"
+            value={weightInput}
+            onChange={setWeightInput}
+            units={["kg", "lbs"]}
+            unit={weightUnit}
+            onUnitChange={(v) => setWeightUnit(v as "kg" | "lbs")}
+            step="0.1"
+            min={0}
+            hint={weightUnit === "lbs" ? `≈ ${weightKg} kg` : undefined}
+          />
+          <NumberField
+            label="Height"
+            value={heightInput}
+            onChange={setHeightInput}
+            units={["cm", "in"]}
+            unit={heightUnit}
+            onUnitChange={(v) => setHeightUnit(v as "cm" | "in")}
+            step="0.1"
+            min={0}
+          />
+          <NumberField
+            label="Serum creatinine"
+            value={scrInput}
+            onChange={setScrInput}
+            units={["mg/dL", "umol/L"]}
+            unit={scrUnit}
+            onUnitChange={(v) => setScrUnit(v as "mg/dL" | "umol/L")}
+            step="0.01"
+            min={0}
+            hint={scrUnit === "umol/L" ? `≈ ${scrMgDl} mg/dL` : "Must be at steady state."}
+          />
+        </FieldGrid>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="flex items-start gap-3 rounded-xl bg-blue-50/60 p-3.5 border border-blue-100/70">
-                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-                                    1
-                                </div>
-                                <div className="text-xs sm:text-sm text-gray-700">
-                                    <strong className="block text-gray-900 font-semibold mb-0.5">Input Patient Vitals</strong>
-                                    Enter age, sex, weight, height, and SCr. The engine auto-computes IBW, AdjBW, and Cockcroft-Gault CrCl.
-                                </div>
-                            </div>
+        <div>
+          <ResultRow label="IBW (Devine)" value={ibwKg} unit="kg" />
+          <ResultRow label="AdjBW (40%)" value={adjBwKg} unit="kg" />
+          <ResultRow label="BMI" value={bmi} unit="kg/m²" />
+        </div>
 
-                            <div className="flex items-start gap-3 rounded-xl bg-green-50/60 p-3.5 border border-green-100/70">
-                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white">
-                                    2
-                                </div>
-                                <div className="text-xs sm:text-sm text-gray-700">
-                                    <strong className="block text-gray-900 font-semibold mb-0.5">Select Drug or Category</strong>
-                                    Search 20+ major renal drugs (Vancomycin, Zosyn, DOACs, Meropenem, Metformin, etc.) or filter by category.
-                                </div>
-                            </div>
+        <div className="space-y-2">
+          <p className="text-[13px] font-medium text-foreground/90">CrCl weight basis</p>
+          <ModeSwitch<WeightMethod>
+            value={weightMethod}
+            onChange={setWeightMethod}
+            label="Weight basis"
+            options={[
+              { value: "auto", label: "Auto", description: "Recommended" },
+              { value: "actual", label: "Actual", description: `${weightKg} kg` },
+              { value: "ibw", label: "IBW", description: `${ibwKg} kg` },
+              { value: "adjbw", label: "AdjBW", description: `${adjBwKg} kg` },
+            ]}
+          />
+          {weightMethod === "auto" && (
+            <p className="text-xs leading-relaxed text-muted-foreground">{autoReason}</p>
+          )}
+        </div>
 
-                            <div className="flex items-start gap-3 rounded-xl bg-emerald-50/60 p-3.5 border border-emerald-100/70">
-                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">
-                                    3
-                                </div>
-                                <div className="text-xs sm:text-sm text-gray-700">
-                                    <strong className="block text-gray-900 font-semibold mb-0.5">Review Tier & Copy Note</strong>
-                                    Examine adjusted dose, interval, HD/CRRT recommendations, and copy EHR-ready consultation note.
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+        <div>
+          <ResultRow label="Cockcroft-Gault CrCl" value={calculatedCrCl} unit="mL/min" badge="dosing standard" />
+          <ResultRow
+            label="CKD-EPI (2021, race-free) eGFR"
+            value={calculatedEGFR}
+            unit="mL/min/1.73 m²"
+            badge={`Stage ${kdigoStage.stage}`}
+            badgeTone={calculatedEGFR >= 60 ? "success" : calculatedEGFR >= 30 ? "warning" : "destructive"}
+          />
+          <ResultRow label="KDIGO category" value={kdigoStage.description} />
+        </div>
 
-                {/* ─── QUICK CLINICAL SCENARIOS BAR ─────────────────────────────────── */}
-                <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-md shadow-gray-200/50">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                            <Zap className="h-4 w-4 text-blue-600" />
-                            <span className="text-xs font-bold text-gray-800 uppercase tracking-wider">
-                                Quick Patient Profiles (1-Click Test Scenarios)
-                            </span>
-                        </div>
-                        <span className="text-[11px] text-gray-400">Clinical Archetypes</span>
-                    </div>
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-[13px] font-medium text-foreground/90">Patient scenario</span>
+          {PATIENT_SCENARIOS.map((sc) => (
+            <Button key={sc.label} type="button" variant="outline" size="sm" title={sc.desc} onClick={() => loadScenario(sc)}>
+              {sc.label}
+            </Button>
+          ))}
+          <Button type="button" variant="ghost" size="sm" onClick={reset}>
+            Reset defaults
+          </Button>
+        </div>
+      </CalcSection>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-                        {patientScenarios.map((sc) => (
-                            <button
-                                key={sc.label}
-                                type="button"
-                                onClick={() => handleLoadScenario(sc)}
-                                className="group p-2.5 rounded-xl border border-gray-200 bg-gray-50/70 hover:bg-blue-50 hover:border-blue-300 text-left transition flex flex-col justify-between"
-                            >
-                                <div className="font-bold text-xs text-gray-900 group-hover:text-blue-700">
-                                    {sc.label}
-                                </div>
-                                <span className="text-[10px] text-gray-500 mt-0.5 font-medium">
-                                    {sc.desc} ({sc.sex}, {sc.age}y)
-                                </span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
+      <CalcSection
+        title="Renal pharmacopeia"
+        description={`${filteredDrugs.length} of ${renalDrugsDatabase.length} medications shown.`}
+      >
+        <div className="space-y-3">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by drug, brand, indication or class"
+              aria-label="Search medications"
+              className="pl-9"
+            />
+          </div>
 
-                {/* ─── MAIN WORKSPACE GRID: 12 COLS ─────────────────────────────────── */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div className="flex flex-wrap gap-1.5">
+            {CATEGORIES.map((c) => (
+              <Button
+                key={c}
+                type="button"
+                variant={selectedCategory === c ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedCategory(c)}
+              >
+                {c}
+              </Button>
+            ))}
+          </div>
 
-                    {/* LEFT: PATIENT BIOMETRICS & RENAL CALCULATOR (5 COLS) */}
-                    <div className="lg:col-span-5 space-y-6">
+          <SelectField
+            label="Medication"
+            value={selectedDrugId}
+            onChange={setSelectedDrugId}
+            options={
+              filteredDrugs.length
+                ? filteredDrugs.map((d) => ({
+                    value: d.id,
+                    label: `${d.name}${d.brandName ? ` (${d.brandName})` : ""} — ${d.category}`,
+                  }))
+                : [{ value: selectedDrugId, label: `${selectedDrug.name} (no match for this filter)` }]
+            }
+          />
+        </div>
 
-                        <div className="rounded-2xl border border-gray-100 bg-white p-5 sm:p-6 shadow-md shadow-gray-200/50 space-y-5">
-                            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                                <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                                    <User className="h-5 w-5 text-blue-600" />
-                                    Patient Biometrics
-                                </h2>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setAge("65");
-                                        setSex("male");
-                                        setWeightInput("70");
-                                        setHeightInput("175");
-                                        setScrInput("1.2");
-                                    }}
-                                    className="text-xs text-gray-500 hover:text-blue-600 flex items-center gap-1 font-medium transition"
-                                >
-                                    <RefreshCw className="h-3.5 w-3.5" /> Reset Defaults
-                                </button>
-                            </div>
+        <div className="rounded-xl border border-border/80 bg-muted/30 p-3 sm:p-4">
+          <p className="text-[13px] font-semibold text-foreground">
+            {selectedDrug.name}
+            {selectedDrug.brandName && (
+              <span className="font-normal text-muted-foreground"> ({selectedDrug.brandName})</span>
+            )}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{selectedDrug.category}</p>
+          <p className="mt-2 text-[13px] leading-relaxed text-foreground/90">
+            <strong>Indication:</strong> {selectedDrug.indication}
+          </p>
+          <p className="mt-1 text-[13px] leading-relaxed text-foreground/90">
+            <strong>Usual dose:</strong> {selectedDrug.usualDose}
+          </p>
+          {selectedDrug.link && (
+            <a
+              href={selectedDrug.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+            >
+              {selectedDrug.source} <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
+        </div>
+      </CalcSection>
 
-                            {/* Form Fields */}
-                            <div className="space-y-4">
+      {currentRecommendation && (
+        <CalcSection
+          title={`Active recommendation (patient CrCl ${calculatedCrCl} mL/min)`}
+          description="The tier the patient's clearance falls into."
+        >
+          <div>
+            <ResultRow
+              label="CrCl range"
+              value={currentRecommendation.crclRangeLabel}
+              badge={currentRecommendation.status}
+              badgeTone={
+                currentRecommendation.status === "contraindicated"
+                  ? "destructive"
+                  : currentRecommendation.status === "caution"
+                    ? "warning"
+                    : "success"
+              }
+            />
+            <ResultRow label="Adjusted dose" value={currentRecommendation.dose} />
+            <ResultRow label="Dosing interval" value={currentRecommendation.interval} />
+            {currentRecommendation.notes && <ResultRow label="Clinical notes" value={currentRecommendation.notes} />}
+          </div>
 
-                                {/* Age & Sex */}
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="rounded-xl border border-blue-200/70 bg-blue-50/30 p-3">
-                                        <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">
-                                            Age (Years)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            min="18"
-                                            max="120"
-                                            value={age}
-                                            onChange={(e) => setAge(e.target.value)}
-                                            placeholder="e.g. 68"
-                                            className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-900 focus:outline-none focus:border-blue-500"
-                                        />
-                                    </div>
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <Button type="button" variant="outline" size="sm" onClick={copyChartNote}>
+              {copied ? <Check className="mr-1.5 h-4 w-4 text-emerald-600" /> : <Copy className="mr-1.5 h-4 w-4" />}
+              {copied ? "Copied" : "Copy chart consultation"}
+            </Button>
+          </div>
+        </CalcSection>
+      )}
 
-                                    <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-3">
-                                        <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">
-                                            Biological Sex
-                                        </label>
-                                        <div className="grid grid-cols-2 gap-1 bg-gray-200/70 p-0.5 rounded-lg">
-                                            <button
-                                                type="button"
-                                                onClick={() => setSex("male")}
-                                                className={`py-1 text-xs font-bold rounded-md transition ${sex === "male"
-                                                        ? "bg-white text-blue-700 shadow-xs"
-                                                        : "text-gray-600 hover:text-gray-900"
-                                                    }`}
-                                            >
-                                                Male
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setSex("female")}
-                                                className={`py-1 text-xs font-bold rounded-md transition ${sex === "female"
-                                                        ? "bg-white text-blue-700 shadow-xs"
-                                                        : "text-gray-600 hover:text-gray-900"
-                                                    }`}
-                                            >
-                                                Female
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+      <CalcSection title="All dose tiers" description={`Every band published for ${selectedDrug.name}.`}>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[34rem] text-sm">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="py-2 pr-3 text-left font-medium text-muted-foreground">CrCl range</th>
+                <th className="py-2 pr-3 text-left font-medium text-muted-foreground">Dose</th>
+                <th className="py-2 pr-3 text-left font-medium text-muted-foreground">Interval</th>
+                <th className="py-2 text-left font-medium text-muted-foreground">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {selectedDrug.adjustments.map((tier) => {
+                const active = tier === currentRecommendation;
+                return (
+                  <tr
+                    key={tier.crclRangeLabel}
+                    className={`border-b border-border/60 last:border-b-0 ${active ? "bg-primary/5 font-medium" : ""}`}
+                  >
+                    <td className="py-2 pr-3">
+                      {tier.crclRangeLabel}
+                      {active && <span className="ml-2 text-xs text-primary">← patient</span>}
+                    </td>
+                    <td className="py-2 pr-3">{tier.dose}</td>
+                    <td className="py-2 pr-3">{tier.interval}</td>
+                    <td className="py-2 text-xs capitalize text-muted-foreground">{tier.status}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
-                                {/* Weight */}
-                                <div className="rounded-xl border border-blue-200/70 bg-blue-50/30 p-3">
-                                    <div className="flex items-center justify-between mb-1">
-                                        <label className="text-[11px] font-bold text-gray-700 uppercase flex items-center gap-1">
-                                            <Scale className="h-3 w-3 text-blue-600" /> Total Body Weight (TBW)
-                                        </label>
-                                        <div className="inline-flex rounded-md bg-blue-100/80 p-0.5 text-[10px] font-bold">
-                                            <button
-                                                type="button"
-                                                onClick={() => setWeightUnit("kg")}
-                                                className={`px-1.5 py-0.5 rounded ${weightUnit === "kg" ? "bg-white text-blue-700 shadow-xs" : "text-blue-600"}`}
-                                            >
-                                                kg
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setWeightUnit("lbs")}
-                                                className={`px-1.5 py-0.5 rounded ${weightUnit === "lbs" ? "bg-white text-blue-700 shadow-xs" : "text-blue-600"}`}
-                                            >
-                                                lbs
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="relative">
-                                        <input
-                                            type="number"
-                                            step="0.1"
-                                            value={weightInput}
-                                            onChange={(e) => setWeightInput(e.target.value)}
-                                            className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-900 focus:outline-none focus:border-blue-500"
-                                        />
-                                        <span className="absolute right-3 top-2 text-xs font-bold text-gray-400">
-                                            {weightUnit}
-                                        </span>
-                                    </div>
-                                </div>
+        {selectedDrug.dialysisGuidance && (
+          <div>
+            {selectedDrug.dialysisGuidance.hemodialysis && (
+              <ResultRow label="Haemodialysis" value={selectedDrug.dialysisGuidance.hemodialysis} />
+            )}
+            {selectedDrug.dialysisGuidance.crrt && (
+              <ResultRow label="CRRT" value={selectedDrug.dialysisGuidance.crrt} />
+            )}
+            {selectedDrug.dialysisGuidance.peritoneal && (
+              <ResultRow label="Peritoneal dialysis" value={selectedDrug.dialysisGuidance.peritoneal} />
+            )}
+          </div>
+        )}
 
-                                {/* Height & Serum Creatinine */}
-                                <div className="grid grid-cols-2 gap-3">
-                                    {/* Height */}
-                                    <div className="rounded-xl border border-gray-200 bg-gray-50/40 p-3">
-                                        <div className="flex items-center justify-between mb-1">
-                                            <label className="text-[11px] font-bold text-gray-700 uppercase">Height</label>
-                                            <div className="inline-flex rounded bg-gray-200 p-0.5 text-[10px] font-bold">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setHeightUnit("cm")}
-                                                    className={`px-1.5 py-0.5 rounded ${heightUnit === "cm" ? "bg-white text-gray-900 shadow-xs" : "text-gray-600"}`}
-                                                >
-                                                    cm
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setHeightUnit("in")}
-                                                    className={`px-1.5 py-0.5 rounded ${heightUnit === "in" ? "bg-white text-gray-900 shadow-xs" : "text-gray-600"}`}
-                                                >
-                                                    in
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="relative">
-                                            <input
-                                                type="number"
-                                                step="0.5"
-                                                value={heightInput}
-                                                onChange={(e) => setHeightInput(e.target.value)}
-                                                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-900 focus:outline-none focus:border-blue-500"
-                                            />
-                                            <span className="absolute right-3 top-2 text-xs font-bold text-gray-400">
-                                                {heightUnit}
-                                            </span>
-                                        </div>
-                                    </div>
+        {selectedDrug.clinicalPearls && selectedDrug.clinicalPearls.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-[13px] font-semibold text-foreground/90">Clinical pearls</p>
+            <ul className="space-y-1">
+              {selectedDrug.clinicalPearls.map((pearl) => (
+                <li key={pearl} className="flex gap-2 text-[13px] leading-relaxed text-foreground/90">
+                  <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-primary" aria-hidden="true" />
+                  {pearl}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
-                                    {/* Serum Creatinine */}
-                                    <div className="rounded-xl border border-teal-200/70 bg-teal-50/30 p-3">
-                                        <div className="flex items-center justify-between mb-1">
-                                            <label className="text-[11px] font-bold text-teal-950 uppercase">SCr</label>
-                                            <div className="inline-flex rounded bg-teal-100 p-0.5 text-[10px] font-bold">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setScrUnit("mg/dL")}
-                                                    className={`px-1 py-0.5 rounded ${scrUnit === "mg/dL" ? "bg-white text-teal-800 shadow-xs" : "text-teal-700"}`}
-                                                >
-                                                    mg/dL
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setScrUnit("umol/L")}
-                                                    className={`px-1 py-0.5 rounded ${scrUnit === "umol/L" ? "bg-white text-teal-800 shadow-xs" : "text-teal-700"}`}
-                                                >
-                                                    µmol/L
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="relative">
-                                            <input
-                                                type="number"
-                                                step="0.05"
-                                                value={scrInput}
-                                                onChange={(e) => setScrInput(e.target.value)}
-                                                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-900 focus:outline-none focus:border-teal-500"
-                                            />
-                                            <span className="absolute right-3 top-2 text-xs font-bold text-gray-400">
-                                                {scrUnit}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          Source: {selectedDrug.source} ({selectedDrug.reference}) · last reviewed{" "}
+          {selectedDrug.lastReviewed}.
+        </p>
+      </CalcSection>
 
-                                {/* Derived Anthropometrics Bar */}
-                                <div className="grid grid-cols-3 gap-2 pt-1 text-center text-xs">
-                                    <div className="bg-blue-50/70 p-2 rounded-xl border border-blue-100">
-                                        <span className="text-gray-500 block text-[10px] uppercase font-bold">IBW (Devine)</span>
-                                        <span className="text-sm font-extrabold text-blue-700">{ibwKg ? `${ibwKg} kg` : "--"}</span>
-                                    </div>
-                                    <div className="bg-emerald-50/70 p-2 rounded-xl border border-emerald-100">
-                                        <span className="text-gray-500 block text-[10px] uppercase font-bold">AdjBW (40%)</span>
-                                        <span className="text-sm font-extrabold text-emerald-700">{adjBwKg ? `${adjBwKg} kg` : "--"}</span>
-                                    </div>
-                                    <div className="bg-gray-100/80 p-2 rounded-xl border border-gray-200">
-                                        <span className="text-gray-500 block text-[10px] uppercase font-bold">BMI</span>
-                                        <span className="text-sm font-extrabold text-gray-800">{bmi ? `${bmi} kg/m²` : "--"}</span>
-                                    </div>
-                                </div>
+      <FormulaNote title="How this is calculated">
+        <p>Creatinine clearance for dosing uses Cockcroft-Gault:</p>
+        <Formula>CrCl = ((140 − age) × weight kg) / (72 × SCr mg/dL) × 0.85 if female</Formula>
+        <p>
+          The weight is chosen by a heuristic: actual body weight if the patient is below IBW,
+          adjusted body weight (IBW + 0.4 × excess) above 120% of IBW, otherwise Devine IBW
+          (50 kg male / 45.5 kg female, + 2.3 kg per inch over 5 feet).
+        </p>
+        <p>Kidney function for staging uses CKD-EPI 2021, which no longer includes a race term:</p>
+        <Formula>eGFR = 142 × min(Scr/κ, 1)^α × max(Scr/κ, 1)^−1.209 × 0.9938^age × 1.012 if female</Formula>
+        <p>
+          κ is 0.7 for women and 0.9 for men; α is −0.241 and −0.302 respectively. KDIGO stages are
+          G1 ≥ 90, G2 60–89, G3a 45–59, G3b 30–44, G4 15–29 and G5 below 15 mL/min/1.73 m².
+        </p>
+        <p>
+          The dose tier is then matched on <strong>CrCl</strong>, not eGFR, because that is what FDA
+          labelling uses.
+        </p>
+      </FormulaNote>
 
-                                {/* Weight Basis Selector for Cockcroft-Gault */}
-                                <div className="space-y-1.5 pt-2 border-t border-gray-100">
-                                    <div className="flex items-center justify-between text-[11px] font-bold text-gray-700">
-                                        <span>CrCl Weight Basis:</span>
-                                        <span className="text-blue-700">{effectiveWeightLabel}</span>
-                                    </div>
-                                    <div className="grid grid-cols-4 gap-1 bg-gray-100 p-1 rounded-xl text-xs font-bold">
-                                        {(
-                                            [
-                                                { key: "auto", label: "Auto" },
-                                                { key: "actual", label: "Actual" },
-                                                { key: "ibw", label: "IBW" },
-                                                { key: "adjbw", label: "AdjBW" },
-                                            ] as const
-                                        ).map((tab) => (
-                                            <button
-                                                key={tab.key}
-                                                type="button"
-                                                onClick={() => setWeightMethod(tab.key)}
-                                                className={`py-1 rounded-lg transition ${weightMethod === tab.key
-                                                        ? "bg-white text-blue-700 shadow-xs"
-                                                        : "text-gray-500 hover:text-gray-800"
-                                                    }`}
-                                            >
-                                                {tab.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    {weightMethod === "auto" && (
-                                        <p className="text-[11px] text-blue-900 bg-blue-50/80 border border-blue-200 p-2.5 rounded-xl leading-relaxed">
-                                            💡 <strong>Weight Heuristic:</strong> {autoReason}
-                                        </p>
-                                    )}
-                                </div>
-
-                            </div>
-
-                            {/* Clearance Readouts */}
-                            <div className="pt-2 border-t border-gray-100 space-y-3">
-                                {/* Cockcroft-Gault Card */}
-                                <div className="bg-gradient-to-r from-blue-600 to-green-500 text-white rounded-2xl p-4 shadow-md">
-                                    <div className="flex items-center justify-between mb-1">
-                                        <span className="text-xs font-bold uppercase tracking-wider text-blue-100 flex items-center gap-1.5">
-                                            <Activity className="h-4 w-4 text-green-300" /> Cockcroft-Gault CrCl
-                                        </span>
-                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20 font-bold backdrop-blur-md">
-                                            Dosing Standard
-                                        </span>
-                                    </div>
-                                    <div className="flex items-baseline gap-2 mt-1">
-                                        <span className="text-3xl sm:text-4xl font-black tracking-tight text-white">
-                                            {calculatedCrCl !== null ? calculatedCrCl : "--"}
-                                        </span>
-                                        <span className="text-sm font-bold text-green-100">mL / min</span>
-                                    </div>
-                                    <p className="text-[11px] text-blue-100/90 mt-1">
-                                        Calculated using {effectiveWeightLabel}. Matches FDA labeling.
-                                    </p>
-                                </div>
-
-                                {/* CKD-EPI Card */}
-                                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-3.5">
-                                    <div className="flex items-center justify-between mb-1">
-                                        <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                                            CKD-EPI (2021 Race-Free) eGFR
-                                        </span>
-                                        {kdigoStage && (
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${kdigoStage.badgeStyle}`}>
-                                                Stage {kdigoStage.stage}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="flex items-baseline gap-2 mt-0.5">
-                                        <span className="text-2xl font-black text-gray-800">
-                                            {calculatedEGFR !== null ? calculatedEGFR : "--"}
-                                        </span>
-                                        <span className="text-xs font-bold text-gray-500">mL/min/1.73 m²</span>
-                                    </div>
-                                    {kdigoStage && (
-                                        <p className="text-[11px] text-gray-600 mt-1">
-                                            KDIGO: <strong className="text-gray-800">{kdigoStage.description}</strong>
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Expandable Formulas Reference */}
-                            <div className="border-t border-gray-100 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowFormulas(!showFormulas)}
-                                    className="w-full flex items-center justify-between text-xs font-bold text-blue-600 hover:text-blue-800 py-1 transition"
-                                >
-                                    <span className="flex items-center gap-1.5">
-                                        <BookOpen className="h-3.5 w-3.5" /> Formula Details & Conversions
-                                    </span>
-                                    {showFormulas ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                </button>
-
-                                <AnimatePresence>
-                                    {showFormulas && (
-                                        <motion.div
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: "auto" }}
-                                            exit={{ opacity: 0, height: 0 }}
-                                            className="mt-3 space-y-2 text-xs text-gray-600 bg-gray-50 p-3.5 rounded-xl border border-gray-200 overflow-hidden leading-relaxed"
-                                        >
-                                            <div>
-                                                <strong className="text-gray-900 block mb-0.5">Cockcroft-Gault Equation (1976):</strong>
-                                                <code className="text-blue-700 bg-white p-1.5 rounded border border-gray-200 block text-[10px] font-mono">
-                                                    CrCl = [(140 - Age) × Wt (kg)] / [72 × SCr] (× 0.85 if Female)
-                                                </code>
-                                            </div>
-                                            <div>
-                                                <strong className="text-gray-900 block mb-0.5">Devine Formula (IBW):</strong>
-                                                <p className="text-[11px] text-gray-500">
-                                                    M: 50 kg + 2.3 kg/in &gt; 60&quot; | F: 45.5 kg + 2.3 kg/in &gt; 60&quot;
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <strong className="text-gray-900 block mb-0.5">Adjusted Body Weight (AdjBW 40%):</strong>
-                                                <code className="text-blue-700 bg-white p-1.5 rounded border border-gray-200 block text-[10px] font-mono">
-                                                    AdjBW = IBW + 0.4 × (Actual TBW - IBW)
-                                                </code>
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    {/* RIGHT: PHARMACOPEIA & ACTIVE DOSING MATRIX (7 COLS) */}
-                    <div className="lg:col-span-7 space-y-6">
-
-                        {/* SEARCH & CATEGORY FILTER CARD */}
-                        <div className="rounded-2xl border border-gray-100 bg-white p-5 sm:p-6 shadow-md shadow-gray-200/50 space-y-4">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                                    <Pill className="h-5 w-5 text-emerald-600" />
-                                    Renal Pharmacopeia
-                                </h2>
-                                <span className="text-xs text-gray-500">
-                                    {filteredDrugs.length} of {renalDrugsDatabase.length} medications available
-                                </span>
-                            </div>
-
-                            {/* Search Bar */}
-                            <div className="relative">
-                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Search drugs (e.g. Vancomycin, Zosyn, Apixaban, Metformin, Cefepime)..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full bg-gray-50 border border-gray-300 rounded-xl pl-10 pr-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:outline-none focus:border-blue-500"
-                                />
-                                {searchTerm && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setSearchTerm("")}
-                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 hover:text-gray-700"
-                                    >
-                                        Clear
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Category Pills */}
-                            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
-                                {categories.map((cat) => (
-                                    <button
-                                        key={cat}
-                                        type="button"
-                                        onClick={() => setSelectedCategory(cat)}
-                                        className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition ${selectedCategory === cat
-                                                ? "bg-gradient-to-r from-blue-600 to-green-500 text-white shadow-xs"
-                                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                            }`}
-                                    >
-                                        {cat}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Drug Selector Grid */}
-                            <div className="max-h-48 overflow-y-auto pr-1 grid grid-cols-1 sm:grid-cols-2 gap-2 border border-gray-200 p-2 rounded-2xl bg-gray-50/50">
-                                {filteredDrugs.map((drug) => {
-                                    const isSelected = selectedDrug.id === drug.id;
-                                    return (
-                                        <button
-                                            key={drug.id}
-                                            type="button"
-                                            onClick={() => setSelectedDrugId(drug.id)}
-                                            className={`text-left p-3 rounded-xl transition flex flex-col justify-between border ${isSelected
-                                                    ? "bg-blue-50/90 border-blue-400 text-blue-950 shadow-xs ring-1 ring-blue-400"
-                                                    : "bg-white border-gray-200 text-gray-700 hover:bg-gray-100 hover:border-gray-300"
-                                                }`}
-                                        >
-                                            <div className="flex items-start justify-between gap-1">
-                                                <p className="font-bold text-sm text-gray-900">{drug.name}</p>
-                                                {drug.brandName && (
-                                                    <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded">
-                                                        {drug.brandName}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <p className="text-[11px] text-gray-500 truncate mt-1">
-                                                {drug.category}
-                                            </p>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        {/* ACTIVE RECOMMENDATION & DOSING MATRIX CARD */}
-                        <div className="rounded-2xl border border-gray-100 bg-white p-5 sm:p-7 shadow-md shadow-gray-200/50 space-y-6">
-
-                            {/* Drug Header & Action Bar */}
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold">
-                                            {selectedDrug.category}
-                                        </span>
-                                        {selectedDrug.brandName && (
-                                            <span className="text-xs text-gray-500">
-                                                Brand: <strong className="text-gray-800">{selectedDrug.brandName}</strong>
-                                            </span>
-                                        )}
-                                    </div>
-                                    <h3 className="text-2xl sm:text-3xl font-black text-gray-900 mt-1">
-                                        {selectedDrug.name}
-                                    </h3>
-                                    <p className="text-xs text-gray-500 mt-0.5">
-                                        Indication: {selectedDrug.indication}
-                                    </p>
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={handleCopyChartNote}
-                                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-white text-xs font-bold transition shadow-md shrink-0 self-start sm:self-center"
-                                >
-                                    {copiedNote ? (
-                                        <>
-                                            <Check className="h-4 w-4" />
-                                            <span>Note Copied to EHR!</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Copy className="h-4 w-4" />
-                                            <span>Copy Chart Consultation</span>
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-
-                            {/* Active Recommendation Card */}
-                            {calculatedCrCl !== null && currentRecommendation ? (
-                                <motion.div
-                                    key={`${selectedDrug.id}-${currentRecommendation.crclRangeLabel}`}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className={`rounded-2xl p-5 sm:p-6 border shadow-sm relative overflow-hidden ${currentRecommendation.status === "contraindicated"
-                                            ? "bg-rose-50 border-rose-300"
-                                            : currentRecommendation.status === "caution"
-                                                ? "bg-amber-50/90 border-amber-300"
-                                                : "bg-gradient-to-br from-blue-50/90 via-teal-50/40 to-white border-blue-300"
-                                        }`}
-                                >
-                                    <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
-                                        <div className="flex items-center gap-2">
-                                            <div
-                                                className={`h-3 w-3 rounded-full animate-pulse ${currentRecommendation.status === "contraindicated"
-                                                        ? "bg-rose-500"
-                                                        : currentRecommendation.status === "caution"
-                                                            ? "bg-amber-500"
-                                                            : "bg-emerald-500"
-                                                    }`}
-                                            />
-                                            <span className="text-xs font-bold uppercase tracking-wider text-gray-800">
-                                                Active Recommendation (Patient CrCl: {calculatedCrCl} mL/min)
-                                            </span>
-                                        </div>
-                                        <span
-                                            className={`text-xs font-extrabold px-3 py-1 rounded-full uppercase border ${currentRecommendation.status === "contraindicated"
-                                                    ? "bg-rose-100 text-rose-800 border-rose-300"
-                                                    : currentRecommendation.status === "caution"
-                                                        ? "bg-amber-100 text-amber-800 border-amber-300"
-                                                        : "bg-emerald-100 text-emerald-800 border-emerald-300"
-                                                }`}
-                                        >
-                                            {currentRecommendation.crclRangeLabel}
-                                        </span>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
-                                            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700">
-                                                Adjusted Dose
-                                            </span>
-                                            <p className="text-lg sm:text-xl font-black text-gray-900 mt-1">
-                                                {currentRecommendation.dose}
-                                            </p>
-                                        </div>
-                                        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
-                                            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">
-                                                Dosing Interval
-                                            </span>
-                                            <p className="text-lg sm:text-xl font-black text-gray-900 mt-1">
-                                                {currentRecommendation.interval}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {currentRecommendation.notes && (
-                                        <div className="mt-4 flex items-start gap-2.5 text-xs text-gray-800 bg-white/90 p-3.5 rounded-xl border border-gray-200">
-                                            <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-                                            <p>{currentRecommendation.notes}</p>
-                                        </div>
-                                    )}
-                                </motion.div>
-                            ) : (
-                                <div className="p-6 bg-gray-50 border border-gray-200 rounded-2xl text-center text-gray-500 text-sm">
-                                    Enter patient parameters on the left to activate real-time renal adjustment.
-                                </div>
-                            )}
-
-                            {/* Critical Clinical Warning */}
-                            {selectedDrug.criticalWarning && (
-                                <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-start gap-3 text-rose-950 text-xs sm:text-sm">
-                                    <AlertTriangle className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
-                                    <div>
-                                        <strong className="text-rose-900 font-bold block mb-0.5">
-                                            Critical Clinical Warning:
-                                        </strong>
-                                        {selectedDrug.criticalWarning}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Complete Dosing Adjustment Matrix Table */}
-                            <div className="space-y-2">
-                                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-2">
-                                    <SlidersHorizontal className="h-4 w-4 text-blue-600" />
-                                    Complete Renal Adjustment Matrix
-                                </h4>
-                                <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white">
-                                    <table className="w-full text-left text-xs">
-                                        <thead className="bg-gray-50 text-gray-700 font-bold border-b border-gray-200 uppercase tracking-wider text-[10px]">
-                                            <tr>
-                                                <th className="py-3 px-4">CrCl Range</th>
-                                                <th className="py-3 px-4">Recommended Dose</th>
-                                                <th className="py-3 px-4">Interval</th>
-                                                <th className="py-3 px-4">Specific Guidance</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-100">
-                                            {selectedDrug.adjustments.map((adj, idx) => {
-                                                const isActive =
-                                                    calculatedCrCl !== null &&
-                                                    calculatedCrCl >= adj.minCrCl &&
-                                                    calculatedCrCl <= adj.maxCrCl;
-                                                return (
-                                                    <tr
-                                                        key={idx}
-                                                        className={`transition ${isActive
-                                                                ? "bg-blue-50/80 font-bold text-blue-950 border-l-4 border-l-blue-600"
-                                                                : "text-gray-700 hover:bg-gray-50"
-                                                            }`}
-                                                    >
-                                                        <td className="py-3 px-4 font-bold whitespace-nowrap">
-                                                            <div className="flex items-center gap-1.5">
-                                                                {isActive && <span className="h-2 w-2 rounded-full bg-blue-600 inline-block" />}
-                                                                {adj.crclRangeLabel}
-                                                            </div>
-                                                        </td>
-                                                        <td className="py-3 px-4 font-semibold">{adj.dose}</td>
-                                                        <td className="py-3 px-4">{adj.interval}</td>
-                                                        <td className="py-3 px-4 text-gray-500 text-[11px] leading-relaxed">
-                                                            {adj.notes ?? "Standard administration"}
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            {/* Dialysis (HD & CRRT) Guidance */}
-                            {selectedDrug.dialysisGuidance && (
-                                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-2.5">
-                                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-2">
-                                        <Droplet className="h-4 w-4 text-blue-600" />
-                                        Renal Replacement Therapy (HD & CRRT)
-                                    </h4>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                                        {selectedDrug.dialysisGuidance.hemodialysis && (
-                                            <div className="bg-white p-3 rounded-xl border border-gray-200">
-                                                <strong className="text-blue-700 block mb-1">
-                                                    Intermittent Hemodialysis (HD):
-                                                </strong>
-                                                <p className="text-gray-600 leading-relaxed">
-                                                    {selectedDrug.dialysisGuidance.hemodialysis}
-                                                </p>
-                                            </div>
-                                        )}
-                                        {selectedDrug.dialysisGuidance.crrt && (
-                                            <div className="bg-white p-3 rounded-xl border border-gray-200">
-                                                <strong className="text-emerald-700 block mb-1">
-                                                    Continuous Renal Replacement (CRRT):
-                                                </strong>
-                                                <p className="text-gray-600 leading-relaxed">
-                                                    {selectedDrug.dialysisGuidance.crrt}
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Guideline Citation & Official External Links */}
-                            <div className="border-t border-gray-100 pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                                <div>
-                                    <p className="text-gray-500 font-bold">Primary Guideline / Label Reference:</p>
-                                    <p className="text-gray-800 font-semibold">{selectedDrug.reference}</p>
-                                </div>
-                                <div className="flex items-center gap-3 shrink-0">
-                                    <span className="px-2.5 py-1 rounded-md bg-gray-100 text-gray-700 text-[11px] font-bold border border-gray-200">
-                                        {selectedDrug.source}
-                                    </span>
-                                    {selectedDrug.link && (
-                                        <a
-                                            href={selectedDrug.link}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-bold transition"
-                                        >
-                                            Official Source <ExternalLink className="h-3.5 w-3.5" />
-                                        </a>
-                                    )}
-                                </div>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-                {/* ─── FOOTER & REGULATORY DISCLOSURES ─────────────────────────────── */}
-                <footer className="border-t border-gray-200 pt-6 pb-10 text-center text-xs text-gray-500 space-y-2">
-                    <p className="max-w-4xl mx-auto leading-relaxed">
-                        <strong>Clinical Evidence Summary:</strong> Dosing matrices incorporate criteria from the
-                        2024 KDIGO Clinical Practice Guidelines, ASHP/IDSA Consensus Guidelines, and FDA-approved labeling.
-                        For pregnant patients, amputees, cirrhotic patients, or those with unstable fluctuating renal function (AKI),
-                        standard serum creatinine equations may be inaccurate; direct 24-hour urine collection or cystatin C measurement is advised.
-                    </p>
-                    <p className="text-gray-400">
-                        © 2024–2026 Advanced Renal Decision Support. Clinical Edition.
-                    </p>
-                </footer>
-
-            </div>
-        </section>
-    );
+      <CalcFaq
+        items={[
+          {
+            q: "Why does the tool dose on CrCl but stage on eGFR?",
+            a: "Because they answer different questions. Almost all renal dosing bands in FDA labelling were derived with Cockcroft-Gault, which uses actual body weight and is not normalised to body surface area. CKD-EPI eGFR is normalised to 1.73 m² and is the standard for staging chronic kidney disease, so it is shown alongside for context.",
+          },
+          {
+            q: "Which weight should Cockcroft-Gault use?",
+            a: "IBW in normal-weight patients, actual weight if the patient is below their IBW, and adjusted body weight once actual weight exceeds 120% of IBW. Using actual weight in obesity substantially overestimates clearance and can lead to overdosing. The Auto setting applies this and states its reasoning.",
+          },
+          {
+            q: "Can I use this in acute kidney injury?",
+            a: "No. Both equations assume creatinine is at steady state. In rapidly changing renal function the serum creatinine lags behind the true clearance, so the calculated value will be too high while the patient is deteriorating and too low while they recover.",
+          },
+          {
+            q: "Why are the eGFR and CrCl values so different for my patient?",
+            a: "They use different inputs. Cockcroft-Gault is weight-driven, so a heavy patient gets a higher CrCl and a light or sarcopenic one a lower one; CKD-EPI ignores weight entirely and normalises to body surface area. Large divergence is expected at the extremes of body size — which is exactly where prescribing needs most care.",
+          },
+        ]}
+      />
+    </CalculatorShell>
+  );
 }

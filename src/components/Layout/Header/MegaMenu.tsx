@@ -60,7 +60,6 @@ const FEATURED: Record<
 
 const FOOTER_LINKS: Record<string, { label: string; href: string }[]> = {
   Resources: [
-    { label: "Books library", href: "/books-library" },
     { label: "Flashcards", href: "/flash-cards" },
     { label: "AI Guide", href: "/ai-guide" },
   ],

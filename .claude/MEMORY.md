@@ -1023,6 +1023,163 @@ Traps that will otherwise be rediscovered painfully.
     54675776) and atropine (CID 174174) have no MeSH class on those records, so they sit in "Other".
     NSAIDs (naproxen, diclofenac) are not in "Analgesics" because MeSH does not list that term for them.
 
+106. **The community's schema IS in the repo — uniquely.** `supabase/migrations/20260920_community.sql`
+    is the first and only SQL in this project (Known Issue 4 still stands for everything else).
+    It must be pasted into the Supabase SQL editor by the owner: there is no `DATABASE_URL`, and
+    PostgREST cannot run DDL, so no session can apply it. Until it is applied every `/community`
+    route renders its error boundary.
+
+107. **Postgres has no `round(double precision, int)`.** Only `round(numeric, int)`. Do the
+    arithmetic in `numeric` and cast back — this broke `community_hot_rank()` on its first run
+    against a real Postgres.
+
+108. **A superuser silently bypasses RLS.** An RLS test run as `postgres` passes no matter what the
+    policies say. Create a `nobypassrls` role and `set role` to it, or the test proves nothing.
+    (Verified this way for the community: cross-member update/delete return `UPDATE 0`, a forged
+    `user_id` insert raises a policy violation, and another member's votes/saves read as 0 rows.)
+
+109. **Postgres 16 server binaries are on this machine** at `/usr/lib/postgresql/16/bin`
+    (`initdb`, `pg_ctl`), so a migration can be genuinely run and re-run locally before it is handed
+    over — no Docker, no network. One trap: the Unix socket path is capped at ~107 bytes, and the
+    scratchpad path alone exceeds it. Keep `PGDATA` in the scratchpad but put `-k` somewhere short
+    like `/tmp/cpgsock`.
+
+110. **Karma only moves when the vote trigger fires.** Any path that writes a `score` directly — a
+    backfill, a manual correction — must be followed by a karma recompute, or authors show 0 karma
+    while holding well-scored posts. The community migration ends with exactly that pass.
+
+111. **Community voting is server-authoritative and must stay that way.** The browser posts a
+    *direction*; `community_vote()` decides cast/switch/toggle-off and returns the stored score.
+    `useCommunityVote` overwrites its optimistic guess with that number, so two tabs converge.
+    The retired `useVote` trusted its own arithmetic and had no way back — do not reintroduce it.
+
+112. **Community authors are `community_members`, not `profiles`.** The FK points at the
+    community's own table on purpose, because `profiles` is not version-controlled. Every write
+    route must call `ensureMember()` first, or a member's very first post fails on the FK.
+
+113. **`useSearchParams` forces a CSR bailout**, so every community page wraps its client component
+    in `<Suspense>`. Without the boundary `next build` fails on that route.
+
+114. **PostgREST's `.or()` is a comma-delimited filter string.** Unescaped commas or parentheses in
+    a member's search text are parsed as extra filters; the community feed strips `,()*` first.
+
+115. **The DrugBank import's list fields are capped samples, and `interactions.total_count` does not
+     say so.** Measured 2026-09-20 over all three `pharmacopedia` collections: `total_count` equals the
+     stored `drug_interactions` length on **all 4,479** records that carry it, and both max out at
+     exactly **100** (mean 85). `products` caps at **5**, `synonyms` at **5**. So `total_count` is not a
+     true total and must never be printed as one, or summed into a site figure. Say "the import stores
+     at most N per drug" instead. The pre-2026-09-13 hero's "50k+ interactions, 100k+ products" was this
+     mistake.
+
+116. **`classification.substituents` and `properties.monoisotopic_mass` exist on most records and were
+     invisible until 2026-09-20.** 6,994 records carry substituents (up to 91 each) and 9,036 carry a
+     monoisotopic mass. Before assuming a DrugBank field is absent, count it — `drug_type: "biotech"`
+     (3,269 records) is the field that really is empty: no SMILES, so no 2D depiction and no 3D
+     conformer, which is why the monograph explains the absence rather than rendering an empty plate.
+
+117. **An allow-list over external data silently drops data.** `Monograph.tsx` used to pass calculated
+     properties through a 17-kind `CALC_KEEP` list; the import actually has 25 kinds, so seven were
+     discarded for ~8,700 records each (`Monoisotopic Weight`, `InChI`, `SMILES`, `Ghose Filter`,
+     `Polarizability`, `Refractivity`, `MDDR-Like Rule`). Render everything and *exclude by exception*,
+     naming the exception on screen — `UNRELIABLE_KINDS` holds the one real exception, DrugBank's
+     "Traditional IUPAC Name", whose values are wrong in this import (Morphine's reads "dexamethasone
+     phosphate").
+
+118. **A search field that is conditionally re-parented loses focus mid-typing.** `/encyclopedia` shows
+     a hero before a search and a sticky bar after one. Rendering a *different* input in each branch
+     unmounts it on the second character — the state that flips (`q.length >= 2`) is the same state the
+     user is typing. One input, a sibling of the branches, restyled by a `data-` attribute on its
+     wrapper. The same rule applies to any "search page turns into results page" layout.
+
+119. **3Dmol cannot hide atoms in a model it has already parsed**, so "hydrogens off" in the
+     encyclopedia's 3D card is done by rewriting the V2000 record — keep the non-H atom lines, renumber
+     the surviving bonds' 3-wide index fields, and re-emit the counts line. `Structure3D.tsx`
+     (`filterMolfileHydrogens`) is the reference. Re-parsing a filtered record is also why the model's
+     `key` gains a `:heavy` suffix: without it the viewer re-fits the old model.
+
+
+115. **RLS is ROW-level, not column-level — an `update` policy scoped to the owner still lets that
+    owner write *every column of their own row*.** Through a direct PostgREST call (bypassing the
+    route handlers entirely) a community member could otherwise have set their own `score`,
+    `post_karma`, `view_count` or `is_pinned`. The community closes this with BEFORE UPDATE guard
+    triggers (`community_posts_guard`, `_comments_guard`, `_members_guard`) that restore every
+    database-owned column from `OLD` unless the session is privileged
+    (`community_is_privileged()`: `current_user` is postgres/supabase_admin — which is the case
+    inside a SECURITY DEFINER function — or the JWT role is `service_role`). Verified: tampering is
+    silently reverted while a legitimate title/body edit, the view-counter RPC and a real vote all
+    still work. **Any new user-writable table needs the same treatment** — the RLS policy alone is
+    not enough.
+
+120. **`position: sticky` on a grid item with `items-start` has nowhere to stick.** A sticky
+    element's containing block is its grid *area*; `align-items: start` collapses that area to the
+    item's own height, so there is zero travel and it scrolls away silently — `position` still
+    computes as `sticky`, and nothing warns. The disk-diffusion bench hit this: the plate scrolled
+    off while the controls beside it were still in use. Leave the grid item stretched (the default)
+    and put `sticky top-*` on a wrapper *inside* it.
+
+121. **A tray button cannot both select on `pointerdown` and toggle on `click`.** A real tap
+    fires both: pointerdown selected the disk, then the click toggled it straight back off, so
+    tap-to-pick-up then tap-the-plate never worked while a mouse-only `.click()` test passed.
+    Rule: start drags on pointerdown but only *commit* them if the pointer actually moved (a ~6 px
+    threshold), and let `click` own selection. `src/components/Simulations/DiskDiffusion/SimulationWorkspace.tsx`.
+
+122. **When something is "in the forceps", a tap must not be reinterpreted as grabbing what is
+    under it.** The disk placer checked "did this tap land on an existing disk?" before "is a disk
+    selected?", so trying to place one too close to a neighbour silently dragged the neighbour away
+    instead of explaining the 24 mm spacing rule. Selection state takes precedence over hit-testing.
+
+123. **`element.innerText` applies `text-transform`, so a CSS-uppercased label does not match its
+    source string.** `text-[11px] uppercase` headings read as "PRACTICAL NOTE" / "ABOUT THESE
+    CRITERIA" in `innerText`, and three separate assertions failed against perfectly good markup.
+    Compare case-insensitively, or read `textContent`, which is untransformed.
+
+124. **`globals.css` sets `html { scroll-behavior: smooth }` (gotcha 30a), which breaks
+    CDP-driven interaction tests.** A `getBoundingClientRect()` read straight after
+    `scrollIntoView()` is taken mid-glide, so the synthetic tap lands tens of pixels off and the app
+    looks broken. Poll the rect until two consecutive reads agree before dispatching input.
+
+125. **CDP `Input.dispatchKeyEvent` only performs a key's default action when the event carries
+    `text`.** Enter on a focused button fires listeners but does not activate it without
+    `{ type: "keyDown", text: "\r" }` — which reads exactly like a broken keyboard path. Same trap
+    as gotcha 77's port collision: verify the harness before blaming the page.
+
+126. **Two `next dev` processes against one project root destroy each other's `.next`.** Seen
+    2026-09-20 with servers on :3000 and :3011: unrelated routes began answering 404 and 500 while
+    the files on disk were fine. This is Known Issue 10's sibling — it is not only `build` vs `dev`,
+    it is any two Next processes sharing `.next`. To verify safely while a peer holds the dev
+    server, copy the tree to a scratch dir, symlink `node_modules`, copy `.env`, and run there.
+
+127. **`@tailwindcss/typography` is NOT installed, so every `prose*` class in this repo generates
+    nothing.** Verified 2026-09-20: it is absent from `package.json`, from `node_modules`, and from
+    `tailwind.config.ts`'s `plugins: [require("tailwindcss-animate")]`. The old `/ai-guide` styled
+    AI answers with `prose prose-gray prose-p:... prose-headings:... prose-table:...` — none of
+    which existed, so headings had no hierarchy, tables had no rules, and lists fell through to
+    globals.css's `ul:not(.prose ul)` grey-bulleted `pl-6`. **The `:not(.prose …)` escape hatch in
+    globals.css is therefore dead too** — nothing is ever inside a real `.prose`. Style markdown
+    with your own namespaced CSS (see `src/components/ai-guide/ai-guide.css` `.pw-ai-md`), or
+    install the plugin deliberately. **`src/components/community/` renders member markdown and may
+    have the same fault — unchecked, it is another session's file.**
+
+128. **A page under the site shell has TWO `<aside>` elements, and the header's comes first.**
+    `document.querySelector('aside')` in a CDP check selects the header's mobile nav drawer
+    (styled-jsx, 320px, `position: fixed`, translated off-screen right), not the page's own rail —
+    so an assertion about "the sidebar" can pass or fail for entirely the wrong element. Cost real
+    time on 2026-09-20: a phone check reported the AI Guide's rail on-screen when it was correctly
+    off-canvas at `left: -272`. **Scope every CDP selector to the page's namespace** (`.pw-ai aside`).
+
+129. **The Gemini key is on the free tier: 5 requests per minute for the whole project.** Measured
+    2026-09-20 against `/api/chat`. The 6th call in a minute returns `429 … quotaValue: "5"` with a
+    ~50 s `retryDelay`, which surfaces as a failed answer for whoever asked. This is a **product
+    ceiling shared by every visitor**, not a per-user limit, and it binds long before our own rate
+    limits do. Two consequences: budget live test calls (a verification loop will trip it and look
+    like a bug you wrote), and treat "the AI feature is unreliable under load" as expected until
+    the owner enables billing.
+
+130. **Auto-scroll effects fire on mount.** `useEffect(() => scrollToBottom(), [messages.length])`
+    also runs when there are zero messages, which scrolled the AI Guide's empty state past its own
+    heading and mode picker. `tsc`, the build and 28 behavioural assertions all passed; only
+    reading the screenshot caught it. Guard on "is there actually a conversation".
+
 ## 9. Working preferences (observed)
 
 - Commit messages are short, lowercase, hyphenated subjects (`cology-calcs-added`, `fix-tournament-ui`,
@@ -1034,3 +1191,74 @@ Traps that will otherwise be rediscovered painfully.
 - Rationale comments in code are valued and maintained. Match that style; don't strip them.
 
 <!-- Add new preferences here as they emerge, with the date observed. -->
+
+131. **The calculator kit migration is COMPLETE — 104/104 (2026-09-20).** Verify with
+     `grep -rL "@/components/calculators" "src/app/(site)/calculation-tools/(tools)"/*/page.tsx`,
+     which must print nothing. Phase 2 of `.claude/redesign-tracker.md` is closed. Don't re-open it
+     on the strength of a stale "17 remain" line in an older doc.
+
+132. **For the last 17 tools, HEAD *was* the pre-migration original — gotcha 76 did not apply.**
+     Each file was byte-identical between `5dbe98c` and HEAD (`git diff 5dbe98c HEAD -- <path>`
+     empty), because no earlier session had touched them. So the "before" capture was taken from the
+     live page and the `src/app/migration-before/` temp-route dance was skipped entirely. **Check the
+     diff first** before assuming you need it; it costs one command and saves a whole ritual.
+
+133. **`next dev` compiles a route on first request, and 20 s+ is normal on this project.** A CDP
+     driver that sleeps a fixed 3–6 s after `Page.navigate` will sample a blank, unhydrated page and
+     silently report "no result". Poll for
+     `document.readyState === 'complete' && !!window.next && !!document.querySelector('main')`
+     instead, with a 30–120 s deadline. `window.next` is the reliable hydration signal — the HTML is
+     server-rendered and present long before React attaches, so testing for text proves nothing.
+
+134. **A peer session's broken route 500s *every* route on the shared dev server.** A compile error
+     anywhere in the module graph (a `page.tsx` importing a file that does not exist yet) takes the
+     whole dev server down, not just that page. When several sessions share the tree, run your own
+     verification server from an **isolated rsync copy** with `node_modules` symlinked and the peers'
+     in-progress routes deleted from the copy. That also satisfies the no-shared-build rule.
+
+135. **`backdrop-saturate` is the part of "liquid glass" you can actually see; the blur is often a
+     no-op.** On `ModeSwitch` the pane sits over a flat tinted track, so `backdrop-blur` changes
+     nothing — but a pixel diff of the crop with and without the filter showed a **max channel delta
+     of 91 across 7.9% of channels**, all of it from the saturation boost. Do not "optimise away" a
+     backdrop-filter by reasoning alone: diff the pixels. The kit keeps the filter on fine pointers
+     and drops it under `[@media(hover:none)]` with a pre-saturated fill, so phones and the APK pay
+     nothing (gotcha 51 is about `position: fixed`, which this is not).
+
+136. **The kit's motion keyframes live in `tailwind.config.ts`** (`calc-result`, `calc-sheen`,
+     `calc-tide`). Editing that file needs a **dev-server restart** — Next caches it (gotcha 26) —
+     and the classes are consumed by `src/components/calculators/`, so one edit reaches all 104
+     calculators *and* the Android APK, which re-exports the real tool pages.
+
+137. **`globals.css` has a FOURTH way of fighting a bespoke page: `pre`.** On top of gotcha 30's
+     three, `pre { @apply bg-gray-900 text-gray-100 p-4 rounded-lg }` (globals.css ~line 102) makes
+     every `<pre>` on the site a dark code block. The pharmacy counter's dispensing label and
+     intervention record are `<pre>` on cream paper, and rendered as unreadable white-on-near-black
+     — which is also against the no-black-grounds rule. Found by *looking at a screenshot*; every
+     assertion passed. Neutralise inside the namespace: `.pw-cph pre` is (0,1,1) and beats the bare
+     `pre` at (0,0,1). `code:not(pre code)` is styled too, and `.ns code` beats it the same way.
+
+138. **A mount-only effect that needs a ref on a *conditionally rendered* screen never attaches.**
+     `CommunityPharmacyLab` returns a different tree for home / counter / debrief. An effect with
+     `[]` deps ran while the home screen was mounted, found `rootRef.current === null`, returned
+     early and was never re-run, so the header-following CSS variable was silently never set. React
+     does not re-run a `[]` effect when a *sibling* branch mounts. Depend on whatever selects the
+     branch (`[state.screen]`).
+
+139. **Do not open a panel as a side effect of changing stage.** The counter's reducer set
+     `panel: STAGE_COPY[next].panel` on every `advance`, and because a non-null panel renders a
+     modal `Dialog`, every single step of the workflow popped a dialog over the workstation the
+     student then had to dismiss. Caught by screenshot, not by any assertion — the assertions
+     queried the DOM, which contained both the workstation and the dialog. Stage changes move the
+     student; drawers open only when the student asks for one.
+
+140. **A stage whose work is "read this" still needs an explicit completion signal.** The counter
+     gates every stage on `stageComplete()` derived from state, and `arrival` / `receive` /
+     `patient-assessment` complete by being *seen* — which meant nothing until a `see` action was
+     actually dispatched from an effect. Until it was, the very first primary action did nothing but
+     raise a review, and the whole workflow was unreachable. If a stage has no artefact, dispatch
+     the fact that it was looked at.
+
+141. **zsh does not word-split unquoted variables.** `for s in "walk.mjs 1440 900"; do node $s; done`
+     passes the whole string as one filename and fails with `Cannot find module 'walk.mjs 1440 900'`
+     — under bash the same loop works. Three verification runs silently produced no output this way
+     and looked like a hung harness. Use an explicit array, or write the calls out.

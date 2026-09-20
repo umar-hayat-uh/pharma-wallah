@@ -12,7 +12,6 @@ import { MapPin, Phone, Mail, ArrowUpRight } from "lucide-react";
  */
 const resourceLinks = [
   { label: "Study material", href: "/courses" },
-  { label: "Books library", href: "/books-library" },
   { label: "Flashcards", href: "/flash-cards" },
   { label: "MCQ bank", href: "/mcqs-bank" },
   { label: "Slide spotting", href: "/spotting" },

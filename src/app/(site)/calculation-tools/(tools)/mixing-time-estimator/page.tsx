@@ -1,319 +1,446 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { Clock, Activity, Gauge, AlertCircle, Info, BookOpen, BarChart3, RefreshCw } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+import { useMemo, useState } from "react";
+import { Clock } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import { Button } from "@/components/ui/button";
+import {
+  CalculatorShell,
+  CalcSection,
+  FieldGrid,
+  NumberField,
+  SelectField,
+  ResultCard,
+  ResultRow,
+  FormulaNote,
+  Formula,
+  CalcAbout,
+  CalcList,
+  CalcFaq,
+  AdSlot,
+  LabNotice,
+  type ResultTone,
+} from "@/components/calculators";
+
+/* ── Impeller reference data (unchanged from the original page) ──────────── */
+const IMPELLER_DATA = [
+  { type: "Rushton turbine", Np: 5.0, application: "Gas dispersion" },
+  { type: "Pitched blade", Np: 1.5, application: "Blending" },
+  { type: "Propeller", Np: 0.3, application: "Low power blending" },
+  { type: "Anchor", Np: 0.3, application: "High viscosity" },
+  { type: "Helical ribbon", Np: 0.3, application: "Very viscous" },
+];
+
+type MixingObjective = "blending" | "suspension" | "reaction" | "dispersion";
+
+const MIXING_CONSTANTS: Record<MixingObjective, number> = {
+  blending: 4,
+  suspension: 8,
+  reaction: 6,
+  dispersion: 10,
+};
+
+const OBJECTIVE_OPTIONS = [
+  { value: "blending", label: "Blending (K = 4)" },
+  { value: "suspension", label: "Solid suspension (K = 8)" },
+  { value: "reaction", label: "Chemical reaction (K = 6)" },
+  { value: "dispersion", label: "Dispersion (K = 10)" },
+];
+
+/* ── Pure calculation — correlations, constants and rounding copied verbatim ── */
+interface MixingResult {
+  mixingTime: number;
+  powerNumber: number;
+  reynoldsNumber: number;
+  flowRegime: string;
+  impellerType: string;
+  tone: ResultTone;
+  K: number;
+}
+
+function computeMixing(
+  tankRaw: string,
+  impellerRaw: string,
+  speedRaw: string,
+  viscosityRaw: string,
+  densityRaw: string,
+  objective: MixingObjective,
+): MixingResult | null {
+  const D = parseFloat(tankRaw);
+  const d = parseFloat(impellerRaw);
+  const N = parseFloat(speedRaw);
+  const mu = parseFloat(viscosityRaw);
+  const rho = parseFloat(densityRaw);
+
+  if (
+    !Number.isFinite(D) || !Number.isFinite(d) || !Number.isFinite(N) ||
+    !Number.isFinite(mu) || !Number.isFinite(rho) ||
+    D <= 0 || d <= 0 || N <= 0 || mu <= 0 || rho <= 0
+  ) {
+    return null;
+  }
+
+  // Impeller Reynolds number — N in revolutions per second.
+  const Re = (rho * N * Math.pow(d, 2)) / mu;
+
+  // Power number, estimated from Re against a Rushton turbine reference.
+  let Np = 0;
+  let flowRegime = "";
+  if (Re < 10) {
+    Np = 70 / Re;
+    flowRegime = "LAMINAR";
+  } else if (Re < 10000) {
+    Np = 70 / Math.pow(Re, 0.5);
+    flowRegime = "TRANSITIONAL";
+  } else {
+    Np = 5.0;
+    flowRegime = "TURBULENT";
+  }
+
+  const K = MIXING_CONSTANTS[objective] ?? 4;
+  const mixingTime = K * Math.pow(D / d, 2) * (1 / N) * 60;
+
+  let impellerType = "Rushton Turbine";
+  if (Re < 100) impellerType = "Anchor / Helical Ribbon";
+  else if (Re < 1000) impellerType = "Pitched Blade";
+  else impellerType = "Rushton Turbine / Propeller";
+
+  const tone: ResultTone =
+    mixingTime < 60 ? "success" : mixingTime < 300 ? "neutral" : mixingTime < 600 ? "warning" : "danger";
+
+  return { mixingTime, powerNumber: Np, reynoldsNumber: Re, flowRegime, impellerType, tone, K };
+}
 
 export default function MixingTimeEstimator() {
-    const [tankDiameter, setTankDiameter] = useState<string>('');
-    const [impellerDiameter, setImpellerDiameter] = useState<string>('');
-    const [impellerSpeed, setImpellerSpeed] = useState<string>('');
-    const [fluidViscosity, setFluidViscosity] = useState<string>('0.001');
-    const [fluidDensity, setFluidDensity] = useState<string>('1000');
-    const [mixingType, setMixingType] = useState<string>('blending');
-    const [result, setResult] = useState<{
-        mixingTime: number;
-        powerNumber: number;
-        reynoldsNumber: number;
-        flowRegime: string;
-        color: string;
-        impellerType: string;
-    } | null>(null);
-    const [chartData, setChartData] = useState<any[]>([]);
-    const [showDetails, setShowDetails] = useState<boolean>(false);
+  const [tankDiameter, setTankDiameter] = useState("");
+  const [impellerDiameter, setImpellerDiameter] = useState("");
+  const [impellerSpeed, setImpellerSpeed] = useState("");
+  const [fluidViscosity, setFluidViscosity] = useState("0.001");
+  const [fluidDensity, setFluidDensity] = useState("1000");
+  const [mixingType, setMixingType] = useState<MixingObjective>("blending");
 
-    // Impeller power numbers
-    const impellerData = [
-        { type: 'Rushton Turbine', Np: 5.0, application: 'Gas dispersion' },
-        { type: 'Pitched Blade', Np: 1.5, application: 'Blending' },
-        { type: 'Propeller', Np: 0.3, application: 'Low power blending' },
-        { type: 'Anchor', Np: 0.3, application: 'High viscosity' },
-        { type: 'Helical Ribbon', Np: 0.3, application: 'Very viscous' },
-    ];
+  const result = useMemo(
+    () => computeMixing(tankDiameter, impellerDiameter, impellerSpeed, fluidViscosity, fluidDensity, mixingType),
+    [tankDiameter, impellerDiameter, impellerSpeed, fluidViscosity, fluidDensity, mixingType],
+  );
 
-    const mixingConstants = {
-        blending: 4,
-        suspension: 8,
-        reaction: 6,
-        dispersion: 10,
-    };
+  // Mixing time against a speed sweep, as on the original: 0.5 rps to 2N in steps of N/10.
+  const chartData = useMemo(() => {
+    if (!result) return [];
+    const D = parseFloat(tankDiameter);
+    const d = parseFloat(impellerDiameter);
+    const N = parseFloat(impellerSpeed);
+    const rows: { speed: number; time: number }[] = [];
+    for (let n = 0.5; n <= N * 2; n += N / 10) {
+      rows.push({ speed: n, time: result.K * Math.pow(D / d, 2) * (1 / n) * 60 });
+    }
+    return rows;
+  }, [result, tankDiameter, impellerDiameter, impellerSpeed]);
 
-    const calculateMixingTime = () => {
-        const D = parseFloat(tankDiameter);
-        const d = parseFloat(impellerDiameter);
-        const N = parseFloat(impellerSpeed);
-        const μ = parseFloat(fluidViscosity);
-        const ρ = parseFloat(fluidDensity);
+  const positiveError = (raw: string, name: string) => {
+    if (raw.trim() === "") return undefined;
+    const n = parseFloat(raw);
+    if (!Number.isFinite(n)) return `Enter ${name} as a number.`;
+    return n <= 0 ? `${name} must be greater than 0.` : undefined;
+  };
 
-        if (isNaN(D) || isNaN(d) || isNaN(N) || isNaN(μ) || isNaN(ρ) || D <= 0 || d <= 0 || N <= 0 || μ <= 0 || ρ <= 0) {
-            alert('Please enter valid positive numbers');
-            return;
-        }
+  // The impeller cannot be wider than the vessel; typical designs sit at D/3 to D/2.
+  const geometryWarning =
+    result !== null && parseFloat(impellerDiameter) >= parseFloat(tankDiameter);
 
-        // Reynolds number
-        const Re = (ρ * N * Math.pow(d, 2)) / μ;
+  const reset = () => {
+    setTankDiameter("");
+    setImpellerDiameter("");
+    setImpellerSpeed("");
+    setFluidViscosity("0.001");
+    setFluidDensity("1000");
+    setMixingType("blending");
+  };
 
-        // Estimate power number based on Re and typical impeller (Rushton turbine as reference)
-        let Np = 0;
-        let flowRegime = '';
-        if (Re < 10) {
-            Np = 70 / Re;
-            flowRegime = 'LAMINAR';
-        } else if (Re < 10000) {
-            Np = 70 / Math.pow(Re, 0.5);
-            flowRegime = 'TRANSITIONAL';
-        } else {
-            Np = 5.0; // turbulent value for Rushton
-            flowRegime = 'TURBULENT';
-        }
+  return (
+    <CalculatorShell
+      title="Mixing Time Estimator"
+      subtitle="Estimates blend time in a stirred tank from the vessel and impeller geometry, and reports the impeller Reynolds number, flow regime and power number."
+      icon={Clock}
+      eyebrow="Pharmaceutical Engineering"
+      aside={
+        <>
+          <CalcAbout title="About mixing time">
+            <p>
+              Mixing time is how long a stirred vessel takes to reach a stated degree of uniformity.
+              It falls as the impeller turns faster and as the impeller gets larger relative to the
+              tank — which is why scale-up keeps the D/d ratio fixed wherever it can.
+            </p>
+            <CalcList
+              title="Use it when"
+              items={[
+                "Comparing blend times between vessel sizes during scale-up",
+                "Judging whether an impeller speed is enough for a solution or suspension",
+                "Checking which flow regime a viscous batch is actually mixing in",
+              ]}
+            />
+            <CalcList
+              tone="caution"
+              title="Keep in mind"
+              items={[
+                "This is a teaching correlation, not a design tool. Real blend times are measured, not predicted.",
+                "The power number is estimated against a Rushton turbine; a propeller or anchor will differ substantially.",
+                "The time returned is inconsistent with the speed unit used elsewhere on this page — see the note beside the result.",
+              ]}
+            />
+          </CalcAbout>
 
-        // Mixing time constant
-        const K = mixingConstants[mixingType as keyof typeof mixingConstants] || 4;
-        const mixingTime = K * Math.pow(D / d, 2) * (1 / N) * 60; // seconds
+          <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+        </>
+      }
+    >
+      <ResultCard
+        label="Estimated mixing time"
+        value={result ? result.mixingTime.toFixed(0) : null}
+        unit="s"
+        interpretation={result ? `${result.flowRegime} regime` : undefined}
+        tone={result?.tone ?? "neutral"}
+        empty="Enter the tank and impeller diameters, the impeller speed, and the fluid properties."
+      />
 
-        // Determine impeller type recommendation
-        let impellerType = 'Rushton Turbine';
-        if (Re < 100) impellerType = 'Anchor / Helical Ribbon';
-        else if (Re < 1000) impellerType = 'Pitched Blade';
-        else impellerType = 'Rushton Turbine / Propeller';
+      {result && (
+        // Reported, not silently corrected: the maths is unchanged from the original
+        // page. Recorded in .claude/redesign-tracker.md.
+        <LabNotice tone="warning" title="Check this figure before quoting it">
+          The Reynolds number below treats the speed as revolutions per <strong>second</strong>, but
+          the time correlation multiplies by 60 as though it were revolutions per{" "}
+          <strong>minute</strong>. With the speed entered in rps the time shown is therefore 60×
+          longer than the correlation t = K(D/d)²/N gives — that would be{" "}
+          {(result.mixingTime / 60).toFixed(1)} s. The figure above is left as the original tool
+          calculated it; treat it as a relative comparison, not an absolute blend time.
+        </LabNotice>
+      )}
 
-        let color = mixingTime < 60 ? 'text-green-600' : mixingTime < 300 ? 'text-blue-600' : mixingTime < 600 ? 'text-yellow-600' : 'text-red-600';
+      {geometryWarning && (
+        <LabNotice tone="warning" title="Check the geometry">
+          The impeller diameter is not smaller than the tank diameter. A typical stirred vessel uses
+          an impeller between a third and a half of the tank diameter.
+        </LabNotice>
+      )}
 
-        setResult({ mixingTime, powerNumber: Np, reynoldsNumber: Re, flowRegime, color, impellerType });
+      <CalcSection title="Vessel and impeller" description="Geometry, speed and the properties of the batch being mixed.">
+        <FieldGrid>
+          <NumberField
+            label="Tank diameter D"
+            value={tankDiameter}
+            onChange={setTankDiameter}
+            unit="m"
+            step="0.01"
+            min={0}
+            placeholder="e.g. 2"
+            hint="Internal diameter of the vessel."
+            error={positiveError(tankDiameter, "Tank diameter")}
+          />
+          <NumberField
+            label="Impeller diameter d"
+            value={impellerDiameter}
+            onChange={setImpellerDiameter}
+            unit="m"
+            step="0.01"
+            min={0}
+            placeholder="e.g. 0.7"
+            hint="Usually D/3 to D/2."
+            error={positiveError(impellerDiameter, "Impeller diameter")}
+          />
+          <NumberField
+            label="Impeller speed N"
+            value={impellerSpeed}
+            onChange={setImpellerSpeed}
+            unit="rps"
+            step="0.1"
+            min={0}
+            placeholder="e.g. 2"
+            hint="Revolutions per second. 120 rpm = 2 rps."
+            error={positiveError(impellerSpeed, "Impeller speed")}
+          />
+          <NumberField
+            label="Dynamic viscosity μ"
+            value={fluidViscosity}
+            onChange={setFluidViscosity}
+            unit="Pa·s"
+            step="0.000001"
+            min={0}
+            placeholder="e.g. 0.001"
+            hint="Water at 20 °C is about 0.001 Pa·s."
+            error={positiveError(fluidViscosity, "Viscosity")}
+          />
+          <NumberField
+            label="Density ρ"
+            value={fluidDensity}
+            onChange={setFluidDensity}
+            unit="kg/m³"
+            step="0.001"
+            min={0}
+            placeholder="e.g. 1000"
+            hint="Bulk density of the batch."
+            error={positiveError(fluidDensity, "Density")}
+          />
+          <SelectField
+            label="Mixing objective"
+            value={mixingType}
+            onChange={(v) => setMixingType(v as MixingObjective)}
+            options={OBJECTIVE_OPTIONS}
+            hint="Sets the constant K in the correlation."
+          />
+        </FieldGrid>
 
-        // Generate mixing time vs speed curve
-        const data = [];
-        for (let n = 0.5; n <= N * 2; n += N / 10) {
-            const t = K * Math.pow(D / d, 2) * (1 / n) * 60;
-            data.push({ speed: n, time: t });
-        }
-        setChartData(data);
-    };
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-[13px] font-medium text-foreground/90">Try an example</span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setTankDiameter("2");
+              setImpellerDiameter("0.7");
+              setImpellerSpeed("2");
+              setFluidViscosity("0.001");
+              setFluidDensity("1000");
+              setMixingType("blending");
+            }}
+          >
+            Aqueous batch, turbulent
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setTankDiameter("1");
+              setImpellerDiameter("0.5");
+              setImpellerSpeed("0.5");
+              setFluidViscosity("10");
+              setFluidDensity("1200");
+              setMixingType("blending");
+            }}
+          >
+            Viscous syrup
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={reset}>
+            Reset
+          </Button>
+        </div>
+      </CalcSection>
 
-    useEffect(() => {
-        if (result) calculateMixingTime();
-    }, [mixingType]);
+      {result && (
+        <CalcSection title="Working" description="The intermediate quantities behind the estimate.">
+          <div>
+            <ResultRow
+              label="Impeller Reynolds number Re = ρNd²/μ"
+              value={result.reynoldsNumber.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              badge={result.flowRegime}
+            />
+            <ResultRow label="Power number Np" value={result.powerNumber.toFixed(2)} />
+            <ResultRow label="Diameter ratio D/d" value={(parseFloat(tankDiameter) / parseFloat(impellerDiameter)).toFixed(3)} />
+            <ResultRow label="(D/d)²" value={Math.pow(parseFloat(tankDiameter) / parseFloat(impellerDiameter), 2).toFixed(3)} />
+            <ResultRow label="Mixing constant K" value={result.K} unit={mixingType} />
+            <ResultRow label="Mixing time = K × (D/d)² × (1/N) × 60" value={result.mixingTime.toFixed(0)} unit="s" />
+            <ResultRow label="Recommended impeller" value={result.impellerType} />
+          </div>
+        </CalcSection>
+      )}
 
-    const reset = () => {
-        setTankDiameter('');
-        setImpellerDiameter('');
-        setImpellerSpeed('');
-        setFluidViscosity('0.001');
-        setFluidDensity('1000');
-        setMixingType('blending');
-        setResult(null);
-        setChartData([]);
-    };
+      {chartData.length > 0 && (
+        <CalcSection
+          title="Mixing time vs. impeller speed"
+          description="The same vessel across a range of speeds — mixing time is inversely proportional to N."
+        >
+          <div className="h-56 w-full sm:h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 8, right: 12, bottom: 24, left: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                <XAxis
+                  dataKey="speed"
+                  fontSize={11}
+                  tickMargin={8}
+                  tickFormatter={(v: number) => v.toFixed(2)}
+                  label={{ value: "Impeller speed (rps)", position: "insideBottom", offset: -14, fontSize: 11 }}
+                />
+                <YAxis fontSize={11} width={58} tickFormatter={(v: number) => v.toFixed(0)} />
+                <Tooltip
+                  formatter={(v) => [`${Number(v).toFixed(0)} s`, "Mixing time"]}
+                  labelFormatter={(l) => `N = ${Number(l).toFixed(2)} rps`}
+                />
+                <Line type="monotone" dataKey="time" stroke="#1C7BD9" strokeWidth={2.5} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </CalcSection>
+      )}
 
-    return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 pt-20">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6">
-                    <div className="flex flex-col md:flex-row items-center justify-between">
-                        <div className="flex items-center mb-4 md:mb-0">
-                            <div className="bg-white/20 p-3 rounded-xl mr-4">
-                                <Clock className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-white">Mixing Time Estimator</h1>
-                                <p className="text-blue-100 mt-2">tₘ = K × (D/d)² × (1/N) </p>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-2 bg-white/20 px-4 py-2 rounded-lg">
-                            <Gauge className="w-5 h-5 text-white" />
-                            <span className="text-white font-semibold">Agitated Vessel Design</span>
-                        </div>
-                    </div>
-                </div>
+      <CalcSection title="Impeller reference" description="Turbulent power numbers and what each impeller is for.">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="py-2 pr-3 text-left font-medium text-muted-foreground">Impeller</th>
+                <th className="py-2 pr-3 text-left font-medium text-muted-foreground">Np (turbulent)</th>
+                <th className="py-2 text-left font-medium text-muted-foreground">Typical use</th>
+              </tr>
+            </thead>
+            <tbody>
+              {IMPELLER_DATA.map((row) => (
+                <tr key={row.type} className="border-b border-border/60 last:border-b-0">
+                  <td className="py-2 pr-3">{row.type}</td>
+                  <td className="py-2 pr-3 tabular-nums">{row.Np.toFixed(1)}</td>
+                  <td className="py-2 text-muted-foreground">{row.application}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CalcSection>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left Column: Inputs */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
-                                <Activity className="w-6 h-6 mr-2 text-blue-600" />
-                                Vessel & Impeller Parameters
-                            </h2>
+      <FormulaNote title="How this is calculated">
+        <p>The impeller Reynolds number decides the flow regime:</p>
+        <Formula>Re = (ρ × N × d²) / μ</Formula>
+        <p>
+          Below Re 10 the flow is laminar, from 10 to 10 000 transitional, and above that turbulent.
+          The power number is estimated from Re against a Rushton turbine: Np = 70/Re in the laminar
+          region, 70/√Re in the transitional region, and a constant 5.0 when turbulent.
+        </p>
+        <p>The blend time uses a geometric correlation with a constant K set by the mixing duty:</p>
+        <Formula>t = K × (D/d)² × (1/N) × 60</Formula>
+        <p>
+          K is 4 for blending, 6 for a chemical reaction, 8 for solid suspension and 10 for
+          dispersion. Note the unit inconsistency flagged beside the result: the factor of 60 assumes
+          N in rpm, while Re above assumes rps.
+        </p>
+      </FormulaNote>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-4 border border-blue-200">
-                                    <label className="text-sm font-semibold mb-2">Tank diameter D (m)</label>
-                                    <input type="number" step="0.01" value={tankDiameter} onChange={(e) => setTankDiameter(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg" placeholder="e.g., 1.5" />
-                                </div>
-                                <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-xl p-4 border border-green-200">
-                                    <label className="text-sm font-semibold mb-2">Impeller diameter d (m)</label>
-                                    <input type="number" step="0.01" value={impellerDiameter} onChange={(e) => setImpellerDiameter(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-green-200 rounded-lg" placeholder="e.g., 0.5" />
-                                </div>
-                                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
-                                    <label className="text-sm font-semibold mb-2">Impeller speed N (rps)</label>
-                                    <input type="number" step="0.1" value={impellerSpeed} onChange={(e) => setImpellerSpeed(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg" placeholder="e.g., 4" />
-                                </div>
-                                <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl p-4 border border-orange-200">
-                                    <label className="text-sm font-semibold mb-2">Viscosity μ (Pa·s)</label>
-                                    <input type="number" step="0.001" value={fluidViscosity} onChange={(e) => setFluidViscosity(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-orange-200 rounded-lg" />
-                                </div>
-                                <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl p-4 border border-amber-200">
-                                    <label className="text-sm font-semibold mb-2">Density ρ (kg/m³)</label>
-                                    <input type="number" step="1" value={fluidDensity} onChange={(e) => setFluidDensity(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-amber-200 rounded-lg" />
-                                </div>
-                                <div className="bg-gradient-to-r from-indigo-50 to-violet-50 rounded-xl p-4 border border-indigo-200">
-                                    <label className="text-sm font-semibold mb-2">Mixing objective</label>
-                                    <select value={mixingType} onChange={(e) => setMixingType(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-indigo-200 rounded-lg">
-                                        <option value="blending">Blending (K=4)</option>
-                                        <option value="suspension">Solid suspension (K=8)</option>
-                                        <option value="reaction">Chemical reaction (K=6)</option>
-                                        <option value="dispersion">Dispersion (K=10)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Mixing time vs speed chart */}
-                            {chartData.length > 0 && (
-                                <div className="mt-6 bg-gray-50 rounded-xl p-4">
-                                    <h3 className="text-lg font-bold text-gray-800 mb-4">Mixing Time vs. Impeller Speed</h3>
-                                    {/* Increased height to h-64 for better breathing room */}
-                                    <div className="h-64">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            {/* Added margins to ensure labels have space */}
-                                            <LineChart data={chartData} margin={{ top: 10, right: 30, left: 25, bottom: 35 }}>
-                                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-
-                                                <XAxis
-                                                    dataKey="speed"
-                                                    fontSize={12}
-                                                    label={{
-                                                        value: "Speed (rps)",
-                                                        position: "insideBottom",
-                                                        offset: -25,
-                                                        fontSize: 13,
-                                                        fontWeight: 600
-                                                    }}
-                                                />
-
-                                                <YAxis
-                                                    fontSize={12}
-                                                    label={{
-                                                        value: "Time (s)",
-                                                        angle: -90,
-                                                        position: "insideLeft",
-                                                        offset: -10,
-                                                        fontSize: 13,
-                                                        fontWeight: 600
-                                                    }}
-                                                />
-
-                                                <Tooltip
-                                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                                                />
-
-                                                <Line
-                                                    type="monotone"
-                                                    dataKey="time"
-                                                    stroke="#2563eb"
-                                                    strokeWidth={3}
-                                                    dot={{ r: 4, fill: '#2563eb' }} // Added dots for clarity on speed points
-                                                    activeDot={{ r: 6 }}
-                                                />
-                                            </LineChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Formula */}
-                            <div className="bg-blue-50 p-4 rounded-lg mt-4">
-                                <p className="text-sm font-mono">tₘ = K × (D/d)² × (1/N) </p>
-                                <p className="text-xs text-gray-600 mt-1">K depends on objective: blending 4, suspension 8, reaction 6, dispersion 10 .</p>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="flex flex-col sm:flex-row gap-4 mt-6">
-                                <button onClick={calculateMixingTime}
-                                    className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 px-6 rounded-xl shadow-lg">
-                                    Estimate Mixing Time
-                                </button>
-                                <button onClick={reset}
-                                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white rounded-xl flex items-center justify-center">
-                                    <RefreshCw className="w-5 h-5 mr-2" /> Reset
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Detailed Information */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <button onClick={() => setShowDetails(!showDetails)}
-                                className="flex items-center justify-between w-full text-left">
-                                <h3 className="text-lg font-bold text-gray-800 flex items-center">
-                                    <Info className="w-5 h-5 mr-2 text-blue-600" />
-                                    About Mixing Time
-                                </h3>
-                            </button>
-                            {showDetails && (
-                                <div className="mt-4 space-y-3 text-sm text-gray-600">
-                                    <p><span className="font-semibold">Definition:</span> Mixing time is the time required to achieve a specified degree of homogeneity in a stirred vessel .</p>
-                                    <p><span className="font-semibold">Correlation:</span> tₘ ∝ (D/d)² / N, with proportionality constant K depending on impeller type and process objective .</p>
-                                    <p><span className="font-semibold">Reynolds number:</span> Re = ρ N d² / μ – indicates flow regime (laminar, transitional, turbulent).</p>
-                                    <p><span className="font-semibold">Power number:</span> Np = P / (ρ N³ d⁵) – characterizes power consumption.</p>
-                                    <p><span className="font-semibold">Applications:</span> Scale‑up, process optimization, equipment selection.</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Right Column: Results & Reference */}
-                    <div className="space-y-6">
-                        {result && (
-                            <div className="bg-gradient-to-br from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 text-white">
-                                <h2 className="text-2xl font-bold mb-4 flex items-center">
-                                    <Clock className="w-7 h-7 mr-3" />
-                                    Mixing Time
-                                </h2>
-                                <div className="bg-white/20 rounded-xl p-4 text-center">
-                                    <div className="text-4xl font-bold mb-2">{result.mixingTime.toFixed(0)} s</div>
-                                    <div className={`text-lg font-bold ${result.color}`}>{result.flowRegime}</div>
-                                </div>
-                                <div className="bg-white/10 rounded-lg p-4 mt-4 grid grid-cols-2 gap-2 text-sm">
-                                    <div><span className="font-semibold">Re</span> {result.reynoldsNumber.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                                    <div><span className="font-semibold">Np</span> {result.powerNumber.toFixed(2)}</div>
-                                    <div className="col-span-2 mt-2"><span className="font-semibold">Recommended impeller:</span> {result.impellerType}</div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Impeller Power Numbers */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                                <BookOpen className="w-5 h-5 mr-2 text-blue-600" />
-                                Impeller Power Numbers
-                            </h3>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead className="bg-gradient-to-r from-blue-50 to-green-50">
-                                        <tr><th className="py-2 px-3 text-left">Impeller</th><th className="py-2 px-3 text-left">Np</th><th className="py-2 px-3 text-left">Application</th></tr>
-                                    </thead>
-                                    <tbody>
-                                        {impellerData.map((imp, i) => (
-                                            <tr key={i} className="border-b"><td className="py-2 px-3">{imp.type}</td><td>{imp.Np}</td><td className="text-gray-600">{imp.application}</td></tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        {/* Flow regime guide */}
-                        <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-2xl shadow-lg p-6 border border-blue-200">
-                            <h3 className="text-lg font-bold text-gray-800 mb-2">Flow Regime</h3>
-                            <p>Re &lt; 10: Laminar<br />10 ≤ Re &lt; 10⁴: Transitional<br />Re ≥ 10⁴: Turbulent</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    );
+      <CalcFaq
+        items={[
+          {
+            q: "Why is the mixing time so long?",
+            a: "Because of the ×60 in the correlation. With the speed entered in revolutions per second, the dimensionless form t = K(D/d)²/N gives a time 60 times shorter. The tool reports the original figure and states the discrepancy rather than silently changing it.",
+          },
+          {
+            q: "My impeller runs at 120 rpm — what do I enter?",
+            a: "2 rps. Divide rpm by 60. The Reynolds number and the flow regime depend on getting this right.",
+          },
+          {
+            q: "Why does the power number jump at Re 10 000?",
+            a: "Above that the flow is fully turbulent and Np becomes independent of Reynolds number — a constant for each impeller geometry (5.0 for a Rushton turbine). Below it, Np still falls with increasing Re.",
+          },
+          {
+            q: "Does a bigger impeller always mix faster?",
+            a: "In this correlation yes, because time scales with (D/d)². In practice a larger impeller also needs far more power — power scales with N³d⁵ — so the choice is a trade-off, not a free win.",
+          },
+        ]}
+      />
+    </CalculatorShell>
+  );
 }

@@ -1,13 +1,13 @@
 // app/simulations/disk-diffusion/page.tsx
 import type { Metadata } from 'next';
-import DiskDiffusionSim from '@/components/Simulations/DiskDiffusion/DiskDiffusionSim';
+import DiskDiffusionLab from '@/components/Simulations/DiskDiffusion/DiskDiffusionLab';
 
 export const metadata: Metadata = {
-  title: 'Disk Diffusion Simulation — PharmaWallah',
+  title: 'Disk Diffusion Lab (Kirby-Bauer) — PharmaWallah',
   description:
-    'Interactive Kirby-Bauer antibiotic susceptibility test simulation. Learn disk diffusion, measure zones, interpret CLSI breakpoints, and download a lab report.',
+    'Virtual Kirby-Bauer antibiotic susceptibility test. Walk through the illustrated lab guide, then standardise the inoculum, inoculate a Mueller-Hinton plate, apply disks, incubate, measure the zones of inhibition yourself and interpret them against configurable criteria.',
 };
 
 export default function DiskDiffusionPage() {
-  return <DiskDiffusionSim />;
+  return <DiskDiffusionLab />;
 }

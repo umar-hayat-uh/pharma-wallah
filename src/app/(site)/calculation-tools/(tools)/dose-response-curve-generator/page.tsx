@@ -1,469 +1,490 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Scatter } from 'recharts';
-import { Activity, RefreshCw, TrendingUp, Plus, Trash2, Settings, Target } from 'lucide-react';
 
-interface CurveParams {
-    id: string;
-    name: string;
-    emax: number;
-    ec50: number;
-    hill: number;
-    baseline: number;
-    color: string;
-}
+import { useMemo, useState } from "react";
+import {
+  ComposedChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  ReferenceLine,
+  Scatter,
+} from "recharts";
+import { TrendingUp, Plus, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  CalculatorShell,
+  CalcSection,
+  FieldGrid,
+  NumberField,
+  ResultCard,
+  ResultRow,
+  FormulaNote,
+  Formula,
+  CalcAbout,
+  CalcList,
+  CalcFaq,
+  AdSlot,
+  ModeSwitch,
+  LabNotice,
+} from "@/components/calculators";
+import { generateCurveData, safeEc50, type CurveParams } from "./_curves";
+
+const COLOR_PALETTE = ["#1C7BD9", "#21B67A", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
+
+const SAMPLE_DRUGS = [
+  { name: "Morphine", ec50: 10, emax: 100, hill: 1.2 },
+  { name: "Aspirin", ec50: 100, emax: 80, hill: 1.0 },
+  { name: "Propranolol", ec50: 1, emax: 100, hill: 0.8 },
+  { name: "Fentanyl", ec50: 0.1, emax: 100, hill: 1.5 },
+  { name: "Diazepam", ec50: 20, emax: 90, hill: 1.1 },
+];
+
+type ScaleMode = "linear" | "log";
 
 export default function DoseResponseCurveGenerator() {
-    const [curves, setCurves] = useState<CurveParams[]>([
-        { id: '1', name: 'Drug A', emax: 100, ec50: 10, hill: 1, baseline: 0, color: '#3b82f6' }
+  const [curves, setCurves] = useState<CurveParams[]>([
+    { id: "1", name: "Drug A", emax: 100, ec50: 10, hill: 1, baseline: 0, color: COLOR_PALETTE[0] },
+  ]);
+  const [maxConc, setMaxConc] = useState(100);
+  const [nextId, setNextId] = useState(2);
+  const [scale, setScale] = useState<ScaleMode>("log");
+
+  const { linearData, logData, yDomainMax } = useMemo(
+    () => generateCurveData(curves, maxConc),
+    [curves, maxConc],
+  );
+
+  const addCurve = () => {
+    setCurves([
+      ...curves,
+      {
+        id: nextId.toString(),
+        name: `Drug ${String.fromCharCode(65 + curves.length)}`,
+        emax: 100,
+        ec50: 10,
+        hill: 1,
+        baseline: 0,
+        color: COLOR_PALETTE[curves.length % COLOR_PALETTE.length],
+      },
     ]);
-    const [maxConc, setMaxConc] = useState<number>(100);
-    const [pointsPerCurve] = useState<number>(150);
-    const [linearData, setLinearData] = useState<any[]>([]);
-    const [logData, setLogData] = useState<any[]>([]);
-    const [yDomainMax, setYDomainMax] = useState<number>(100);
-    const [nextId, setNextId] = useState<number>(2);
-    const [showSettings, setShowSettings] = useState<boolean>(false);
+    setNextId(nextId + 1);
+  };
 
-    const colorPalette = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+  const removeCurve = (id: string) => {
+    if (curves.length <= 1) return;
+    setCurves(curves.filter((c) => c.id !== id));
+  };
 
-    // Generate data for all curves
-    const generateAllData = () => {
-        if (curves.length === 0) return;
+  const updateCurve = (id: string, field: keyof CurveParams, value: number | string) => {
+    setCurves(curves.map((c) => (c.id === id ? { ...c, [field]: value } : c)));
+  };
 
-        let observedMax = 0;
+  const loadSample = (index: number) => {
+    const drug = SAMPLE_DRUGS[index];
+    setCurves([
+      {
+        id: "1",
+        name: drug.name,
+        emax: drug.emax,
+        ec50: drug.ec50,
+        hill: drug.hill,
+        baseline: 0,
+        color: COLOR_PALETTE[0],
+      },
+    ]);
+  };
 
-        // Linear scale points (from 0 to maxConc)
-        const linearPoints: any[] = [];
-        const step = maxConc / pointsPerCurve;
-        for (let i = 0; i <= pointsPerCurve; i++) {
-            const conc = i * step;
-            const point: any = { conc };
-            curves.forEach(curve => {
-                // Safeguard against zero or negative ec50
-                const ec = curve.ec50 <= 0 ? 0.001 : curve.ec50;
-                // Hill / sigmoid Emax equation: E = E0 + (Emax * C^n) / (EC50^n + C^n)
-                const effect = curve.baseline + (curve.emax * Math.pow(conc, curve.hill)) /
-                    (Math.pow(ec, curve.hill) + Math.pow(conc, curve.hill));
-                point[curve.id] = effect;
-                if (effect > observedMax) observedMax = effect;
-            });
-            linearPoints.push(point);
+  const reset = () => {
+    setCurves([
+      { id: "1", name: "Drug A", emax: 100, ec50: 10, hill: 1, baseline: 0, color: COLOR_PALETTE[0] },
+    ]);
+    setMaxConc(100);
+    setNextId(2);
+  };
+
+  // EC50 markers sit at each curve's own half-maximal effect (baseline + Emax/2),
+  // not at a fixed y = 50 — that only coincides when baseline is 0 and Emax is 100.
+  const ec50PointsLinear = curves.map((curve) => ({
+    conc: curve.ec50,
+    effect: curve.baseline + curve.emax / 2,
+    name: curve.name,
+  }));
+  const ec50PointsLog = curves.map((curve) => ({
+    logConc: Math.log10(safeEc50(curve.ec50)),
+    effect: curve.baseline + curve.emax / 2,
+    name: curve.name,
+  }));
+
+  const primary = curves[0];
+  const showReferenceLines = curves.length <= 2;
+
+  return (
+    <CalculatorShell
+      title="Dose-Response Curve Generator"
+      subtitle="Plots the sigmoid Emax (Hill) equation for one or more drugs on linear and log-dose axes, so potency and efficacy can be compared side by side."
+      icon={TrendingUp}
+      eyebrow="Pharmacology"
+      aside={
+        <>
+          <CalcAbout title="About dose-response curves">
+            <p>
+              A dose-response curve separates two things students often conflate.{" "}
+              <strong>Potency</strong> is where the curve sits on the concentration axis (EC₅₀);{" "}
+              <strong>efficacy</strong> is how high it climbs (Emax). A more potent drug is not
+              necessarily a more effective one.
+            </p>
+            <CalcList
+              title="Use it when"
+              items={[
+                "Comparing a full agonist with a partial agonist",
+                "Showing why the log-dose plot is the one that looks sigmoid",
+                "Exploring what the Hill coefficient does to curve steepness",
+              ]}
+            />
+            <CalcList
+              tone="caution"
+              title="Keep in mind"
+              items={[
+                "These are idealised curves from an equation, not fitted experimental data.",
+                "EC₅₀ marks half of that curve's own maximum (baseline + Emax/2), so it is not at y = 50 unless baseline is 0 and Emax is 100.",
+                "A Hill coefficient far from 1 implies cooperativity — a single-site model may not be appropriate.",
+              ]}
+            />
+          </CalcAbout>
+
+          <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR} />
+        </>
+      }
+    >
+      <ResultCard
+        label={curves.length === 1 ? `${primary.name} · EC₅₀` : `${curves.length} curves plotted`}
+        value={curves.length === 1 ? String(primary.ec50) : String(curves.length)}
+        unit={curves.length === 1 ? "nM" : "curves"}
+        interpretation={
+          curves.length === 1
+            ? `Emax ${primary.emax}%, Hill n = ${primary.hill}, baseline ${primary.baseline}%`
+            : curves.map((c) => `${c.name} EC₅₀ ${c.ec50}`).join(" · ")
         }
-        setLinearData(linearPoints);
+        tone="neutral"
+      />
 
-        // Log scale points (log concentration), centered on the range of EC50s
-        const minLog = Math.log10(0.01 * Math.min(...curves.map(c => c.ec50 <= 0 ? 0.001 : c.ec50)));
-        const maxLog = Math.log10(100 * Math.max(...curves.map(c => c.ec50 <= 0 ? 0.001 : c.ec50)));
-        const logStep = (maxLog - minLog) / pointsPerCurve;
-        const logPoints: any[] = [];
-        for (let i = 0; i <= pointsPerCurve; i++) {
-            const logConc = minLog + i * logStep;
-            const conc = Math.pow(10, logConc);
-            const point: any = { logConc, conc };
-            curves.forEach(curve => {
-                const ec = curve.ec50 <= 0 ? 0.001 : curve.ec50;
-                const effect = curve.baseline + (curve.emax * Math.pow(conc, curve.hill)) /
-                    (Math.pow(ec, curve.hill) + Math.pow(conc, curve.hill));
-                point[curve.id] = effect;
-                if (effect > observedMax) observedMax = effect;
-            });
-            logPoints.push(point);
+      <CalcSection title="Scale">
+        <ModeSwitch<ScaleMode>
+          label="Concentration axis"
+          value={scale}
+          onChange={setScale}
+          options={[
+            { value: "log", label: "Log-dose", description: "The classic sigmoid shape" },
+            { value: "linear", label: "Linear", description: "True concentration axis" },
+          ]}
+        />
+      </CalcSection>
+
+      <CalcSection
+        title={scale === "log" ? "Log-dose scale" : "Linear scale"}
+        description={
+          scale === "log"
+            ? "Effect against log₁₀ concentration. Black dots mark each curve's EC₅₀."
+            : "Effect against concentration. Black dots mark each curve's EC₅₀."
         }
-        setLogData(logPoints);
-
-        // Auto-scale the Y axis to whatever the curves actually reach (baseline + Emax can exceed 100).
-        // A hard-coded clamp to 100 would silently flatten and misrepresent the top of the curve.
-        setYDomainMax(Math.max(100, Math.ceil(observedMax / 10) * 10));
-    };
-
-    useEffect(() => {
-        generateAllData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [curves, maxConc]);
-
-    const addCurve = () => {
-        const newCurve: CurveParams = {
-            id: nextId.toString(),
-            name: `Drug ${String.fromCharCode(65 + curves.length)}`,
-            emax: 100,
-            ec50: 10,
-            hill: 1,
-            baseline: 0,
-            color: colorPalette[curves.length % colorPalette.length]
-        };
-        setCurves([...curves, newCurve]);
-        setNextId(nextId + 1);
-    };
-
-    const removeCurve = (id: string) => {
-        if (curves.length <= 1) return;
-        setCurves(curves.filter(c => c.id !== id));
-    };
-
-    const updateCurve = (id: string, field: keyof CurveParams, value: number | string) => {
-        setCurves(curves.map(c => c.id === id ? { ...c, [field]: value } : c));
-    };
-
-    const reset = () => {
-        setCurves([{ id: '1', name: 'Drug A', emax: 100, ec50: 10, hill: 1, baseline: 0, color: '#3b82f6' }]);
-        setMaxConc(100);
-        setNextId(2);
-    };
-
-    const sampleDrugs = [
-        { name: 'Morphine', ec50: 10, emax: 100, hill: 1.2 },
-        { name: 'Aspirin', ec50: 100, emax: 80, hill: 1.0 },
-        { name: 'Propranolol', ec50: 1, emax: 100, hill: 0.8 },
-        { name: 'Fentanyl', ec50: 0.1, emax: 100, hill: 1.5 },
-        { name: 'Diazepam', ec50: 20, emax: 90, hill: 1.1 },
-    ];
-
-    const loadSample = (index: number) => {
-        const drug = sampleDrugs[index];
-        setCurves([{
-            id: '1',
-            name: drug.name,
-            emax: drug.emax,
-            ec50: drug.ec50,
-            hill: drug.hill,
-            baseline: 0,
-            color: '#3b82f6'
-        }]);
-    };
-
-    // EC50 markers: by definition, EC50 is the concentration that produces HALF of that curve's
-    // own maximal effect (baseline + Emax/2) — not a fixed y = 50, unless baseline = 0 and Emax = 100.
-    const ec50PointsLinear = curves.map(curve => ({
-        conc: curve.ec50,
-        effect: curve.baseline + curve.emax / 2,
-        name: curve.name,
-    }));
-    const ec50PointsLog = curves.map(curve => ({
-        logConc: Math.log10(curve.ec50 <= 0 ? 0.001 : curve.ec50),
-        effect: curve.baseline + curve.emax / 2,
-        name: curve.name,
-    }));
-
-    return (
-        <section className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 md:p-6 pt-20">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-green-400 rounded-2xl shadow-xl p-6 md:p-8 mb-6 md:mb-8">
-                    <div className="flex flex-col md:flex-row items-center justify-between">
-                        <div className="flex items-center mb-4 md:mb-0">
-                            <div className="bg-white/20 p-3 rounded-xl mr-4">
-                                <TrendingUp className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-white">Dose-Response Curve Generator</h1>
-                                <p className="text-blue-100 mt-2">Sigmoid Emax (Hill) equation with multiple curves</p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => setShowSettings(!showSettings)}
-                            className="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors flex items-center gap-2"
-                        >
-                            <Settings className="w-4 h-4" /> Settings
-                        </button>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left Column: Inputs */}
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Curve List */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-xl font-bold text-gray-800">Curves</h2>
-                                <button
-                                    onClick={addCurve}
-                                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                                >
-                                    <Plus className="w-4 h-4" /> Add Curve
-                                </button>
-                            </div>
-                            <div className="space-y-4">
-                                {curves.map((curve) => (
-                                    <div key={curve.id} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                                        <div className="flex justify-between items-start mb-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: curve.color }} />
-                                                <input
-                                                    type="text"
-                                                    value={curve.name}
-                                                    onChange={(e) => updateCurve(curve.id, 'name', e.target.value)}
-                                                    className="font-semibold bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 outline-none"
-                                                />
-                                            </div>
-                                            {curves.length > 1 && (
-                                                <button
-                                                    onClick={() => removeCurve(curve.id)}
-                                                    className="text-red-500 hover:text-red-700"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            )}
-                                        </div>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                            <div>
-                                                <label className="block text-xs text-gray-600">Emax (%)</label>
-                                                <input
-                                                    type="number"
-                                                    step="1"
-                                                    min="0"
-                                                    max="200"
-                                                    value={curve.emax}
-                                                    onChange={(e) => updateCurve(curve.id, 'emax', parseFloat(e.target.value) || 0)}
-                                                    className="w-full px-2 py-1 border rounded"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs text-gray-600">EC₅₀ (nM)</label>
-                                                <input
-                                                    type="number"
-                                                    step="0.1"
-                                                    min="0.001"
-                                                    value={curve.ec50}
-                                                    onChange={(e) => updateCurve(curve.id, 'ec50', parseFloat(e.target.value) || 0.001)}
-                                                    className="w-full px-2 py-1 border rounded"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs text-gray-600">Hill (n)</label>
-                                                <input
-                                                    type="number"
-                                                    step="0.1"
-                                                    min="0.1"
-                                                    max="5"
-                                                    value={curve.hill}
-                                                    onChange={(e) => updateCurve(curve.id, 'hill', parseFloat(e.target.value) || 0.1)}
-                                                    className="w-full px-2 py-1 border rounded"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs text-gray-600">Baseline</label>
-                                                <input
-                                                    type="number"
-                                                    step="1"
-                                                    min="0"
-                                                    max="100"
-                                                    value={curve.baseline}
-                                                    onChange={(e) => updateCurve(curve.id, 'baseline', parseFloat(e.target.value) || 0)}
-                                                    className="w-full px-2 py-1 border rounded"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Settings */}
-                            {showSettings && (
-                                <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                                    <h3 className="font-semibold text-gray-800 mb-3">Plot Settings</h3>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Max Concentration (nM)</label>
-                                            <input
-                                                type="number"
-                                                min="10"
-                                                max="1000"
-                                                value={maxConc}
-                                                onChange={(e) => setMaxConc(parseFloat(e.target.value) || 100)}
-                                                className="w-full px-3 py-2 border rounded-lg"
-                                            />
-                                            <p className="text-xs text-gray-500 mt-1">Applies to the linear-scale plot only. The log-scale plot auto-ranges around each curve's EC₅₀.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Sample Drugs */}
-                            <div className="mt-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-4">
-                                <h3 className="font-semibold text-gray-800 mb-3">Example Drugs</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                                    {sampleDrugs.map((drug, idx) => (
-                                        <button
-                                            key={idx}
-                                            onClick={() => loadSample(idx)}
-                                            className="bg-white p-2 rounded-lg text-xs hover:bg-blue-100 transition-colors"
-                                        >
-                                            <div className="font-semibold">{drug.name}</div>
-                                            <div>EC₅₀ {drug.ec50}</div>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="flex gap-4 mt-6">
-                                <button
-                                    onClick={generateAllData}
-                                    className="flex-1 bg-gradient-to-r from-blue-600 to-green-400 hover:from-blue-700 hover:to-green-500 text-white font-semibold py-4 px-6 rounded-xl shadow-lg"
-                                >
-                                    Update Curves
-                                </button>
-                                <button
-                                    onClick={reset}
-                                    className="px-6 bg-gray-600 hover:bg-gray-700 text-white rounded-xl"
-                                >
-                                    <RefreshCw className="w-5 h-5" />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Right Column: Plots */}
-                    <div className="space-y-6">
-                        {/* Linear Scale Plot */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">Linear Scale</h3>
-                            <div className="h-80">
-                                {linearData.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <ComposedChart data={linearData} margin={{ top: 30, right: 30, left: 20, bottom: 25 }}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis
-                                                dataKey="conc"
-                                                type="number"
-                                                label={{ value: 'Concentration (nM)', position: 'insideBottom', offset: -5 }}
-                                                domain={[0, maxConc]}
-                                                tickCount={6}
-                                            />
-                                            <YAxis domain={[0, yDomainMax]} label={{ value: 'Effect (%)', angle: -90, position: 'insideLeft' }} />
-                                            <Tooltip formatter={(v: number | undefined) => (v ?? 0).toFixed(1)} />
-                                            <Legend layout="horizontal" verticalAlign="top" align="center" wrapperStyle={{ paddingBottom: 10 }} />
-                                            {curves.map(curve => (
-                                                <Line
-                                                    key={curve.id}
-                                                    type="monotone"
-                                                    dataKey={curve.id}
-                                                    stroke={curve.color}
-                                                    strokeWidth={2}
-                                                    dot={false}
-                                                    name={curve.name}
-                                                    isAnimationActive={false}
-                                                />
-                                            ))}
-                                            {curves.length <= 2 && curves.map(curve => (
-                                                <ReferenceLine
-                                                    key={`v-${curve.id}`}
-                                                    x={curve.ec50}
-                                                    stroke={curve.color}
-                                                    strokeDasharray="3 3"
-                                                    label={{ value: `${curve.name} EC₅₀`, position: 'top', fill: curve.color, fontSize: 10 }}
-                                                />
-                                            ))}
-                                            {curves.length <= 2 && curves.map(curve => (
-                                                <ReferenceLine
-                                                    key={`h-${curve.id}`}
-                                                    y={curve.baseline + curve.emax / 2}
-                                                    stroke={curve.color}
-                                                    strokeDasharray="2 2"
-                                                    strokeOpacity={0.5}
-                                                />
-                                            ))}
-                                            <Scatter
-                                                data={ec50PointsLinear}
-                                                dataKey="effect"
-                                                fill="#000"
-                                                shape="circle"
-                                                legendType="none"
-                                                isAnimationActive={false}
-                                            />
-                                        </ComposedChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <div className="flex items-center justify-center h-full text-gray-500">
-                                        No data – adjust parameters or add curves.
-                                    </div>
-                                )}
-                            </div>
-                            <p className="text-xs text-gray-500 mt-2">Black dots mark each curve's true EC₅₀ point (baseline + Emax/2) — not a fixed y = 50, since baseline and Emax vary per drug.</p>
-                        </div>
-
-                        {/* Log‑Dose Scale Plot */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">Log-Dose Scale</h3>
-                            <div className="h-80">
-                                {logData.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <ComposedChart data={logData} margin={{ top: 30, right: 30, left: 20, bottom: 25 }}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis
-                                                dataKey="logConc"
-                                                type="number"
-                                                label={{ value: 'log₁₀ Concentration (nM)', position: 'insideBottom', offset: -5 }}
-                                                tickFormatter={(v: number) => v.toFixed(1)}
-                                                tickCount={6}
-                                            />
-                                            <YAxis domain={[0, yDomainMax]} label={{ value: 'Effect (%)', angle: -90, position: 'insideLeft' }} />
-                                            <Tooltip formatter={(v: number | undefined) => (v ?? 0).toFixed(1)} />
-                                            <Legend layout="horizontal" verticalAlign="top" align="center" wrapperStyle={{ paddingBottom: 10 }} />
-                                            {curves.map(curve => (
-                                                <Line
-                                                    key={curve.id}
-                                                    type="monotone"
-                                                    dataKey={curve.id}
-                                                    stroke={curve.color}
-                                                    strokeWidth={2}
-                                                    dot={false}
-                                                    name={curve.name}
-                                                    isAnimationActive={false}
-                                                />
-                                            ))}
-                                            {curves.length <= 2 && curves.map(curve => (
-                                                <ReferenceLine
-                                                    key={`log-${curve.id}`}
-                                                    x={Math.log10(curve.ec50 <= 0 ? 0.001 : curve.ec50)}
-                                                    stroke={curve.color}
-                                                    strokeDasharray="3 3"
-                                                    label={{ value: `${curve.name} EC₅₀`, position: 'top', fill: curve.color, fontSize: 10 }}
-                                                />
-                                            ))}
-                                            {curves.length <= 2 && curves.map(curve => (
-                                                <ReferenceLine
-                                                    key={`logh-${curve.id}`}
-                                                    y={curve.baseline + curve.emax / 2}
-                                                    stroke={curve.color}
-                                                    strokeDasharray="2 2"
-                                                    strokeOpacity={0.5}
-                                                />
-                                            ))}
-                                            <Scatter
-                                                data={ec50PointsLog}
-                                                dataKey="effect"
-                                                fill="#000"
-                                                shape="circle"
-                                                legendType="none"
-                                                isAnimationActive={false}
-                                            />
-                                        </ComposedChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <div className="flex items-center justify-center h-full text-gray-500">
-                                        No data – adjust parameters or add curves.
-                                    </div>
-                                )}
-                            </div>
-                            <p className="text-xs text-gray-500 mt-2">The classic symmetric sigmoid shape only appears on a log concentration axis — this is the standard way dose-response curves are presented.</p>
-                        </div>
-
-                        {/* Formula Card */}
-                        <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-2xl shadow-lg p-6 border border-blue-200">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4">Hill Equation (Sigmoid Emax Model)</h3>
-                            <p className="text-sm font-mono">E = E₀ + (Emax·Cⁿ) / (EC₅₀ⁿ + Cⁿ)</p>
-                            <ul className="text-xs text-gray-600 mt-3 space-y-1">
-                                <li><strong>E₀</strong> (Baseline) — response with no drug present</li>
-                                <li><strong>Emax</strong> — maximal drug-attributable effect</li>
-                                <li><strong>EC₅₀</strong> — concentration producing half of Emax</li>
-                                <li><strong>n</strong> (Hill coefficient) — steepness of the curve</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
+      >
+        <div className="h-72 w-full sm:h-96">
+          {(scale === "log" ? logData : linearData).length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart
+                data={scale === "log" ? logData : linearData}
+                margin={{ top: 28, right: 16, left: 4, bottom: 28 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis
+                  dataKey={scale === "log" ? "logConc" : "conc"}
+                  type="number"
+                  fontSize={11}
+                  tickCount={6}
+                  domain={scale === "log" ? ["dataMin", "dataMax"] : [0, maxConc]}
+                  tickFormatter={(v: number) => (scale === "log" ? v.toFixed(1) : String(v))}
+                  label={{
+                    value: scale === "log" ? "log₁₀ concentration (nM)" : "Concentration (nM)",
+                    position: "insideBottom",
+                    offset: -16,
+                    fontSize: 11,
+                  }}
+                />
+                <YAxis
+                  domain={[0, yDomainMax]}
+                  fontSize={11}
+                  width={48}
+                  label={{ value: "Effect (%)", angle: -90, position: "insideLeft", fontSize: 11 }}
+                />
+                <Tooltip
+                  formatter={(v) => [`${Number(v ?? 0).toFixed(1)} %`, "Effect"]}
+                  labelFormatter={(l) =>
+                    scale === "log"
+                      ? `log₁₀[C] = ${Number(l).toFixed(2)}`
+                      : `[C] = ${Number(l).toFixed(2)} nM`
+                  }
+                />
+                <Legend layout="horizontal" verticalAlign="top" align="center" wrapperStyle={{ paddingBottom: 8, fontSize: 12 }} />
+                {curves.map((curve) => (
+                  <Line
+                    key={curve.id}
+                    type="monotone"
+                    dataKey={curve.id}
+                    stroke={curve.color}
+                    strokeWidth={2.5}
+                    dot={false}
+                    name={curve.name}
+                    isAnimationActive={false}
+                  />
+                ))}
+                {showReferenceLines &&
+                  curves.map((curve) => (
+                    <ReferenceLine
+                      key={`v-${curve.id}`}
+                      x={scale === "log" ? Math.log10(safeEc50(curve.ec50)) : curve.ec50}
+                      stroke={curve.color}
+                      strokeDasharray="3 3"
+                      label={{ value: `${curve.name} EC₅₀`, position: "top", fill: curve.color, fontSize: 10 }}
+                    />
+                  ))}
+                {showReferenceLines &&
+                  curves.map((curve) => (
+                    <ReferenceLine
+                      key={`h-${curve.id}`}
+                      y={curve.baseline + curve.emax / 2}
+                      stroke={curve.color}
+                      strokeDasharray="2 2"
+                      strokeOpacity={0.5}
+                    />
+                  ))}
+                <Scatter
+                  data={scale === "log" ? ec50PointsLog : ec50PointsLinear}
+                  dataKey="effect"
+                  fill="#0f172a"
+                  shape="circle"
+                  legendType="none"
+                  isAnimationActive={false}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              No data — adjust the parameters or add a curve.
             </div>
-        </section>
-    );
+          )}
+        </div>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          Black dots mark each curve&apos;s true EC₅₀ point (baseline + Emax/2) — not a fixed y = 50,
+          since baseline and Emax vary per drug.
+        </p>
+      </CalcSection>
+
+      <CalcSection
+        title="Curves"
+        description="Each drug is one set of Hill parameters. Add a second to compare potency against efficacy."
+      >
+        <div className="space-y-4">
+          {curves.map((curve) => (
+            <div key={curve.id} className="rounded-xl border border-border/80 bg-muted/30 p-3 sm:p-4">
+              <div className="mb-3 flex items-center gap-2.5">
+                <span
+                  className="h-3.5 w-3.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: curve.color }}
+                  aria-hidden="true"
+                />
+                <Input
+                  value={curve.name}
+                  onChange={(e) => updateCurve(curve.id, "name", e.target.value)}
+                  aria-label="Curve name"
+                  className="h-9 max-w-[16rem] font-medium"
+                />
+                {curves.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeCurve(curve.id)}
+                    aria-label={`Remove ${curve.name}`}
+                    className="ml-auto text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+
+              <FieldGrid>
+                <NumberField
+                  label="Emax"
+                  value={String(curve.emax)}
+                  onChange={(v) => updateCurve(curve.id, "emax", parseFloat(v) || 0)}
+                  unit="%"
+                  step="1"
+                  hint="Maximum effect above baseline — efficacy."
+                />
+                <NumberField
+                  label="EC₅₀"
+                  value={String(curve.ec50)}
+                  onChange={(v) => updateCurve(curve.id, "ec50", parseFloat(v) || 0.001)}
+                  unit="nM"
+                  step="0.01"
+                  hint="Concentration giving half of Emax — potency."
+                />
+                <NumberField
+                  label="Hill coefficient n"
+                  value={String(curve.hill)}
+                  onChange={(v) => updateCurve(curve.id, "hill", parseFloat(v) || 0.1)}
+                  step="0.1"
+                  hint="Steepness. n = 1 is a simple single-site curve."
+                />
+                <NumberField
+                  label="Baseline E₀"
+                  value={String(curve.baseline)}
+                  onChange={(v) => updateCurve(curve.id, "baseline", parseFloat(v) || 0)}
+                  unit="%"
+                  step="1"
+                  hint="Effect present with no drug at all."
+                />
+              </FieldGrid>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <Button type="button" variant="outline" size="sm" onClick={addCurve}>
+            <Plus className="mr-1.5 h-4 w-4" /> Add curve
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={reset}>
+            Reset
+          </Button>
+        </div>
+      </CalcSection>
+
+      <CalcSection title="Plot settings">
+        <FieldGrid>
+          <NumberField
+            label="Maximum concentration"
+            value={String(maxConc)}
+            onChange={(v) => setMaxConc(parseFloat(v) || 0)}
+            unit="nM"
+            step="1"
+            min={0}
+            hint="Sets the right-hand end of the linear axis only."
+          />
+        </FieldGrid>
+
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-[13px] font-medium text-foreground/90">Load a sample drug</span>
+          {SAMPLE_DRUGS.map((d, i) => (
+            <Button
+              key={d.name}
+              type="button"
+              variant="outline"
+              size="sm"
+              title={`EC₅₀ ${d.ec50} nM, Emax ${d.emax}%, n = ${d.hill}`}
+              onClick={() => loadSample(i)}
+            >
+              {d.name}
+            </Button>
+          ))}
+        </div>
+      </CalcSection>
+
+      {curves.length > 1 && (
+        <CalcSection title="Comparison" description="Potency and efficacy of each curve side by side.">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="py-2 pr-3 text-left font-medium text-muted-foreground">Curve</th>
+                  <th className="py-2 pr-3 text-left font-medium text-muted-foreground">EC₅₀ (nM)</th>
+                  <th className="py-2 pr-3 text-left font-medium text-muted-foreground">Emax (%)</th>
+                  <th className="py-2 pr-3 text-left font-medium text-muted-foreground">Hill n</th>
+                  <th className="py-2 text-left font-medium text-muted-foreground">Baseline (%)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {curves.map((c) => (
+                  <tr key={c.id} className="border-b border-border/60 last:border-b-0">
+                    <td className="py-2 pr-3">
+                      <span className="mr-2 inline-block h-2.5 w-2.5 rounded-full align-middle" style={{ backgroundColor: c.color }} />
+                      {c.name}
+                    </td>
+                    <td className="py-2 pr-3 tabular-nums">{c.ec50}</td>
+                    <td className="py-2 pr-3 tabular-nums">{c.emax}</td>
+                    <td className="py-2 pr-3 tabular-nums">{c.hill}</td>
+                    <td className="py-2 tabular-nums">{c.baseline}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CalcSection>
+      )}
+
+      {curves.length === 1 && (
+        <CalcSection title="Working" description="Key points read off this curve.">
+          <div>
+            <ResultRow label="Effect with no drug (baseline)" value={primary.baseline} unit="%" />
+            <ResultRow label="Effect at EC₅₀" value={(primary.baseline + primary.emax / 2).toFixed(1)} unit="%" />
+            <ResultRow label="Effect approaching saturation" value={(primary.baseline + primary.emax).toFixed(1)} unit="%" />
+            <ResultRow label="Concentration for 90% of Emax" value={(safeEc50(primary.ec50) * Math.pow(9, 1 / primary.hill)).toFixed(3)} unit="nM" />
+            <ResultRow label="Y-axis plotted to" value={yDomainMax} unit="%" />
+          </div>
+        </CalcSection>
+      )}
+
+      {curves.some((c) => c.baseline + c.emax > 100) && (
+        <LabNotice tone="info" title="Y axis extended past 100%">
+          Baseline plus Emax exceeds 100% on at least one curve, so the axis has been scaled to{" "}
+          {yDomainMax}% rather than clamped — clamping would flatten the top of the curve and
+          misrepresent it.
+        </LabNotice>
+      )}
+
+      <FormulaNote title="How this is calculated">
+        <p>Every curve is the sigmoid Emax (Hill) equation:</p>
+        <Formula>E = E₀ + (Emax × C ⁿ) / (EC₅₀ ⁿ + C ⁿ)</Formula>
+        <p>
+          <strong>E₀</strong> is the baseline effect with no drug, <strong>Emax</strong> the maximum
+          effect above that baseline, <strong>C</strong> the concentration, <strong>EC₅₀</strong> the
+          concentration producing half of Emax, and <strong>n</strong> the Hill coefficient.
+        </p>
+        <p>
+          At C = EC₅₀ the two powered terms are equal, so the fraction is exactly ½ and the effect is
+          E₀ + Emax/2 — which is where the markers sit. The concentration needed for 90% of Emax is
+          EC₅₀ × 9^(1/n), so a steeper curve (larger n) reaches saturation over a narrower range.
+        </p>
+        <p>
+          Each axis is drawn from 151 points. An EC₅₀ of zero or below is substituted with 0.001 nM to
+          keep the logarithm defined.
+        </p>
+      </FormulaNote>
+
+      <CalcFaq
+        items={[
+          {
+            q: "Why does the log-dose plot look sigmoid but the linear one does not?",
+            a: "They are the same equation. On a linear axis the curve is a rectangular hyperbola that rises steeply and flattens; taking logs of the concentration stretches the low end and compresses the high end, which straightens the middle into the familiar S-shape and makes EC₅₀ easy to read off.",
+          },
+          {
+            q: "What does the Hill coefficient actually change?",
+            a: "Steepness. n = 1 gives a simple single-site curve spanning about two log units from 10% to 90% effect. n above 1 (positive cooperativity, like haemoglobin binding oxygen) makes the curve steeper; n below 1 makes it shallower.",
+          },
+          {
+            q: "Is a lower EC₅₀ always better?",
+            a: "No. A low EC₅₀ means high potency — less drug is needed — but says nothing about how large an effect is achievable. A partial agonist can be very potent and still have a low Emax, which is why both numbers are plotted here.",
+          },
+          {
+            q: "Why is the EC₅₀ dot not at 50% on my curve?",
+            a: "Because EC₅₀ is half of that curve's own maximum, measured from its baseline. With a baseline of 20% and an Emax of 60%, the half-maximal point is at 50% — but with a baseline of 0 and an Emax of 80%, it is at 40%.",
+          },
+        ]}
+      />
+    </CalculatorShell>
+  );
 }
