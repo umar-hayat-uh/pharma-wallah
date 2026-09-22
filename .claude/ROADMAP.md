@@ -395,11 +395,12 @@ pages, confirm progress tracking records a visit, then batch the rest.
 
 ---
 
-## Phase 4.54 - iOS app (Capacitor) 🟡 (scaffolded and configured, never compiled)
+## Phase 4.54 - iOS app (Capacitor) 🟡 (compiles in CI; never run on a device, not signed)
 
 ### Offline calculators for iPhone/iPad
-- **Status:** 🟡 The Xcode project exists, is committed and syncs cleanly; **it has never been
-  compiled, run or installed**, because that needs a Mac and none was available.
+- **Status:** 🟡 The Xcode project exists, is committed, syncs cleanly and — since 2026-09-22 —
+  **compiles**: the macOS CI job went green on its first run (Simulator + unsigned arm64 device
+  slice, 5m22s). It has still **never been run or installed**, and there is no signed `.ipa`.
 - **Existing implementation:** `ios/` - a Capacitor 8 Xcode project wrapping the *same*
   `mobile/out` bundle the APK wraps (105 calculators + the hub). Capacitor 8 uses **Swift Package
   Manager**, not CocoaPods, so `cap add ios` and `cap sync ios` run on Linux. Brand icon and
@@ -416,13 +417,13 @@ pages, confirm progress tracking records a visit, then batch the rest.
   (Debug) **and** the arm64 device slice (Release, unsigned) — gated on two guards: `Info.plist`
   must request no permissions, and ≥100 calculator pages must be bundled. It needs **no Apple
   account and no secrets**, and uploads the `.app` as an artifact. `workflow_dispatch` + `ios-v*`
-  tags only, because macOS runners bill at 10x on a private repository. **It has never been run**
-  — that is one click in the Actions tab.
+  tags only, because macOS runners bill at 10x on a private repository. **First run 2026-09-22:
+  `success`, 5m22s, all 13 steps green.**
 - **Remaining work:**
-  - **Run the "iOS app" workflow once.** That is now the cheapest way to learn whether it compiles;
-    no Mac required. Everything below still needs real hardware.
-  - Open it on a Mac (or the artifact in a Simulator) for the things a compile cannot show: the
-    launch-screen handover, the keyboard accessory bar, the share sheet.
+  - ~~Run the "iOS app" workflow once~~ — **done 2026-09-22, conclusion `success`.** It compiles.
+  - Download the `pharmawallah-ios-simulator-app` artifact and run it in a Simulator on a Mac, for
+    the things a compile cannot show: the launch-screen handover, the keyboard accessory bar, the
+    share sheet.
   - An Apple Developer team, a provisioning profile and an App Store Connect record. None exist.
   - Decide distribution: TestFlight, App Store, or neither for now.
 - **Important files:** `ios/App/App/{Info.plist,Assets.xcassets}`, `capacitor.config.ts` (`ios`

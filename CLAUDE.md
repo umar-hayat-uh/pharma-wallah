@@ -482,31 +482,15 @@ exact steps — the content is already written and shipped in `public/content/`,
 existing dead assets into working pages at the lowest risk-per-value ratio in the repo.
 
 ### Known Issues
-21. **The iOS app has never been compiled, run or installed.** `ios/` was created, configured and
-    synced from a Linux machine, which Capacitor 8 supports because it uses Swift Package Manager
-    — but Xcode is what turns it into an app, and no Mac was available. Everything downstream of
-    `cap sync` is therefore **unproven**: the build itself, the launch-screen handover, the
-    keyboard accessory bar, the share sheet, `capacitor://localhost` as a secure origin, and any
-    App Store submission. **A macOS CI job now exists** — `.github/workflows/ios-app.yml`, no
-    Apple account and no secrets needed — but **it has not been run**, so nothing above has
-    changed yet. **Owner action:** Actions tab → "iOS app" → Run workflow. A signed `.ipa`
-    (device install, TestFlight, App Store) additionally needs a paid Apple Developer account,
-    which does not exist.
-20. **The landing page advertises the wrong calculator count.** `STATS.calculators` in
-    `src/components/Home/landing/data.ts` is **97**; there are **104** tool directories and **98**
-    registered on the hub. The hero ruler, timecode and pillar copy all derive from that constant,
-    so `/` currently tells visitors "97 tools" while `/calculation-tools` and the Android app both
-    say 104. The file's own comment says these numbers must never be rounded "for effect" because a
-    pharmacy student will check — the same argument applies to their being stale. **One-line fix**
-    (`calculators: 104`), deliberately not made here: it is user-visible product copy and was outside
-    this task's scope. It matters now because the figure is about to be used in marketing —
-    see `.claude/BRAND_KIT.md` §8.
-19. **The pharmacy counter's clinical content has not been reviewed by a pharmacist.** The ten
-    cases, 31 medicine monographs, counselling points, interaction findings and dose ranges in
-    `src/components/Simulations/CommunityPharmacy/data/` were written as teaching values and are
-    internally consistent and unit-tested, but nobody qualified has read them. Every screen says
-    "educational use only" and names the limitation. **Owner action before this is used with
-    students:** have a pharmacist read `data/medicines.ts` and `data/scenarios.ts`.
+21. **The iOS app compiles, but has never been *run* or installed.** ✅ 2026-09-22: the
+    `.github/workflows/ios-app.yml` job went green on `macos-latest` — Simulator (Debug) **and**
+    the arm64 device slice (Release, unsigned) both built, in 5m22s, with the offline bundle inside
+    and no permissions requested. So "does it build?" is answered: **yes**. What is still unproven
+    is everything a compile cannot show — the launch-screen handover, the keyboard accessory bar,
+    the share sheet, `capacitor://localhost` as a secure origin, and behaviour on real hardware.
+    The Simulator `.app` is downloadable from the run's artifacts; running it needs a Mac. A signed
+    `.ipa` (device install, TestFlight, App Store) additionally needs a **paid Apple Developer
+    account**, which does not exist — the workflow's closing comment names the secrets and steps.
 0c. **The Gemini API key is on the free tier: 5 requests per minute for the whole project.**
    Measured 2026-09-20 against `/api/chat`; the 6th call in a minute returns `429 … quotaValue: "5"`
    with a ~50 s retry delay. This is a **site-wide ceiling shared by every visitor**, not a per-user
@@ -811,10 +795,31 @@ file ownership was agreed by message before any shared file was touched.
   "calculator pages bundled: 106", both exit 0. The heredoc-inside-YAML indentation was checked
   this way rather than assumed (MEMORY 160). **The workflow itself has never run.**
 
+**Outcome — the workflow was run and it went green**
+- The user ran it the same day. **`macos-latest`, 5m22s, commit `5b8788e`, conclusion `success`,
+  all 13 steps green** (confirmed from the Actions API, not inferred from the artifact link):
+  both guards passed, Swift packages resolved, the Simulator build and the unsigned arm64 device
+  build both compiled, and `App.app` uploaded. **The iOS app compiles.** Known Issue 21 was
+  rewritten accordingly and §9 gained an iOS compile baseline.
+- What that does **not** prove: anything needing a running app or a signature. Still unverified —
+  the launch-screen handover, the keyboard accessory bar, the share sheet, and any device install.
+
+**Also on 2026-09-22 — `main` broke for ~4 minutes, twice, from partial commits**
+- `86049de` pushed `package.json` without `pnpm-lock.yaml`; Vercel installs with
+  `--frozen-lockfile` and failed instantly with `ERR_PNPM_OUTDATED_LOCKFILE`. Fixed by `d0381d4`.
+- `5b8788e` ("ios app", committed by the user with `git add -A` across a tree three sessions were
+  working in) took `src/app/(site)/download/page.tsx` but **not** the `DownloadClient.tsx` that
+  exports the `PlatformFile` type it imports, so the Vercel build failed its type-check with
+  `Module "./DownloadClient" has no exported member 'PlatformFile'`. Fixed by `302ab2f`.
+- Both are the same lesson and it is now MEMORY gotcha 161: **in this repo every push to `main`
+  deploys the website, so a commit must be a complete unit.** `npm run build` — not just
+  `npx tsc --noEmit` — re-run after `302ab2f`: **exit 0**, full route table, shared JS 88.6 kB,
+  middleware 81.9 kB. `main` is green.
+
 **Next**
-- Click Run workflow on "iOS app". If it goes green, the app compiles — then open the artifact in
-  a Simulator for the three things only a running app can show: the launch-screen handover, the
-  keyboard accessory bar, and the share sheet.
+- Download the `pharmawallah-ios-simulator-app` artifact and run it in a Simulator on a Mac — the
+  three things only a running app can show: the launch-screen handover, the keyboard accessory bar,
+  and the share sheet.
 
 ### 2026-09-22 — Windows desktop target: Tauri 2, fully offline (`desktop/` + `src-tauri/`)
 
@@ -2687,6 +2692,7 @@ Session `pharma-wallah-a8`, renamed `pharma-wallah-3d` after a machine reboot mi
 | Lint | `npm run lint` | **NOT AVAILABLE.** No ESLint config; the command opens an interactive setup prompt. Do not report lint as passing. |
 | Build | `npm run build` | **PASSES — re-verified 2026-09-20 after the calculator migration finished** (isolated copy of the tree; peers had agreed not to build in the shared root): exit 0, shared JS **88.5 kB**, middleware **81.9 kB**. All 104 calculators then swept against `next start` at 1440×900 and 390×844 — 104/104 HTTP 200, hydrated, **0 exceptions, 0 console errors, 0 horizontal overflow**. **Also 2026-09-20 after the AI Guide rebuild** (isolated copy; the peer dev server on :3000 was left alone): exit 0, shared JS **88.5 kB** (unchanged), `/ai-guide` **9.7 kB / 150 kB first load**, `/books-library` no longer emitted. **Also 2026-09-20, after the Disk Diffusion Lab rebuild** (in an isolated copy of the tree — two peer `next dev` servers were running on the shared root and had already corrupted its `.next`, MEMORY gotcha 126): exit 0, **277 route lines**, shared JS **88.5 kB**, middleware 81.9 kB, `/simulations/disk-diffusion` 49.1 kB / **241 kB first load**; jsPDF confirmed absent from the page chunk and present in its own, so the report no longer rides in the first load. One extra expected warning: `buffer-lab`'s ambiguous `duration-[2000ms]` class. **Earlier the same day: PASSES — after the `/encyclopedia` redesign** (in an isolated copy of the tree, the peer sessions' dev servers left alone): exit 0, shared JS **88.5 kB**, `/encyclopedia` **16.3 kB / 113 kB first load**, `/molecular-lab` 60.2 kB / 149 kB. OpenChemLib (1.09 MB) and 3Dmol (568 KB) are lazy chunks only — grep the built shared chunks for both and expect **0 hits** before shipping any new 3D consumer. Two 404s on `/_vercel/insights` and `/_vercel/speed-insights` appear under `next start` locally; they come from `Analytics` / `SpeedInsights` in `src/app/layout.tsx` and only resolve on Vercel — not a defect. **Earlier: PASSES — 2026-09-16 after Molecular Lab** (in an isolated copy of the tree, dev server left up): exit 0, shared JS **88.4 kB**, middleware 81.9 kB, `/molecular-lab` 59.5 kB / 148 kB first load, `resources.<hash>.json` 1.35 MB in `static/media`. The build also prints several `Dynamic server usage` stack traces (tournament leaderboard, DailyMed, AMR routes) — logged by those handlers, non-fatal, not new. **Before that** (again after the simple `/about-us`: exit 0, shared JS 88.3 kB, `/about-us` 106 kB first load). Earlier the same day: exit 0 in ~2.5 min, 252 route lines, shared JS **88.3 kB**, middleware 81.9 kB; `/calculation-tools/rf-value-calculator` 184 kB and `/cfu-calculator` 183 kB first load; `.next/static/media/opencv.<hash>.js` 10.8 MB emitted as an asset. Same expected warnings as below. **Earlier (2026-09-12):** with the dev server stopped, after the AdSense work (the first successful run since the PWA removal, the shadcn migration and the Outfit switch): exit 0, ~170 routes, middleware 81.8 kB, shared JS 87.8 kB. Stop `npm run dev` first — they share `.next` and corrupt each other (§7 Known Issue 10). **PASSES with a populated `.env`** — exit 0, ~170 routes emitted, middleware 81.8 kB, shared JS 87.8 kB. Only `/_not-found` is static; everything else is `ƒ` (dynamic, server-rendered on demand). **Without `.env` it FAILS**: `Missing environment variable: NEXT_PUBLIC_SUPABASE_URL` while collecting page data for `/api/admin/registrations`. Expected non-fatal warnings: the `@supabase/supabase-js` Edge-runtime `process.version` notice, the stale `caniuse-lite` Browserslist notice, and two webpack "Serializing big strings" cache notices. |
 | Mobile build | `npm run mobile:build` | **PASSES (2026-09-22, ~3 min)** — re-measured after the iOS target landed and the three Capacitor plugins were installed: exit 0, **106 HTML files** under `mobile/out/calculation-tools/` (105 tools + the hub), CSS **88,734 bytes**, shared JS **88.3 kB**; **0** files match the JWT-shaped secret pattern and **0** contain an ad string. This one export now feeds three native targets — `cap sync android`, `cap sync ios` and the Tauri desktop build. **Earlier: PASSES (2026-09-20, ~2 min)** — after the calculator migration and the liquid-glass kit change: exit 0, **108 HTML files**, 106 entries under `mobile/out/calculation-tools/`, CSS **84,243 + 4,210 bytes**. The glass ships to the APK: `calcSheen`/`calcTide` and the `[@media(hover:none)]` phone path are all present in the exported CSS, and the export renders at 390 px with `backdrop-filter: none`. **Earlier (2026-09-16, ~2 min)** — 105 HTML files under `mobile/out/calculation-tools/`, home `/` 125 kB first load, shared JS 88.2 kB, CSS **113,194 bytes**, `mobile/out` 22 MB (OpenCV.js is 10.8 MB of it). Secret scan: use the JWT-shaped pattern (gotcha 90). **Earlier (v1.1):** 109 static pages, 108 HTML files, 105 under `mobile/out/calculation-tools/`, shared JS 87.9 kB, CSS in two files **98,751 + 4,210 bytes**, 12 MB (re-measured 2026-09-13 by the v1.1 APK build, with 85 of 104 tools on the kit; 103,829 + 4,210 before). Independent of `.env` and safe to run while `npm run dev` is up (separate `mobile/.next`). **Also assert zero ad strings in `mobile/out`** — see `.claude/skills/adsense-monetization/SKILL.md`. A ~10 KB stylesheet is the silent Tailwind failure (gotcha 23). |
+| iOS compile | `.github/workflows/ios-app.yml` (Actions → "iOS app" → Run workflow) | **PASSES — first ever run 2026-09-22, `macos-latest`, 5m22s, commit `5b8788e`, conclusion `success`, every step green.** Builds twice with no Apple account and no secrets: **Simulator** (Debug, `-sdk iphonesimulator`) and the **arm64 device slice** (Release, `-sdk iphoneos`, `CODE_SIGNING_ALLOWED=NO`), and uploads `App.app` as the `pharmawallah-ios-simulator-app` artifact. Two guards run before the compile and are part of the baseline: `Info.plist` must request **no permissions**, and **≥100** calculator pages must be in the synced bundle. Needs the committed shared scheme `ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme` (MEMORY gotcha 159). **This is a compile baseline only** — no signed `.ipa`, and the app has still never been *run* (§7 Known Issue 21). Do not report the iOS app as tested on a device. |
 | iOS sync | `npm run ios:sync` (i.e. `cap sync ios`) | **PASSES (2026-09-22, ~4 s after the build)** — exit 0 on **Linux**; Capacitor 8 uses the SPM template so no CocoaPods is involved. Reports **3 Capacitor plugins for ios** (`@capacitor/filesystem@8.1.3`, `@capacitor/keyboard@8.0.5`, `@capacitor/share@8.0.2`) and rewrites `ios/App/CapApp-SPM/Package.swift`. Also assert: `Info.plist` parses with `plistlib` and has **zero** `*UsageDescription` keys, and `ios/App/App/public/calculation-tools` holds one `index.html` per tool. **There is no iOS build baseline** — compiling needs Xcode on macOS and has never been done (§7 Known Issue 21). Do not report the iOS app as building. |
 | APK | `npm run mobile:apk` | **PASSES (2026-09-20, v1.4 / versionCode 5, ~2 min)** — signed V2 release APK **9,369,674 B (8.9 MB)**, certificate SHA-256 `afe4c18e…5b03` **unchanged from v1.3**, so it installs as an update; published file byte-identical to the Gradle output; 104 tool pages inside. **Earlier (2026-09-16, v1.3 / versionCode 4, ~2.5 min)** — signed V2 release APK **9,347,799 B** (8.9 MB), same certificate SHA-256 `afe4c18e…5b03` as v1.2; published file byte-identical to the Gradle output. **Earlier:** (2026-09-14, v1.2 / versionCode 3, built by `pharma-wallah-4b` — new launcher icon + redesigned Serial Dose tool) — signed V2 release APK, 5,945,495 B, copied to `public/downloads/`; same certificate as v1.0/v1.1. Needs JDK 21 (auto-selected) and `android/keystore.properties`. Check `aapt dump badging` for the version and `apksigner verify --print-certs` for the certificate. |
 | Tests | `node --test scripts/pharmacy-counter.test.mts` · `node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts` · `node --test scripts/molecular-lab.test.mts` · `node --test scripts/community.test.mts` · `node --test scripts/ai-guide.test.mts` · `node --test scripts/dissolution-rate.test.mts` | **47 pass, 0 fail** (2026-09-20, Community Pharmacy pure layer, ~0.5 s — case-data integrity, the check grader, verification truths, labels, expiry, inventory, the calculators, scoring) · **41 pass, 0 fail** (2026-09-16; 21 TLC + 20 colony, ~10 s) · **21 pass, 0 fail** (2026-09-16, Molecular Lab, ~12 s, real OpenChemLib) · **19 pass, 0 fail** (2026-09-20, community pure layer, <1 s) · **34 pass, 0 fail** (2026-09-20, AI Guide pure layer — request clamps, Gemini history rules, NDJSON framing, study modes — <1 s). · **28 pass, 0 fail** (2026-09-22, Dissolution Rate Constant pure layer — every column of the supplied practical sheet, both k columns proven distinct, the average against 0.000291833 and against each rejected averaging range, division-by-zero paths, duplicate/backwards times, both notations — <1 s). These cover seven features' pure modules only — there is no framework, no CI, and nothing else is tested. Report them by name. **The community's SQL is verified separately** by running its migration twice against a throwaway local Postgres 16 and asserting RLS from a `nobypassrls` role — see the `community-system` skill. |

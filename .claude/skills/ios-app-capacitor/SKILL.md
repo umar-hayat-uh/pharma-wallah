@@ -130,7 +130,9 @@ the synced bundle. Triggered by `workflow_dispatch` or an `ios-v*` tag only: mac
 on a public repository and bill at **10x** on a private one, so it must never run on an ordinary push.
 
 This is the cheapest answer to "does it compile?" and should be run before anyone books time on a
-Mac. It cannot answer anything that needs a signature or a running app.
+Mac. **First run 2026-09-22: `success` in 5m22s, all steps green** — so the project is known to
+build, and a red run means you broke it. It cannot answer anything that needs a signature or a
+running app.
 
 **Validate a change to that workflow locally** rather than on a billed runner: load it with PyYAML,
 write each `run` block to a file, `bash -n` it, and execute the pure-check steps directly.

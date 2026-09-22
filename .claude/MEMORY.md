@@ -1450,3 +1450,15 @@ Traps that will otherwise be rediscovered painfully.
      `bash -n` it (and execute the pure-check steps), which catches the mistake locally instead of
      on a billed macOS runner.
 
+161. **Every push to `main` deploys the website, so a commit must be a self-contained unit — and
+     `git add -A` in this tree is not one.** Two production breaks in one evening, both from
+     partial commits while three sessions shared the working tree: `86049de` pushed `package.json`
+     without `pnpm-lock.yaml` (Vercel installs with `--frozen-lockfile` →
+     `ERR_PNPM_OUTDATED_LOCKFILE`), and `5b8788e` swept in `download/page.tsx` without the
+     `DownloadClient.tsx` that exports the type it imports (→ build-time type error). Neither was
+     visible locally: the on-disk tree was complete and `npx tsc --noEmit` was clean, because the
+     missing halves were *present but uncommitted*. **Commit by pathspec (`git commit -- <paths>`),
+     treat `package.json` + `pnpm-lock.yaml` as atomic, and when a session shares the tree, check
+     `git status` for a peer's half-written file before staging.** The check that would have caught
+     both is building from a clean checkout of what you are about to push, not from your tree.
+
