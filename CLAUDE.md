@@ -756,7 +756,11 @@ file ownership was agreed by message before any shared file was touched.
   gotcha 23), shared JS 88.3 kB.
 - `npx cap sync ios` → exit 0, **3 Capacitor plugins found**, `Package.swift` rewritten.
   `npx cap sync android` → exit 0, same 3 plugins.
-- **Android regression:** `./gradlew assembleDebug` with the three new plugins — see §9.
+- **Android regression:** `cap sync android` then `./gradlew assembleDebug` (JDK 21, ANDROID_HOME set)
+  → **BUILD SUCCESSFUL in 4m 24s**, 184 tasks, a fresh 11.5 MB debug APK with all three plugins
+  packaged. The plugins do not break the Android target. Note `android/capacitor.settings.gradle`
+  and `android/app/capacitor.build.gradle` changed as a result — generated, but they **must be
+  committed** or Gradle cannot resolve the plugins (MEMORY gotcha 158).
 - Bundle audit: **0** files matching the JWT-shaped secret pattern, **0** ad strings in
   `mobile/out`. External origins in the chunks were read in context and are all inert — Next's own
   font-preconnect constants, jsPDF's unreachable `pdfobject` CDN string, and library error-message
@@ -906,6 +910,15 @@ Capacitor target, `-6c`); file ownership was agreed by message before any shared
   `store_path`, `export_save`) have never executed; only their localStorage/object-URL fallbacks
   were exercised. Also not verified: a real Windows machine, WebView2, the print dialog, the NSIS
   installer, and dark mode (still unreachable site-wide). `npm run lint` does not run in this repo.
+
+**Committed and pushed (user asked, 2026-09-22)**
+- `86049de` — the desktop target, the CI workflow and the four shared root files. Deliberately
+  excluded: a peer's live iOS target, `mobile/`, `src/` and `pnpm-lock.yaml`.
+- `d0381d4` — **`pnpm-lock.yaml`, fixing a production deploy this session broke.** Holding the
+  lockfile back was wrong: every push to `main` deploys the website, Vercel installs with
+  `--frozen-lockfile`, and `86049de` added `@tauri-apps/cli` to `package.json`, so the build failed
+  with `ERR_PNPM_OUTDATED_LOCKFILE` naming five unresolved specifiers (mine plus the four Capacitor
+  packages the iOS session had added). See MEMORY gotcha 152.
 
 **Remaining**
 - **Build the installer.** No Windows machine needed: `.github/workflows/desktop-windows.yml`

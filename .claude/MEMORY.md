@@ -1421,3 +1421,15 @@ Traps that will otherwise be rediscovered painfully.
      DO NOT EDIT and means it — re-sync, never hand-patch the version in the path. The same applies
      to `android/app/capacitor.build.gradle`, which lists the `implementation project(...)` lines.
 
+
+152. **`package.json` and `pnpm-lock.yaml` are ONE atomic unit in this repo — never commit one
+     without the other.** Every push to `main` triggers a Vercel production deploy, and Vercel
+     installs with `--frozen-lockfile`, so a package.json listing a dependency the lockfile does not
+     resolve fails the build immediately with `ERR_PNPM_OUTDATED_LOCKFILE`. This happened for real
+     on 2026-09-22: a session committed `package.json` with `@tauri-apps/cli` while deliberately
+     holding back the lockfile (a peer was mid-install), and the website build broke on the first
+     push. The last good deployment stays live, so the site does not go down — but nothing new ships
+     until it is fixed. Two consequences when several sessions share the tree: **a dependency added
+     by one session cannot be committed by another without also committing the lockfile**, and
+     before pushing either file, validate with `pnpm install --frozen-lockfile --lockfile-only`,
+     which runs exactly Vercel's check and writes nothing.
