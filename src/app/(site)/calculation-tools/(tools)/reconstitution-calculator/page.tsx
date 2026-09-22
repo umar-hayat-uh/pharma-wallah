@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { Syringe, Check, Copy, ExternalLink } from "lucide-react";
+import { Syringe, Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   CalculatorShell,
@@ -18,6 +18,7 @@ import {
   CalcFaq,
   AdSlot,
   ModeSwitch,
+  SourceLink,
   LabNotice,
 } from "@/components/calculators";
 import {
@@ -261,14 +262,9 @@ Generated: ${new Date().toLocaleString()}
               {activePreset.clinicalNotes}
             </p>
             {activePreset.fdaLink && (
-              <a
-                href={activePreset.fdaLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
-              >
-                DailyMed monograph <ExternalLink className="h-3 w-3" />
-              </a>
+              <SourceLink href={activePreset.fdaLink} className="mt-2">
+                DailyMed monograph
+              </SourceLink>
             )}
           </div>
         )}

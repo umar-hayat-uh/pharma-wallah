@@ -30,6 +30,7 @@ hard way in this codebase.
 | `deployment-and-env` | Build behaviour, env vars, PWA, hosting reality | Build failures, new env vars, deploying, fresh setup | `.claude/skills/deployment-and-env/` |
 | `frontend-ui-conventions` | Tokens, motion, icons, page structure, dark mode | Building or changing any page or component | `.claude/skills/frontend-ui-conventions/` |
 | `android-app-capacitor` | The offline calculators-only Android app: second Next project, generated routes, Capacitor | Anything touching `mobile/`, `android/`, or "does this work in the app?" | `.claude/skills/android-app-capacitor/` |
+| `ios-app-capacitor` | The offline iOS app: same `mobile/out` bundle, SPM (no CocoaPods), generated icon/splash, WKWebView safe areas + keyboard, share sheet | Anything touching `ios/`, the Xcode project, App Store readiness, or "does this work on an iPhone?" | `.claude/skills/ios-app-capacitor/` |
 | `landing-page-motion` | The GSAP landing page at `/`: "The Index" as a scroll-played whiteboard video — marker marks, pen, timeline bar, motion hook, scoped stylesheet | Any change to `/`, its copy, its sections, annotations or animation | `.claude/skills/landing-page-motion/` |
 | `top-design` | Awwwards-level design standard: typography as architecture, composition, custom easing, colour, micro-details, 0–10 scoring rubric | Designing or reviewing any page's visual quality; "make it premium" | `.claude/skills/top-design/` |
 | `adsense-monetization` | Ad placements: the one `AdSlot` component, the env-gated loader, the excluded surfaces | Adding/moving an ad, "ads aren't showing", an AdSense policy warning | `.claude/skills/adsense-monetization/` |
@@ -38,7 +39,8 @@ hard way in this codebase.
 
 | Skill | Purpose | Use When | Location |
 | --- | --- | --- | --- |
-| `calculator-tool` | Add/fix one of the 97 calculators and register it on the hub | Any calculation-tools work | `.claude/skills/calculator-tool/` |
+| `calculator-tool` | Add/fix one of the 104 calculators and register it on the hub | Any calculation-tools work | `.claude/skills/calculator-tool/` |
+| `calculator-refinement` | Bring an existing calculator up to the 2026-09-22 refinement standard: units, examples, the working, graphs, mobile | "refine X", "add unit dropdowns / a graph / a working section", "it doesn't show how it got the answer" | `.claude/skills/calculator-refinement/` |
 | `course-content-system` | Subject registry, units, lesson markdown, the 9 unregistered subjects | Courses, units, MCQ subject coverage | `.claude/skills/course-content-system/` |
 | `progress-tracking` | Progress events, batching queue, dashboard, streaks | Tracking a new page, dashboard bugs, new event types | `.claude/skills/progress-tracking/` |
 | `community-system` | The Reddit-shaped community: schema, RLS, triggers, server-authoritative voting, local SQL verification | Any community change; "add a space"; comment ordering; voting | `.claude/skills/community-system/` |
@@ -71,6 +73,7 @@ Most real tasks use three. Typical stacks:
 | Task | Stack |
 | --- | --- |
 | "Add a Cockcroft-Gault calculator" | `implement-feature` → `calculator-tool` → `frontend-ui-conventions` → `testing-verification` |
+| "Refine / improve an existing calculator" | `calculator-refinement` → `calculator-tool` (registry, safety) → `frontend-ui-conventions` → `testing-verification` |
 | "Register the remaining subjects" | `next-feature` → `implement-feature` → `course-content-system` → `roadmap-status` |
 | "The dashboard is empty" | `debug-issue` → `progress-tracking` → `caching-and-ratelimiting` |
 | "Add a tournament game" | `implement-feature` → `tournament-system` → `api-route-conventions` → `security-review` |

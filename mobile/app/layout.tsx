@@ -2,10 +2,12 @@ import type { Metadata, Viewport } from "next";
 import { Outfit } from "next/font/google";
 // The app's own stylesheet: Tailwind base + shadcn/ui tokens mapped to the
 // PharmaWallah brand. It replaces src/app/globals.css rather than importing it,
-// because none of the 89 calculators uses a custom class defined there.
+// because no calculator uses a custom class defined there.
 import "./globals.css";
 import MobileShell from "./_components/MobileShell";
+import { TOOL_SLUGS } from "./_generated/tool-slugs";
 import StartupSplash from "./_components/StartupSplash";
+import NativeShell from "./_components/NativeShell";
 
 // next/font self-hosts the font files into the static export, so the app bar
 // renders correctly with the device in airplane mode.
@@ -18,7 +20,9 @@ const font = Outfit({
 
 export const metadata: Metadata = {
   title: "PharmaWallah Calculators",
-  description: "89 pharmacy calculators that work with no internet connection.",
+  // Counted from the generated slug list rather than typed, so it cannot go
+  // stale the way the hand-written "89" did once the library reached 105.
+  description: `${TOOL_SLUGS.length} pharmacy calculators that work with no internet connection.`,
 };
 
 export const viewport: Viewport = {
@@ -32,7 +36,7 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  // No ThemeProvider: none of the 89 calculators uses a single `dark:` class,
+  // No ThemeProvider: no calculator uses a single `dark:` class,
   // so a theme switcher here would toggle nothing but the app bar.
   return (
     <html lang="en" className={`light ${font.variable}`} style={{ colorScheme: "light" }}>
@@ -40,6 +44,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Covers the gap between the native launch screen and the first paint
             of the catalogue. Removes itself after ~1.5s. */}
         <StartupSplash />
+        {/* Renders nothing; configures the iOS keyboard. See NativeShell. */}
+        <NativeShell />
         <MobileShell>{children}</MobileShell>
       </body>
     </html>

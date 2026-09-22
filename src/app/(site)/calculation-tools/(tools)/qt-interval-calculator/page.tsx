@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useId, useMemo, useState } from "react";
-import { Check, Copy, ExternalLink, HeartPulse, RefreshCw } from "lucide-react";
+import { Check, Copy, HeartPulse, RefreshCw } from "lucide-react";
 import {
     LineChart,
     Line,
@@ -28,6 +28,7 @@ import {
     CalcFaq,
     AdSlot,
     ModeSwitch,
+    SourceLink,
     LabNotice,
     TextField,
     type ResultTone,
@@ -792,14 +793,9 @@ REFERENCES:
                     Electrocardiol. 2014;19(6):568-575.
                 </p>
                 <p>
-                    <a
-                        href="https://www.crediblemeds.org"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 font-medium text-primary underline underline-offset-2"
-                    >
-                        CredibleMeds drug database <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
+                    <SourceLink href="https://www.crediblemeds.org" className="text-[13px]">
+                        CredibleMeds drug database
+                    </SourceLink>
                 </p>
             </FormulaNote>
 

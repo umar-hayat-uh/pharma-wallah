@@ -1433,3 +1433,20 @@ Traps that will otherwise be rediscovered painfully.
      by one session cannot be committed by another without also committing the lockfile**, and
      before pushing either file, validate with `pnpm install --frozen-lockfile --lockfile-only`,
      which runs exactly Vercel's check and writes nothing.
+
+159. **Capacitor's iOS template ships no *shared* Xcode scheme, so `xcodebuild -scheme App` fails
+     on a fresh checkout.** Xcode auto-creates schemes into `xcuserdata/`, which is gitignored, so
+     the project works the moment a human opens it on a Mac and fails in CI, where no human ever
+     has — with the unhelpful "does not contain a scheme named App". Fixed by committing
+     `ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme`; its `BlueprintIdentifier` must be
+     the App `PBXNativeTarget` id from `project.pbxproj` (`504EC3031FED79650016851F`). `-scheme`
+     rather than `-target` is required anyway, because SPM package dependencies are only resolved
+     for a scheme.
+
+160. **A `run: |` block in GitHub Actions YAML can carry a `<<'EOF'` heredoc, because YAML strips
+     the block's common indentation before the shell sees it** — the terminator ends up at column 0
+     as the shell requires. Worth knowing because it looks wrong in the file. It is also worth
+     verifying rather than trusting: load the workflow with PyYAML, write each `run` to a file and
+     `bash -n` it (and execute the pure-check steps), which catches the mistake locally instead of
+     on a billed macOS runner.
+

@@ -12,6 +12,7 @@ export { FormulaNote, Formula } from "./FormulaNote";
 export { CalcAbout, CalcList, CalcFaq } from "./CalcAbout";
 export { AdSlot } from "./AdSlot";
 export { CalcDisclaimer } from "./CalcDisclaimer";
+export { SourceLink } from "./SourceLink";
 
 // Laboratory calculators — lab record card, mode switch, units, formula → molar mass.
 export {

@@ -204,6 +204,13 @@ export type TableColumn = {
   placeholder?: string;
   /** A derived, read-only cell. Receives the row index. */
   computed?: (rowIndex: number) => string;
+  /**
+   * Width override for this column's input. The default fits an absorbance;
+   * a practical whose readings run to ten or eleven digits (a dissolution
+   * corrected reading, 0.000877352) clips inside it, and a student cannot
+   * check a value they cannot see.
+   */
+  inputClass?: string;
 };
 
 /**
@@ -296,7 +303,8 @@ export function DataTable({
                             placeholder={column.placeholder}
                             onChange={(event) => onCell(row.id, column.key, event.target.value)}
                             className={cn(
-                              "h-10 w-[6.5rem] rounded-lg px-2.5 text-sm",
+                              "h-10 rounded-lg px-2.5 text-sm",
+                              column.inputClass ?? "w-[6.5rem]",
                               error && "border-destructive bg-red-50/60 focus-visible:border-destructive focus-visible:ring-destructive/15",
                             )}
                           />

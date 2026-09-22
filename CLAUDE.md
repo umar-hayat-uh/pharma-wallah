@@ -487,7 +487,11 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
     — but Xcode is what turns it into an app, and no Mac was available. Everything downstream of
     `cap sync` is therefore **unproven**: the build itself, the launch-screen handover, the
     keyboard accessory bar, the share sheet, `capacitor://localhost` as a secure origin, and any
-    App Store submission. **Owner action:** run `npm run ios:open` on a Mac and build once.
+    App Store submission. **A macOS CI job now exists** — `.github/workflows/ios-app.yml`, no
+    Apple account and no secrets needed — but **it has not been run**, so nothing above has
+    changed yet. **Owner action:** Actions tab → "iOS app" → Run workflow. A signed `.ipa`
+    (device install, TestFlight, App Store) additionally needs a paid Apple Developer account,
+    which does not exist.
 20. **The landing page advertises the wrong calculator count.** `STATS.calculators` in
     `src/components/Home/landing/data.ts` is **97**; there are **104** tool directories and **98**
     registered on the hub. The hero ruler, timecode and pillar copy all derive from that constant,
@@ -785,9 +789,32 @@ file ownership was agreed by message before any shared file was touched.
   user scoped them out of this task.
 - No Apple Developer team, bundle provisioning or App Store Connect record exists yet.
 
+**Follow-up the same session — macOS CI (user asked "can we make the ios app on github actions?")**
+- **Yes, and it is wired up.** New `.github/workflows/ios-app.yml` builds on `macos-latest`: it runs
+  `pnpm ios:sync`, then compiles for the **Simulator** (Debug) and for the **arm64 device slice**
+  (Release, unsigned), and uploads the `.app`. No Apple account, no certificate, no secrets —
+  unsigned builds need none of that. `workflow_dispatch` + `ios-v*` tags only, because macOS
+  minutes bill at 10x on a private repository.
+- **Two product guards gate the compile** rather than being checked after it: `Info.plist` must
+  request **no permissions**, and **≥100 calculator pages** must be present in the synced bundle
+  (a silent `cap sync` failure otherwise ships an app that builds and shows a blank screen).
+- **A missing shared scheme would have failed the first run.** Capacitor's template ships none —
+  Xcode writes schemes into gitignored `xcuserdata`, so the project builds on a laptop and not in
+  CI. `ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme` is now committed (MEMORY 159).
+- **Signing is deliberately not implemented.** An `.ipa` that installs on a phone needs a paid
+  Apple Developer account, which does not exist; the workflow ends with a comment block naming the
+  four secrets and the four steps to add when it does. An untested signing job that looks
+  authoritative is worse than a documented gap.
+- **Verified locally, as far as is possible without a Mac:** the workflow parses with PyYAML (12
+  steps); every `run` block passes `bash -n`; and the two guard steps were **executed against the
+  real tree** — "Info.plist parses and requests no permissions / display name: PharmaWallah" and
+  "calculator pages bundled: 106", both exit 0. The heredoc-inside-YAML indentation was checked
+  this way rather than assumed (MEMORY 160). **The workflow itself has never run.**
+
 **Next**
-- Open the project in Xcode on a Mac, run it on a simulator, and check the three things only a
-  device can show: the launch-screen handover, the keyboard accessory bar, and the share sheet.
+- Click Run workflow on "iOS app". If it goes green, the app compiles — then open the artifact in
+  a Simulator for the three things only a running app can show: the launch-screen handover, the
+  keyboard accessory bar, and the share sheet.
 
 ### 2026-09-22 — Windows desktop target: Tauri 2, fully offline (`desktop/` + `src-tauri/`)
 

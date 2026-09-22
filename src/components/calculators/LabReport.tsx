@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, MotionConfig } from "framer-motion";
-import { Calculator, Check, Copy, Download, Printer, RefreshCw, TriangleAlert } from "lucide-react";
+import { Calculator, Check, Copy, Download, Printer, RefreshCw, Share2, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { IS_MOBILE_APP } from "./lab-math";
@@ -232,6 +232,23 @@ export function LabActions({
   children?: React.ReactNode;
 }) {
   const [status, setStatus] = useState<string>("");
+  // Starts false and is only ever set true inside the packaged app, so the
+  // website renders exactly what it rendered before.
+  const [canShare, setCanShare] = useState(false);
+
+  useEffect(() => {
+    if (!IS_MOBILE_APP) return;
+    let live = true;
+    import("./native-share")
+      .then(({ isNativeShareAvailable }) => isNativeShareAvailable())
+      .then((ok) => live && setCanShare(ok))
+      .catch(() => {
+        /* No share sheet: Copy still works, which is what the app had before. */
+      });
+    return () => {
+      live = false;
+    };
+  }, []);
 
   const flash = (message: string) => {
     setStatus(message);
@@ -288,6 +305,35 @@ export function LabActions({
               Print
             </Button>
           </>
+        )}
+        {/* The packaged apps get the platform share sheet in place of the
+            Download/Print pair above: same card, saved or sent from the phone,
+            still with nothing leaving the device until the student chooses a
+            target. */}
+        {IS_MOBILE_APP && canShare && (
+          <Button
+            variant="outline"
+            disabled={!report}
+            onClick={async () => {
+              if (!report) return;
+              try {
+                const { shareReportCard } = await import("./native-share");
+                const shared = await shareReportCard({
+                  pngDataUrl: await reportPngDataUrl(report),
+                  fileName: name,
+                  title: report.title,
+                });
+                if (!shared) flash("Sharing is not available here — use Copy instead.");
+              } catch {
+                // A cancelled share sheet also lands here on some targets, so
+                // this stays neutral rather than reporting a failure.
+                flash("Nothing was shared.");
+              }
+            }}
+          >
+            <Share2 />
+            Share
+          </Button>
         )}
         {children}
       </div>
@@ -373,7 +419,7 @@ const GREEN = "#4ADE80";
  * every quirk of the page it captures; drawing from the data is deterministic
  * and always the same width, which is what a lab record wants.
  */
-export async function downloadReportPng(data: LabReportData, fileName: string): Promise<void> {
+async function renderReportCanvas(data: LabReportData): Promise<HTMLCanvasElement> {
   const figure = data.figure ? await loadSvg(data.figure.svg) : null;
   const scale = 2;
 
@@ -387,7 +433,20 @@ export async function downloadReportPng(data: LabReportData, fileName: string): 
   const ctx = canvas.getContext("2d")!;
   ctx.scale(scale, scale);
   paintReport(ctx, data, figure, true);
+  return canvas;
+}
 
+/**
+ * The same card as a PNG data URL. The packaged apps cannot download a blob
+ * (MEMORY.md gotcha 40), so they hand this to the platform share sheet instead
+ * — see native-share.ts.
+ */
+export async function reportPngDataUrl(data: LabReportData): Promise<string> {
+  return (await renderReportCanvas(data)).toDataURL("image/png");
+}
+
+export async function downloadReportPng(data: LabReportData, fileName: string): Promise<void> {
+  const canvas = await renderReportCanvas(data);
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
   if (!blob) throw new Error("Canvas export failed");
   const url = URL.createObjectURL(blob);

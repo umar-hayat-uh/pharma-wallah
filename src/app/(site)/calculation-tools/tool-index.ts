@@ -94,6 +94,7 @@ export const HUB_SUBJECTS: HubSubject[] = [
       { name: "Master Formula Calculator", slug: "master-formula-calculator", desc: "Scales every ingredient of a master formula to a desired batch size" },
       { name: "Dissolution Calculator", slug: "dissolution-calculator", desc: "Absorbance → concentration → corrected concentration → % drug release over time" },
       { name: "Cumulative Drug Release Calculator", slug: "cumulative-drug-release-calculator", desc: "Cumulative drug amount and % release, corrected for sample withdrawal" },
+      { name: "Dissolution Rate Constant Calculator", slug: "dissolution-rate-constant-calculator", desc: "Midpoint, dC/dt, Cs − C and both k columns from a dissolution practical" },
     ],
   },
   {

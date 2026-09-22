@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { Activity, Check, Copy, ExternalLink, Search } from "lucide-react";
+import { Activity, Check, Copy, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,6 +19,7 @@ import {
   CalcFaq,
   AdSlot,
   ModeSwitch,
+  SourceLink,
   LabNotice,
   type ResultTone,
 } from "@/components/calculators";
@@ -480,14 +481,9 @@ DISCLAIMER: Clinical decision support tool. Verify with official FDA package ins
             <strong>Usual dose:</strong> {selectedDrug.usualDose}
           </p>
           {selectedDrug.link && (
-            <a
-              href={selectedDrug.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
-            >
-              {selectedDrug.source} <ExternalLink className="h-3 w-3" />
-            </a>
+            <SourceLink href={selectedDrug.link} className="mt-2">
+              {selectedDrug.source}
+            </SourceLink>
           )}
         </div>
       </CalcSection>

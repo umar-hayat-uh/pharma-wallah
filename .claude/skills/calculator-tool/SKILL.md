@@ -1,8 +1,12 @@
 # Calculator Tool
 
 ## Purpose
-Add or modify one of the 97 pharmacy calculation tools, and make sure it is actually reachable from
-the hub.
+Add or modify one of the 104 pharmacy calculation tools, and make sure it is actually reachable
+from the hub (98 are registered on it).
+
+**Improving a tool that already works** — units, examples, the step-by-step working, a graph,
+mobile behaviour — is `.claude/skills/calculator-refinement/SKILL.md`. This skill owns creating,
+registering and the medical-safety rules; that one owns quality.
 
 ## Trigger Examples
 - "add a Cockcroft-Gault calculator"
@@ -27,7 +31,8 @@ src/app/(site)/calculation-tools/
     AnionGapCalculator/page.tsx→ /calculation-tools/AnionGapCalculator
 ```
 
-**104 tool directories exist; `tool-index.ts` lists 93** (2026-09-13). Six of the difference are deliberately linked
+**104 tool directories exist; `tool-index.ts` lists 98** (re-counted 2026-09-20 by parsing the
+file; the "93" recorded here before that was stale — MEMORY gotcha 142). Six of the difference are deliberately linked
 from `src/app/clinical/dose-calculators/page.tsx` instead (vancomycin-auc, tpn, renal-dosing-adjuster,
 OpioidMMECalculator, reconstitution-calculator, GeriatricDosingCalculator). **Five are linked from
 nowhere** — `AntagonismSimulator`, `EmaxModelCalculator`, `drug-half-life-calculator`,

@@ -412,9 +412,17 @@ pages, confirm progress tracking records a visit, then batch the rest.
   88,734 B); `cap sync ios` and `cap sync android` both exit 0 and find the 3 plugins; `Info.plist`
   parses with zero `*UsageDescription` keys; 0 secrets and 0 ad strings in the bundle; the icon read
   under a real iOS squircle mask and the splash read at a 19.5:9 aspect-fill crop.
+- **CI:** `.github/workflows/ios-app.yml` compiles the app on a `macos-latest` runner — Simulator
+  (Debug) **and** the arm64 device slice (Release, unsigned) — gated on two guards: `Info.plist`
+  must request no permissions, and ≥100 calculator pages must be bundled. It needs **no Apple
+  account and no secrets**, and uploads the `.app` as an artifact. `workflow_dispatch` + `ios-v*`
+  tags only, because macOS runners bill at 10x on a private repository. **It has never been run**
+  — that is one click in the Actions tab.
 - **Remaining work:**
-  - **Open `npm run ios:open` on a Mac and build once.** Everything downstream of `cap sync` is
-    unproven: the compile, the launch-screen handover, the accessory bar, the share sheet.
+  - **Run the "iOS app" workflow once.** That is now the cheapest way to learn whether it compiles;
+    no Mac required. Everything below still needs real hardware.
+  - Open it on a Mac (or the artifact in a Simulator) for the things a compile cannot show: the
+    launch-screen handover, the keyboard accessory bar, the share sheet.
   - An Apple Developer team, a provisioning profile and an App Store Connect record. None exist.
   - Decide distribution: TestFlight, App Store, or neither for now.
 - **Important files:** `ios/App/App/{Info.plist,Assets.xcassets}`, `capacitor.config.ts` (`ios`

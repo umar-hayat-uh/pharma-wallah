@@ -1,0 +1,176 @@
+# Compiles the PharmaWallah iOS app on a real macOS runner.
+#
+# WHY THIS EXISTS: `ios/` is scaffolded, configured and synced from the Linux
+# development machine — Capacitor 8 uses Swift Package Manager rather than
+# CocoaPods, so `cap add ios` and `cap sync ios` need only Node. But *compiling*
+# needs Xcode, which exists on no machine this project has. Until this workflow
+# ran, the iOS app had never been built at all (CLAUDE.md §7 Known Issue 21).
+#
+# WHAT IT PROVES, WITH NO APPLE ACCOUNT AND NO SECRETS
+#   - the Xcode project builds for the Simulator, and
+#   - it builds for a real device architecture (arm64, unsigned),
+#   - with the offline bundle inside it.
+# That is the whole compile surface. What it cannot prove without a paid Apple
+# Developer account is anything requiring a signature: installing on a phone,
+# TestFlight, the App Store. See "SIGNING" at the bottom.
+#
+# HOW TO USE IT
+#   1. Actions tab → "iOS app" → Run workflow.
+#   2. Download the "pharmawallah-ios-simulator-app" artifact from the summary.
+#      Unzip it and drag App.app onto a running iOS Simulator to try the app —
+#      no Apple account needed, but you do need a Mac to run the Simulator.
+#
+# COST: macOS runners are free for public repositories. On a private repository
+# they bill at 10x the Linux rate, so this is deliberately `workflow_dispatch`
+# and tag-triggered only — it never runs on an ordinary push.
+#
+# The build needs no secrets and no .env: the app is a static export of the
+# calculators, which read nothing from the environment (same reason the Android
+# build ignores the root .env — MEMORY gotcha 20).
+
+name: iOS app
+
+on:
+  # Run it by hand from the Actions tab.
+  workflow_dispatch:
+  # ...or automatically when an iOS release is tagged.
+  push:
+    tags:
+      - "ios-v*"
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          # No version here on purpose: pnpm/action-setup reads the
+          # "packageManager" field in package.json, so CI and the developers
+          # cannot drift apart.
+          run_install: false
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        # Not --frozen-lockfile: several build targets share this repo and the
+        # lockfile is not always committed in step with package.json.
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Report the toolchain
+        # Xcode on macos-latest moves without notice, and "it stopped compiling"
+        # is much easier to read when the run says which Xcode it used.
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Build the offline bundle and sync it into the Xcode project
+        # `ios:sync` = mobile:build (Next static export) + `cap sync ios`.
+        # This is the same command used on the Linux machine; it re-copies
+        # mobile/out into ios/App/App/public (which is gitignored, so the
+        # checkout does not contain it) and regenerates Package.swift.
+        run: pnpm ios:sync
+
+      - name: Prove the app asks for no permissions
+        # The privacy claim is a product requirement, so it gates the build
+        # rather than being checked afterwards. Any *UsageDescription key means
+        # somebody added a permission prompt; the App Store privacy answers and
+        # the "no permissions" promise in the skill would both become false.
+        run: |
+          python3 - <<'PY'
+          import plistlib, sys
+          with open("ios/App/App/Info.plist", "rb") as f:
+              plist = plistlib.load(f)
+          usage = [k for k in plist if "UsageDescription" in k]
+          if usage:
+              sys.exit(f"Info.plist requests permissions: {usage}")
+          print("Info.plist parses and requests no permissions.")
+          print("display name:", plist.get("CFBundleDisplayName"))
+          PY
+
+      - name: Check the offline bundle actually made it into the app
+        # A silent `cap sync` failure would produce an app that builds and shows
+        # a blank screen, which is exactly the failure this workflow exists to
+        # catch early.
+        run: |
+          count=$(find ios/App/App/public/calculation-tools -name index.html | wc -l | tr -d ' ')
+          echo "calculator pages bundled: $count"
+          if [ "$count" -lt 100 ]; then
+            echo "::error::only $count pages were bundled — cap sync did not copy the export"
+            exit 1
+          fi
+
+      - name: Resolve Swift package dependencies
+        # Done as its own step so a network/SPM failure is not misreported as a
+        # compile error further down.
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project ios/App/App.xcodeproj \
+            -scheme App
+
+      - name: Build for the Simulator
+        # Unsigned: a simulator build needs no certificate, no provisioning
+        # profile and no Apple account.
+        # Raw xcodebuild output on purpose: piping through a prettifier needs
+        # `set -o pipefail` to fail correctly, and a prettifier that is missing
+        # from the runner image would turn a green build red for no reason.
+        run: |
+          xcodebuild build \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build-sim \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Build for a real device architecture (unsigned)
+        # The Simulator is x86_64/arm64-simulator; this is the arm64 device
+        # slice. Building it unsigned catches architecture and Release-only
+        # problems that a Debug simulator build would miss, still with no Apple
+        # account involved.
+        run: |
+          xcodebuild build \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build-device \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Upload the Simulator app
+        uses: actions/upload-artifact@v4
+        with:
+          name: pharmawallah-ios-simulator-app
+          if-no-files-found: error
+          retention-days: 30
+          path: build-sim/Build/Products/Debug-iphonesimulator/App.app
+
+# SIGNING — what this workflow deliberately does not do
+#
+# Producing an .ipa that installs on a phone, goes to TestFlight or reaches the
+# App Store needs a **paid Apple Developer account** ($99/year). None exists for
+# this project yet (ROADMAP Phase 4.54). Once one does, add a second job that:
+#
+#   1. imports a distribution certificate and provisioning profile from secrets
+#      (IOS_CERTIFICATE_P12, IOS_CERTIFICATE_PASSWORD, IOS_PROVISIONING_PROFILE)
+#      into a temporary keychain;
+#   2. runs `xcodebuild archive` with DEVELOPMENT_TEAM set;
+#   3. runs `xcodebuild -exportArchive` with an ExportOptions.plist;
+#   4. uploads with `xcrun altool`/`notarytool` using an App Store Connect API
+#      key (APPSTORE_ISSUER_ID, APPSTORE_KEY_ID, APPSTORE_PRIVATE_KEY).
+#
+# That job is not written here because none of it can be tested without the
+# account, and an untested signing job that looks authoritative is worse than a
+# documented gap.
