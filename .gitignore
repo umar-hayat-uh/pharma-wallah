@@ -53,3 +53,26 @@ wget-log
 android/keystore.properties
 *.jks
 *.keystore
+
+# iOS app (Capacitor) — the native project IS committed (like android/); only
+# the copied web bundle and generated configs are not. Those are covered by
+# ios/.gitignore, which Capacitor's template writes.
+
+# Brand .ttf files fetched by scripts/generate-ios-assets.mjs. The generated
+# PNGs are committed, so nobody needs these unless the brand changes.
+/scripts/.fonts/
+
+# Windows desktop app (Tauri 2) — build output and generated route tree.
+# The calculators themselves live in src/; desktop/app/calculation-tools/<slug>/
+# and desktop/app/_generated/ are re-emitted by
+# scripts/generate-desktop-routes.mjs on every `npm run desktop:build`.
+/desktop/.next/
+/desktop/out/
+/desktop/next-env.d.ts
+/desktop/app/_generated/
+/desktop/app/calculation-tools/*/
+
+# Rust build artefacts. src-tauri/ itself IS committed (config, Rust source,
+# icons); target/ is hundreds of MB of compiler output.
+/src-tauri/target/
+/src-tauri/gen/

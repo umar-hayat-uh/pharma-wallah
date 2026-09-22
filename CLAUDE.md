@@ -22,6 +22,9 @@ The product is unusually broad for its size. Six distinct pillars share one Next
 | **Tournament** | Entry-code-gated science-fair competition with server-authoritative scoring + leaderboard |
 | **Clinical subdomain** | Drug finder, interaction checkers, AMR surveillance, ADR, encyclopedia, literature search |
 
+A seventh surface is not a pillar but a **target**: `desktop/` + `src-tauri/` package the
+calculators as an offline Windows program (Tauri 2). See `desktop/README.md`.
+
 Cross-cutting: Supabase auth, a progress/streak dashboard, a Q&A community, an AI chat tutor,
 a prescription reader, and a PWA shell.
 
@@ -45,7 +48,8 @@ a prescription reader, and a PWA shell.
 | `lucide-react` | 0.575.x | The icon library. `@iconify/react` also present but marginal |
 | `recharts` / `three` / `konva` | 3.7.0 / 0.185.1 / 9.3.22 | Charts / molecule viewer / canvas simulations |
 | `next-auth` | 4.24.13 | **Installed but never imported — dead dependency.** Auth is Supabase |
-| `@capacitor/core` / `cli` / `android` | **8.5.2** | Wraps `mobile/out` as an offline Android app |
+| `@capacitor/core` / `cli` / `android` / `ios` | **8.5.2** | Wraps `mobile/out` as an offline Android **and iOS** app. iOS uses the SPM template, so `cap add`/`cap sync ios` run on Linux; only compiling needs Xcode |
+| `@capacitor/share` / `filesystem` / `keyboard` | **8.0.2** / **8.1.3** / **8.0.5** | Added 2026-09-22 (user choice). Share sheet for the lab-record card, and the iOS keyboard accessory bar. Both apps only — the website never loads them |
 | `openchemlib` | **9.25.0** | Added 2026-09-16 (user choice). Cheminformatics for `/molecular-lab` only: SMILES/MOL parsing, 2D layout, 3D conformers + MMFF94, MCS. Lazy, in a Web Worker (§6 rule 18) |
 | `@techstark/opencv-js` | **4.12.0-release.1** | Added 2026-09-16 (user choice). OpenCV.js with embedded WASM, 10.8 MB — used **only** by the colony counter, emitted as a static asset (MEMORY gotcha 89) |
 
@@ -63,13 +67,25 @@ node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts   # 41 unit 
 node --test scripts/molecular-lab.test.mts                             # 21 unit tests, Molecular Lab
 node --test scripts/community.test.mts                                 # 19 unit tests, community pure layer
 node --test scripts/ai-guide.test.mts                                  # 34 unit tests, AI Guide pure layer
+node --test scripts/dissolution-rate.test.mts                          # 28 unit tests, Dissolution Rate Constant
 node scripts/build-molecule-library.mts   # regenerate the Molecular Lab library from PubChem (network)
 ```
 
 ```bash
-npm run mobile:build   # regenerate routes + static export of the 98 calculators -> mobile/out
+npm run mobile:build   # regenerate routes + static export of every calculator -> mobile/out
 npm run mobile:sync    # mobile:build + `cap sync android`
 npm run mobile:open    # open the native project in Android Studio
+npm run ios:sync       # mobile:build + `cap sync ios`   — runs on Linux (SPM, no CocoaPods)
+npm run ios:open       # open the Xcode project          — macOS only
+npm run ios:assets     # regenerate the iOS icon + launch screen from the brand mark
+```
+
+```bash
+npm run desktop:build  # regenerate routes + static export of the calculators -> desktop/out
+npm run desktop:audit  # prove the built desktop bundle cannot reach the network
+npm run desktop:icons  # regenerate src-tauri/icons from the PharmaWallah mark
+npm run tauri:dev      # run the Windows app against a live Next dev server (needs Rust)
+npm run tauri:build    # routes -> export -> audit -> Windows installer (RUN ON WINDOWS)
 ```
 
 `npm run predeploy` / `npm run deploy` (gh-pages) are **stale and cannot work** — the app has API
@@ -88,6 +104,7 @@ this with a *second* Next project root, `mobile/` — see §5.)
 | `.claude/PROJECT_MAP.md` | "Where is X implemented?" | Before searching the repo by hand |
 | `.claude/ROADMAP.md` | Reconciled feature status and what to build next | Starting new work, or asked "what's next" |
 | `.claude/SKILLS.md` | Index of reusable procedures | Before inventing an approach |
+| `.claude/BRAND_KIT.md` | Brand & content brief: colours, type, logo, voice, publishable figures | Writing marketing/social copy, or any user-facing count |
 | `.claude/skills/<name>/SKILL.md` | One procedure, deeply repo-specific | When its trigger matches |
 | `.claude/history/YYYY-MM.md` | Archived work-log entries | Rarely — only for older context |
 
@@ -265,8 +282,28 @@ These are conventions **observed in the code**, not aspirations.
 - **Two Claude sessions may be working in the tree at once** (it happened on 2026-09-13) — check
   `git status` and `ListAgents` before editing a shared directory. `MEMORY.md` §8 gotcha 46.
 - Typography: the site is now single-typeface (**Outfit**, variable) across web and APK.
+- **There are now FOUR build targets, not two**: the website (`src/`), the Android app
+  (`mobile/` + `android/`), an iOS target in progress (`ios/`, session `pharma-wallah-9d`), and the
+  **Windows desktop app** (`desktop/` + `src-tauri/`, Tauri 2, added 2026-09-22). All of them
+  compile the same calculator files; none of them may be broken by a change to `src/`.
+- **Up to four Claude sessions have worked in this tree at once** (2026-09-22). Check `git status`
+  and `ListAgents`, and announce which shared files you are taking, before editing one.
 
 ### Recently Completed
+- **iOS app target added (2026-09-22)** — `ios/`, a Capacitor 8 Xcode project wrapping the *same*
+  `mobile/out` bundle the APK wraps: 105 calculators, no login, no API, no account. Scaffolded and
+  synced **on Linux** (Capacitor 8 uses SPM, not CocoaPods); brand icon and Outfit-set launch
+  screen generated by `scripts/generate-ios-assets.mjs`; `Info.plist` asks for **no permissions**;
+  the iOS decimal keypad gets an accessory bar so it can be dismissed; and the packaged apps trade
+  Download/Print for a native **Share** of the lab-record card. **Never compiled** — that needs a
+  Mac. See the §8 entry and the `ios-app-capacitor` skill.
+- **Windows desktop app added (2026-09-22)** — a third packaged target, `desktop/` (Next static
+  export) wrapped by `src-tauri/` (Tauri 2). Fully offline: no API, no auth, no cloud, no ad
+  network, self-hosted fonts, and `npm run desktop:audit` fails the build if any of that changes.
+  Ships all 105 calculators plus a dashboard, a 212-row searchable values library, 40 formulas, a
+  unit converter, local calculation history and PDF/CSV/text export. **The Rust half has never been
+  compiled** — there is no Rust toolchain on this machine and the host is Linux, so no installer
+  exists yet. See the §8 entry and `desktop/README.md`.
 - **`/pharmacy-counter` rebuilt as the Community Pharmacy Simulation Lab (2026-09-20)** — the old
   1,529-line six-step click-through with XP, combos and a countdown is replaced by a counter a
   student works at: fourteen gated stages (plus a ten-stage minor-ailment path), **ten clinical
@@ -407,6 +444,10 @@ These are conventions **observed in the code**, not aspirations.
 
 ### In Progress
 - **AdSense**: plumbing done, ad-unit IDs outstanding (Phase 4.6).
+- **Calculator refinement standard (2026-09-22)**: the user's 25-section brief is written up as
+  `.claude/skills/calculator-refinement/SKILL.md`. **No calculator has been refined yet** — the
+  procedure exists, the work does not. Starting point measured over the 104 tool pages: 35 have a
+  unit selector, 37 a graph, 15 a lab record, 9 an editable table, 3 scientific notation.
 
 ### Partially Implemented
 - **Course catalogue (largest gap).** `src/lib/courses/registry.ts` registers **4 subjects**, but
@@ -414,9 +455,12 @@ These are conventions **observed in the code**, not aspirations.
   subjects**. Nine subject files are dead code *and use a different data shape* (`*_META` +
   `*Units` + `*_DIFF_BADGE`) than the registry's `SubjectMeta` interface. A tenth,
   `natural-toxins.ts`, *is* in `SubjectMeta` shape but is still not registered.
-- **Calculation tools hub.** 104 tool directories exist; `HUB_SUBJECTS` in
-  `src/app/(site)/calculation-tools/tool-index.ts` lists **93** (cross-checked slug-by-slug 2026-09-13
-  after the hub rebuild). Six of the remainder are deliberately
+- **Calculation tools hub.** 105 tool directories exist; `HUB_SUBJECTS` in
+  `src/app/(site)/calculation-tools/tool-index.ts` lists **99** across 10 categories (re-counted
+  2026-09-22 by parsing the file: Pharmaceutical Chemistry 16, Clinical & Hospital Pharmacy 18,
+  Pharmaceutics **17**, Biopharmaceutics & PK 14, Pharmaceutical Analysis 10, Unit Conversion 6,
+  Pharmacology 6, Microbiology 6, Pharmaceutical Engineering 4, Physiology 2 — Pharmaceutics gained
+  the Dissolution Rate Constant Calculator on 2026-09-22; the previously recorded "93" was stale). Six of the remainder are deliberately
   linked from `src/app/clinical/dose-calculators/page.tsx` instead. **Five —
   `AntagonismSimulator`, `EmaxModelCalculator`, `drug-half-life-calculator`,
   `OsmolarGapCalculator`, `OpioidConversionCalculator` — are reachable by URL but linked from
@@ -438,6 +482,21 @@ exact steps — the content is already written and shipped in `public/content/`,
 existing dead assets into working pages at the lowest risk-per-value ratio in the repo.
 
 ### Known Issues
+21. **The iOS app has never been compiled, run or installed.** `ios/` was created, configured and
+    synced from a Linux machine, which Capacitor 8 supports because it uses Swift Package Manager
+    — but Xcode is what turns it into an app, and no Mac was available. Everything downstream of
+    `cap sync` is therefore **unproven**: the build itself, the launch-screen handover, the
+    keyboard accessory bar, the share sheet, `capacitor://localhost` as a secure origin, and any
+    App Store submission. **Owner action:** run `npm run ios:open` on a Mac and build once.
+20. **The landing page advertises the wrong calculator count.** `STATS.calculators` in
+    `src/components/Home/landing/data.ts` is **97**; there are **104** tool directories and **98**
+    registered on the hub. The hero ruler, timecode and pillar copy all derive from that constant,
+    so `/` currently tells visitors "97 tools" while `/calculation-tools` and the Android app both
+    say 104. The file's own comment says these numbers must never be rounded "for effect" because a
+    pharmacy student will check — the same argument applies to their being stale. **One-line fix**
+    (`calculators: 104`), deliberately not made here: it is user-visible product copy and was outside
+    this task's scope. It matters now because the figure is about to be used in marketing —
+    see `.claude/BRAND_KIT.md` §8.
 19. **The pharmacy counter's clinical content has not been reviewed by a pharmacist.** The ten
     cases, 31 medicine monographs, counselling points, interaction findings and dose ranges in
     `src/components/Simulations/CommunityPharmacy/data/` were written as teaching values and are
@@ -617,6 +676,490 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 
 > Newest first. Never paste source code here. Archive entries older than ~10 into
 > `.claude/history/YYYY-MM.md`.
+
+### 2026-09-22 — iOS target added: offline calculators app via Capacitor (`ios/`)
+
+Session `pharma-wallah-9d`, "follow protocol" + a 34-section user specification. Two peer sessions
+were live in the same tree throughout (`-92` a new calculator, `-b8` the Tauri desktop target);
+file ownership was agreed by message before any shared file was touched.
+
+**Completed**
+- **`ios/` exists and is committed** — a Capacitor 8 Xcode project wrapping the *same*
+  `mobile/out` bundle the APK wraps. 105 calculators plus the hub, no login, no API, no account.
+  20 files tracked; the copied web bundle and the generated configs are not.
+- **It was scaffolded and is maintained entirely on Linux.** Capacitor 8 uses the **SPM** template
+  (`ios-spm-template.tar.gz`), not CocoaPods, so `cap add ios` and `cap sync ios` are pure Node.
+  Only compiling needs a Mac. This is the fact that made the whole target deliverable here.
+- **Brand icon and launch screen generated, not placeholder.** New
+  `scripts/generate-ios-assets.mjs` un-mattes the mark out of `public/icons/icon-1.png`, writes a
+  1024² opaque white-ground `AppIcon-512@2x.png`, and composes a flat-brandBlue launch screen
+  carrying the mark on a white plate, "PharmaWallah" and "Offline Pharmaceutical Calculator Suite"
+  **set in Outfit** — librsvg finds the real brand face through a fontconfig file the script
+  writes. Capacitor's default icon and splash are gone.
+- **Info.plist made App-Store-honest**: display name `PharmaWallah` (iOS truncates the home-screen
+  label at ~12 characters, so the Android name would not fit), `armv7` → `arm64`,
+  `ITSAppUsesNonExemptEncryption = false`, and **zero permission usage keys** — the app asks for
+  nothing.
+- **Keyboard fixed for iOS specifically.** Every calculator input is `type="number"
+  inputMode="decimal"`, which on iOS is the 12-key pad — **and that pad has no return key**. New
+  `mobile/app/_components/NativeShell.tsx` turns on Capacitor's accessory bar and re-centres a
+  focused field that lands under the keyboard. It returns early unless
+  `Capacitor.getPlatform() === "ios"`, so Android is untouched.
+- **Download/Print → Share in the packaged apps.** `LabActions` now offers the platform share
+  sheet: the lab-record card is drawn to a canvas, written to `Directory.Cache` and handed to
+  iOS/Android via `@capacitor/share`. Nothing is uploaded. New
+  `src/components/calculators/native-share.ts`; `LabReport` gained `reportPngDataUrl` by
+  extracting the canvas step out of `downloadReportPng` (no behaviour change to the website).
+- **The three calculators that link out no longer mislead offline.** New shared `SourceLink`
+  renders a plain anchor on the website; in the app it says "opens a web page", and while the
+  device is offline it stops being a link and says it needs a connection.
+  `qt-interval-calculator`, `reconstitution-calculator`, `renal-dosing-adjuster`.
+- **`npm run ios:build` / `ios:sync` / `ios:open` / `ios:assets`** added alongside the `mobile:*`
+  scripts. `ios:build` is an alias of `mobile:build` — there is one bundle, not two.
+
+**Files**
+- New: `ios/` (20 tracked files), `scripts/generate-ios-assets.mjs`,
+  `mobile/app/_components/NativeShell.tsx`, `src/components/calculators/{native-share.ts,SourceLink.tsx}`,
+  `.claude/skills/ios-app-capacitor/SKILL.md`.
+- Edited: `capacitor.config.ts` (`ios` block, `server.iosScheme`, `plugins.Keyboard`),
+  `package.json` (4 scripts + 3 plugin dependencies), `pnpm-lock.yaml`, `.gitignore`,
+  `.vercelignore`, `mobile/app/layout.tsx` (mount + a derived description), `mobile/README.md`
+  (rewritten to cover both platforms), `src/components/calculators/{LabReport.tsx,index.ts}`,
+  three tool pages, `.claude/SKILLS.md`.
+
+**Architecture & Decisions**
+- **One bundle, two platforms.** iOS was added as a Capacitor *platform*, not a second project.
+  `mobile/out` is copied into both native projects, so a calculator fixed once is fixed in three
+  places. The alternative — an iOS-specific export — would have duplicated the thing this repo has
+  worked hardest to keep single.
+- **Brand tokens over the spec's hexes.** The brief names #2563EB/#4ADE80; the product is
+  #1C7BD9/#21B67A. Same call the Molecular Lab, the pharmacy counter and the calculator-refinement
+  skill made, and here it is load-bearing rather than cosmetic: the native launch screen, the
+  WKWebView background and the web splash must be the *same* blue or startup flashes.
+- **`ios.contentInset: "never"`.** The web layer already pads with `env(safe-area-inset-*)` under
+  `viewportFit: cover`; WKWebView's default automatic inset would double every one of those gaps.
+- **`server.iosScheme` pinned to `capacitor`** and commented: the origin is what `localStorage` is
+  keyed to, so changing it later would silently empty every student's Recent and Saved list.
+- **Scope was put to the user and narrowed deliberately.** The brief also asks for calculation
+  history, a Pharmaceutical Values browser and export — all of which live in the shared `mobile/`
+  layer and would change Android too. The user chose "iOS target only", and separately chose to
+  install the three Capacitor plugins. Both choices are recorded here because the brief's §13/§8
+  remain unbuilt by decision, not by oversight.
+- **The icon is opaque and inset to 700/1024 px**; the splash artwork fits a centred 1257 px box
+  because `scaleAspectFill` on a square shows only ~46% of the width on a 19.5:9 iPhone. Both
+  constants are derived in the script's comments rather than tuned by eye.
+
+**Verification**
+- `npx tsc --noEmit` → **0 errors** (whole repo, shared tree, after the install).
+- `npm run mobile:build` → exit 0. **106 HTML pages** under `mobile/out/calculation-tools/`
+  (105 tools + hub), CSS **88,734 bytes** (healthy — ~10 kB is the silent Tailwind failure,
+  gotcha 23), shared JS 88.3 kB.
+- `npx cap sync ios` → exit 0, **3 Capacitor plugins found**, `Package.swift` rewritten.
+  `npx cap sync android` → exit 0, same 3 plugins.
+- **Android regression:** `./gradlew assembleDebug` with the three new plugins — see §9.
+- Bundle audit: **0** files matching the JWT-shaped secret pattern, **0** ad strings in
+  `mobile/out`. External origins in the chunks were read in context and are all inert — Next's own
+  font-preconnect constants, jsPDF's unreachable `pdfobject` CDN string, and library error-message
+  URLs. Only **one** clickable external anchor existed across the tool sources; it and the two
+  data-driven ones now go through `SourceLink`.
+- `Info.plist` parses with `plistlib` and reports **zero** `*UsageDescription` keys.
+- The generated icon was rendered **under a real iOS superellipse mask** and read — nothing
+  clipped. The splash was **cropped to a 19.5:9 iPhone's aspect-fill** and read — nothing cropped,
+  type legible, Outfit confirmed by comparing letterforms against a fallback render.
+- **NOT verified, and cannot be from this machine:** anything that needs Xcode. No compile, no
+  Simulator, no device, no archive, no App Store upload. The share sheet, the keyboard accessory
+  bar, `capacitor://localhost` as a secure origin and the launch screen on real hardware are all
+  **unexercised**. `npm run build` (web) was not re-run — no web-only file changed except the
+  three tool pages and the shared kit, which the mobile build compiles. Lint is not configured;
+  the `node --test` suites cover none of this.
+
+**Remaining**
+- **Someone with a Mac must run `npm run ios:open` and build once.** That is the only outstanding
+  step, and until it happens the target is unproven.
+- Commit (the protocol forbids it here). The tree also carries two peer sessions' work.
+- Calculation history, a Pharmaceutical Values browser and CSV/PDF export are **not built** — the
+  user scoped them out of this task.
+- No Apple Developer team, bundle provisioning or App Store Connect record exists yet.
+
+**Next**
+- Open the project in Xcode on a Mac, run it on a simulator, and check the three things only a
+  device can show: the launch-screen handover, the keyboard accessory bar, and the share sheet.
+
+### 2026-09-22 — Windows desktop target: Tauri 2, fully offline (`desktop/` + `src-tauri/`)
+
+Session `pharma-wallah-b8`, "follow protocol" + a 30-section user specification. Three peer
+sessions were live in the same tree throughout (`-92` dissolution-rate calculator, `-9d` iOS
+Capacitor target, `-6c`); file ownership was agreed by message before any shared file was touched.
+
+**Completed**
+- **A third build target.** `desktop/` is a new Next project root (a sibling of `mobile/`) that
+  statically exports the calculators plus six desktop-only sections; `src-tauri/` wraps that export
+  in a Windows program. The website, `mobile/` and `android/` are untouched.
+- **Every calculator ships.** `scripts/generate-desktop-routes.mjs` emits a one-line re-export per
+  tool directory, exactly as the Android generator does, so the calculators live in exactly one
+  place and all three targets compile the same file. 105 tools in this build (104 + session 92's
+  new dissolution-rate calculator, picked up automatically).
+- **Six sections around them**: a Dashboard whose figures are *counted, never typed*; the calculator
+  index grouped by the shared registry's ten real categories; a **searchable values library** (212
+  rows); a **formula reference** (40 formulas, every symbol defined, each linked to its calculator);
+  a **unit converter**; **calculation history**; and Settings.
+- **Save / Print / Export on all 105 calculators without editing one of them.** `ToolFrame` reads
+  the calculation out of the rendered DOM through four anchors the shared kit guarantees (the `h1`,
+  labelled inputs, the `aria-live` result card, the FormulaNote panel) — see Architecture.
+- **Export is local**: PDF (jsPDF, lazily imported), CSV (RFC 4180, BOM so Excel reads UTF-8) and
+  text, written by a Rust command into Documents\PharmaWallah, or through an object-URL download in
+  a browser. Printing is the WebView's own dialog, with a print stylesheet that drops the chrome.
+- **Icons are the PharmaWallah mark, not Tauri's.** `scripts/generate-desktop-icons.mjs` builds
+  seven PNGs and a 7-size `icon.ico` from `public/icons/icon-512x512.png`; the ICO container is
+  assembled by hand because sharp cannot write one and an icon library would be a dependency with
+  nothing else to do.
+- **`npm run desktop:audit`** is a new, load-bearing check: it reads the built export and fails on
+  an ad network, analytics, a Supabase/Mongo/Upstash/Gemini client, a CDN script, a secret-shaped
+  string, or **any remote `src=`/`href=` subresource in the emitted HTML**. It is wired into
+  `tauri:build` between the frontend build and the Rust build.
+
+**Files**
+- New `desktop/` — `next.config.mjs`, `tsconfig.json`, `tailwind.config.ts`, `postcss.config.mjs`,
+  `README.md`, `app/{globals.css,layout.tsx,page.tsx,favicon.ico}`, six section pages,
+  `app/calculation-tools/{page,layout}.tsx`, `app/_components/` (11 files), `app/_data/`
+  (`catalog.ts`, `values.ts`, `formulas.ts`, `units.ts`), `app/_lib/`
+  (`bridge.ts`, `store.ts`, `snapshot.ts`, `export.ts`).
+- New `src-tauri/` — `Cargo.toml`, `build.rs`, `tauri.conf.json`, `capabilities/default.json`,
+  `src/{main,lib}.rs`, `icons/` (8 files), `.gitignore`.
+- New `scripts/{generate-desktop-routes,generate-desktop-icons,audit-desktop-offline}.mjs`.
+- Root, additive only: `package.json` (7 scripts + `@tauri-apps/cli` devDependency),
+  `.gitignore`, `.vercelignore`, `tsconfig.json` (`exclude` += `desktop`, `src-tauri`).
+- Knowledge: this file (§1, §7, §8, §9), `.claude/MEMORY.md` (gotchas 148–151),
+  `.claude/PROJECT_MAP.md`, `.claude/ROADMAP.md`.
+
+**Architecture & Decisions**
+- **The calculators needed no change at all, and that was verifiable up front.** A grep for
+  `fetch(`, `axios`, `XMLHttpRequest`, `sendBeacon`, `EventSource`, `WebSocket` and remote `<img>`
+  across all 104 tool pages *and* the shared kit returns **zero hits** — the pillar was already
+  pure-local. The spec's "audit and remove network dependencies" work therefore turned out to be
+  proving the property rather than changing anything, which is why `desktop:audit` exists.
+- **`NEXT_PUBLIC_IS_MOBILE_APP=true` is set by the desktop build too.** It is the flag the shared
+  kit already understands for "packaged, offline, ad-free", and setting it is what keeps AdSlot
+  silent and `calculatorHref` trailing-slashed **without a single edit to `src/`**. The cost is that
+  it also hides the kit's own Download/Print buttons, which is why the desktop frame provides its
+  own. `NEXT_PUBLIC_ADSENSE_CLIENT` is blanked as a second line of defence.
+- **History is captured from the DOM, deliberately.** Recording it "properly" would mean 104 tool
+  pages calling a desktop-only hook — 104 edits to files three targets share, for one target's
+  feature. Reading the rendered result instead gives every calculator Save/Print/Export for free and
+  degrades honestly: a tool with no standard result card (the TLC analyzer, the colony counter)
+  says "no result on screen yet" rather than saving an empty record.
+- **No Tauri plugins, and no `@tauri-apps/api` package.** `withGlobalTauri` means the frontend
+  reaches Rust through `window.__TAURI__`, so the desktop bundle needs **no new npm dependency** and
+  the same build runs in a plain browser (where `isTauri()` is false and everything falls back to
+  localStorage) — which is the only reason this could be verified at all without a Rust toolchain.
+  `capabilities/default.json` grants `core:default` and nothing else: no shell, no fs plugin, no
+  network, no updater, no dialog. The four app commands are constrained individually in `lib.rs` —
+  `export_save` rejects any path separator, `..`, leading dot or unexpected extension outside the
+  three it writes, so it can only ever write inside one folder.
+- **Storage is one JSON file, not SQLite.** The spec allows either; the data is a single capped list
+  and a database engine would be a dependency with nothing to do. The write is temp-file-then-rename,
+  so a power cut cannot truncate a student's history.
+- **Brand tokens over the spec's palette.** The spec names #2563EB/#4ADE80; the product is
+  #1C7BD9/#21B67A, and the spec also says to keep the existing design language. Same call the
+  Molecular Lab, the pharmacy counter and the calculator-refinement skill made.
+- **The values library is sourced, not typed.** Every row is computed from data already verified in
+  this repo (IUPAC 2021 atomic weights; the 83-molecule PubChem-verified Molecular Lab library),
+  transcribed from a named calculator's own reference table, or an exactly-defined SI constant — and
+  **every row prints its source on screen**. Where a value could not be sourced it is absent.
+- **The rail collapses to icons below 1100 px rather than reflowing to a phone layout** (spec §17:
+  this is a desktop program, not a responsive website).
+
+**Verification**
+- `npx tsc --noEmit -p desktop/tsconfig.json` → **0 errors**.
+- `npm run desktop:build` → **exit 0**, 116 static pages, 114 HTML files, 105 tool routes,
+  **shared JS 88.2 kB**, CSS **78,704 + 1,014 bytes** (checked against gotcha 23's ~10 kB silent
+  failure), export 21.3 MB — 10.8 MB of which is OpenCV.js for the colony counter.
+- `npm run desktop:audit` → **PASSED**: 397 files scanned, **0 remote subresources in the emitted
+  HTML**, no ad network, no analytics, no API client, no secrets. Three findings were investigated
+  and proved benign rather than suppressed wholesale (an `AIza…` run inside OpenCV's base64 WASM —
+  the same false positive as gotcha 90; jsPDF's unreachable `pdfobject` CDN string; and Next's own
+  `fonts.googleapis.com` preconnect constant). Each is an explicit, documented exception scoped to
+  one file *and* one rule, so the same pattern elsewhere still fails the build.
+- **Driven in headless Chrome with every non-local request failed at the network layer**
+  (`Fetch.failRequest`, the closest a Linux box gets to pulling the cable): **25/25 checks pass, 0
+  console errors, and ZERO application requests left the machine.** Exercised end to end: dashboard
+  figures derived (105), index lists and filters, a calculator computing from typed input with no
+  NaN/Infinity anywhere, **Save → history entry with inputs, results and formula captured from the
+  DOM**, persistence across navigation and reload, **TXT and PDF export both producing a file**,
+  delete, values search finding paracetamol at 151.16 g/mol with its PubChem source line, mass
+  conversion (250 mg = 0.25 g), formulas rendering with symbol definitions, settings, and no
+  horizontal overflow at **1400×900 or 1000×650** with the rail collapsing under 1100 px.
+- Screenshots read at 1400×900; they caught one defect no assertion saw — `type="search"` drew
+  Chrome's own clear button beside ours, so the field showed two X marks. Fixed.
+- ICO container verified structurally (7 entries, PNG payloads, last entry ending exactly at EOF)
+  and by `file`, which reports "MS Windows icon resource - 7 icons".
+- Built in an **isolated copy** of the tree (peers' dev servers own the shared `.next`, Known Issue
+  10). At build time session 9d's in-flight `src/components/calculators/native-share.ts` imported
+  two Capacitor packages that were not yet installed, which breaks *every* calculator build target;
+  those two files were reverted to HEAD **in the build copy only**. Their install has since landed
+  and `tsc` is clean against the live tree.
+- **NOT verified, and this is the important part: nothing Rust was compiled or run.** There is no
+  Rust toolchain on this machine (`cargo`, `rustc`, `rustup` all absent) and the host is Linux, so
+  `Cargo.toml`, `tauri.conf.json`, `capabilities/default.json` and `src/lib.rs` are **unbuilt and
+  untested** — they are written to the Tauri 2 template's shape but no compiler has seen them. No
+  `.exe` and no installer exists. The Tauri storage and export paths (`store_load`, `store_save`,
+  `store_path`, `export_save`) have never executed; only their localStorage/object-URL fallbacks
+  were exercised. Also not verified: a real Windows machine, WebView2, the print dialog, the NSIS
+  installer, and dark mode (still unreachable site-wide). `npm run lint` does not run in this repo.
+
+**Remaining**
+- **Build the installer.** No Windows machine needed: `.github/workflows/desktop-windows.yml`
+  (the repo's first and only CI workflow) builds it on a `windows-latest` runner — push, then
+  Actions → "Windows desktop app" → Run workflow, and download the artifact. Locally on
+  Windows it is `pnpm install`, rustup, `pnpm tauri:build`. Output:
+  `src-tauri/target/release/bundle/nsis/PharmaWallah_1.0.0_x64-setup.exe`.
+  Expect to fix small Rust/config errors on that first compile — see the honesty note above.
+- Commit (the protocol forbids it here). The tree also carries two peers' work.
+- If `tauri dev` rejects the config, the one key to suspect is `app.security.devCsp`.
+- 21.3 MB of export, 10.8 MB of it OpenCV.js for one calculator. If installer size matters, that is
+  the thing to look at first — but it is a working offline tool, so it was kept (spec §26).
+
+**Next**
+- Run `pnpm tauri:build` on a Windows machine and install the result.
+
+### 2026-09-22 — Dissolution Rate Constant Calculator (new tool, 105th)
+
+Session `cb572d28`, "follow protocol" + a 19-section user specification carrying a real practical
+sheet (Cs = 3.5, seven corrected readings) and its expected answers.
+
+**Completed**
+- New `/calculation-tools/dissolution-rate-constant-calculator`, registered on the hub under
+  Pharmaceutics and in the Android catalogue. It reproduces the supplied practical table rather
+  than substituting a generic dissolution-kinetics model: **Time | Corrected Reading | Midpoint |
+  dC/dt | Cs − C | k = x/y (x = dC/dt) | k = x/y (x = midpoint)**, then the mean of the last column.
+- **The two k columns are kept apart**, as the spec demands — different numerators, separate
+  columns, named in their headers, and a note on screen saying they are two calculations and not
+  two roundings of one.
+- The sheet's conventions are reproduced exactly: the final row's midpoint looks **backwards**
+  ((C previous + C current) / 2, making it a repeat of the row above), the final row's dC/dt is
+  **—** because there is no following time point, and **Cs − C uses the row's own corrected
+  reading, never its midpoint**.
+- Four Recharts graphs with the spec's titles (concentration, midpoint, dC/dt with a zero rule and
+  visible negatives, k with the average as a labelled reference line), a scientific ⇄ decimal
+  notation toggle, editable rows with Add / Delete / Clear / Load example / Calculate, and the
+  lab-record Copy / PNG / Print through `LabActions`.
+- Validation per the spec: Cs numeric and non-zero, numeric times and readings, duplicate times
+  flagged (and their dC/dt refuses to divide by zero), out-of-order times flagged while the rows
+  are still calculated **as entered**, Cs − C = 0 handled, and a negative dC/dt shown with the
+  spec's own wording — "Negative rate detected — review experimental variability." Nothing is
+  deleted, re-sorted or absolute-valued.
+
+**Files**
+- New `src/app/(site)/calculation-tools/(tools)/dissolution-rate-constant-calculator/`:
+  `_dissolution-rate.ts` (pure: validation, the seven columns, the average, display formatting) and
+  `page.tsx` (kit UI, four graphs, worked steps, lab record).
+- New `scripts/dissolution-rate.test.mts` — 28 unit tests.
+- `src/app/(site)/calculation-tools/tool-index.ts`, `mobile/app/_data/tool-registry.ts` — one entry each.
+- `src/components/calculators/lab-analysis/parts.tsx` — `TableColumn.inputClass`, an **optional**
+  per-column input width (default unchanged, so no existing tool moves).
+- `scripts/lib/ts-resolve.mjs` — now also resolves the `@/` alias, so a pure module that imports a
+  kit sibling that way can still be tested under `node --test`. Relative handling untouched.
+
+**Architecture & Decisions**
+- **The spec contradicts itself about the average, and the calculator says so instead of choosing
+  silently.** §8 asks for "the mean of all midpoint-based k values", but the expected answer it
+  states twice (0.000291833) is the mean of only **five** of the seven — t = 10…50. Measured: mean
+  of all seven is 0.000269425; of t = 10–60, 0.000293440; of t = 0–50, 0.000264084. Only the
+  interior five give 0.000291833 exactly. So "Average over" is a labelled `ModeSwitch` with
+  **Practical sheet rows** (interior only) as the default — it reproduces the stated expected
+  output — and **All observations** beside it, with the reason on screen. This is the
+  `calculator-tool` skill's rule (gotcha 67): an alternative method is an option, never a silent
+  substitute. **Owner decision** if the sheet's average was meant to cover all seven.
+- **Brand tokens, not the spec's palette.** §16 names #2563EB/#4ADE80 but also says to use the
+  existing design system; the site's are #1C7BD9/#21B67A. Same call as the Molecular Lab and the
+  pharmacy counter.
+- **Full precision throughout, rounding only at the point of printing**, so the notation toggle
+  cannot change an answer — asserted by a test that computes k from the *displayed* string and
+  proves it differs.
+- The midpoint-based k divides a concentration by a concentration and therefore carries **no
+  unit** as the sheet writes it. That is stated in "How the calculator works" rather than quietly
+  corrected.
+- No new dependency, no API route, no data store — it ships in the offline APK like every other tool.
+
+**Verification**
+- `npx tsc --noEmit` → **0 errors** (whole repo; matches the §9 baseline).
+- `node --test scripts/dissolution-rate.test.mts` → **28 pass, 0 fail**: every column against the
+  supplied sheet, the backward final midpoint, the two k columns proven different row by row, the
+  average against 0.000291833 and against each rejected range, division-by-zero paths, duplicate
+  and backwards times, a reading above Cs, both notations, and that intermediates are not rounded.
+- Headless Chrome over CDP against an isolated dev server on :3211 — **56/56 at 1440×900** and
+  **14/14 at 390×844 with touch**, 0 console errors in both. Driven for real: the example chip
+  fills the sheet; the table prints 8.77352 × 10⁻⁵, 2.50672 × 10⁻⁵, 3.76783 × 10⁻⁶, Cs − C of
+  3.499122648 and 3.498990807, "—" on the final row's two rate columns; the headline average reads
+  2.91833 × 10⁻⁴ and, in decimal, 0.000291833; the k column reads 0.000125336 / 0.000269574 /
+  0.000287909 / 0.000288555 / 0.000311630 / 0.000301497; switching to All observations moves it to
+  0.000269425 and back; four graphs draw 7 / 7 / 6 / 7 points with both reference lines; no
+  NaN/Infinity; no horizontal page overflow at either width and the wide table scrolls in its own box.
+- **Screenshots read at both widths**, and they caught two things no assertion did: `Cs − C` printed
+  as "3.500000000" (trailing-zero noise beside Cs — now trimmed for that column only, while the
+  significant-figure columns keep theirs), and the corrected-reading inputs **clipped** their own
+  values at the kit's fixed `w-[6.5rem]` (hence `TableColumn.inputClass`).
+- **NOT verified:** a real phone or tablet; iOS Safari; screen readers; the print dialog; dark mode
+  (still unreachable site-wide, tracker F13); the APK (not rebuilt). `npm run lint` does not run in
+  this repo.
+
+**Remaining**
+- Commit (the protocol forbids it here). Three peer sessions were live in the tree throughout —
+  an iOS Capacitor target, a Tauri desktop target, and a kit `SourceLink` — so commit selectively.
+- Owner decision: whether the reported average should cover all seven rows instead of the
+  interior five (the switch is already on screen either way).
+
+**Next**
+- Have a pharmaceutics demonstrator check the tool against a filled practical sheet other than the
+  one supplied, then decide the averaging convention.
+
+---
+
+### 2026-09-22 — Calculator refinement standard written up as a skill
+
+Session `9ac71ea2`, "follow protocol" + a 25-section user brief ("PharmaWallah Calculator — Global
+Refinement Instructions"), with the explicit instruction **"for now just create this skill."** No
+calculator was changed.
+
+**Completed**
+- New `.claude/skills/calculator-refinement/SKILL.md` (~300 lines). It is the brief translated into
+  this repo: not a restatement, but a mapping of each requirement onto the component or helper that
+  already delivers it, plus an honest list of what the kit does **not** have.
+- **Every claim in it was read from source**, not from documentation: the kit's exports and their
+  props (`NumberField`'s `units=` select, `ResultCard`'s `empty`/`interpretation`, `LabActions`'
+  Calculate/Reset/Copy/Download/Print and its `IS_MOBILE_APP` gating), the parsers and formatters
+  (`toNumber`, `fieldError`, `numericError`, `formatSig`/`formatFixed`/`formatScientific`), the
+  analytical layer (`DataTable`, `CountStepper`, `ChartPanel`, `CHART`, `chartSvg`, `Checked<T>`),
+  and the two real on-screen orders, taken from `bmi-calculator` and `calibration-curve-calculator`.
+- **Starting point measured, not estimated** (counted over the 104 tool pages): 35 have a unit
+  selector, 37 import Recharts, 15 build a lab record, 9 use `DataTable`, 6 use `ExampleChips`
+  (68 have some example affordance), 3 ever print scientific notation.
+
+**Files**
+- New `.claude/skills/calculator-refinement/SKILL.md`.
+- `.claude/SKILLS.md` — domain-skill row + a composing stack.
+- `.claude/skills/calculator-tool/SKILL.md` — a pointer at the top: that skill owns creating,
+  registering and medical safety; this one owns quality. **Two stale counts corrected** while
+  there: "97 pharmacy calculation tools" → 104 (98 registered), and "`tool-index.ts` lists 93" →
+  98 (gotcha 142). The same "97" in `.claude/SKILLS.md`'s row was corrected too.
+- `.claude/ROADMAP.md` — new Phase 4.7 item (⚪ not started), and **a stale line corrected**: it
+  still said Phase 2 "migrates 81 calculators", which finished 104/104 on 2026-09-20.
+- `.claude/MEMORY.md` — gotchas 143 (the `lab-analysis` barrel imports Recharts at module scope)
+  and 144 (there is no unit conversion beyond mass/volume/amount, and temperature cannot join it).
+- This file — §7 In Progress, this entry.
+
+**Architecture & Decisions**
+- **Two families, not one layout.** The brief's §21 order (inputs → Calculate → result) is how the
+  experimental-data tools already work; the formula tools put the result *first*, which is the only
+  way the answer is visible on a phone without scrolling past every field. The skill names both and
+  says which applies when, rather than forcing one order onto 104 tools.
+- **Brand tokens over the brief's hexes.** The brief names #2563EB/#4ADE80; the product is
+  #1C7BD9/#21B67A and `CHART.primary` is already the brand blue. Same decision the Molecular Lab and
+  the pharmacy counter took, for the same reason — a second near-identical blue on a brand page.
+- **§20's "minimal shadows, few gradients" does not mean stripping the liquid glass.** The user
+  asked for that specifically on 2026-09-20; it is shared kit and one edit there reaches all 104
+  tools and the APK (gotcha 136). The skill scopes §20 to decoration a page adds for itself, and
+  flags kit-level visual change as a separate, deliberate decision.
+- **The refinement is presentation; the maths is not in scope.** The skill's step 2 sends the
+  refiner to the tracker's suspected-faults list *before* touching anything, and requires a
+  before/after number capture. A render bug (stale result, NaN, dead unit selector) may be fixed and
+  must be stated; a formula may not.
+- **The brief's §3 and §23 conflict in practice** — "automatically convert when the unit changes"
+  against "do not unexpectedly erase data". The skill resolves it into a five-point rule (one
+  canonical internal unit, convert once on read, never rewrite the typed value, never clear, state
+  the choice on screen), because double conversion is this repo's classic silent calculator bug.
+
+**Verification**
+- Skill content checked against source for every named export, prop and file path.
+- Counts produced by `grep -rl` over `src/app/(site)/calculation-tools/(tools)`; the tool-directory
+  count (104) matches `MEMORY.md` gotcha 131.
+- Section order conformed to the house order documented at the foot of `.claude/SKILLS.md`.
+- **Not run, because no product code changed:** `npx tsc --noEmit`, `npm run build`,
+  `npm run mobile:build`, the `node --test` suites, no browser pass. Lint does not run in this repo.
+- **Not verified:** whether importing `ExampleChips` actually lands Recharts in a tool's bundle —
+  the module-scope import is a fact, the tree-shaking outcome is not, and the skill says to measure
+  it with a build rather than reason about it.
+
+**Remaining**
+- No calculator has been refined. The standard is unapplied to all 104.
+- The kit gaps the skill lists (unit tables beyond mass/volume/amount, temperature, graph tabs, a
+  notation toggle) are not built — the first tool that needs one builds it, in `lab-math.ts`.
+- Commit (the protocol forbids it here). The tree also carries the previous session's uncommitted
+  `.claude/BRAND_KIT.md`, `CLAUDE.md` and `.claude/MEMORY.md` changes.
+
+**Next**
+- Pick one tool from each family and refine it as the worked reference — `dissolution-calculator`
+  (family B: table → calculations → result → graph, and the brief's own worked example) and one
+  short formula tool — then measure how much of the standard the skill actually carried.
+
+### 2026-09-20 — Brand & content brief for social media (`.claude/BRAND_KIT.md`)
+
+Session `afbe3f0b`, "follow protocol". User is commissioning social media content (image posts)
+from a separate Claude on the web and needed a self-contained brief so that model knows the colour
+scheme, typeface, logo, voice and — critically — which numbers it is allowed to state.
+
+**Completed**
+- New `.claude/BRAND_KIT.md`, written to be pasted whole into a fresh model with no repo access.
+  Eleven sections: what the product is, audience, voice (with an explicit do/don't list), the full
+  colour system, typography, logo construction and usage, visual language, **publishable figures**,
+  a "never claim this" section, post formats and series ideas, and a short copy-paste summary.
+- **Every value was read from source, not from documentation**: brand tokens and the clinical
+  palette from `tailwind.config.ts`; the gradient, the two navy scrim strengths and their measured
+  WCAG ratios from `src/components/page-kit/brand.ts`; Outfit from `src/app/layout.tsx`; the six
+  pillar colours and their marketing lines from `src/components/Home/landing/data.ts`; the story
+  copy from `/about-us`; the mark described by actually rendering `public/icons/icon-512x512.png`
+  and the wordmark by extracting the base64 raster out of `public/images/logo/logo.svg`.
+- **Counts re-measured rather than copied**: 104 tool directories, **98** on the hub across 10
+  categories (parsed from `tool-index.ts`), 69 lesson markdown files, 8 simulations, 3 spotting
+  disciplines, 12 seeded community spaces (counted in the migration), an 83-molecule library, 5 AI
+  Guide modes, APK v1.4 / 8.9 MB / 104 tools, 18 team members.
+- Found the live **Instagram handle** in the codebase — `@pharmawallah_com`, linked from
+  `PharmaWallahQuiz.tsx` — and recorded it, since the user is about to run social accounts.
+- §9's "never claim" section encodes the project's real legal exposure: educational-use-only, the
+  unreviewed clinical content (Known Issue 19), the known formula faults (Known Issue 15) and the
+  copyright position that removed the books library.
+
+**Files**
+- New `.claude/BRAND_KIT.md`.
+- `CLAUDE.md` — §2 doc index row, §7 hub count corrected **93 → 98** with the per-category
+  breakdown (Source-of-Truth rule; the 93 was stale), new Known Issue 20, this entry.
+- `.claude/MEMORY.md` — one new gotcha (derived marketing counts live in two places and drift).
+
+**Architecture & Decisions**
+- **A file, not an artifact.** The deliverable's job is to be pasted into another chat, so a
+  markdown file in the repo beats a rendered page; it also version-controls alongside the tokens it
+  documents, which is what stops it going stale the way the 93 did.
+- **It lives in `.claude/`** because that is where this project keeps durable reference material and
+  `CLAUDE.md` §2 is its index — the brand kit is now discoverable from the entry point.
+- **Figures are quarantined into one section (§8)** with an instruction that nothing outside it may
+  be stated. A model writing marketing copy will invent "trusted by thousands" unless told plainly
+  where the boundary is.
+- **No product code changed.** The stale landing-page constant was recorded, not fixed — it is
+  user-visible copy and the user should make that call.
+
+**Verification**
+- Every hex, count and string in the brief was read back from the file that defines it; the two
+  logo assets were opened and looked at rather than described from the work log.
+- Discrepancy found and reported: landing `STATS.calculators` = 97 vs 104 real / 98 hub
+  (Known Issue 20), and §7's recorded hub count of 93 was wrong (corrected).
+- The DrugBank figures (12,673 drugs and its splits) are carried over from the 2026-09-13 measured
+  entry; they were **not** re-measured here — that needs a live Mongo read.
+- **Not run, because no code changed:** `npx tsc --noEmit`, `npm run build`, no browser pass.
+  Lint is not configured in this repo; no test covers documentation.
+
+**Remaining**
+- Decide whether to set `calculators: 104` in `src/components/Home/landing/data.ts` so the homepage
+  and the marketing agree (Known Issue 20).
+- The footer still carries a placeholder phone number and four `#` social links (Known Issue 13) —
+  worth fixing before driving traffic from Instagram.
+- No brand assets were exported for the designer (no PNG logo on transparent, no colour swatch
+  sheet). `logo.svg` is the white lockup only; a colour lockup does not exist in the repo.
+
+**Next**
+- Export a small asset pack (colour + white logo PNGs, the 512px mark, a swatch card) so the social
+  designer has files as well as hex values.
+
+---
 
 ### 2026-09-20 — `/pharmacy-counter` rebuilt as the Community Pharmacy Simulation Lab
 
@@ -2103,9 +2646,10 @@ Session `pharma-wallah-a8`, renamed `pharma-wallah-3d` after a machine reboot mi
 | Type-check | `npx tsc --noEmit` | **PASSES — 0 errors, re-measured 2026-09-20** after the calculator migration finished (104/104 on the kit). The 4 transient errors a peer recorded in `(tools)/OpioidMMECalculator/page.tsx:229-231` were a `Set` spread needing `downlevelIteration` (gotcha 37) during that migration and are **fixed** — use `Array.from(...)`, not a spread, in this tsconfig. Any error you see now is yours. The app project: `npx tsc --noEmit -p mobile/tsconfig.json` → 0 errors (needs a generated `mobile/app/_generated`, i.e. one `npm run mobile:build`). |
 | Lint | `npm run lint` | **NOT AVAILABLE.** No ESLint config; the command opens an interactive setup prompt. Do not report lint as passing. |
 | Build | `npm run build` | **PASSES — re-verified 2026-09-20 after the calculator migration finished** (isolated copy of the tree; peers had agreed not to build in the shared root): exit 0, shared JS **88.5 kB**, middleware **81.9 kB**. All 104 calculators then swept against `next start` at 1440×900 and 390×844 — 104/104 HTTP 200, hydrated, **0 exceptions, 0 console errors, 0 horizontal overflow**. **Also 2026-09-20 after the AI Guide rebuild** (isolated copy; the peer dev server on :3000 was left alone): exit 0, shared JS **88.5 kB** (unchanged), `/ai-guide` **9.7 kB / 150 kB first load**, `/books-library` no longer emitted. **Also 2026-09-20, after the Disk Diffusion Lab rebuild** (in an isolated copy of the tree — two peer `next dev` servers were running on the shared root and had already corrupted its `.next`, MEMORY gotcha 126): exit 0, **277 route lines**, shared JS **88.5 kB**, middleware 81.9 kB, `/simulations/disk-diffusion` 49.1 kB / **241 kB first load**; jsPDF confirmed absent from the page chunk and present in its own, so the report no longer rides in the first load. One extra expected warning: `buffer-lab`'s ambiguous `duration-[2000ms]` class. **Earlier the same day: PASSES — after the `/encyclopedia` redesign** (in an isolated copy of the tree, the peer sessions' dev servers left alone): exit 0, shared JS **88.5 kB**, `/encyclopedia` **16.3 kB / 113 kB first load**, `/molecular-lab` 60.2 kB / 149 kB. OpenChemLib (1.09 MB) and 3Dmol (568 KB) are lazy chunks only — grep the built shared chunks for both and expect **0 hits** before shipping any new 3D consumer. Two 404s on `/_vercel/insights` and `/_vercel/speed-insights` appear under `next start` locally; they come from `Analytics` / `SpeedInsights` in `src/app/layout.tsx` and only resolve on Vercel — not a defect. **Earlier: PASSES — 2026-09-16 after Molecular Lab** (in an isolated copy of the tree, dev server left up): exit 0, shared JS **88.4 kB**, middleware 81.9 kB, `/molecular-lab` 59.5 kB / 148 kB first load, `resources.<hash>.json` 1.35 MB in `static/media`. The build also prints several `Dynamic server usage` stack traces (tournament leaderboard, DailyMed, AMR routes) — logged by those handlers, non-fatal, not new. **Before that** (again after the simple `/about-us`: exit 0, shared JS 88.3 kB, `/about-us` 106 kB first load). Earlier the same day: exit 0 in ~2.5 min, 252 route lines, shared JS **88.3 kB**, middleware 81.9 kB; `/calculation-tools/rf-value-calculator` 184 kB and `/cfu-calculator` 183 kB first load; `.next/static/media/opencv.<hash>.js` 10.8 MB emitted as an asset. Same expected warnings as below. **Earlier (2026-09-12):** with the dev server stopped, after the AdSense work (the first successful run since the PWA removal, the shadcn migration and the Outfit switch): exit 0, ~170 routes, middleware 81.8 kB, shared JS 87.8 kB. Stop `npm run dev` first — they share `.next` and corrupt each other (§7 Known Issue 10). **PASSES with a populated `.env`** — exit 0, ~170 routes emitted, middleware 81.8 kB, shared JS 87.8 kB. Only `/_not-found` is static; everything else is `ƒ` (dynamic, server-rendered on demand). **Without `.env` it FAILS**: `Missing environment variable: NEXT_PUBLIC_SUPABASE_URL` while collecting page data for `/api/admin/registrations`. Expected non-fatal warnings: the `@supabase/supabase-js` Edge-runtime `process.version` notice, the stale `caniuse-lite` Browserslist notice, and two webpack "Serializing big strings" cache notices. |
-| Mobile build | `npm run mobile:build` | **PASSES (2026-09-20, ~2 min)** — after the calculator migration and the liquid-glass kit change: exit 0, **108 HTML files**, 106 entries under `mobile/out/calculation-tools/`, CSS **84,243 + 4,210 bytes**. The glass ships to the APK: `calcSheen`/`calcTide` and the `[@media(hover:none)]` phone path are all present in the exported CSS, and the export renders at 390 px with `backdrop-filter: none`. **Earlier (2026-09-16, ~2 min)** — 105 HTML files under `mobile/out/calculation-tools/`, home `/` 125 kB first load, shared JS 88.2 kB, CSS **113,194 bytes**, `mobile/out` 22 MB (OpenCV.js is 10.8 MB of it). Secret scan: use the JWT-shaped pattern (gotcha 90). **Earlier (v1.1):** 109 static pages, 108 HTML files, 105 under `mobile/out/calculation-tools/`, shared JS 87.9 kB, CSS in two files **98,751 + 4,210 bytes**, 12 MB (re-measured 2026-09-13 by the v1.1 APK build, with 85 of 104 tools on the kit; 103,829 + 4,210 before). Independent of `.env` and safe to run while `npm run dev` is up (separate `mobile/.next`). **Also assert zero ad strings in `mobile/out`** — see `.claude/skills/adsense-monetization/SKILL.md`. A ~10 KB stylesheet is the silent Tailwind failure (gotcha 23). |
+| Mobile build | `npm run mobile:build` | **PASSES (2026-09-22, ~3 min)** — re-measured after the iOS target landed and the three Capacitor plugins were installed: exit 0, **106 HTML files** under `mobile/out/calculation-tools/` (105 tools + the hub), CSS **88,734 bytes**, shared JS **88.3 kB**; **0** files match the JWT-shaped secret pattern and **0** contain an ad string. This one export now feeds three native targets — `cap sync android`, `cap sync ios` and the Tauri desktop build. **Earlier: PASSES (2026-09-20, ~2 min)** — after the calculator migration and the liquid-glass kit change: exit 0, **108 HTML files**, 106 entries under `mobile/out/calculation-tools/`, CSS **84,243 + 4,210 bytes**. The glass ships to the APK: `calcSheen`/`calcTide` and the `[@media(hover:none)]` phone path are all present in the exported CSS, and the export renders at 390 px with `backdrop-filter: none`. **Earlier (2026-09-16, ~2 min)** — 105 HTML files under `mobile/out/calculation-tools/`, home `/` 125 kB first load, shared JS 88.2 kB, CSS **113,194 bytes**, `mobile/out` 22 MB (OpenCV.js is 10.8 MB of it). Secret scan: use the JWT-shaped pattern (gotcha 90). **Earlier (v1.1):** 109 static pages, 108 HTML files, 105 under `mobile/out/calculation-tools/`, shared JS 87.9 kB, CSS in two files **98,751 + 4,210 bytes**, 12 MB (re-measured 2026-09-13 by the v1.1 APK build, with 85 of 104 tools on the kit; 103,829 + 4,210 before). Independent of `.env` and safe to run while `npm run dev` is up (separate `mobile/.next`). **Also assert zero ad strings in `mobile/out`** — see `.claude/skills/adsense-monetization/SKILL.md`. A ~10 KB stylesheet is the silent Tailwind failure (gotcha 23). |
+| iOS sync | `npm run ios:sync` (i.e. `cap sync ios`) | **PASSES (2026-09-22, ~4 s after the build)** — exit 0 on **Linux**; Capacitor 8 uses the SPM template so no CocoaPods is involved. Reports **3 Capacitor plugins for ios** (`@capacitor/filesystem@8.1.3`, `@capacitor/keyboard@8.0.5`, `@capacitor/share@8.0.2`) and rewrites `ios/App/CapApp-SPM/Package.swift`. Also assert: `Info.plist` parses with `plistlib` and has **zero** `*UsageDescription` keys, and `ios/App/App/public/calculation-tools` holds one `index.html` per tool. **There is no iOS build baseline** — compiling needs Xcode on macOS and has never been done (§7 Known Issue 21). Do not report the iOS app as building. |
 | APK | `npm run mobile:apk` | **PASSES (2026-09-20, v1.4 / versionCode 5, ~2 min)** — signed V2 release APK **9,369,674 B (8.9 MB)**, certificate SHA-256 `afe4c18e…5b03` **unchanged from v1.3**, so it installs as an update; published file byte-identical to the Gradle output; 104 tool pages inside. **Earlier (2026-09-16, v1.3 / versionCode 4, ~2.5 min)** — signed V2 release APK **9,347,799 B** (8.9 MB), same certificate SHA-256 `afe4c18e…5b03` as v1.2; published file byte-identical to the Gradle output. **Earlier:** (2026-09-14, v1.2 / versionCode 3, built by `pharma-wallah-4b` — new launcher icon + redesigned Serial Dose tool) — signed V2 release APK, 5,945,495 B, copied to `public/downloads/`; same certificate as v1.0/v1.1. Needs JDK 21 (auto-selected) and `android/keystore.properties`. Check `aapt dump badging` for the version and `apksigner verify --print-certs` for the certificate. |
-| Tests | `node --test scripts/pharmacy-counter.test.mts` · `node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts` · `node --test scripts/molecular-lab.test.mts` · `node --test scripts/community.test.mts` · `node --test scripts/ai-guide.test.mts` | **47 pass, 0 fail** (2026-09-20, Community Pharmacy pure layer, ~0.5 s — case-data integrity, the check grader, verification truths, labels, expiry, inventory, the calculators, scoring) · **41 pass, 0 fail** (2026-09-16; 21 TLC + 20 colony, ~10 s) · **21 pass, 0 fail** (2026-09-16, Molecular Lab, ~12 s, real OpenChemLib) · **19 pass, 0 fail** (2026-09-20, community pure layer, <1 s) · **34 pass, 0 fail** (2026-09-20, AI Guide pure layer — request clamps, Gemini history rules, NDJSON framing, study modes — <1 s). These cover six features' pure modules only — there is no framework, no CI, and nothing else is tested. Report them by name. **The community's SQL is verified separately** by running its migration twice against a throwaway local Postgres 16 and asserting RLS from a `nobypassrls` role — see the `community-system` skill. |
+| Tests | `node --test scripts/pharmacy-counter.test.mts` · `node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts` · `node --test scripts/molecular-lab.test.mts` · `node --test scripts/community.test.mts` · `node --test scripts/ai-guide.test.mts` · `node --test scripts/dissolution-rate.test.mts` | **47 pass, 0 fail** (2026-09-20, Community Pharmacy pure layer, ~0.5 s — case-data integrity, the check grader, verification truths, labels, expiry, inventory, the calculators, scoring) · **41 pass, 0 fail** (2026-09-16; 21 TLC + 20 colony, ~10 s) · **21 pass, 0 fail** (2026-09-16, Molecular Lab, ~12 s, real OpenChemLib) · **19 pass, 0 fail** (2026-09-20, community pure layer, <1 s) · **34 pass, 0 fail** (2026-09-20, AI Guide pure layer — request clamps, Gemini history rules, NDJSON framing, study modes — <1 s). · **28 pass, 0 fail** (2026-09-22, Dissolution Rate Constant pure layer — every column of the supplied practical sheet, both k columns proven distinct, the average against 0.000291833 and against each rejected averaging range, division-by-zero paths, duplicate/backwards times, both notations — <1 s). These cover seven features' pure modules only — there is no framework, no CI, and nothing else is tested. Report them by name. **The community's SQL is verified separately** by running its migration twice against a throwaway local Postgres 16 and asserting RLS from a `nobypassrls` role — see the `community-system` skill. |
 
 ---
 

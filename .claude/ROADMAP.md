@@ -134,6 +134,12 @@ pages, confirm progress tracking records a visit, then batch the rest.
     `OpioidConversionCalculator` is **not clinically safe** (one ×3 IV factor for every opioid) — keep it
     unlisted; `drug-half-life-calculator` is only partly working.
   - **Formula faults found by the 2026-09-13 hub audit** — see CLAUDE.md §7 Known Issues 15.
+  - ✅ 2026-09-22: **Dissolution Rate Constant Calculator** (`dissolution-rate-constant-calculator`) —
+    reproduces a dissolution practical sheet's own table (midpoint, dC/dt, Cs − C and **two separate**
+    k columns), four Recharts graphs, scientific ⇄ decimal notation, 28 unit tests. Registered on the
+    hub (Pharmaceutics) and in the Android catalogue → **105 directories, 99 on the hub**. Open owner
+    decision: whether the reported average covers the interior rows (the sheet's own answer, and the
+    default) or all of them — both are on screen as a labelled switch.
   - Delete the dead legacy registry `src/app/api/calculators.tsx` (419 lines, zero importers).
   - ✅ Migrate older tools to the shared kit (`src/components/calculators/`) — **COMPLETE 2026-09-20,
     104 of 104**, each verified number-for-number against its pre-migration page. Tracker Phase 2 is
@@ -380,12 +386,82 @@ pages, confirm progress tracking records a visit, then batch the rest.
   - Install v1.3 on a real phone: update over v1.2, camera capture in both camera tools, cold start.
   - ~~Replace the default Capacitor launcher icon and splash screen~~ — done (v1.2 onward).
   - A Play Store listing (signing key exists in `android/keystore.properties`).
-  - Optional: an iOS target (`@capacitor/ios`) — the same `mobile/out` bundle would work.
+  - ~~Optional: an iOS target (`@capacitor/ios`)~~ - **done 2026-09-22**, see Phase 4.54.
 - **Important files:** `mobile/README.md`, `mobile/next.config.mjs`,
   `mobile/app/_data/tool-registry.ts`, `scripts/generate-mobile-routes.mjs`, `capacitor.config.ts`
 - **Dependencies:** JDK 21 (installed) and `~/Android/Sdk`.
 - **Notes:** The app is offline by construction — the whole bundle lives in the APK. Since v1.3 no
   tool needs a connection (`ONLINE_ONLY_SLUGS` is empty); OpenCV.js (10.8 MB) ships inside it.
+
+---
+
+## Phase 4.54 - iOS app (Capacitor) 🟡 (scaffolded and configured, never compiled)
+
+### Offline calculators for iPhone/iPad
+- **Status:** 🟡 The Xcode project exists, is committed and syncs cleanly; **it has never been
+  compiled, run or installed**, because that needs a Mac and none was available.
+- **Existing implementation:** `ios/` - a Capacitor 8 Xcode project wrapping the *same*
+  `mobile/out` bundle the APK wraps (105 calculators + the hub). Capacitor 8 uses **Swift Package
+  Manager**, not CocoaPods, so `cap add ios` and `cap sync ios` run on Linux. Brand icon and
+  Outfit-set launch screen from `scripts/generate-ios-assets.mjs`; `Info.plist` declares **no
+  permissions** and `ITSAppUsesNonExemptEncryption = false`; `ios.contentInset: "never"` so the
+  web layer's own safe-area padding is not doubled; Capacitor's keyboard accessory bar turned on
+  for iOS only (`mobile/app/_components/NativeShell.tsx`) because the decimal keypad has no return
+  key; Download/Print replaced by a native **Share** of the lab-record card.
+- **Verified:** `npx tsc --noEmit` 0 errors; `npm run mobile:build` exit 0 (106 HTML pages, CSS
+  88,734 B); `cap sync ios` and `cap sync android` both exit 0 and find the 3 plugins; `Info.plist`
+  parses with zero `*UsageDescription` keys; 0 secrets and 0 ad strings in the bundle; the icon read
+  under a real iOS squircle mask and the splash read at a 19.5:9 aspect-fill crop.
+- **Remaining work:**
+  - **Open `npm run ios:open` on a Mac and build once.** Everything downstream of `cap sync` is
+    unproven: the compile, the launch-screen handover, the accessory bar, the share sheet.
+  - An Apple Developer team, a provisioning profile and an App Store Connect record. None exist.
+  - Decide distribution: TestFlight, App Store, or neither for now.
+- **Important files:** `ios/App/App/{Info.plist,Assets.xcassets}`, `capacitor.config.ts` (`ios`
+  block), `scripts/generate-ios-assets.mjs`, `.claude/skills/ios-app-capacitor/SKILL.md`
+- **Dependencies:** macOS + Xcode (not available on the project machine).
+- **Notes:** The brief also asked for calculation history, a Pharmaceutical Values browser and
+  CSV/PDF export. Those live in the shared `mobile/` layer (so they would change Android too) and
+  the user scoped them **out** of the iOS task on 2026-09-22. They are not blocked, just not built.
+
+---
+
+## Phase 4.55 — Windows desktop app (Tauri 2) 🟡 (built, never compiled)
+
+### Offline calculator suite for Windows
+- **Status:** 🟡 **Frontend complete and verified; the Rust half has never been compiled.** There is
+  no Rust toolchain on the development machine and the host is Linux, so **no `.exe` and no
+  installer exist yet**. Everything else works and was driven end to end.
+- **Existing implementation:** `desktop/` — a third Next.js project root with `output: "export"`,
+  containing all 105 calculators as generated one-line re-exports, plus six desktop-only sections
+  (dashboard, calculator index, 212-row searchable values library, 40-formula reference, unit
+  converter, calculation history, settings). `src-tauri/` — Tauri 2 shell: four Rust commands, no
+  plugins, no networking crate, `core:default` as the only permission.
+- **Verified:** `npx tsc --noEmit -p desktop/tsconfig.json` → 0 errors. `npm run desktop:build` →
+  exit 0, 116 static pages, shared JS 88.2 kB, CSS 78.7 kB. `npm run desktop:audit` → passed, with
+  **0 remote subresources in the emitted HTML**. Driven in headless Chrome with every non-local
+  request failed — **25/25 checks, 0 console errors, 0 application requests left the machine**;
+  save → reload → history persists → export (TXT and PDF both wrote a file) → delete; no horizontal
+  overflow at 1400×900 or 1000×650.
+- **Remaining work:**
+  - **Compile it.** Easiest route, needing no Windows machine and no local Rust:
+    `.github/workflows/desktop-windows.yml` (added 2026-09-22) builds it on a `windows-latest`
+    runner — push, then Actions → "Windows desktop app" → Run workflow, and download the
+    `pharmawallah-windows-installer` artifact. Locally on Windows it is `pnpm install`, rustup,
+    `pnpm tauri:build`. Either way, expect to fix small Rust/config errors on the first compile —
+    nothing Rust has been through a compiler. If `tauri dev` rejects the config, suspect
+    `app.security.devCsp` first.
+  - Install the result on a real Windows machine: WebView2, the window chrome, the print dialog,
+    the NSIS installer, and the four Rust commands (store load/save/path, export) which have never
+    executed — only their browser fallbacks have.
+  - Decide whether 21.3 MB of export (10.8 MB of it OpenCV.js for one calculator) is acceptable.
+  - Optional: a code-signing certificate, so Windows SmartScreen does not warn on first run.
+- **Important files:** `desktop/README.md`, `desktop/next.config.mjs`, `src-tauri/tauri.conf.json`,
+  `src-tauri/src/lib.rs`, `scripts/generate-desktop-routes.mjs`, `scripts/audit-desktop-offline.mjs`
+- **Dependencies:** a Rust toolchain (not installed), and Windows to produce a Windows installer.
+- **Notes:** Offline is a requirement, not a property — `npm run desktop:audit` is wired into
+  `tauri:build` and fails the build on an ad network, analytics, an API client, a CDN script, a
+  secret-shaped string or any remote subresource in the HTML.
 
 ---
 
@@ -437,9 +513,26 @@ pages, confirm progress tracking records a visit, then batch the rest.
 - **Existing implementation:** `.claude/redesign-tracker.md` (the plan and status of record),
   `src/components/page-kit/`.
 - **Remaining work:** Phase 1 pages in order hub → courses → MCQ → spotting → simulations → community →
-  dashboard → auth → static → tools → tournament → clinical → admin; Phase 2 migrates 81 calculators
-  onto the calculator kit with before/after output capture.
+  dashboard → auth → static → tools → tournament → clinical → admin. **Phase 2 (migrate every
+  calculator onto the calculator kit) is COMPLETE — 104/104, 2026-09-20**; the "81 calculators"
+  figure recorded here before that was stale.
 - **Notes:** UI only. Logic faults found while measuring (tracker F9, F10, F17, F19) need approval.
+
+### Calculator refinement standard (the 2026-09-22 brief)
+- **Status:** ⚪ Not started — **the procedure exists, no tool has been refined.**
+  `.claude/skills/calculator-refinement/SKILL.md` (2026-09-22) encodes the user's 25-section brief
+  against what the kit actually provides.
+- **Why it is a separate item from Phase 2:** the migration made all 104 tools *consistent*; this
+  makes them *teach* — units the student picks rather than types, a loadable example, the
+  substitution shown line by line, a graph where the data has a shape, and a record they can copy.
+- **Measured starting point (2026-09-22, counted over the 104 tool pages):** 35 have a unit
+  selector, 37 draw a Recharts graph, 15 build a lab record (`LabActions`), 9 use an editable
+  `DataTable`, 68 have some example/preset affordance, 3 ever print scientific notation.
+- **Known gaps in the shared kit:** no unit tables beyond mass/volume/amount, no temperature or
+  time conversion, no graph-tab component, no notation/decimals toggle, no reset confirmation.
+- **Constraint:** refinement is presentation. The ~70 suspected formula faults
+  (`.claude/redesign-tracker.md`, `CLAUDE.md` Known Issue 15) are **not** fixed by it — that is
+  logic work and an owner decision.
 
 ## Phase 5 — Hardening ⚪
 

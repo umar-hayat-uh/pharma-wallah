@@ -1262,3 +1262,162 @@ Traps that will otherwise be rediscovered painfully.
      passes the whole string as one filename and fails with `Cannot find module 'walk.mjs 1440 900'`
      — under bash the same loop works. Three verification runs silently produced no output this way
      and looked like a hung harness. Use an explicit array, or write the calls out.
+
+142. **Derived, publishable counts live in at least three places and drift apart.** The number of
+     calculators is stated by `STATS.calculators` in `src/components/Home/landing/data.ts` (a
+     hand-typed constant, was **97**), by `HUB_TOOL_COUNT` in `calculation-tools/tool-index.ts` (a
+     `reduce` over the registry, **98**), by `APP_TOOL_COUNT` in `download/DownloadClient.tsx`
+     (hand-typed, **104**) and by the actual directory count under `(tools)/` (**104**). Three of
+     the four disagreed on 2026-09-20, and `CLAUDE.md` §7 recorded a fourth wrong figure (93).
+     Before quoting any count — in product copy, in a doc, or to the user — **count the source of
+     truth**, and prefer deriving the constant over typing it. The landing file's own comment warns
+     against rounding numbers up "for effect" because a pharmacy student will check; the same
+     applies to letting them go stale. See `.claude/BRAND_KIT.md` §8 for the measured set, and
+     `CLAUDE.md` Known Issue 20.
+
+143. **`lab-analysis/parts.tsx` imports Recharts at module scope.** `ExampleChips`, `DataTable`,
+     `CountStepper`, `StatTiles`, `ResultTable` and `ReportSteps` all live in the same file as
+     `ChartPanel`, which does `import { ResponsiveContainer } from "recharts"` at the top. Pulling
+     one small helper out of `@/components/calculators/lab-analysis` may therefore drag a chart
+     library into a tool that draws nothing. Most tools build their own example chips locally (68
+     of 104 have some example affordance; only 6 use `ExampleChips`). Don't reason about
+     tree-shaking — if it matters, build and compare the route's first-load size against
+     `CLAUDE.md` §9. Sibling of gotcha 69 (the same barrel also loads React UI, which is why a
+     pure maths module must import `lab-analysis/math` and `format` directly).
+
+144. **The calculator kit has no unit conversion beyond mass, volume and amount.** `lab-math.ts`
+     exports `MASS_TO_G`, `VOLUME_TO_ML` and `AMOUNT_TO_MOL` and nothing else; `CONCENTRATION_UNITS`
+     in `lab-analysis/parts.tsx` is a **label list, not a converter**, and there is no time, length,
+     pressure or temperature table anywhere. Temperature cannot join those tables at all — °C/°F/K
+     need an offset, not a factor. A tool that offers a unit dropdown is doing its own arithmetic,
+     which is why two shipped with selectors that change nothing (`DensityConversionCalculator`,
+     `heat-transfer-area` — Known Issue 15). New shared tables belong in `lab-math.ts`, the file
+     that already ships inside the APK.
+
+145. **A supplied practical sheet can contradict its own stated answer — reproduce it, and put the
+     choice on screen.** The Dissolution Rate Constant spec asked for "the mean of all midpoint-based
+     k values" and stated the expected result twice as 0.000291833. It is not the mean of all seven:
+     all seven give 0.000269425, t = 10–60 give 0.000293440, t = 0–50 give 0.000264084, and **only the
+     five interior rows (t = 10–50) give 0.000291833**, which is what a spreadsheet does when the
+     average range accidentally omits the first and last cell. Before writing any UI, compute every
+     candidate range in Node and find which one the stated answer actually is — that identifies the
+     real convention in minutes and would otherwise be a silently wrong headline figure. Then ship it
+     as a labelled option with the alternative beside it (skill rule, gotcha 67), never as a silent
+     choice. Same family as the "prefer the sheet's method" rule, but the trap here is that the prose
+     and the number in one document disagree.
+
+146. **`formatSig` switches to scientific below 1e-4, which is the whole working range of some
+     practicals.** A dissolution table's readings, midpoints, rates and rate constants all sit between
+     1e-3 and 1e-7, so `formatSig` renders the entire table in exponent form and a "decimal notation"
+     toggle built on it does nothing. A decimal formatter that keeps N significant figures without an
+     exponent is `Number(v.toPrecision(sig)).toFixed(sig - 1 - Math.floor(Math.log10(Math.abs(rounded))))`
+     — see `_dissolution-rate.ts`'s `formatDecimal`. Keep trailing zeros in significant-figure columns
+     (0.000311630 *is* six figures) but trim them where the value sits next to a round number, or a
+     Cs − C column prints "3.500000000".
+
+147. **`DataTable`'s inputs were a fixed `w-[6.5rem]`, which clips a value the student must check.**
+     Sized for an absorbance (0.131); a dissolution corrected reading (0.000877352) renders as
+     "0.00087735:" and the student cannot see what they typed. `TableColumn` now takes an optional
+     `inputClass` (default unchanged, so no existing tool moved). Nothing in the DOM says a value is
+     clipped, so no assertion catches it — this was found by reading the 1440 screenshot. Compare
+     `input.scrollWidth` with `input.clientWidth` if you want it asserted.
+
+
+148. **There are now four build targets compiling the same calculator files**, not two: the website
+     (`src/`), Android (`mobile/` + `android/`), iOS (`ios/`) and **Windows** (`desktop/` +
+     `src-tauri/`, Tauri 2, added 2026-09-22). Gotcha 18's rule hardens accordingly: a tool that
+     starts calling `fetch`, importing a server module, or importing a platform-only package breaks
+     *three* packaged apps at once. This bit for real on 2026-09-22 — `LabReport.tsx` gained an
+     import of `@capacitor/share` before that package was installed, and every calculator build
+     target failed to resolve it, including a desktop build that has nothing to do with iOS.
+
+149. **The desktop target sets `NEXT_PUBLIC_IS_MOBILE_APP=true` as well, on purpose.** That flag is
+     the shared kit's "packaged, offline, ad-free build" switch, and setting it in
+     `desktop/next.config.mjs` is what keeps `AdSlot` silent and `calculatorHref` trailing-slashed
+     **with zero edits to `src/`**. The side effect to know: it also hides `LabActions`' own
+     Download-card and Print buttons, which is why `desktop/app/_components/ToolFrame.tsx` supplies
+     its own Save / PDF / Text / Print. Do not rename or repurpose the flag without checking all
+     three consumers (`AdSlot`, `LabReport`, `lab-math`).
+
+150. **The desktop app records a calculation by reading the DOM, not by instrumenting the tools.**
+     `desktop/app/_lib/snapshot.ts` depends on exactly four things the shared calculator kit
+     guarantees: a single `h1` (CalculatorShell), labelled `input`/`select` controls (NumberField /
+     SelectField), `[aria-live="polite"]` on the result card (ResultCard), and a
+     `button[aria-controls]` whose label mentions "calculated" (FormulaNote). **Changing any of
+     those four in the kit silently breaks Save, Print and Export on all 105 calculators at once,
+     and nothing type-checks it.** Two specifics: the result card's *empty* state also carries
+     `aria-live`, and is told apart only by its value line being an em dash; and the FormulaNote
+     panel must be read with `textContent`, never `innerText`, because `Collapse` leaves it in the
+     DOM at `visibility: hidden` when closed and `innerText` returns "" for that.
+
+151. **A grep is the cheapest offline proof, and this repo passes it.** All 104 tool pages plus
+     `src/components/calculators/**` contain **zero** `fetch(`, `axios`, `XMLHttpRequest`,
+     `sendBeacon`, `EventSource`, `new WebSocket` and zero remote `<img src>` (measured
+     2026-09-22). The remote URLs that *do* appear — ~102 across 25 hosts — are all `<a href>`
+     citations (FDA labels, CredibleMeds, journals), which make no request until clicked; the
+     desktop shell intercepts those clicks and copies the address instead.
+     `scripts/audit-desktop-offline.mjs` re-checks all of this against the **built** bundle and is
+     wired into `npm run tauri:build`. Three of its rules hit known-benign matches, each excused by
+     file *and* rule so the same pattern elsewhere still fails: an `AIza…` run inside OpenCV's
+     base64 WASM (the gotcha-90 false positive again), jsPDF's unreachable `pdfobject` CDN string,
+     and Next's own `fonts.googleapis.com` preconnect constant in `main-*.js`. The check that
+     actually matters is the one with no exceptions: **zero remote `src=`/`href=` subresources in
+     the emitted HTML**.
+
+152. **Capacitor 8 scaffolds iOS with Swift Package Manager, so `cap add ios` and `cap sync ios`
+     run on Linux.** The template is `ios-spm-template.tar.gz` in `@capacitor/cli/assets`; there is
+     no `pod install` step and no CocoaPods dependency. Both commands are pure Node — they extract
+     a template, copy `webDir`, and rewrite `Package.swift` and `capacitor.config.json`. This is
+     why an iOS target could be created and is maintained on this project's Linux machine. What
+     still needs macOS is everything *after* sync: compiling, the Simulator, a device build, an
+     archive, App Store Connect. Do not skip the sync step "because it's iOS" — the bundle it
+     copies is the entire app. (`ios/App/CapApp-SPM/Package.swift` says DO NOT MODIFY and means it:
+     `cap sync` regenerates it from the installed `@capacitor/*` plugins.)
+
+153. **WKWebView's automatic content inset doubles every safe-area gap this app already pads.**
+     `mobile/app/layout.tsx` sets `viewportFit: "cover"` and the app chrome pads with
+     `env(safe-area-inset-*)`, so `capacitor.config.ts` sets `ios.contentInset: "never"`. Setting it
+     back to the default `"automatic"` makes iOS add its own inset on top of the CSS one. Related
+     and equally load-bearing: **`server.iosScheme` must stay `capacitor`** — the origin is what
+     `localStorage` is keyed to, so changing it silently empties every student's Recent and Saved
+     list.
+
+154. **The iOS decimal keypad has no return key, so a numeric form cannot be dismissed without
+     Capacitor's accessory bar.** Every calculator input is `type="number" inputMode="decimal"`
+     (`NumberField`), which on iOS is the 12-key pad. Capacitor leaves `setAccessoryBarVisible`
+     off by default. `mobile/app/_components/NativeShell.tsx` turns it on and guards on
+     `Capacitor.getPlatform() === "ios"`, so Android — where the API is a no-op anyway — is
+     untouched.
+
+155. **An iOS app icon with an alpha channel builds fine and is rejected at App Store upload,
+     hours later.** `scripts/generate-ios-assets.mjs` flattens onto white deliberately. Two more
+     constants in that script are derived, not taste: the mark is fitted to **700 of 1024 px** so
+     the system squircle cannot clip it, and the launch-screen artwork must fit a **centred
+     1257 px box** because `LaunchScreen.storyboard` uses `scaleAspectFill` on a square image and a
+     19.5:9 iPhone shows only the middle ~46% of its width (same fraction of the height in
+     landscape).
+
+156. **sharp can typeset in a brand font that is not installed system-wide.** It rasterises SVG
+     through librsvg, which resolves fonts via fontconfig, so writing a temp `fonts.conf` pointing
+     at a directory of `.ttf` files and exporting `FONTCONFIG_FILE` **before the first render**
+     makes `font-family="Outfit"` resolve. Without it librsvg falls back to DejaVu **silently** —
+     the render succeeds and looks plausible, so check the letterforms, not the exit code.
+     fontconfig is read once per process; setting the variable after a render has no effect.
+
+157. **Two sessions writing `package.json` at once loses one of them, and pnpm is one of the
+     writers.** On 2026-09-22 a `pnpm add` of three plugins completed — the packages were in
+     `node_modules/.pnpm` — yet the three `dependencies` lines, the lockfile entries and the
+     `node_modules/@capacitor/*` symlinks were all absent afterwards, because a peer session wrote
+     package.json from a copy it had read before the install finished. The install had to be run
+     again. **Announce a `pnpm add` in a shared tree, and re-read package.json from disk
+     immediately before writing it** — never write back a version read earlier in the task.
+
+158. **`android/capacitor.settings.gradle` hard-codes pnpm store paths, version numbers and all.**
+     `cap sync android` writes lines like
+     `new File('../node_modules/.pnpm/@capacitor+share@8.0.2_@capacitor+core@8.5.2/node_modules/@capacitor/share/android')`.
+     Two consequences: the file is **generated but must be committed** (Gradle cannot find the
+     plugins without it), and **bumping any Capacitor plugin version breaks the Android build until
+     `cap sync android` is re-run**, because the old versioned path no longer exists. The file says
+     DO NOT EDIT and means it — re-sync, never hand-patch the version in the path. The same applies
+     to `android/app/capacitor.build.gradle`, which lists the `implementation project(...)` lines.
+

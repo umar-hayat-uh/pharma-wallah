@@ -1,0 +1,35 @@
+[package]
+name = "pharmawallah"
+version = "1.0.0"
+description = "PharmaWallah — Offline Pharmaceutical Calculator Suite"
+authors = ["PharmaWallah"]
+edition = "2021"
+rust-version = "1.77.2"
+# The binary is what the installer places on disk and what the Start menu runs.
+default-run = "pharmawallah"
+
+[lib]
+# Tauri 2's template shape: the application lives in a library so the same code
+# can be reused by a mobile target later, and main.rs is a three-line shim.
+name = "pharmawallah_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# No HTTP client, no networking crate, no database engine. The whole backend is
+# three commands that read and write one JSON file — see src/lib.rs.
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+# A calculator suite is not performance-critical, but the installer size is
+# worth caring about (spec §26): optimise for size, strip symbols, and let LTO
+# drop everything the app does not call.
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

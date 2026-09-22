@@ -1,0 +1,93 @@
+# Builds the PharmaWallah Windows desktop installer on a real Windows runner.
+#
+# WHY THIS EXISTS: Tauri compiles a native binary for the host platform, so a
+# Windows installer cannot be produced on the Linux development machine without
+# cross-compiling (which supports NSIS only, and cannot be test-run there).
+# A windows-latest runner builds it natively, produces BOTH the NSIS .exe and
+# the MSI, and installs nothing on anybody's laptop.
+#
+# HOW TO USE IT
+#   1. Push this file to GitHub.
+#   2. Actions tab → "Windows desktop app" → Run workflow.
+#   3. When it finishes, download the "pharmawallah-windows-installer" artifact
+#      from the run summary. It contains the .exe and the .msi.
+#
+# The build needs no secrets and no .env: the desktop project is a static export
+# of the calculators, which read nothing from the environment (the same reason
+# the Android build ignores the root .env — see MEMORY gotcha 20).
+
+name: Windows desktop app
+
+on:
+  # Run it by hand from the Actions tab.
+  workflow_dispatch:
+  # ...or automatically when a desktop release is tagged.
+  push:
+    tags:
+      - "desktop-v*"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          # No version here on purpose: pnpm/action-setup reads the
+          # "packageManager" field in package.json, so CI and the developers
+          # cannot drift apart.
+          run_install: false
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install dependencies
+        # Not --frozen-lockfile: several build targets share this repo and the
+        # lockfile is not always committed in step with package.json.
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build the offline frontend
+        run: pnpm desktop:build
+
+      - name: Prove the bundle cannot reach the network
+        # The offline guarantee is the product requirement, so it gates the
+        # installer rather than being checked afterwards.
+        run: pnpm desktop:audit
+
+      - name: Build the Windows installer
+        # `tauri build` only — the frontend and the audit already ran above, and
+        # `pnpm tauri:build` would repeat both.
+        run: pnpm tauri build
+
+      - name: Upload the installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: pharmawallah-windows-installer
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/msi/*.msi
+
+      - name: Upload the bare executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: pharmawallah-exe
+          if-no-files-found: error
+          retention-days: 30
+          path: src-tauri/target/release/PharmaWallah.exe

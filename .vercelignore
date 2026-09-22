@@ -4,3 +4,13 @@
 # keep them out of the upload entirely.
 mobile
 android
+
+# The iOS app is not part of the web deployment either. `ios/` is the native
+# Capacitor Xcode project; it is built on a Mac, never by Vercel.
+ios
+
+# The Windows desktop app is not part of the web deployment either.
+# `desktop/` is a third Next.js project root built by
+# `npm run desktop:build`, and `src-tauri/` is the native Rust project.
+desktop
+src-tauri

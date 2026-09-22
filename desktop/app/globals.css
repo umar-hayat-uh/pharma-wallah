@@ -1,0 +1,198 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * shadcn/ui design tokens, tuned to the PharmaWallah brand — the same values
+ * the Android app uses, so one calculator looks identical on all three targets.
+ * `--primary` is brandBlue (#1C7BD9) in HSL, `--secondary` is brandGreen
+ * (#21B67A).
+ *
+ * This file replaces src/app/globals.css for the desktop build, as mobile's
+ * does for the APK: none of the calculators uses a custom class defined there.
+ */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* brandBlue #1C7BD9 */
+    --primary: 210 77% 48%;
+    --primary-foreground: 0 0% 100%;
+
+    /* brandGreen #21B67A */
+    --secondary: 156 69% 42%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 210 77% 48%;
+
+    --radius: 0.75rem;
+
+    /* The desktop app has no fixed header over the calculator, so the shared
+       CalculatorShell's sticky aside needs no offset. */
+    --calc-top-offset: 0rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    /* A desktop window is not a document: the app frame scrolls its own panes,
+       so the body itself must never bounce or rubber-band. */
+    overscroll-behavior: none;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.2);
+  }
+}
+
+/* ── Desktop chrome ───────────────────────────────────────────────────────
+ * Everything here is scoped under .pw-desk so it can never leak into a shared
+ * calculator's markup. Motion is transform/opacity only and stops entirely
+ * under prefers-reduced-motion.
+ */
+.pw-desk {
+  /* The window is the viewport; the rail and the content pane scroll
+     independently, which is what makes this feel like an application rather
+     than a web page in a frame. */
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr);
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* Below the app's stated minimum width the rail collapses to icons rather than
+   reflowing into a phone layout — this is a desktop program (spec §17). */
+@media (max-width: 1100px) {
+  .pw-desk {
+    grid-template-columns: 4.25rem minmax(0, 1fr);
+  }
+  .pw-desk__label {
+    display: none;
+  }
+  .pw-desk__rail-wide {
+    display: none;
+  }
+}
+
+.pw-desk__rail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  color: #fff;
+  /* The brand gradient under a navy scrim — no black grounds (CLAUDE.md §6
+     rule 15). No backdrop-filter anywhere (rule 16 / MEMORY gotcha 51). */
+  background:
+    linear-gradient(170deg, rgba(10, 22, 52, 0.82) 0%, rgba(10, 30, 58, 0.7) 55%, rgba(8, 44, 44, 0.62) 100%),
+    linear-gradient(140deg, #1c7bd9 0%, #2563eb 45%, #21b67a 100%);
+}
+
+.pw-desk__main {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pw-desk__main {
+    scroll-behavior: auto;
+  }
+}
+
+/* A row in the navigation rail. */
+.pw-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.7rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.82);
+  transition: background-color 200ms ease, color 200ms ease;
+}
+.pw-nav:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+.pw-nav[data-active="true"] {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-weight: 600;
+}
+.pw-nav:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.75);
+  outline-offset: 2px;
+}
+
+/* Entrance for card grids. No fill mode on the resting state, so nothing can
+   ever be left invisible if the animation is interrupted. */
+.pw-rise {
+  animation: pw-rise 440ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 35ms);
+}
+@keyframes pw-rise {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-rise {
+    animation: none;
+  }
+}
+
+/* ── Printing (spec §21) ──────────────────────────────────────────────────
+ * Windows prints through the WebView's own print dialog, which includes
+ * "Microsoft Print to PDF". Everything that is chrome disappears, so what
+ * comes out is the calculation, not the application.
+ */
+@media print {
+  .pw-desk {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+  .pw-desk__rail,
+  [data-print="hide"] {
+    display: none !important;
+  }
+  .pw-desk__main {
+    overflow: visible;
+  }
+  /* The calculator kit's result card is a white-on-gradient panel; printers
+     drop backgrounds by default, which would print white on white. */
+  [aria-live="polite"] {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.75em;
+    word-break: break-all;
+  }
+}

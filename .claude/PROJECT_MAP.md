@@ -18,6 +18,7 @@
 | Where is the DB schema? | **Not in this repo.** Supabase dashboard only — see `MEMORY.md` §8 gotcha 2 |
 | How do I add a calculator? | `.claude/skills/calculator-tool/SKILL.md` |
 | Where is the Android app? | `mobile/` (second Next project) + `android/` — see `.claude/skills/android-app-capacitor/SKILL.md` |
+| Where is the iOS app? | the same `mobile/` bundle + `ios/` (Capacitor, SPM) — see `.claude/skills/ios-app-capacitor/SKILL.md` |
 | How do I add a course subject? | `.claude/skills/course-content-system/SKILL.md` |
 | Where's the list of calculators shown on the hub? | `HUB_SUBJECTS` in `src/app/(site)/calculation-tools/tool-index.ts` |
 | Where's the subject registry? | `src/lib/courses/registry.ts` |
@@ -141,7 +142,7 @@
 | **Analytical-practical layer** (calibration line, replicates, regression, graphs) | `src/components/calculators/lab-analysis/` — `math.ts` (`linearFit` with textbook sums, `concentrationFromAbsorbance`, `sampleSD`, `parseReplicates`), `format.ts` (typographic minus, equations), `figure.ts` (`chartSvg` for PNG/print), `calibration-store.ts` (hand-off: `?a=&b=&unit=` + `localStorage` `pw_lab_calibration_v1`), `parts.tsx` (`CalibrationFields`, `DataTable`, `ChartPanel`, `StepBlock`, `ReportSteps`, `ResultTable`, `CHART` palette). Not re-exported from the kit's `index.ts` |
 | **TLC Rf Analyzer** (`/calculation-tools/rf-value-calculator`, 2026-09-16) | Page `(tools)/rf-value-calculator/page.tsx` (tabs) + `_DistanceMode.tsx` (the original distance calculator, lazy). Analyzer in `src/components/calculators/tlc/`: pure `rf.ts` (`calculateRf`, `analyzePlate`), `geometry.ts` (screen↔image, homography), `spots.ts` (detector), `plate.ts` (plate finder), `sample.ts` (synthetic plate), `storage.ts` (IndexedDB saves), `canvas.ts` (decode/rotate/crop/warp/annotate), `detection.ts` + `detect.worker.ts`, `report.ts`; UI `TLCAnalyzer.tsx`, `TLCStage.tsx`, `TLCUploader.tsx`, `TLCResults.tsx`. Tests: `scripts/tlc-rf.test.mts` |
 | **Colony Counter & CFU Calculator** (`/calculation-tools/cfu-calculator`, 2026-09-16) | Page `(tools)/cfu-calculator/page.tsx`. `src/components/calculators/colony/`: `detect.ts` (OpenCV pipeline, pure — takes `cv`), `opencv.ts` (asset URL + thenable-safe `waitForCv`), `colony.worker.ts`, `client.ts` (worker → main-thread fallback), `cfu.ts` (CFU maths/format/parse), `sample.ts`, `validation.ts` (P/R/F1), `export.ts` (annotated PNG, text result), UI `ColonyCounter.tsx`, `ColonyStage.tsx`. Tests: `scripts/colony-counter.test.mts` + `test-data/colony-counter/fixtures.json`. Dev metrics panel: `?validate=1` |
-| Analytical-practical tools | `(tools)/{calibration-curve-calculator,dissolution-calculator,accuracy-recovery-calculator,dialysis-diffusion-calculator,cumulative-drug-release-calculator,partition-coefficient-calculator}/` — `page.tsx` + pure `_*.ts` maths; the calibration tool is the reference implementation |
+| Analytical-practical tools | `(tools)/{calibration-curve-calculator,dissolution-calculator,dissolution-rate-constant-calculator,accuracy-recovery-calculator,dialysis-diffusion-calculator,cumulative-drug-release-calculator,partition-coefficient-calculator}/` — `page.tsx` + pure `_*.ts` maths; the calibration tool is the reference implementation. `dissolution-rate-constant-calculator/_dissolution-rate.ts` is the one with unit tests (`scripts/dissolution-rate.test.mts`, 28) and the one to copy for a practical whose sheet defines its own conventions |
 | Lab helpers | `lab-math.ts` (parsing, `fieldError`, sig figs, units, `calculatorHref`), `ModeSwitch.tsx`, `LabFields.tsx`, `chemistry.ts` (formula → molar mass), `hemocytometer.ts` |
 | **Reference lab tool** (copy this) | `(tools)/theoretical-yield-calculator/page.tsx` |
 | Theoretical → percentage yield hand-off | `calculatorHref("percentage-yield-calculator", …)` in theoretical-yield; `readQuery()` in percentage-yield |
@@ -376,6 +377,34 @@ Rebuilt 2026-09-20; replaced the flat Q&A. Schema is **not** applied automatical
 
 ---
 
+## Windows desktop app (Tauri 2)
+
+Offline, calculators + reference library. A **third Next.js project root** wrapped in a Rust shell.
+See `desktop/README.md`. Fully offline by requirement: no API, no auth, no cloud, no ad network.
+
+| Piece | File |
+| --- | --- |
+| Tauri config (window 1400×900, min 1000×650, CSP, NSIS/MSI) | `src-tauri/tauri.conf.json` |
+| Permissions (`core:default` only — no shell/fs/net/updater/dialog) | `src-tauri/capabilities/default.json` |
+| Rust backend — 4 commands, no plugins, no networking crate | `src-tauri/src/lib.rs` (`store_load`, `store_save`, `store_path`, `export_save`) |
+| Desktop Next config (`output: "export"`, `IS_MOBILE_APP=true`) | `desktop/next.config.mjs` |
+| App frame (rail + one scrolling pane, external-link interception) | `desktop/app/_components/DesktopShell.tsx`, `desktop/app/globals.css` (`.pw-desk`) |
+| Per-tool chrome — Save / PDF / Text / Print | `desktop/app/_components/ToolFrame.tsx`, `desktop/app/calculation-tools/layout.tsx` |
+| Dashboard (figures counted, never typed) | `desktop/app/_components/Dashboard.tsx` |
+| Calculator index, grouped by the shared registry's categories | `desktop/app/_components/CalculatorIndex.tsx`, `desktop/app/_data/catalog.ts` (re-exports `mobile/app/_data/tool-registry.ts`) |
+| Searchable values library (212 rows, every row sourced) | `desktop/app/_components/ValuesLibrary.tsx`, `desktop/app/_data/values.ts` |
+| Formula reference (40, each linked to its calculator) | `desktop/app/_components/FormulaLibrary.tsx`, `desktop/app/_data/formulas.ts` |
+| Unit converter (kit's own factors) | `desktop/app/_components/UnitConverter.tsx`, `desktop/app/_data/units.ts` |
+| Calculation history + export | `desktop/app/_components/HistoryView.tsx`, `desktop/app/_lib/{store,export}.ts` |
+| Reads the calculation out of the rendered DOM | `desktop/app/_lib/snapshot.ts` (see MEMORY gotcha 150) |
+| Tauri bridge (global `window.__TAURI__`, localStorage fallback) | `desktop/app/_lib/bridge.ts` |
+| Route generator (re-exports the real tools) | `scripts/generate-desktop-routes.mjs` |
+| Windows icons from the PharmaWallah mark (hand-rolled ICO) | `scripts/generate-desktop-icons.mjs` → `src-tauri/icons/` |
+| Offline audit of the built bundle | `scripts/audit-desktop-offline.mjs` (`npm run desktop:audit`) |
+| Generated, gitignored | `desktop/app/calculation-tools/<slug>/`, `desktop/app/_generated/`, `desktop/out/`, `src-tauri/target/` |
+| Installer output | `src-tauri/target/release/bundle/nsis/*.exe`, `.../msi/*.msi` — **must be built on Windows** |
+| Windows build CI (real `windows-latest` runner) | `.github/workflows/desktop-windows.yml` — the repo's **only** CI workflow |
+
 ## Android app (Capacitor)
 
 Offline, calculators-only. A **second Next.js project root** — the main app cannot be statically
@@ -384,6 +413,11 @@ exported. See `.claude/skills/android-app-capacitor/SKILL.md`.
 | Piece | File |
 | --- | --- |
 | Capacitor config (`webDir: mobile/out`) | `capacitor.config.ts` |
+| Native iOS project (committed; bundle + generated config gitignored) | `ios/` |
+| iOS icon + launch screen generator | `scripts/generate-ios-assets.mjs` → `ios/App/App/Assets.xcassets/` |
+| iOS keyboard accessory bar / focus scroll | `mobile/app/_components/NativeShell.tsx` |
+| Native share sheet for a lab record | `src/components/calculators/native-share.ts` (used by `LabActions`) |
+| Source link that degrades offline in the apps | `src/components/calculators/SourceLink.tsx` |
 | Native Android project | `android/` (committed; build output + copied assets gitignored) |
 | Mobile Next config (`output: "export"`) | `mobile/next.config.mjs` |
 | Mobile shell / tool app bar (star, Recent) | `mobile/app/layout.tsx`, `mobile/app/_components/MobileShell.tsx` (no bar on the home screen) |
