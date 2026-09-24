@@ -1,23 +1,84 @@
 // src/app/api/contact/route.ts
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { checkLimit, contactLimiter } from "@/lib/rateLimit";
+import { clientIpFrom } from "@/lib/ai-guide/pure";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
-const RECIPIENT_EMAIL = "shayanhusein@gmail.com";   
+const RECIPIENT_EMAIL = "shayanhusein@gmail.com";
+
+/*
+ * Used by /contact and /careers. Until 2026-09-23 neither form called it — both
+ * faked a success message after a timeout and discarded what the visitor typed.
+ * Wiring them up made this route public-facing, so it now validates, clamps,
+ * rate-limits, and HTML-escapes every field: the values are interpolated into
+ * the email's HTML, and unescaped they let anyone send arbitrary markup, under
+ * our domain, to the recipient's inbox.
+ */
+const MAX_NAME = 100;
+const MAX_EMAIL = 200;
+const MAX_SUBJECT = 150;
+const MAX_MESSAGE = 5000;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function errorResponse(message: string, status: number) {
+  return NextResponse.json({ error: message }, { status });
+}
+
+function field(value: unknown, max: number): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > max) return null;
+  return trimmed;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 export async function POST(req: Request) {
+  const { success } = await checkLimit(contactLimiter, clientIpFrom(req.headers));
+  if (!success) {
+    return errorResponse("Too many messages from this connection. Please try again in a few minutes.", 429);
+  }
+
+  let body: Record<string, unknown>;
   try {
-    const { name, email, subject, message } = await req.json();
+    body = await req.json();
+  } catch {
+    return errorResponse("Invalid request.", 400);
+  }
 
-    if (!name || !email || !subject || !message) {
-      return NextResponse.json({ error: "All fields are required." }, { status: 400 });
-    }
+  const rawName = field(body?.name, MAX_NAME);
+  const rawEmail = field(body?.email, MAX_EMAIL);
+  const rawSubject = field(body?.subject, MAX_SUBJECT);
+  const rawMessage = field(body?.message, MAX_MESSAGE);
 
-    await resend.emails.send({
+  if (!rawName || !rawEmail || !rawSubject || !rawMessage) {
+    return errorResponse("All fields are required, and each must be within its length limit.", 400);
+  }
+  if (!EMAIL_RE.test(rawEmail)) {
+    return errorResponse("Please enter a valid email address.", 400);
+  }
+
+  const name = escapeHtml(rawName);
+  const email = escapeHtml(rawEmail);
+  const subject = escapeHtml(rawSubject);
+  const message = escapeHtml(rawMessage);
+
+  try {
+    const { error: sendError } = await resend.emails.send({
       from: "PharmaWallah Contact <noreply@pharmawallah.com>",  
       to: [RECIPIENT_EMAIL],
-      replyTo: email,
-      subject: `[PharmaWallah] ${subject}`,
+      replyTo: rawEmail,
+      // A header, not HTML: send the raw text, with line breaks removed so it
+      // cannot inject further headers.
+      subject: `[PharmaWallah] ${rawSubject.replace(/[\r\n]+/g, " ")}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -62,7 +123,7 @@ export async function POST(req: Request) {
                   <!-- Footer -->
                   <tr>
                     <td style="padding:20px 32px;background:#f1f5f9;text-align:center;">
-                      <p style="margin:0;color:#94a3b8;font-size:12px;">Sent from PharmaWallah Contact Form · Pakistan's #1 Pharmacy eLearning Platform</p>
+                      <p style="margin:0;color:#94a3b8;font-size:12px;">Sent from PharmaWallah Contact Form · pharmawallah.com</p>
                     </td>
                   </tr>
                 </table>
@@ -74,8 +135,13 @@ export async function POST(req: Request) {
       `,
     });
 
+    // Resend reports API failures in the result rather than by throwing.
+    if (sendError) throw sendError;
+
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to send" }, { status: 500 });
+  } catch (error) {
+    // Resend's error text is for us, not the visitor.
+    console.error("[contact] send failed", error);
+    return errorResponse("We couldn't send your message just now. Please email us instead.", 500);
   }
 }

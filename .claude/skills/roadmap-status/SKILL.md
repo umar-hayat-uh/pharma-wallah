@@ -81,7 +81,7 @@ the import, or you loaded the page with `npm run dev`. Say which.
 
 ## Common Failure Modes
 - **Marking ✅ because the directory exists.** The defining mistake in this repo.
-- **Missing that content already ships but is unreachable** (`public/content/` for unregistered
+- **Missing that content already ships but is unreachable** (`content/` for unregistered
   subjects).
 - **Letting `ROADMAP.md` and `CLAUDE.md` §7 drift apart.**
 - **Marking something ✅ that depends on an unverified Supabase table or policy** — that is ⚠.

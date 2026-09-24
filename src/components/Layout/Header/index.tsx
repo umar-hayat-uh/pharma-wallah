@@ -701,7 +701,7 @@ const Header: React.FC = () => {
         <div className="px-5 py-4 border-t border-slate-900/[0.06] shrink-0">
           <div className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" aria-hidden="true" />
-            <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-slate-500">Pakistan's #1 Pharmacy eLearning Platform</span>
+            <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-slate-500">Pharmacy study tools for Pharm-D students</span>
           </div>
         </div>
       </aside>

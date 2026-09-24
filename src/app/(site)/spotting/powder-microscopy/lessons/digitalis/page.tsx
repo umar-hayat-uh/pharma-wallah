@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import { AdSlot } from "@/components/calculators/AdSlot";
 import {
   Microscope, FlaskConical, Leaf, Beaker, Stethoscope, Pill,
-  ChevronRight, ChevronLeft, Trophy, Printer, BookOpen, ArrowRight,
+  ChevronRight, ChevronLeft, Printer, BookOpen,
   Layers,
 } from "lucide-react";
 
@@ -18,10 +17,15 @@ const bgIcons = [
   { Icon: Leaf,         top: "70%", left: "96.5%", size: 28 },
 ];
 
+// Prev/next walk the three powder lessons that exist, in index order
+// (senna → nux-vomica → digitalis). They used to point at clove, turmeric and
+// cascara, which never had pages.
+type LessonLink = { id: string; title: string } | null;
+
 const DATA = {
   id: 'digitalis',
   title: 'Digitalis Leaf Powder (Digitalis purpurea)',
-  imageUrl: '/images/spotting/powder/digitalis.jpg',
+
   definition: 'Digitalis is the dried leaf of Digitalis purpurea Linn. (Purple Foxglove), family Scrophulariaceae (Plantaginaceae). It is the classical source of cardiac glycosides (digitoxin, digoxin from D. lanata), used for centuries in heart failure and atrial arrhythmias.',
   generalFeatures: [
     'Anomocytic stomata (irregular cell type): most common type — surrounded by irregular cells, not in any defined arrangement — key feature',
@@ -72,8 +76,8 @@ const DATA = {
     'Ponikowski, P., et al. (2016). 2016 ESC Guidelines for heart failure. European Heart Journal, 37(27), 2129–2200.',
     'Indian Pharmacopoeia Commission. (2018). Indian Pharmacopoeia 2018 (8th ed.). Government of India.',
   ],
-  prev: { id: "nux-vomica", title: 'Nux Vomica Seed Powder' },
-  next: { id: "cascara", title: 'Cascara Sagrada Bark Powder' },
+  prev: { id: "nux-vomica", title: 'Nux Vomica Seed Powder' } as LessonLink,
+  next: null as LessonLink,
 };
 
 function SectionHead({ title }: { title: string }) {
@@ -98,7 +102,6 @@ function Bullets({ items }: { items: string[] }) {
 }
 
 export default function DigitalisPage() {
-  const [imgLoaded, setImgLoaded] = useState(false);
   return (
     <>
       <style jsx global>{`
@@ -147,10 +150,6 @@ export default function DigitalisPage() {
                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/20 border border-white/40 text-white text-xs font-bold hover:bg-white/30 transition">
                 <Printer className="w-3.5 h-3.5" /> Save PDF
               </button>
-              <Link href="/spotting/powder-microscopy/test"
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white text-xs font-extrabold shadow-md hover:-translate-y-0.5 transition text-emerald-700">
-                <Trophy className="w-3.5 h-3.5" /> Take Test
-              </Link>
             </div>
           </div>
         </div>
@@ -159,15 +158,8 @@ export default function DigitalisPage() {
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <article className="bg-white rounded-2xl shadow-2xl p-6 md:p-12">
 
-            {/* Slide image */}
-            <div className="mb-8 flex justify-center">
-              <div className={`relative w-full rounded-xl overflow-hidden shadow-lg ${!imgLoaded ? "bg-gray-100 animate-pulse h-[360px] flex items-center justify-center" : ""}`}>
-                {!imgLoaded && <Microscope className="w-12 h-12 text-gray-300" />}
-                <Image src={DATA.imageUrl} alt={DATA.title} width={1200} height={600}
-                  className="w-full h-auto max-h-[500px] object-cover"
-                  priority onLoad={() => setImgLoaded(true)} />
-              </div>
-            </div>
+            {/* No slide image: public/images/spotting/powder/ was never created, so
+                the old <Image> here was always broken. The text below is the lesson. */}
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-blue-800 mb-6 leading-tight">
               {DATA.title}
@@ -187,6 +179,11 @@ export default function DigitalisPage() {
 
             <SectionHead title="Etiology" />
             <Bullets items={DATA.etiology} />
+
+            {/* Mid-lesson ad (added 2026-09-23). Plain div; hidden when printing. */}
+            <div className="my-8">
+                <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LESSON} className="min-h-[250px]" />
+            </div>
 
             <SectionHead title="Clinical Features" />
             <Bullets items={DATA.clinicalFeatures} />
@@ -215,6 +212,11 @@ export default function DigitalisPage() {
               </button>
             </div>
           </article>
+
+          {/* Ad after the lesson, before navigation. */}
+          <div className="my-8">
+              <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LESSON} className="min-h-[250px]" />
+          </div>
 
           {/* Prev / Next nav */}
           {(DATA.prev || DATA.next) && (
@@ -255,16 +257,12 @@ export default function DigitalisPage() {
             <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-white/10 pointer-events-none" />
             <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-5">
               <div>
-                <div className="flex items-center gap-2 mb-1"><Trophy className="w-5 h-5 text-white" />
-                  <span className="text-white font-extrabold">Ready to test your knowledge?</span>
+                <div className="flex items-center gap-2 mb-1"><BookOpen className="w-5 h-5 text-white" />
+                  <span className="text-white font-extrabold">Keep studying</span>
                 </div>
-                <p className="text-white/80 text-sm">Try the shuffled Spot Test with instant scoring.</p>
+                <p className="text-white/80 text-sm">Work through the other powder microscopy lessons.</p>
               </div>
               <div className="flex gap-3">
-                <Link href="/spotting/powder-microscopy/test"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-emerald-700 font-extrabold text-sm shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all shrink-0">
-                  <Trophy className="w-4 h-4" /> Start Test
-                </Link>
                 <Link href="/spotting/powder-microscopy/lessons"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/20 border border-white/40 text-white font-extrabold text-sm hover:bg-white/30 transition-all">
                   <BookOpen className="w-4 h-4" /> More Lessons

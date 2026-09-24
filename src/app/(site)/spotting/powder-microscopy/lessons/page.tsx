@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Microscope, FlaskConical, Leaf, Beaker, Stethoscope, Pill,
-  BookOpen, Trophy, ChevronRight, ChevronLeft, Search,
-  X, Clock, Tag, Zap, Layers, ArrowRight,
+  ChevronRight, ChevronLeft, Search,
+  X, Clock, Tag, Zap, Layers,
 } from "lucide-react";
 
 const bgIcons = [
@@ -19,15 +18,14 @@ const bgIcons = [
   { Icon: Leaf,         top: "70%", left: "96.5%", size: 28 },
 ];
 
+// Only lessons that have a page are listed. Clove, ginger, turmeric, cascara and
+// belladonna cards used to link to pages that never existed. No card carries an
+// image: public/images/spotting/powder/ was never created, so every thumbnail
+// here was a broken image. Add `imageUrl` back once real photographs exist.
 const LESSONS = [
-  { id: "senna", title: 'Senna Leaf Powder', imageUrl: '/images/spotting/powder/senna.jpg', tag: 'Leaf', difficulty: 'Easy', readTime: 6, summary: 'Paracytic stomata, unicellular warty trichomes, and rosette crystals of calcium oxalate — hallmark of this anthraquinone laxative.' },
-  { id: "clove", title: 'Clove Powder (Syzygium aromaticum)', imageUrl: '/images/spotting/powder/clove.jpg', tag: 'Floral', difficulty: 'Medium', readTime: 7, summary: 'Fibres, vessels, brown pigmented cells, spherical pollen grains, and oil glands filled with volatile oil.' },
-  { id: "ginger", title: 'Ginger Rhizome Powder (Zingiber officinale)', imageUrl: '/images/spotting/powder/ginger.jpg', tag: 'Rhizome', difficulty: 'Easy', readTime: 6, summary: 'Large oval starch grains with eccentric hilum, yellowish oleoresin cells, and thin-walled parenchyma with cork fragments.' },
-  { id: "turmeric", title: 'Turmeric Rhizome Powder (Curcuma longa)', imageUrl: '/images/spotting/powder/turmeric.jpg', tag: 'Rhizome', difficulty: 'Easy', readTime: 6, summary: 'Yellow parenchyma cells packed with starch, large oil globules, thin-walled cork cells — bright yellow colouring from curcuminoids.' },
-  { id: "nux-vomica", title: 'Nux Vomica Seed Powder (Strychnos)', imageUrl: '/images/spotting/powder/nux-vomica.jpg', tag: 'Seed', difficulty: 'Hard', readTime: 9, summary: 'Stone cells in groups, lignified trichomes with thick walls, endosperm cells containing aleurone and fixed oil — strychnine alkaloids.' },
-  { id: "digitalis", title: 'Digitalis Leaf Powder (Digitalis purpurea)', imageUrl: '/images/spotting/powder/digitalis.jpg', tag: 'Leaf', difficulty: 'Medium', readTime: 8, summary: 'Anomocytic stomata, non-glandular trichomes, prismatic calcium oxalate crystals in mesophyll cells — cardiac glycoside source.' },
-  { id: "cascara", title: 'Cascara Sagrada Bark Powder', imageUrl: '/images/spotting/powder/cascara.jpg', tag: 'Bark', difficulty: 'Medium', readTime: 7, summary: 'Starch granules, cork cells, calcium oxalate crystals with crystal sheath fibres, and reddish-brown pigmented cells.' },
-  { id: "belladonna", title: 'Belladonna Root Powder (Atropa)', imageUrl: '/images/spotting/powder/belladonna.jpg', tag: 'Root', difficulty: 'Hard', readTime: 9, summary: 'Abundant simple starch grains, micro sand crystals, vessels with bordered pits, and parenchyma cells — atropine-bearing drug.' }
+  { id: "senna", title: 'Senna Leaf Powder', tag: 'Leaf', difficulty: 'Easy', readTime: 6, summary: 'Paracytic stomata, unicellular warty trichomes, and rosette crystals of calcium oxalate — hallmark of this anthraquinone laxative.' },
+  { id: "nux-vomica", title: 'Nux Vomica Seed Powder (Strychnos)', tag: 'Seed', difficulty: 'Hard', readTime: 9, summary: 'Stone cells in groups, lignified trichomes with thick walls, endosperm cells containing aleurone and fixed oil — strychnine alkaloids.' },
+  { id: "digitalis", title: 'Digitalis Leaf Powder (Digitalis purpurea)', tag: 'Leaf', difficulty: 'Medium', readTime: 8, summary: 'Anomocytic stomata, non-glandular trichomes, prismatic calcium oxalate crystals in mesophyll cells — cardiac glycoside source.' }
 ];
 
 const DIFF_BADGE: Record<string, string> = {
@@ -87,14 +85,11 @@ export default function PowderMicroscopyLessonsPage() {
           </h1>
           <p className="text-white/80 text-lg font-semibold mb-3">Pharmacognostic Powder Analysis</p>
           <p className="text-white/70 text-sm max-w-xl leading-relaxed mb-8">
-            Identify crude drug powders using characteristic microscopic markers — trichomes, crystals, starch grains, fibres, and tracheids.
+            Identify crude drug powders using characteristic microscopic markers — stomata, trichomes, calcium oxalate crystals, fibres and stone cells.
           </p>
 
+          {/* No spot-test button: the powder test has no slide photographs yet. */}
           <div className="flex flex-wrap gap-3 mb-8">
-            <Link href="/spotting/powder-microscopy/test"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-emerald-700 font-extrabold text-sm shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
-              <Trophy className="w-4 h-4" /> Take Spot Test
-            </Link>
             <Link href="/spotting"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/20 border border-white/40 text-white font-extrabold text-sm hover:bg-white/30 transition-all duration-300">
               <ChevronLeft className="w-4 h-4" /> All Categories
@@ -149,15 +144,11 @@ export default function PowderMicroscopyLessonsPage() {
           </div>
         </div>
 
-        {/* Results count + test link */}
+        {/* Results count */}
         <div className="flex items-center justify-between mb-6">
           <span className="text-xs font-bold text-gray-400 bg-gray-100 border border-gray-200 rounded-full px-3 py-1">
             {filtered.length} lesson{filtered.length !== 1 ? "s" : ""}
           </span>
-          <Link href="/spotting/powder-microscopy/test"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:opacity-80 transition">
-            <Trophy className="w-3.5 h-3.5" /> Go to Spot Test <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
         </div>
 
         {/* Lesson grid */}
@@ -176,34 +167,15 @@ export default function PowderMicroscopyLessonsPage() {
 
                     <div className="h-[3px] bg-gradient-to-r from-emerald-600 to-cyan-400" />
 
-                    {/* Slide image */}
-                    <div className="relative h-44 bg-gray-100 overflow-hidden">
-                      <Image
-                        src={lesson.imageUrl}
-                        alt={lesson.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
-                        sizes="(max-width:640px) 100vw,(max-width:1024px) 50vw,25vw"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div className="w-10 h-10 rounded-xl bg-white/90 flex items-center justify-center shadow-lg">
-                          <BookOpen className="w-5 h-5 text-blue-600" />
-                        </div>
-                      </div>
-                      <div className="absolute top-2 right-2">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${DIFF_BADGE[lesson.difficulty]}`}>
-                          {lesson.difficulty}
-                        </span>
-                      </div>
-                    </div>
-
                     {/* Card info */}
                     <div className="flex flex-col flex-1 p-4">
                       <div className="flex items-center gap-1.5 mb-2">
                         <Tag className="w-3 h-3 text-emerald-700 shrink-0" />
                         <span className="text-[10px] font-extrabold text-emerald-700 uppercase tracking-wide truncate">
                           {lesson.tag}
+                        </span>
+                        <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full border ${DIFF_BADGE[lesson.difficulty]}`}>
+                          {lesson.difficulty}
                         </span>
                       </div>
                       <h3 className="font-extrabold text-gray-900 text-sm mb-1.5 leading-snug">{lesson.title}</h3>
@@ -236,26 +208,15 @@ export default function PowderMicroscopyLessonsPage() {
           )}
         </AnimatePresence>
 
-        {/* Bottom CTA */}
-        <div className="mt-14 relative rounded-2xl bg-gradient-to-r from-emerald-600 to-cyan-400 overflow-hidden p-7">
-          <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-white/10 pointer-events-none" />
-          <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-white/10 pointer-events-none" />
-          <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-5">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Trophy className="w-5 h-5 text-white" />
-                <span className="text-white font-extrabold">Ready to be tested?</span>
-              </div>
-              <p className="text-white/80 text-sm">
-                Take the <span className="font-bold text-white">Powder Microscopy Spot Test</span> — shuffled slides, point-writing questions, and instant scoring.
-              </p>
-            </div>
-            <Link href="/spotting/powder-microscopy/test"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-emerald-700 font-extrabold text-sm shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300 shrink-0">
-              <Trophy className="w-4 h-4" /> Start Spot Test <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
+        {/* The "Ready to be tested?" banner linked to the powder spot test, which
+            cannot run without slide photographs; it returns with the test. */}
+        <p className="mt-14 text-sm text-gray-500 leading-relaxed">
+          Want to practise identification under time pressure? The{" "}
+          <Link href="/spotting/histology/test" className="font-bold text-emerald-700 hover:underline">histology</Link>{" "}
+          and{" "}
+          <Link href="/spotting/pathology/test" className="font-bold text-emerald-700 hover:underline">pathology</Link>{" "}
+          spot tests are open now.
+        </p>
 
       </div>
     </section>

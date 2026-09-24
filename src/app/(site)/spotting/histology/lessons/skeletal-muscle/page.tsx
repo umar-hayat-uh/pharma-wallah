@@ -117,7 +117,7 @@ export default function SkeletalMuscleLesson() {
       references={REFS}
       videoUrl="https://www.youtube.com/embed/zcUNuYtODmU" // Added video URL (tracking parameters removed)
       prevLesson={{ id: "smooth-muscle", title: "Smooth Muscle" }}
-      nextLesson={{ id: "rbcs", title: "Red Blood Cells" }}
+      nextLesson={{ id: "cardiac-muscle", title: "Cardiac Muscle" }}
     />
   );
 }

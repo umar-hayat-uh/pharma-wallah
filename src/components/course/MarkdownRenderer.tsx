@@ -104,16 +104,22 @@ const mdComponents = {
     tr: ({ children }: any) => (
         <tr className="hover:bg-blue-50/30 transition-colors">{children}</tr>
     ),
-    code: ({ inline, children }: any) =>
-        inline ? (
-            <code className="bg-gray-100 text-blue-700 px-1.5 py-0.5 rounded text-xs font-mono break-all">
-                {children}
-            </code>
-        ) : (
-            <pre className="bg-gray-900 text-green-300 rounded-2xl p-4 overflow-x-auto text-xs font-mono my-4 leading-relaxed">
-                <code>{children}</code>
-            </pre>
-        ),
+    // react-markdown 9+ no longer passes `inline` to `code`, so the old
+    // `inline ? … : <pre>` check treated every `inline code` as a block and put
+    // a <pre> inside a <p> — invalid HTML, and a hydration failure on every
+    // lesson that used inline code. Now `pre` owns the block styling (fenced
+    // code is always <pre><code>), and `code` is inline unless inside a `pre`,
+    // where the `[&_code]` resets strip the inline chip styling.
+    pre: ({ children }: any) => (
+        <pre className="bg-gray-900 text-green-300 rounded-2xl p-4 overflow-x-auto text-xs font-mono my-4 leading-relaxed [&_code]:bg-transparent [&_code]:text-inherit [&_code]:p-0 [&_code]:rounded-none [&_code]:break-normal">
+            {children}
+        </pre>
+    ),
+    code: ({ children }: any) => (
+        <code className="bg-gray-100 text-blue-700 px-1.5 py-0.5 rounded text-xs font-mono break-all">
+            {children}
+        </code>
+    ),
     hr: () => <hr className="my-8 border-gray-200" />,
 
     // 👇 ADDED: Lightbox for all inline images

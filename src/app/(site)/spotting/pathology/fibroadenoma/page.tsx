@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useTracker } from "@/hooks/useTracker";
 import Image from "next/image";
 import Link from "next/link";
+import { AdSlot } from "@/components/calculators/AdSlot";
 import {
   ChevronLeft, ChevronRight, BookOpen, ExternalLink,
   Microscope, Play, X, Zap, ArrowUp, Menu,
@@ -399,6 +400,11 @@ export default function PathologyFibroadenomaPage() {
               </a>
             </div>
 
+            {/* Ad between sections (added 2026-09-23). Plain div, never inside anything animated (gotcha 29). */}
+            <div>
+              <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LESSON} className="min-h-[250px]" />
+            </div>
+
             {/* Detailed theory */}
             <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
               <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
@@ -446,6 +452,11 @@ export default function PathologyFibroadenomaPage() {
               </div>
             </div>
 
+            {/* Ad after the pathology theory. */}
+            <div>
+              <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LESSON} className="min-h-[250px]" />
+            </div>
+
             {/* Video lesson */}
             {VIDEO_URL && (
               <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
@@ -489,6 +500,11 @@ export default function PathologyFibroadenomaPage() {
                   </li>
                 </ul>
               </div>
+            </div>
+
+            {/* Ad after the lesson, before navigation. */}
+            <div>
+              <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LESSON} className="min-h-[250px]" />
             </div>
 
             {/* Prev / Next */}

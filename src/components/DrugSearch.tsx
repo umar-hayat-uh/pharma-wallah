@@ -203,7 +203,8 @@ export default function DrugSearch() {
 
               <div className="px-4 py-2.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
                 <p className="text-[10px] text-gray-400 flex items-center gap-1.5">
-                  <Database className="w-3 h-3" /> 17,430+ drugs · DrugBank v5.1
+                  {/* Was "17,430+"; 12,673 is the measured record count (see encyclopedia/EncyclopediaFigures.tsx). */}
+                  <Database className="w-3 h-3" /> 12,673 drugs · DrugBank v5.1
                 </p>
                 <p className="text-[10px] text-gray-400">Press Enter to search</p>
               </div>
@@ -320,7 +321,7 @@ export default function DrugSearch() {
             </div>
             <h3 className="text-lg font-extrabold text-gray-900 mb-1">Search the Drug Database</h3>
             <p className="text-gray-400 text-sm mb-6 max-w-xs mx-auto">
-              17,430+ drugs from DrugBank v5.1. Click the search bar or try a popular drug below.
+              12,673 drugs from DrugBank v5.1. Click the search bar or try a popular drug below.
             </p>
             <div className="flex flex-wrap gap-2 justify-center">
               {POPULAR.map(drug => (
@@ -332,7 +333,7 @@ export default function DrugSearch() {
             </div>
           </div>
           <div className="grid grid-cols-3 divide-x divide-gray-100 border-t border-gray-100">
-            {[{ n: "17,430+", l: "Total Drugs" }, { n: "DrugBank", l: "v5.1 Source" }, { n: "Live", l: "Search API" }].map(({ n, l }) => (
+            {[{ n: "12,673", l: "Total Drugs" }, { n: "DrugBank", l: "v5.1 Source" }, { n: "Live", l: "Search API" }].map(({ n, l }) => (
               <div key={l} className="py-4 text-center">
                 <div className="text-sm font-extrabold text-gray-800">{n}</div>
                 <div className="text-[11px] text-gray-400 mt-0.5">{l}</div>

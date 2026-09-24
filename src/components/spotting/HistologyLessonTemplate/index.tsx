@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { AdSlot } from "@/components/calculators/AdSlot";
 import {
   ChevronLeft,
   ChevronRight,
@@ -550,6 +551,11 @@ export default function HistologyLessonTemplate({
               </div>
             </div>
 
+            {/* Ad between sections (added 2026-09-23). Plain div, never inside anything animated (gotcha 29). */}
+            <div>
+              <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LESSON} className="min-h-[250px]" />
+            </div>
+
             {/* ── Detailed Theory – with table styles ── */}
             <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
               <div
@@ -573,36 +579,28 @@ export default function HistologyLessonTemplate({
               </div>
             </div>
 
+            {/* Ad after the theory. */}
+            <div>
+              <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LESSON} className="min-h-[250px]" />
+            </div>
+
             {/* ── Video Lesson ── */}
-            {videoUrl ? (
+            {/* No video → no block. The old fallback printed developer-facing
+                "add a videoUrl prop" copy to students. */}
+            {videoUrl && (
               <VideoPlayer
                 url={videoUrl}
                 title={`${title} — Histology Video Lesson`}
               />
-            ) : (
-              <div className="relative rounded-2xl border border-dashed border-gray-200 bg-gray-50/60 overflow-hidden p-5 sm:p-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0">
-                    <Video className="w-5 h-5 text-gray-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-extrabold text-gray-500">
-                      Video Lesson
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      Video coming soon — check back later or add a{" "}
-                      <code className="text-blue-600 bg-blue-50 px-1 py-0.5 rounded text-[10px]">
-                        videoUrl
-                      </code>{" "}
-                      prop
-                    </p>
-                  </div>
-                </div>
-              </div>
             )}
 
             {/* ── References ── */}
             <ReferencesBlock refs={references} />
+
+            {/* Ad after the lesson, before navigation. */}
+            <div>
+              <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LESSON} className="min-h-[250px]" />
+            </div>
 
             {/* ── Prev / Next ── */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2 w-full">

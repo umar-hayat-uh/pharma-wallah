@@ -12,7 +12,7 @@ export default function ClinicalFooter() {
                 <div className="py-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
                     {/* Brand Column */}
                     <div className="col-span-1 lg:col-span-1">
-                        <Link href="/" className="inline-flex items-center gap-2 group">
+                        <Link href="/clinical" className="inline-flex items-center gap-2 group">
                             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1C7BD9] to-teal-500 flex items-center justify-center shadow-md">
                                 <Activity className="w-5 h-5 text-white" />
                             </div>
@@ -29,7 +29,7 @@ export default function ClinicalFooter() {
                     <div>
                         <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4">Clinical</h3>
                         <ul className="space-y-3">
-                            <li><Link href="/" className="text-sm text-slate-500 hover:text-[#1C7BD9] transition-colors">Clinical Tools</Link></li>
+                            <li><Link href="/clinical" className="text-sm text-slate-500 hover:text-[#1C7BD9] transition-colors">Clinical Tools</Link></li>
                             <li><Link href="/encyclopedia" className="text-sm text-slate-500 hover:text-[#1C7BD9] transition-colors">Pharmacopedia</Link></li>
                             <li><Link href="/calculation-tools" className="text-sm text-slate-500 hover:text-[#1C7BD9] transition-colors">Calculators</Link></li>
                             <li><Link href="/antibiogram-simulator" className="text-sm text-slate-500 hover:text-[#1C7BD9] transition-colors">Antibiogram</Link></li>

@@ -94,3 +94,17 @@ export const communityReadLimiter = redis
       prefix: "ratelimit:community:read",
     })
   : null;
+
+/**
+ * The contact and careers forms (`POST /api/contact`). Anonymous, and every
+ * accepted request sends a real email through Resend, so it is tight: a person
+ * writing to us sends one or two messages, not a stream.
+ */
+export const contactLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(5, "10 m"),
+      analytics: true,
+      prefix: "ratelimit:contact",
+    })
+  : null;

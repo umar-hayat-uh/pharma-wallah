@@ -203,7 +203,30 @@ export const HUB_SUBJECTS: HubSubject[] = [
   },
 ];
 
-export const HUB_TOOL_COUNT = HUB_SUBJECTS.reduce((n, s) => n + s.tools.length, 0);
+/*
+ * Tool directories that are NOT on the hub (see the header comment), keyed by
+ * directory. Used for their page metadata and the sitemap, so they are still
+ * described and discoverable by search.
+ */
+export const UNLISTED_TOOLS: Record<string, { name: string; desc: string }> = {
+  // Names and descriptions are the tool pages' own title and subtitle.
+  AntagonismSimulator: { name: "Antagonism Simulator", desc: "Models how a competitive, non-competitive or uncompetitive antagonist changes the response to an agonist, and the Schild dose ratio it produces" },
+  EmaxModelCalculator: { name: "Emax Model Calculator", desc: "Predicts the effect of a drug at a given concentration with the sigmoid Emax (Hill) equation, and plots the concentration–effect curve" },
+  GeriatricDosingCalculator: { name: "Geriatric Dosing & Safety Calculator", desc: "Start-low dose reductions against Cockcroft-Gault clearance and a frailty index, with AGS Beers Criteria alerts" },
+  OpioidConversionCalculator: { name: "Opioid Conversion Calculator", desc: "Converts a dose of one opioid to its oral morphine equivalent, then to an equivalent dose of another opioid and route" },
+  OpioidMMECalculator: { name: "Opioid MME & Equianalgesic Converter", desc: "Totals a multi-drug regimen as daily morphine milligram equivalents and works out a rotated dose" },
+  OsmolarGapCalculator: { name: "Osmolar Gap Calculator", desc: "Compares measured with calculated serum osmolality to flag unmeasured osmoles such as toxic alcohols" },
+  "drug-half-life-calculator": { name: "Drug Half-Life Calculator (Multiple Dose)", desc: "Elimination rate constant, accumulation and time to steady state for a repeated dosing regimen" },
+  "reconstitution-calculator": { name: "Reconstitution & IV Compounding Calculator", desc: "Diluent volume, yield concentration and syringe volume for a parenteral vial, then the bag dilution and pump rate" },
+  "renal-dosing-adjuster": { name: "Renal Dosing Adjuster", desc: "Cockcroft-Gault creatinine clearance and CKD-EPI 2021 eGFR with dose tiers for 20 renally cleared medicines" },
+  tpn: { name: "TPN Admixture Calculator", desc: "Builds a parenteral nutrition bag from weight-based targets: volumes, calories, nitrogen balance and osmolarity" },
+  "vancomycin-auc-calculator": { name: "Vancomycin AUC/MIC Dosing Calculator", desc: "One-compartment AUC24/MIC, steady-state peak and trough, loading dose and an optimised regimen" },
+};
+
+// Unique tools. Five tools are deliberately listed under two subjects (e.g. the
+// dilution calculator in both chemistry and pharmaceutics); a plain sum of the
+// lists printed 99 for 94 calculators.
+export const HUB_TOOL_COUNT = new Set(HUB_SUBJECTS.flatMap((s) => s.tools.map((t) => t.slug))).size;
 
 export function findTool(slug: string): HubTool | undefined {
   for (const subject of HUB_SUBJECTS) {

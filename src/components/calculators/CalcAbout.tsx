@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Collapse } from "./Collapse";
+import { AdSlot } from "./AdSlot";
 
 /**
  * Explanatory content about the calculator: what it is for, when to use it, how
@@ -68,6 +69,15 @@ export function CalcList({
 /** Common questions, collapsed. Also gives crawlers Q&A-shaped content. */
 export function CalcFaq({ items }: { items: { q: string; a: string }[] }) {
   return (
+    <>
+      {/* The calculator's in-content ad (added 2026-09-23): after the working
+          and formula, before the questions — never beside the inputs or the
+          result. One placement here reaches every calculator that has a FAQ.
+          Renders nothing in the packaged apps. */}
+      <AdSlot
+        slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR_INLINE || process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR}
+        className="min-h-[250px]"
+      />
     <section className="overflow-hidden rounded-2xl border border-border/80 bg-card">
       <h2 className="px-4 pb-2 pt-4 text-[15px] font-semibold tracking-[-0.01em] text-foreground sm:px-5 sm:pt-5 sm:text-base">
         Common questions
@@ -78,6 +88,7 @@ export function CalcFaq({ items }: { items: { q: string; a: string }[] }) {
         ))}
       </div>
     </section>
+    </>
   );
 }
 

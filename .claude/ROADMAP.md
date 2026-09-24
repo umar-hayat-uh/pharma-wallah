@@ -27,7 +27,7 @@ user can actually reach*, and paying down the duplication that accumulated while
 
 **Why this one, ahead of everything else:**
 
-1. **The content is already written and already shipping.** `public/content/` contains markdown for
+1. **The content is already written and already shipping.** `content/` (moved out of `public/` on 2026-09-23) contains markdown for
    10+ subjects — advanced-pharmacognosy, hospital-pharmacy, industrial-pharmacy, industrial-
    pharmacy-2, pharmaceutical-analysis, pharmaceutical-technology, natural-toxins and more — and it
    is deployed to production right now. Users cannot reach any of it.
@@ -45,7 +45,7 @@ user can actually reach*, and paying down the duplication that accumulated while
 - `natural-toxins.ts` is already in the right shape — it only needs adding to `SUBJECTS`. **Start
   there**: it is a one-line change that proves the whole path end to end before touching the nine.
 - For each subject, verify every `CourseUnit.contentFile` resolves to a real file under
-  `public/content/`. A missing file surfaces as a broken unit page, not a build error.
+  `content/`. A missing file surfaces as a broken unit page, not a build error.
 - Follow `.claude/skills/course-content-system/SKILL.md`.
 
 **Do not** start by converting all nine. Ship `natural-toxins` first, load `/courses` and its unit
@@ -168,7 +168,7 @@ pages, confirm progress tracking records a visit, then batch the rest.
 - **Remaining work:** Only **4 of 14** subjects are registered. Nine subject files use an
   incompatible shape and need converting; `natural-toxins.ts` needs only registering. Verify every
   `contentFile` resolves.
-- **Important files:** `src/lib/courses/registry.ts`, `src/lib/courses/types.ts`, `src/lib/courses/subjects/*.ts`, `public/content/`
+- **Important files:** `src/lib/courses/registry.ts`, `src/lib/courses/types.ts`, `src/lib/courses/subjects/*.ts`, `content/`
 - **Dependencies:** None
 - **Notes:** Content for the unregistered subjects is already written and deployed.
 
@@ -477,6 +477,16 @@ pages, confirm progress tracking records a visit, then batch the rest.
 ## Phase 4.6 — Monetisation (Google AdSense) 🟡
 
 ### Ad placements across the site
+- **2026-09-23 — AdSense rejected the site for "Low value content".** Site-quality pass done in
+  code (see CLAUDE.md §8 entry of that date): per-page titles/descriptions/canonicals on every
+  page, `robots.txt` + `sitemap.xml`, clinical-subdomain duplicates canonicalised to www, 9 broken
+  links fixed, placeholder phone/social/"Coming Soon"/template pages removed, fake contact and
+  careers forms wired to a real endpoint, false FAQ and privacy-policy statements corrected,
+  inflated figures replaced, community feed bug fixed. **Owner steps before re-requesting review:**
+  deploy; make the apex→www redirect permanent in Vercel (it is a 307); submit the sitemap in
+  Google Search Console and let it recrawl; decide on the DrugBank text (replicated-content policy). The textbook-derived lesson markdown
+  is **no longer public** — it moved from `public/content/` to `content/` (read server-side only). Traffic and site age ("consistent
+  presence", "user interest") cannot be fixed in code.
 - **Status:** 🟡 Loader + verification tag now in `<head>` on every page and not env-dependent;
   `ads.txt` live. **Blocked on two things only the account owner can do:** passing AdSense site
   verification (needs the current code deployed), and creating the ad units so their IDs can be
@@ -485,15 +495,16 @@ pages, confirm progress tracking records a visit, then batch the rest.
   component. `src/app/layout.tsx` renders the `adsbygoogle.js` loader, but only when
   `NEXT_PUBLIC_ADSENSE_CLIENT` is set. `public/ads.txt` authorises the publisher.
   Publisher ID: `ca-pub-9553986083846603` (a public identifier, also in `ads.txt`).
-- **Placements (4 surfaces):** the calculator hub, every calculator page via
-  `src/app/(site)/calculation-tools/(tools)/layout.tsx`, each migrated calculator's
-  sticky `aside`, the course subject listing, and the end of every course lesson.
+- **Placements (re-planned 2026-09-23, "4–5 on content pages"):** lessons 3–5 (spaced between
+  sections by `src/lib/ads/split-for-ads.ts`), calculators 3 (aside, before the FAQ, footer band),
+  the calculator hub 4, histology and pathology lessons 3, powder lessons 2, the spotting hub,
+  flash cards and course subject listing 1 each. Full table in the `adsense-monetization` skill.
 - **Deliberately excluded:** auth pages, the dashboard, `/admin`, tournament play and the
   leaderboard, timed spotting and MCQ tests, the simulations, and the AI tools — thin, private,
   or timed surfaces where an ad is disruptive or a policy risk.
 - **Remaining work:**
   - Create the ad units in **AdSense → Ads → By ad unit** and fill in
-    `NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR`, `_CALCULATOR_FOOTER`, `_LESSON`, `_LIST`. Any left
+    `NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR`, `_CALCULATOR_FOOTER`, `_LESSON`, `_LIST` (and optionally `_CALCULATOR_INLINE`, which otherwise reuses `_CALCULATOR`). Any left
     blank simply renders nothing. (`_HOME_1/2/3` are unused since the landing page's ad bands
     were removed on 2026-09-13.)
   - Add the seven `NEXT_PUBLIC_ADSENSE_SLOT_*` variables to the **Vercel** project — `.env` is
@@ -510,7 +521,8 @@ pages, confirm progress tracking records a visit, then batch the rest.
 - **Notes:** The Android app is deliberately ad-free: `AdSlot` returns `null` when
   `NEXT_PUBLIC_IS_MOBILE_APP` is set, and a web `layout.tsx` never reaches the APK because the
   generated mobile routes re-export only the page component. Verified — zero ad strings in
-  `mobile/out`. Privacy and terms already disclose AdSense cookies.
+  `mobile/out`. The privacy policy was rewritten on 2026-09-23 to disclose AdSense's third-party
+  cookies with Google's opt-out links, as the Publisher Policies require.
 
 ---
 

@@ -79,7 +79,7 @@ const DrugDrugInteractionSchema = new Schema<DrugDrugInteractionDocument>(
         },
         source: {
             type: String,
-            default: "Prototype curated clinical reference",
+            default: "PharmaWallah curated clinical reference",
         },
     },
     {

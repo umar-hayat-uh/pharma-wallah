@@ -293,10 +293,10 @@ export default function AdverseEffectsPage() {
                                 {/* Back link */}
                                 <div className="pt-1 sm:pt-2">
                                     <Link
-                                        href="/drug-tools"
+                                        href="/clinical#features"
                                         className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
                                     >
-                                        <span>←</span> Back to Drug Tools
+                                        <span>←</span> Back to Clinical Tools
                                     </Link>
                                 </div>
                             </motion.div>

@@ -115,7 +115,7 @@ Mono on the lab guide and the histology spotting test, plus `font-mono` — beca
 readouts, SMILES strings and codes are meant to be monospaced.
 
 ### Course prose is markdown on disk, metadata is TypeScript
-Lesson bodies live in `public/content/<subject>/<unit>.md` (69 files) and a smaller `src/content/`
+Lesson bodies live in `content/<subject>/<unit>.md` (repo root; moved out of `public/` 2026-09-23) (69 files) and a smaller `src/content/`
 tree. Subject/unit metadata is typed TS in `src/lib/courses/subjects/`, surfaced through
 `src/lib/courses/registry.ts`. *Why:* prose is editable without a rebuild-breaking type error, and
 navigation/ordering stays type-checked.
@@ -383,7 +383,7 @@ Traps that will otherwise be rediscovered painfully.
 8. **Only 4 of 14 subjects are registered.** `SUBJECTS` in `registry.ts` lists biochemistry,
    physiology, physical-pharmacy, and pharmaceutical-organic-chemistry. `natural-toxins.ts` is in
    the correct `SubjectMeta` shape but still absent from the array. The markdown content for the
-   unregistered subjects already ships in `public/content/`.
+   unregistered subjects already exists in `content/`.
 
 9. **The calculator hub registry is hand-maintained and can drift.** 104 tool directories exist;
    `tool-index.ts` lists **93** (verified 2026-09-13 by cross-checking every slug against a
@@ -1461,4 +1461,63 @@ Traps that will otherwise be rediscovered painfully.
      treat `package.json` + `pnpm-lock.yaml` as atomic, and when a session shares the tree, check
      `git status` for a peer's half-written file before staging.** The check that would have caught
      both is building from a clean checkout of what you are about to push, not from your tree.
+
+162. **Client pages get their metadata from the request path, not from themselves.** Nearly every
+     page is `"use client"` and cannot export `metadata`, so until 2026-09-23 173 of 216 live pages
+     were `<title>PharmaWallah</title>` / "AI-powered pharmacy platform" — the main finding behind
+     the AdSense "low value content" rejection. Now middleware sets an `x-pathname` request header,
+     the root layout's `generateMetadata` looks it up in `src/lib/seo.ts` (`STATIC_META`,
+     slug-derived spotting/MCQ entries, `NOINDEX_PREFIXES`), and `(tools)/layout.tsx` describes
+     every calculator from `tool-index.ts`. **A new page needs either its own `metadata` export or a
+     `STATIC_META` entry — otherwise it silently gets the home page's title.** A new noindexed
+     section goes in `NOINDEX_PREFIXES`, never in `robots.ts` (a disallowed page's noindex is never
+     read). `metadataBase` is www, and canonicals are absolute www on both hosts: the clinical
+     subdomain serves the entire main site (middleware tags, never rewrites), so without that every
+     page was a duplicate on a second host.
+
+163. **Middleware must overwrite `x-pathname` and delete a client-sent `x-subdomain`.** Both are
+     read by server components as trusted input. Before 2026-09-23 a non-clinical request passed
+     its own headers through untouched, so `curl -H "x-subdomain: clinical"` switched the root
+     layout into clinical mode on www.
+
+164. **PostgREST embeds must name the FK when two paths exist (`PGRST201`).** `community_posts`
+     reaches `community_members` both by `user_id` and through the `community_saves` join table, so
+     `author:community_members!inner(...)` is ambiguous and PostgREST rejects the *whole* query.
+     Every feed and post request returned "Database error" in production while 12 posts sat in
+     the table; the migration's local-Postgres verification could not catch it because it never
+     went through PostgREST. Use `community_members!community_posts_user_id_fkey!inner`. Reproduce
+     any such error in seconds with the anon key: `curl "$SUPABASE_URL/rest/v1/<table>?select=..."`
+     — PostgREST returns the real message the route hides behind "Database error".
+
+165. **`HUB_SUBJECTS` lists five tools twice** (under two subjects each), so a plain sum over the
+     subject lists over-counts: it printed 99 for 94 unique hub tools. Count with a `Set` of slugs.
+     Tool directories: 105 = 94 on the hub + 11 in `UNLISTED_TOOLS` (`tool-index.ts`). The landing
+     `STATS` and `HUB_TOOL_COUNT` are now derived, not typed.
+
+166. **Resend's `emails.send()` does not throw on an API failure — it returns `{ error }`.** The
+     contact route awaited it and returned success regardless. Check `error` explicitly. The route
+     also interpolates form fields into email HTML, so every field is escaped
+     (`src/app/api/contact/route.ts`).
+
+167. **Headless screenshots of a very tall viewport show blank bands on pages with
+     `min-h-screen` heroes and `whileInView` sections** (e.g. `/clinical` at 1440×2600). It is the
+     viewport, not missing content — check the SSR word count before "fixing" it.
+
+168. **Anything under `public/` is served raw at its path — lesson markdown included.** Until
+     2026-09-23 the 69 lesson files lived in `public/content/`, so every lesson (and drafts for the
+     ten unregistered subjects, some following Aulton's chapter by chapter) was also a plain-text
+     page at `/content/…`: duplicate and replicated content for AdSense. They now live in
+     `content/` at the repo root and are read with `fs` by `src/lib/courses/content.ts`; Next's
+     file tracing still bundles all 69 into the unit page's lambda (checked in
+     `page.js.nft.json`). Never put server-only data in `public/`.
+
+169. **react-markdown 9+ does not pass `inline` to a `code` renderer.** A `code: ({ inline }) =>
+     inline ? <code/> : <pre/>` override therefore renders *every* inline code span as a `<pre>`
+     inside a `<p>` — invalid HTML and a hydration failure on every lesson that used inline code
+     (fixed 2026-09-24 in `MarkdownRenderer.tsx`). Style fenced blocks through a `pre` override
+     and keep `code` inline. Installed version: react-markdown **10.1.0**.
+
+170. **Counting ads by a phrase in the HTML can over-count.** The dev placeholder says "…to
+     activate", and so does lesson prose ("calcium is needed to activate…"). Count
+     `Set NEXT_PUBLIC_ADSENSE_CLIENT`, which only the placeholder contains.
 

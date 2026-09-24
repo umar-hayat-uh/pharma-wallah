@@ -35,7 +35,7 @@ export default function ClinicalCTA() {
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                         <Link
-                            href="#tools"
+                            href="#features"
                             className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-2xl bg-gradient-to-r from-[#1C7BD9] to-teal-500 text-white font-bold text-sm shadow-lg shadow-[#1C7BD9]/20 hover:shadow-xl hover:shadow-[#1C7BD9]/30 transition-all duration-300 active:scale-95 gap-2"
                         >
                             Explore Clinical Tools

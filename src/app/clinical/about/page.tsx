@@ -611,8 +611,10 @@ function TeamMemberCard({
     index = 0,
 }: {
     name: string;
-    role: string;
-    description: string;
+    // Optional: members without a recorded role or bio show their name only,
+    // under the group heading, rather than a generic filler line.
+    role?: string;
+    description?: string;
     size?: "featured" | "regular";
     index?: number;
 }) {
@@ -644,30 +646,37 @@ function TeamMemberCard({
                     <h3 className={`font-medium text-[#0B2340] ${isFeatured ? "text-xl" : "text-base"}`}>
                         {name}
                     </h3>
-                    <p className="mt-0.5 font-mono text-[11px] uppercase tracking-wide text-[#0E8388]">
-                        {role}
-                    </p>
+                    {role && (
+                        <p className="mt-0.5 font-mono text-[11px] uppercase tracking-wide text-[#0E8388]">
+                            {role}
+                        </p>
+                    )}
                 </div>
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#0B2340]/10 text-[#0B2340]/30">
                     <Linkedin className="h-3.5 w-3.5" strokeWidth={1.75} />
                 </span>
             </div>
-            <p
-                className={`relative mt-5 leading-relaxed text-slate-600 ${isFeatured ? "text-[15px]" : "text-sm"
-                    }`}
-            >
-                {description}
-            </p>
+            {description && (
+                <p
+                    className={`relative mt-5 leading-relaxed text-slate-600 ${isFeatured ? "text-[15px]" : "text-sm"
+                        }`}
+                >
+                    {description}
+                </p>
+            )}
         </motion.div>
     );
 }
 
 function TeamSection() {
+    // Names only. These four used to share one invented role ("Team Member")
+    // and one identical filler description; the group heading below already
+    // says what they are, and no individual role is on record.
     const clinicalTeam = [
-        { name: "Sumaiya Saeed", role: "Team Member", description: "Contributing to the clinical and project team behind PharmaWallah Clinical." },
-        { name: "Muhammad Salman", role: "Team Member", description: "Contributing to the clinical and project team behind PharmaWallah Clinical." },
-        { name: "Rumaisa Farooqui", role: "Team Member", description: "Contributing to the clinical and project team behind PharmaWallah Clinical." },
-        { name: "Saman Hamza", role: "Team Member", description: "Contributing to the clinical and project team behind PharmaWallah Clinical." },
+        { name: "Sumaiya Saeed" },
+        { name: "Muhammad Salman" },
+        { name: "Rumaisa Farooqui" },
+        { name: "Saman Hamza" },
     ];
 
     return (

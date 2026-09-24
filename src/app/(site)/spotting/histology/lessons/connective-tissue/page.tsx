@@ -119,7 +119,7 @@ export default function ConnectiveTissuePage() {
       references={REFS}
       videoUrl={videoEmbedUrl}
       prevLesson={{ id: "epithelium-stratified", title: "Stratified & Transitional Epithelium" }}
-      nextLesson={{ id: "stratified-squamous-epithelium", title: "Stratified Squamous Epithelium" }}
+      nextLesson={{ id: "slide-preparation", title: "Slide Preparation & Staining" }}
     />
   );
 }

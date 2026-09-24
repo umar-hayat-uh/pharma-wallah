@@ -139,7 +139,9 @@ export default function EpitheliumSimplePage() {
       theory={THEORY}
       references={REFS}
       videoUrl={videoEmbedUrl}
-      prevLesson={{ id: "rbcs", title: "Red Blood Cells" }}
+      // WBCs sits between RBCs and this lesson on the index, and wbcs already
+      // points forward here; pointing back at rbcs skipped it.
+      prevLesson={{ id: "wbcs", title: "White Blood Cells" }}
       nextLesson={{ id: "epithelium-stratified", title: "Stratified & Transitional Epithelium" }}
     />
   );

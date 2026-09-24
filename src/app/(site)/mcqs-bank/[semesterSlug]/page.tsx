@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { SemesterData } from "@/app/api/semester-data";
 import { semesterToSlug, subjectToSlug } from "@/lib/mcq-utils";
+import { isMcqSubjectAvailable } from "@/lib/mcq-availability";
 
 interface PageProps { params: { semesterSlug: string } }
 
@@ -23,13 +24,6 @@ const BG_ICONS = [
   { Icon: FlaskConical, top: "38%", left: "97%", size: 26 },
   { Icon: Leaf, top: "70%", left: "96.5%", size: 26 },
 ];
-
-const AVAILABLE_SLUGS = new Set([
-  "pharmaceutical-biochemistry",
-  "physiology-histology-i",
-  "physical-pharmacy",
-  "pharmaceutical-organic-chemistry"
-]);
 
 const SEM_GRADS = [
   "from-blue-600 via-indigo-600 to-cyan-500",
@@ -68,9 +62,12 @@ export default function MCQBankSemesterPage({ params }: PageProps) {
   );
 
   const semGrad = SEM_GRADS[semIdx % SEM_GRADS.length];
-  const prevSem = semIdx > 0 ? SemesterData[semIdx - 1] : null;
-  const nextSem = semIdx < SemesterData.length - 1 ? SemesterData[semIdx + 1] : null;
-  const availCount = sem.subjects.filter(s => AVAILABLE_SLUGS.has(subjectToSlug(s.name))).length;
+  // Step only between semesters that have a question bank.
+  const withQuestions = (s: typeof sem) => s.subjects.some(sub => isMcqSubjectAvailable(sub.name));
+  const prevSem = [...SemesterData.slice(0, semIdx)].reverse().find(withQuestions) ?? null;
+  const nextSem = SemesterData.slice(semIdx + 1).find(withQuestions) ?? null;
+  // Only subjects with a finished bank are shown — see src/lib/mcq-availability.ts.
+  const subjects = sem.subjects.filter(s => isMcqSubjectAvailable(s.name));
 
   return (
     <section className="min-h-screen bg-gray-50/80 pt-8 relative overflow-x-hidden">
@@ -111,36 +108,30 @@ export default function MCQBankSemesterPage({ params }: PageProps) {
             Choose a subject module below to start practice sessions with instant rationale, streak multipliers, and downloadable performance reports.
           </p>
 
-          <div className="flex flex-wrap gap-6 sm:gap-10">
+          {subjects.length > 0 && <div className="flex flex-wrap gap-6 sm:gap-10">
             {[
-              { n: String(sem.subjects.length), l: "Total Subjects" },
-              { n: String(availCount), l: "Available Now" },
-              { n: String(sem.subjects.length - availCount), l: "In Production" },
+              { n: String(subjects.length), l: subjects.length === 1 ? "Subject" : "Subjects" },
             ].map(({ n, l }) => (
               <div key={l} className="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2.5 rounded-2xl text-left">
                 <div className="text-2xl sm:text-3xl font-black text-white leading-none">{n}</div>
                 <div className="text-xs text-white/80 font-bold mt-1">{l}</div>
               </div>
             ))}
-          </div>
+          </div>}
         </div>
       </div>
 
       {/* ══ CONTENT BODY ══ */}
       <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
-          {sem.subjects.map((sub, i) => {
+          {subjects.map((sub, i) => {
             const subSlug = subjectToSlug(sub.name);
-            const isAvail = AVAILABLE_SLUGS.has(subSlug);
             const href = `/mcqs-bank/${semesterSlug}/${subSlug}`;
 
             return (
               <div
                 key={sub.name}
-                className={`group relative rounded-3xl border-2 bg-white overflow-hidden transition-all duration-300 flex flex-col justify-between ${isAvail
-                  ? "border-gray-100 hover:border-blue-500 hover:shadow-xl hover:-translate-y-1 cursor-pointer"
-                  : "border-gray-100 opacity-60 cursor-default"
-                  }`}
+                className="group relative rounded-3xl border-2 border-gray-100 bg-white overflow-hidden transition-all duration-300 flex flex-col justify-between hover:border-blue-500 hover:shadow-xl hover:-translate-y-1 cursor-pointer"
               >
                 <div className={`h-1.5 bg-gradient-to-r ${semGrad}`} />
 
@@ -154,15 +145,9 @@ export default function MCQBankSemesterPage({ params }: PageProps) {
                         <span className="text-[10px] font-black text-gray-400 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-full">
                           #{i + 1}
                         </span>
-                        {isAvail ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 uppercase tracking-wider">
-                            <Sparkles className="w-3 h-3 text-emerald-600 animate-pulse" /> Available
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 uppercase tracking-wider">
-                            Soon
-                          </span>
-                        )}
+                        <span className="inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 uppercase tracking-wider">
+                          <Sparkles className="w-3 h-3 text-emerald-600" /> Available
+                        </span>
                       </div>
                     </div>
 
@@ -173,25 +158,37 @@ export default function MCQBankSemesterPage({ params }: PageProps) {
                   </div>
 
                   <div className="pt-2">
-                    {isAvail ? (
-                      <Link
-                        href={href}
-                        onClick={scrollToTop}
-                        className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-r ${semGrad} text-white text-xs font-black shadow-md hover:shadow-lg transition-all group-hover:scale-[1.02]`}
-                      >
-                        <Trophy className="w-4 h-4" /> Start Interactive Quiz
-                      </Link>
-                    ) : (
-                      <div className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-gray-100 text-gray-400 text-xs font-bold">
-                        <ClipboardList className="w-4 h-4" /> Questions Coming Soon
-                      </div>
-                    )}
+                    <Link
+                      href={href}
+                      onClick={scrollToTop}
+                      className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-r ${semGrad} text-white text-xs font-black shadow-md hover:shadow-lg transition-all group-hover:scale-[1.02]`}
+                    >
+                      <Trophy className="w-4 h-4" /> Start Interactive Quiz
+                    </Link>
                   </div>
                 </div>
               </div>
             );
           })}
         </div>
+
+        {subjects.length === 0 && (
+          <div className="text-center py-14 px-6 bg-white rounded-3xl border-2 border-gray-100 shadow-sm max-w-lg mx-auto">
+            <ClipboardList className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-900 font-extrabold text-lg">No question bank for {sem.semester} yet</p>
+            <p className="text-gray-500 text-sm mt-2 mb-6">
+              Practice questions are available for Physical Pharmacy, Pharmaceutical Biochemistry,
+              Pharmaceutical Organic Chemistry and Physiology &amp; Histology-I.
+            </p>
+            <Link
+              href="/mcqs-bank"
+              onClick={scrollToTop}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-blue-600 text-white text-xs font-black hover:bg-blue-700 transition"
+            >
+              <Layers className="w-4 h-4" /> See the available subjects
+            </Link>
+          </div>
+        )}
 
         {/* Semester Navigation Bar */}
         <div className="grid grid-cols-2 gap-4 mt-10 sm:mt-12">

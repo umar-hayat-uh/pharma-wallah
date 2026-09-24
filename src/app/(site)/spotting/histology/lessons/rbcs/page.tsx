@@ -97,8 +97,8 @@ export default function RBCsLesson() {
       theory={THEORY}
       references={REFS}
       videoUrl="https://www.youtube.com/embed/gMz0OjcOORo" // Added video URL (tracking parameters removed)
-      prevLesson={{ id: "skeletal-muscle", title: "Skeletal Muscle" }}
-      nextLesson={{ id: "stratified-squamous-epithelium", title: "Stratified Squamous Epithelium" }}
+      prevLesson={{ id: "gall-bladder-skin", title: "Gall Bladder & Skin" }}
+      nextLesson={{ id: "wbcs", title: "White Blood Cells" }}
     />
   );
 }

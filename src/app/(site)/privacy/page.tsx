@@ -21,7 +21,7 @@ const bgIcons = [
 const SECTIONS = [
   { id: "introduction",   label: "Introduction",            Icon: FileText,     accent: "from-blue-600 to-green-400",   hex: "#2563eb" },
   { id: "info-collection",label: "Information Collection",  Icon: Database,     accent: "from-purple-600 to-blue-500",  hex: "#7c3aed" },
-  { id: "cookies",        label: "Cookies & Third-Party",   Icon: Lock,         accent: "from-emerald-600 to-cyan-400", hex: "#059669" },
+  { id: "cookies",        label: "Cookies & Advertising",   Icon: Lock,         accent: "from-emerald-600 to-cyan-400", hex: "#059669" },
   { id: "data-retention", label: "Data Retention",          Icon: Clock,        accent: "from-sky-500 to-blue-500",     hex: "#0ea5e9" },
   { id: "disclaimer",     label: "Professional Disclaimer", Icon: AlertTriangle,accent: "from-amber-500 to-orange-400", hex: "#d97706" },
   { id: "user-consent",   label: "User Consent",            Icon: CheckCircle,  accent: "from-rose-500 to-red-500",     hex: "#dc2626" },
@@ -126,13 +126,13 @@ export default function PrivacyPage() {
           </p>
           <div className="flex flex-wrap gap-4">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-xs font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-300 inline-block" /> Version 2.0
+              <span className="w-1.5 h-1.5 rounded-full bg-green-300 inline-block" /> Version 3.0
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-xs font-bold">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-300 inline-block" /> Governing Law: Pakistan
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-xs font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-yellow-300 inline-block" /> Last Updated: Feb 2025
+              <span className="w-1.5 h-1.5 rounded-full bg-yellow-300 inline-block" /> Last Updated: September 2026
             </span>
           </div>
         </div>
@@ -188,36 +188,58 @@ export default function PrivacyPage() {
 
             {/* Sections */}
             <SectionBlock id="introduction" num={1} label="Introduction" Icon={FileText} accent="from-blue-600 to-green-400" hex="#2563eb">
-              <Para>Pharmawallah is an open-access educational platform for pharmacy students offering structured study materials, pharmaceutical calculators, a Pharmacopedia drug encyclopedia, and an AI-powered expert guide. This Privacy Policy outlines our commitment to user privacy and describes how we handle the limited data processed through our website.</Para>
+              <Para>PharmaWallah (pharmawallah.com) is a free educational website for pharmacy students, offering course lessons, pharmaceutical calculators, MCQ practice, a drug encyclopedia, clinical tools and an AI study guide. This Privacy Policy describes what information we collect, how we use it, and the choices you have.</Para>
             </SectionBlock>
 
+            {/* Sections 2–4 rewritten 2026-09-23 to describe what the site actually
+                does. The old text said no registration existed (Supabase accounts
+                do), named Google Analytics (the site uses Vercel Analytics), and
+                promised a six-month deletion schedule nothing implements. */}
             <SectionBlock id="info-collection" num={2} label="Information Collection and Usage" Icon={Database} accent="from-purple-600 to-blue-500" hex="#7c3aed">
-              <Para>Pharmawallah operates as a free resource and does not require user registration, sign-ups, or the creation of personal profiles. Data collection is limited to the following categories:</Para>
-              <Sub>Voluntary Correspondence</Sub>
-              <Para>When you use the "Contact Us" feature, we collect your name and email address solely to address your specific inquiries or technical support requests.</Para>
-              <Sub>AI Guide Tool Interactions</Sub>
+              <Para>Most of PharmaWallah — lessons, calculators, question banks and tools — can be used without an account. We collect the following:</Para>
+              <Sub>Optional accounts</Sub>
+              <Para>If you create an account, we store your name and email address, and your password is handled by our authentication provider, Supabase (we never see it). You can also sign in with Google, in which case Google shares your name and email address with us. With an account we record your study progress — which course units you have opened or marked as read, your quiz and MCQ results, and time spent — so that your dashboard can show where you left off.</Para>
+              <Sub>Community</Sub>
+              <Para>Posts, comments and votes you make in the community are stored with your display name and are visible to other visitors.</Para>
+              <Sub>Contact and careers forms</Sub>
+              <Para>When you use the Contact or Careers form, the name, email address and message you enter are emailed to our team (sent through the email service Resend) so that we can reply.</Para>
+              <Sub>AI tools</Sub>
               <Bullets items={[
-                "Questions submitted are processed to generate educational responses",
-                "Interactions may be logged anonymously to improve the tool's accuracy",
-                "We do not associate AI queries with personal identifiers",
+                "Questions you ask the AI Guide, and photos you give the Prescription Reader, are sent to Google's Gemini API to generate the answer.",
+                "We do not store your AI Guide questions on our servers. Your saved AI Guide conversations are kept only in your own browser, and you can delete them from the Guide at any time.",
               ]} />
-              <Sub>Automated Usage Data</Sub>
-              <Para>We utilize Google Analytics to monitor website traffic and performance, including technical information such as IP addresses, browser types, device identifiers, and interaction patterns.</Para>
+              <Sub>Usage and security data</Sub>
+              <Para>We use Vercel Web Analytics and Speed Insights to count page views and measure performance. They report aggregated statistics and do not use cookies. To protect the site from abuse, your IP address is used briefly to rate-limit requests such as searches, AI questions and form submissions.</Para>
             </SectionBlock>
 
-            <SectionBlock id="cookies" num={3} label="Cookies & Third-Party Services" Icon={Lock} accent="from-emerald-600 to-cyan-400" hex="#059669">
+            <SectionBlock id="cookies" num={3} label="Cookies, Advertising & Third-Party Services" Icon={Lock} accent="from-emerald-600 to-cyan-400" hex="#059669">
+              <Sub>Advertising (Google AdSense)</Sub>
               <Bullets items={[
-                "Functional Storage: Local storage retains session data within our calculators, Pharmacopedia preferences, and AI tool conversation continuity during a single session.",
-                "Third-Party Advertising: Advertisements are displayed through partners such as Google AdSense, which use cookies to serve relevant ads.",
-                "AI Service Providers: Our AI guide may utilize third-party ML infrastructure processing query data under strict confidentiality standards.",
+                "PharmaWallah shows advertisements served by Google AdSense. Third-party vendors, including Google, use cookies to serve ads based on your prior visits to this website and other websites.",
+                "Google's use of advertising cookies enables it and its partners to serve ads to you based on your visits to this site and/or other sites on the Internet.",
+                "You can opt out of personalised advertising in Google's Ads Settings (adssettings.google.com), or opt out of some third-party vendors' use of cookies for personalised advertising at www.aboutads.info.",
               ]} />
+              <Para>
+                How Google uses information from sites that use its services is explained at{" "}
+                <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 hover:underline">policies.google.com/technologies/partner-sites</a>.
+                The Android app shows no advertising.
+              </Para>
+              <Sub>Cookies and browser storage we set</Sub>
+              <Bullets items={[
+                "Sign-in cookies keep you logged in to your account. They are only set when you sign in.",
+                "Your browser's local storage keeps things like saved AI Guide conversations, saved analyses in the camera tools, molecules saved in the Molecular Lab and display preferences. This stays on your device; clearing your browser data removes it.",
+              ]} />
+              <Sub>Service providers</Sub>
+              <Para>We rely on Vercel (hosting and analytics), Supabase (accounts and database), MongoDB Atlas (drug reference data), Upstash (rate limiting), Resend (email) and Google (AI answers, sign-in and advertising). Each processes data only as needed to provide its service.</Para>
             </SectionBlock>
 
-            <SectionBlock id="data-retention" num={4} label="Data Retention Policy" Icon={Clock} accent="from-sky-500 to-blue-500" hex="#0ea5e9">
+            <SectionBlock id="data-retention" num={4} label="Data Retention and Your Choices" Icon={Clock} accent="from-sky-500 to-blue-500" hex="#0ea5e9">
               <Bullets items={[
-                "Personal Information: Any personal information obtained through contact forms is permanently deleted every six (6) months.",
-                "AI Interaction Logs: Anonymized question/response data may be retained for quality improvement and model training — no personally identifiable information is retained.",
-                "Usage Data: Data processed by third-party analytics or advertising providers is managed according to their respective global retention policies.",
+                "Account and progress data is kept for as long as you have an account. To have your account and its data deleted, email us from the address you signed up with.",
+                "Messages sent through the Contact or Careers form are kept only as long as needed to answer them.",
+                "Community posts stay visible until you delete them or we remove them.",
+                "Data held by advertising and analytics providers is kept under their own retention policies.",
+                "PharmaWallah is not directed at children under 13, and we do not knowingly collect their personal information.",
               ]} />
             </SectionBlock>
 
@@ -250,9 +272,9 @@ export default function PrivacyPage() {
                 </div>
               </div>
               <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <p className="text-xs text-gray-400">Version 2.0 · Last Updated: February 2025 · Governed by the laws of Pakistan</p>
+                <p className="text-xs text-gray-400">Version 3.0 · Last Updated: 23 September 2026 · Governed by the laws of Pakistan</p>
                 <Link href="/" className="text-xs font-bold text-blue-600 hover:text-blue-700 transition">
-                  pharma-wallah.vercel.app →
+                  pharmawallah.com →
                 </Link>
               </div>
             </SectionBlock>

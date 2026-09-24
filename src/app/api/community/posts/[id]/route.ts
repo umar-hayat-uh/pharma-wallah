@@ -23,12 +23,17 @@ import {
 } from "@/lib/community/server";
 import type { CommunityPost } from "@/lib/community/types";
 
+// The author relationship is named explicitly. community_posts reaches
+// community_members two ways — the author FK and the community_saves join table —
+// so a bare `community_members!inner` is ambiguous and PostgREST rejects the
+// whole query (PGRST201). Until 2026-09-23 that made every feed and post request
+// return "Database error" in production, and the community looked empty.
 const POST_SELECT = `
     id, kind, title, body, link_url, image_url, flair, tags,
     score, comment_count, view_count, is_pinned, is_locked, is_deleted,
     accepted_comment_id, created_at, edited_at, user_id, space_id,
     space:community_spaces!inner (id, slug, name, icon, accent, rules, description),
-    author:community_members!inner (user_id, handle, display_name, avatar_url, post_karma, comment_karma)
+    author:community_members!community_posts_user_id_fkey!inner (user_id, handle, display_name, avatar_url, post_karma, comment_karma)
 `;
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {

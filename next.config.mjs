@@ -4,6 +4,16 @@
 const nextConfig = {
   reactStrictMode: true,
 
+  // Course lesson markdown lives in /content (not public/) and is read from disk
+  // at request time by src/lib/courses/content.ts. The file tracer cannot follow
+  // a runtime path, so include the folder in the lesson route's bundle
+  // explicitly — without this the deployed lesson pages would find no files.
+  experimental: {
+    outputFileTracingIncludes: {
+      "/courses/[subjectSlug]/[unit]": ["./content/**/*"],
+    },
+  },
+
   async headers() {
     return [
       {
@@ -48,6 +58,14 @@ const nextConfig = {
       // took over its job — explaining a topic and pointing at material we own
       // — so old links, bookmarks and any indexed page land there.
       { source: "/books-library", destination: "/ai-guide", permanent: true },
+      // Removed 2026-09-23 while preparing the AdSense review. /mentor was a
+      // second copy of /contact under a different heading; /documentation was
+      // the purchased UI template's own developer docs ("Crypgo"), live and
+      // indexable. Both are duplicate or foreign content to a reviewer.
+      { source: "/mentor", destination: "/contact", permanent: true },
+      { source: "/documentation", destination: "/", permanent: true },
+      // A single-drug demo page with a search box that did nothing.
+      { source: "/flash-cards/sample", destination: "/flash-cards", permanent: true },
     ];
   },
 

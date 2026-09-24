@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
                     drugA,
                     drugB,
                     message:
-                        "No interaction was found in the PharmaWallah Clinical prototype database. Absence from this prototype database does not establish that no interaction exists.",
+                        "No interaction was found in the PharmaWallah Clinical interaction database. This database is not comprehensive: absence from it does not establish that no interaction exists.",
                 });
             }
 

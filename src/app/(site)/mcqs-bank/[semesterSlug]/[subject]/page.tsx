@@ -1042,10 +1042,12 @@ export default function MCQBankQuizPage({ params }: PageProps) {
         <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${semGrad} flex items-center justify-center mx-auto mb-4 shadow-lg`}>
           <ClipboardList className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
         </div>
-        <h2 className="text-lg sm:text-xl font-extrabold text-gray-900 mb-2">MCQs Coming Soon</h2>
-        <p className="text-gray-500 text-sm mb-6">Questions for <strong>{subData.name}</strong> are currently in production.</p>
-        <Link href={`/mcqs-bank/${semesterSlug}`} className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r ${semGrad} text-white font-extrabold text-sm shadow-md hover:-translate-y-0.5 transition-all`}>
-          <ChevronLeft className="w-4 h-4" /> Back to {semData.semester}
+        {/* Not linked from anywhere since 2026-09-23 (only subjects with a bank
+            are listed) and noindexed by src/lib/seo.ts; reached only by URL. */}
+        <h2 className="text-lg sm:text-xl font-extrabold text-gray-900 mb-2">No question bank for this subject</h2>
+        <p className="text-gray-500 text-sm mb-6">There are no practice questions for <strong>{subData.name}</strong> on PharmaWallah.</p>
+        <Link href="/mcqs-bank" className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r ${semGrad} text-white font-extrabold text-sm shadow-md hover:-translate-y-0.5 transition-all`}>
+          <ChevronLeft className="w-4 h-4" /> See the available subjects
         </Link>
       </div>
     </div>

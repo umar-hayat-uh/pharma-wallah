@@ -1,17 +1,30 @@
+import { HUB_SUBJECTS, UNLISTED_TOOLS } from "@/app/(site)/calculation-tools/tool-index";
+import { SUBJECTS } from "@/lib/courses/registry";
+
 /*
  * Content for the landing page.
  *
  * Kept out of the section components so copy can be edited without reading
  * markup. Every number here was counted from the repo on 2026-09-13 — do not
- * round them up for effect; a pharmacy student will check. `calculators` is
- * the number of tool directories under (tools)/ (97 after the eight lab tools
- * landed the same day); the ruler, timecode and copy all derive from it. Every `href` points
+ * round them up for effect; a pharmacy student will check. `calculators` and
+ * `lessons` are derived (2026-09-23), not typed: the typed 97 had gone stale at
+ * 105, and "69 lessons" counted markdown files on disk, most of which belong to
+ * subjects that are not published as pages. The ruler, timecode and copy all
+ * derive from these. Every `href` points
  * at a route that exists under src/app/ (see .claude/PROJECT_MAP.md).
  */
 
+/** Every calculator page: the hub's tools (some are listed under two subjects) plus the unlisted ones. */
+const CALCULATOR_COUNT =
+  new Set(HUB_SUBJECTS.flatMap((subject) => subject.tools.map((tool) => tool.slug))).size +
+  Object.keys(UNLISTED_TOOLS).length;
+
+/** Published course units — the pages a student can actually open. */
+const LESSON_COUNT = SUBJECTS.reduce((n, subject) => n + subject.units.length, 0);
+
 export const STATS = {
-  calculators: 97,
-  lessons: 69,
+  calculators: CALCULATOR_COUNT,
+  lessons: LESSON_COUNT,
   simulations: 8,
   pillars: 6,
 } as const;

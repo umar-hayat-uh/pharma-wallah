@@ -42,7 +42,7 @@ const BG_ICONS = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  SLIDE DATA — 21 histology slides (20 used: 2 rounds × 10)
+//  SLIDE DATA — 20 histology slides (all 20 used: 2 rounds × 10)
 //  (unchanged from your original, I'm keeping the full array as provided)
 const SLIDE_DATA = [
   {
@@ -387,24 +387,28 @@ const SLIDE_DATA = [
       "Pseudostratified columnar epithelium appears stratified because nuclei are at different levels, but all cells rest on the basement membrane. In the respiratory tract, it is ciliated with goblet cells, forming the mucociliary escalator. In the epididymis, it has non-motile stereocilia.",
   },
   {
-    id: "stratified-squamous-keratinised",
-    title: "Stratified Squamous Keratinised Epithelium",
+    // Was "Stratified Squamous Keratinised" with a missing first image
+    // (stratified-squamous-keratinised.jpg never existed). Both surviving photos
+    // show nucleated surface cells and no keratin layer — non-keratinised
+    // epithelium — so the slide now asks for what the photos actually show.
+    id: "stratified-squamous-non-keratinised",
+    title: "Stratified Squamous Non-keratinised Epithelium",
     category: "Epithelial Tissue",
     images: [
-      { url: "/images/spotting/histology/stratified-squamous-keratinised.jpg" },
+      { url: "/images/spotting/histology/stratified-squamous-epithelium.jpg" },
       { url: "/images/spotting/histology/stratified-squamous-high.jpg" },
     ],
     options: ["Stratified Squamous Keratinised", "Stratified Squamous Non-keratinised", "Stratified Cuboidal", "Transitional Epithelium"],
-    correctOptionIndex: 0,
+    correctOptionIndex: 1,
     definition: [
-      "Multiple cell layers",
-      "Surface cells are anucleate, filled with keratin (stratum corneum)",
-      "Found only in skin (epidermis)",
-      "Five layers: basale, spinosum, granulosum, lucidum (thick skin), corneum",
+      "Multiple cell layers; only the basal layer rests on the basement membrane",
+      "Surface cells are flattened but keep their nuclei (no stratum corneum)",
+      "Kept moist by glandular secretions",
+      "Lines the oral cavity, oesophagus, vagina and cornea",
     ],
-    keyFeatures: ["Multiple layers", "Anucleate keratinised surface", "Stratum corneum", "Skin only"],
+    keyFeatures: ["Multiple layers", "Nucleated flattened surface cells", "No keratin layer", "Moist surfaces (oesophagus, vagina)"],
     lessonDetailed:
-      "Keratinised stratified squamous epithelium forms the epidermis of skin. Surface cells are dead and filled with keratin, providing a waterproof barrier. It consists of five layers: stratum basale (mitotic), spinosum, granulosum, lucidum (in thick skin), and corneum (anucleate squames).",
+      "Non-keratinised stratified squamous epithelium lines wet surfaces subject to abrasion: the oral cavity, oesophagus, vagina and cornea. Basal cells are cuboidal to columnar and mitotic; cells flatten as they move up but, unlike the epidermis, the surface cells keep their nuclei and no anucleate keratin layer forms. Contrast with keratinised epithelium of the skin, whose surface is a layer of dead, keratin-filled squames.",
   },
   {
     id: "stratified-cuboidal",

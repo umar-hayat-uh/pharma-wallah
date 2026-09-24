@@ -69,8 +69,10 @@ const DATA = {
     "Young, B., O'Dowd, G., & Woodford, P. (2018). Wheater's Functional Histology (6th ed.). Churchill Livingstone.",
     'Kumar, V., Abbas, A.K., & Aster, J.C. (2020). Robbins & Cotran Pathologic Basis of Disease (10th ed.). Elsevier.',
   ],
-  prev: { id: "stratified-squamous-epithelium", title: 'Stratified Squamous Epithelium' },
-  next: { id: "transitional-epithelium", title: 'Transitional Epithelium' },
+  // The old targets (stratified-squamous-epithelium, transitional-epithelium) never
+  // existed as pages; point at the two epithelium lessons that do.
+  prev: { id: "epithelium-simple", title: 'Simple Epithelium' },
+  next: { id: "epithelium-stratified", title: 'Stratified Epithelium' },
 };
 
 function SectionHead({ title }: { title: string }) {

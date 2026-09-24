@@ -11,7 +11,7 @@ export interface CourseUnit {
   readTime: number;       // minutes
   difficulty: "Beginner" | "Intermediate" | "Advanced";
   previewImage?: string;
-  // Path to the markdown file relative to /public/content
+  // Path to the markdown file relative to /content (repo root, not public)
   contentFile: string;
 }
 

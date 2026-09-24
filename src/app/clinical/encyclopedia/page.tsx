@@ -29,22 +29,30 @@ import {
 /* DATA                                                                       */
 /* -------------------------------------------------------------------------- */
 
+/*
+ * Counted, not typed. This strip used to print "17.4K+ drug profiles, 50K+
+ * interactions, 100K+ products, 200+ categories". Measured against the
+ * pharmacopedia collections on 2026-09-13 (see EncyclopediaFigures.tsx):
+ * 12,673 drug records, 4,398 approved, 9,404 small molecules, 3,269 biotech.
+ * Interaction and product lists are stored as capped samples (100 and 5 per
+ * drug), so no honest total exists for either and none is shown.
+ */
 const heroStats = [
     {
-        value: "17.4K+",
-        label: "Drug profiles",
+        value: "12,673",
+        label: "Drug records",
     },
     {
-        value: "50K+",
-        label: "Interactions",
+        value: "4,398",
+        label: "Approved drugs",
     },
     {
-        value: "100K+",
-        label: "Products",
+        value: "9,404",
+        label: "Small molecules",
     },
     {
-        value: "200+",
-        label: "Categories",
+        value: "3,269",
+        label: "Biotech drugs",
     },
 ];
 

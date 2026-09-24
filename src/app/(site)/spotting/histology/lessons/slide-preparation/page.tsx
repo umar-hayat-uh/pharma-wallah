@@ -205,7 +205,7 @@ export default function SlidePreparationPage() {
       theory={THEORY}
       references={REFS}
       videoUrl={videoEmbedUrl}
-      prevLesson={{ id: "stratified-squamous-epithelium", title: "Stratified Squamous Epithelium" }}
+      prevLesson={{ id: "connective-tissue", title: "Connective Tissue & ECM" }}
       // nextLesson is omitted because this is the last lesson in the list
     />
   );

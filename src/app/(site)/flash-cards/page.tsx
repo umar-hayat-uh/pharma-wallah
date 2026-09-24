@@ -9,6 +9,7 @@ import {
   Target, ChevronDown, LayoutGrid, BrainCircuit, CheckCircle2, XCircle, RotateCcw, ArrowLeft
 } from "lucide-react";
 import Link from "next/link";
+import { AdSlot } from "@/components/calculators/AdSlot";
 import type { LucideIcon } from "lucide-react";
 import { useTracker } from "@/hooks/useTracker";
 
@@ -3196,6 +3197,12 @@ export default function FlashcardsPage() {
         </div>
       </div>
 
+      {/* Ad below the cards (added 2026-09-23) — outside the animated card grid,
+          because a transformed parent breaks AdSense viewability (gotcha 29). */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LIST} format="horizontal" className="min-h-[250px]" />
+      </div>
+
       {/* Pharmacopedia CTA */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <div className="relative rounded-2xl bg-gradient-to-r from-blue-600 to-green-400 overflow-hidden p-8 text-center">
@@ -3207,7 +3214,7 @@ export default function FlashcardsPage() {
             </div>
             <h3 className="text-xl font-extrabold text-white mb-2 tracking-tight">Want Detailed Drug Information?</h3>
             <p className="text-blue-100 text-sm max-w-lg mx-auto mb-5 leading-relaxed">
-              These flashcards are your quick-review tool. For comprehensive profiles including chemical properties, pharmacokinetics, interactions, dosing, and 17,430+ drug entries — visit <span className="font-extrabold text-white">Pharmacopedia</span>.
+              These flashcards are your quick-review tool. For comprehensive profiles including chemical properties, pharmacokinetics, interactions, dosing, and 12,673 drug records — visit <span className="font-extrabold text-white">Pharmacopedia</span>.
             </p>
           </div>
         </div>

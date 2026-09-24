@@ -17,24 +17,33 @@ const bgIcons = [
   { Icon: Leaf,         top: "70%", left: "96.5%", size: 28 },
 ];
 
+/*
+ * Rewritten 2026-09-23. The previous answers described a different product:
+ * Indian exams (B.Pharm, D.Pharm, GPAT) for a Pakistani Pharm-D site, "thousands
+ * of questions" (there are 660), "no account required… future updates may
+ * introduce accounts" (accounts exist), content "by professors and industry
+ * experts" (the team is students — see /about-us), downloadable PDFs for most
+ * material, and a "Material" menu item that does not exist. Every answer below
+ * was checked against the code. Keep counts here in step with the registries.
+ */
 const FAQS = [
-  { id:1,  cat:"general", q:"What is Pharma Wallah?",              a:"Pharma Wallah is a free online educational platform for pharmacy and pharmaceutical science students, offering study materials, MCQ banks, a drug encyclopedia (Pharmacopedia), AI-guided learning, and calculation tools." },
-  { id:2,  cat:"general", q:"Who is this platform for?",           a:"Undergraduate (B.Pharm, D.Pharm) and postgraduate pharmacy students, GPAT aspirants, and pharmacy professionals looking to reinforce their knowledge." },
-  { id:3,  cat:"general", q:"Is Pharma Wallah completely free?",    a:"Yes. All core resources — study materials, MCQ Bank, Pharmacopedia, and calculation tools — are completely free with no hidden fees or subscriptions." },
-  { id:4,  cat:"general", q:"Do I need to create an account?",      a:"Currently no account is required to access most resources. Future updates may introduce optional accounts for personalised progress tracking and saved notes." },
-  { id:5,  cat:"content", q:"What subjects are covered?",           a:"Pharmaceutics, Pharmaceutical Chemistry, Pharmacology, Pharmacognosy, Pharmaceutical Analysis, Biopharmaceutics, Clinical Pharmacy, Hospital Pharmacy, and Pharmaceutical Microbiology." },
-  { id:6,  cat:"content", q:"Who creates the content?",             a:"Content is developed by experienced pharmacy educators, professors, and industry experts. Their profiles are available on the About page." },
-  { id:7,  cat:"content", q:"What is included in Study Materials?", a:"Structured lecture notes, topic-wise summaries, diagrams, and key concept explanations aligned with standard pharmacy curricula." },
-  { id:8,  cat:"content", q:"How can the MCQ Bank help me?",        a:"The MCQ Bank contains thousands of questions for self-assessment, semester prep, and competitive exam practice (e.g., GPAT), each with detailed explanations." },
-  { id:9,  cat:"content", q:"What is Pharmacopedia?",               a:"An integrated drug encyclopedia covering uses, mechanisms, side effects, interactions, and drug classifications — a quick reference for students and professionals." },
-  { id:10, cat:"content", q:"What Calculation Tools are available?",a:"Interactive tools for dosage calculations, dilution/concentration problems, isotonic solutions, and pharmacokinetic parameters with step-by-step guidance." },
-  { id:11, cat:"usage",   q:"How do I access study materials?",     a:"Navigate to the Material section from the main menu. Content is organised by subject and topic. No login required." },
-  { id:12, cat:"usage",   q:"Can I download content offline?",      a:"Yes. Most study materials are available as downloadable PDFs for offline access." },
-  { id:13, cat:"usage",   q:"Is there a mobile app?",               a:"The website is fully responsive and works great on all mobile browsers. Check the homepage for any app download links." },
-  { id:14, cat:"support", q:"I found an error. How do I report it?",a:"Use the Contact page to report issues. Your feedback is invaluable for maintaining accuracy and quality." },
-  { id:15, cat:"support", q:"How often is new content added?",      a:"We continuously expand our resources. Follow our social media or check regularly for announcements about new subjects and features." },
-  { id:16, cat:"support", q:"Can I contribute content?",            a:"We welcome inquiries from qualified professionals. Contact us through the official channels listed on the Contact page." },
-  { id:17, cat:"support", q:"My question isn't listed here.",       a:"Visit the Contact section for email and contact form details. Our team is happy to help with anything not covered here." },
+  { id:1,  cat:"general", q:"What is PharmaWallah?",                a:"PharmaWallah is a free study website for pharmacy students. It has pharmacy calculators with worked formulas, course lessons, MCQ practice, slide-spotting lessons and tests, virtual lab simulations, a drug encyclopedia and a set of clinical pharmacy tools." },
+  { id:2,  cat:"general", q:"Who is it for?",                       a:"Mainly Doctor of Pharmacy (Pharm-D) students in Pakistan — the lessons and question banks follow the Pharm-D semester structure. The calculators, encyclopedia and clinical tools are also useful to practising pharmacists." },
+  { id:3,  cat:"general", q:"Is PharmaWallah free?",                a:"Yes. Every lesson, calculator, question bank and tool on the site is free to use. The site is supported by advertising." },
+  { id:4,  cat:"general", q:"Do I need an account?",                a:"No. You can read lessons, practise MCQs and use every calculator without signing in. A free account adds a dashboard that remembers which units you have read, your quiz results and your recent activity, and lets you post in the community." },
+  { id:5,  cat:"content", q:"Which subjects have course lessons?",  a:"Pharmaceutical Biochemistry, Physiology, Physical Pharmacy and Pharmaceutical Organic Chemistry, each split into units that follow the syllabus. Every unit ends with a short set of practice questions from that subject's MCQ bank." },
+  { id:6,  cat:"content", q:"Who writes the content?",              a:"A team of pharmacy students and graduates — you can meet them on the About Us page. If you spot a mistake, please tell us through the Contact page; corrections are made as they are reported." },
+  { id:7,  cat:"content", q:"What is in the MCQ bank?",             a:"660 questions across four first-year subjects — Physical Pharmacy, Pharmaceutical Biochemistry, Pharmaceutical Organic Chemistry and Physiology & Histology-I. You can practise one unit or the whole syllabus, every answer has an explanation, and you can download a score report at the end." },
+  { id:8,  cat:"content", q:"What is slide spotting?",              a:"Lessons that teach you to recognise microscope slides for practical exams: sixteen histology slides, fifteen pathology slides and three powder-microscopy drugs, each with its points of identification. Histology and pathology also have practice spot tests." },
+  { id:9,  cat:"content", q:"What is the drug encyclopedia?",       a:"A searchable reference of 12,673 drug records — indication, mechanism, pharmacokinetics, interactions, products, chemistry and classification — with a 2D and 3D view of each drug's structure." },
+  { id:10, cat:"content", q:"What calculators are there?",          a:"Over a hundred, grouped by subject: pharmaceutical chemistry, pharmaceutics, pharmacokinetics, pharmaceutical analysis, microbiology, pharmacology, engineering, clinical pharmacy and unit conversion. Each shows the formula it uses and works through your numbers step by step. They are for learning — always check a clinical dose against an authoritative reference." },
+  { id:11, cat:"usage",   q:"How do I find a course lesson?",       a:"Open Courses from the menu, choose a subject and then a unit. Your place is remembered if you are signed in." },
+  { id:12, cat:"usage",   q:"Can I use it offline?",                a:"The calculators, yes: the free PharmaWallah Android app contains all of them and works without an internet connection — see the Download page. Course lessons can be saved as a PDF from each unit page. The rest of the site needs a connection." },
+  { id:13, cat:"usage",   q:"Is there a mobile app?",               a:"Yes, for Android: a free, offline app with every calculator, available from the Download page. The whole website also works on phones and tablets." },
+  { id:14, cat:"support", q:"I found an error. How do I report it?",a:"Use the Contact page and tell us the page and what looks wrong. Accuracy reports are the most useful feedback we get." },
+  { id:15, cat:"support", q:"How often is new content added?",      a:"Regularly — new calculators, lessons and tools are added as they are written and checked." },
+  { id:16, cat:"support", q:"Can I contribute content?",            a:"Yes. See the Careers page for the roles we are looking for, or write to us through the Contact page." },
+  { id:17, cat:"support", q:"My question isn't listed here.",       a:"Send it through the Contact page and the team will reply by email." },
 ];
 
 const CATS = [

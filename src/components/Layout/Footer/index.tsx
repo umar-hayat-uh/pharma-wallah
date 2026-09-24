@@ -3,7 +3,7 @@ import Image from "next/image";
 import Wordmark from "./Wordmark";
 import { Icon } from "@iconify/react";
 import { headerData } from "../Header/Navigation/menuData";
-import { MapPin, Phone, Mail, ArrowUpRight } from "lucide-react";
+import { MapPin, Mail, ArrowUpRight } from "lucide-react";
 
 /*
  * Every href below was checked against src/app on 2026-09-13. Five of the seven
@@ -21,7 +21,6 @@ const resourceLinks = [
 
 const companyLinks = [
   { label: "About us", href: "/about-us" },
-  { label: "Our mentors", href: "/mentor" },
   { label: "Careers", href: "/careers" },
   { label: "FAQs", href: "/faqs" },
   { label: "Contact", href: "/contact" },
@@ -30,17 +29,21 @@ const companyLinks = [
 // "Resources" is a menu heading with href "#", not a destination.
 const quickLinks = headerData.filter((item) => item.href && item.href !== "#");
 
+/*
+ * Only details that are real. Until 2026-09-23 this also printed a placeholder
+ * phone number (+92 300 1234567) and four social icons that all linked to "#",
+ * on every page of the site — exactly the kind of unfinished detail an AdSense
+ * "low value content" review reads as an abandoned template. Add a channel back
+ * here only once it has a real address.
+ */
 const contact = [
   { Icon: MapPin, text: "Dept. of Pharmacy, University of Karachi" },
-  { Icon: Phone, text: "+92 300 1234567" },
   { Icon: Mail, text: "info@pharmawallah.com" },
 ];
 
+// The one account that exists — also linked from the science-fair quiz.
 const socials = [
-  { icon: "tabler:brand-facebook", href: "#", label: "Facebook" },
-  { icon: "tabler:brand-twitter", href: "#", label: "Twitter" },
-  { icon: "tabler:brand-instagram", href: "#", label: "Instagram" },
-  { icon: "tabler:brand-linkedin", href: "#", label: "LinkedIn" },
+  { icon: "tabler:brand-instagram", href: "https://www.instagram.com/pharmawallah_com/", label: "PharmaWallah on Instagram" },
 ];
 
 function Column({ title, children }: { title: string; children: React.ReactNode }) {
@@ -156,14 +159,16 @@ const Footer = () => (
 
           <div className="mt-8 flex items-center gap-2">
             {socials.map(({ icon, href, label }) => (
-              <Link
+              <a
                 key={label}
                 href={href}
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label={label}
                 className="grid h-10 w-10 place-items-center rounded-full border border-white/35 text-white/90 transition-colors duration-300 hover:border-white hover:bg-white hover:text-[#1C7BD9]"
               >
                 <Icon icon={icon} className="text-lg" />
-              </Link>
+              </a>
             ))}
           </div>
         </div>

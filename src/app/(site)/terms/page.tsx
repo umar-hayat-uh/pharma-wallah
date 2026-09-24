@@ -193,7 +193,7 @@ export default function TermsPage() {
             </div>
 
             <SectionBlock id="introduction" num={1} label="Introduction" Icon={FileText} accent="from-blue-600 to-green-400" hex="#2563eb">
-              <Para>Pharmawallah ("we", "our", "us") provides an open-access educational platform including pharmaceutical calculators, drug mechanism explanations, an AI guide tool, and a Pharmacopedia drug encyclopedia. These Terms govern your use of our website at pharma-wallah.vercel.app (the "Site"). By accessing or using the Site, you agree to be bound by these Terms.</Para>
+              <Para>Pharmawallah ("we", "our", "us") provides an open-access educational platform including pharmaceutical calculators, drug mechanism explanations, an AI guide tool, and a Pharmacopedia drug encyclopedia. These Terms govern your use of our website at pharmawallah.com (the "Site"). By accessing or using the Site, you agree to be bound by these Terms.</Para>
             </SectionBlock>
 
             <SectionBlock id="use-of-website" num={2} label="Use of Website" Icon={Globe} accent="from-emerald-600 to-cyan-400" hex="#059669">
@@ -291,7 +291,7 @@ export default function TermsPage() {
               <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <p className="text-xs text-gray-400">Version 1.0 · Last Updated: February 2025 · Governed by the laws of Pakistan</p>
                 <Link href="/" className="text-xs font-bold text-blue-600 hover:text-blue-700 transition">
-                  pharma-wallah.vercel.app →
+                  pharmawallah.com →
                 </Link>
               </div>
             </SectionBlock>

@@ -116,7 +116,7 @@ export default function DoseCalculatorsPage() {
                         Back to Clinical Hub
                     </Link>
                     <Link
-                        href="/clinical-calculators"
+                        href="/clinical/calculators"
                         className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 transition"
                     >
                         Go to Clinical Calculators

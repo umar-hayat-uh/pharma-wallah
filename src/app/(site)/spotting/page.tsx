@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AdSlot } from "@/components/calculators/AdSlot";
 import { motion } from "framer-motion";
 import {
   Microscope, FlaskConical, Leaf, Beaker, Stethoscope, Pill,
@@ -17,6 +18,14 @@ const bgIcons = [
   { Icon: Leaf,         top: "70%", left: "96.5%", size: 28 },
 ];
 
+// Lesson counts are hardcoded because Next page files may not export data.
+// Counted 2026-09-23 from each index's LESSONS array, and every entry was
+// checked to have its own page.tsx:
+//   histology/lessons/page.tsx           → 16
+//   pathology/lessons/page.tsx           → 15
+//   powder-microscopy/lessons/page.tsx   → 3
+// Update these when a lesson is added or removed. They replace the old
+// uniform "8 lessons" / "24+", which were not true for any category.
 const CATEGORIES = [
   {
     id: "histology",
@@ -27,10 +36,12 @@ const CATEGORIES = [
     gradient: "from-blue-600 to-green-400",
     lightBg: "from-blue-50/80 to-green-50/60",
     diffColor: "bg-blue-50 text-blue-700 border-blue-200",
-    lessonCount: 8,
-    topics: ["Epithelium", "Connective Tissue", "Bone & Muscle", "Glandular Tissue"],
+    lessonCount: 16,
+    // "Bone" and "Glandular Tissue" were listed here but no lesson covers them.
+    topics: ["Epithelium", "Connective Tissue", "Muscle", "Organs & Blood"],
     lessonPath: "/spotting/histology/lessons",
     testPath: "/spotting/histology/test",
+    testNote: "20 min test", // 2 rounds × 10 min — ROUND_SECONDS in histology/test
     accentBg: "bg-blue-50",
     accentText: "text-blue-600",
   },
@@ -44,10 +55,12 @@ const CATEGORIES = [
     gradient: "from-indigo-600 to-pink-500",
     lightBg: "from-indigo-50/80 to-pink-50/60",
     diffColor: "bg-indigo-50 text-indigo-700 border-indigo-200",
-    lessonCount: 8,
+    lessonCount: 15,
     topics: ["Benign Tumours", "Malignant Neoplasms", "Inflammation", "Cell Injury"],
-    lessonPath: "/spotting/pathology/lessons ",
+    // A trailing space here used to make this link 404.
+    lessonPath: "/spotting/pathology/lessons",
     testPath: "/spotting/pathology/test",
+    testNote: "Untimed test", // pathology/test has no round timer
     accentBg: "bg-indigo-50",
     accentText: "text-indigo-600",
   },
@@ -55,24 +68,28 @@ const CATEGORIES = [
     id: "powder-microscopy",
     title: "Powder Microscopy",
     subtitle: "Pharmacognostic powder analysis",
-    description: "Identify crude drug powders using characteristic diagnostic elements — trichomes, calcium oxalate crystals, starch grains, fibres, tracheids, and other microscopic markers.",
+    description: "Identify crude drug powders using characteristic diagnostic elements — stomata, trichomes, calcium oxalate crystals, fibres and stone cells.",
     Icon: Leaf,
     gradient: "from-emerald-600 to-cyan-400",
     lightBg: "from-emerald-50/80 to-cyan-50/60",
     diffColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    lessonCount: 8,
-    topics: ["Trichomes", "Starch Grains", "Crystals", "Fibres & Tracheids"],
+    lessonCount: 3,
+    // Topics match what the three lessons (senna, nux vomica, digitalis) teach.
+    topics: ["Stomata", "Trichomes", "Calcium Oxalate Crystals", "Fibres & Stone Cells"],
     lessonPath: "/spotting/powder-microscopy/lessons",
-    testPath: "/spotting/powder-microscopy/test",
+    // No test: the powder spot test has no slide photographs yet, so it is not
+    // advertised here (powder-microscopy/test explains that to direct visitors).
+    testPath: null,
+    testNote: null,
     accentBg: "bg-emerald-50",
     accentText: "text-emerald-600",
   },
 ];
 
 const STATS = [
-  { n: "24+",  l: "Total Lessons",  Icon: BookOpen   },
-  { n: "3",    l: "Categories",     Icon: Layers     },
-  { n: "3",    l: "Practice Tests", Icon: Trophy     },
+  { n: String(CATEGORIES.reduce((sum, c) => sum + c.lessonCount, 0)), l: "Total Lessons", Icon: BookOpen },
+  { n: String(CATEGORIES.length), l: "Categories", Icon: Layers },
+  { n: String(CATEGORIES.filter(c => c.testPath).length), l: "Practice Tests", Icon: Trophy },
   { n: "100%", l: "Free to Use",    Icon: Star       },
 ];
 
@@ -163,7 +180,7 @@ export default function SpottingHubPage() {
           </div>
           <div>
             <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">Choose a Category</h2>
-            <p className="text-sm text-gray-400 mt-0.5">Each category has dedicated annotated lessons and a competitive spot test</p>
+            <p className="text-sm text-gray-400 mt-0.5">Each category has annotated lessons; histology and pathology also have a spot test</p>
           </div>
           <div className="flex-1 h-px bg-gradient-to-r from-gray-200 to-transparent hidden sm:block" />
         </div>
@@ -199,10 +216,14 @@ export default function SpottingHubPage() {
                     <div className={`flex items-center gap-1.5 text-xs font-bold ${cat.accentText}`}>
                       <BookOpen className="w-3.5 h-3.5" /> {cat.lessonCount} lessons
                     </div>
-                    <span className="w-1 h-1 rounded-full bg-gray-300" />
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500">
-                      <Clock className="w-3.5 h-3.5" /> ~20 min test
-                    </div>
+                    {cat.testNote && (
+                      <>
+                        <span className="w-1 h-1 rounded-full bg-gray-300" />
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500">
+                          <Clock className="w-3.5 h-3.5" /> {cat.testNote}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -221,10 +242,12 @@ export default function SpottingHubPage() {
                 </div>
 
                 {/* CTA Buttons */}
-                <div className="mt-auto grid grid-cols-2 gap-3">
+                <div className={`mt-auto grid gap-3 ${cat.testPath ? "grid-cols-2" : "grid-cols-1"}`}>
                   {[
                     { href: cat.lessonPath, IcBtn: BookOpen, label: "Study Lessons", sub: "Annotated slides + notes" },
-                    { href: cat.testPath,   IcBtn: Trophy,   label: "Take Test",     sub: "Shuffled MCQ + scoring"  },
+                    ...(cat.testPath
+                      ? [{ href: cat.testPath, IcBtn: Trophy, label: "Take Test", sub: "Shuffled MCQ + scoring" }]
+                      : []),
                   ].map(({ href, IcBtn, label, sub }) => (
                     <Link key={href} href={href}
                       className="group relative flex flex-col gap-2 rounded-2xl border border-gray-200 bg-white p-4 hover:border-blue-300 hover:shadow-md transition-all duration-250 overflow-hidden">
@@ -245,6 +268,11 @@ export default function SpottingHubPage() {
               </div>
             </motion.div>
           ))}
+        </div>
+
+        {/* Ad after the categories (added 2026-09-23). Plain div (gotcha 29). */}
+        <div className="mt-12">
+          <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LIST} format="horizontal" className="min-h-[250px]" />
         </div>
 
         {/* ── Bottom CTA ── */}

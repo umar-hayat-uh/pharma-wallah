@@ -2,7 +2,6 @@
 
 import ClinicalHero from "./ClinicalHero";
 import ClinicalToolsSection from "./ClinicalToolsSection";
-import ClinicalDashboardPreview from "./ClinicalDashboardPreview";
 import ClinicalTrust from "./ClinicalTrust";
 import ClinicalWorkflow from "./ClinicalWorkflow";
 import ClinicalCTA from "./ClinicalCTA";
@@ -12,7 +11,9 @@ export default function ClinicalLandingPage() {
         <main className="bg-white min-h-screen">
             <ClinicalHero />
             <ClinicalToolsSection />
-            <ClinicalDashboardPreview />
+            {/* ClinicalDashboardPreview (a mock "integrated clinical environment"
+                with a fabricated patient profile) was removed: a mock-up of an
+                unbuilt product reads as vapourware. Recoverable from git. */}
             <ClinicalTrust />
             <ClinicalWorkflow />
             <ClinicalCTA />

@@ -50,15 +50,37 @@ every page's source — so it is *not* a secret and is hardcoded as the default.
 still come from env, so **Vercel needs every `NEXT_PUBLIC_ADSENSE_SLOT_*` set in the project
 settings** or production renders no ad units.
 
-### Current placements — 4 surfaces (the home landing has none, by decision, 2026-09-13)
+### Current placements (re-planned 2026-09-23: "4–5 on content pages", the user's choice)
 
-| Surface | File | Slot env var |
-| --- | --- | --- |
-| Calculator hub | `src/app/(site)/calculation-tools/HubCatalogue.tsx` | `_LIST` |
-| **Every calculator** | `src/app/(site)/calculation-tools/(tools)/layout.tsx` | `_CALCULATOR_FOOTER` |
-| Migrated calculators' `aside` | the tool page itself (the ones that pass `AdSlot` in `aside`) | `_CALCULATOR` |
-| Course subject listing | `src/app/(site)/courses/[subjectSlug]/page.tsx` | `_LIST` |
-| Course lesson | `src/components/course/UnitPageClient.tsx` | `_LESSON` |
+The user asked for 4–5 ads on every page; they chose the policy-safe reading — dense on pages
+with real content, none on thin/private/timed ones (list below). Counts are **measured** on a dev
+server (dev draws a placeholder per placement).
+
+| Surface | File | Slot env var | Ads per page |
+| --- | --- | --- | --- |
+| Course lesson — between sections | `src/components/course/UnitPageClient.tsx` + `src/lib/ads/split-for-ads.ts` | `_LESSON` | up to 4 (≥350 words apart, none in the last 150) |
+| Course lesson — end | same file | `_LESSON` | 1 → **3–5 per lesson in total** |
+| Calculator `aside` | each tool page | `_CALCULATOR` | 1 |
+| Calculator — before the FAQ | `CalcFaq` in `src/components/calculators/CalcAbout.tsx` (all 105 tools use it) | `_CALCULATOR_INLINE`, falls back to `_CALCULATOR` | 1 |
+| Calculator — footer band | `src/app/(site)/calculation-tools/(tools)/layout.tsx` | `_CALCULATOR_FOOTER` | 1 → **3 per calculator** |
+| Calculator hub | `src/app/(site)/calculation-tools/HubCatalogue.tsx` — top, then before subjects 4, 7, 10 | `_LIST` | **4** |
+| Histology lessons (template) | `src/components/spotting/HistologyLessonTemplate/index.tsx` | `_LESSON` | **3** |
+| Pathology lessons (15 pages) | each `spotting/pathology/*/page.tsx` | `_LESSON` | **3** |
+| Powder-microscopy lessons | the three `powder-microscopy/lessons/*/page.tsx` | `_LESSON` | **2** (short, image-less pages) |
+| Spotting hub | `src/app/(site)/spotting/page.tsx` | `_LIST` | 1 |
+| Flash cards | `src/app/(site)/flash-cards/page.tsx`, below the grid | `_LIST` | 1 |
+| Course subject listing | `src/app/(site)/courses/[subjectSlug]/page.tsx` | `_LIST` | 1 |
+
+Rules the placements follow — keep them when adding one:
+- **Never inside a `motion.*` or other animated/transformed container** (gotcha 29 — breaks
+  viewability). The spotting ads sit in plain `div`s between sections.
+- **Every `AdSlot` carries `data-html2canvas-ignore` and `print:hidden`**, so the lesson/lab PDF
+  exports and the print dialog never contain an ad, even where the ad sits inside the exported node.
+- The publisher ID lives in **`src/lib/adsense.ts`** (shared by the root layout and `AdSlot`). It
+  is `undefined` whenever `NEXT_PUBLIC_IS_MOBILE_APP=true`, so the literal is dead-code-eliminated
+  from the Android/iOS/desktop bundles — re-check with the `ca-pub` grep after touching it.
+- **`/encyclopedia` stays ad-free on purpose**: it shows DrugBank text verbatim, which is
+  "replicated content" under the Publisher Policies (Known Issue 16/22).
 
 ### Surfaces deliberately left ad-free
 
@@ -160,6 +182,18 @@ ls -l mobile/out/_next/static/css/*.css   # ~96 KB, not ~10 KB (gotcha 23)
 
 The env-var *name* `NEXT_PUBLIC_ADSENSE_CLIENT` does survive in the mobile bundle as a dead
 expression — that is fine and expected. Ad *markup*, the publisher ID, and the loader URL must not.
+
+## Site-quality review ("Low value content")
+
+AdSense rejected the site for thin content on 2026-09-23. What was wrong, and what keeps it fixed,
+is in `CLAUDE.md` §8 (2026-09-23) and MEMORY 162–167. Before any re-review, re-run the live crawl
+(it takes ~4 minutes) and check: every page has its own `<title>` and description, no internal
+404s, `robots.txt` and `sitemap.xml` return 200, canonicals are absolute www (also on
+`clinical.*`), and no rendered "Coming Soon", placeholder phone number, `href="#"` social link,
+template text or unverifiable superlative ("#1", "thousands of…"). A page an ad could land on
+must have real content — the Publisher Policies' "inventory value" rule excludes under-construction
+screens. The privacy policy must keep disclosing AdSense's third-party cookies and Google's opt-out
+links.
 
 ## Common Failure Modes
 

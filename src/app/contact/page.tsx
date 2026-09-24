@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
   Pill, FlaskConical, Beaker, Microscope, Stethoscope, Leaf,
-  Send, MapPin, Mail, Phone, Facebook, Twitter, Instagram, Linkedin,
-  CheckCircle, MessageSquare, Zap,
+  Send, MapPin, Mail, Instagram,
+  CheckCircle, AlertCircle, MessageSquare, Zap,
 } from "lucide-react";
 
 const bgIcons = [
@@ -33,20 +33,12 @@ const CONTACT_INFO = [
     iconBg: "bg-green-50", iconColor: "text-green-600",
     gradient: "from-green-500 to-teal-400",
   },
-  {
-    Icon: Phone, label: "Phone",
-    value: "+92 123 4567890",
-    href: "tel:+921234567890",
-    iconBg: "bg-purple-50", iconColor: "text-purple-600",
-    gradient: "from-purple-500 to-blue-500",
-  },
 ];
 
+// Only channels that exist. A placeholder phone number (+92 123 4567890) and
+// three social icons linking to "#" were removed on 2026-09-23.
 const SOCIALS = [
-  { Icon: Facebook,  href: "#", bg: "bg-blue-50 hover:bg-blue-100",  color: "text-blue-600"  },
-  { Icon: Twitter,   href: "#", bg: "bg-sky-50 hover:bg-sky-100",    color: "text-sky-500"   },
-  { Icon: Instagram, href: "#", bg: "bg-pink-50 hover:bg-pink-100",  color: "text-pink-600"  },
-  { Icon: Linkedin,  href: "#", bg: "bg-blue-50 hover:bg-blue-100",  color: "text-blue-700"  },
+  { Icon: Instagram, label: "PharmaWallah on Instagram", href: "https://www.instagram.com/pharmawallah_com/", bg: "bg-pink-50 hover:bg-pink-100", color: "text-pink-600" },
 ];
 
 const inputCls = "w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm text-gray-800 placeholder:text-gray-400 bg-white transition-all duration-200";
@@ -54,19 +46,33 @@ const inputCls = "w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:bo
 export default function ContactPage() {
   const [form, setForm]         = useState({ name: "", email: "", subject: "", message: "" });
   const [submitting, setSub]    = useState(false);
-  const [status, setStatus]     = useState<"idle" | "success">("idle");
+  const [status, setStatus]     = useState<"idle" | "success" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  const onSubmit = (e: React.FormEvent) => {
+  // Until 2026-09-23 this faked success after a timeout and sent nothing.
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSub(true);
-    setTimeout(() => {
-      setSub(false); setStatus("success");
+    setStatus("idle");
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "We couldn't send your message.");
+      setStatus("success");
       setForm({ name: "", email: "", subject: "", message: "" });
-      setTimeout(() => setStatus("idle"), 5000);
-    }, 1200);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "We couldn't send your message.");
+      setStatus("error");
+    } finally {
+      setSub(false);
+    }
   };
 
   return (
@@ -145,8 +151,9 @@ export default function ContactPage() {
               <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 to-green-400" />
               <p className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400 mb-4">Follow Us</p>
               <div className="flex gap-3">
-                {SOCIALS.map(({ Icon, href, bg, color }, i) => (
-                  <a key={i} href={href}
+                {SOCIALS.map(({ Icon, label, href, bg, color }) => (
+                  <a key={label} href={href} aria-label={label}
+                    target="_blank" rel="noopener noreferrer"
                     className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center transition-all duration-200 hover:-translate-y-0.5`}>
                     <Icon className={`w-4 h-4 ${color}`} />
                   </a>
@@ -157,10 +164,9 @@ export default function ContactPage() {
             {/* Response time note */}
             <div className="relative rounded-2xl border border-blue-100 bg-blue-50/60 p-5 overflow-hidden">
               <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 to-green-400" />
-              <p className="text-xs font-extrabold uppercase tracking-widest text-blue-600 mb-1">Response Time</p>
+              <p className="text-xs font-extrabold uppercase tracking-widest text-blue-600 mb-1">How we reply</p>
               <p className="text-sm text-gray-700 leading-relaxed">
-                We typically respond within <span className="font-bold text-blue-700">24 hours</span> on weekdays.
-                For urgent matters, email us directly.
+                Every message is read by the team, and we reply by email to the address you give.
               </p>
             </div>
           </motion.div>
@@ -184,7 +190,17 @@ export default function ContactPage() {
                       <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-green-500 to-teal-400" />
                       <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
                       <p className="text-sm font-semibold text-green-700">
-                        Message sent! We'll get back to you within 24 hours.
+                        Message sent. We'll reply to the email address you gave.
+                      </p>
+                    </motion.div>
+                  )}
+                  {status === "error" && (
+                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                      role="alert"
+                      className="relative flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 mb-6 overflow-hidden">
+                      <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                      <p className="text-sm font-semibold text-red-700">
+                        {errorMsg} You can also write to support@pharmawallah.com.
                       </p>
                     </motion.div>
                   )}
@@ -194,25 +210,25 @@ export default function ContactPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                       <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Full Name *</label>
-                      <input type="text" name="name" required value={form.name} onChange={onChange}
+                      <input type="text" name="name" required maxLength={100} value={form.name} onChange={onChange}
                         placeholder="Your name" className={inputCls} />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Email *</label>
-                      <input type="email" name="email" required value={form.email} onChange={onChange}
+                      <input type="email" name="email" required maxLength={200} value={form.email} onChange={onChange}
                         placeholder="you@example.com" className={inputCls} />
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Subject *</label>
-                    <input type="text" name="subject" required value={form.subject} onChange={onChange}
+                    <input type="text" name="subject" required maxLength={150} value={form.subject} onChange={onChange}
                       placeholder="What's this about?" className={inputCls} />
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Message *</label>
-                    <textarea name="message" required rows={5} value={form.message} onChange={onChange}
+                    <textarea name="message" required rows={5} maxLength={5000} value={form.message} onChange={onChange}
                       placeholder="Tell us how we can help…"
                       className={`${inputCls} resize-none`} />
                   </div>

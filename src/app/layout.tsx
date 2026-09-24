@@ -9,6 +9,16 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import Script from "next/script";
 import AppShell from "@/components/AppShell";
 import ServiceWorkerCleanup from "@/components/ServiceWorkerCleanup";
+import {
+  SITE_URL,
+  SITE_NAME,
+  DEFAULT_TITLE,
+  DEFAULT_DESCRIPTION,
+  metaForPath,
+  canonicalFor,
+} from "@/lib/seo";
+import { mcqLookup } from "@/lib/mcq-availability";
+import { ADSENSE_CLIENT } from "@/lib/adsense";
 
 /*
  * Outfit is the single typeface for the whole product. It is a variable font on
@@ -26,50 +36,55 @@ const font = Outfit({
   variable: "--font-outfit",
 });
 
-/*
- * The AdSense publisher ID.
- *
- * Hardcoded, with an env override, deliberately. It is a *public* identifier —
- * it is served to every visitor in the page source and in /ads.txt — so it is
- * not a secret. Keeping it only in `.env` (which is gitignored) meant Vercel
- * never received it, so the deployed site carried no AdSense code at all and
- * AdSense answered "Couldn't verify your site". Both site verification and
- * Auto ads need the snippet on the LIVE site, so the default must not depend
- * on someone remembering to set a dashboard variable.
- *
- * Ad *units* are still env-gated — see src/components/calculators/AdSlot.tsx.
- */
-const ADSENSE_CLIENT =
-  process.env.NEXT_PUBLIC_ADSENSE_CLIENT || "ca-pub-9553986083846603";
+// The publisher ID — see src/lib/adsense.ts for why it is hardcoded. This root
+// layout is never part of the packaged apps (they have their own project roots),
+// so here it is always defined.
+const PUBLISHER_ID = ADSENSE_CLIENT!;
 
-/* ── Dynamic metadata based on subdomain ─────────────────────────────────── */
+
+/* ── Metadata: per page, per host ─────────────────────────────────────────
+ *
+ * Most pages are client components and cannot export metadata, so this layout
+ * supplies it from the request path (set as `x-pathname` by middleware) — see
+ * src/lib/seo.ts for why. Any page or layout that exports its own metadata
+ * overrides these fields.
+ *
+ * `metadataBase` makes every relative canonical and OG URL resolve to www, on
+ * both hosts. Without it the handful of pages that set `alternates.canonical`
+ * pointed the clinical subdomain's copy of the site at itself.
+ */
 export async function generateMetadata(): Promise<Metadata> {
   const headersList = await headers();
-  const subdomain = headersList.get("x-subdomain");
+  const isClinical = headersList.get("x-subdomain") === "clinical";
+  const path = headersList.get("x-pathname") || "/";
 
-  if (subdomain === "clinical") {
-    return {
-      title: "PharmaWallah Clinical | Clinical Pharmacy Tools",
-      description:
-        "Clinical pharmacy tools, medication resources, calculators, interaction checking and practical decision-support resources from PharmaWallah.",
-      openGraph: {
-        title: "PharmaWallah Clinical | Clinical Pharmacy Tools",
-        description:
-          "Clinical pharmacy tools, medication resources, calculators, interaction checking and practical decision-support resources from PharmaWallah.",
-        siteName: "PharmaWallah Clinical",
-        type: "website",
-      },
-      // AdSense's meta-tag verification method. A second, independent way for
-      // the crawler to recognise the site, in case it cannot execute or reach
-      // the loader script.
-      other: { "google-adsense-account": ADSENSE_CLIENT },
-    };
-  }
+  // The clinical subdomain's home page is the clinical landing (same content
+  // as www /clinical); every other path on that host is the main site.
+  const lookupPath = isClinical && path === "/" ? "/clinical" : path;
+  const page = metaForPath(lookupPath, mcqLookup);
+
+  const title = page?.title ?? DEFAULT_TITLE;
+  const description = page?.description ?? DEFAULT_DESCRIPTION;
+  const canonical = canonicalFor(page?.canonicalPath ?? path, isClinical);
 
   return {
-    title: "PharmaWallah",
-    description: "AI-powered pharmacy platform",
-    other: { "google-adsense-account": ADSENSE_CLIENT },
+    metadataBase: new URL(SITE_URL),
+    title,
+    description,
+    alternates: { canonical },
+    robots: page?.noindex ? { index: false, follow: true } : undefined,
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      siteName: SITE_NAME,
+      type: "website",
+      locale: "en_PK",
+    },
+    // AdSense's meta-tag verification method. A second, independent way for
+    // the crawler to recognise the site, in case it cannot execute or reach
+    // the loader script.
+    other: { "google-adsense-account": PUBLISHER_ID },
   };
 }
 
@@ -117,7 +132,7 @@ export default async function RootLayout({
           async
           strategy="beforeInteractive"
           crossOrigin="anonymous"
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${PUBLISHER_ID}`}
         />
       </body>
     </html>

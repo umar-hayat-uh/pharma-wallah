@@ -74,7 +74,10 @@ export default function DrugDrugInteractionPage() {
   const [activeInput, setActiveInput] = useState<"drug1" | "drug2" | "multi" | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [stats, setStats] = useState({ total: 300, low: 75, moderate: 125, high: 100 });
+  // Starts empty and is filled from the database (countDocuments in the API).
+  // It used to start at a typed 300/75/125/100, which rendered as fact before
+  // the fetch returned and stayed on screen if it failed.
+  const [stats, setStats] = useState<{ total: number; low: number; moderate: number; high: number } | null>(null);
   const [samplePairs, setSamplePairs] = useState<Array<{ drugA: string; drugB: string; severity: DDISeverity }>>([]);
 
   // Fetch initial stats and examples from MongoDB API
@@ -192,7 +195,7 @@ export default function DrugDrugInteractionPage() {
                   Drug–Drug Interaction Checker
                 </h1>
                 <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                  Prototype DDI Database
+                  Curated database
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-slate-500 font-normal">
@@ -231,34 +234,34 @@ export default function DrugDrugInteractionPage() {
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
-        {/* Prototype Stats Bar */}
+        {/* Database stats bar — every figure is counted by the API */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
             <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-              Prototype Database
+              Curated Database
             </div>
-            <div className="text-xl font-bold text-slate-900 mt-0.5">{stats.total}</div>
-            <div className="text-[11px] text-slate-400">Curated Records in MongoDB</div>
+            <div className="text-xl font-bold text-slate-900 mt-0.5">{stats ? stats.total.toLocaleString() : "—"}</div>
+            <div className="text-[11px] text-slate-400">Interaction records</div>
           </div>
           <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
             <div className="text-[11px] font-semibold text-red-600 uppercase tracking-wider">
               High Severity
             </div>
-            <div className="text-xl font-bold text-red-700 mt-0.5">{stats.high}</div>
+            <div className="text-xl font-bold text-red-700 mt-0.5">{stats ? stats.high.toLocaleString() : "—"}</div>
             <div className="text-[11px] text-slate-400">Critical / Avoid</div>
           </div>
           <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
             <div className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider">
               Moderate
             </div>
-            <div className="text-xl font-bold text-amber-700 mt-0.5">{stats.moderate}</div>
+            <div className="text-xl font-bold text-amber-700 mt-0.5">{stats ? stats.moderate.toLocaleString() : "—"}</div>
             <div className="text-[11px] text-slate-400">Monitor / Adjust</div>
           </div>
           <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
             <div className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">
               Low Severity
             </div>
-            <div className="text-xl font-bold text-emerald-700 mt-0.5">{stats.low}</div>
+            <div className="text-xl font-bold text-emerald-700 mt-0.5">{stats ? stats.low.toLocaleString() : "—"}</div>
             <div className="text-[11px] text-slate-400">Minor / Informational</div>
           </div>
         </div>
@@ -448,7 +451,7 @@ export default function DrugDrugInteractionPage() {
                   <h3 className="text-base font-bold text-slate-800 mb-1">
                     {pairResult.isSameDrug
                       ? "Same Medication Selected"
-                      : "No Interaction Found in Prototype"}
+                      : "No Interaction Found in This Database"}
                   </h3>
                   <p className="text-xs text-slate-600 max-w-lg mx-auto leading-relaxed">
                     {pairResult.message}
@@ -561,7 +564,7 @@ export default function DrugDrugInteractionPage() {
                   {multiSummary.interactionsFound.length === 0 ? (
                     <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center">
                       <p className="text-sm font-semibold text-slate-700">
-                        No interactions found among the selected medications in this prototype database.
+                        No interactions found among the selected medications in this curated database.
                       </p>
                     </div>
                   ) : (
@@ -598,15 +601,15 @@ export default function DrugDrugInteractionPage() {
           </div>
         )}
 
-        {/* Prototype Clinical Notice */}
+        {/* Clinical information notice */}
         <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
           <div className="flex items-start gap-3.5">
             <ShieldAlert className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
             <div className="text-xs text-slate-600 leading-relaxed">
               <strong className="text-slate-800 font-semibold block mb-0.5">
-                Prototype Clinical Information Notice
+                Clinical Information Notice
               </strong>
-              This Drug–Drug Interaction Checker uses a limited curated prototype database of 300 interaction pairs fetched from MongoDB. It is intended for educational, demonstration, and software-development purposes and is not a comprehensive clinical interaction database. Failure to identify an interaction does not mean that no interaction exists. Always verify clinically significant interactions using an appropriate authoritative drug-information resource and apply professional clinical judgment before making treatment decisions.
+              This Drug–Drug Interaction Checker uses a limited, curated database{stats ? ` of ${stats.total.toLocaleString()} interaction pairs` : ""}. It is intended for educational purposes and is not a comprehensive clinical interaction database. Failure to identify an interaction does not mean that no interaction exists. Always verify clinically significant interactions using an appropriate authoritative drug-information resource and apply professional clinical judgment before making treatment decisions.
             </div>
           </div>
         </section>

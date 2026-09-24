@@ -13,7 +13,6 @@ import {
   Pill,
   Search,
   Sparkles,
-  ArrowRight,
   X,
   Utensils,
 } from "lucide-react";
@@ -34,7 +33,6 @@ interface Tool {
   description: string;
   category: Category;
   featured?: boolean;
-  comingSoon?: boolean;
 }
 
 const tools: Tool[] = [
@@ -97,7 +95,7 @@ const tools: Tool[] = [
     title: "Dose & Therapy Tools",
     icon: <Syringe className="w-6 h-6" />,
     color: "teal",
-    href: "/clinical/calculators",
+    href: "/clinical/dose-calculators",
     category: "clinical",
     featured: true,
     description:
@@ -112,7 +110,7 @@ const tools: Tool[] = [
     category: "laboratory",
     featured: true,
     description:
-      "Search standardized laboratory and clinical observation terminology using LOINC.",
+      "Look up known food and drink interactions for a medicine, or search by food.",
   },
 
 
@@ -126,16 +124,9 @@ const tools: Tool[] = [
       "Explore medication information including indications, dosing and precautions.",
   },
 
-  {
-    title: "Clinical Guidelines",
-    icon: <BookOpen className="w-6 h-6" />,
-    color: "violet",
-    href: "/clinical/resources/pubmed",
-    category: "clinical",
-    description:
-      "Access organized clinical guideline resources for pharmacy practice.",
-    comingSoon: true,
-  },
+  // A "Clinical Guidelines" card (comingSoon) used to sit here, linking to the
+  // PubMed search. It was removed: an unfinished card reads as vapourware, and
+  // PubMed is already reachable from /clinical/resources.
 ];
 
 export default function ClinicalToolsSection() {
@@ -352,51 +343,9 @@ export default function ClinicalToolsSection() {
           )}
         </div>
 
-        {/* CTA */}
-        <motion.div
-          initial={{
-            opacity: 0,
-            y: 20,
-          }}
-          whileInView={{
-            opacity: 1,
-            y: 0,
-          }}
-          viewport={{
-            once: true,
-          }}
-          className="mt-16 overflow-hidden rounded-3xl bg-slate-950"
-        >
-          <div className="relative px-6 py-10 sm:px-10">
-            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-blue-600/20 blur-3xl" />
-
-            <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold text-blue-400">
-                  PharmaWallah Clinical
-                </p>
-
-                <h3 className="mt-2 text-2xl font-bold text-white">
-                  More clinical features are coming.
-                </h3>
-
-                <p className="mt-2 max-w-xl text-sm leading-6 text-slate-400">
-                  We are continuously expanding PharmaWallah
-                  Clinical with more clinical decision-support,
-                  laboratory and medication resources.
-                </p>
-              </div>
-
-              <a
-                href="/clinical"
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
-              >
-                Explore Clinical
-                <ArrowRight className="h-4 w-4" />
-              </a>
-            </div>
-          </div>
-        </motion.div>
+        {/* A "More clinical features are coming" teaser used to sit here,
+            linking back to this same page. Removed: it promised unbuilt work
+            and added no path anywhere. */}
 
         {/* DISCLAIMER */}
         <div className="mt-8 text-center">

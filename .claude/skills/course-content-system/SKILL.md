@@ -25,7 +25,7 @@ src/lib/courses/
   content.ts        markdown loading
   subjects/         14 files — only 4 are registered
 src/actions/lesson.ts        "use server" — reads a .md file from disk, converts to HTML
-public/content/<subject>/<unit>.md     69 lesson files, already deployed
+content/<subject>/<unit>.md     69 lesson files, read server-side only (not publicly served)
 src/content/<semester>/<subject>/*.md  a second, smaller tree used by src/actions/lesson.ts
 ```
 
@@ -45,7 +45,7 @@ The nine are: `advanced-pharmacognosy-data`, `hospital-pharmacy-data`, `industri
 `industrial-pharmacy-2-data`, `natural-toxins-data`, `organic-chemistry-data`,
 `pharmaceutical-analysis-data`, `pharmaceutical-technology-data`, `systemic-pharmacology-3-data`.
 
-**Their markdown already ships in `public/content/`** — the content is written and deployed; only
+**Their markdown is already in `content/`** — the content is written; only
 the wiring is missing. This is `ROADMAP.md`'s Recommended Next Feature.
 
 ## Procedure
@@ -73,7 +73,7 @@ whole path end to end before converting the nine.
    - each `*Units` entry → a `CourseUnit`: `id` (the URL slug), `title`, `shortTitle`,
      `description`, `emoji`, `gradient`, `readTime`, `difficulty`, optional `previewImage`, and
      **`contentFile`**
-3. `contentFile` is the path **relative to `public/content`**, e.g.
+3. `contentFile` is the path **relative to `content/`**, e.g.
    `"natural-toxins/unit2-higher-plant-toxins.md"`. Confirm the file exists.
 4. `semesterSlug` must equal `semesterToSlug(semester)` from `src/lib/mcq-utils.ts`
    (`"Semester 6"` → `"semester-6"`). `getSemesters()` groups by it, so a mismatch splits a
@@ -84,7 +84,7 @@ whole path end to end before converting the nine.
 
 ### Adding a unit to an existing subject
 Append a `CourseUnit` to that subject's `units` array and add the markdown under
-`public/content/<subject>/`. Order in the array **is** the prev/next order.
+`content/<subject>/`. Order in the array **is** the prev/next order.
 
 ### Lesson markdown
 - `src/actions/lesson.ts` (`"use server"`) reads
@@ -98,7 +98,7 @@ Append a `CourseUnit` to that subject's `units` array and add the markdown under
 ## Files Usually Involved
 - `src/lib/courses/{registry,types,content}.ts`, `src/lib/courses/subjects/*.ts`
 - `src/actions/lesson.ts`, `src/utils/markdownToHtml.ts`, `src/lib/mcq-utils.ts`
-- `public/content/<subject>/*.md`, `src/content/`
+- `content/<subject>/*.md`, `src/content/`
 - `src/app/(site)/courses/[subjectSlug]/[unit]/page.tsx`
 - `src/components/UnitTracker.tsx`, `src/components/dashboard/dashboard-shared.ts` (subject labels)
 
@@ -116,7 +116,7 @@ Before claiming a subject is registered:
 # every contentFile must resolve
 grep -oE 'contentFile: "[^"]+"' src/lib/courses/subjects/<file>.ts \
   | sed 's|contentFile: "||;s|"$||' \
-  | while read f; do [ -f "public/content/$f" ] && echo "OK  $f" || echo "MISS $f"; done
+  | while read f; do [ -f "content/$f" ] && echo "OK  $f" || echo "MISS $f"; done
 
 # slug consistency
 grep -n "slug\|semesterSlug\|semester" src/lib/courses/subjects/<file>.ts | head
@@ -145,12 +145,12 @@ confirm the markdown renders (a missing file throws at runtime, not at build) �
 - **Deleting a `*-data.ts` before checking importers.**
 - **Forgetting the subject label** in `src/components/UnitTracker.tsx` and
   `src/components/dashboard/dashboard-shared.ts`, so the dashboard shows a raw slug.
-- **Confusing the two content trees** — `public/content/` (registry `contentFile`) vs
+- **Confusing the two content trees** — `content/` (registry `contentFile`) vs
   `src/content/` (`src/actions/lesson.ts`).
 
 ## Do Not
 - Do not restructure `SubjectMeta` to accommodate the old triplet shape — convert the data instead.
-- Do not delete `public/content/` markdown; it is the asset the whole task exists to surface.
+- Do not delete `content/` markdown; it is the asset the whole task exists to surface.
 - Do not rename an existing subject `slug` or unit `id` — both are live URLs.
 
 ## Update Project Knowledge

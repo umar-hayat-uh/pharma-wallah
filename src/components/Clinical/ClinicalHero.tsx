@@ -60,7 +60,7 @@ export default function ClinicalHero() {
 
                         <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
                             <Link
-                                href="#tools"
+                                href="#features"
                                 className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-gradient-to-r from-[#1C7BD9] to-teal-500 text-white font-bold text-sm shadow-lg shadow-[#1C7BD9]/20 hover:shadow-xl hover:shadow-[#1C7BD9]/30 transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 group"
                             >
                                 Explore Clinical Tools
@@ -125,13 +125,11 @@ export default function ClinicalHero() {
                                     <div className="w-3 h-3 rounded-full bg-amber-500/80" />
                                     <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="relative flex h-2 w-2">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                    </span>
-                                    <span className="text-xs font-medium text-slate-300">Clinical Workspace • Live</span>
-                                </div>
+                                {/* This panel is an illustration, not a product. It used to say
+                                    "Clinical Workspace • Live" with "Monitoring: Active" and a
+                                    risk score — features that do not exist — so it is labelled
+                                    as an example instead. */}
+                                <span className="text-xs font-medium text-slate-300">Example interaction check</span>
                                 <div className="w-12" /> {/* Spacer for centering */}
                             </div>
 
@@ -180,17 +178,9 @@ export default function ClinicalHero() {
                                 </div>
                             </div>
 
-                            {/* Bottom Metrics Bar */}
-                            <div className="bg-slate-800/80 px-4 py-3 flex items-center justify-between text-[11px] font-medium text-slate-400 border-t border-slate-700">
-                                <div className="flex items-center gap-1.5">
-                                    <span className="text-amber-400">●</span> Risk Score: 3/10
-                                </div>
-                                <div>
-                                    Monitoring: Active
-                                </div>
-                                <div>
-                                    Last Updated: Just now
-                                </div>
+                            {/* Bottom caption (replaces a fake risk-score / monitoring bar) */}
+                            <div className="bg-slate-800/80 px-4 py-3 text-[11px] font-medium text-slate-400 border-t border-slate-700">
+                                Illustrative example, not patient data.
                             </div>
 
                         </motion.div>

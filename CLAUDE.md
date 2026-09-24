@@ -68,6 +68,7 @@ node --test scripts/molecular-lab.test.mts                             # 21 unit
 node --test scripts/community.test.mts                                 # 19 unit tests, community pure layer
 node --test scripts/ai-guide.test.mts                                  # 34 unit tests, AI Guide pure layer
 node --test scripts/dissolution-rate.test.mts                          # 28 unit tests, Dissolution Rate Constant
+node --test scripts/split-for-ads.test.mts                             # 6 unit tests, lesson ad spacing
 node scripts/build-molecule-library.mts   # regenerate the Molecular Lab library from PubChem (network)
 ```
 
@@ -197,7 +198,7 @@ Google **Gemini** powers the chat tutor, prescription reader, histology evaluati
 counting. **Resend** sends the contact form email.
 
 ### Content
-Course lesson prose is **markdown on disk** in `public/content/<subject>/<unit>.md` (69 files),
+Course lesson prose is **markdown on disk** in `content/<subject>/<unit>.md` (69 files; repo root, **not** `public/` — server-read only since 2026-09-23),
 plus a smaller `src/content/` tree. Subject/unit metadata is **TypeScript**, in
 `src/lib/courses/subjects/`, registered through `src/lib/courses/registry.ts`.
 
@@ -290,6 +291,17 @@ These are conventions **observed in the code**, not aspirations.
   and `ListAgents`, and announce which shared files you are taking, before editing one.
 
 ### Recently Completed
+- **Ads: 3–5 per content page, lesson files no longer public (2026-09-23/24)** — see the §8
+  entry. Lessons 3–5, calculators 3, hub 4, spotting lessons 2–3; thin pages none. Every lesson
+  with inline code was failing to hydrate (react-markdown 10) — fixed. **Not deployed.**
+- **AdSense "Low value content" rejection addressed in code (2026-09-23)** — every page now has
+  its own title, description and absolute www canonical (173 of 216 live pages shared one title);
+  `robots.txt` and `sitemap.xml` exist (217 URLs, derived); the clinical subdomain's duplicate copy
+  of the site canonicalises to www; 9 broken internal links fixed; fake phone numbers, `#` social
+  links, "Coming Soon" MCQ cards, the template's `/documentation` page and the duplicate `/mentor`
+  page removed; the contact and careers forms actually send now; FAQ and privacy policy rewritten
+  to be true; inflated figures corrected; the community feed (broken in production by a PostgREST
+  ambiguity) fixed. **Not yet deployed. Owner steps remain** — see the §8 entry.
 - **iOS app target added (2026-09-22)** — `ios/`, a Capacitor 8 Xcode project wrapping the *same*
   `mobile/out` bundle the APK wraps: 105 calculators, no login, no API, no account. Scaffolded and
   synced **on Linux** (Capacitor 8 uses SPM, not CocoaPods); brand icon and Outfit-set launch
@@ -451,12 +463,12 @@ These are conventions **observed in the code**, not aspirations.
 
 ### Partially Implemented
 - **Course catalogue (largest gap).** `src/lib/courses/registry.ts` registers **4 subjects**, but
-  `src/lib/courses/subjects/` holds **14 files** and `public/content/` holds markdown for **10+
+  `src/lib/courses/subjects/` holds **14 files** and `content/` holds markdown for **10+
   subjects**. Nine subject files are dead code *and use a different data shape* (`*_META` +
   `*Units` + `*_DIFF_BADGE`) than the registry's `SubjectMeta` interface. A tenth,
   `natural-toxins.ts`, *is* in `SubjectMeta` shape but is still not registered.
 - **Calculation tools hub.** 105 tool directories exist; `HUB_SUBJECTS` in
-  `src/app/(site)/calculation-tools/tool-index.ts` lists **99** across 10 categories (re-counted
+  `src/app/(site)/calculation-tools/tool-index.ts` lists **94 unique tools** (99 entries — five tools appear under two subjects, MEMORY 165; corrected 2026-09-23) across 10 categories (re-counted
   2026-09-22 by parsing the file: Pharmaceutical Chemistry 16, Clinical & Hospital Pharmacy 18,
   Pharmaceutics **17**, Biopharmaceutics & PK 14, Pharmaceutical Analysis 10, Unit Conversion 6,
   Pharmacology 6, Microbiology 6, Pharmaceutical Engineering 4, Physiology 2 — Pharmaceutics gained
@@ -478,10 +490,23 @@ These are conventions **observed in the code**, not aspirations.
 
 ### Next Recommended
 **Register the remaining course subjects.** See `.claude/ROADMAP.md` for the reasoning and the
-exact steps — the content is already written and shipped in `public/content/`, so this converts
+exact steps — the content is already written and sits in `content/`, so this converts
 existing dead assets into working pages at the lowest risk-per-value ratio in the repo.
 
 ### Known Issues
+22. **AdSense re-review needs owner steps the code cannot do (2026-09-23).** (a) Deploy. (b) The
+    apex `pharmawallah.com` → www redirect is a **307** (temporary) and `http://pharmawallah.com`
+    takes two hops — set www as primary with a permanent redirect in **Vercel → Domains**.
+    (c) Submit `https://www.pharmawallah.com/sitemap.xml` in Google Search Console and wait for a
+    recrawl before requesting review. (d) **Replicated content** (Publisher Policies): `/encyclopedia`
+    and `/clinical/encyclopedia` show DrugBank's text verbatim (Known Issue 16), . ~~The unregistered
+    subjects' markdown under `public/content/` was publicly served~~ — **fixed 2026-09-23**: moved
+    to `content/`, no longer reachable (at the user's direction). (e) "Consistent presence" and "user interest" are traffic and site-age
+    signals; no code change moves them.
+23. **Powder microscopy has no images at all** — `public/images/spotting/powder/` never existed.
+    Since 2026-09-23 the three text lessons render without images, the five lessons that had no
+    page are gone from the index, and the test is replaced by a "being rebuilt" notice (noindexed).
+    Needs real slide photographs.
 21. **The iOS app compiles, but has never been *run* or installed.** ✅ 2026-09-22: the
     `.github/workflows/ios-app.yml` job went green on `macos-latest` — Simulator (Debug) **and**
     the arm64 device slice (Release, unsigned) both built, in 5m22s, with the offline bundle inside
@@ -552,7 +577,8 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 12. **Radix `NavigationMenuViewportItem` is not a `forwardRef` component**, so React 18 logs
     "Function components cannot be given refs" once per mega-menu open in development. It is a
     library-internal warning, harmless, and not fixable from this repo.
-13. **Footer placeholders.** The footer's phone number (`+92 300 1234567`) looks like a placeholder
+13. ~~Footer placeholders~~ **Fixed 2026-09-23**: phone removed, only the real Instagram link kept.
+    Original note: the footer's phone number (`+92 300 1234567`) looks like a placeholder
     and all four social links point at `#`. Both were carried over unchanged in the 2026-09-13
     footer redesign — they need real values from the owner. The old footer's "Weekly Updates" email
     box had **no submit handler** (typing an address did nothing); it was removed rather than
@@ -664,6 +690,198 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 
 > Newest first. Never paste source code here. Archive entries older than ~10 into
 > `.claude/history/YYYY-MM.md`.
+
+### 2026-09-23/24 — Lesson files out of `public/`; 3–5 ads per content page (continuation)
+
+Session `pharma-wallah-b5`, "follow protocol — yesterday got cut off, pick it up and finish". The
+2026-09-23 session below got two more requests after its report and was cut off mid-verification
+(its `npm run mobile:build` was killed, exit 137). The code was already written; this session
+reconstructed the plan from that transcript, verified it, fixed one defect it exposed, and synced
+the docs.
+
+**The two requests** (user, 2026-09-23): *"these files are like the content lessons so no need to
+show them"* (the `public/content/` markdown), and *"every page should show at least 4–5 ads"*.
+Asked how, the user chose **"4–5 on content pages"**: dense on pages with real content, none on
+sign-in, dashboard, 404, timed tests, tournament, simulations and AI tools, which Google's policy
+forbids ads on and which the review is judged against.
+
+**Completed**
+- **`public/content/` → `content/`** (69 files, `git mv`, staged). The markdown is no longer served
+  raw at `/content/…` (verified 404), which removes both the unstyled duplicates of every lesson
+  and the publicly reachable textbook-derived drafts for the ten unregistered subjects. Lessons
+  still render: `src/lib/courses/content.ts` reads from the new root, and Next's file tracing
+  bundles all 69 into the unit route. The visitor-facing "Place `public/content/…`" message on a
+  missing lesson now says "This lesson isn't available right now".
+- **Ad placements** (full table in the `adsense-monetization` skill), measured on a dev server:
+  course lessons **3–5** (22/22 published units checked), calculators **3**, the calculator hub
+  **4**, histology and pathology lessons **3**, powder-microscopy lessons **2**, the spotting hub,
+  flash cards and course subject listings **1**; `/signin` and `/encyclopedia` **0**.
+- **In-content lesson ads are spaced by word count, not by position.** New pure
+  `src/lib/ads/split-for-ads.ts` cuts the markdown only at `##`/`###` headings outside fenced
+  code, at most 4 times, at least 350 words apart and never in the last 150 words, so ads never
+  outnumber content. On a 21,000 px lesson the 5 ads land ~4,000 px apart.
+- **`src/lib/adsense.ts`**: the publisher ID in one place. `AdSlot` used to read only
+  `NEXT_PUBLIC_ADSENSE_CLIENT`, so **no ad unit could render in production unless that variable
+  was also set in Vercel** even with slot IDs filled in; it now shares the layout's hardcoded
+  default. It is `undefined` in the packaged apps, so the literal never reaches them.
+- **Ads never reach a student's PDF or printout**: every `AdSlot` carries
+  `data-html2canvas-ignore` and `print:hidden`.
+- **Fixed (pre-existing, found while verifying): every lesson with inline code failed to
+  hydrate.** react-markdown 10 does not pass `inline` to the `code` renderer, so each
+  `` `-NH₂` `` rendered as a dark `<pre>` block inside a `<p>` (MEMORY 169). Now `pre` owns the
+  block style and `code` is an inline chip. This mattered twice over: the pages were visibly wrong,
+  and a hydration failure re-renders the whole tree, including freshly placed ads.
+
+**Files**
+- Moved: `public/content/**` → `content/**` (69). New: `src/lib/adsense.ts`,
+  `src/lib/ads/split-for-ads.ts`, `scripts/split-for-ads.test.mts`.
+- Edited: `src/lib/courses/{content,types}.ts`, `src/components/course/{UnitPageClient,MarkdownRenderer}.tsx`,
+  `src/components/calculators/{AdSlot,CalcAbout}.tsx`, `src/app/layout.tsx`, `src/app/robots.ts`
+  (comment), `HubCatalogue.tsx`, `HistologyLessonTemplate/index.tsx`, the 15 pathology lesson
+  pages, the 3 powder lessons, `spotting/page.tsx`, `flash-cards/page.tsx`.
+- Knowledge: this file (§5, §7, §9), `.claude/{MEMORY (168–170), PROJECT_MAP, ROADMAP,
+  redesign-tracker}.md`, skills `adsense-monetization`, `course-content-system`, `roadmap-status`.
+
+**Architecture & Decisions**
+- **One new, optional slot variable**: `NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR_INLINE`, falling back to
+  `_CALCULATOR`, so no extra ad unit has to be created unless separate reporting is wanted.
+- **`/encyclopedia` got no ads, deliberately** — its DrugBank text is the replicated content the
+  Publisher Policies name (Known Issue 16/22).
+- **Flash cards get one ad, below the grid**: the grid is inside animated containers, where an ad
+  breaks viewability (gotcha 29).
+
+**Verification**
+- `npx tsc --noEmit` → **0 errors**. `node --test scripts/split-for-ads.test.mts` → **6 pass**
+  (including a lossless split of all 69 real lesson files); community 19 and AI Guide 34 still pass.
+- `npm run build` (isolated copy) → **exit 0**, shared JS **88.6 kB**, middleware **81.9 kB**
+  (both unchanged); lesson route 271 kB first load.
+- `npm run mobile:build` → **exit 0**, CSS 84,566 + 4,210 B; **0 files** in `mobile/out` contain
+  `ca-pub`, `adsbygoogle`, `googlesyndication`, `data-ad-client` or the publisher number.
+- `npm run desktop:build` + `desktop:audit` → **PASSED** (402 files, 0 remote subresources, no ad
+  network).
+- Dev server (isolated, :3217): the placement counts above; 22/22 lesson units 200 with content;
+  `/content/industrial-pharmacy/…md` → **404**. Headless Chrome on three lessons: **0 console
+  errors** after the markdown fix (3 hydration errors before), 0 `<pre>` inside `<p>`, inline code
+  grey, fenced blocks dark. Screenshots read: a calculator at 1440 (aside + pre-FAQ ads sit
+  cleanly), a lesson at phone width.
+- **NOT verified:** a real ad — every slot ID is still blank, so production renders none; the
+  lesson PDF export with ads present (`data-html2canvas-ignore` is html2canvas's documented
+  attribute, not exercised); a real phone; dark mode. No test framework beyond the pure-layer
+  suites; lint is not configured.
+
+**Remaining**
+- **Commit and deploy** — together with the 2026-09-23 work below; none of it is committed.
+- Owner, in AdSense: create ad units and set `NEXT_PUBLIC_ADSENSE_SLOT_LESSON`, `_LIST`,
+  `_CALCULATOR`, `_CALCULATOR_FOOTER` (optionally `_CALCULATOR_INLINE`) **in Vercel**. Until then
+  every placement renders nothing, which is correct while the review is pending.
+- Owner steps in Known Issue 22 before requesting the review.
+
+**Next**
+- Deploy, then request the AdSense review once the sitemap has been recrawled.
+
+### 2026-09-23 — AdSense "Low value content" rejection: site-quality pass
+
+Session `pharma-wallah-bb`, "follow protocol". The user pasted AdSense's rejection ("Low value
+content") and Google's thin-content, spam and Publisher Policies pages, and asked for everything to
+be fixed so AdSense can start. Audited first — a live crawl of all 226 reachable URLs plus a code
+sweep — then fixed; two sub-agents took the spotting and clinical sections, on disjoint files.
+
+**Completed**
+- **Unique metadata on every page.** 173 of 216 live pages (every calculator, the home page) were
+  `<title>PharmaWallah</title>` / "AI-powered pharmacy platform". New `src/lib/seo.ts` + an
+  `x-pathname` header from middleware let the root layout describe ~130 client pages it could not
+  before; `(tools)/layout.tsx` describes every calculator from the registry. Local crawl after:
+  **230 distinct titles of 235 pages** (the 5 repeats are sign-in and query-string variants, both
+  handled). Absolute www canonicals everywhere, `metadataBase`, OpenGraph.
+- **`robots.txt` and `sitemap.xml`** (both were 404). Sitemap: 217 URLs, derived from the tool,
+  course, MCQ and lesson registries. Robots disallows `/api/`, `/admin`, `/dashboard`, `/content/`.
+- **Clinical subdomain duplication**: it serves the whole main site; every page on it now
+  canonicalises to www, and its `/` to www `/clinical`.
+- **`noindex`** on sign-in/up, password pages, the dashboard, the ended tournament and `/pw`,
+  community submit/saved, the prescription reader, the four clinical resource search shells,
+  semesters and subjects with no MCQ bank, the orphan histology lesson, and the 404 page.
+- **9 broken internal links → 0**: histology prev/next chain (4 pages), the spotting hub's
+  trailing-space pathology link, four pathology breadcrumbs, five missing powder-microscopy
+  lessons, `/dose-calculators`, `/clinical-calculators`, `/drug-tools`, `/tools`, `#tools`, and the
+  course unit breadcrumb (`/courses/sem-1` → `/courses#semester-1`).
+- **Placeholder and template content removed**: fake phone numbers (footer on 203 pages, contact,
+  mentor), `href="#"` social icons (kept only the real Instagram), 41 "Coming Soon" MCQ cards (only
+  the 4 subjects with banks are listed), `/documentation` (the purchased template's own docs,
+  titled "Featurs | Crypgo"), `/mentor` (a copy of `/contact`), `flash-cards/sample`, the 404 title
+  "404 Page | Venus", a mock clinical dashboard with a fabricated patient, a "coming soon" clinical
+  card, "Prototype" labels, a developer-facing "add a `videoUrl` prop" message, and "Pakistan's #1
+  Pharmacy eLearning Platform" in the header.
+- **Forms that faked success now send.** `/contact` and `/careers` waited 1.2 s, said "sent" and
+  discarded the message. Both post to `/api/contact`, which gained validation, clamping, HTML
+  escaping (it interpolated raw input into email HTML), a 5/10-min IP limiter, and a check of
+  Resend's returned `error` (it reported success on failed sends — MEMORY 166).
+- **False statements corrected**: FAQ rewritten (Indian exams, "thousands of questions" — there are
+  660, "no accounts", "professors", "downloadable PDFs for most material"); privacy policy
+  rewritten (said no registration exists and named Google Analytics; now discloses accounts,
+  Vercel Analytics, Gemini, Resend, Upstash, and AdSense third-party cookies with Google's opt-out
+  links); inflated figures fixed (clinical encyclopedia "17.4K+/50K+/100K+", "17,430+" in two
+  places, landing "97 calculators, 69 lessons" → derived 105 / 22, hub "99" → 94 unique, spotting
+  "24+ lessons" → 34, MCQ "46 subjects"). Old `vercel.app` domain removed from privacy and terms.
+- **Community feed fixed** — it returned "Database error" in production for every request
+  (PostgREST `PGRST201`, MEMORY 164) although 12 posts existed. Post pages also get their own title.
+- **Middleware** now strips a client-sent `x-subdomain` (MEMORY 163).
+
+**Files**
+- New: `src/lib/seo.ts`, `src/lib/mcq-availability.ts`, `src/app/robots.ts`, `src/app/sitemap.ts`.
+- Deleted: `(site)/documentation`, `(site)/mentor`, `(site)/flash-cards/sample`,
+  `src/components/Documentation/*`, `src/components/Clinical/ClinicalDashboardPreview.tsx`
+  (redirects in `next.config.mjs`).
+- Edited: `src/middleware.ts`, `src/app/layout.tsx`, `src/app/not-found.tsx`, `(tools)/layout.tsx`,
+  `tool-index.ts`, `HubCatalogue.tsx`, footer, header, `contact`, `careers`, `faqs`, `privacy`,
+  `terms`, the three MCQ pages, `api/contact`, `lib/rateLimit.ts`, community post routes and page,
+  `UnitPageClient.tsx`, landing `data.ts`, flash-cards, DilutionLab PDF footer, DDI lib/route/model
+  strings; the spotting tree (sub-agent: hub, powder lessons + test, pathology breadcrumbs,
+  histology chain and test, lesson template); the clinical tree (sub-agent: links, stats, mock
+  removal, about-page team, DDI copy, footer/hero/navbar).
+- Knowledge: this file, `.claude/{MEMORY (162–167), ROADMAP (4.6), PROJECT_MAP}.md`, skill
+  `adsense-monetization`.
+
+**Architecture & Decisions**
+- **Metadata from the path, centrally**, rather than server wrappers around ~130 client pages. A
+  page's own `metadata` still wins (field-by-field merge), so nothing that had metadata changed.
+- **noindex, not robots-disallow**, for pages that should stay reachable (MEMORY 162).
+- **Empty MCQ subjects are hidden, not deleted** — the syllabus data is untouched; the hub and
+  semester pages filter through `mcq-availability.ts`, one list for UI, metadata and sitemap.
+- **The careers form lost its file upload**: `/api/contact` sends a plain email; a CV link replaces it.
+- **The histology test's missing "keratinised" slide** was re-labelled by the spotting sub-agent to
+  what its two existing photos show (non-keratinised). New teaching content — worth a look.
+- Not changed, by decision: the DrugBank text and the textbook-derived `public/content/` files
+  (owner decisions, Known Issue 22); the ended tournament pages (noindexed, not deleted); ad
+  placements themselves.
+
+**Verification**
+- `npx tsc --noEmit` → 0 errors (after the build regenerated `.next/types`); `-p mobile/tsconfig.json`
+  and `-p desktop/tsconfig.json` → 0 errors.
+- `npm run build` → exit 0, shared JS **88.6 kB**, middleware **81.9 kB** (both unchanged);
+  `/robots.txt` and `/sitemap.xml` emitted.
+- **Local production crawl** (same crawler as the live audit, `next start`): 235 URLs, **235 × 200,
+  0 broken**; 230 distinct titles; 0 non-www canonicals; 0 "Coming Soon", "Venus", "Crypgo",
+  "Prototype", "#1 Pharmacy", fake phone numbers or `href="#"` on local pages.
+- Header-level checks: calculator, MCQ, lesson and clinical-host titles and canonicals; the
+  semester-4 Physical Pharmacy page canonicalises to semester 1; a spoofed `x-subdomain` is ignored;
+  `/mentor`, `/documentation`, `/flash-cards/sample`, `/books-library` → 308.
+- `/api/contact`: empty, bad-email, over-length and non-JSON bodies → 400 each.
+- The community fix was verified by running the exact new select against production PostgREST
+  (read-only, anon key): rows returned where the old select returns `PGRST201`.
+- Screenshots read: MCQ hub, contact, spotting hub, powder lessons (390), empty semester (390),
+  clinical landing, careers (390) — they caught four copy errors, all fixed.
+- **NOT verified:** the live site (nothing is deployed); a real email through the contact form (it
+  would email the team); the community feed rendering in a browser against production; dark mode;
+  a real phone. No test framework covers any of this; lint is not configured. `npm run
+  mobile:build` was not run (no calculator page changed; the mobile tsconfig passes).
+
+**Remaining**
+- Commit and deploy (not done — the protocol forbids committing unasked).
+- Owner steps in Known Issue 22, then request the AdSense review.
+
+**Next**
+- Deploy, fix the apex redirect in Vercel, submit the sitemap in Search Console, and re-run the
+  live crawl before pressing "Request review".
 
 ### 2026-09-22 — iOS target added: offline calculators app via Capacitor (`ios/`)
 
@@ -2695,7 +2913,7 @@ Session `pharma-wallah-a8`, renamed `pharma-wallah-3d` after a machine reboot mi
 | iOS compile | `.github/workflows/ios-app.yml` (Actions → "iOS app" → Run workflow) | **PASSES — first ever run 2026-09-22, `macos-latest`, 5m22s, commit `5b8788e`, conclusion `success`, every step green.** Builds twice with no Apple account and no secrets: **Simulator** (Debug, `-sdk iphonesimulator`) and the **arm64 device slice** (Release, `-sdk iphoneos`, `CODE_SIGNING_ALLOWED=NO`), and uploads `App.app` as the `pharmawallah-ios-simulator-app` artifact. Two guards run before the compile and are part of the baseline: `Info.plist` must request **no permissions**, and **≥100** calculator pages must be in the synced bundle. Needs the committed shared scheme `ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme` (MEMORY gotcha 159). **This is a compile baseline only** — no signed `.ipa`, and the app has still never been *run* (§7 Known Issue 21). Do not report the iOS app as tested on a device. |
 | iOS sync | `npm run ios:sync` (i.e. `cap sync ios`) | **PASSES (2026-09-22, ~4 s after the build)** — exit 0 on **Linux**; Capacitor 8 uses the SPM template so no CocoaPods is involved. Reports **3 Capacitor plugins for ios** (`@capacitor/filesystem@8.1.3`, `@capacitor/keyboard@8.0.5`, `@capacitor/share@8.0.2`) and rewrites `ios/App/CapApp-SPM/Package.swift`. Also assert: `Info.plist` parses with `plistlib` and has **zero** `*UsageDescription` keys, and `ios/App/App/public/calculation-tools` holds one `index.html` per tool. **There is no iOS build baseline** — compiling needs Xcode on macOS and has never been done (§7 Known Issue 21). Do not report the iOS app as building. |
 | APK | `npm run mobile:apk` | **PASSES (2026-09-20, v1.4 / versionCode 5, ~2 min)** — signed V2 release APK **9,369,674 B (8.9 MB)**, certificate SHA-256 `afe4c18e…5b03` **unchanged from v1.3**, so it installs as an update; published file byte-identical to the Gradle output; 104 tool pages inside. **Earlier (2026-09-16, v1.3 / versionCode 4, ~2.5 min)** — signed V2 release APK **9,347,799 B** (8.9 MB), same certificate SHA-256 `afe4c18e…5b03` as v1.2; published file byte-identical to the Gradle output. **Earlier:** (2026-09-14, v1.2 / versionCode 3, built by `pharma-wallah-4b` — new launcher icon + redesigned Serial Dose tool) — signed V2 release APK, 5,945,495 B, copied to `public/downloads/`; same certificate as v1.0/v1.1. Needs JDK 21 (auto-selected) and `android/keystore.properties`. Check `aapt dump badging` for the version and `apksigner verify --print-certs` for the certificate. |
-| Tests | `node --test scripts/pharmacy-counter.test.mts` · `node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts` · `node --test scripts/molecular-lab.test.mts` · `node --test scripts/community.test.mts` · `node --test scripts/ai-guide.test.mts` · `node --test scripts/dissolution-rate.test.mts` | **47 pass, 0 fail** (2026-09-20, Community Pharmacy pure layer, ~0.5 s — case-data integrity, the check grader, verification truths, labels, expiry, inventory, the calculators, scoring) · **41 pass, 0 fail** (2026-09-16; 21 TLC + 20 colony, ~10 s) · **21 pass, 0 fail** (2026-09-16, Molecular Lab, ~12 s, real OpenChemLib) · **19 pass, 0 fail** (2026-09-20, community pure layer, <1 s) · **34 pass, 0 fail** (2026-09-20, AI Guide pure layer — request clamps, Gemini history rules, NDJSON framing, study modes — <1 s). · **28 pass, 0 fail** (2026-09-22, Dissolution Rate Constant pure layer — every column of the supplied practical sheet, both k columns proven distinct, the average against 0.000291833 and against each rejected averaging range, division-by-zero paths, duplicate/backwards times, both notations — <1 s). These cover seven features' pure modules only — there is no framework, no CI, and nothing else is tested. Report them by name. **The community's SQL is verified separately** by running its migration twice against a throwaway local Postgres 16 and asserting RLS from a `nobypassrls` role — see the `community-system` skill. |
+| Tests | `node --test scripts/pharmacy-counter.test.mts` · `node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts` · `node --test scripts/molecular-lab.test.mts` · `node --test scripts/community.test.mts` · `node --test scripts/ai-guide.test.mts` · `node --test scripts/dissolution-rate.test.mts` · `node --test scripts/split-for-ads.test.mts` | **47 pass, 0 fail** (2026-09-20, Community Pharmacy pure layer, ~0.5 s — case-data integrity, the check grader, verification truths, labels, expiry, inventory, the calculators, scoring) · **41 pass, 0 fail** (2026-09-16; 21 TLC + 20 colony, ~10 s) · **21 pass, 0 fail** (2026-09-16, Molecular Lab, ~12 s, real OpenChemLib) · **19 pass, 0 fail** (2026-09-20, community pure layer, <1 s) · **34 pass, 0 fail** (2026-09-20, AI Guide pure layer — request clamps, Gemini history rules, NDJSON framing, study modes — <1 s). · **28 pass, 0 fail** (2026-09-22, Dissolution Rate Constant pure layer — every column of the supplied practical sheet, both k columns proven distinct, the average against 0.000291833 and against each rejected averaging range, division-by-zero paths, duplicate/backwards times, both notations — <1 s). · **6 pass, 0 fail** (2026-09-24, lesson ad spacing — heading-only breaks, never inside a code fence, word-count gaps, lossless over all 69 lesson files, <1 s). These cover eight features' pure modules only — there is no framework, no CI, and nothing else is tested. Report them by name. **The community's SQL is verified separately** by running its migration twice against a throwaway local Postgres 16 and asserting RLS from a `nobypassrls` role — see the `community-system` skill. |
 
 ---
 

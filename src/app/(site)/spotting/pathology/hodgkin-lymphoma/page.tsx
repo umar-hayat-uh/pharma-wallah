@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useTracker } from "@/hooks/useTracker";
 import Image from "next/image";
 import Link from "next/link";
+import { AdSlot } from "@/components/calculators/AdSlot";
 import {
   ChevronLeft, ChevronRight, BookOpen, ExternalLink,
   Microscope, Play, X, Zap, ArrowUp, Menu,
@@ -255,7 +256,7 @@ useEffect(() => {
       <div className="lg:hidden sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
         <div className="flex items-center justify-between px-3 py-2.5 pt-[2.625rem]">
           <div className="flex items-center gap-1 text-xs text-gray-500 min-w-0 flex-1 mr-2">
-            <Link href="/spotting/pathology/" className="hover:text-indigo-600 shrink-0 font-medium">Pathology</Link>
+            <Link href="/spotting/pathology/lessons" className="hover:text-indigo-600 shrink-0 font-medium">Pathology</Link>
             <ChevronRight size={11} className="mx-0.5 text-gray-300 shrink-0" />
             <span className="text-indigo-700 font-semibold truncate">{TITLE}</span>
           </div>
@@ -404,6 +405,11 @@ useEffect(() => {
               </a>
             </div>
 
+            {/* Ad between sections (added 2026-09-23). Plain div, never inside anything animated (gotcha 29). */}
+            <div>
+              <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LESSON} className="min-h-[250px]" />
+            </div>
+
             {/* Detailed theory */}
             <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
               <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${GRAD}`} />
@@ -451,6 +457,11 @@ useEffect(() => {
               </div>
             </div>
 
+            {/* Ad after the pathology theory. */}
+            <div>
+              <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LESSON} className="min-h-[250px]" />
+            </div>
+
             {/* Video lesson */}
             {VIDEO_URL && (
               <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
@@ -494,6 +505,11 @@ useEffect(() => {
                   </li>
                 </ul>
               </div>
+            </div>
+
+            {/* Ad after the lesson, before navigation. */}
+            <div>
+              <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LESSON} className="min-h-[250px]" />
             </div>
 
             {/* Prev / Next */}

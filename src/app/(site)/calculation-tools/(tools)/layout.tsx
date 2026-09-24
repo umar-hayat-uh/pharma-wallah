@@ -1,8 +1,43 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { ArrowLeft, Smartphone } from "lucide-react";
 import { AdSlot } from "@/components/calculators/AdSlot";
 import { CalcDisclaimer } from "@/components/calculators/CalcDisclaimer";
 import { Button } from "@/components/ui/button";
+import { HUB_SUBJECTS, UNLISTED_TOOLS } from "../tool-index";
+import { SITE_NAME } from "@/lib/seo";
+
+
+/**
+ * Each calculator's title and description, from the hub registry.
+ *
+ * The tool pages are client components and cannot export metadata, so before
+ * 2026-09-23 all ~105 of them were titled plain "PharmaWallah" — to a search
+ * crawler (and an AdSense review), a hundred copies of one page. Reading the
+ * slug from the request path here gives every tool its own, and a newly
+ * registered tool is described automatically. Web only: the Android and desktop
+ * builds re-export the page files, never this layout.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const path = headers().get("x-pathname") ?? "";
+  const slug = path.split("/")[2] ?? "";
+
+  let found: { name: string; desc: string; subject?: string } | undefined;
+  for (const subject of HUB_SUBJECTS) {
+    const tool = subject.tools.find((t) => t.slug === slug);
+    if (tool) found = { name: tool.name, desc: tool.desc, subject: subject.label };
+  }
+  found ??= UNLISTED_TOOLS[slug];
+  if (!found) return {};
+
+  const title = `${found.name} | ${SITE_NAME}`;
+  const description = `${found.desc}. Free ${
+    found.subject ? `${found.subject.toLowerCase()} ` : "pharmacy "
+  }calculator for Pharm-D students, with the formula and worked steps.`;
+
+  return { title, description, openGraph: { title, description } };
+}
 
 /**
  * Layout shared by every calculator page.

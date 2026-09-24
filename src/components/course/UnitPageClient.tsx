@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { semesterToSlug } from "@/lib/mcq-utils";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowUp,
@@ -15,6 +16,7 @@ import UnitTracker from "@/components/UnitTracker";
 import UnitSidebar from "./UnitSidebar";
 import MobileUnitNav from "./MobileUnitNav";
 import MarkdownRenderer from "./MarkdownRenderer";
+import { splitForAds } from "@/lib/ads/split-for-ads";
 import PdfDownloadButton from "./PdfDownloadButton";
 import LessonCheckpoint from "./LessonCheckpoint";
 import Comments from "@/components/course/Comments";
@@ -43,6 +45,7 @@ export default function UnitPageClient({
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [imgError, setImgError] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
+  const lessonChunks = useMemo(() => (content ? splitForAds(content) : []), [content]);
   const GRAD = unit.gradient;
 
   useEffect(() => {
@@ -80,7 +83,9 @@ export default function UnitPageClient({
           {[
             { href: "/", label: "Home" },
             { href: "/courses", label: "Courses" },
-            { href: `/courses/${subject.semesterSlug}`, label: subject.semester },
+            // There is no per-semester page (/courses/sem-1 was a 404 on every
+            // unit); the courses index has an anchor for each semester.
+            { href: `/courses#${semesterToSlug(subject.semester)}`, label: subject.semester },
             { href: basePath, label: subject.title },
           ].map(({ href, label }) => (
             <span key={href} className="flex items-center gap-1.5">
@@ -168,20 +173,30 @@ export default function UnitPageClient({
                 style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
               >
                 {content ? (
-                  <MarkdownRenderer content={content} />
+                  // Ads between sections, spaced by word count (splitForAds).
+                  // They sit inside printRef, but AdSlot carries
+                  // data-html2canvas-ignore, so the PDF export skips them.
+                  lessonChunks.map((chunk, i) => (
+                    <Fragment key={i}>
+                      {i > 0 && (
+                        <div className="my-8">
+                          <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LESSON} className="min-h-[280px]" />
+                        </div>
+                      )}
+                      <MarkdownRenderer content={chunk} />
+                    </Fragment>
+                  ))
                 ) : (
                   <div className="py-16 text-center px-4">
                     <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center mx-auto mb-4">
                       <BookOpen className="w-5 h-5 text-red-400" />
                     </div>
                     <p className="text-gray-700 font-bold mb-1">
-                      Content file not found
+                      Lesson not available
                     </p>
-                    <p className="text-gray-400 text-xs mb-4 break-all">
-                      Place{" "}
-                      <code className="bg-gray-100 px-1.5 py-0.5 rounded text-blue-600 font-mono">
-                        public/content/{unit.contentFile}
-                      </code>
+                    {/* Visitor-facing: no file paths. The file lives at content/{unit.contentFile}. */}
+                    <p className="text-gray-400 text-xs mb-4">
+                      This lesson isn&apos;t available right now. Please try another unit.
                     </p>
                     <Link
                       href={basePath}

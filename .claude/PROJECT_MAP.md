@@ -22,7 +22,7 @@
 | How do I add a course subject? | `.claude/skills/course-content-system/SKILL.md` |
 | Where's the list of calculators shown on the hub? | `HUB_SUBJECTS` in `src/app/(site)/calculation-tools/tool-index.ts` |
 | Where's the subject registry? | `src/lib/courses/registry.ts` |
-| Where does lesson markdown live? | `public/content/<subject>/<unit>.md` (69 files); also `src/content/` |
+| Where does lesson markdown live? | `content/<subject>/<unit>.md` (69 files, repo root — **not** under `public/` since 2026-09-23, so never served raw); also `src/content/` |
 | How is progress recorded? | `src/lib/activityQueue.ts` → `/api/progress/batch` → `applyProgressEvent()` |
 | Where are Gemini prompts? | Inline in each AI route under `src/app/api/` — see the AI table below |
 | Where are external drug/literature API clients? | `src/lib/api/*.ts` |
@@ -37,7 +37,7 @@
 | Concern | Files |
 | --- | --- |
 | Root layout, theming, PWA manifest, analytics | `src/app/layout.tsx`, `src/components/AppShell.tsx`, `public/manifest.json` |
-| **Advertising (AdSense)** | `src/components/calculators/AdSlot.tsx` (the only placement component), the loader in `src/app/layout.tsx`, `public/ads.txt`, `src/app/(site)/calculation-tools/(tools)/layout.tsx` (nav strip + band under every tool). The home landing has no placement. |
+| **Advertising (AdSense)** | `src/components/calculators/AdSlot.tsx` (the only placement component), `src/lib/adsense.ts` (publisher ID, app-safe), `src/lib/ads/split-for-ads.ts` (lesson in-content spacing), the loader in `src/app/layout.tsx`, `public/ads.txt`, `src/app/(site)/calculation-tools/(tools)/layout.tsx` (nav strip + band under every tool). The home landing has no placement. |
 | Subdomain + auth gating | `src/middleware.ts` |
 | Build / PWA config | `next.config.mjs` |
 | Design tokens | `tailwind.config.ts`, `src/app/globals.css`, `src/Style/` |
@@ -51,6 +51,12 @@
 | 404 | `src/app/not-found.tsx`, `src/components/NotFound/` |
 
 ---
+
+### Search engines & review metadata (added 2026-09-23)
+- `src/lib/seo.ts` — per-path title/description/noindex (`STATIC_META`, `NOINDEX_PREFIXES`, slug-derived spotting/MCQ), `canonicalFor()`; read by `src/app/layout.tsx` via the `x-pathname` header set in `src/middleware.ts` (MEMORY 162)
+- `src/app/(site)/calculation-tools/(tools)/layout.tsx` — `generateMetadata` for every calculator from `tool-index.ts` (`HUB_SUBJECTS` + `UNLISTED_TOOLS`)
+- `src/app/robots.ts`, `src/app/sitemap.ts` — both derived from the registries
+- `src/lib/mcq-availability.ts` — which MCQ subjects have a bank; used by the hub, semester pages, metadata and sitemap
 
 ## Authentication & accounts
 
@@ -168,7 +174,7 @@ Naming is inconsistent by design-drift: some directories are `kebab-case`, other
 | Markdown loader (content.ts) | `src/lib/courses/content.ts` |
 | Server action: read a lesson file | `src/actions/lesson.ts` → `getLessonContent()` |
 | Markdown → HTML | `src/utils/markdownToHtml.ts`, `src/lib/markdown.ts`, `src/utils/markdown.ts` |
-| Lesson prose | `public/content/<subject>/<unit>.md`, `src/content/` |
+| Lesson prose | `content/<subject>/<unit>.md` (server-read only), `src/content/` |
 | **End-of-lesson block** (5 optional questions, Mark as read, next unit) | `src/components/course/LessonCheckpoint.tsx`, mounted in `src/components/course/UnitPageClient.tsx` |
 | Lesson ↔ MCQ-bank unit table (explicit, not by number) | `src/lib/courses/lesson-questions.ts` |
 | Slug helpers + MCQ types | `src/lib/mcq-utils.ts` |
@@ -176,7 +182,7 @@ Naming is inconsistent by design-drift: some directories are `kebab-case`, other
 | **MCQ question data (ships to client)** | `src/app/api/mcq-data/*.ts` |
 | MCQ UI | `src/components/Mcq/`, `src/components/PharmaWallahQuiz.tsx` |
 | Unit comments API | `src/app/api/comments/route.ts` (Mongo + Supabase auth) |
-| Flashcards | `src/app/(site)/flash-cards/page.tsx`, `flash-cards/sample/` |
+| Flashcards | `src/app/(site)/flash-cards/page.tsx` (`flash-cards/sample/` deleted 2026-09-23, 308 → `/flash-cards`) |
 | Semester metadata | `src/app/api/semester-data.tsx` |
 
 ---
@@ -191,7 +197,7 @@ Naming is inconsistent by design-drift: some directories are `kebab-case`, other
 | **Shared lesson template** | `src/components/spotting/HistologyLessonTemplate/index.tsx` |
 | Histology timed test | `src/app/(site)/spotting/histology/test/page.tsx` (`SLIDE_DATA` inline) |
 | Pathology lessons (16) + test | `src/app/(site)/spotting/pathology/<condition>/page.tsx`, `pathology/test/` |
-| Powder microscopy (3) + test | `src/app/(site)/spotting/powder-microscopy/lessons/<drug>/`, `powder-microscopy/test/` |
+| Powder microscopy (3) | `src/app/(site)/spotting/powder-microscopy/lessons/<drug>/`; `powder-microscopy/test/` is a "being rebuilt" notice — no powder images exist in `public/` |
 | **AI grading of written observations** | `src/app/api/evaluate-histology/route.ts` |
 | Slide images | `public/images/spotting/<category>/` |
 | Image zoom | `src/components/ui/ImageZoom.tsx` |
@@ -287,7 +293,6 @@ Supabase cache tables: `pubmed_cache`, `medlineplus_cache`, `clinicaltrials_cach
 | Chat UI | `src/app/(site)/ai-guide/page.tsx` (server, metadata) → `src/components/ai-guide/AIGuideClient.tsx` | — | Study modes, saved threads, streaming, stop/regenerate/copy |
 | Chat UI internals | `src/components/ai-guide/{Markdown,useChatStream,useThreads}.tsx/.ts`, `ai-guide.css` | — | Markdown styling is bespoke — `prose*` generates nothing here (MEMORY gotcha 127) |
 | Chat pure layer | `src/lib/ai-guide/{pure,modes,prompt,resources,types}.ts` | — | Tested by `scripts/ai-guide.test.mts` (34) |
-| Mentor page | `src/app/(site)/mentor/page.tsx` | — | Static; does not call `/api/chat` |
 | Prescription UI | `src/app/(site)/prescription-reader/page.tsx` | — | |
 
 ---
@@ -355,7 +360,7 @@ Rebuilt 2026-09-20; replaced the flat Q&A. Schema is **not** applied automatical
 | Home page promo strip | `src/components/Home/tournament/` (`OfficialLaunchBanner`, still rendered) |
 | **About / the team (`/about-us`)** | `src/app/(site)/about-us/` — `page.tsx` (server: hero, story, pillars, leadership `LeadCard`s, grouped team), `FlipCard.tsx` (client flip card), `_Plate.tsx` (monogram, or a `photo` if the roster ever sets one) |
 | **Team roster (data)** | `src/lib/team.ts` — one `ROSTER` array; groups, monograms, gradient angles, ids and card descriptions (`ROLE_NOTE`) are derived. Was `src/app/api/team-members.tsx` (deleted 2026-09-16) |
-| Static pages | `src/app/(site)/{careers,faqs,privacy,terms,documentation,pw}/page.tsx` |
+| Static pages | `src/app/(site)/{careers,faqs,privacy,terms,pw}/page.tsx` (`/mentor` → `/contact` and `/documentation` → `/` are 308s since 2026-09-23) |
 | Toast context (misfiled under api/) | `src/app/api/contex/ToasetContex.tsx` |
 | Shared types | `src/types/*.ts` |
 

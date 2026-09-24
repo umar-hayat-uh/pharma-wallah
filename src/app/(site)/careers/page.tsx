@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Pill, FlaskConical, Beaker, Microscope, Stethoscope, Leaf,
-  Send, Upload, CheckCircle, Users, Zap,
+  Send, CheckCircle, Users, Zap,
   Globe, Clock, TrendingUp, Heart, Briefcase, ChevronRight,
 } from "lucide-react";
 
@@ -30,7 +30,7 @@ const POSITIONS = [
 const PERKS = [
   { Icon: Globe, title: "Remote First", desc: "Work from anywhere in the world." },
   { Icon: Clock, title: "Flexible Hours", desc: "Focus on outcomes, not clock-watching." },
-  { Icon: Heart, title: "Real Impact", desc: "Directly help thousands of students." },
+  { Icon: Heart, title: "Real Impact", desc: "Your work reaches pharmacy students directly." },
   { Icon: TrendingUp, title: "Growth", desc: "Learn, upskill, and grow professionally." },
 ];
 
@@ -59,24 +59,48 @@ function SectionTitle({ Icon, title, sub }: { Icon: React.ElementType; title: st
 }
 
 export default function CareersPage() {
-  const [form, setForm] = useState({ name: "", email: "", position: "", message: "", resume: null as File | null });
+  const [form, setForm] = useState({ name: "", email: "", position: "", message: "", cvLink: "" });
   const [sub, setSub] = useState(false);
   const [ok, setOk] = useState(false);
+  const [err, setErr] = useState("");
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value });
-  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) setForm({ ...form, resume: e.target.files[0] });
-  };
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault(); setSub(true);
-    setTimeout(() => {
-      setSub(false); setOk(true);
-      setForm({ name: "", email: "", position: "", message: "", resume: null });
-      const fi = document.getElementById("resume") as HTMLInputElement;
-      if (fi) fi.value = "";
-      setTimeout(() => setOk(false), 5000);
-    }, 1400);
+
+  /*
+   * Until 2026-09-23 this faked success after a timeout and discarded the
+   * application. It now goes through the same endpoint as /contact. That route
+   * sends a plain email and cannot carry an attachment, so the file upload was
+   * replaced by a link to a CV or portfolio.
+   */
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); setSub(true); setOk(false); setErr("");
+    const message = [
+      `Position: ${form.position}`,
+      form.cvLink.trim() ? `CV / portfolio: ${form.cvLink.trim()}` : "CV / portfolio: not given",
+      "",
+      form.message.trim() || "(No message.)",
+    ].join("\n");
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          subject: `Application: ${form.position}`,
+          message,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "We couldn't send your application.");
+      setOk(true);
+      setForm({ name: "", email: "", position: "", message: "", cvLink: "" });
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "We couldn't send your application.");
+    } finally {
+      setSub(false);
+    }
   };
 
   return (
@@ -124,7 +148,16 @@ export default function CareersPage() {
                       <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-green-500 to-teal-400" />
                       <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
                       <p className="text-sm font-semibold text-green-700">
-                        Application submitted! We'll review and get back to you soon.
+                        Application sent. We'll reply to the email address you gave.
+                      </p>
+                    </motion.div>
+                  )}
+                  {err && (
+                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                      role="alert"
+                      className="relative flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 mb-6 overflow-hidden">
+                      <p className="text-sm font-semibold text-red-700">
+                        {err} You can also write to support@pharmawallah.com.
                       </p>
                     </motion.div>
                   )}
@@ -135,7 +168,7 @@ export default function CareersPage() {
                     <div>
                       <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Full Name *</label>
                       <input type="text" name="name" required value={form.name} onChange={onChange}
-                        placeholder="Jane Doe" className={inputCls} />
+                        placeholder="Your name" maxLength={100} className={inputCls} />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Email *</label>
@@ -154,19 +187,17 @@ export default function CareersPage() {
 
                   <div>
                     <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Why Are You a Good Fit?</label>
-                    <textarea name="message" rows={4} value={form.message} onChange={onChange}
+                    <textarea name="message" rows={4} maxLength={4000} value={form.message} onChange={onChange}
                       placeholder="Tell us about your skills, experience, and interest…"
                       className={`${inputCls} resize-none`} />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Resume / CV (PDF, DOC, DOCX) *</label>
-                    <div className="relative">
-                      <input type="file" id="resume" name="resume" required accept=".pdf,.doc,.docx"
-                        onChange={onFile}
-                        className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white text-sm text-gray-500 file:mr-4 file:py-1.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-extrabold file:bg-gradient-to-r file:from-blue-600 file:to-green-400 file:text-white hover:file:opacity-90 focus:border-blue-400 focus:outline-none transition-all" />
-                      <Upload className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    </div>
+                    <label htmlFor="cvLink" className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Link to your CV or portfolio</label>
+                    <input type="url" id="cvLink" name="cvLink" maxLength={500} value={form.cvLink} onChange={onChange}
+                      placeholder="https://drive.google.com/… or LinkedIn"
+                      className={inputCls} />
+                    <p className="mt-1.5 text-xs text-gray-400">Share a link that anyone with it can view.</p>
                   </div>
 
                   <button type="submit" disabled={sub}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Search, X } from "lucide-react";
 import { AdSlot } from "@/components/calculators/AdSlot";
@@ -111,7 +111,8 @@ export default function HubCatalogue() {
   }, [terms]);
 
   const visible = matches.filter((m) => m.tools.length > 0);
-  const resultCount = visible.reduce((n, m) => n + m.tools.length, 0);
+  // Unique, to match HUB_TOOL_COUNT: a tool listed under two subjects counts once.
+  const resultCount = new Set(visible.flatMap((m) => m.tools.map((t) => t.tool.slug))).size;
   const searching = terms.length > 0;
 
   // "/" focuses search from anywhere on the page, as on most documentation sites.
@@ -297,9 +298,17 @@ export default function HubCatalogue() {
         )}
 
         <div className="space-y-14 sm:space-y-16">
-          {visible.map(({ subject, number, tools }) => (
+          {visible.map(({ subject, number, tools }, index) => (
+            <Fragment key={subject.id}>
+            {/* An ad between every third subject (added 2026-09-23), not while
+                searching — a filtered list is short, and the one above covers it.
+                Plain div, nothing animated around it (gotcha 29). */}
+            {!searching && index > 0 && index % 3 === 0 && (
+              <div>
+                <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LIST} format="horizontal" className="min-h-[250px]" />
+              </div>
+            )}
             <section
-              key={subject.id}
               id={subject.id}
               data-hub-section
               aria-labelledby={`${subject.id}-title`}
@@ -338,6 +347,7 @@ export default function HubCatalogue() {
                 ))}
               </ul>
             </section>
+            </Fragment>
           ))}
         </div>
       </div>

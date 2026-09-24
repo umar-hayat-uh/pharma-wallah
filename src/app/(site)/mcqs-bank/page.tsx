@@ -11,8 +11,8 @@ import {
   Microscope, FlaskConical, Beaker, Stethoscope, Leaf, Pill,
   Trophy, Layers, Filter, Sparkles, CheckCircle2, Flame, Brain
 } from "lucide-react";
-import { SemesterData } from "@/app/api/semester-data";
 import { semesterToSlug, subjectToSlug } from "@/lib/mcq-utils";
+import { semestersWithQuestions } from "@/lib/mcq-availability";
 
 const GRAD = "from-blue-600 via-indigo-600 to-cyan-500";
 
@@ -38,12 +38,19 @@ const SEM_GRADS = [
   "from-fuchsia-600 via-violet-600 to-purple-500",
 ];
 
-const AVAILABLE_SLUGS = new Set([
-  "pharmaceutical-biochemistry",
-  "physiology-histology-i",
-  "physical-pharmacy",
-  "pharmaceutical-organic-chemistry"
-]);
+/*
+ * Only subjects with a finished bank are listed (src/lib/mcq-availability.ts).
+ * The page used to list all 46 syllabus subjects and badge 41 of them "Coming
+ * Soon" — a wall of placeholders that reads as an unfinished site.
+ */
+const SemesterData = semestersWithQuestions();
+
+/*
+ * Counted from src/app/api/mcq-data/* on 2026-09-23 (150 + 120 + 180 + 210).
+ * Not imported: the banks are ~500 KB and this hub only needs the number.
+ * Update it when a bank is added.
+ */
+const QUESTION_COUNT = 660;
 
 export default function MCQBankHubPage() {
   const [search, setSearch] = useState("");
@@ -51,10 +58,8 @@ export default function MCQBankHubPage() {
 
   const semOptions = ["All", ...SemesterData.map(s => s.semester)];
 
-  const totalSubjects = SemesterData.reduce((s, sem) => s + sem.subjects.length, 0);
-  const availableCount = SemesterData.reduce((s, sem) =>
-    s + sem.subjects.filter(sub => AVAILABLE_SLUGS.has(subjectToSlug(sub.name))).length, 0
-  );
+  // Unique: Physical Pharmacy sits in both Semester 1 and Semester 4.
+  const totalSubjects = new Set(SemesterData.flatMap(sem => sem.subjects.map(sub => subjectToSlug(sub.name)))).size;
 
   const scrollToTop = useCallback(() => {
     if (typeof window !== "undefined") {
@@ -115,16 +120,16 @@ export default function MCQBankHubPage() {
           </h1>
 
           <p className="text-white/85 text-sm sm:text-base max-w-2xl mb-8 font-medium leading-relaxed">
-            Master your pharmacy coursework with timed exams, practice flashcards, instant explanations, and downloadable PDF report cards across all semesters.
+            Practise by unit or across the whole syllabus, with an explanation for every answer and a downloadable PDF score report at the end.
           </p>
 
           {/* Quick Stats Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl">
             {[
+              { n: String(QUESTION_COUNT), l: "Questions", icon: Sparkles },
+              { n: String(totalSubjects), l: "Subjects", icon: BookOpen },
               { n: String(SemesterData.length), l: "Semesters", icon: GraduationCap },
-              { n: String(totalSubjects), l: "Total Subjects", icon: BookOpen },
-              { n: String(availableCount), l: "Ready Now", icon: Sparkles },
-              { n: "100%", l: "Free Access", icon: Trophy },
+              { n: "Free", l: "No sign-up needed", icon: Trophy },
             ].map(({ n, l, icon: Icon }) => (
               <div key={l} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-3.5 text-left flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white shrink-0">
@@ -222,16 +227,12 @@ export default function MCQBankHubPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {sem.subjects.map(sub => {
                     const subSlug = subjectToSlug(sub.name);
-                    const isAvail = AVAILABLE_SLUGS.has(subSlug);
                     const href = `/mcqs-bank/${semSlug}/${subSlug}`;
 
                     return (
                       <div
                         key={sub.name}
-                        className={`group relative rounded-3xl border-2 bg-white overflow-hidden transition-all duration-300 flex flex-col justify-between ${isAvail
-                          ? "border-gray-100 hover:border-blue-500 hover:shadow-xl hover:-translate-y-1 cursor-pointer"
-                          : "border-gray-100 opacity-60 cursor-default"
-                          }`}
+                        className="group relative rounded-3xl border-2 border-gray-100 bg-white overflow-hidden transition-all duration-300 flex flex-col justify-between hover:border-blue-500 hover:shadow-xl hover:-translate-y-1 cursor-pointer"
                       >
                         <div className={`h-1.5 bg-gradient-to-r ${semGrad}`} />
 
@@ -241,15 +242,9 @@ export default function MCQBankHubPage() {
                               <div className="text-3xl shrink-0 p-2 rounded-2xl bg-gray-50 border border-gray-100">
                                 {typeof sub.icon === "string" ? sub.icon : "📚"}
                               </div>
-                              {isAvail ? (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 uppercase tracking-wider">
-                                  <Sparkles className="w-3 h-3 text-emerald-600 animate-pulse" /> Ready Now
-                                </span>
-                              ) : (
-                                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-gray-100 border border-gray-200 text-gray-400 uppercase tracking-wider">
-                                  Coming Soon
-                                </span>
-                              )}
+                              <span className="inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 uppercase tracking-wider">
+                                <Sparkles className="w-3 h-3 text-emerald-600" /> Ready
+                              </span>
                             </div>
 
                             <h3 className="font-black text-gray-900 text-base leading-snug mb-1.5 group-hover:text-blue-600 transition-colors">
@@ -260,19 +255,13 @@ export default function MCQBankHubPage() {
 
                           {/* Action Button */}
                           <div className="pt-2">
-                            {isAvail ? (
-                              <Link
-                                href={href}
-                                onClick={scrollToTop}
-                                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-gradient-to-r ${semGrad} text-white text-xs font-black shadow-md hover:shadow-lg transition-all group-hover:scale-[1.02]`}
-                              >
-                                <Trophy className="w-4 h-4" /> Start Practice
-                              </Link>
-                            ) : (
-                              <div className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-gray-100 text-gray-400 text-xs font-bold">
-                                <ClipboardList className="w-4 h-4" /> Bank In Progress
-                              </div>
-                            )}
+                            <Link
+                              href={href}
+                              onClick={scrollToTop}
+                              className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-gradient-to-r ${semGrad} text-white text-xs font-black shadow-md hover:shadow-lg transition-all group-hover:scale-[1.02]`}
+                            >
+                              <Trophy className="w-4 h-4" /> Start Practice
+                            </Link>
                           </div>
                         </div>
                       </div>
