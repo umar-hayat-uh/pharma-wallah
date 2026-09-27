@@ -69,6 +69,7 @@ node --test scripts/community.test.mts                                 # 19 unit
 node --test scripts/ai-guide.test.mts                                  # 34 unit tests, AI Guide pure layer
 node --test scripts/dissolution-rate.test.mts                          # 28 unit tests, Dissolution Rate Constant
 node --test scripts/split-for-ads.test.mts                             # 6 unit tests, lesson ad spacing
+node --test scripts/battle-royale.test.mts                             # 12 unit tests, Battle Royale schemas/format
 node scripts/build-molecule-library.mts   # regenerate the Molecular Lab library from PubChem (network)
 ```
 
@@ -291,9 +292,13 @@ These are conventions **observed in the code**, not aspirations.
   and `ListAgents`, and announce which shared files you are taking, before editing one.
 
 ### Recently Completed
+- **Battle Royale event app (2026-09-27)** — `/battle-royale`: registration (online + desk), arena
+  with a game loading/title screen, three server-graded rounds, live leaderboard, full admin.
+  **Blocked on the owner running `supabase/migrations/20260927_battle_royale.sql`.** See §8.
 - **Ads: 3–5 per content page, lesson files no longer public (2026-09-23/24)** — see the §8
   entry. Lessons 3–5, calculators 3, hub 4, spotting lessons 2–3; thin pages none. Every lesson
-  with inline code was failing to hydrate (react-markdown 10) — fixed. **Not deployed.**
+  with inline code was failing to hydrate (react-markdown 10) — fixed. **Deployed (`8527e56`) and
+  verified live 2026-09-24**; waiting on the AdSense re-review.
 - **AdSense "Low value content" rejection addressed in code (2026-09-23)** — every page now has
   its own title, description and absolute www canonical (173 of 216 live pages shared one title);
   `robots.txt` and `sitemap.xml` exist (217 URLs, derived); the clinical subdomain's duplicate copy
@@ -494,9 +499,7 @@ exact steps — the content is already written and sits in `content/`, so this c
 existing dead assets into working pages at the lowest risk-per-value ratio in the repo.
 
 ### Known Issues
-22. **AdSense re-review needs owner steps the code cannot do (2026-09-23).** (a) Deploy. (b) The
-    apex `pharmawallah.com` → www redirect is a **307** (temporary) and `http://pharmawallah.com`
-    takes two hops — set www as primary with a permanent redirect in **Vercel → Domains**.
+22. **AdSense re-review needs owner steps the code cannot do (2026-09-23).** (a) Deploy. ~~(b) apex → www redirect was a 307~~ — **fixed 2026-09-24**, now 308.
     (c) Submit `https://www.pharmawallah.com/sitemap.xml` in Google Search Console and wait for a
     recrawl before requesting review. (d) **Replicated content** (Publisher Policies): `/encyclopedia`
     and `/clinical/encyclopedia` show DrugBank's text verbatim (Known Issue 16), . ~~The unregistered
@@ -691,6 +694,45 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 > Newest first. Never paste source code here. Archive entries older than ~10 into
 > `.claude/history/YYYY-MM.md`.
 
+### 2026-09-27 — Battle Royale event app (`/battle-royale`)
+
+Session `pharma-wallah-af`, "follow protocol" + the event PDF + a 39-section spec. User decisions:
+**Battle Royale** name (PDF), **online + desk registration**, **letter-block** Round 1, **zod +
+react-hook-form** added; later "always show the registration form".
+
+**Completed**
+- Landing, register, success (printable), instructions (rules/scoring from settings), check-in,
+  results, live leaderboard with TV mode, and the **arena**: a game title/loading screen that tracks
+  real boot steps → Player ID + Game Code gate → Press Start → 3-2-1 → round intros → Word Block /
+  Column Matching / Final Quiz with per-question server timers → feedback → finish. Route
+  `loading.tsx` is a branded loading screen.
+- Admin (`admin`/`desk` roles in `br_admins`): overview + live switches, participants (filters,
+  drawer, desk registration, payment, check-in, slot, disqualify, reset attempt, final status,
+  emails), sessions, questions, results (freeze → finalise → notify), email log with resend, settings.
+- Six Resend emails, all logged; a failed send never undoes a registration.
+
+**Architecture & Decisions** — see MEMORY 171–175 and the `battle-royale` skill. Game engine is
+plpgsql (grading, timers, totals); browser never sends a score, a participant id or a time; answer
+key revealed only after recording; brand tokens used over the spec's hexes.
+
+**Verification**
+- `npx tsc --noEmit` → 0 errors. `node --test scripts/battle-royale.test.mts` → **12 pass**.
+- Migration + seeds applied twice (idempotent) on a throwaway Postgres 16;
+  `scripts/battle-royale-engine.test.sql` → all assertions pass, anon/authenticated locked out.
+- Local Supabase stand-in (PostgREST + proxy): API e2e **64/64**; headless Chrome full battle
+  **20/20 at 390 touch, 19/19 at 1440, 19/19 reduced motion**; edge paths (timeout, partial
+  auto-submit, reload-resume, device takeover) **10/10**; public pages + form registration **21/21**
+  at both widths; admin pages by role **15/15**; 0 console errors. Screenshots read.
+- Bugs found and fixed by those runs: online registration always failed (MEMORY 171), correct-count
+  disagreed with question count on matching boards, Player ID wiped after a wrong code, HUD jumped
+  a round on feedback, a smuggled `score` field was silently accepted (now 400).
+- `npm run build` (isolated copy, dummy Resend key — `/api/contact` needs one at build) → exit 0.
+- **NOT verified:** real Supabase, real Resend delivery, a real phone, print dialog, dark mode.
+
+**Remaining (owner)** — run the migration + question seed in Supabase, add yourself to
+`br_admins`, set event date/venue in admin Settings, turn on "Battles can start" on the day.
+Have a pharmacist read the question seed. Until the migration runs, submitting the form fails.
+
 ### 2026-09-23/24 — Lesson files out of `public/`; 3–5 ads per content page (continuation)
 
 Session `pharma-wallah-b5`, "follow protocol — yesterday got cut off, pick it up and finish". The
@@ -769,8 +811,16 @@ forbids ads on and which the review is judged against.
   attribute, not exercised); a real phone; dark mode. No test framework beyond the pure-layer
   suites; lint is not configured.
 
+**Deployed and verified live (2026-09-24)** — committed by the user as `8527e56`, all five
+`NEXT_PUBLIC_ADSENSE_SLOT_*` set in Vercel (units created as **Display ads**, responsive). Live
+crawl of www.pharmawallah.com: **236 URLs, 0 non-200**; every indexable page has a www canonical;
+sitemap 217 URLs, none non-200 or noindexed; no placeholder/template strings. Real slot IDs are in
+the served HTML: lessons 5, calculators 3 (three distinct units), hub 4, pathology 3, powder 2,
+sign-in / encyclopedia / dashboard 0. `/content/*.md` → 404. Apex and http now **308** to www
+(the owner fixed the Vercel redirect). Community feed and `/api/contact` validation work in
+production. No ad has been observed *filling* — that needs AdSense approval.
+
 **Remaining**
-- **Commit and deploy** — together with the 2026-09-23 work below; none of it is committed.
 - Owner, in AdSense: create ad units and set `NEXT_PUBLIC_ADSENSE_SLOT_LESSON`, `_LIST`,
   `_CALCULATOR`, `_CALCULATOR_FOOTER` (optionally `_CALCULATOR_INLINE`) **in Vercel**. Until then
   every placement renders nothing, which is correct while the review is pending.

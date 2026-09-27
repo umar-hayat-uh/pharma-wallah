@@ -257,6 +257,12 @@ pages, confirm progress tracking records a visit, then batch the rest.
 
 ## Phase 3 — Tournament & clinical sub-brand ✅
 
+### Battle Royale (Pharma Fest event) 🟡 built, not live
+Built and verified on a local Postgres + PostgREST stand-in (2026-09-27). **Blocked on the owner:**
+run `supabase/migrations/20260927_battle_royale.sql` and the question seed, add an admin row to
+`br_admins`, set `NEXT_PUBLIC_SITE_URL`, set the event date/venue in admin Settings. Never run
+against the real Supabase project or with a real Resend send.
+
 ### Tournament
 - **Status:** ✅ Implemented
 - **Existing implementation:** Registration → admin approval → entry code → code validation →

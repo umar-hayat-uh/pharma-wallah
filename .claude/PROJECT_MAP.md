@@ -97,6 +97,22 @@
 
 ---
 
+## Battle Royale (Pharma Fest event, added 2026-09-27)
+Separate from the tournament below. Skill: `.claude/skills/battle-royale/`.
+- Schema + engine: `supabase/migrations/20260927_battle_royale.sql` (NOT applied — owner runs it);
+  question seed `supabase/seed/20260927_battle_royale_questions.sql`; demo data `supabase/seed/battle_royale_demo.sql` (never production).
+- Pages: `src/app/(site)/battle-royale/` — landing, `register`, `success`, `instructions`, `check-in`,
+  `battle` (the station, chromeless), `results`, `leaderboard` (TV mode), `admin/` (overview,
+  participants, sessions, questions, results, emails, settings; chromeless), `loading.tsx`.
+- API: `src/app/api/battle-royale/` — `register`, `check-in`, `results`, `leaderboard`,
+  `battle/{start,state,serve,answer}`, `admin/{participants,participants/[id],sessions,sessions/[id],questions,questions/[id],settings,results,emails}`.
+- Lib: `src/lib/battle-royale/` — `server.ts` (service client, `BR_*` error map, token/cookie, admin check,
+  cached settings), `schemas.ts` (Zod, shared client/server), `email.ts` (Resend + `br_email_logs`),
+  `leaderboard.ts`, `format.ts`, `types.ts`, `constants.ts`, `admin.ts`, `admin-page.ts`, `questions.ts`.
+- Emails: `src/emails/battle-royale/` (HTML-string templates, six types).
+- UI: `src/components/battle-royale/` (+ `battle/` game screens, `admin/`), `battle-royale.css` (`.pw-br`).
+- Tests: `scripts/battle-royale.test.mts` (node --test), `scripts/battle-royale-engine.test.sql` (throwaway Postgres).
+
 ## Tournament (entry-code competition)
 
 | Piece | File |

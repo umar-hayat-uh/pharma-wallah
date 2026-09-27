@@ -45,6 +45,7 @@ hard way in this codebase.
 | `progress-tracking` | Progress events, batching queue, dashboard, streaks | Tracking a new page, dashboard bugs, new event types | `.claude/skills/progress-tracking/` |
 | `community-system` | The Reddit-shaped community: schema, RLS, triggers, server-authoritative voting, local SQL verification | Any community change; "add a space"; comment ordering; voting | `.claude/skills/community-system/` |
 | `tournament-system` | Entry codes, server-authoritative scoring, leaderboard, admin | Any tournament or admin work | `.claude/skills/tournament-system/` |
+| `battle-royale` | Pharma Fest Battle Royale: SQL game engine, Game Code + cookie auth, `br_admins`, Resend emails, local Supabase stand-in for testing | Any `/battle-royale` work | `.claude/skills/battle-royale/` |
 | `lab-simulation` | Build or upgrade an interactive lab under `/simulations`: pure model, stage machine, illustrated Lab Guide, a procedure the student performs | Any simulation work; "the sim just animates" | `.claude/skills/lab-simulation/` |
 | `pharmacy-counter` | The Community Pharmacy Simulation Lab at `/pharmacy-counter`: the fourteen-stage workflow, the ten checks that never reveal their own answer, blocking findings, inventory and expiry, scoring | Anything under `src/components/Simulations/CommunityPharmacy/`; adding a case, a medicine or a check | `.claude/skills/pharmacy-counter/` |
 | `spotting-lessons` | Histology/pathology/powder lessons, timed tests, AI grading | Adding slides or fixing a spotting test | `.claude/skills/spotting-lessons/` |

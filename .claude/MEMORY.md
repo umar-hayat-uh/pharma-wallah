@@ -1180,6 +1180,30 @@ Traps that will otherwise be rediscovered painfully.
     heading and mode picker. `tsc`, the build and 28 behavioural assertions all passed; only
     reading the screenshot caught it. Guard on "is there actually a conversation".
 
+171. **A react-hook-form + zodResolver form POSTs the schema's *transformed* output, and the
+    route re-validates it with the same schema.** So every transform must accept its own output:
+    an optional field that turns `""` into `null` must also accept `null` (`.nullish()`), or every
+    submission that leaves it blank fails server-side with "expected string, received null".
+    Battle Royale's online registration shipped broken this way until a browser run caught it — the
+    API test posted raw `""` and passed. `scripts/battle-royale.test.mts` now round-trips every
+    schema. (2026-09-27)
+172. **Battle Royale is its own system, not the old tournament.** `br_*` tables, a plpgsql engine
+    (`br_start_attempt/serve/answer/state`), players identified by Player ID + Game Code and then an
+    httpOnly `br_attempt` cookie whose SHA-256 is all the DB stores, admins in `br_admins` (roles
+    `admin`/`desk`) — no email allowlist, no Redis. Don't mix it with `entry_codes`/`tournament_*`.
+    Grading, timers and totals live in SQL; route handlers only validate, rate-limit and map
+    `BR_*` errors. Test the engine with `scripts/battle-royale-engine.test.sql` on a throwaway
+    Postgres (it deletes rows — never against Supabase). (2026-09-27)
+173. **Inside one transaction `now()` is constant**, so an SQL test that needs "a later score" must
+    set the timestamp explicitly — the Battle Royale freeze test did. (2026-09-27)
+174. **The site header is fixed and retracts on scroll; a `sticky top-0` bar under it slides beneath
+    it.** Event sub-navs stay in flow (Battle Royale's `EventNav`). (2026-09-27)
+175. **A full local Supabase stand-in is possible without Docker**: Postgres 16 from
+    `/usr/lib/postgresql/16/bin`, the PostgREST static binary, and a ~30-line Node proxy mapping
+    `/rest/v1` → PostgREST and `/auth/v1/user` → fake users; sign a user in by setting the
+    `sb-localhost-auth-token=base64-<session JSON>` cookie. Recipe in the `battle-royale` skill.
+    (2026-09-27)
+
 ## 9. Working preferences (observed)
 
 - Commit messages are short, lowercase, hyphenated subjects (`cology-calcs-added`, `fix-tournament-ui`,

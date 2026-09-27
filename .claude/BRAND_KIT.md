@@ -53,7 +53,7 @@ never hypey.
 
 **Do:**
 - Lead with the specific thing. "Clearance, dosing, isotonicity, half-life — worked and explained."
-- Use exact measured numbers. "104 calculators", not "100+ calculators".
+- Use exact measured numbers. "105 calculators", not "100+ calculators".
 - Use real pharmacy vocabulary: Carr's index, AUC, Cockcroft-Gault, Rf value, zone of inhibition.
 - Be honest about limits. Everything here is **educational**, not clinical advice.
 - Short declarative sentences. Full stops do the work that exclamation marks would.
@@ -232,9 +232,9 @@ All measured from the codebase on **2026-09-20**. These are safe to publish.
 
 | Fact | Figure |
 | --- | --- |
-| Pharmacy calculators | **104** built (98 listed on the hub across 10 subject categories) |
-| Calculator categories | Pharmaceutical Chemistry (16), Clinical & Hospital Pharmacy (18), Pharmaceutics (16), Biopharmaceutics & Pharmacokinetics (14), Pharmaceutical Analysis (10), Unit Conversion (6), Pharmacology (6), Microbiology (6), Pharmaceutical Engineering (4), Physiology (2) |
-| Course lessons | **69** markdown lessons |
+| Pharmacy calculators | **105** built (re-counted 2026-09-26; the hub lists 94 unique tools across 10 subject categories, some under two subjects) |
+| Calculator categories | Pharmaceutical Chemistry (16), Clinical & Hospital Pharmacy (18), Pharmaceutics (17), Biopharmaceutics & Pharmacokinetics (14), Pharmaceutical Analysis (10), Unit Conversion (6), Pharmacology (6), Microbiology (6), Pharmaceutical Engineering (4), Physiology (2) |
+| Course lessons | **22** published lessons across 4 subjects (re-counted 2026-09-26 — the old "69" counted markdown files, most of them for subjects not yet published) |
 | Wet-lab simulations | **8** — titration, disk diffusion, UV, staining, buffer, dilution, organic ID, lab guide |
 | Spotting disciplines | **3** — histology, pathology, powder microscopy (with timed identification tests) |
 | Drug encyclopedia | **12,673** drugs (4,398 approved, 9,404 small molecules, 3,269 biotech) |
@@ -247,8 +247,8 @@ All measured from the codebase on **2026-09-20**. These are safe to publish.
 
 | # | Pillar | Figure | Line |
 | --- | --- | --- | --- |
-| 01 | Calculations | 104 tools | Clearance, dosing, isotonicity, half-life — every formula a Pharm-D asks of you, worked and explained. |
-| 02 | Courses | 69 lessons | Semester by semester, unit by unit, with an MCQ bank behind each subject. |
+| 01 | Calculations | 105 tools | Clearance, dosing, isotonicity, half-life — every formula a Pharm-D asks of you, worked and explained. |
+| 02 | Courses | 22 lessons | Semester by semester, unit by unit, with an MCQ bank behind each subject. |
 | 03 | Spotting | 3 disciplines | Histology, pathology and powder microscopy slides — then a timed identification test. |
 | 04 | Simulations | 8 wet labs | Titration, disk diffusion, UV, staining — run the experiment before the practical. |
 | 05 | Tournament | Live scoring | A science-fair competition with server-graded answers and a public leaderboard. |
@@ -334,7 +334,7 @@ LinkedIn 1200×627 · carousel slides 1080×1350.
 > Voice: precise, calm, generous, never hypey; exact numbers only; real pharmacy vocabulary; no
 > emoji spam; no clinical claims — everything is for education only.
 > Headline to build from: **"The whole Pharm-D, Solved."**
-> Facts: 104 calculators, 69 lessons, 8 wet-lab simulations, 3 spotting disciplines, 12,673 drugs,
+> Facts: 105 calculators, 22 published lessons, 8 wet-lab simulations, 3 spotting disciplines, 12,673 drugs,
 > a free offline Android app (v1.4, 8.9 MB, ad-free). Free, no account needed.
 > Site: pharmawallah.com · Instagram: @pharmawallah_com
 

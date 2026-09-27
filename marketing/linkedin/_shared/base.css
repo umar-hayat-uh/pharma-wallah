@@ -1,0 +1,15 @@
+/* Shared tokens for PharmaWallah social posts. Values from .claude/BRAND_KIT.md. */
+@font-face { font-family: "Outfit"; src: url("fonts/outfit-latin.woff2") format("woff2"); font-weight: 100 900; }
+@font-face { font-family: "JB Mono"; src: url("fonts/JetBrainsMono-Regular.ttf"); }
+:root {
+  --blue: #1C7BD9; --green: #21B67A; --ink: #1A1A1A; --soft: #F4FBFF; --soft2: #E9F7F2;
+  --grad: linear-gradient(120deg, #1C7BD9 0%, #21B67A 100%);
+  --scrim: rgba(6, 18, 36, .40);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1080px; height: 1350px; overflow: hidden; }
+body { font-family: "Outfit", sans-serif; -webkit-font-smoothing: antialiased; font-feature-settings: "tnum" 1; }
+.mono { font-family: "JB Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; }
+.tile { background: #fff; border-radius: 22px; display: grid; place-items: center; box-shadow: 0 10px 30px rgba(6,18,36,.18); }
+.tile img { width: 86%; height: 86%; object-fit: contain; }

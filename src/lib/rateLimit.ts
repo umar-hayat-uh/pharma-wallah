@@ -108,3 +108,28 @@ export const contactLimiter = redis
       prefix: "ratelimit:contact",
     })
   : null;
+
+/*
+ * Battle Royale (/battle-royale). Several people may share one connection at
+ * the stall — a campus network, or the desk's own laptop — so the per-IP
+ * limits leave room for a queue while still stopping a script.
+ */
+const brLimiter = (tokens: number, window: Parameters<typeof Ratelimit.slidingWindow>[1], name: string) =>
+  redis
+    ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(tokens, window), analytics: true, prefix: `ratelimit:br:${name}` })
+    : null;
+
+/** Online registration — each accepted request sends an email. Per IP. */
+export const brRegisterLimiter = brLimiter(6, "10 m", "register");
+/**
+ * Anything that checks a Game Code (check-in, results, starting a battle).
+ * The code space is 32⁶ ≈ 10⁹, so 20 guesses per 10 minutes per IP makes
+ * guessing someone's code hopeless. Per IP.
+ */
+export const brCredentialLimiter = brLimiter(20, "10 m", "credentials");
+/** Serving and answering inside a running battle. Per attempt token. */
+export const brPlayLimiter = brLimiter(90, "60 s", "play");
+/** The public board, polled by the stall TV and by phones. Per IP. */
+export const brLeaderboardLimiter = brLimiter(60, "60 s", "leaderboard");
+/** Admin writes, including email sends. Per admin user id. */
+export const brAdminLimiter = brLimiter(120, "60 s", "admin");

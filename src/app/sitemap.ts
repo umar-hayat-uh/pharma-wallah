@@ -45,6 +45,12 @@ const STATIC_PATHS = [
   "/drug-finder",
   "/ai-guide",
   "/community",
+  // Battle Royale (2026-09-27): the public event pages only — the arena,
+  // check-in, results, success and admin are noindexed.
+  "/battle-royale",
+  "/battle-royale/register",
+  "/battle-royale/instructions",
+  "/battle-royale/leaderboard",
   "/download",
   "/about-us",
   "/faqs",

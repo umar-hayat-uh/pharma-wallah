@@ -1,0 +1,83 @@
+/*
+ * Battle Royale — everything under `.pw-br` (CLAUDE.md §6 rule 14).
+ *
+ * globals.css styles every ul/li (`ul:not(.prose ul)` — specificity 0,1,2)
+ * and turns on smooth scrolling; both fight an app-like page. The doubled
+ * class below (0,2,1) outranks them without touching globals.css.
+ */
+.pw-br.pw-br ul,
+.pw-br.pw-br ol {
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: 0;
+}
+.pw-br.pw-br li {
+  margin-bottom: 0;
+  color: inherit;
+}
+
+.pw-br {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The gradient crest behind the event name: a slow drifting sheen, painted
+   with transform only so it stays on the compositor. */
+.pw-br .br-sheen {
+  position: absolute;
+  inset: -40% -20%;
+  background: radial-gradient(40% 50% at 30% 40%, rgba(255, 255, 255, 0.16), transparent 70%),
+    radial-gradient(35% 45% at 75% 65%, rgba(33, 182, 122, 0.25), transparent 70%);
+  animation: br-drift 18s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes br-drift {
+  from { transform: translate3d(-4%, -2%, 0) rotate(0deg); }
+  to   { transform: translate3d(4%, 3%, 0) rotate(6deg); }
+}
+
+/* Faint arena grid on the title screen. */
+.pw-br .br-grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+  pointer-events: none;
+}
+
+/* Boot progress bar fill. */
+.pw-br .br-bar {
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: left center;
+}
+
+/* Timer ring. */
+.pw-br .br-ring {
+  transition: stroke-dashoffset 0.25s linear, stroke 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pw-br .br-sheen { animation: none; }
+  .pw-br .br-bar, .pw-br .br-ring { transition: none; }
+}
+
+@media print {
+  .pw-br .br-no-print { display: none !important; }
+  .pw-br .br-print-card { box-shadow: none !important; border: 1px solid #ccc !important; }
+}
+
+/* "Download / Print confirmation": print the card alone, not the site chrome.
+   Scoped with :has() so it only applies on a page that contains the card. */
+@media print {
+  body:has(.br-print-card) * { visibility: hidden; }
+  body:has(.br-print-card) .br-print-card,
+  body:has(.br-print-card) .br-print-card * { visibility: visible; }
+  body:has(.br-print-card) .br-print-card { position: absolute; left: 0; top: 0; width: 100%; }
+}
+
+/* The route loading bar: a segment sweeping across its track. */
+@keyframes br-load {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(300%); }
+}

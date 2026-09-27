@@ -36,6 +36,7 @@
     "@capacitor/keyboard": "8.0.5",
     "@capacitor/share": "8.0.2",
     "@google/generative-ai": "^0.24.1",
+    "@hookform/resolvers": "^5.9.1",
     "@iconify/icons-ion": "^1.2.10",
     "@iconify/react": "^5.0.1",
     "@radix-ui/react-navigation-menu": "^1.2.22",
@@ -75,6 +76,7 @@
     "openchemlib": "9.25.0",
     "react": "^18",
     "react-dom": "^18",
+    "react-hook-form": "^7.89.0",
     "react-hot-toast": "^2.4.1",
     "react-konva": "^18.2.16",
     "react-markdown": "^10.1.0",
@@ -90,7 +92,8 @@
     "tailwind-merge": "^3.6.0",
     "three": "^0.185.1",
     "unist-util-visit": "^5.1.0",
-    "use-image": "^1.1.4"
+    "use-image": "^1.1.4",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.2",

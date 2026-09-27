@@ -20,7 +20,13 @@ export default function AppShell({
 
     // The dashboard is an app, not a page: it brings its own sidebar and top
     // bar, so the marketing header and footer would only be a second nav.
-    const isChromeless = !isClinical && pathname?.startsWith("/dashboard");
+    // The Battle Royale gaming station and its admin are apps too: the station
+    // fills a screen at the stall, and the admin has its own sidebar.
+    const isChromeless =
+        !isClinical &&
+        (pathname?.startsWith("/dashboard") ||
+            pathname?.startsWith("/battle-royale/battle") ||
+            pathname?.startsWith("/battle-royale/admin"));
     if (isChromeless) return <main>{children}</main>;
 
     return (
