@@ -10,7 +10,6 @@ import { PHARM_YEARS } from "./constants";
 
 const trimmed = (max: number) => z.string().trim().max(max, `Keep this under ${max} characters.`);
 
-export const playerIdentifierSchema = trimmed(120).min(3, "Enter your Player ID or email.");
 export const gameCodeSchema = z
   .string()
   .trim()
@@ -60,35 +59,62 @@ export const deskRegistrationSchema = z.object({
   pharmYear: z.enum(PHARM_YEARS, { message: "Choose a year." }),
   studentId: optionalText(40),
   slotId: optionalUuid,
-  paymentStatus: z.enum(["unpaid", "paid", "waived"]).default("paid"),
-  checkIn: z.boolean().default(true),
+  /** Paid at the desk now → approve and issue the Game Code in the same step. */
+  approve: z.boolean().default(true),
+  paymentStatus: z.enum(["paid", "waived"]).default("paid"),
   sendEmail: z.boolean().default(true),
 });
 export type DeskRegistrationInput = z.input<typeof deskRegistrationSchema>;
 
-export const credentialsSchema = z.object({
-  identifier: playerIdentifierSchema,
-  gameCode: gameCodeSchema,
-});
-export type CredentialsInput = z.input<typeof credentialsSchema>;
+/** The arena: the desk-issued Game Code, nothing else. */
+export const codeSchema = z.object({ code: gameCodeSchema }).strict();
+export type CodeInput = z.input<typeof codeSchema>;
 
-// Strict at every level: a body that also carries a score, a participant or a
-// time is refused outright rather than silently stripped, so a tampered client
-// fails loudly. (The engine would ignore those fields anyway — it computes all three.)
-export const answerSchema = z
+/** Status & results lookup: Player ID + the registered email, both required. */
+export const statusSchema = z
   .object({
-    questionId: z.string().uuid(),
-    answer: z.union([
-      z.object({ word: z.string().max(40) }).strict(),
-      z.object({ choice: z.enum(["A", "B", "C", "D"]) }).strict(),
-      z.object({ matches: z.array(z.string().max(200)).max(8) }).strict(),
-    ]),
+    playerId: trimmed(20)
+      .toUpperCase()
+      .regex(/^BR-\d{4}-\d{4,}$/, "Your Player ID looks like BR-2026-0001 (it's in your registration email)."),
+    email: trimmed(200).toLowerCase().email("Enter the email you registered with."),
   })
   .strict();
+export type StatusInput = z.input<typeof statusSchema>;
+
+const cell = z.number().int().min(0).max(20);
+const mcqKey = z.enum(["A", "B", "C", "D"]);
+
+/*
+ * One round at a time. Strict at every level: a body that also carries a
+ * score, a participant or a time is refused, not silently stripped — the
+ * engine computes all three.
+ */
+export const submitRoundSchema = z.discriminatedUnion("round", [
+  z.object({
+    round: z.literal(1),
+    answers: z.object({
+      found: z.array(z.object({ word: z.string().max(20), r1: cell, c1: cell, r2: cell, c2: cell }).strict()).max(30),
+    }).strict(),
+  }).strict(),
+  z.object({
+    round: z.literal(2),
+    answers: z.object({
+      boards: z.array(z.object({ questionId: z.string().uuid(), matches: z.array(z.string().max(200)).max(8) }).strict()).max(5),
+    }).strict(),
+  }).strict(),
+  z.object({
+    round: z.literal(3),
+    answers: z.object({
+      choices: z.array(z.object({ questionId: z.string().uuid(), choice: mcqKey.nullable() }).strict()).max(40),
+    }).strict(),
+  }).strict(),
+]);
+export type SubmitRoundInput = z.infer<typeof submitRoundSchema>;
 
 /* ── Admin ──────────────────────────────────────────────────────────────── */
 
 export const participantActionSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("issue_code"), payment: z.enum(["paid", "waived"]).default("paid") }),
   z.object({ action: z.literal("set_payment"), value: z.enum(["unpaid", "paid", "waived"]) }),
   z.object({ action: z.literal("set_check_in"), value: z.enum(["not_checked_in", "checked_in", "late"]) }),
   z.object({ action: z.literal("disqualify"), reason: trimmed(300).optional() }),
@@ -176,11 +202,12 @@ export const settingsSchema = z.object({
   venue: trimmed(160),
   entryFee: z.coerce.number().int().min(0).max(100000),
   contactText: trimmed(300),
-  round1Count: z.coerce.number().int().min(1).max(20),
+  round1Count: z.coerce.number().int().min(3).max(20),
   round2Count: z.coerce.number().int().min(1).max(5),
   round3Count: z.coerce.number().int().min(1).max(40),
-  speedBonusEnabled: z.boolean(),
-  speedBonusMax: z.coerce.number().int().min(0).max(50),
+  round1Seconds: z.coerce.number().int().min(20).max(900),
+  gridSize: z.coerce.number().int().min(7).max(14),
+  syncGraceSeconds: z.coerce.number().int().min(30).max(1800),
   winnersCount: z.coerce.number().int().min(1).max(100),
   registrationOpen: z.boolean(),
   competitionOpen: z.boolean(),

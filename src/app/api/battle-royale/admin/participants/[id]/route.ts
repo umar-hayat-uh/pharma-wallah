@@ -5,12 +5,15 @@ import { adminGuard } from "@/lib/battle-royale/admin";
 import { firstIssue, participantActionSchema, type ParticipantAction } from "@/lib/battle-royale/schemas";
 import { SESSIONS_TAG, db, engineErrorResponse, errorResponse, GENERIC_ERROR, readJson } from "@/lib/battle-royale/server";
 import { sendBattleEmail } from "@/lib/battle-royale/email";
+import { invalidateLeaderboard } from "@/lib/battle-royale/leaderboard";
 
 type Ctx = { params: { id: string } };
 const idSchema = z.string().uuid();
 
 /** Actions the desk role may take; everything else needs a full admin. */
-const DESK_ACTIONS: ParticipantAction["action"][] = ["set_payment", "set_check_in", "assign_slot"];
+const DESK_ACTIONS: ParticipantAction["action"][] = ["issue_code", "set_payment", "set_check_in", "assign_slot"];
+/** Actions that change who is on the public board, or how. */
+const BOARD_ACTIONS: ParticipantAction["action"][] = ["disqualify", "restore", "cancel", "void_attempt", "set_final_status", "update_details"];
 
 /** Full record for the admin drawer — the only place the Game Code is shown after registration. */
 export async function GET(_req: Request, { params }: Ctx) {
@@ -58,6 +61,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
   const guard = await adminGuard(DESK_ACTIONS.includes(action.action) ? "desk" : "admin");
   if (guard.response) return guard.response;
   if (!idSchema.safeParse(params.id).success) return errorResponse("Participant not found.", 404);
+  if (BOARD_ACTIONS.includes(action.action)) await invalidateLeaderboard();
 
   const svc = await db();
   const now = new Date().toISOString();
@@ -68,6 +72,14 @@ export async function PATCH(req: Request, { params }: Ctx) {
   let notice: string | undefined;
 
   switch (action.action) {
+    case "issue_code": {
+      // Approve the payment and issue (or re-issue) the single-use Game Code.
+      // The code is returned to the desk only — it is never emailed.
+      const { data, error } = await svc.rpc("br_issue_code", { p_participant_id: params.id, p_payment: action.payment });
+      if (error || !data) return engineErrorResponse(error, "issue code");
+      notice = (await sendBattleEmail("check_in", params.id)).status;
+      return NextResponse.json({ ok: true, code: data, email: notice });
+    }
     case "set_payment":
       result = await update({ payment_status: action.value });
       break;

@@ -14,7 +14,6 @@ export type EmailContext = {
   eventTitle: string;
   name: string;
   code: string;
-  gameCode: string;
   slotLabel: string;
   eventDate: string;
   reportingTime: string;
@@ -66,13 +65,13 @@ export function detailsTable(rows: [string, string][]): string {
     .join("")}</table>`;
 }
 
-export function codeCard(code: string, gameCode: string): string {
+/** The Player ID, highlighted. The Game Code is never emailed: the desk hands it over. */
+export function playerCard(code: string, note: string): string {
   return `<table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;border-radius:14px;background:#eef6ff;border:1px solid #cfe3fb;">
     <tr><td style="padding:18px 20px;">
       <p style="margin:0;color:${MUTED};font-size:11px;letter-spacing:.12em;text-transform:uppercase;">Player ID</p>
-      <p style="margin:4px 0 14px;color:${BLUE};font-size:26px;font-weight:800;letter-spacing:.04em;font-family:'SFMono-Regular',Consolas,monospace;">${esc(code)}</p>
-      <p style="margin:0;color:${MUTED};font-size:11px;letter-spacing:.12em;text-transform:uppercase;">Game Code — keep it private</p>
-      <p style="margin:4px 0 0;color:${INK};font-size:22px;font-weight:800;letter-spacing:.2em;font-family:'SFMono-Regular',Consolas,monospace;">${esc(gameCode)}</p>
+      <p style="margin:4px 0 10px;color:${BLUE};font-size:26px;font-weight:800;letter-spacing:.04em;font-family:'SFMono-Regular',Consolas,monospace;">${esc(code)}</p>
+      <p style="margin:0;color:${INK};font-size:14px;line-height:1.55;">${esc(note)}</p>
     </td></tr></table>`;
 }
 

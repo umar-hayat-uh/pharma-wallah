@@ -10,7 +10,7 @@ import { getPublicSettings } from "@/lib/battle-royale/server";
 export const metadata: Metadata = {
   title: "Instructions & Rules — Battle Royale | PharmaWallah",
   description:
-    "How PharmaWallah Battle Royale works: registration, check-in, the three timed rounds, scoring, tie-breakers, disqualification and prizes.",
+    "How PharmaWallah Battle Royale works: registration, payment and your Game Code, the three timed rounds, scoring, tie-breakers, disqualification and prizes.",
   alternates: { canonical: "https://www.pharmawallah.com/battle-royale/instructions" },
 };
 
@@ -19,7 +19,7 @@ const SECTIONS = [
   ["eligibility", "Eligibility"],
   ["registration", "Registration"],
   ["reporting", "Reporting"],
-  ["check-in", "Check-in"],
+  ["check-in", "Payment & Game Code"],
   ["format", "Battle format"],
   ["scoring", "Scoring"],
   ["rules", "Rules"],
@@ -100,9 +100,8 @@ export default async function InstructionsPage() {
           <Section id="registration" title="Registration">
             <p>
               Register <Link href={`${BR_BASE}/register`} className="font-semibold text-[#1C7BD9] underline-offset-4 hover:underline">online</Link> or
-              in person at the PharmaWallah desk. You receive a <strong>Player ID</strong> (for example BR-2026-0007)
-              and a private six-character <strong>Game Code</strong>. The entry fee is <strong>Rs. {fee}</strong>, paid
-              at the desk.
+              in person at the PharmaWallah desk. You receive a <strong>Player ID</strong> (for example BR-2026-0007) by
+              email. The entry fee is <strong>Rs. {fee}</strong>, paid at the desk.
             </p>
           </Section>
 
@@ -116,18 +115,21 @@ export default async function InstructionsPage() {
             <Bullets items={ARRIVAL_POINTS} />
           </Section>
 
-          <Section id="check-in" title="Check-in">
+          <Section id="check-in" title="Payment & Game Code">
             <p>
-              Pay the entry fee at the desk, where staff will check you in. If you have already paid, you can also
-              check yourself in on the <Link href={`${BR_BASE}/check-in`} className="font-semibold text-[#1C7BD9] underline-offset-4 hover:underline">check-in page</Link> with
-              your Player ID (or email) and Game Code. You cannot start a battle until you are checked in.
+              Pay the entry fee at the desk. Once the desk approves your payment, they hand you a six-character
+              <strong> Game Code</strong> on a slip. It is never emailed. You type it at a gaming station to start your
+              battle, and it <strong>works once</strong>. If a station fails mid-battle, the desk can give you a new code
+              that continues the same battle. Check where you are any time on{" "}
+              <Link href={`${BR_BASE}/status`} className="font-semibold text-[#1C7BD9] underline-offset-4 hover:underline">My status</Link>.
             </p>
           </Section>
 
           <Section id="format" title="Battle format">
             <p>
-              At a station, enter your Player ID and Game Code. The battle then runs in order — you cannot go back to
-              an earlier question or round.
+              At a station, type your Game Code. The whole battle downloads to the station at once, so a weak
+              connection won&apos;t interrupt you; each round is sent when you finish it. The battle runs in order — you
+              cannot go back to an earlier question or round.
             </p>
             <ol className="mt-4 grid gap-4">
               {ROUNDS.map((r, i) => (
@@ -137,10 +139,9 @@ export default async function InstructionsPage() {
                     <p className="mt-1 text-lg font-bold text-[#16181d]">{r.name}</p>
                     <p className="mt-1 text-sm">{r.how}</p>
                     <p className="mt-2 text-sm font-medium text-[#16181d]">
-                      {i === 0 && `${r1} ${r1 === 1 ? "word" : "words"}`}
-                      {i === 1 && `${r2} ${r2 === 1 ? "board" : "boards"} of matching pairs`}
-                      {i === 2 && `${r3} questions`}
-                      {" · each with its own timer"}
+                      {i === 0 && `${r1} words to find · ${Math.round((s?.round1Seconds ?? 120) / 6) / 10} minutes for the grid`}
+                      {i === 1 && `${r2} ${r2 === 1 ? "board" : "boards"} of matching pairs · a timer per board`}
+                      {i === 2 && `${r3} questions · a timer per question`}
                     </p>
                   </div>
                   <div className="rounded-xl bg-[#f4f7fb] p-4"><RoundVisual round={r.no} /></div>
@@ -152,14 +153,12 @@ export default async function InstructionsPage() {
           <Section id="scoring" title="Scoring">
             <Bullets
               items={[
-                "Each correct word or quiz answer earns the question's points (usually 10). A wrong or unanswered question earns 0.",
-                "In Column Matching, every correct pair earns its points — a board is not all-or-nothing.",
-                s?.speedBonusEnabled
-                  ? `Speed bonus: a fully correct answer earns up to ${s.speedBonusMax} extra points, falling to 0 as its timer runs out.`
-                  : "There is no speed bonus in this event.",
-                "An answer submitted after its timer ends scores 0.",
-                "Final score = Round 1 + Round 2 + Round 3, calculated by the system.",
-                "Ties are broken by the higher Round 3 score, then by the faster total answering time.",
+                "Round 1: every word you find earns its points (usually 10).",
+                "Round 2: every correct pair earns its points — a board is not all-or-nothing.",
+                "Round 3: every correct answer earns its points (usually 10). Wrong or unanswered scores 0.",
+                "Final score = Round 1 + Round 2 + Round 3, calculated by the system when each round arrives.",
+                "A round must reach the system within its time allowance plus a few minutes for a slow connection; a round that arrives later scores 0.",
+                "Ties are broken by the higher Round 3 score, then by the shorter total battle time, measured by the system.",
               ]}
             />
           </Section>

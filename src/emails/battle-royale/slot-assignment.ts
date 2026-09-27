@@ -1,4 +1,4 @@
-import { codeCard, detailsTable, eventRows, headerSafe, paragraph, shell, textVersion, type EmailContext, type RenderedEmail } from "./layout";
+import { playerCard, detailsTable, eventRows, headerSafe, paragraph, shell, textVersion, type EmailContext, type RenderedEmail } from "./layout";
 
 export function slotAssignment(ctx: EmailContext): RenderedEmail {
   return {
@@ -11,7 +11,7 @@ export function slotAssignment(ctx: EmailContext): RenderedEmail {
         paragraph(`Hi ${ctx.name},`) +
         paragraph("A coordinator has assigned (or changed) your battle slot. Your details are below.") +
         detailsTable(eventRows(ctx)) +
-        codeCard(ctx.code, ctx.gameCode) +
+        playerCard(ctx.code, "Bring your Player ID. Pay at the desk (if you haven't) to receive your Game Code.") +
         paragraph("Please arrive 15–20 minutes before your reporting time."),
       cta: { label: "View Battle Instructions", href: `${ctx.siteUrl}/battle-royale/instructions` },
     }),
@@ -23,7 +23,7 @@ export function slotAssignment(ctx: EmailContext): RenderedEmail {
       `Date: ${ctx.eventDate}`,
       `Reporting time: ${ctx.reportingTime || "Any time the stall is open"}`,
       `Venue: ${ctx.venue}`,
-      `Player ID: ${ctx.code} · Game Code: ${ctx.gameCode}`,
+      `Player ID: ${ctx.code}`,
     ]),
   };
 }

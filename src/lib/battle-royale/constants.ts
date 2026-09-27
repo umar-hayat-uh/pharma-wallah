@@ -23,9 +23,9 @@ export const PHARM_YEARS = ["Year 1", "Year 2", "Year 3", "Year 4", "Year 5", "G
 export const ROUNDS = [
   {
     no: 1,
-    name: "Word Block",
-    short: "Spell the pharmacy word from scrambled letter blocks.",
-    how: "Read the clue, then tap the letter blocks in order to spell the word. Tap a placed letter to take it back. You can also type on a keyboard.",
+    name: "Word Search",
+    short: "Find as many hidden pharmacy words in the letter grid as you can.",
+    how: "Words run in any straight line — across, down, diagonal, even backwards. Drag across a word (or tap its first letter, then its last). Every word you find scores. One timer for the whole grid.",
   },
   {
     no: 2,
@@ -79,7 +79,7 @@ export const EMAIL_TYPE_LABEL: Record<EmailType, string> = {
   registration: "Registration",
   slot_assignment: "Slot assignment",
   reminder: "Reminder",
-  check_in: "Check-in",
+  check_in: "Payment approved",
   qualification: "Qualification",
   result: "Result",
 };
@@ -91,23 +91,23 @@ export const FAQ = [
   },
   {
     q: "Do I have to register online?",
-    a: "No. Online registration just saves time at the stall — you can also register in person at the desk.",
+    a: "No. Online registration just saves time at the stall — you can also register in person at the desk. Either way, you pay at the desk and receive your Game Code there.",
   },
   {
     q: "What is the Game Code?",
-    a: "A private six-character code sent with your Player ID. You need both to check in, to start your battle and to see your results. Don't share it: anyone with it can play as you.",
+    a: "A six-character code the desk gives you after approving your payment. You type it at a gaming station to start your battle. It works once — it is not emailed, and nobody else should see it.",
   },
   {
     q: "Can I play more than once?",
-    a: "No. There is one official attempt per participant. If a station fails during your attempt, tell a coordinator — they can verify it and reset your attempt.",
+    a: "No. There is one official attempt per participant. If a station fails during your attempt, tell a coordinator — they can give you a new code that continues the same battle.",
   },
   {
     q: "How is the score calculated?",
-    a: "Every correct answer earns its points, and a fast correct answer earns a small speed bonus. Your final score is Round 1 + Round 2 + Round 3, calculated by the system.",
+    a: "Every word found and every correct match or answer earns its points. Your final score is Round 1 + Round 2 + Round 3, calculated by the system.",
   },
   {
     q: "What happens if two people tie?",
-    a: "The higher Round 3 score wins the tie; if that is also equal, the faster total answering time wins.",
+    a: "The higher Round 3 score wins the tie; if that is also equal, the shorter total battle time (measured by our server) wins.",
   },
   {
     q: "When are winners announced?",

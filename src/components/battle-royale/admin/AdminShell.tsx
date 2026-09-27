@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BarChart3, ExternalLink, HelpCircle, LayoutDashboard, Mail, Settings, Trophy, Users, CalendarClock } from "lucide-react";
 import { Crest } from "../ui";
+import { SlipHost } from "./SlipHost";
 import { BR_BASE } from "@/lib/battle-royale/constants";
 import type { AdminRole } from "@/lib/battle-royale/types";
 import { cn } from "@/lib/utils";
@@ -59,6 +60,7 @@ export function AdminShell({ email, role, children }: { email: string; role: Adm
         </div>
       </aside>
       <div className="min-w-0 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</div>
+      <SlipHost />
     </div>
   );
 }

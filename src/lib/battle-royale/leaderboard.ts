@@ -6,6 +6,7 @@
  * freeze. This module only projects it onto the public shape — the column list
  * below is the whole of what anyone outside the admin can see.
  */
+import { redis } from "@/lib/redis";
 import { db, readSettings } from "./server";
 import { shortName } from "./format";
 import type { FinalStatus, LeaderboardPayload, LeaderboardRow } from "./types";
@@ -35,12 +36,33 @@ function project(r: Row, fullNames: boolean, finalized: boolean): LeaderboardRow
   };
 }
 
-export async function readLeaderboard(limit: number, code: string | null): Promise<LeaderboardPayload | null> {
+/*
+ * Upstash cache. The stall TV and every phone poll the board, and each read is
+ * three Postgres queries — so the ranked page is cached for CACHE_SECONDS and
+ * dropped the moment a battle finishes or an admin freezes/finalises. Like
+ * every cache here it fails open: no Redis, or a Redis error, reads Postgres.
+ * Only the shared part is cached; "your row" is looked up per request.
+ */
+const CACHE_SECONDS = 20;
+const cacheKey = (limit: number) => `br:leaderboard:v1:${limit}`;
+const CACHED_LIMITS = [20, 50, 100];
+
+export async function invalidateLeaderboard() {
+  if (!redis) return;
+  try {
+    await redis.del(...CACHED_LIMITS.map(cacheKey));
+  } catch (err) {
+    console.error("[battle-royale] leaderboard cache delete failed", err);
+  }
+}
+
+type Shared = Omit<LeaderboardPayload, "you">;
+
+async function readShared(limit: number): Promise<{ shared: Shared; full: boolean; fin: boolean } | null> {
   const settings = await readSettings();
   if (!settings) return null;
   const svc = await db();
-
-  const [top, count, you] = await Promise.all([
+  const [top, count] = await Promise.all([
     svc
       .from("br_leaderboard")
       .select(PUBLIC_COLUMNS)
@@ -48,24 +70,62 @@ export async function readLeaderboard(limit: number, code: string | null): Promi
       .order("completed_at", { ascending: true })
       .limit(limit),
     svc.from("br_leaderboard").select("participant_id", { count: "exact", head: true }),
-    code
-      ? svc.from("br_leaderboard").select(PUBLIC_COLUMNS).eq("participant_code", code).maybeSingle()
-      : Promise.resolve({ data: null, error: null }),
   ]);
   if (top.error) {
     console.error("[battle-royale] leaderboard read failed", top.error);
     return null;
   }
-
   const full = settings.showFullNames;
   const fin = settings.resultsFinalized;
   return {
-    rows: (top.data as Row[]).map((r) => project(r, full, fin)),
-    totalRanked: count.count ?? top.data.length,
-    frozenAt: settings.leaderboardFrozenAt,
-    finalized: fin,
-    winnersCount: settings.winnersCount,
-    you: you.data ? project(you.data as Row, full, fin) : null,
-    updatedAt: new Date().toISOString(),
+    full,
+    fin,
+    shared: {
+      rows: (top.data as Row[]).map((r) => project(r, full, fin)),
+      totalRanked: count.count ?? top.data.length,
+      frozenAt: settings.leaderboardFrozenAt,
+      finalized: fin,
+      winnersCount: settings.winnersCount,
+      updatedAt: new Date().toISOString(),
+    },
   };
+}
+
+export async function readLeaderboard(limit: number, code: string | null): Promise<LeaderboardPayload | null> {
+  // Round to a cached size so a handful of keys serve every caller.
+  const size = CACHED_LIMITS.find((l) => l >= limit) ?? 100;
+
+  let shared: Shared | null = null;
+  if (redis) {
+    try {
+      shared = (await redis.get<Shared>(cacheKey(size))) ?? null;
+    } catch (err) {
+      console.error("[battle-royale] leaderboard cache read failed", err);
+    }
+  }
+  let flags: { full: boolean; fin: boolean } | null = null;
+  if (!shared) {
+    const fresh = await readShared(size);
+    if (!fresh) return null;
+    shared = fresh.shared;
+    flags = { full: fresh.full, fin: fresh.fin };
+    if (redis) {
+      try {
+        await redis.set(cacheKey(size), shared, { ex: CACHE_SECONDS });
+      } catch (err) {
+        console.error("[battle-royale] leaderboard cache write failed", err);
+      }
+    }
+  }
+
+  let you: LeaderboardRow | null = null;
+  if (code) {
+    const svc = await db();
+    const { data } = await svc.from("br_leaderboard").select(PUBLIC_COLUMNS).eq("participant_code", code).maybeSingle();
+    if (data) {
+      const settings = flags ? null : await readSettings();
+      you = project(data as Row, flags?.full ?? settings?.showFullNames ?? false, flags?.fin ?? shared.finalized);
+    }
+  }
+  return { ...shared, rows: shared.rows.slice(0, limit), you };
 }

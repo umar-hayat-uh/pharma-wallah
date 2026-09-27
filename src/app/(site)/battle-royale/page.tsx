@@ -37,11 +37,11 @@ export const metadata: Metadata = {
 
 const STEPS = [
   { t: "Register", d: "Online here, or in person at the PharmaWallah desk." },
-  { t: "Receive confirmation", d: "Your Player ID and private Game Code arrive by email." },
-  { t: "Check in", d: "Pay the entry fee at the desk and check in." },
-  { t: "Enter your battle", d: "At any free gaming station, type your Player ID and Game Code." },
-  { t: "Complete the challenges", d: "Three timed rounds, one attempt, no going back." },
-  { t: "View your score", d: "Your total goes straight onto the live leaderboard." },
+  { t: "Receive confirmation", d: "Your Player ID arrives by email." },
+  { t: "Pay at the desk", d: "Pay the entry fee; the desk approves it." },
+  { t: "Get your Game Code", d: "The desk hands you a single-use code." },
+  { t: "Battle", d: "At a free station, type the code and play three timed rounds." },
+  { t: "See your score", d: "Your total goes straight onto the live leaderboard." },
 ];
 
 export default async function BattleRoyaleLanding() {
@@ -50,8 +50,8 @@ export default async function BattleRoyaleLanding() {
   const winners = settings?.winnersCount ?? 10;
 
   const cards = [
-    { icon: Ticket, title: "Registration", body: `Rs. ${fee} per participant. Register online or walk in at the desk.` },
-    { icon: Layers, title: "Battle rounds", body: "Three rounds: Word Block, Column Matching and the Final Pharma Quiz." },
+    { icon: Ticket, title: "Registration", body: `Register online or at the desk; pay Rs. ${fee} at the desk to get your Game Code.` },
+    { icon: Layers, title: "Battle rounds", body: "Three rounds: Word Search, Column Matching and the Final Pharma Quiz." },
     { icon: UserRound, title: "Individual scoring", body: "One player per station. Your score is yours alone, calculated by the system." },
     { icon: Radio, title: "Live competition", body: "The leaderboard updates the moment each battle is verified." },
     { icon: Gift, title: "Prizes", body: `The Top ${winners} win a PharmaWallah Goodie Hamper — notebook and pen.` },
@@ -181,8 +181,8 @@ export default async function BattleRoyaleLanding() {
           <p className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-[#16181d]/55">Battle rounds</p>
           <h2 id="br-rounds" className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Three rounds. One total.</h2>
           <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-[#16181d]/65">
-            Every question has its own timer, and a fast correct answer earns a small speed bonus. Your final
-            score is Round 1 + Round 2 + Round 3.
+            Every word found and every correct match or answer scores. Your final score is Round 1 + Round 2 +
+            Round 3; ties go to the higher Round 3, then the shorter battle time.
           </p>
           <ul className="mt-10 grid gap-5 lg:grid-cols-3">
             {ROUNDS.map((r) => (

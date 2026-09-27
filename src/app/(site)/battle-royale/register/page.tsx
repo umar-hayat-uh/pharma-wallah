@@ -9,7 +9,7 @@ import { getOpenSessions, getPublicSettings } from "@/lib/battle-royale/server";
 export const metadata: Metadata = {
   title: "Register — Battle Royale | PharmaWallah",
   description:
-    "Register for PharmaWallah Battle Royale. Get your Player ID and Game Code by email, then pay the entry fee and check in at the PharmaWallah desk.",
+    "Register for PharmaWallah Battle Royale. Get your Player ID by email, then pay the entry fee at the PharmaWallah desk to receive your Game Code.",
   alternates: { canonical: "https://www.pharmawallah.com/battle-royale/register" },
 };
 

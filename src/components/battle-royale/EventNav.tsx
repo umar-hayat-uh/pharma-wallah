@@ -9,9 +9,8 @@ const LINKS = [
   { href: BR_BASE, label: "Overview" },
   { href: `${BR_BASE}/register`, label: "Register" },
   { href: `${BR_BASE}/instructions`, label: "Instructions" },
-  { href: `${BR_BASE}/check-in`, label: "Check in" },
+  { href: `${BR_BASE}/status`, label: "My status" },
   { href: `${BR_BASE}/leaderboard`, label: "Leaderboard" },
-  { href: `${BR_BASE}/results`, label: "My results" },
 ];
 
 /** The event's own tabs, under the site header. Hidden on the chromeless apps. */

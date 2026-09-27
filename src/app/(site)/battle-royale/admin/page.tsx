@@ -2,12 +2,12 @@ import Link from "next/link";
 import { Activity, CalendarClock, CheckCheck, Hourglass, MailWarning, Swords, UserPlus, Users, Wallet } from "lucide-react";
 import { AdminHeader } from "@/components/battle-royale/admin/AdminShell";
 import { CompetitionSwitches } from "@/components/battle-royale/admin/CompetitionSwitches";
-import { CheckInBadge, Notice, PaymentBadge, SessionBadge } from "@/components/battle-royale/ui";
+import { Notice, PaymentBadge, SessionBadge, StatusBadge } from "@/components/battle-royale/ui";
 import { adminForPage } from "@/lib/battle-royale/admin-page";
 import { BR_BASE, ROUNDS } from "@/lib/battle-royale/constants";
 import { EVENT_TZ, formatSlot, formatTime } from "@/lib/battle-royale/format";
 import { db, readSettings } from "@/lib/battle-royale/server";
-import type { CheckInStatus, PaymentStatus, SessionStatus } from "@/lib/battle-royale/types";
+import type { PaymentStatus, SessionStatus } from "@/lib/battle-royale/types";
 
 const A = `${BR_BASE}/admin`;
 
@@ -38,14 +38,14 @@ export default async function AdminOverview() {
       readSettings(),
       count(svc.from("br_participants").select("id", { count: "exact", head: true }).neq("registration_status", "cancelled")),
       count(svc.from("br_participants").select("id", { count: "exact", head: true }).in("payment_status", ["paid", "waived"])),
-      count(svc.from("br_participants").select("id", { count: "exact", head: true }).in("check_in_status", ["checked_in", "late"])),
+      count(svc.from("br_participants").select("id", { count: "exact", head: true }).not("code_issued_at", "is", null)),
       count(svc.from("br_attempts").select("id", { count: "exact", head: true }).eq("status", "active")),
       count(svc.from("br_attempts").select("id", { count: "exact", head: true }).eq("status", "completed")),
       count(svc.from("br_scores").select("participant_id", { count: "exact", head: true }).eq("final_status", "pending")),
       count(svc.from("br_email_logs").select("id", { count: "exact", head: true }).eq("status", "failed")),
       svc
         .from("br_participants")
-        .select("id, name, participant_code, university, source, payment_status, check_in_status, created_at")
+        .select("id, name, participant_code, university, source, payment_status, game_code, created_at")
         .order("created_at", { ascending: false })
         .limit(8),
       svc
@@ -102,8 +102,8 @@ export default async function AdminOverview() {
 
       <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
         <StatCard icon={Users} label="Total registrations" value={total} href={`${A}/participants`} />
-        <StatCard icon={Wallet} label="Fee received" value={paid} href={`${A}/participants?payment=paid`} />
-        <StatCard icon={CheckCheck} label="Checked in" value={checkedIn} href={`${A}/participants?checkin=checked_in`} />
+        <StatCard icon={Wallet} label="Awaiting approval" value={total - paid} href={`${A}/participants?code=none`} />
+        <StatCard icon={CheckCheck} label="Codes issued" value={checkedIn} href={`${A}/participants?code=issued`} />
         <StatCard icon={Swords} label="Active battles" value={active} />
         <StatCard icon={Activity} label="Completed battles" value={completed} href={admin.role === "admin" ? `${A}/results` : undefined} />
         <StatCard icon={Hourglass} label="Pending results" value={pending} href={admin.role === "admin" ? `${A}/results` : undefined} />
@@ -184,7 +184,7 @@ export default async function AdminOverview() {
                 </div>
                 <div className="flex gap-1.5">
                   <PaymentBadge value={p.payment_status as PaymentStatus} />
-                  <CheckInBadge value={p.check_in_status as CheckInStatus} />
+                  {p.game_code && <StatusBadge tone="blue">Code issued</StatusBadge>}
                 </div>
               </li>
             ))}

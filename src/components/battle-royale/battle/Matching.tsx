@@ -2,9 +2,9 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { X } from "lucide-react";
-import type { AnswerPayload, PublicQuestion } from "@/lib/battle-royale/types";
+import type { BoardPlan } from "@/lib/battle-royale/types";
 import { cn } from "@/lib/utils";
-import { SubmitButton } from "./WordBlock";
+import { SubmitButton } from "./SubmitButton";
 import type { DraftHandle } from "./types";
 
 // One colour per Column A item, so a pair reads as a pair without lines —
@@ -16,7 +16,7 @@ const PAIR_COLOURS = ["#1C7BD9", "#21B67A", "#8b5cf6", "#f59e0b", "#e11d48", "#0
  * item can only belong to one pair: choosing it again moves it. Every pair is
  * graded on its own, so a board submitted half-done still scores what's right.
  */
-export const Matching = forwardRef<DraftHandle, { question: PublicQuestion; disabled: boolean; onSubmit: (a: AnswerPayload) => void }>(
+export const Matching = forwardRef<DraftHandle, { question: BoardPlan; disabled: boolean; onSubmit: (a: { matches: string[] }) => void }>(
   function Matching({ question, disabled, onSubmit }, ref) {
     const left = question.left ?? [];
     const right = question.right ?? [];

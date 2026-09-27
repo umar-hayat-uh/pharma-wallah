@@ -11,22 +11,23 @@ server-authoritative game engine, its Game Code identity model, or its admin rol
 - "add an admin", "emails aren't sending"
 
 ## Read First
-1. `.claude/MEMORY.md` gotchas 171–175.
-2. `supabase/migrations/20260927_battle_royale.sql` — §9 is the engine; it is the source of truth.
+1. `.claude/MEMORY.md` gotchas 171–179.
+2. `supabase/migrations/20260928_battle_royale_v2.sql` — the current engine (v1 file holds the tables); the SQL is the source of truth.
 3. `src/lib/battle-royale/server.ts` (error map, token, admin check) and `schemas.ts`.
 
 ## Architecture Context
 - **Not the old tournament.** `br_*` tables only; nothing in `tournament_*`/`entry_codes`/Redis.
-- **Identity:** public Player ID (`BR-YYYY-NNNN`, sequential, shown on the board) + private 6-char
-  Game Code. Starting a battle sets an httpOnly `br_attempt` cookie; Postgres stores only its
-  SHA-256. Resuming on another device rotates the token (the old one dies).
-- **Engine in SQL:** `br_start_attempt`, `br_serve` (starts the question's timer — idempotent),
-  `br_answer` (grades, applies timer + 2 s grace, records, advances), `br_state` (expires timed-out
-  questions). Answers are the ledger; `br_recount` rebuilds totals from them. One live attempt per
-  participant (partial unique index); `br_void_attempt` frees it.
-- **Answer key** leaves the server only in `br_answer`'s result, after recording.
-- **Scoring:** points per question (per pair on matching boards) + linear speed bonus
-  (`br_settings.speed_bonus_max`) for fully correct answers. Ranking: total, R3, time.
+- **Flow (v2):** register → Player ID emailed (no code) → pay at desk → admin "Approve & issue code"
+  (`br_issue_code`: paid + checked in + unique 6-char code, shown only on the admin slip, never
+  emailed) → station takes the code alone, which is consumed → battle → status/leaderboard.
+  Re-issuing a code resumes the same attempt on a new station; the old code and cookie die.
+- **Offline-first station:** `br_start_attempt` returns the whole battle without answers (word grid
+  + list, boards with shuffled Column B, MCQs). The station saves it in localStorage and submits
+  one round at a time (`br_submit_round`, idempotent). Round window = previous round's server
+  arrival + the round's time + `sync_grace_seconds`; later = 0 for the round.
+- **Round 1 is a word search** generated in SQL (`br_make_wordsearch`, 8 directions); positions stay
+  server-side and `br_ws_path_spells` verifies each claimed path.
+- **Scoring:** correctness only (no speed bonus in v2). Ranking: total, R3, server-measured battle time.
 - **Security:** RLS on, no policies; EXECUTE on `br_*` functions revoked from anon/authenticated.
   Route handlers use the service client. Admins = rows in `br_admins` (`admin` | `desk`).
 - **Closing:** freeze (sets `leaderboard_frozen_at`, closes the arena) → finalise (Top N winners)
@@ -34,7 +35,7 @@ server-authoritative game engine, its Game Code identity model, or its admin rol
 
 ## Procedure
 - New setting → column in `br_settings` + `SettingsRow`/`toPublicSettings` + `settingsSchema` + form.
-- Engine change → edit the SQL, re-run the file (idempotent), extend
+- Engine change → edit the v2 SQL, re-run it (idempotent; it ends with `notify pgrst`), extend
   `scripts/battle-royale-engine.test.sql`, run it on a throwaway Postgres.
 - Every Zod transform must accept its own output (gotcha 171); `node --test scripts/battle-royale.test.mts`.
 

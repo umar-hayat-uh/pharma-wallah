@@ -4,6 +4,7 @@ import { adminGuard } from "@/lib/battle-royale/admin";
 import { firstIssue, resultsActionSchema } from "@/lib/battle-royale/schemas";
 import { SETTINGS_TAG, db, engineErrorResponse, errorResponse, readJson, readSettings } from "@/lib/battle-royale/server";
 import { sendBattleEmails } from "@/lib/battle-royale/email";
+import { invalidateLeaderboard } from "@/lib/battle-royale/leaderboard";
 
 /** Most emails one request sends; a larger field is notified in batches. */
 const MAX_NOTIFY = 150;
@@ -26,6 +27,8 @@ export async function POST(req: Request) {
   const settings = await readSettings();
   if (!settings) return errorResponse("Settings are unavailable.", 503);
   const now = new Date().toISOString();
+  // Every action here changes what the public board shows.
+  if (action.action !== "notify") await invalidateLeaderboard();
 
   switch (action.action) {
     case "freeze": {
@@ -47,6 +50,7 @@ export async function POST(req: Request) {
       const { data, error } = await svc.rpc("br_finalize_results", { p_winners: settings.winnersCount });
       if (error) return engineErrorResponse(error, "finalize");
       revalidateTag(SETTINGS_TAG);
+      await invalidateLeaderboard();
       return NextResponse.json({ ok: true, labelled: data });
     }
     case "unfinalize": {
@@ -67,5 +71,6 @@ export async function POST(req: Request) {
     }
   }
   revalidateTag(SETTINGS_TAG);
+  await invalidateLeaderboard();
   return NextResponse.json({ ok: true });
 }

@@ -23,7 +23,7 @@ type Draft = {
 
 const TYPE_FOR: Record<1 | 2 | 3, "WORD" | "MATCHING" | "MCQ"> = { 1: "WORD", 2: "MATCHING", 3: "MCQ" };
 const DEFAULTS: Record<1 | 2 | 3, { points: string; timeLimit: string }> = {
-  1: { points: "10", timeLimit: "35" },
+  1: { points: "10", timeLimit: "30" },
   2: { points: "5", timeLimit: "75" },
   3: { points: "10", timeLimit: "20" },
 };
@@ -133,12 +133,12 @@ export function QuestionManager({ round, active, rows }: { round: 1 | 2 | 3; act
       <Dialog open={editing !== null} onClose={() => setEditing(null)} title={`${editing === "new" ? "New" : "Edit"} ${ROUNDS[round - 1].name} question`} wide>
         <form onSubmit={(e) => { e.preventDefault(); void save(); }} className="space-y-4">
           {error && <Notice tone="red">{error}</Notice>}
-          <Field id="q-text" label={round === 1 ? "Clue" : round === 2 ? "Instruction" : "Question"}>
+          <Field id="q-text" label={round === 1 ? "Note (admin only — the word search shows just the word)" : round === 2 ? "Instruction" : "Question"}>
             <textarea id="q-text" required rows={2} className={cn(inputClass, "h-auto py-2.5")} value={draft.question} onChange={(e) => setDraft({ ...draft, question: e.target.value })} />
           </Field>
 
           {round === 1 && (
-            <Field id="q-word" label="Word" hint="3–16 letters, A–Z only. Players see these letters scrambled.">
+            <Field id="q-word" label="Word" hint="3–16 letters, A–Z only. Words longer than the grid (Settings) are never drawn.">
               <input id="q-word" required className={cn(inputClass, "font-mono uppercase tracking-widest")} value={draft.answer} onChange={(e) => setDraft({ ...draft, answer: e.target.value.toUpperCase().replace(/[^A-Z]/g, "") })} />
             </Field>
           )}

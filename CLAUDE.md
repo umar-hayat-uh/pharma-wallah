@@ -69,7 +69,7 @@ node --test scripts/community.test.mts                                 # 19 unit
 node --test scripts/ai-guide.test.mts                                  # 34 unit tests, AI Guide pure layer
 node --test scripts/dissolution-rate.test.mts                          # 28 unit tests, Dissolution Rate Constant
 node --test scripts/split-for-ads.test.mts                             # 6 unit tests, lesson ad spacing
-node --test scripts/battle-royale.test.mts                             # 12 unit tests, Battle Royale schemas/format
+node --test scripts/battle-royale.test.mts                             # 17 unit tests, Battle Royale schemas/format/station
 node scripts/build-molecule-library.mts   # regenerate the Molecular Lab library from PubChem (network)
 ```
 
@@ -292,9 +292,10 @@ These are conventions **observed in the code**, not aspirations.
   and `ListAgents`, and announce which shared files you are taking, before editing one.
 
 ### Recently Completed
-- **Battle Royale event app (2026-09-27)** — `/battle-royale`: registration (online + desk), arena
-  with a game loading/title screen, three server-graded rounds, live leaderboard, full admin.
-  **Blocked on the owner running `supabase/migrations/20260927_battle_royale.sql`.** See §8.
+- **Battle Royale event app (2026-09-27, v2 same day)** — `/battle-royale`: register → pay at desk →
+  admin issues a single-use Game Code → offline-first station (word search, matching, quiz) → live
+  leaderboard (Upstash-cached). **Blocked on the owner running the SQL (v1 + v2, or
+  `supabase/battle_royale_setup.sql`).** See §8.
 - **Ads: 3–5 per content page, lesson files no longer public (2026-09-23/24)** — see the §8
   entry. Lessons 3–5, calculators 3, hub 4, spotting lessons 2–3; thin pages none. Every lesson
   with inline code was failing to hydrate (react-markdown 10) — fixed. **Deployed (`8527e56`) and
@@ -732,6 +733,33 @@ key revealed only after recording; brand tokens used over the spec's hexes.
 **Remaining (owner)** — run the migration + question seed in Supabase, add yourself to
 `br_admins`, set event date/venue in admin Settings, turn on "Battles can start" on the day.
 Have a pharmacist read the question seed. Until the migration runs, submitting the form fails.
+
+### 2026-09-27 (later) — Battle Royale v2: desk-issued single-use codes, offline station, word search
+
+Same session. User: code given only by the admin after payment approval and usable once; fewer API
+calls and questions kept on the device for bad internet; leaderboard in Upstash; Round 1 as a word
+search like a reference image; a flow map of every screen. Decisions (asked): code-only entry;
+no device timing trusted (no speed bonus, server-measured tie time); word list shown; flow map.
+
+**Completed** — `supabase/migrations/20260928_battle_royale_v2.sql` (idempotent upgrade; v1 codes
+cleared unless used; per-round engine; word-search generator; `notify pgrst`), rewritten station
+(`battle/BattleApp.tsx`, `station.ts`, `WordSearch.tsx`), routes `battle/submit` + `status` (check-in,
+results, serve, answer removed; old pages redirect), Upstash leaderboard cache (20 s, invalidated on
+finish/admin actions, fails open), admin Approve & issue code + printable slip + re-issue, emails
+without codes, `supabase/battle_royale_setup.sql` regenerated (v1+v2+questions+2 admins).
+Flow map: https://claude.ai/artifact/HDPyC8TJ1f3UUzuLqjfKNy
+
+**Verification** — tsc 0 errors; `node --test scripts/battle-royale.test.mts` **17 pass**; engine v2
+SQL suite passes (forged word path refused, late round = 0, idempotent retry, single-use codes,
+re-issue resumes); setup file applied twice to a fresh DB; API e2e **35/35**; browser battles
+**13/13 desktop (tap-tap + mouse drag), 13/13 phone (touch drag), 15/15 offline** (round queued,
+reload offline, synced on reconnect). Bugs found and fixed by these runs: drag dropped by a
+state race (MEMORY 178), code slip wiped by a remount (176), stale PostgREST cache (177), crash on
+a v1 database (179 — the user hit it). `npm run build` → see §9. **Not verified:** real Upstash,
+real Supabase, real Resend, a physical phone.
+
+**Remaining (owner)** — run the v2 migration (or the setup file on a fresh project); create the
+admin accounts, then the admin grant at the bottom of the setup file.
 
 ### 2026-09-23/24 — Lesson files out of `public/`; 3–5 ads per content page (continuation)
 

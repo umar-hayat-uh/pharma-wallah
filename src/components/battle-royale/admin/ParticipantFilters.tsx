@@ -43,7 +43,7 @@ export function ParticipantFilters({ slots }: { slots: Slot[] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uni]);
 
-  const any = ["q", "year", "university", "slot", "status", "payment", "checkin"].some((k) => params.get(k));
+  const any = ["q", "year", "university", "slot", "status", "payment", "code"].some((k) => params.get(k));
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -78,11 +78,11 @@ export function ParticipantFilters({ slots }: { slots: Slot[] }) {
         <option value="paid">Paid / waived</option>
         <option value="unpaid">Fee due</option>
       </select>
-      <select aria-label="Check-in" className={sel} value={params.get("checkin") ?? ""} onChange={(e) => set("checkin", e.target.value)}>
-        <option value="">Any check-in</option>
-        <option value="checked_in">Checked in (incl. late)</option>
-        <option value="late">Late</option>
-        <option value="not_checked_in">Not checked in</option>
+      <select aria-label="Game Code" className={sel} value={params.get("code") ?? ""} onChange={(e) => set("code", e.target.value)}>
+        <option value="">Any code state</option>
+        <option value="none">Awaiting approval</option>
+        <option value="issued">Code issued, not used</option>
+        <option value="used">Code used</option>
       </select>
       {any && (
         <button

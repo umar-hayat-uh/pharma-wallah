@@ -3,12 +3,13 @@ import { AdminHeader } from "@/components/battle-royale/admin/AdminShell";
 import { ParticipantFilters } from "@/components/battle-royale/admin/ParticipantFilters";
 import { ParticipantDrawer } from "@/components/battle-royale/admin/ParticipantDrawer";
 import { DeskRegistration } from "@/components/battle-royale/admin/DeskRegistration";
-import { CheckInBadge, Notice, PaymentBadge, RegistrationBadge } from "@/components/battle-royale/ui";
+import { CodeCell } from "@/components/battle-royale/admin/ApproveButton";
+import { Notice, PaymentBadge, RegistrationBadge } from "@/components/battle-royale/ui";
 import { adminForPage } from "@/lib/battle-royale/admin-page";
 import { BR_BASE, PHARM_YEARS } from "@/lib/battle-royale/constants";
 import { formatSlot, formatTime } from "@/lib/battle-royale/format";
 import { db } from "@/lib/battle-royale/server";
-import type { CheckInStatus, PaymentStatus, RegistrationStatus } from "@/lib/battle-royale/types";
+import type { PaymentStatus, RegistrationStatus } from "@/lib/battle-royale/types";
 
 const PAGE_SIZE = 25;
 const MAX_PAGE = 400;
@@ -36,7 +37,7 @@ export default async function ParticipantsPage({ searchParams }: { searchParams:
   const slot = one(searchParams.slot);
   const status = one(searchParams.status);
   const payment = one(searchParams.payment);
-  const checkin = one(searchParams.checkin);
+  const codeState = one(searchParams.code);
   const rawPage = Number(one(searchParams.page) ?? 1);
   const page = Number.isFinite(rawPage) ? Math.min(Math.max(Math.trunc(rawPage), 1), MAX_PAGE) : 1;
 
@@ -44,7 +45,7 @@ export default async function ParticipantsPage({ searchParams }: { searchParams:
   let query = svc
     .from("br_participants")
     .select(
-      "id, participant_code, name, email, university, pharm_year, source, registration_status, payment_status, check_in_status, created_at, slot:br_sessions(name, start_time, end_time)",
+      "id, participant_code, name, email, university, pharm_year, source, registration_status, payment_status, code_issued_at, code_used_at, game_code, created_at, slot:br_sessions(name, start_time, end_time)",
       { count: "exact" },
     )
     .order("created_at", { ascending: false })
@@ -58,8 +59,9 @@ export default async function ParticipantsPage({ searchParams }: { searchParams:
   if (status && ["registered", "disqualified", "cancelled"].includes(status)) query = query.eq("registration_status", status);
   if (payment === "paid") query = query.in("payment_status", ["paid", "waived"]);
   else if (payment === "unpaid") query = query.eq("payment_status", "unpaid");
-  if (checkin === "checked_in") query = query.in("check_in_status", ["checked_in", "late"]);
-  else if (checkin && ["not_checked_in", "late"].includes(checkin)) query = query.eq("check_in_status", checkin);
+  if (codeState === "none") query = query.is("game_code", null).eq("registration_status", "registered");
+  else if (codeState === "issued") query = query.not("game_code", "is", null).is("code_used_at", null);
+  else if (codeState === "used") query = query.not("code_used_at", "is", null);
 
   const [{ data, count, error }, sessions] = await Promise.all([
     query,
@@ -79,7 +81,7 @@ export default async function ParticipantsPage({ searchParams }: { searchParams:
     <>
       <AdminHeader
         title="Participants"
-        lead="Search, filter and act on registrations. Click a row for the full record, the Game Code and every action."
+        lead="When someone pays at the desk, press Approve & issue code and hand them the slip. Click a name for the full record and every other action."
         actions={<DeskRegistration slots={slots} />}
       />
       <ParticipantFilters slots={slots} />
@@ -96,7 +98,7 @@ export default async function ParticipantsPage({ searchParams }: { searchParams:
                 <th scope="col" className="px-4 py-3">Slot</th>
                 <th scope="col" className="px-4 py-3">Status</th>
                 <th scope="col" className="px-4 py-3">Fee</th>
-                <th scope="col" className="px-4 py-3">Check-in</th>
+                <th scope="col" className="px-4 py-3">Game Code</th>
                 <th scope="col" className="px-4 py-3 text-right">Registered</th>
               </tr>
             </thead>
@@ -126,7 +128,14 @@ export default async function ParticipantsPage({ searchParams }: { searchParams:
                     <td className="px-4 py-3 text-xs">{s ? formatSlot({ name: s.name, startTime: s.start_time, endTime: s.end_time }) : "Walk-in"}</td>
                     <td className="px-4 py-3"><RegistrationBadge value={p.registration_status as RegistrationStatus} /></td>
                     <td className="px-4 py-3"><PaymentBadge value={p.payment_status as PaymentStatus} /></td>
-                    <td className="px-4 py-3"><CheckInBadge value={p.check_in_status as CheckInStatus} /></td>
+                    <td className="px-4 py-3">
+                      <CodeCell
+                        id={p.id}
+                        name={p.name}
+                        playerId={p.participant_code}
+                        state={p.code_used_at && p.game_code ? "used" : p.game_code ? "issued" : p.registration_status === "registered" ? "none" : "na"}
+                      />
+                    </td>
                     <td className="px-4 py-3 text-right text-xs text-[#16181d]/55">
                       {p.source === "desk" ? "Desk" : "Online"} · {formatTime(p.created_at)}
                     </td>

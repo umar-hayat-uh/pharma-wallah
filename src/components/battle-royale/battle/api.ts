@@ -1,8 +1,9 @@
 /**
- * The battle's four calls. The browser holds no participant id and no score of
- * its own — only the httpOnly cookie the start call set, which it cannot read.
+ * The battle's three calls: start (downloads everything), state, and submit a
+ * round. The browser holds no participant id and no score of its own — only
+ * the httpOnly cookie the start call set, which it cannot read.
  */
-import type { AnswerPayload, AnswerResult, BattleState } from "@/lib/battle-royale/types";
+import type { BattleState, RoundAnswers, RoundNo, RoundResult } from "@/lib/battle-royale/types";
 
 export type ApiResult<T> =
   | { ok: true; data: T; clockOffset: number }
@@ -23,25 +24,21 @@ async function call<T>(path: string, init?: RequestInit): Promise<ApiResult<T>> 
     if (!res.ok) {
       return { ok: false, error: body.error ?? "Something went wrong. Please try again.", code: body.code, status: res.status };
     }
-    // Server clock minus the midpoint of the round trip: the offset the
-    // countdown uses, so a station with a wrong clock still shows true time.
     const serverNow = Date.parse(body?.state?.now ?? "");
     const clockOffset = Number.isNaN(serverNow) ? 0 : serverNow - (t0 + t1) / 2;
     return { ok: true, data: body as T, clockOffset };
   } catch {
-    return { ok: false, error: "Connection lost. Check the network — your battle is saved on the server.", status: 0 };
+    // status 0 = no response at all: the connection, not the server, failed.
+    return { ok: false, error: "No connection. Your answers are saved on this station.", status: 0 };
   }
 }
 
+export type SubmitResponse = { round: RoundNo; result: RoundResult; state: BattleState; repeat: boolean };
+
 export const battleApi = {
   state: () => call<{ state: BattleState | null; notice?: string }>("/state"),
-  start: (identifier: string, gameCode: string) =>
-    call<{ state: BattleState }>("/start", { method: "POST", body: JSON.stringify({ identifier, gameCode }) }),
-  serve: () => call<{ state: BattleState }>("/serve", { method: "POST" }),
-  answer: (questionId: string, answer: AnswerPayload) =>
-    call<{ result: AnswerResult; state: BattleState }>("/answer", {
-      method: "POST",
-      body: JSON.stringify({ questionId, answer }),
-    }),
+  start: (code: string) => call<{ state: BattleState }>("/start", { method: "POST", body: JSON.stringify({ code }) }),
+  submit: (round: RoundNo, answers: RoundAnswers) =>
+    call<SubmitResponse>("/submit", { method: "POST", body: JSON.stringify({ round, answers }) }),
   leave: () => call<{ ok: true }>("/state", { method: "DELETE" }),
 };

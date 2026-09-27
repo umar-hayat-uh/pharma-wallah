@@ -3,10 +3,10 @@
  * holds the service-role client (RLS bypassed).
  *
  * Authorization model (MEMORY.md §3): this feature is "Model A", but with no
- * user accounts for players. The browser never reads a table. Players are
- * identified by (Player ID or email) + Game Code, checked inside Postgres; a
- * running battle is identified by a random token in an httpOnly cookie whose
- * SHA-256 is all the database stores. Admins are Supabase users with a row in
+ * user accounts for players. The browser never reads a table. A player enters
+ * the arena with the single-use Game Code the desk issued on approving their
+ * payment; from then on the battle is identified by a random token in an
+ * httpOnly cookie whose SHA-256 is all the database stores. Admins are Supabase users with a row in
  * `br_admins` — checked here on every admin request, not by comparing emails.
  */
 import { createHash, randomBytes } from "node:crypto";
@@ -29,21 +29,20 @@ export function errorResponse(message: string, status: number) {
  * generic failure — raw database text never reaches the browser. */
 
 const ENGINE_ERRORS: Record<string, [number, string]> = {
-  BR_INVALID_CREDENTIALS: [401, "That Player ID and Game Code don't match. Check your confirmation slip or email."],
+  BR_INVALID_CODE: [401, "That Game Code isn't valid. Check the slip from the desk and try again."],
+  BR_CODE_USED: [409, "This Game Code has already been used. If your station failed, ask the desk for a new code to continue."],
   BR_DISQUALIFIED: [403, "This participant has been disqualified. Please speak to an event coordinator."],
   BR_CANCELLED: [403, "This registration was cancelled. Please speak to the registration desk."],
-  BR_ALREADY_PLAYED: [409, "You have already completed your official attempt. You can view your results."],
+  BR_NOT_REGISTERED: [409, "This registration is cancelled or disqualified, so no code can be issued."],
+  BR_ALREADY_PLAYED: [409, "This participant has already completed their official attempt."],
   BR_CLOSED: [403, "The arena isn't open for battles right now. Please wait for a coordinator."],
-  BR_NOT_PAID: [402, "Your entry fee hasn't been confirmed yet. Please pay at the PharmaWallah desk."],
-  BR_NOT_CHECKED_IN: [403, "You haven't checked in yet. Check in at the desk or on the check-in page first."],
+  BR_NOT_PAID: [402, "The entry fee hasn't been confirmed yet. Please pay at the PharmaWallah desk."],
   BR_SESSION_ENDED: [403, "This battle session has ended."],
   BR_NO_QUESTIONS: [503, "The question bank isn't ready yet. Please tell a coordinator."],
-  BR_NO_ATTEMPT: [404, "No battle is running on this device. Enter your Player ID and Game Code to continue."],
-  BR_ATTEMPT_VOID: [410, "This attempt was reset by a coordinator. Enter your Player ID and Game Code to start again."],
+  BR_NO_ATTEMPT: [404, "No battle is running on this device. Enter your Game Code to continue."],
+  BR_ATTEMPT_VOID: [410, "This attempt was reset by a coordinator. Ask the desk for a new Game Code."],
   BR_COMPLETED: [409, "This battle is already complete."],
-  BR_DUPLICATE: [409, "This question has already been submitted."],
-  BR_WRONG_QUESTION: [409, "That question is no longer active. Loading the current one…"],
-  BR_QUESTION_MISSING: [500, "A question in your battle could not be loaded. Please tell a coordinator."],
+  BR_ROUND_ORDER: [409, "Rounds must be submitted in order. Syncing…"],
   BR_REGISTRATION_CLOSED: [403, "Online registration is closed. You can still register at the PharmaWallah desk."],
   BR_EMAIL_TAKEN: [409, "This email is already registered for Battle Royale."],
   BR_SLOT_FULL: [409, "That battle slot is full. Please choose another."],
@@ -157,7 +156,7 @@ export const SESSIONS_TAG = "br-sessions";
 export type SettingsRow = {
   event_title: string; tagline: string; event_date: string | null; reporting_time: string; venue: string;
   entry_fee: number; contact_text: string; round1_count: number; round2_count: number; round3_count: number;
-  speed_bonus_enabled: boolean; speed_bonus_max: number; winners_count: number; registration_open: boolean;
+  round1_seconds: number; grid_size: number; sync_grace_seconds: number; winners_count: number; registration_open: boolean;
   competition_open: boolean; leaderboard_frozen_at: string | null; results_finalized: boolean;
   show_full_names: boolean; rules: unknown;
 };
@@ -172,8 +171,9 @@ export function toPublicSettings(r: SettingsRow): PublicSettings {
     entryFee: r.entry_fee,
     contactText: r.contact_text,
     roundCounts: [r.round1_count, r.round2_count, r.round3_count],
-    speedBonusEnabled: r.speed_bonus_enabled,
-    speedBonusMax: r.speed_bonus_max,
+    round1Seconds: r.round1_seconds ?? 120,
+    gridSize: r.grid_size ?? 10,
+    syncGraceSeconds: r.sync_grace_seconds ?? 180,
     winnersCount: r.winners_count,
     registrationOpen: r.registration_open,
     competitionOpen: r.competition_open,

@@ -12,7 +12,7 @@ import { Field, Notice, inputClass, selectClass } from "../ui";
 import { PHARM_YEARS } from "@/lib/battle-royale/constants";
 import { deskRegistrationSchema, type DeskRegistrationInput } from "@/lib/battle-royale/schemas";
 
-type Created = { participant: { id: string; name: string; code: string; gameCode: string }; email: string };
+type Created = { participant: { id: string; name: string; code: string; gameCode: string | null }; email: string };
 
 /**
  * The desk workflow from the event plan: record details → collect the fee →
@@ -38,7 +38,7 @@ export function DeskRegistration({ slots }: { slots: { id: string; label: string
     formState: { errors },
   } = useForm<DeskRegistrationInput, unknown, z.output<typeof deskRegistrationSchema>>({
     resolver: zodResolver(deskRegistrationSchema),
-    defaultValues: { name: "", email: "", phone: "", university: "", studentId: "", slotId: "", paymentStatus: "paid", checkIn: true, sendEmail: true },
+    defaultValues: { name: "", email: "", phone: "", university: "", studentId: "", slotId: "", approve: true, paymentStatus: "paid", sendEmail: true },
   });
 
   const close = () => {
@@ -75,13 +75,13 @@ export function DeskRegistration({ slots }: { slots: { id: string; label: string
                 </div>
                 <div>
                   <p className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-[#16181d]/55">Game Code</p>
-                  <p className="font-mono text-2xl font-bold tracking-[0.2em]">{created.participant.gameCode}</p>
+                  <p className="font-mono text-2xl font-bold tracking-[0.2em]">{created.participant.gameCode ?? "— (not approved)"}</p>
                 </div>
               </div>
             </div>
             <p className="text-sm text-[#16181d]/65">
               {created.email === "sent" ? "Confirmation email sent." : created.email === "failed" ? "The email failed — resend it from the participant's record." : "No email sent."}{" "}
-              Give the participant these codes and direct them to a free station.
+              {created.participant.gameCode ? "Hand over the slip and direct them to a free station. The code works once." : "Approve their payment from the participant list when they pay."}
             </p>
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={() => window.print()} className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#16181d]/15 px-4 text-sm font-semibold">
@@ -89,7 +89,7 @@ export function DeskRegistration({ slots }: { slots: { id: string; label: string
               </button>
               <button
                 type="button"
-                onClick={() => void navigator.clipboard?.writeText(`Player ID: ${created.participant.code}\nGame Code: ${created.participant.gameCode}`)}
+                onClick={() => void navigator.clipboard?.writeText(`Player ID: ${created.participant.code}${created.participant.gameCode ? `\nGame Code: ${created.participant.gameCode}` : ""}`)}
                 className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#16181d]/15 px-4 text-sm font-semibold"
               >
                 <Copy className="h-4 w-4" /> Copy
@@ -135,14 +135,13 @@ export function DeskRegistration({ slots }: { slots: { id: string; label: string
               <Field id="d-pay" label="Entry fee">
                 <select id="d-pay" className={selectClass} {...register("paymentStatus")}>
                   <option value="paid">Paid</option>
-                  <option value="unpaid">Not paid yet</option>
                   <option value="waived">Waived</option>
                 </select>
               </Field>
             </div>
             <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-              <label className="inline-flex items-center gap-2"><input type="checkbox" className="h-4 w-4" {...register("checkIn")} /> Check in now</label>
-              <label className="inline-flex items-center gap-2"><input type="checkbox" className="h-4 w-4" {...register("sendEmail")} /> Email the codes (if an email is given)</label>
+              <label className="inline-flex items-center gap-2"><input type="checkbox" className="h-4 w-4" {...register("approve")} /> Paid now — approve and issue the Game Code</label>
+              <label className="inline-flex items-center gap-2"><input type="checkbox" className="h-4 w-4" {...register("sendEmail")} /> Email the Player ID (never the code)</label>
             </div>
             <div className="flex justify-end">
               <button type="submit" disabled={pending} className="h-11 rounded-xl bg-[#1C7BD9] px-6 font-semibold text-white disabled:opacity-60">

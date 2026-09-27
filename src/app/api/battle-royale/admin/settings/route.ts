@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import { adminGuard } from "@/lib/battle-royale/admin";
 import { z } from "zod";
 import { firstIssue, settingsSchema } from "@/lib/battle-royale/schemas";
+import { invalidateLeaderboard } from "@/lib/battle-royale/leaderboard";
 import { SETTINGS_TAG, db, engineErrorResponse, errorResponse, readJson } from "@/lib/battle-royale/server";
 
 const settingsToggleSchema = z
@@ -49,8 +50,9 @@ export async function PATCH(req: Request) {
       round1_count: s.round1Count,
       round2_count: s.round2Count,
       round3_count: s.round3Count,
-      speed_bonus_enabled: s.speedBonusEnabled,
-      speed_bonus_max: s.speedBonusMax,
+      round1_seconds: s.round1Seconds,
+      grid_size: s.gridSize,
+      sync_grace_seconds: s.syncGraceSeconds,
       winners_count: s.winnersCount,
       registration_open: s.registrationOpen,
       competition_open: s.competitionOpen,
@@ -61,5 +63,6 @@ export async function PATCH(req: Request) {
     .eq("id", 1);
   if (error) return engineErrorResponse(error, "update settings");
   revalidateTag(SETTINGS_TAG);
+  await invalidateLeaderboard(); // names shown in full or short
   return NextResponse.json({ ok: true });
 }

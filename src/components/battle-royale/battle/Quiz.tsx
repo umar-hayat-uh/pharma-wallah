@@ -1,9 +1,9 @@
 "use client";
 
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
-import type { AnswerPayload, PublicQuestion } from "@/lib/battle-royale/types";
+import type { McqPlan } from "@/lib/battle-royale/types";
 import { cn } from "@/lib/utils";
-import { SubmitButton } from "./WordBlock";
+import { SubmitButton } from "./SubmitButton";
 import type { DraftHandle } from "./types";
 
 type Key = "A" | "B" | "C" | "D";
@@ -12,7 +12,7 @@ type Key = "A" | "B" | "C" | "D";
  * Round 3. Choose, then lock in — a single tap would make a slip final.
  * Keys 1–4 or A–D choose; Enter locks in.
  */
-export const Quiz = forwardRef<DraftHandle, { question: PublicQuestion; disabled: boolean; onSubmit: (a: AnswerPayload) => void }>(
+export const Quiz = forwardRef<DraftHandle, { question: McqPlan; disabled: boolean; onSubmit: (a: { choice: Key }) => void }>(
   function Quiz({ question, disabled, onSubmit }, ref) {
     const [choice, setChoice] = useState<Key | null>(null);
     useEffect(() => setChoice(null), [question.id]);

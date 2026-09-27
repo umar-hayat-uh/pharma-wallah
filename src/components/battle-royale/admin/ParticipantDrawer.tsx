@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Mail, RotateCcw, ShieldAlert, ShieldCheck, X } from "lucide-react";
 import { adminFetch, useMutation } from "./client";
 import { ConfirmDialog } from "./Dialog";
+import { showSlip } from "./SlipHost";
 import { CheckInBadge, FinalBadge, Notice, PaymentBadge, RegistrationBadge, SkeletonRows, StatusBadge } from "../ui";
 import { EMAIL_TYPE_LABEL, ROUNDS } from "@/lib/battle-royale/constants";
 import { formatDuration, formatTime } from "@/lib/battle-royale/format";
@@ -13,10 +14,11 @@ import { cn } from "@/lib/utils";
 
 type Detail = {
   participant: {
-    id: string; participant_code: string; game_code: string; name: string; email: string | null; phone: string | null;
+    id: string; participant_code: string; name: string; email: string | null; phone: string | null;
     university: string; pharm_year: string; student_id: string | null; slot_id: string | null; source: string;
     registration_status: RegistrationStatus; payment_status: PaymentStatus; check_in_status: CheckInStatus;
     checked_in_at: string | null; notes: string | null; created_at: string;
+    game_code: string | null; code_issued_at: string | null; code_used_at: string | null;
   };
   attempts: {
     id: string; status: string; round: number; q_index: number; round1_score: number; round2_score: number; round3_score: number;
@@ -39,7 +41,7 @@ export function ParticipantDrawer({ slots, role }: { slots: { id: string; label:
   const [detail, setDetail] = useState<Detail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showCode, setShowCode] = useState(false);
-  const [confirm, setConfirm] = useState<null | "void" | "disqualify" | "cancel">(null);
+  const [confirm, setConfirm] = useState<null | "void" | "disqualify" | "cancel" | "reissue">(null);
   const [reason, setReason] = useState("");
   const [notify, setNotify] = useState(true);
   const { run, pending, error, message, setError, setMessage } = useMutation();
@@ -72,7 +74,7 @@ export function ParticipantDrawer({ slots, role }: { slots: { id: string; label:
   };
 
   const act = async (body: Record<string, unknown>, success: string) => {
-    const r = await run(() => adminFetch<{ email?: string }>(`/api/battle-royale/admin/participants/${id}`, "PATCH", body), (res) =>
+    const r = await run(() => adminFetch<{ email?: string; code?: string }>(`/api/battle-royale/admin/participants/${id}`, "PATCH", body), (res) =>
       res.email ? `${success} Email: ${res.email}.` : success,
     );
     if (r) await load();
@@ -120,14 +122,57 @@ export function ParticipantDrawer({ slots, role }: { slots: { id: string; label:
                 </div>
               </div>
 
-              <div className="flex items-center justify-between rounded-2xl border border-[#16181d]/10 bg-[#f7f8fa] px-4 py-3">
-                <div>
-                  <p className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-[#16181d]/55">Game Code</p>
-                  <p className="font-mono text-xl font-bold tracking-[0.2em]">{showCode ? p.game_code : "••••••"}</p>
+              {/* ── Game Code ── */}
+              <div className="rounded-2xl border border-[#16181d]/10 bg-[#f7f8fa] px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-[#16181d]/55">Game Code</p>
+                    {p.game_code ? (
+                      <p className="font-mono text-xl font-bold tracking-[0.2em]">{showCode ? p.game_code : "••••••"}</p>
+                    ) : (
+                      <p className="text-sm font-semibold text-[#16181d]/60">{p.code_used_at ? "Withdrawn" : "Not issued — approve the payment to issue one"}</p>
+                    )}
+                    {p.game_code && (
+                      <p className="text-xs text-[#16181d]/55">
+                        {p.code_used_at ? `Used at ${formatTime(p.code_used_at)}` : `Issued ${p.code_issued_at ? formatTime(p.code_issued_at) : ""} · not used yet`}
+                      </p>
+                    )}
+                  </div>
+                  {p.game_code && (
+                    <button type="button" onClick={() => setShowCode((v) => !v)} className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1C7BD9]">
+                      {showCode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />} {showCode ? "Hide" : "Reveal"}
+                    </button>
+                  )}
                 </div>
-                <button type="button" onClick={() => setShowCode((v) => !v)} className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1C7BD9]">
-                  {showCode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />} {showCode ? "Hide" : "Reveal"}
-                </button>
+                {p.registration_status === "registered" && !detail?.attempts.some((a) => a.status === "completed") && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {!p.game_code ? (
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={async () => {
+                          const r = await act({ action: "issue_code" }, "Payment approved.");
+                          const c = (r as { code?: string } | null)?.code;
+                          if (c && p) showSlip({ name: p.name, playerId: p.participant_code, code: c });
+                        }}
+                        className="h-10 rounded-xl bg-[#21B67A] px-4 text-sm font-bold text-white disabled:opacity-60"
+                      >
+                        Approve payment & issue code
+                      </button>
+                    ) : (
+                      <>
+                        {!p.code_used_at && (
+                          <button type="button" onClick={() => showSlip({ name: p.name, playerId: p.participant_code, code: p.game_code! })} className="h-10 rounded-xl border border-[#16181d]/15 px-4 text-sm font-semibold">
+                            Show slip
+                          </button>
+                        )}
+                        <button type="button" onClick={() => setConfirm("reissue")} className="h-10 rounded-xl border border-[#16181d]/15 px-4 text-sm font-semibold">
+                          Re-issue code
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
 
               <dl className="grid grid-cols-[8rem_minmax(0,1fr)] gap-y-2 text-sm">
@@ -144,21 +189,13 @@ export function ParticipantDrawer({ slots, role }: { slots: { id: string; label:
               {/* ── Desk actions ─────────────────────────────────── */}
               <section className="space-y-3 border-t border-[#16181d]/10 pt-5">
                 <p className="font-semibold">Desk</p>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3">
                   <label className="text-sm">
-                    <span className="mb-1 block text-[#16181d]/60">Entry fee</span>
+                    <span className="mb-1 block text-[#16181d]/60">Entry fee (correction)</span>
                     <select className={sel} value={p.payment_status} disabled={pending} onChange={(e) => void act({ action: "set_payment", value: e.target.value }, "Payment updated.")}>
                       <option value="unpaid">Fee due</option>
                       <option value="paid">Paid</option>
                       <option value="waived">Waived</option>
-                    </select>
-                  </label>
-                  <label className="text-sm">
-                    <span className="mb-1 block text-[#16181d]/60">Check-in</span>
-                    <select className={sel} value={p.check_in_status} disabled={pending} onChange={(e) => void act({ action: "set_check_in", value: e.target.value }, "Check-in updated.")}>
-                      <option value="not_checked_in">Not checked in</option>
-                      <option value="checked_in">Checked in</option>
-                      <option value="late">Late</option>
                     </select>
                   </label>
                 </div>
@@ -286,18 +323,20 @@ export function ParticipantDrawer({ slots, role }: { slots: { id: string; label:
         onClose={() => setConfirm(null)}
         busy={pending}
         danger
-        title={confirm === "void" ? "Reset this attempt?" : confirm === "disqualify" ? "Disqualify this participant?" : "Cancel this registration?"}
-        confirmLabel={confirm === "void" ? "Reset attempt" : confirm === "disqualify" ? "Disqualify" : "Cancel registration"}
+        title={confirm === "reissue" ? "Issue a new Game Code?" : confirm === "void" ? "Reset this attempt?" : confirm === "disqualify" ? "Disqualify this participant?" : "Cancel this registration?"}
+        confirmLabel={confirm === "reissue" ? "Issue new code" : confirm === "void" ? "Reset attempt" : confirm === "disqualify" ? "Disqualify" : "Cancel registration"}
         body={
           <div className="space-y-3">
             <p>
-              {confirm === "void"
-                ? "Their current attempt is voided and its score removed from the leaderboard; they can start a fresh attempt. The answers stay on record. Only do this after verifying a genuine technical failure."
+              {confirm === "reissue"
+                ? "The current code stops working. With the new one, the player continues the same battle — rounds already submitted are kept. Use this when a station failed."
+                : confirm === "void"
+                ? "Their current attempt is voided, its score removed from the leaderboard and their code withdrawn; issue a new code for a fresh attempt. The answers stay on record. Only after a verified technical failure — for a crashed station, re-issuing the code is usually enough."
                 : confirm === "disqualify"
                   ? "They are removed from the leaderboard and cannot start a battle. You can restore them later."
                   : "Their slot is released and they cannot play. You can restore them later."}
             </p>
-            {confirm !== "cancel" && (
+            {(confirm === "void" || confirm === "disqualify") && (
               <label className="block text-sm">
                 <span className="mb-1 block font-semibold text-[#16181d]">Reason{confirm === "void" ? "" : " (optional)"}</span>
                 <input value={reason} onChange={(e) => setReason(e.target.value)} className={sel} maxLength={300} />
@@ -306,6 +345,15 @@ export function ParticipantDrawer({ slots, role }: { slots: { id: string; label:
           </div>
         }
         onConfirm={async () => {
+          if (confirm === "reissue") {
+            const r = await act({ action: "issue_code" }, "New code issued.");
+            const c = (r as { code?: string } | null)?.code;
+            if (c && p) {
+              setConfirm(null);
+              showSlip({ name: p.name, playerId: p.participant_code, code: c, reissued: true });
+            }
+            return;
+          }
           const body =
             confirm === "void" ? { action: "void_attempt", reason } : confirm === "disqualify" ? { action: "disqualify", reason: reason || undefined } : { action: "cancel" };
           const ok = await act(body, confirm === "void" ? "Attempt reset." : confirm === "disqualify" ? "Disqualified." : "Registration cancelled.");

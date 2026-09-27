@@ -58,6 +58,9 @@ const nextConfig = {
       // took over its job — explaining a topic and pointing at material we own
       // — so old links, bookmarks and any indexed page land there.
       { source: "/books-library", destination: "/ai-guide", permanent: true },
+      // Battle Royale v2 (2026-09-28): check-in and results became one status page.
+      { source: "/battle-royale/check-in", destination: "/battle-royale/status", permanent: false },
+      { source: "/battle-royale/results", destination: "/battle-royale/status", permanent: false },
       // Removed 2026-09-23 while preparing the AdSense review. /mentor was a
       // second copy of /contact under a different heading; /documentation was
       // the purchased UI template's own developer docs ("Crypgo"), live and

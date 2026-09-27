@@ -17,63 +17,49 @@ export type FinalStatus = "pending" | "participant" | "winner" | "qualified" | "
 export type EmailType = "registration" | "slot_assignment" | "reminder" | "check_in" | "qualification" | "result";
 export type AdminRole = "admin" | "desk";
 
-/** A question as the player sees it (from `br_public_question`). */
-export type PublicQuestion = {
-  id: string;
-  type: QuestionType;
-  round: RoundNo;
-  prompt: string;
-  points: number;
-  timeLimit: number;
-  difficulty: "easy" | "medium" | "hard";
-  servedAt: string;
-  deadline: string;
-  letters: string[] | null;
-  length: number | null;
-  options: { key: "A" | "B" | "C" | "D"; text: string }[] | null;
-  left: string[] | null;
-  right: string[] | null;
+/** Round 1, as downloaded: the grid and the words to find (their positions stay on the server). */
+export type WordSearchPlan = { grid: string[]; words: string[]; points: number[]; seconds: number };
+export type BoardPlan = { id: string; prompt: string; points: number; timeLimit: number; left: string[]; right: string[] };
+export type McqPlan = {
+  id: string; prompt: string; points: number; timeLimit: number;
+  options: { key: "A" | "B" | "C" | "D"; text: string }[];
 };
+/** The whole battle, downloaded once at start. Contains no answers. */
+export type BattlePlan = { r1: WordSearchPlan; r2: BoardPlan[]; r3: McqPlan[]; graceSeconds: number };
 
-/** The battle as the engine reports it (`br_state_of`). */
+export type ItemResult = {
+  questionId: string; correct: boolean; correctParts: number; totalParts: number; score: number;
+  correctAnswer: string | string[]; given: unknown; explanation: string | null;
+};
+export type RoundResult =
+  | { found: string[]; missed: string[]; score: number; late: boolean }
+  | { items: ItemResult[]; score: number; late: boolean };
+
+/** The battle as the engine reports it (`br_attempt_view`). */
 export type BattleState = {
   status: "active" | "completed";
+  /** The next round to submit (stays 3 once complete). */
   round: RoundNo;
-  index: number;
-  roundSizes: [number, number, number];
+  plan: BattlePlan;
+  results: Partial<Record<"1" | "2" | "3", RoundResult>>;
   roundScores: [number, number, number];
   totalScore: number;
   correctCount: number;
-  answeredCount: number;
   totalQuestions: number;
   totalTimeMs: number;
   startedAt: string;
   completedAt: string | null;
   participant: { code: string; name: string };
-  question: PublicQuestion | null;
-  /** Server clock at the moment of the read, for the client's skew offset. */
   now: string;
   resumed?: boolean;
 };
 
-export type AnswerResult = {
-  questionId: string;
-  correct: boolean;
-  timedOut: boolean;
-  correctParts: number;
-  totalParts: number;
-  basePoints: number;
-  bonusPoints: number;
-  score: number;
-  /** WORD/MCQ: the word or option key. MATCHING: right items in left order. */
-  correctAnswer: string | string[];
-  explanation: string | null;
-};
-
-export type AnswerPayload =
-  | { word: string }
-  | { choice: "A" | "B" | "C" | "D" }
-  | { matches: string[] };
+/** Round submissions. */
+export type FoundWord = { word: string; r1: number; c1: number; r2: number; c2: number };
+export type RoundAnswers =
+  | { found: FoundWord[] }
+  | { boards: { questionId: string; matches: string[] }[] }
+  | { choices: { questionId: string; choice: "A" | "B" | "C" | "D" | null }[] };
 
 /** Settings safe to show anyone. */
 export type PublicSettings = {
@@ -85,8 +71,9 @@ export type PublicSettings = {
   entryFee: number;
   contactText: string;
   roundCounts: [number, number, number];
-  speedBonusEnabled: boolean;
-  speedBonusMax: number;
+  round1Seconds: number;
+  gridSize: number;
+  syncGraceSeconds: number;
   winnersCount: number;
   registrationOpen: boolean;
   competitionOpen: boolean;
@@ -134,7 +121,6 @@ export type LeaderboardPayload = {
 export type RegistrationReceipt = {
   name: string;
   code: string;
-  gameCode: string;
   email: string | null;
   slot: string | null;
   eventDate: string | null;
@@ -142,4 +128,18 @@ export type RegistrationReceipt = {
   venue: string;
   entryFee: number;
   emailStatus: "sent" | "failed";
+};
+
+/** The public status lookup (Player ID + email). */
+export type StatusPayload = {
+  participant: { name: string; code: string; registrationStatus: RegistrationStatus; paymentStatus: PaymentStatus; slot: string };
+  steps: { registered: true; paid: boolean; codeIssued: boolean; played: boolean };
+  attemptStatus: "active" | "completed" | null;
+  score: null | {
+    rounds: [number, number, number]; total: number; correct: number; questions: number; timeMs: number; finalStatus: FinalStatus;
+  };
+  rank: number | null;
+  finalized: boolean;
+  frozen: boolean;
+  winnersCount: number;
 };

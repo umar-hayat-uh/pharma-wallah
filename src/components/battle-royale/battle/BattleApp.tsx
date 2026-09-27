@@ -1,348 +1,392 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, Hourglass } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { battleApi } from "./api";
 import { TitleScreen, type BootStep } from "./TitleScreen";
 import { Hud, Timer } from "./Hud";
-import { WordBlock } from "./WordBlock";
+import { WordSearch } from "./WordSearch";
 import { Matching } from "./Matching";
 import { Quiz } from "./Quiz";
-import { Countdown, Feedback, Finish, NextPrompt, RoundIntro } from "./Panels";
+import { Countdown, Finish, RoundEnd, RoundIntro } from "./Panels";
+import { OUTDATED_ENGINE, answersFor, battleKey, freshProgress, isPlayable, load, save, type Progress, type Station } from "./station";
 import type { DraftHandle } from "./types";
-import type { Credentials } from "../CredentialsForm";
-import type { AnswerPayload, AnswerResult, BattleState, PublicQuestion } from "@/lib/battle-royale/types";
+import type { FoundWord, RoundNo } from "@/lib/battle-royale/types";
 
 /*
- * The station's state machine.
+ * The station — offline-first.
  *
- *   boot ─┬─ no battle on this device ─────────────▶ gate
- *         └─ battle found ─────────────────────────▶ ready
- *   gate ── Player ID + Game Code (start) ─────────▶ ready
- *   ready ── Press start ─▶ countdown (first time) ─▶ intro | question | between
- *   intro ── Begin (serve) ─────────────────────────▶ question
- *   question ── answer / timer ─────────────────────▶ feedback
- *   feedback ── Next ─▶ intro (new round) | question (serve) | finished
- *   finished ── Finish (forget cookie) ─────────────▶ gate
+ *   boot ─┬─ a saved battle on this station ──────────▶ ready (resume)
+ *         └─ nothing saved ────────────────────────────▶ gate
+ *   gate ── Game Code (start: downloads the whole battle) ▶ ready
+ *   ready ─▶ countdown (first time) ─▶ intro → play → end, per round ─▶ finish
  *
- * Every transition that changes the battle goes through the server, and every
- * screen is rebuilt from the state the server returns — the client never
- * advances a round or adds a point on its own. A reload anywhere lands back in
- * the right place: `phaseFor()` maps any server state to its screen.
+ * Network calls: ONE to start (everything, no answers), ONE per round to
+ * submit, and a state read on boot. Every other step runs from the copy saved
+ * in localStorage, so a flaky connection only delays the results — it never
+ * stops the player. Submissions go into a queue that retries with backoff;
+ * the server treats a repeated round as a no-op, so retrying is always safe.
  */
 
-type Phase = "boot" | "gate" | "ready" | "countdown" | "intro" | "between" | "question" | "feedback" | "finished" | "fatal";
-
-type FeedbackData = {
-  result: AnswerResult | { timedOut: true; expiredOnly: true };
-  question: PublicQuestion;
-  next: "question" | "round" | "finish";
-  /** Where the answered question sat, so the HUD doesn't jump ahead to the next round. */
-  at: { round: BattleState["round"]; index: number };
-};
+type Phase = "boot" | "gate" | "ready" | "countdown" | "intro" | "play" | "end" | "finish";
 
 const FIRST_BOOT: BootStep[] = [
-  { label: "Connecting to the arena", done: false },
-  { label: "Looking for a battle on this station", done: false },
+  { label: "Starting the station", done: false },
+  { label: "Looking for a saved battle", done: false },
 ];
 const START_BOOT: BootStep[] = [
-  { label: "Verifying player", done: false },
-  { label: "Drawing your questions", done: false },
-  { label: "Syncing the clock", done: false },
+  { label: "Checking your Game Code", done: false },
+  { label: "Downloading your battle", done: false },
+  { label: "Saving it on this station", done: false },
 ];
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-function phaseFor(s: BattleState): Phase {
-  if (s.status === "completed") return "finished";
-  if (s.question) return "question";
-  return s.index === 0 ? "intro" : "between";
+function phaseOf(p: Progress): Phase {
+  return p.step === "finished" ? "finish" : p.step;
 }
 
 export function BattleApp() {
   const [phase, setPhase] = useState<Phase>("boot");
   const [steps, setSteps] = useState<BootStep[]>(FIRST_BOOT);
-  const [state, setState] = useState<BattleState | null>(null);
-  const [offset, setOffset] = useState(0);
+  const [station, setStation] = useState<Station | null>(null);
   const [busy, setBusy] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<FeedbackData | null>(null);
-  const [lastIdentifier, setLastIdentifier] = useState("");
   const [rank, setRank] = useState<{ rank: number | null; total: number | null }>({ rank: null, total: null });
   const draftRef = useRef<DraftHandle>(null);
-  const submittingRef = useRef(false);
-  const startedRef = useRef(false);
+  const stationRef = useRef<Station | null>(null);
+  const syncingRef = useRef(false);
+  const firstRun = useRef(true);
+  const retryTimer = useRef<number | undefined>(undefined);
+  const backoff = useRef(2000);
+
+  const tick = (i: number) => setSteps((s) => s.map((x, k) => (k === i ? { ...x, done: true } : x)));
+
+  /** The single writer: memory, localStorage and the ref move together. */
+  const commit = useCallback((next: Station | null) => {
+    stationRef.current = next;
+    setStation(next);
+    save(next);
+  }, []);
+  const update = useCallback(
+    (fn: (s: Station) => Station) => {
+      const cur = stationRef.current;
+      if (cur) commit(fn(cur));
+    },
+    [commit],
+  );
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [phase]);
 
-  const tick = (i: number) => setSteps((s) => s.map((x, k) => (k === i ? { ...x, done: true } : x)));
+  // ── Sync queue ─────────────────────────────────────────────────────────
+  const flush = useCallback(async () => {
+    const cur = stationRef.current;
+    if (!cur || cur.queue.length === 0 || syncingRef.current) return;
+    syncingRef.current = true;
+    setSyncing(true);
+    window.clearTimeout(retryTimer.current);
+    try {
+      while (stationRef.current && stationRef.current.queue.length > 0) {
+        const item = stationRef.current.queue[0];
+        const res = await battleApi.submit(item.round, item.answers);
+        if (res.ok) {
+          backoff.current = 2000;
+          update((s) => ({ ...s, state: res.data.state, clockOffset: res.clockOffset, queue: s.queue.slice(1) }));
+          continue;
+        }
+        if (res.code === "BR_ROUND_ORDER" || res.code === "BR_COMPLETED") {
+          // The server and this queue disagree: re-read the server and keep
+          // only the rounds it doesn't have yet.
+          const st = await battleApi.state();
+          if (st.ok && st.data.state) {
+            const server = st.data.state;
+            update((s) => ({ ...s, state: server, queue: s.queue.filter((q) => !(String(q.round) in server.results)) }));
+            continue;
+          }
+        }
+        if (res.code === "BR_NO_ATTEMPT" || res.code === "BR_ATTEMPT_VOID") {
+          setError(`${res.error} Your answers are still saved on this station.`);
+          break;
+        }
+        if (res.status === 0 || res.status >= 500 || res.status === 429) {
+          // Offline or overloaded: wait and try again, backing off to every 20 s.
+          retryTimer.current = window.setTimeout(() => void flush(), backoff.current);
+          backoff.current = Math.min(backoff.current * 2, 20000);
+          break;
+        }
+        setError(res.error);
+        break;
+      }
+    } finally {
+      syncingRef.current = false;
+      setSyncing(false);
+    }
+  }, [update]);
 
-  const apply = useCallback((s: BattleState, clockOffset: number) => {
-    setState(s);
-    setOffset(clockOffset);
-  }, []);
+  useEffect(() => {
+    const onOnline = () => void flush();
+    window.addEventListener("online", onOnline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.clearTimeout(retryTimer.current);
+    };
+  }, [flush]);
 
-  // ── Boot: is there a battle on this device already? ────────────────────
+  // ── Boot ───────────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const res = await battleApi.state();
-      if (cancelled) return;
+      let saved = load();
+      if (saved && !isPlayable(saved.state)) {
+        save(null);
+        saved = null;
+      }
       tick(0);
       await sleep(250);
-      if (!res.ok) {
-        setError(res.error);
-        setPhase("gate");
+      if (saved) {
+        // Play on from the saved copy at once; refresh from the server in the
+        // background if it answers.
+        commit(saved);
+        tick(1);
+        await sleep(250);
+        if (cancelled) return;
+        firstRun.current = false;
+        setPhase(saved.progress.step === "finished" ? "finish" : "ready");
+        void flush();
+        const res = await battleApi.state();
+        if (!cancelled && res.ok && res.data.state && battleKey(res.data.state) === saved.key) {
+          const server = res.data.state;
+          update((s) => ({ ...s, state: server, clockOffset: res.clockOffset }));
+        }
         return;
       }
+      const res = await battleApi.state();
+      if (cancelled) return;
       tick(1);
-      await sleep(300);
-      if (res.data.notice === "BR_ATTEMPT_VOID") {
-        setError("Your previous attempt was reset by a coordinator. Enter your details to start again.");
-      }
-      if (res.data.state) {
-        apply(res.data.state, res.clockOffset);
-        startedRef.current = res.data.state.answeredCount > 0 || Boolean(res.data.state.question);
-        setPhase(res.data.state.status === "completed" ? "finished" : "ready");
+      await sleep(250);
+      if (res.ok && res.data.state && !isPlayable(res.data.state)) {
+        void battleApi.leave();
+        setError(OUTDATED_ENGINE);
+        setPhase("gate");
+      } else if (res.ok && res.data.state) {
+        // A cookie but no saved copy (storage cleared): rebuild from the server.
+        const st = res.data.state;
+        commit({ key: battleKey(st), state: st, clockOffset: res.clockOffset, progress: freshProgress(st), queue: [] });
+        firstRun.current = Object.keys(st.results).length === 0;
+        setPhase(st.status === "completed" ? "finish" : "ready");
       } else {
+        if (res.ok && res.data.notice === "BR_ATTEMPT_VOID") setError("Your previous attempt was reset. Ask the desk for a new Game Code.");
         setPhase("gate");
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [apply]);
+  }, [commit, flush, update]);
 
   // ── Gate → ready ───────────────────────────────────────────────────────
-  const enter = async (c: Credentials) => {
-    setLastIdentifier(c.identifier);
+  const enter = async (code: string) => {
     setBusy(true);
     setError(null);
     setSteps(START_BOOT);
     setPhase("boot");
-    const res = await battleApi.start(c.identifier, c.gameCode);
+    const res = await battleApi.start(code);
     if (!res.ok) {
       setBusy(false);
       setError(res.error);
       setPhase("gate");
       return;
     }
-    tick(0);
-    await sleep(280);
-    tick(1); // the questions were drawn by the same call
-    await sleep(280);
-    apply(res.data.state, res.clockOffset);
-    tick(2);
-    await sleep(320);
-    setBusy(false);
-    startedRef.current = Boolean(res.data.state.resumed);
-    setPhase(res.data.state.status === "completed" ? "finished" : "ready");
-  };
-
-  // ── Ready → play ───────────────────────────────────────────────────────
-  const pressStart = () => {
-    if (!state) return;
-    if (!startedRef.current && state.round === 1 && state.index === 0 && !state.question) setPhase("countdown");
-    else setPhase(phaseFor(state));
-  };
-
-  const serve = async () => {
-    setBusy(true);
-    setError(null);
-    const res = await battleApi.serve();
-    setBusy(false);
-    if (!res.ok) return handleFailure(res.error, res.code);
-    startedRef.current = true;
-    apply(res.data.state, res.clockOffset);
-    setPhase(phaseFor(res.data.state));
-  };
-
-  // ── Answering ──────────────────────────────────────────────────────────
-  const submit = useCallback(
-    async (answer: AnswerPayload) => {
-      if (!state?.question || submittingRef.current) return;
-      submittingRef.current = true;
-      setBusy(true);
-      const question = state.question;
-      const prevRound = state.round;
-      const at = { round: state.round, index: state.index + 1 };
-      const res = await battleApi.answer(question.id, answer);
-      submittingRef.current = false;
+    if (!isPlayable(res.data.state)) {
+      void battleApi.leave();
       setBusy(false);
-      if (!res.ok) {
-        // Already answered or no longer current (a second tab, a slow network):
-        // re-read the truth and carry on from there.
-        if (res.code === "BR_DUPLICATE" || res.code === "BR_WRONG_QUESTION") return resync();
-        return handleFailure(res.error, res.code);
-      }
-      const next = res.data.state;
-      apply(next, res.clockOffset);
-      setFeedback({
-        result: res.data.result,
-        question,
-        next: next.status === "completed" ? "finish" : next.round !== prevRound ? "round" : "question",
-        at,
-      });
-      setPhase("feedback");
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [state],
-  );
-
-  /** Timer hit zero: submit what's there, or let the server record the timeout. */
-  const onExpire = useCallback(async () => {
-    const draft = draftRef.current?.draft();
-    if (draft) return submit(draft);
-    if (!state?.question) return;
-    const question = state.question;
-    const prevRound = state.round;
-    const at = { round: state.round, index: state.index + 1 };
-    setBusy(true);
-    // The server allows a short grace period; wait it out so the read expires the question.
-    await sleep(2300);
-    const res = await battleApi.state();
+      setError(OUTDATED_ENGINE);
+      setPhase("gate");
+      return;
+    }
+    tick(0);
+    await sleep(250);
+    tick(1);
+    const st = res.data.state;
+    const saved = load();
+    // A re-issued code on the same station keeps the local progress and queue.
+    const keep = saved && saved.key === battleKey(st);
+    commit(
+      keep
+        ? { ...saved, state: st, clockOffset: res.clockOffset }
+        : { key: battleKey(st), state: st, clockOffset: res.clockOffset, progress: freshProgress(st), queue: [] },
+    );
+    await sleep(250);
+    tick(2);
+    await sleep(300);
     setBusy(false);
-    if (!res.ok || !res.data.state) return handleFailure(res.ok ? "Your battle could not be found." : res.error);
-    const next = res.data.state;
-    apply(next, res.clockOffset);
-    if (next.question?.id === question.id) return; // not expired yet by the server's clock; keep going
-    setFeedback({
-      result: { timedOut: true, expiredOnly: true },
-      question,
-      next: next.status === "completed" ? "finish" : next.round !== prevRound ? "round" : "question",
-      at,
+    firstRun.current = !st.resumed;
+    setPhase(st.status === "completed" ? "finish" : "ready");
+    if (keep) void flush();
+  };
+
+  // ── Playing ────────────────────────────────────────────────────────────
+  const setProgress = (fn: (p: Progress) => Progress) => update((s) => ({ ...s, progress: fn(s.progress) }));
+
+  const pressStart = () => {
+    const s = stationRef.current;
+    if (!s) return;
+    if (firstRun.current && s.progress.round === 1 && s.progress.step === "intro") {
+      firstRun.current = false;
+      setPhase("countdown");
+    } else {
+      setPhase(phaseOf(s.progress));
+    }
+  };
+
+  const begin = () => {
+    setProgress((p) => ({ ...p, step: "play", startedAt: p.startedAt ?? Date.now(), index: 0 }));
+    setPhase("play");
+  };
+
+  /** Queue the round, show its end screen, and try to send it. */
+  const endRound = () => {
+    const s = stationRef.current;
+    if (!s || s.progress.step !== "play") return;
+    const round = s.progress.round;
+    update((cur) => ({
+      ...cur,
+      queue: cur.queue.some((q) => q.round === round) ? cur.queue : [...cur.queue, { round, answers: answersFor(round, cur.progress) }],
+      progress: { ...cur.progress, step: round === 3 ? "finished" : "end", startedAt: null },
+    }));
+    setPhase(round === 3 ? "finish" : "end");
+    void flush();
+  };
+
+  const nextRound = () => {
+    setProgress((p) => ({ ...p, round: (p.round + 1) as RoundNo, step: "intro", startedAt: null, index: 0 }));
+    setPhase("intro");
+  };
+
+  const onFind = (w: FoundWord) =>
+    setProgress((p) => (p.found.some((f) => f.word === w.word) ? p : { ...p, found: [...p.found, w] }));
+
+  /** Record the current board / question, then move on (or end the round). */
+  const recordItem = (answer: { matches: string[] } | { choice: "A" | "B" | "C" | "D" } | null) => {
+    const s = stationRef.current;
+    if (!s || s.progress.step !== "play") return;
+    const { round, index } = s.progress;
+    const items = round === 2 ? s.state.plan.r2 : s.state.plan.r3;
+    const item = items[index];
+    if (!item) return;
+    setProgress((p) => {
+      if (round === 2) {
+        const matches = answer && "matches" in answer ? answer.matches : [];
+        return { ...p, boards: [...p.boards.filter((b) => b.questionId !== item.id), { questionId: item.id, matches }] };
+      }
+      const choice = answer && "choice" in answer ? answer.choice : null;
+      return { ...p, choices: [...p.choices.filter((c) => c.questionId !== item.id), { questionId: item.id, choice }] };
     });
-    setPhase("feedback");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, submit]);
-
-  const afterFeedback = () => {
-    if (!feedback || !state) return;
-    setFeedback(null);
-    if (feedback.next === "question") void serve();
-    else setPhase(phaseFor(state));
+    if (index + 1 < items.length) setProgress((p) => ({ ...p, index: p.index + 1, startedAt: Date.now() }));
+    else endRound();
   };
 
-  // ── Recovery ───────────────────────────────────────────────────────────
-  const resync = async () => {
-    const res = await battleApi.state();
-    if (!res.ok) return handleFailure(res.error);
-    if (!res.data.state) {
-      setState(null);
-      setPhase("gate");
-      return;
-    }
-    apply(res.data.state, res.clockOffset);
-    setPhase(phaseFor(res.data.state));
-  };
+  const onItemExpire = () => recordItem(draftRef.current?.draft() ?? null);
 
-  function handleFailure(message: string, code?: string) {
-    if (code === "BR_NO_ATTEMPT" || code === "BR_ATTEMPT_VOID") {
-      setState(null);
-      setError(message);
-      setPhase("gate");
-      return;
-    }
-    if (code === "BR_COMPLETED") return void resync();
-    setError(message);
-    // Network trouble mid-battle keeps the screen; the banner offers a retry.
-    if (phase === "boot") setPhase("gate");
-  }
-
-  // ── Finished ───────────────────────────────────────────────────────────
+  // ── Finish ─────────────────────────────────────────────────────────────
+  const completed = station?.state.status === "completed" && station.queue.length === 0;
+  const code = station?.state.participant.code;
   useEffect(() => {
-    if (phase !== "finished" || !state) return;
+    if (phase !== "finish" || !completed || !code) return;
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/battle-royale/leaderboard?limit=1&code=${encodeURIComponent(state.participant.code)}`, { cache: "no-store" });
+        const res = await fetch(`/api/battle-royale/leaderboard?limit=20&code=${encodeURIComponent(code)}`, { cache: "no-store" });
         const body = await res.json();
         if (!cancelled && res.ok) setRank({ rank: body.you?.rank ?? null, total: body.totalRanked ?? null });
       } catch {
-        /* the rank is a nicety; the score is already on screen */
+        /* the rank is a nicety */
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [phase, state]);
+  }, [phase, completed, code]);
 
   const finish = async () => {
-    setBusy(true);
     await battleApi.leave();
-    setBusy(false);
-    setState(null);
-    setFeedback(null);
+    commit(null);
     setError(null);
     setRank({ rank: null, total: null });
-    setLastIdentifier("");
-    startedRef.current = false;
+    firstRun.current = true;
+    setSteps(FIRST_BOOT);
     setPhase("gate");
   };
 
   // ── Render ─────────────────────────────────────────────────────────────
   if (phase === "boot" || phase === "gate" || phase === "ready") {
     return (
-      <TitleScreen
-        mode={phase}
-        steps={steps}
-        state={state}
-        error={error}
-        busy={busy}
-        onEnter={enter}
-        onStart={pressStart}
-        lastIdentifier={lastIdentifier}
+      <TitleScreen mode={phase} steps={steps} state={station?.state ?? null} error={error} busy={busy} onEnter={enter} onStart={pressStart} />
+    );
+  }
+  if (!station) return null;
+  if (phase === "countdown") return <Countdown onDone={() => setPhase("intro")} />;
+  if (phase === "finish") {
+    return (
+      <Finish
+        state={station.state}
+        pending={station.queue.length}
+        syncing={syncing}
+        rank={rank.rank}
+        totalRanked={rank.total}
+        onRetry={() => void flush()}
+        onFinish={finish}
       />
     );
   }
-  if (phase === "countdown") return <Countdown onDone={() => state && setPhase(phaseFor(state))} />;
-  if (phase === "finished" && state) {
-    return <Finish state={state} rank={rank.rank} totalRanked={rank.total} onFinish={finish} finishing={busy} />;
-  }
-  if (!state) return null;
 
-  const q = state.question;
+  const { state, progress } = station;
+  const plan = state.plan;
+  const round = progress.round;
+  const size = round === 1 ? plan.r1.words.length : round === 2 ? plan.r2.length : plan.r3.length;
+  const hudIndex = round === 1 ? progress.found.length : progress.index;
+  const board = round === 2 ? plan.r2[progress.index] : undefined;
+  const mcq = round === 3 ? plan.r3[progress.index] : undefined;
+
+  const timer =
+    phase === "play" && progress.startedAt !== null ? (
+      <Timer
+        key={`${round}-${progress.index}-${progress.startedAt}`}
+        startedAt={progress.startedAt}
+        total={round === 1 ? plan.r1.seconds : ((board ?? mcq)?.timeLimit ?? 30)}
+        onExpire={round === 1 ? endRound : onItemExpire}
+      />
+    ) : undefined;
+
   return (
     <div className="min-h-dvh bg-[#f4f6f9]">
-      <Hud
-        state={phase === "feedback" && feedback ? { ...state, ...feedback.at } : state}
-        timer={
-          phase === "question" && q ? (
-            <Timer deadline={q.deadline} total={q.timeLimit} clockOffset={offset} onExpire={onExpire} paused={busy} />
-          ) : undefined
-        }
-      />
+      <Hud round={round} index={hudIndex} size={size} score={state.totalScore} pending={station.queue.length} timer={timer} />
 
       {error && (
         <div className="mx-auto mt-4 flex max-w-3xl items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="alert">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <p className="flex-1">{error}</p>
-          <button type="button" onClick={() => { setError(null); void resync(); }} className="font-semibold underline">
+          <button type="button" onClick={() => { setError(null); void flush(); }} className="font-semibold underline">
             Retry
           </button>
         </div>
       )}
 
-      <div className="mx-auto max-w-5xl">
-        {phase === "intro" && <RoundIntro state={state} timeLimits="Per question" busy={busy} onBegin={serve} />}
-        {phase === "between" && <NextPrompt state={state} busy={busy} onNext={serve} />}
-        {phase === "feedback" && feedback && (
-          <Feedback result={feedback.result} question={feedback.question} next={feedback.next} busy={busy} onNext={afterFeedback} />
+      <div className="mx-auto max-w-6xl">
+        {phase === "intro" && <RoundIntro round={round} plan={plan} score={state.totalScore} onBegin={begin} />}
+        {phase === "end" && (
+          <RoundEnd round={round} plan={plan} result={state.results[String(round) as "1" | "2" | "3"] ?? null} syncing={syncing} onContinue={nextRound} />
         )}
-        {phase === "question" && q && (
-          <div className="px-5 py-8 sm:px-8 sm:py-12">
-            <div className="rounded-3xl border border-[#16181d]/10 bg-white p-5 shadow-[0_24px_60px_-40px_rgba(6,18,36,.35)] sm:p-8">
-              {q.type === "WORD" && <WordBlock ref={draftRef} question={q} disabled={busy} onSubmit={submit} />}
-              {q.type === "MATCHING" && <Matching ref={draftRef} question={q} disabled={busy} onSubmit={submit} />}
-              {q.type === "MCQ" && <Quiz ref={draftRef} question={q} disabled={busy} onSubmit={submit} />}
+        {phase === "play" && (
+          <div className="px-4 py-6 sm:px-8 sm:py-10">
+            <div className="rounded-3xl border border-[#16181d]/10 bg-white p-4 shadow-[0_24px_60px_-40px_rgba(6,18,36,.35)] sm:p-8">
+              {round === 1 && <WordSearch plan={plan.r1} found={progress.found} disabled={false} onFind={onFind} onFinish={endRound} />}
+              {board && <Matching key={board.id} ref={draftRef} question={board} disabled={false} onSubmit={(a) => recordItem(a)} />}
+              {mcq && <Quiz key={mcq.id} ref={draftRef} question={mcq} disabled={false} onSubmit={(a) => recordItem(a)} />}
             </div>
-            {busy && (
-              <p className="mt-4 flex items-center justify-center gap-2 text-sm text-[#16181d]/60">
-                <Hourglass className="h-4 w-4" /> Submitting…
-              </p>
-            )}
           </div>
         )}
       </div>

@@ -11,7 +11,8 @@ import { formatDuration, formatTime, ordinal } from "@/lib/battle-royale/format"
 import type { LeaderboardPayload, LeaderboardRow } from "@/lib/battle-royale/types";
 import { cn } from "@/lib/utils";
 
-const POLL_MS = 15_000;
+// 30 s: the board is cached for 20 s server-side, so polling faster buys nothing.
+const POLL_MS = 30_000;
 
 /**
  * The live board. Polls every 15 s while the tab is visible (not at all when
@@ -241,7 +242,7 @@ export function LeaderboardClient({
         {!tv && (
           <p className="mt-6 text-sm">
             Played already?{" "}
-            <Link href={`${BR_BASE}/results`} className="font-semibold text-[#1C7BD9] hover:underline">See your full result</Link>
+            <Link href={`${BR_BASE}/status`} className="font-semibold text-[#1C7BD9] hover:underline">See your full result</Link>
           </p>
         )}
       </div>

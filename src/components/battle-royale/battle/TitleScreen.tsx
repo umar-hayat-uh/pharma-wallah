@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, Check, CircleAlert, Play, RotateCcw } from "lucide-react";
 import { BRAND_SURFACE } from "@/components/page-kit";
 import { Crest } from "../ui";
-import { CredentialsForm, type Credentials } from "../CredentialsForm";
+import { CodeForm } from "../CodeForm";
 import { BR_BASE, ROUNDS } from "@/lib/battle-royale/constants";
 import { shortName } from "@/lib/battle-royale/format";
 import type { BattleState } from "@/lib/battle-royale/types";
@@ -20,13 +20,12 @@ export type BootStep = { label: string; done: boolean };
  * It has three faces, and the event wordmark never moves between them, so the
  * station always looks like the same game:
  *   boot   — a progress bar and a checklist that track real work (reaching the
- *            server, verifying the player, drawing the questions, syncing the
- *            clock). Nothing is faked to look busy; each line ticks when the
- *            thing it names has happened.
- *   gate   — "Enter the arena": Player ID + Game Code.
- *   ready  — the player's card, the three rounds, and one big Start button
- *            (Enter works too). The first question is not served until Start,
- *            so reading this screen costs no time.
+ *            server, checking the code, downloading the battle, saving it on
+ *            this station). Each line ticks when the thing it names happened.
+ *   gate   — "Enter the arena": the single-use Game Code from the desk.
+ *   ready  — the player's card, the three rounds and one big Start button.
+ *            It also starts on its own after a few seconds: the server's
+ *            window for Round 1 opened when the code was accepted.
  */
 export function TitleScreen({
   mode,
@@ -36,22 +35,36 @@ export function TitleScreen({
   busy,
   onEnter,
   onStart,
-  lastIdentifier,
 }: {
   mode: "boot" | "gate" | "ready";
   steps: BootStep[];
   state: BattleState | null;
   error: string | null;
   busy: boolean;
-  onEnter: (c: Credentials) => void;
+  onEnter: (code: string) => void;
   onStart: () => void;
-  lastIdentifier?: string;
 }) {
   const reduce = useReducedMotion();
   const startRef = useRef<HTMLButtonElement>(null);
   const done = steps.filter((s) => s.done).length;
   const progress = steps.length ? done / steps.length : 0;
-  const resumed = Boolean(state && (state.answeredCount > 0 || state.question));
+  const resumed = Boolean(state && Object.keys(state.results).length > 0);
+  // The server's clock for Round 1 is already running: start on our own.
+  const [left, setLeft] = useState(12);
+  useEffect(() => {
+    if (mode !== "ready") return;
+    const started = Date.now();
+    const id = window.setInterval(() => {
+      const l = Math.max(0, 12 - Math.floor((Date.now() - started) / 1000));
+      setLeft(l);
+      if (l === 0) {
+        window.clearInterval(id);
+        onStart();
+      }
+    }, 250);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   useEffect(() => {
     if (mode === "ready") startRef.current?.focus();
@@ -117,17 +130,17 @@ export function TitleScreen({
               className="rounded-3xl border border-white/25 bg-[#061224]/30 p-6 sm:p-7"
             >
               <p className="text-xl font-bold">Enter the arena</p>
-              <p className="mt-1 text-sm text-white/80">Checked in at the desk? Enter your Player ID and Game Code to begin.</p>
+              <p className="mt-1 text-sm text-white/80">Paid at the desk? Type the Game Code they gave you to begin.</p>
               {error && (
                 <p role="alert" className="mt-4 flex gap-2 rounded-xl bg-white px-3.5 py-3 text-sm font-medium text-red-700">
                   <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" /> {error}
                 </p>
               )}
               <div className="mt-5">
-                <CredentialsForm tone="inverse" onSubmit={onEnter} busy={busy} busyLabel="Verifying…" submitLabel="Enter the arena" autoFocus defaultIdentifier={lastIdentifier} />
+                <CodeForm onSubmit={onEnter} busy={busy} />
               </div>
               <p className="mt-4 text-center text-xs text-white/70">
-                Not registered? <Link href={`${BR_BASE}/register`} className="font-semibold underline">Register</Link> or visit the desk.
+                No code yet? Register, then pay at the PharmaWallah desk to receive one.
               </p>
             </motion.div>
           )}
@@ -149,7 +162,7 @@ export function TitleScreen({
                     key={r.no}
                     className={cn(
                       "rounded-2xl border px-3 py-3",
-                      state.round > r.no || state.status === "completed"
+                      String(r.no) in state.results || state.status === "completed"
                         ? "border-white/20 bg-white/5 text-white/60"
                         : state.round === r.no
                           ? "border-white/60 bg-white/15"
@@ -158,7 +171,9 @@ export function TitleScreen({
                   >
                     <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/75">Round {r.no}</p>
                     <p className="mt-0.5 text-[13px] font-semibold leading-tight">{r.name}</p>
-                    <p className="mt-1 text-[11px] text-white/70">{state.roundSizes[i]} {i === 1 ? (state.roundSizes[i] === 1 ? "board" : "boards") : "questions"}</p>
+                    <p className="mt-1 text-[11px] text-white/70">
+                      {i === 0 ? `${state.plan.r1.words.length} words` : i === 1 ? `${state.plan.r2.length} board${state.plan.r2.length === 1 ? "" : "s"}` : `${state.plan.r3.length} questions`}
+                    </p>
                   </li>
                 ))}
               </ol>
@@ -174,9 +189,8 @@ export function TitleScreen({
                 {resumed ? "Resume battle" : "Press start"}
               </button>
               <p className="mt-4 text-xs text-white/75">
-                {resumed
-                  ? "Your battle was saved. Any question whose timer ran out while you were away has been recorded."
-                  : "One attempt · answers are final · every question has its own timer"}
+                {resumed ? "Your battle was saved — carrying on from the next round." : "One attempt · answers are final · everything is saved on this station"}
+                <br />Starts by itself in {left} s.
               </p>
             </motion.div>
           )}

@@ -54,7 +54,7 @@ async function buildContext(participantId: string): Promise<{ ctx: EmailContext;
   const [{ data: p }, settings] = await Promise.all([
     svc
       .from("br_participants")
-      .select("id, name, email, participant_code, game_code, payment_status, slot:br_sessions(name, start_time, end_time)")
+      .select("id, name, email, participant_code, payment_status, slot:br_sessions(name, start_time, end_time)")
       .eq("id", participantId)
       .maybeSingle(),
     readSettings(),
@@ -80,7 +80,6 @@ async function buildContext(participantId: string): Promise<{ ctx: EmailContext;
       eventTitle: settings.eventTitle,
       name: p.name,
       code: p.participant_code,
-      gameCode: p.game_code,
       slotLabel: formatSlot(slot ? { name: slot.name, startTime: slot.start_time, endTime: slot.end_time } : null),
       eventDate: formatEventDate(settings.eventDate),
       reportingTime: settings.reportingTime,

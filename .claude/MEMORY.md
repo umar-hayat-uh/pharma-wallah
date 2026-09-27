@@ -1188,8 +1188,8 @@ Traps that will otherwise be rediscovered painfully.
     API test posted raw `""` and passed. `scripts/battle-royale.test.mts` now round-trips every
     schema. (2026-09-27)
 172. **Battle Royale is its own system, not the old tournament.** `br_*` tables, a plpgsql engine
-    (`br_start_attempt/serve/answer/state`), players identified by Player ID + Game Code and then an
-    httpOnly `br_attempt` cookie whose SHA-256 is all the DB stores, admins in `br_admins` (roles
+    (v2: `br_issue_code`, `br_start_attempt(code)`, `br_submit_round`, `br_state`), players identified
+    by a desk-issued single-use Game Code and then an httpOnly `br_attempt` cookie whose SHA-256 is all the DB stores, admins in `br_admins` (roles
     `admin`/`desk`) — no email allowlist, no Redis. Don't mix it with `entry_codes`/`tournament_*`.
     Grading, timers and totals live in SQL; route handlers only validate, rate-limit and map
     `BR_*` errors. Test the engine with `scripts/battle-royale-engine.test.sql` on a throwaway
@@ -1203,6 +1203,23 @@ Traps that will otherwise be rediscovered painfully.
     `/rest/v1` → PostgREST and `/auth/v1/user` → fake users; sign a user in by setting the
     `sb-localhost-auth-token=base64-<session JSON>` cookie. Recipe in the `battle-royale` skill.
     (2026-09-27)
+
+176. **`router.refresh()` under a route with `loading.tsx` can remount the whole page**, wiping
+    client state. Battle Royale's Game Code slip vanished the instant it opened because the table
+    refresh remounted the admin page (the event's `loading.tsx` sits above it). State that must
+    survive a refresh lives above the boundary or in sessionStorage (`admin/SlipHost.tsx`). (2026-09-27)
+177. **PostgREST caches the function list.** New or renamed SQL functions answer "Could not find the
+    function … in the schema cache" until `notify pgrst, 'reload schema'` — the v2 migration ends
+    with it. (2026-09-27)
+178. **Pointer handlers must not read the drag anchor from React state.** A fast press-and-drag
+    delivers moves before the re-render, so the handler saw no anchor and dropped the drag; the
+    word search keeps anchor/end in refs and uses state only to draw. (2026-09-27)
+179. **Battle Royale v2 contract:** the station downloads the whole battle once (no answers), stores
+    it in localStorage (`br:station:v2`), and submits one round at a time through a retrying queue;
+    `br_submit_round` is idempotent and applies a server-side window per round
+    (previous round's arrival + round time + `sync_grace_seconds`). No device clock is trusted;
+    ties break on Round 3 then server-measured battle time. A client talking to a v1 database gets
+    a state without `plan`/`results` — `isPlayable()` catches it. (2026-09-27)
 
 ## 9. Working preferences (observed)
 

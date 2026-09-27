@@ -2,7 +2,7 @@
 export const ARRIVAL_POINTS = [
   "Arrive 15–20 minutes before your reporting time.",
   "Bring this confirmation — on your phone is fine.",
-  "Keep your Player ID and Game Code with you: you need both to check in and to play.",
+  "Pay the entry fee at the desk — they approve it and hand you your single-use Game Code.",
   "Follow the instructions of the Battle Royale coordinators.",
   "Your score is recorded by the system during the competition.",
 ];

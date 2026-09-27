@@ -1,5 +1,5 @@
 import { ARRIVAL_INSTRUCTIONS } from "./registration-confirmation";
-import { bullets, codeCard, detailsTable, eventRows, headerSafe, paragraph, sectionTitle, shell, textVersion, type EmailContext, type RenderedEmail } from "./layout";
+import { bullets, playerCard, detailsTable, eventRows, headerSafe, paragraph, sectionTitle, shell, textVersion, type EmailContext, type RenderedEmail } from "./layout";
 
 export function battleReminder(ctx: EmailContext): RenderedEmail {
   return {
@@ -12,7 +12,7 @@ export function battleReminder(ctx: EmailContext): RenderedEmail {
         paragraph(`Hi ${ctx.name},`) +
         paragraph(`This is a reminder about your place in ${ctx.eventTitle}.`) +
         detailsTable(eventRows(ctx)) +
-        codeCard(ctx.code, ctx.gameCode) +
+        playerCard(ctx.code, "Bring your Player ID. Pay at the desk (if you haven't) to receive your Game Code.") +
         (ctx.paymentStatus === "unpaid"
           ? paragraph(`Your Rs. ${ctx.entryFee} entry fee is still due — please pay at the desk on arrival.`)
           : "") +
@@ -28,7 +28,7 @@ export function battleReminder(ctx: EmailContext): RenderedEmail {
       `Date: ${ctx.eventDate}`,
       `Reporting time: ${ctx.reportingTime || "Any time the stall is open"}`,
       `Venue: ${ctx.venue}`,
-      `Player ID: ${ctx.code} · Game Code: ${ctx.gameCode}`,
+      `Player ID: ${ctx.code}`,
       ctx.paymentStatus === "unpaid" && `Your Rs. ${ctx.entryFee} entry fee is still due.`,
     ]),
   };

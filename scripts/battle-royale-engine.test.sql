@@ -1,16 +1,15 @@
 -- ============================================================================
--- Battle Royale engine — assertion suite for a THROWAWAY local Postgres.
+-- Battle Royale engine (v2) — assertion suite for a THROWAWAY local Postgres.
 -- ============================================================================
 -- Never run against Supabase: it creates and deletes participants.
 -- Procedure (see .claude/skills/battle-royale/SKILL.md):
 --   1. initdb a scratch cluster, create roles anon/authenticated/service_role
 --      and a stub auth.users table;
---   2. apply supabase/migrations/20260927_battle_royale.sql and the question seed;
+--   2. apply both migrations (v1 then v2) and the question seed;
 --   3. psql -v ON_ERROR_STOP=1 -f scripts/battle-royale-engine.test.sql
 -- Every check raises on failure, so a clean exit means every assertion held.
 -- ============================================================================
 
--- Helper: run a statement and return the BR_* error it raised, or 'OK'.
 create or replace function pg_temp.err(stmt text) returns text language plpgsql as $$
 begin
     execute stmt;
@@ -20,17 +19,27 @@ exception when others then
 end;
 $$;
 
--- Helper: the correct answer payload for whatever question is currently served.
-create or replace function pg_temp.right_answer(p_token text) returns jsonb language plpgsql as $$
+-- The correct submission for a round, built from the private plan.
+create or replace function pg_temp.perfect(p_token text, p_round int) returns jsonb language plpgsql as $$
 declare
-    q public.br_questions;
+    a public.br_attempts;
 begin
-    select qq.* into q from public.br_attempts a join public.br_questions qq on qq.id = a.served_question
-     where a.token_hash = p_token;
-    if q.type = 'WORD' then return jsonb_build_object('word', lower(q.correct_answer));
-    elsif q.type = 'MCQ' then return jsonb_build_object('choice', q.correct_answer);
-    else return jsonb_build_object('matches',
-        (select jsonb_agg(p -> 'right' order by o) from jsonb_array_elements(q.options -> 'pairs') with ordinality t(p, o)));
+    select * into a from public.br_attempts where token_hash = p_token;
+    if p_round = 1 then
+        return jsonb_build_object('found', (select jsonb_agg(jsonb_build_object(
+            'word', lower(w ->> 'word'),
+            -- submitted end-to-start, to prove reversed selections count
+            'r1', (w ->> 'r')::int + (w ->> 'dr')::int * (char_length(w ->> 'word') - 1),
+            'c1', (w ->> 'c')::int + (w ->> 'dc')::int * (char_length(w ->> 'word') - 1),
+            'r2', (w ->> 'r')::int, 'c2', (w ->> 'c')::int))
+            from jsonb_array_elements(a.plan -> 'r1' -> 'words') w));
+    elsif p_round = 2 then
+        return jsonb_build_object('boards', (select jsonb_agg(jsonb_build_object('questionId', q.id,
+            'matches', (select jsonb_agg(pr -> 'right' order by o) from jsonb_array_elements(q.options -> 'pairs') with ordinality t(pr, o))))
+            from jsonb_array_elements_text(a.plan -> 'r2') x join public.br_questions q on q.id = x::uuid));
+    else
+        return jsonb_build_object('choices', (select jsonb_agg(jsonb_build_object('questionId', q.id, 'choice', q.correct_answer))
+            from jsonb_array_elements_text(a.plan -> 'r3') x join public.br_questions q on q.id = x::uuid));
     end if;
 end;
 $$;
@@ -39,202 +48,126 @@ do $$
 declare
     pa public.br_participants;
     pb public.br_participants;
-    s jsonb;
-    r jsonb;
-    qid uuid;
-    n integer;
-    guard integer := 0;
+    code_a text; code_b text; code_b2 text;
+    s jsonb; r jsonb; sub jsonb;
+    n_words int; n_pairs int;
 begin
     delete from public.br_participants where email like 'test%@example.test';
-    update public.br_settings set competition_open = false, round1_count = 3, round2_count = 1, round3_count = 4,
-                                  speed_bonus_enabled = true, speed_bonus_max = 5, leaderboard_frozen_at = null,
-                                  results_finalized = false, registration_open = true where id = 1;
+    update public.br_settings set competition_open = false, round1_count = 6, round2_count = 1, round3_count = 4,
+        grid_size = 10, round1_seconds = 120, sync_grace_seconds = 180,
+        leaderboard_frozen_at = null, results_finalized = false, registration_open = true where id = 1;
 
-    -- Registration ------------------------------------------------------------
+    -- Registration creates no code
     pa := public.br_register('Test Alpha', 'TestA@Example.test', '0300', 'UoK', 'Year 3', null, null, 'online', null);
-    assert pa.email = 'testa@example.test', 'email stored lower-case';
-    assert pa.participant_code ~ '^BR-\d{4}-\d{4,}$', 'participant code format: ' || pa.participant_code;
-    assert pa.game_code ~ '^[A-HJ-NP-Z2-9]{6}$', 'game code alphabet: ' || pa.game_code;
-    assert pg_temp.err(format($f$select public.br_register('Dup', 'TESTA@example.test', null, 'UoK', 'Year 1', null, null, 'online', null)$f$))
-           = 'BR_EMAIL_TAKEN', 'duplicate email refused, case-insensitively';
-    update public.br_settings set registration_open = false where id = 1;
-    assert pg_temp.err($f$select public.br_register('Closed', 'testc@example.test', null, 'UoK', 'Year 1', null, null, 'online', null)$f$)
-           = 'BR_REGISTRATION_CLOSED', 'online registration closed';
-    pb := public.br_register('Test Beta', 'testb@example.test', null, 'Dow', 'Year 2', null, null, 'desk', 'paid');
-    assert pb.payment_status = 'paid' and pb.source = 'desk', 'desk registration bypasses the closed form';
-    update public.br_settings set registration_open = true where id = 1;
+    assert pa.game_code is null, 'registration does not create a Game Code';
+    assert pa.payment_status = 'unpaid', 'online registration starts unpaid';
+    assert pg_temp.err($f$select public.br_register('Dup', 'TESTA@example.test', null, 'UoK', 'Year 1', null, null, 'online', null)$f$)
+           = 'BR_EMAIL_TAKEN', 'duplicate email refused';
+    pb := public.br_register('Test Beta', 'testb@example.test', null, 'Dow', 'Year 2', null, null, 'desk', null);
 
-    -- Start gates -------------------------------------------------------------
-    assert pg_temp.err(format($f$select public.br_start_attempt(%L, 'WRONG1', 'tokA')$f$, pa.participant_code))
-           = 'BR_INVALID_CREDENTIALS', 'wrong game code';
-    assert pg_temp.err(format($f$select public.br_start_attempt(%L, %L, 'tokA')$f$, pa.participant_code, pa.game_code))
-           = 'BR_CLOSED', 'competition closed';
+    -- Approval issues the code
+    code_a := public.br_issue_code(pa.id);
+    assert code_a ~ '^[A-HJ-NP-Z2-9]{6}$', 'issued code format: ' || code_a;
+    select * into pa from public.br_participants where id = pa.id;
+    assert pa.payment_status = 'paid' and pa.check_in_status = 'checked_in' and pa.code_issued_at is not null,
+           'approval marks paid + checked in';
+
+    -- Start gates
+    assert pg_temp.err($f$select public.br_start_attempt('NOPE99', 'tokA')$f$) = 'BR_INVALID_CODE', 'unknown code';
+    assert pg_temp.err(format($f$select public.br_start_attempt(%L, 'tokA')$f$, code_a)) = 'BR_CLOSED', 'arena closed';
     update public.br_settings set competition_open = true where id = 1;
-    assert pg_temp.err(format($f$select public.br_start_attempt(%L, %L, 'tokA')$f$, pa.participant_code, pa.game_code))
-           = 'BR_NOT_PAID', 'unpaid cannot start';
-    update public.br_participants set payment_status = 'paid' where id = pa.id;
-    assert pg_temp.err(format($f$select public.br_start_attempt(%L, %L, 'tokA')$f$, pa.participant_code, pa.game_code))
-           = 'BR_NOT_CHECKED_IN', 'not checked in cannot start';
-    update public.br_participants set check_in_status = 'checked_in', registration_status = 'disqualified' where id = pa.id;
-    assert pg_temp.err(format($f$select public.br_start_attempt(%L, %L, 'tokA')$f$, pa.participant_code, pa.game_code))
-           = 'BR_DISQUALIFIED', 'disqualified cannot start';
-    update public.br_participants set registration_status = 'registered' where id = pa.id;
-
-    -- Start by email + lower-case code ------------------------------------------
-    s := public.br_start_attempt(pa.email, lower(pa.game_code), 'tokA');
-    assert s ->> 'status' = 'active' and (s ->> 'resumed')::boolean = false, 'attempt started';
-    assert s -> 'roundSizes' = '[3, 1, 4]'::jsonb, 'plan sizes follow settings: ' || (s -> 'roundSizes')::text;
-    assert (s ->> 'totalQuestions')::int = 3 + 5 + 4, 'matching pairs counted as questions';
-    assert s -> 'question' = 'null'::jsonb, 'nothing served before the player asks';
-
-    -- Serve is idempotent and never leaks the key --------------------------------
-    s := public.br_serve('tokA');
-    qid := (s -> 'question' ->> 'id')::uuid;
-    assert s -> 'question' ->> 'type' = 'WORD', 'round 1 serves a word';
-    assert not (s::text ilike '%correct_answer%') and not (s::text ilike '%correctAnswer%'), 'no key in served state';
-    assert (select string_agg(x, '' order by x) from jsonb_array_elements_text(s -> 'question' -> 'letters') x)
-         = (select string_agg(x, '' order by x) from regexp_split_to_table((select correct_answer from br_questions where id = qid), '') x),
-           'letters are an anagram of the answer';
-    assert (select array_to_string(array(select jsonb_array_elements_text(s -> 'question' -> 'letters')), ''))
-         <> (select correct_answer from br_questions where id = qid), 'letters are scrambled';
-    r := public.br_serve('tokA');
-    assert r -> 'question' ->> 'id' = qid::text and r -> 'question' ->> 'deadline' = s -> 'question' ->> 'deadline',
-           'a second serve returns the same question and deadline';
-
-    -- A second device resumes, the first token dies ------------------------------
-    s := public.br_start_attempt(pa.participant_code, pa.game_code, 'tokA2');
-    assert (s ->> 'resumed')::boolean and s -> 'question' ->> 'id' = qid::text, 'resume keeps the served question';
-    assert pg_temp.err($f$select public.br_state('tokA')$f$) = 'BR_NO_ATTEMPT', 'old token revoked on resume';
-
-    -- Wrong question id, then a correct answer, then a duplicate -----------------
-    assert pg_temp.err($f$select public.br_answer('tokA2', gen_random_uuid(), '{"word":"X"}')$f$) = 'BR_WRONG_QUESTION',
-           'cannot answer an unserved question';
-    r := public.br_answer('tokA2', qid, pg_temp.right_answer('tokA2'));
-    assert (r -> 'result' ->> 'correct')::boolean, 'lower-case correct word accepted';
-    assert (r -> 'result' ->> 'basePoints')::int = 10, 'base points';
-    assert (r -> 'result' ->> 'bonusPoints')::int between 4 and 5, 'instant answer earns ~full bonus';
-    assert pg_temp.err(format($f$select public.br_answer('tokA2', %L, '{"word":"X"}')$f$, qid)) = 'BR_DUPLICATE',
-           'second submission for the same question refused';
-    assert (r -> 'state' ->> 'index')::int = 1, 'advanced to the next question';
-
-    -- A late answer scores zero -------------------------------------------------
-    s := public.br_serve('tokA2');
-    qid := (s -> 'question' ->> 'id')::uuid;
-    update public.br_attempts set served_at = now() - interval '10 minutes' where token_hash = 'tokA2';
-    -- br_answer grades lateness itself rather than expiring first, so the
-    -- answer is recorded (as late) instead of being refused.
-    r := public.br_answer('tokA2', qid, pg_temp.right_answer('tokA2'));
-    assert (r -> 'result' ->> 'timedOut')::boolean and (r -> 'result' ->> 'score')::int = 0, 'late correct answer scores 0';
-
-    -- An abandoned question expires on the next read ----------------------------
-    s := public.br_serve('tokA2');
-    qid := (s -> 'question' ->> 'id')::uuid;
-    update public.br_attempts set served_at = now() - interval '10 minutes' where token_hash = 'tokA2';
-    s := public.br_state('tokA2');
-    assert (s ->> 'round')::int = 2 and s -> 'question' = 'null'::jsonb, 'expired word recorded, moved to round 2';
-    assert (select timed_out from br_answers where question_id = qid and participant_id = pa.id), 'timeout row written';
-
-    -- Round 2: matching, partly right -------------------------------------------
-    s := public.br_serve('tokA2');
-    qid := (s -> 'question' ->> 'id')::uuid;
-    assert jsonb_array_length(s -> 'question' -> 'left') = 5 and jsonb_array_length(s -> 'question' -> 'right') = 5, 'board shape';
-    r := pg_temp.right_answer('tokA2');
-    -- swap the first two matches: 3 of 5 right
-    r := jsonb_set(jsonb_set(r, '{matches,0}', r -> 'matches' -> 1), '{matches,1}', r -> 'matches' -> 0);
-    r := public.br_answer('tokA2', qid, r);
-    assert (r -> 'result' ->> 'correctParts')::int = 3 and (r -> 'result' ->> 'score')::int = 15
-           and (r -> 'result' ->> 'bonusPoints')::int = 0, 'partial board: 3 × 5, no bonus';
-
-    -- Round 3: answer everything right ------------------------------------------
-    loop
-        guard := guard + 1; exit when guard > 20;
-        s := public.br_serve('tokA2');
-        exit when s ->> 'status' = 'completed';
-        r := public.br_answer('tokA2', (s -> 'question' ->> 'id')::uuid, pg_temp.right_answer('tokA2'));
-    end loop;
-    s := public.br_state('tokA2');
-    assert s ->> 'status' = 'completed', 'attempt completed';
-    assert (s -> 'roundScores' ->> 2)::int between 4 * 14 and 4 * 15, 'round 3 = 4 × (10 + ~5)';
-    assert (select total_score from br_scores where participant_id = pa.id) = (s ->> 'totalScore')::int, 'score row matches attempt';
-    assert (select total_score from br_scores where participant_id = pa.id)
-         = (select sum(score) from br_answers where participant_id = pa.id), 'score equals the answer ledger';
-    assert (select correct_count from br_scores where participant_id = pa.id)
-         = (select sum(correct_parts) from br_answers where participant_id = pa.id)
-       and (select correct_count from br_scores where participant_id = pa.id) = 1 + 3 + 4,
-           'correct count counts matching pairs, like total_questions (1 word + 3 pairs + 4 MCQs)';
-    assert pg_temp.err(format($f$select public.br_answer('tokA2', %L, '{}')$f$, qid)) = 'BR_COMPLETED', 'no answers after completion';
-    assert pg_temp.err(format($f$select public.br_start_attempt(%L, %L, 'tokA3')$f$, pa.participant_code, pa.game_code))
-           = 'BR_ALREADY_PLAYED', 'one official attempt';
-
-    -- Second player, all wrong ---------------------------------------------------
-    update public.br_participants set check_in_status = 'late' where id = pb.id;
-    s := public.br_start_attempt(pb.participant_code, pb.game_code, 'tokB');
-    guard := 0;
-    loop
-        guard := guard + 1; exit when guard > 30;
-        s := public.br_serve('tokB');
-        exit when s ->> 'status' = 'completed';
-        r := public.br_answer('tokB', (s -> 'question' ->> 'id')::uuid, '{"word":"ZZZ","choice":"Z","matches":[]}');
-        assert not (r -> 'result' ->> 'correct')::boolean, 'wrong answer graded wrong';
-    end loop;
-    assert (select total_score from br_scores where participant_id = pb.id) = 0, 'all wrong scores 0';
-
-    -- Leaderboard, freeze, finalize ---------------------------------------------
-    assert (select participant_id from br_leaderboard where rank = 1 and participant_id in (pa.id, pb.id)) = pa.id
-           or (select count(*) from br_leaderboard where total_score > (select total_score from br_scores where participant_id = pa.id)) > 0,
-           'higher total ranks higher';
-    -- One transaction shares one now(), so date the later score explicitly.
-    update public.br_scores set completed_at = completed_at + interval '1 minute' where participant_id = pb.id;
-    update public.br_settings set leaderboard_frozen_at = (select completed_at from br_scores where participant_id = pa.id) where id = 1;
-    assert not exists (select 1 from br_leaderboard where participant_id = pb.id), 'frozen board ignores later scores';
-    update public.br_settings set leaderboard_frozen_at = null where id = 1;
-    perform public.br_finalize_results(1);
-    assert (select final_status from br_scores where participant_id = pb.id) = 'participant', 'finalize labels non-winners';
-    assert (select results_finalized from br_settings) , 'finalized flag';
     update public.br_participants set registration_status = 'disqualified' where id = pa.id;
-    assert not exists (select 1 from br_leaderboard where participant_id = pa.id), 'disqualified removed from board';
+    assert pg_temp.err(format($f$select public.br_start_attempt(%L, 'tokA')$f$, code_a)) = 'BR_DISQUALIFIED', 'disqualified';
     update public.br_participants set registration_status = 'registered' where id = pa.id;
+
+    -- Start downloads the whole battle, without answers
+    s := public.br_start_attempt(lower(code_a), 'tokA');
+    assert s ->> 'status' = 'active' and (s ->> 'round')::int = 1, 'attempt started at round 1';
+    n_words := jsonb_array_length(s -> 'plan' -> 'r1' -> 'words');
+    assert n_words between 4 and 6, 'word list drawn: ' || n_words;
+    assert jsonb_array_length(s -> 'plan' -> 'r1' -> 'grid') = 10
+       and (select bool_and(char_length(x) = 10) from jsonb_array_elements_text(s -> 'plan' -> 'r1' -> 'grid') x), '10x10 grid';
+    assert jsonb_array_length(s -> 'plan' -> 'r2') = 1 and jsonb_array_length(s -> 'plan' -> 'r3') = 4, 'boards and MCQs downloaded';
+    assert not (s::text ~* 'correct_answer|correctAnswer|"pairs"|"dr"|"dc"'), 'no key, pair list or word position in the download';
+    select jsonb_array_length(q.options -> 'pairs') into n_pairs from public.br_questions q where q.id = (s -> 'plan' -> 'r2' -> 0 ->> 'id')::uuid;
+    assert (s ->> 'totalQuestions')::int = n_words + n_pairs + 4, 'total counts words + pairs + MCQs';
+    select * into pa from public.br_participants where id = pa.id;
+    assert pa.code_used_at is not null, 'code consumed at start';
+    assert pg_temp.err(format($f$select public.br_start_attempt(%L, 'tokA-again')$f$, code_a)) = 'BR_CODE_USED', 'code works once';
+
+    -- Every word in the private plan really is in the grid
+    assert (select bool_and(public.br_ws_path_spells(a.plan -> 'r1' -> 'grid', (w ->> 'r')::int, (w ->> 'c')::int,
+                (w ->> 'r')::int + (w ->> 'dr')::int * (char_length(w ->> 'word') - 1),
+                (w ->> 'c')::int + (w ->> 'dc')::int * (char_length(w ->> 'word') - 1), w ->> 'word'))
+            from public.br_attempts a, jsonb_array_elements(a.plan -> 'r1' -> 'words') w where a.token_hash = 'tokA'),
+           'every placed word spells out on its path';
+
+    assert pg_temp.err($f$select public.br_submit_round('tokA', 2, '{}')$f$) = 'BR_ROUND_ORDER', 'rounds in order';
+
+    -- Round 1: every word but one found, plus a forged claim for a real word
+    sub := pg_temp.perfect('tokA', 1);
+    sub := jsonb_build_object('found', (sub -> 'found') - 0
+        || jsonb_build_array(jsonb_build_object('word', (sub -> 'found' -> 0 ->> 'word'), 'r1', 0, 'c1', 0, 'r2', 0, 'c2', 1)));
+    r := public.br_submit_round('tokA', 1, sub);
+    assert jsonb_array_length(r -> 'result' -> 'found') = n_words - 1, 'wrong path for a real word is not credited';
+    assert jsonb_array_length(r -> 'result' -> 'missed') = 1, 'the missed word is reported';
+    assert (r -> 'result' ->> 'score')::int = (n_words - 1) * 10, 'round 1 = 10 per word found';
+    assert (r -> 'state' ->> 'round')::int = 2, 'moved to round 2';
+    s := public.br_submit_round('tokA', 1, pg_temp.perfect('tokA', 1));
+    assert (s ->> 'repeat')::boolean and s -> 'result' = r -> 'result', 'retry is idempotent';
+
+    -- Round 2 arrives past its window: scores 0
+    update public.br_attempts set round_submitted_at = jsonb_set(round_submitted_at, '{1}', to_jsonb(now() - interval '1 hour'))
+     where token_hash = 'tokA';
+    r := public.br_submit_round('tokA', 2, pg_temp.perfect('tokA', 2));
+    assert (r -> 'result' ->> 'late')::boolean and (r -> 'result' ->> 'score')::int = 0, 'a round past its server window scores 0';
+    assert r -> 'result' -> 'items' -> 0 -> 'correctAnswer' is not null, 'answers revealed after grading';
+
+    -- Round 3: perfect
+    r := public.br_submit_round('tokA', 3, pg_temp.perfect('tokA', 3));
+    assert (r -> 'result' ->> 'score')::int = 40, 'round 3 = 4 x 10';
+    assert r -> 'state' ->> 'status' = 'completed', 'attempt complete after round 3';
+    assert (select total_score from br_scores where participant_id = pa.id) = (n_words - 1) * 10 + 40, 'score row';
+    assert (select correct_count from br_scores where participant_id = pa.id) = (n_words - 1) + 0 + 4, 'correct count';
+    assert (select total_time_ms from br_scores where participant_id = pa.id) >= 0, 'server-measured time';
+    assert pg_temp.err($f$select public.br_submit_round('tokA', 3, '{}')$f$) = 'OK', 'retry after completion returns stored result';
+    assert pg_temp.err(format($f$select public.br_issue_code(%L)$f$, pa.id)) = 'BR_ALREADY_PLAYED', 'no code after playing';
+
+    -- Station failure: a re-issued code resumes the same attempt
+    code_b := public.br_issue_code(pb.id);
+    s := public.br_start_attempt(code_b, 'tokB');
+    r := public.br_submit_round('tokB', 1, '{"found": []}');
+    assert (r -> 'result' ->> 'score')::int = 0, 'nothing found scores 0';
+    code_b2 := public.br_issue_code(pb.id);
+    assert code_b2 <> code_b, 'a new code';
+    assert pg_temp.err(format($f$select public.br_start_attempt(%L, 'tokB2')$f$, code_b)) = 'BR_INVALID_CODE', 'old code dead';
+    s := public.br_start_attempt(code_b2, 'tokB2');
+    assert (s ->> 'resumed')::boolean and (s ->> 'round')::int = 2, 'resumed at round 2 with round 1 kept';
+    assert s -> 'results' ? '1', 'round 1 results come back on resume';
+    assert pg_temp.err($f$select public.br_state('tokB')$f$) = 'BR_NO_ATTEMPT', 'old station token dead';
+
+    perform public.br_void_attempt(pb.id, 'test');
+    assert (select game_code from br_participants where id = pb.id) is null, 'void clears the code';
+
+    perform public.br_finalize_results(10);
+    assert (select final_status from br_scores where participant_id = pa.id) in ('winner', 'participant'), 'finalize';
     perform public.br_unfinalize_results();
 
-    -- Void and replay -------------------------------------------------------------
-    perform public.br_void_attempt(pb.id, 'station crashed');
-    assert not exists (select 1 from br_scores where participant_id = pb.id), 'void removes the score';
-    assert pg_temp.err($f$select public.br_state('tokB')$f$) = 'BR_NO_ATTEMPT', 'voided token dead';
-    s := public.br_start_attempt(pb.participant_code, pb.game_code, 'tokB2');
-    assert s ->> 'status' = 'active', 'a voided attempt allows a new one';
-
-    -- Slot capacity -------------------------------------------------------------
-    insert into br_sessions (name, event_date, start_time, end_time, capacity, status)
-    values ('Test slot', current_date, now(), now() + interval '1 hour', 1, 'open');
-    perform public.br_assign_slot(pa.id, (select id from br_sessions where name = 'Test slot'));
-    assert pg_temp.err(format($f$select public.br_assign_slot(%L, (select id from br_sessions where name = 'Test slot'))$f$, pb.id))
-           = 'BR_SLOT_FULL', 'capacity enforced';
-    update br_sessions set status = 'completed' where name = 'Test slot';
-    update br_participants set slot_id = (select id from br_sessions where name = 'Test slot') where id = pb.id;
-    perform public.br_void_attempt(pb.id, 'test');
-    assert pg_temp.err(format($f$select public.br_start_attempt(%L, %L, 'tokB3')$f$, pb.participant_code, pb.game_code))
-           = 'BR_SESSION_ENDED', 'ended session cannot start';
-
-    -- Question deletion keeps history ---------------------------------------------
-    assert public.br_delete_question(qid) = 'deactivated', 'used question retired, not deleted';
-
-    -- Clean up --------------------------------------------------------------------
     delete from public.br_participants where email like 'test%@example.test';
-    delete from public.br_sessions where name = 'Test slot';
-    update public.br_questions set active = true where id = qid;
-    raise notice 'ENGINE: all assertions passed';
+    raise notice 'ENGINE v2: all assertions passed';
 end;
 $$;
 
--- Privileges: the anon and authenticated roles can touch nothing.
 set role anon;
 do $$
 begin
     begin perform 1 from public.br_participants; raise exception 'anon read participants';
     exception when insufficient_privilege then null; end;
-    begin perform public.br_state('x'); raise exception 'anon executed engine';
+    begin perform public.br_start_attempt('X', 'y'); raise exception 'anon executed engine';
     exception when insufficient_privilege then null; end;
-    begin perform 1 from public.br_leaderboard; raise exception 'anon read leaderboard view';
+    begin perform public.br_submit_round('x', 1, '{}'); raise exception 'anon executed submit';
+    exception when insufficient_privilege then null; end;
+    begin perform public.br_issue_code(gen_random_uuid()); raise exception 'anon issued a code';
     exception when insufficient_privilege then null; end;
     raise notice 'PRIVILEGES: anon locked out';
 end;
@@ -245,7 +178,7 @@ do $$
 begin
     begin update public.br_scores set total_score = 9999; raise exception 'authenticated wrote scores';
     exception when insufficient_privilege then null; end;
-    begin perform public.br_answer('x', gen_random_uuid(), '{}'); raise exception 'authenticated executed engine';
+    begin perform public.br_submit_round('x', 1, '{}'); raise exception 'authenticated executed engine';
     exception when insufficient_privilege then null; end;
     raise notice 'PRIVILEGES: authenticated locked out';
 end;

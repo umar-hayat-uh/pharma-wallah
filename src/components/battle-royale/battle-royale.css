@@ -81,3 +81,13 @@
   from { transform: translateX(-100%); }
   to   { transform: translateX(300%); }
 }
+
+/* A wrong word-search selection. */
+@keyframes br-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-br [class*="br-shake"] { animation: none !important; }
+}

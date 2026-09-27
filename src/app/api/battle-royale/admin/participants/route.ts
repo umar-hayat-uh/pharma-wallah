@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { adminGuard } from "@/lib/battle-royale/admin";
 import { deskRegistrationSchema, firstIssue } from "@/lib/battle-royale/schemas";
-import { SESSIONS_TAG, db, engineErrorResponse, errorResponse, GENERIC_ERROR, readJson } from "@/lib/battle-royale/server";
+import { SESSIONS_TAG, db, engineErrorResponse, errorResponse, readJson } from "@/lib/battle-royale/server";
 import { sendBattleEmail } from "@/lib/battle-royale/email";
 
 /*
- * Desk registration: a walk-in at the stall. Usually paid and checked in in
- * the same step (the PDF's desk workflow), so the Player ID and Game Code can
- * be handed over and the participant sent straight to a station. Email is
- * optional here — a walk-in may not give one — and is only sent if present.
+ * Desk registration: a walk-in at the stall. Usually paid on the spot, so the
+ * payment is approved and the Game Code issued in the same step, and the
+ * participant goes straight to a station with the printed slip. Email is
+ * optional — a walk-in may not give one — and never contains the code.
  */
 export async function POST(req: Request) {
   const guard = await adminGuard("desk");
@@ -33,21 +33,20 @@ export async function POST(req: Request) {
   });
   if (error || !p) return engineErrorResponse(error, "desk register");
 
-  if (input.checkIn) {
-    const { error: ciError } = await svc
-      .from("br_participants")
-      .update({ check_in_status: "checked_in", checked_in_at: new Date().toISOString() })
-      .eq("id", p.id);
-    if (ciError) {
-      console.error("[battle-royale] desk check-in failed", ciError);
-      return errorResponse(GENERIC_ERROR, 500);
-    }
+  let gameCode: string | null = null;
+  if (input.approve) {
+    const { data: code, error: codeError } = await svc.rpc("br_issue_code", {
+      p_participant_id: p.id,
+      p_payment: input.paymentStatus,
+    });
+    if (codeError || !code) return engineErrorResponse(codeError, "desk approve");
+    gameCode = code;
   }
   if (input.slotId) revalidateTag(SESSIONS_TAG);
 
   const email = input.email && input.sendEmail ? await sendBattleEmail("registration", p.id) : { status: "skipped" as const };
   return NextResponse.json(
-    { participant: { id: p.id, name: p.name, code: p.participant_code, gameCode: p.game_code }, email: email.status },
+    { participant: { id: p.id, name: p.name, code: p.participant_code, gameCode }, email: email.status },
     { status: 201 },
   );
 }

@@ -36,12 +36,12 @@ export function SuccessCard() {
         <Mail className="mx-auto h-10 w-10 text-[#1C7BD9]" />
         <h1 className="text-2xl font-bold">Looking for your confirmation?</h1>
         <p className="text-[15px] text-[#16181d]/65">
-          Your Player ID and Game Code were emailed to you when you registered. If you can&apos;t find the email,
+          Your Player ID was emailed to you when you registered. If you can&apos;t find the email,
           check your spam folder or ask at the PharmaWallah desk.
         </p>
         <div className="flex flex-wrap justify-center gap-3">
           <Link href={`${BR_BASE}/register`} className={secondaryButtonClass}>Register</Link>
-          <Link href={`${BR_BASE}/check-in`} className={primaryButtonClass} style={{ background: BRAND_BUTTON }}>Check in</Link>
+          <Link href={`${BR_BASE}/status`} className={primaryButtonClass} style={{ background: BRAND_BUTTON }}>My status</Link>
         </div>
       </div>
     );
@@ -49,7 +49,7 @@ export function SuccessCard() {
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(`Player ID: ${receipt.code}\nGame Code: ${receipt.gameCode}`);
+      await navigator.clipboard.writeText(`Player ID: ${receipt.code}`);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
@@ -84,15 +84,13 @@ export function SuccessCard() {
         </header>
 
         <div className="p-6 sm:p-8">
-          <div className="grid gap-3 rounded-2xl border border-[#1C7BD9]/20 bg-[#1C7BD9]/[0.05] p-5 sm:grid-cols-2">
-            <div>
-              <p className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-[#16181d]/55">Player ID</p>
-              <p className="mt-1 font-mono text-2xl font-bold tracking-wide text-[#1C7BD9]">{receipt.code}</p>
-            </div>
-            <div>
-              <p className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-[#16181d]/55">Game Code · keep private</p>
-              <p className="mt-1 font-mono text-2xl font-bold tracking-[0.2em]">{receipt.gameCode}</p>
-            </div>
+          <div className="rounded-2xl border border-[#1C7BD9]/20 bg-[#1C7BD9]/[0.05] p-5">
+            <p className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-[#16181d]/55">Player ID</p>
+            <p className="mt-1 font-mono text-2xl font-bold tracking-wide text-[#1C7BD9]">{receipt.code}</p>
+            <p className="mt-2 text-sm text-[#16181d]/70">
+              <strong>Next:</strong> pay the Rs. {receipt.entryFee} entry fee at the PharmaWallah desk. Once it&apos;s
+              approved, the desk gives you your single-use <strong>Game Code</strong> to start your battle.
+            </p>
           </div>
 
           <dl className="mt-6 divide-y divide-[#16181d]/10 text-sm">
@@ -107,7 +105,6 @@ export function SuccessCard() {
           <div className="mt-6">
             <p className="text-sm font-semibold">Before you arrive</p>
             <ul className="mt-2 space-y-1.5 text-sm text-[#16181d]/75">
-              <li>• Pay the Rs. {receipt.entryFee} entry fee at the PharmaWallah desk to be checked in.</li>
               {ARRIVAL_POINTS.map((p) => (
                 <li key={p}>• {p}</li>
               ))}
@@ -136,7 +133,7 @@ export function SuccessCard() {
           <Printer className="h-4 w-4" /> Download / Print Confirmation
         </button>
         <button type="button" onClick={copy} className={secondaryButtonClass}>
-          <Copy className="h-4 w-4" /> {copied ? "Copied" : "Copy codes"}
+          <Copy className="h-4 w-4" /> {copied ? "Copied" : "Copy Player ID"}
         </button>
         <Link href={BR_BASE} className={secondaryButtonClass}>Back to Battle Royale</Link>
       </div>

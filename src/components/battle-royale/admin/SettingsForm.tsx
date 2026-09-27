@@ -18,8 +18,9 @@ export function SettingsForm({ initial }: { initial: PublicSettings }) {
     round1Count: String(initial.roundCounts[0]),
     round2Count: String(initial.roundCounts[1]),
     round3Count: String(initial.roundCounts[2]),
-    speedBonusEnabled: initial.speedBonusEnabled,
-    speedBonusMax: String(initial.speedBonusMax),
+    round1Seconds: String(initial.round1Seconds),
+    gridSize: String(initial.gridSize),
+    syncGraceSeconds: String(initial.syncGraceSeconds),
     winnersCount: String(initial.winnersCount),
     registrationOpen: initial.registrationOpen,
     competitionOpen: initial.competitionOpen,
@@ -33,7 +34,7 @@ export function SettingsForm({ initial }: { initial: PublicSettings }) {
     run(() => adminFetch("/api/battle-royale/admin/settings", "PATCH", { ...s, rules: s.rules.map((r) => r.trim()).filter(Boolean) }), "Settings saved.");
 
   const box = "space-y-4 rounded-2xl border border-[#16181d]/10 bg-white p-5";
-  const check = (k: "speedBonusEnabled" | "registrationOpen" | "competitionOpen" | "showFullNames", label: string, hint: string) => (
+  const check = (k: "registrationOpen" | "competitionOpen" | "showFullNames", label: string, hint: string) => (
     <label className="flex items-start gap-3 text-sm">
       <input type="checkbox" className="mt-0.5 h-4 w-4" checked={s[k]} onChange={(e) => set(k, e.target.checked)} />
       <span><span className="font-semibold">{label}</span><span className="block text-[#16181d]/55">{hint}</span></span>
@@ -61,13 +62,19 @@ export function SettingsForm({ initial }: { initial: PublicSettings }) {
       <section className={box}>
         <h2 className="font-semibold">Battle & scoring</h2>
         <div className="grid grid-cols-3 gap-3">
-          <Field id="st-r1" label="Round 1 words"><input id="st-r1" type="number" min={1} max={20} className={inputClass} value={s.round1Count} onChange={(e) => set("round1Count", e.target.value)} /></Field>
+          <Field id="st-r1" label="Words in the grid"><input id="st-r1" type="number" min={3} max={20} className={inputClass} value={s.round1Count} onChange={(e) => set("round1Count", e.target.value)} /></Field>
           <Field id="st-r2" label="Round 2 boards"><input id="st-r2" type="number" min={1} max={5} className={inputClass} value={s.round2Count} onChange={(e) => set("round2Count", e.target.value)} /></Field>
           <Field id="st-r3" label="Round 3 MCQs"><input id="st-r3" type="number" min={1} max={40} className={inputClass} value={s.round3Count} onChange={(e) => set("round3Count", e.target.value)} /></Field>
         </div>
-        <p className="text-xs text-[#16181d]/55">Points and time limits are set per question on the Questions page.</p>
-        {check("speedBonusEnabled", "Speed bonus", "A fully correct answer earns extra points that fall to 0 as its timer runs out.")}
-        <Field id="st-bonus" label="Maximum speed bonus"><input id="st-bonus" type="number" min={0} max={50} className={inputClass} value={s.speedBonusMax} onChange={(e) => set("speedBonusMax", e.target.value)} /></Field>
+        <div className="grid grid-cols-3 gap-3">
+          <Field id="st-r1s" label="Word search (s)"><input id="st-r1s" type="number" min={20} max={900} className={inputClass} value={s.round1Seconds} onChange={(e) => set("round1Seconds", e.target.value)} /></Field>
+          <Field id="st-grid" label="Grid size"><input id="st-grid" type="number" min={7} max={14} className={inputClass} value={s.gridSize} onChange={(e) => set("gridSize", e.target.value)} /></Field>
+          <Field id="st-grace" label="Sync grace (s)"><input id="st-grace" type="number" min={30} max={1800} className={inputClass} value={s.syncGraceSeconds} onChange={(e) => set("syncGraceSeconds", e.target.value)} /></Field>
+        </div>
+        <p className="text-xs text-[#16181d]/55">
+          Words longer than the grid are skipped. Round 2 and 3 timers are set per question on the Questions page.
+          Sync grace is how late a round may reach the server (slow internet, reading the round card) before it scores 0.
+        </p>
         {check("competitionOpen", "Battles can start", "Off before the event opens and after closing.")}
         {check("registrationOpen", "Online registration open", "The desk can always register walk-ins.")}
         {check("showFullNames", "Full names on the public leaderboard", "Off shows “Ayesha K.” — nobody's email or phone is ever shown.")}

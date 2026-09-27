@@ -99,18 +99,22 @@
 
 ## Battle Royale (Pharma Fest event, added 2026-09-27)
 Separate from the tournament below. Skill: `.claude/skills/battle-royale/`.
-- Schema + engine: `supabase/migrations/20260927_battle_royale.sql` (NOT applied — owner runs it);
+- Schema + engine: `supabase/migrations/20260927_battle_royale.sql` then `20260928_battle_royale_v2.sql`
+  (NOT applied — owner runs them; `supabase/battle_royale_setup.sql` = both + questions + admins in one file);
   question seed `supabase/seed/20260927_battle_royale_questions.sql`; demo data `supabase/seed/battle_royale_demo.sql` (never production).
-- Pages: `src/app/(site)/battle-royale/` — landing, `register`, `success`, `instructions`, `check-in`,
-  `battle` (the station, chromeless), `results`, `leaderboard` (TV mode), `admin/` (overview,
+- Pages: `src/app/(site)/battle-royale/` — landing, `register`, `success`, `instructions`, `status`
+  (tracker + results; `/check-in` and `/results` redirect here), `battle` (the station, chromeless),
+  `leaderboard` (TV mode), `admin/` (overview,
   participants, sessions, questions, results, emails, settings; chromeless), `loading.tsx`.
-- API: `src/app/api/battle-royale/` — `register`, `check-in`, `results`, `leaderboard`,
-  `battle/{start,state,serve,answer}`, `admin/{participants,participants/[id],sessions,sessions/[id],questions,questions/[id],settings,results,emails}`.
+- API: `src/app/api/battle-royale/` — `register`, `status`, `leaderboard` (Upstash-cached),
+  `battle/{start,state,submit}`, `admin/{participants,participants/[id],sessions,sessions/[id],questions,questions/[id],settings,results,emails}`.
 - Lib: `src/lib/battle-royale/` — `server.ts` (service client, `BR_*` error map, token/cookie, admin check,
   cached settings), `schemas.ts` (Zod, shared client/server), `email.ts` (Resend + `br_email_logs`),
   `leaderboard.ts`, `format.ts`, `types.ts`, `constants.ts`, `admin.ts`, `admin-page.ts`, `questions.ts`.
 - Emails: `src/emails/battle-royale/` (HTML-string templates, six types).
-- UI: `src/components/battle-royale/` (+ `battle/` game screens, `admin/`), `battle-royale.css` (`.pw-br`).
+- UI: `src/components/battle-royale/` (+ `battle/` station: `BattleApp` state machine, `station.ts` offline
+  store + grid geometry, `WordSearch`, `Matching`, `Quiz`, `Panels`; `admin/` incl. `CodeSlip`/`SlipHost`),
+  `battle-royale.css` (`.pw-br`). Flow map of every screen: https://claude.ai/artifact/HDPyC8TJ1f3UUzuLqjfKNy
 - Tests: `scripts/battle-royale.test.mts` (node --test), `scripts/battle-royale-engine.test.sql` (throwaway Postgres).
 
 ## Tournament (entry-code competition)
