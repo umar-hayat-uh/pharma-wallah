@@ -80,6 +80,8 @@ export type PublicSettings = {
   leaderboardFrozenAt: string | null;
   resultsFinalized: boolean;
   showFullNames: boolean;
+  /** "Close tournament": the public pages show only the leaderboard and My result. */
+  eventClosed: boolean;
   rules: string[];
 };
 
@@ -140,6 +142,8 @@ export type StatusPayload = {
   };
   rank: number | null;
   finalized: boolean;
+  /** The tournament is closed — nothing left to do but look at results. */
+  closed: boolean;
   /** Earned from the battle itself, highest first (titles.ts). Empty until played. */
   titles: { id: string; name: string; reason: string }[];
   /** Null until the battle is complete, or for a cancelled/disqualified registration. */

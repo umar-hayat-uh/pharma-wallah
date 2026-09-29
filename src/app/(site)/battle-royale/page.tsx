@@ -38,6 +38,55 @@ export default async function BattleRoyaleLanding() {
   const fee = settings?.entryFee ?? 100;
   const winners = settings?.winnersCount ?? 10;
 
+  // "Close tournament" (admin): the event is over — only the results remain.
+  if (settings?.eventClosed) {
+    return (
+      <>
+        <header className="relative overflow-hidden text-white" style={{ background: BRAND_SURFACE }}>
+          <div className="br-grid" aria-hidden="true" />
+          <div className="br-sheen" aria-hidden="true" />
+          <div className="relative mx-auto max-w-5xl px-5 pb-12 pt-10 text-center sm:px-6 sm:pb-16 sm:pt-14">
+            <Crest size={64} className="mx-auto" />
+            <p className="mt-5 font-mono text-[11px] font-semibold uppercase tracking-[0.24em] text-white/85">Tournament closed</p>
+            <h1 className="mt-2 text-[clamp(3rem,11vw,6.5rem)] font-extrabold uppercase leading-[0.9] tracking-[-0.02em]">Battle Royale</h1>
+            <p className="mt-4 text-xl font-semibold sm:text-2xl">Thanks for playing. Here are the results.</p>
+            <nav aria-label="Battle Royale results" className="mx-auto mt-9 grid max-w-2xl gap-3 sm:grid-cols-2">
+              {[
+                { href: `${BR_BASE}/leaderboard`, icon: Trophy, title: "Leaderboard", sub: board?.finalized ? "The final standings." : "The standings, being verified." },
+                { href: `${BR_BASE}/status`, icon: Award, title: "My result", sub: "Your score, titles and e-certificate." },
+              ].map(({ href, icon: Icon, title, sub }, i) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className={
+                    i === 0
+                      ? "group flex items-center gap-4 rounded-2xl bg-white p-5 text-left text-[#16181d] shadow-[0_18px_36px_-18px_rgba(6,18,36,.7)] transition-transform duration-300 ease-out-expo hover:-translate-y-1"
+                      : "group flex items-center gap-4 rounded-2xl border-2 border-white/40 bg-white/10 p-5 text-left transition-[transform,background-color] duration-300 ease-out-expo hover:-translate-y-1 hover:bg-white/20"
+                  }
+                >
+                  <span className={i === 0 ? "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#1C7BD9] text-white" : "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-[#0f4f8f]"}>
+                    <Icon className="h-6 w-6" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-1 text-xl font-extrabold">
+                      {title} <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                    </span>
+                    <span className={i === 0 ? "mt-0.5 block text-sm text-[#16181d]/65" : "mt-0.5 block text-sm text-white/85"}>{sub}</span>
+                  </span>
+                </Link>
+              ))}
+            </nav>
+          </div>
+        </header>
+        <div className="mx-auto max-w-5xl px-5 py-12 sm:px-6 sm:py-16">
+          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{board?.finalized ? "The winners" : "Top 3"}</h2>
+          <Podium rows={board?.rows ?? []} className="mt-6" />
+        </div>
+        <EventFooter closed />
+      </>
+    );
+  }
+
   const menu = [
     { href: `${BR_BASE}/register`, icon: UserPlus, title: "Register", sub: "New here? Get your Player ID." },
     { href: `${BR_BASE}/battle`, icon: Gamepad2, title: "Play", sub: "Have a Game Code? Start your battle." },

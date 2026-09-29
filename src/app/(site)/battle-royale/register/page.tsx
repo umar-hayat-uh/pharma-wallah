@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { PageHero } from "@/components/page-kit";
 import { RegistrationForm } from "@/components/battle-royale/RegistrationForm";
 import { EventFooter } from "@/components/battle-royale/sections";
@@ -15,6 +16,8 @@ export const metadata: Metadata = {
 
 export default async function RegisterPage() {
   const [settings, sessions] = await Promise.all([getPublicSettings(), getOpenSessions()]);
+  // A closed tournament shows only the leaderboard and My result (admin "Close tournament").
+  if (settings?.eventClosed) redirect(BR_BASE);
 
   return (
     <>

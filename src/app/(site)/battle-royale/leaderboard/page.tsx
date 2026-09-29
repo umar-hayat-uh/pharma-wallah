@@ -15,5 +15,5 @@ export const metadata: Metadata = {
 export default async function LeaderboardPage({ searchParams }: { searchParams: { code?: string } }) {
   const code = typeof searchParams.code === "string" ? searchParams.code.trim().toUpperCase().slice(0, 20) : null;
   const [initial, settings] = await Promise.all([readLeaderboard(50, code), getPublicSettings()]);
-  return <LeaderboardClient initial={initial} code={code} title={settings?.eventTitle ?? "PharmaWallah Battle Royale"} />;
+  return <LeaderboardClient initial={initial} code={code} title={settings?.eventTitle ?? "PharmaWallah Battle Royale"} closed={settings?.eventClosed ?? false} />;
 }

@@ -41,6 +41,11 @@ server-authoritative game engine, its Game Code identity model, or its admin rol
   `titles` + `certificate`; `certificate/draw.ts` draws it on canvas (PDF via lazy jsPDF, PNG).
   `winner` design only when finalised and `final_status = winner`; otherwise participation.
 
+- **Close tournament (2026-09-29):** admin overview → `results` route `close`/`reopen`. Closed =
+  `event_closed` + registration off + battles off + frozen. Public pages check
+  `settings.eventClosed`: menu shows the closed variant, register/instructions/success/battle
+  redirect to it, leaderboard and status stay. Needs `20260929_battle_royale_closed.sql`.
+
 ## Procedure
 - New title → add to `TITLES` (order = precedence) and `earnedTitles`, plus a test; the landing,
   instructions and certificate pick it up.

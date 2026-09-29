@@ -6,6 +6,14 @@ import { SETTINGS_TAG, db, engineErrorResponse, errorResponse, readJson, readSet
 import { sendBattleEmails } from "@/lib/battle-royale/email";
 import { invalidateLeaderboard } from "@/lib/battle-royale/leaderboard";
 
+/** The closed flag is a later column; say which SQL adds it rather than "something went wrong". */
+function closedFlagError(error: { message?: string }, where: string) {
+  if (String(error.message ?? "").includes("event_closed")) {
+    return errorResponse("Run supabase/migrations/20260929_battle_royale_closed.sql in the Supabase SQL editor first.", 503);
+  }
+  return engineErrorResponse(error, where);
+}
+
 /** Most emails one request sends; a larger field is notified in batches. */
 const MAX_NOTIFY = 150;
 
@@ -56,6 +64,30 @@ export async function POST(req: Request) {
     case "unfinalize": {
       const { error } = await svc.rpc("br_unfinalize_results");
       if (error) return engineErrorResponse(error, "unfinalize");
+      break;
+    }
+    case "close": {
+      // One button for the end of the event: registration and battles off, the
+      // board frozen (if it isn't already — an earlier freeze time is kept), and
+      // the public pages reduced to the leaderboard and My result.
+      const { error } = await svc
+        .from("br_settings")
+        .update({
+          event_closed: true,
+          registration_open: false,
+          competition_open: false,
+          leaderboard_frozen_at: settings.leaderboardFrozenAt ?? now,
+          updated_at: now,
+        })
+        .eq("id", 1);
+      if (error) return closedFlagError(error, "close");
+      break;
+    }
+    case "reopen": {
+      // Only lifts the curtain. Registration, battles and the freeze stay as they
+      // are — the organisers turn each back on deliberately.
+      const { error } = await svc.from("br_settings").update({ event_closed: false, updated_at: now }).eq("id", 1);
+      if (error) return closedFlagError(error, "reopen");
       break;
     }
     case "notify": {

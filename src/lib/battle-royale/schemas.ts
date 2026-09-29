@@ -221,6 +221,8 @@ export const resultsActionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("unfreeze") }),
   z.object({ action: z.literal("finalize") }),
   z.object({ action: z.literal("unfinalize") }),
+  z.object({ action: z.literal("close") }),
+  z.object({ action: z.literal("reopen") }),
   z.object({ action: z.literal("notify"), type: z.enum(["result", "qualification"]) }),
 ]);
 

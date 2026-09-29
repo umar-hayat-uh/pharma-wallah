@@ -64,7 +64,9 @@ export function StatusClient() {
 
   const p = data.participant;
   const blocked = p.registrationStatus !== "registered";
-  const next = !data.steps.paid
+  const next = data.closed
+    ? { t: "The tournament has ended", d: "Battle Royale is closed, so this registration can no longer play. See the leaderboard for the results." }
+    : !data.steps.paid
     ? { t: "Pay at the PharmaWallah desk", d: "Show your Player ID and pay the entry fee. The desk then gives you your Game Code." }
     : !data.steps.codeIssued
       ? { t: "Collect your Game Code", d: "Ask the desk for your Game Code slip." }
@@ -108,7 +110,7 @@ export function StatusClient() {
             <p className="mt-2 text-2xl font-bold">{next.t}</p>
             <p className="mt-1.5 text-[15px] leading-relaxed text-[#16181d]/70">{next.d}</p>
           </div>
-          <p className="text-sm text-[#16181d]/60">Your score and e-certificate appear here as soon as you finish your battle.</p>
+          {!data.closed && <p className="text-sm text-[#16181d]/60">Your score and e-certificate appear here as soon as you finish your battle.</p>}
         </>
       )}
 
@@ -167,7 +169,7 @@ export function StatusClient() {
 
           {!data.finalized ? (
             <Notice tone="blue" icon={<Hourglass />} title="Results aren't final yet.">
-              Your score won&apos;t change, but your rank can while others play. The Top {data.winnersCount} receive a gold
+              {data.closed ? "The tournament has closed and the results are being verified." : "Your score won't change, but your rank can while others play."} The Top {data.winnersCount} receive a gold
               Certificate of Achievement once results are final — come back here then.
             </Notice>
           ) : data.score.finalStatus === "winner" ? (

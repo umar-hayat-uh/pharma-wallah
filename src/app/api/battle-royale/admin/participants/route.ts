@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { adminGuard } from "@/lib/battle-royale/admin";
 import { deskRegistrationSchema, firstIssue } from "@/lib/battle-royale/schemas";
-import { SESSIONS_TAG, db, engineErrorResponse, errorResponse, readJson } from "@/lib/battle-royale/server";
+import { SESSIONS_TAG, db, engineErrorResponse, errorResponse, readJson, readSettings } from "@/lib/battle-royale/server";
 import { sendBattleEmail } from "@/lib/battle-royale/email";
 
 /*
@@ -18,6 +18,9 @@ export async function POST(req: Request) {
   const parsed = deskRegistrationSchema.safeParse(await readJson(req));
   if (!parsed.success) return errorResponse(firstIssue(parsed.error), 400);
   const input = parsed.data;
+  if ((await readSettings())?.eventClosed) {
+    return errorResponse("The tournament is closed, so no new players can be registered.", 409);
+  }
 
   const svc = await db();
   const { data: p, error } = await svc.rpc("br_register", {

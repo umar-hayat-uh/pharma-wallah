@@ -4,7 +4,9 @@ import { adminGuard } from "@/lib/battle-royale/admin";
 import { z } from "zod";
 import { firstIssue, settingsSchema } from "@/lib/battle-royale/schemas";
 import { invalidateLeaderboard } from "@/lib/battle-royale/leaderboard";
-import { SETTINGS_TAG, db, engineErrorResponse, errorResponse, readJson } from "@/lib/battle-royale/server";
+import { SETTINGS_TAG, db, engineErrorResponse, errorResponse, readJson, readSettings } from "@/lib/battle-royale/server";
+
+const CLOSED_MESSAGE = "The tournament is closed. Reopen it on the overview before turning registration or battles back on.";
 
 const settingsToggleSchema = z
   .object({ registrationOpen: z.boolean().optional(), competitionOpen: z.boolean().optional() })
@@ -21,6 +23,9 @@ export async function PATCH(req: Request) {
   const toggle = settingsToggleSchema.safeParse(body);
   if (toggle.success && Object.keys(toggle.data).length > 0) {
     const t = toggle.data;
+    if ((t.registrationOpen || t.competitionOpen) && (await readSettings())?.eventClosed) {
+      return errorResponse(CLOSED_MESSAGE, 409);
+    }
     const { error } = await svc
       .from("br_settings")
       .update({
@@ -37,6 +42,9 @@ export async function PATCH(req: Request) {
   const parsed = settingsSchema.safeParse(body);
   if (!parsed.success) return errorResponse(firstIssue(parsed.error), 400);
   const s = parsed.data;
+  if ((s.registrationOpen || s.competitionOpen) && (await readSettings())?.eventClosed) {
+    return errorResponse(CLOSED_MESSAGE, 409);
+  }
   const { error } = await svc
     .from("br_settings")
     .update({

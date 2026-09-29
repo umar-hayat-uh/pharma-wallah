@@ -295,7 +295,9 @@ These are conventions **observed in the code**, not aspirations.
 - **Battle Royale polish (2026-09-29)** — live top-3 podium on the home page (under the hero) and the
   leaderboard; `/battle-royale` is a three-button game menu; downloadable e-certificates (gold
   Achievement for the Top N once final, Participation for everyone) and performance titles; the home
-  hero now fits one screen with the calculator buttons. See §8.
+  hero now fits one screen with the calculator buttons. See §8. Later the same day: an admin
+  **Close tournament** button (public site → leaderboard + My result only). **Owner: run
+  `supabase/migrations/20260929_battle_royale_closed.sql`.**
 - **Battle Royale event app (2026-09-27, v2 same day)** — `/battle-royale`: register → pay at desk →
   admin issues a single-use Game Code → offline-first station (word search, matching, quiz) → live
   leaderboard (Upstash-cached). **Blocked on the owner running the SQL (v1 + v2, or
@@ -698,6 +700,55 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 
 > Newest first. Never paste source code here. Archive entries older than ~10 into
 > `.claude/history/YYYY-MM.md`.
+
+### 2026-09-29 (later) — Battle Royale: "Close tournament" admin button
+
+Same session. User: an admin button that closes registration and arena play and leaves only the
+leaderboard public. Asked: certificates still need the result page after closing → user chose
+**keep "My result & certificate"** alongside the leaderboard.
+
+**Completed**
+- Admin overview → **Close tournament** (red, confirm dialog listing exactly what happens, warns
+  when battles are still running) / **Reopen tournament**. Closing sets `event_closed`, turns
+  online registration and battles off, and freezes the board (an earlier freeze time is kept).
+  Reopening only clears `event_closed`; the switches stay off until someone turns them on.
+- While closed: `/battle-royale` becomes "Tournament closed · Thanks for playing" with two buttons
+  (Leaderboard, My result) and the podium; `register`, `instructions`, `success` and `battle` (the
+  arena) redirect to it; the footer drops its Rules link; the home-page section drops "Join the
+  battle" and reads "The final podium"; the result page stops telling unplayed players to go play.
+- Server guards: desk registration refused (409), and the settings switches/form refuse to turn
+  registration or battles back on while closed ("Reopen the tournament first").
+
+**Files** — new `supabase/migrations/20260929_battle_royale_closed.sql` (one column, also appended
+to `supabase/battle_royale_setup.sql`), `admin/CloseTournament.tsx`; edited `server.ts`
+(`event_closed` → `eventClosed`, tolerant of an older database), `types.ts`, `schemas.ts`
+(`close`/`reopen`), `admin/results` (the two actions + a "run the migration" message),
+`admin/settings`, `admin/participants`, `status` route, the admin overview, the menu, register,
+instructions, success, battle, leaderboard and status pages, `LeaderboardClient`, `StatusClient`,
+`HomeBattleSection`, `sections.tsx` (`EventFooter closed`).
+
+**Architecture & Decisions**
+- **A real column, not a derived state.** "Frozen + both switches off" also describes the normal
+  verify-before-finalise step, so deriving "closed" from it would hide the site by accident.
+- Pages redirect with `redirect()`; under the event's `loading.tsx` that arrives as a streamed
+  client redirect (HTTP 200 + `NEXT_REDIRECT`), not a 307 — MEMORY 183.
+- The arena is hidden too, so a station reloaded after closing can't finish syncing; the confirm
+  dialog says how many battles are still running for exactly that reason.
+
+**Verification**
+- `npx tsc --noEmit` → 0 errors; `node --test scripts/battle-royale.test.mts` → 22 pass;
+  `npm run build` (isolated copy) → exit 0, shared JS 88.6 kB, middleware 81.9 kB (unchanged).
+- Closed mode forced through `getPublicSettings` **in an isolated copy only** (live Supabase,
+  read-only; the repo file was never changed), dev server on :3217, Chrome over CDP: register,
+  instructions, success and battle all end on `/battle-royale`; the closed menu, the leaderboard
+  and the status page render with 0 console errors and 0 overflow at 1440 and 390; no Rules link.
+  Screenshots read.
+- **NOT verified:** the admin button against a database (needs an admin session and a write — the
+  close/reopen actions and the 409 guards are type-checked only); the migration was not run on a
+  throwaway Postgres (a single `add column if not exists`); the open-state pages were not re-shot.
+
+**Remaining (owner)** — run `supabase/migrations/20260929_battle_royale_closed.sql` in the
+Supabase SQL editor. Until then the site works as before, and pressing Close says which file to run.
 
 ### 2026-09-29 — Battle Royale: home-page podium, simple game menu, e-certificates, titles; home hero fits the screen
 

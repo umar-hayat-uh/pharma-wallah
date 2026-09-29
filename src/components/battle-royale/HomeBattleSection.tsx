@@ -35,7 +35,8 @@ export async function HomeBattleSection() {
     return null;
   }
   const rows = board?.rows ?? [];
-  const status = board?.finalized ? "Final results" : board?.frozenAt ? "Results being verified" : rows.length ? "Live now" : "Starting soon";
+  const closed = settings.eventClosed;
+  const status = board?.finalized ? "Final results" : closed ? "Tournament closed" : board?.frozenAt ? "Results being verified" : rows.length ? "Live now" : "Starting soon";
   const date = settings.eventDate
     ? new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", timeZone: EVENT_TZ }).format(new Date(`${settings.eventDate}T12:00:00+05:00`))
     : null;
@@ -52,7 +53,7 @@ export async function HomeBattleSection() {
             Battle Royale · {status}
           </p>
           <h2 id="pw-br-home-title" className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">
-            {rows.length ? "Who's on top right now" : "The podium is empty. For now."}
+            {closed || board?.finalized ? "The final podium" : rows.length ? "Who's on top right now" : "The podium is empty. For now."}
           </h2>
           <p className="mt-3 text-[17px] leading-relaxed text-[#16181d]/65">
             Three timed rounds of pharmacy — Word Search, Column Matching and a Final Quiz.
@@ -61,7 +62,7 @@ export async function HomeBattleSection() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          {!board?.finalized && (
+          {!board?.finalized && !closed && (
             <Link
               href={`${BR_BASE}/register`}
               className="inline-flex h-12 items-center gap-2 rounded-full px-6 text-[15px] font-semibold text-white transition-[filter] hover:brightness-110"

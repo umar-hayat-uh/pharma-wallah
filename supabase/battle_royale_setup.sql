@@ -1697,6 +1697,12 @@ from (values
 on conflict (seed_key) do nothing;
 
 
+-- ─── 2026-09-29: "Close tournament" flag (supabase/migrations/20260929_battle_royale_closed.sql) ───
+alter table public.br_settings
+    add column if not exists event_closed boolean not null default false;
+notify pgrst, 'reload schema';
+
+
 -- ============================================================================
 -- Admins. Create each account first (Authentication → Users → Add user, or
 -- sign in to pharmawallah.com once), then this grants the admin role.

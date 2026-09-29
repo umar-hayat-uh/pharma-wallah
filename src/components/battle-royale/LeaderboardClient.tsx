@@ -24,10 +24,12 @@ export function LeaderboardClient({
   initial,
   code,
   title,
+  closed = false,
 }: {
   initial: LeaderboardPayload | null;
   code: string | null;
   title: string;
+  closed?: boolean;
 }) {
   const [board, setBoard] = useState(initial);
   const [error, setError] = useState(false);
@@ -223,7 +225,7 @@ export function LeaderboardClient({
           </p>
         )}
       </div>
-      {!tv && <EventFooter />}
+      {!tv && <EventFooter closed={closed} />}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { PageHero } from "@/components/page-kit";
 import { StatusClient } from "@/components/battle-royale/StatusClient";
 import { EventFooter } from "@/components/battle-royale/sections";
 import { BR_BASE } from "@/lib/battle-royale/constants";
+import { getPublicSettings } from "@/lib/battle-royale/server";
 
 export const metadata: Metadata = {
   title: "My result & certificate — Battle Royale | PharmaWallah",
@@ -10,7 +11,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: true },
 };
 
-export default function StatusPage() {
+export default async function StatusPage() {
+  const closed = (await getPublicSettings())?.eventClosed ?? false;
   return (
     <>
       <PageHero
@@ -22,7 +24,7 @@ export default function StatusPage() {
       <div className="mx-auto max-w-3xl px-5 py-10 sm:px-6 sm:py-14">
         <StatusClient />
       </div>
-      <EventFooter />
+      <EventFooter closed={closed} />
     </>
   );
 }

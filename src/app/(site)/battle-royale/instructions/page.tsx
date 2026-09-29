@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { PageHero } from "@/components/page-kit";
 import { EventFooter, RoundVisual } from "@/components/battle-royale/sections";
@@ -44,6 +45,7 @@ function Bullets({ items }: { items: readonly string[] }) {
 
 export default async function InstructionsPage() {
   const s = await getPublicSettings();
+  if (s?.eventClosed) redirect(BR_BASE);
   const fee = s?.entryFee ?? 100;
   const winners = s?.winnersCount ?? 10;
   const [r1, r2, r3] = s?.roundCounts ?? [5, 1, 10];

@@ -104,6 +104,7 @@ export async function POST(req: Request) {
       : null,
     rank: board?.rank ?? null,
     finalized,
+    closed: settings?.eventClosed ?? false,
     titles,
     certificate,
     frozen: Boolean(settings?.leaderboardFrozenAt),

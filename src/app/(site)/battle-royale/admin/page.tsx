@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Activity, CalendarClock, CheckCheck, Hourglass, MailWarning, Swords, UserPlus, Users, Wallet } from "lucide-react";
 import { AdminHeader } from "@/components/battle-royale/admin/AdminShell";
 import { CompetitionSwitches } from "@/components/battle-royale/admin/CompetitionSwitches";
+import { CloseTournament } from "@/components/battle-royale/admin/CloseTournament";
 import { Notice, PaymentBadge, SessionBadge, StatusBadge } from "@/components/battle-royale/ui";
 import { adminForPage } from "@/lib/battle-royale/admin-page";
 import { BR_BASE, ROUNDS } from "@/lib/battle-royale/constants";
@@ -99,6 +100,7 @@ export default async function AdminOverview() {
         frozen={Boolean(settings.leaderboardFrozenAt)}
         finalized={settings.resultsFinalized}
       />
+      <CloseTournament canEdit={admin.role === "admin"} closed={settings.eventClosed} activeBattles={active} />
 
       <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
         <StatCard icon={Users} label="Total registrations" value={total} href={`${A}/participants`} />

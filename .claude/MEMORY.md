@@ -1234,6 +1234,14 @@ Traps that will otherwise be rediscovered painfully.
     The home hero's headline is capped by viewport height (`landing.css` `.hero__title`), so it and the
     calculator buttons fit one screen — keep the ~270 px budget in step if the foot or header grows. (2026-09-29)
 
+183. **`redirect()` in a page under a route with `loading.tsx` is not an HTTP redirect.** The Suspense
+    boundary has already streamed a 200, so Next sends `NEXT_REDIRECT` + a meta refresh and the browser
+    navigates client-side. `curl -w %{redirect_url}` shows nothing — check the landing URL in a browser.
+    Battle Royale's closed-tournament redirects work this way. (2026-09-29)
+184. **Battle Royale "closed" is its own column (`br_settings.event_closed`)**, set by the admin
+    "Close tournament" action together with registration off, battles off and a freeze. Don't derive
+    it from those three: frozen + switches off is also the normal verify step. (2026-09-29)
+
 ## 9. Working preferences (observed)
 
 - Commit messages are short, lowercase, hyphenated subjects (`cology-calcs-added`, `fix-tournament-ui`,

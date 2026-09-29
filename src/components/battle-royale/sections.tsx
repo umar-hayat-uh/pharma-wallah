@@ -87,7 +87,7 @@ export function RoundVisual({ round }: { round: 1 | 2 | 3 }) {
 }
 
 /** The event's own sign-off, above the site footer. */
-export function EventFooter() {
+export function EventFooter({ closed = false }: { closed?: boolean }) {
   return (
     <div className="br-no-print border-t border-[#16181d]/10 bg-white">
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
@@ -99,7 +99,8 @@ export function EventFooter() {
           </div>
         </div>
         <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium text-[#16181d]/65">
-          <Link href={`${BR_BASE}/instructions`} className="hover:text-[#16181d]">Rules</Link>
+          {/* A closed tournament hides the rules page (admin "Close tournament"). */}
+          {!closed && <Link href={`${BR_BASE}/instructions`} className="hover:text-[#16181d]">Rules</Link>}
           <Link href={`${BR_BASE}/leaderboard`} className="hover:text-[#16181d]">Leaderboard</Link>
           <Link href="/contact" className="hover:text-[#16181d]">Contact</Link>
           <a href="https://www.pharmawallah.com" className="hover:text-[#16181d]">PharmaWallah.com</a>
