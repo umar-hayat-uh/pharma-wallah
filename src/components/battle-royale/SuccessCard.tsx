@@ -41,7 +41,7 @@ export function SuccessCard() {
         </p>
         <div className="flex flex-wrap justify-center gap-3">
           <Link href={`${BR_BASE}/register`} className={secondaryButtonClass}>Register</Link>
-          <Link href={`${BR_BASE}/status`} className={primaryButtonClass} style={{ background: BRAND_BUTTON }}>My status</Link>
+          <Link href={`${BR_BASE}/status`} className={primaryButtonClass} style={{ background: BRAND_BUTTON }}>My result</Link>
         </div>
       </div>
     );

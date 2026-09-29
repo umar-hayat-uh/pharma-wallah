@@ -1221,6 +1221,19 @@ Traps that will otherwise be rediscovered painfully.
     ties break on Round 3 then server-measured battle time. A client talking to a v1 database gets
     a state without `plan`/`results` — `isPlayable()` catches it. (2026-09-27)
 
+180. **Battle Royale titles and certificates are derived, never stored.** `titles.ts` computes titles
+    from the player's own battle (accuracy, time vs the plan's summed timers, perfect rounds from
+    `round_results`) — never from rank — so they are final when the battle is. The certificate is drawn
+    in the browser from the status payload (Player ID + email gated). Only the gold "Achievement" design
+    shows a place, and only once `results_finalized`. (2026-09-29)
+181. **A component-level list reset (`ol { margin: 0 }`) beats Tailwind's `mx-auto`** when it is written
+    with a doubled class for specificity against globals.css — the podium hugged the left edge until the
+    reset was narrowed to `margin-block: 0`. Reset only what globals.css actually sets. (2026-09-29)
+182. **Headless screenshots of `/` loaded at an `#anchor` come out blank**: the landing's intro
+    preloader covers the page for the first seconds. Drive Chrome over CDP, wait, scroll, then capture.
+    The home hero's headline is capped by viewport height (`landing.css` `.hero__title`), so it and the
+    calculator buttons fit one screen — keep the ~270 px budget in step if the foot or header grows. (2026-09-29)
+
 ## 9. Working preferences (observed)
 
 - Commit messages are short, lowercase, hyphenated subjects (`cology-calcs-added`, `fix-tournament-ui`,

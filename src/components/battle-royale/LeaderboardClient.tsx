@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Crown, Lock, Maximize2, Minimize2, Radio, RefreshCw, Trophy } from "lucide-react";
+import { Lock, Maximize2, Minimize2, Radio, RefreshCw, Trophy } from "lucide-react";
 import { BRAND_SURFACE } from "@/components/page-kit";
 import { Crest, FinalBadge, Notice } from "./ui";
 import { EventFooter } from "./sections";
+import { Podium } from "./Podium";
 import { BR_BASE } from "@/lib/battle-royale/constants";
 import { formatDuration, formatTime, ordinal } from "@/lib/battle-royale/format";
 import type { LeaderboardPayload, LeaderboardRow } from "@/lib/battle-royale/types";
@@ -87,7 +88,6 @@ export function LeaderboardClient({
   };
 
   const rows = board?.rows ?? [];
-  const podium = rows.filter((r) => r.rank <= 3).slice(0, 3);
   const youVisible = board?.you && rows.some((r) => r.code === board.you!.code);
 
   return (
@@ -152,30 +152,7 @@ export function LeaderboardClient({
           </div>
         )}
 
-        {podium.length > 0 && (
-          <ol className="mb-8 grid gap-4 sm:grid-cols-3" aria-label="Top three">
-            {podium.map((r) => (
-              <li
-                key={r.code}
-                className={cn(
-                  "relative overflow-hidden rounded-3xl border bg-white p-5",
-                  r.rank === 1 ? "border-[#f5b301]/60 shadow-[0_18px_40px_-24px_rgba(245,179,1,.8)]" : "border-[#16181d]/10",
-                  board?.you?.code === r.code && "ring-4 ring-[#1C7BD9]/25",
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <span className={cn("font-mono font-bold", tv ? "text-3xl" : "text-2xl", r.rank === 1 ? "text-[#b98500]" : "text-[#16181d]/60")}>
-                    {ordinal(r.rank)}
-                  </span>
-                  {r.rank === 1 && <Crown className="h-7 w-7 text-[#f5b301]" />}
-                </div>
-                <p className={cn("mt-3 truncate font-bold", tv ? "text-3xl" : "text-xl")}>{r.name}</p>
-                <p className="truncate text-sm text-[#16181d]/55">{r.code} · {r.university}</p>
-                <p className={cn("mt-4 font-extrabold tracking-tight text-[#1C7BD9]", tv ? "text-6xl" : "text-4xl")}>{r.total}</p>
-              </li>
-            ))}
-          </ol>
-        )}
+        {rows.length > 0 && <Podium rows={rows} highlightCode={board?.you?.code} size={tv ? "lg" : "md"} className="mb-8" />}
 
         {rows.length > 0 && (
           <div className="overflow-x-auto rounded-3xl border border-[#16181d]/10 bg-white">
@@ -242,7 +219,7 @@ export function LeaderboardClient({
         {!tv && (
           <p className="mt-6 text-sm">
             Played already?{" "}
-            <Link href={`${BR_BASE}/status`} className="font-semibold text-[#1C7BD9] hover:underline">See your full result</Link>
+            <Link href={`${BR_BASE}/status`} className="font-semibold text-[#1C7BD9] hover:underline">Get your result &amp; certificate</Link>
           </p>
         )}
       </div>

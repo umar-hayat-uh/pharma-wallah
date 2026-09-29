@@ -115,6 +115,10 @@ Separate from the tournament below. Skill: `.claude/skills/battle-royale/`.
 - UI: `src/components/battle-royale/` (+ `battle/` station: `BattleApp` state machine, `station.ts` offline
   store + grid geometry, `WordSearch`, `Matching`, `Quiz`, `Panels`; `admin/` incl. `CodeSlip`/`SlipHost`),
   `battle-royale.css` (`.pw-br`). Flow map of every screen: https://claude.ai/artifact/HDPyC8TJ1f3UUzuLqjfKNy
+- Home-page podium: `src/components/battle-royale/HomeBattleSection.tsx` (server, streamed from `src/app/page.tsx`
+  into `LandingPage`'s `battle` slot); shared `Podium.tsx` + `podium.css` (also on the event page and leaderboard).
+- Titles: `src/lib/battle-royale/titles.ts`. E-certificate: `src/components/battle-royale/certificate/`
+  (`draw.ts` canvas drawing, `Certificate.tsx` preview + PDF/PNG), shown by `StatusClient.tsx` on `/battle-royale/status`.
 - Tests: `scripts/battle-royale.test.mts` (node --test), `scripts/battle-royale-engine.test.sql` (throwaway Postgres).
 
 ## Tournament (entry-code competition)

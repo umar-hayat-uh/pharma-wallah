@@ -5,8 +5,8 @@ import { EventFooter } from "@/components/battle-royale/sections";
 import { BR_BASE } from "@/lib/battle-royale/constants";
 
 export const metadata: Metadata = {
-  title: "My status & results — Battle Royale | PharmaWallah",
-  description: "Track your Battle Royale registration — payment, Game Code, battle — and see your scores and rank.",
+  title: "My result & certificate — Battle Royale | PharmaWallah",
+  description: "See your Battle Royale score, rank and titles, and download your e-certificate.",
   robots: { index: false, follow: true },
 };
 
@@ -14,12 +14,12 @@ export default function StatusPage() {
   return (
     <>
       <PageHero
-        eyebrow="Battle Royale · My status"
-        title="My status & results"
-        lead="Enter your Player ID (from your registration email) and the email you registered with."
-        trail={[{ label: "Battle Royale", href: BR_BASE }, { label: "My status" }]}
+        eyebrow="Battle Royale · My result"
+        title="My result & certificate"
+        lead="Type your Player ID and the email you registered with. After your battle, your score, titles and e-certificate are here."
+        trail={[{ label: "Battle Royale", href: BR_BASE }, { label: "My result" }]}
       />
-      <div className="mx-auto max-w-2xl px-5 py-10 sm:px-6 sm:py-14">
+      <div className="mx-auto max-w-3xl px-5 py-10 sm:px-6 sm:py-14">
         <StatusClient />
       </div>
       <EventFooter />

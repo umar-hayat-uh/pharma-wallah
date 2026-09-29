@@ -1,7 +1,8 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { headers } from "next/headers";
 import LandingPage from "@/components/Home/landing/LandingPage";
 import ClinicalLandingPage from "@/components/Clinical/ClinicalLandingPage";
+import { HomeBattleSection } from "@/components/battle-royale/HomeBattleSection";
 
 /*
  * The student-facing landing page.
@@ -19,5 +20,15 @@ export default function Home() {
     return <ClinicalLandingPage />;
   }
 
-  return <LandingPage />;
+  // The Battle Royale podium sits under the hero while the event is current
+  // (it hides itself when it isn't). Streamed, so it never delays the hero.
+  return (
+    <LandingPage
+      battle={
+        <Suspense fallback={null}>
+          <HomeBattleSection />
+        </Suspense>
+      }
+    />
+  );
 }

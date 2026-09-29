@@ -140,6 +140,27 @@ export type StatusPayload = {
   };
   rank: number | null;
   finalized: boolean;
+  /** Earned from the battle itself, highest first (titles.ts). Empty until played. */
+  titles: { id: string; name: string; reason: string }[];
+  /** Null until the battle is complete, or for a cancelled/disqualified registration. */
+  certificate: CertificateData | null;
   frozen: boolean;
   winnersCount: number;
+};
+
+/** Everything drawn on an e-certificate. `winner` = Top N after finalising. */
+export type CertificateData = {
+  kind: "winner" | "participant";
+  name: string;
+  code: string;
+  university: string;
+  total: number;
+  /** Percent, 0–100. */
+  accuracy: number;
+  /** Only once results are final. */
+  rank: number | null;
+  title: string;
+  eventTitle: string;
+  eventDate: string | null;
+  completedAt: string;
 };

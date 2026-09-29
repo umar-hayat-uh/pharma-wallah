@@ -8,26 +8,42 @@ import { BR_BASE } from "@/lib/battle-royale/constants";
 /** A small illustration of each round, drawn with the round's real controls. */
 export function RoundVisual({ round }: { round: 1 | 2 | 3 }) {
   if (round === 1) {
+    // A miniature of the v2 station: a letter grid with one word found and
+    // the list of words to find (the v1 letter-blocks game is gone).
+    const grid = ["KDOSEQM", "ASPIRIN", "VULCBZH", "TABLETR", "GYWENOX"];
+    const words: [string, boolean][] = [["ASPIRIN", true], ["DOSE", false], ["TABLET", false]];
     return (
       <div aria-hidden="true">
-        <div className="flex gap-1.5">
-          {"ASPIRIN".split("").map((c, i) => (
+        <div className="grid w-fit grid-cols-7 gap-y-1 font-mono text-[13px] font-bold">
+          {grid.map((row, r) =>
+            row.split("").map((c, i) => {
+              const found = r === 1;
+              return (
+                <span
+                  key={`${r}-${i}`}
+                  className={
+                    found
+                      ? `flex h-7 w-7 items-center justify-center bg-[#1C7BD9] text-white ${i === 0 ? "rounded-l-full" : ""} ${i === 6 ? "rounded-r-full" : ""}`
+                      : "flex h-7 w-7 items-center justify-center text-[#16181d]/75"
+                  }
+                >
+                  {c}
+                </span>
+              );
+            }),
+          )}
+        </div>
+        <div className="mt-3 flex flex-wrap gap-1.5 text-[11px] font-semibold">
+          {words.map(([w, done]) => (
             <span
-              key={i}
+              key={w}
               className={
-                i < 3
-                  ? "flex h-9 w-8 items-center justify-center rounded-lg bg-[#1C7BD9] text-sm font-bold text-white"
-                  : "flex h-9 w-8 items-center justify-center rounded-lg border-2 border-dashed border-[#16181d]/15"
+                done
+                  ? "rounded-full bg-[#21B67A]/15 px-2 py-0.5 text-[#0f7a50] line-through"
+                  : "rounded-full border border-[#16181d]/15 bg-white px-2 py-0.5 text-[#16181d]/70"
               }
             >
-              {i < 3 ? c : ""}
-            </span>
-          ))}
-        </div>
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {"RNIPI".split("").map((c, i) => (
-            <span key={i} className="flex h-9 w-8 items-center justify-center rounded-lg border border-[#16181d]/15 bg-white text-sm font-bold shadow-sm">
-              {c}
+              {w}
             </span>
           ))}
         </div>

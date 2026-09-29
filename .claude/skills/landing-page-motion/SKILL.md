@@ -32,6 +32,10 @@ previous ADME page is in git at `5dbe98c`).
 - **Playback is scroll.** Marks and notes outside the hero are scrubbed to scroll position, so
   scrolling back un-draws them. Hero marks are *played* in the load timeline (they are on screen
   at frame one). A marker pen (`Pen` in `Chrome.tsx`) rides the tip of whatever is drawing.
+- **The hero fits one screen** (user request, 2026-09-29): headline, lede and both calculator
+  buttons are in view at 1366×700 and up. `.hero__title` is capped at `(100svh − 270px) / 2.75`
+  and the hero's top padding is near zero — re-measure both if the header or `.hero__foot` grows.
+  Battle Royale's podium renders between the hero and the Tape through `LandingPage`'s `battle` slot.
 - **No timeline bar, no play button.** The fixed scroll-timecode bar (`Player.tsx`) and its
   `CHAPTERS` / `data-chapter` hooks were **removed on 2026-09-13** at the user's request; its
   14px `backdrop-filter` was also the page's biggest scroll cost (gotcha 51). Playback stays

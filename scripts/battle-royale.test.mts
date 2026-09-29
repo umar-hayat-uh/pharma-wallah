@@ -182,3 +182,58 @@ test("station: a resumed battle starts at the first round the server doesn't hav
   assert.equal(st.freshProgress({ ...base, results: { 1: {}, 2: {} } }).round, 3);
   assert.equal(st.freshProgress({ status: "completed", results: { 1: {}, 2: {}, 3: {} } }).step, "finished");
 });
+
+const t = await import("../src/lib/battle-royale/titles.ts");
+const titleIds = (x: Parameters<typeof t.earnedTitles>[0]) => t.earnedTitles(x).map((y) => y.id);
+const base = { correct: 0, questions: 20, timeMs: 400_000, allowedMs: 500_000, perfect: [false, false, false] as [boolean, boolean, boolean] };
+
+test("titles: a completed battle always earns at least Battle Tested", () => {
+  assert.deepEqual(titleIds(base), ["battle-tested"]);
+  assert.deepEqual(titleIds({ ...base, questions: 0 }), ["battle-tested"]);
+});
+
+test("titles: accuracy tiers don't stack (Flawless > Precision Master > Sharp Shooter)", () => {
+  assert.deepEqual(titleIds({ ...base, correct: 15 }), ["sharp-shooter"]); // 75%
+  assert.deepEqual(titleIds({ ...base, correct: 18 }), ["precision-master"]); // 90%
+  assert.deepEqual(titleIds({ ...base, correct: 20, perfect: [true, true, true] }), ["flawless", "quiz-master", "match-maker", "word-hunter"]);
+  assert.deepEqual(titleIds({ ...base, correct: 14 }), ["battle-tested"]); // 70%
+});
+
+test("titles: Speed Demon needs half the allowed time AND 60% correct", () => {
+  assert.ok(titleIds({ ...base, correct: 12, timeMs: 250_000 }).includes("speed-demon"));
+  assert.ok(!titleIds({ ...base, correct: 11, timeMs: 250_000 }).includes("speed-demon")); // 55%: fast but careless
+  assert.ok(!titleIds({ ...base, correct: 12, timeMs: 250_001 }).includes("speed-demon"));
+  assert.ok(!titleIds({ ...base, correct: 12, timeMs: 1, allowedMs: 0 }).includes("speed-demon")); // unknown allowance
+});
+
+test("titles: the headline title is the highest earned", () => {
+  const got = t.earnedTitles({ ...base, correct: 18, timeMs: 100_000, perfect: [true, false, false] });
+  assert.equal(got[0].name, "Precision Master");
+  assert.deepEqual(got.map((x) => x.id), ["precision-master", "speed-demon", "word-hunter"]);
+});
+
+test("titles: allowed time sums every timer; perfect rounds read the graded results", () => {
+  const plan = {
+    r1: { grid: [], words: [], points: [], seconds: 120 },
+    r2: [{ id: "b", prompt: "", points: 10, timeLimit: 90, left: [], right: [] }],
+    r3: [
+      { id: "q1", prompt: "", points: 10, timeLimit: 20, options: [] },
+      { id: "q2", prompt: "", points: 10, timeLimit: 20, options: [] },
+    ],
+    graceSeconds: 180,
+  };
+  assert.equal(t.allowedMsFromPlan(plan), 250_000);
+  assert.equal(t.allowedMsFromPlan(null), 0);
+  const item = (correct: boolean) => ({ questionId: "x", correct, correctParts: 0, totalParts: 1, score: 0, correctAnswer: "", given: null, explanation: null });
+  assert.deepEqual(
+    t.perfectRounds({
+      "1": { found: ["A", "B"], missed: [], score: 20, late: false },
+      "2": { items: [item(true), item(false)], score: 10, late: false },
+      "3": { items: [item(true)], score: 10, late: true }, // late rounds score 0, so never "perfect"
+    }),
+    [true, false, false],
+  );
+  assert.deepEqual(t.perfectRounds({ "1": { found: [], missed: [], score: 0, late: false } }), [false, false, false]);
+  assert.equal(t.accuracy(3, 0), 0);
+  assert.equal(t.accuracy(30, 20), 1);
+});

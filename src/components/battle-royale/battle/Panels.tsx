@@ -8,6 +8,7 @@ import { BRAND_SURFACE } from "@/components/page-kit";
 import { Crest } from "../ui";
 import { BR_BASE, ROUNDS } from "@/lib/battle-royale/constants";
 import { formatDuration, ordinal } from "@/lib/battle-royale/format";
+import { allowedMsFromPlan, earnedTitles, perfectRounds } from "@/lib/battle-royale/titles";
 import type { BattlePlan, BattleState, RoundNo, RoundResult } from "@/lib/battle-royale/types";
 import { cn } from "@/lib/utils";
 
@@ -265,6 +266,16 @@ export function Finish({
 }) {
   const reduce = useReducedMotion();
   const synced = pending === 0 && state.status === "completed";
+  // Same rule the status page and the certificate use (titles.ts).
+  const title = synced
+    ? earnedTitles({
+        correct: state.correctCount,
+        questions: state.totalQuestions,
+        timeMs: state.totalTimeMs,
+        allowedMs: allowedMsFromPlan(state.plan),
+        perfect: perfectRounds(state.results),
+      })[0]
+    : null;
   return (
     <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-5 py-12 text-white" style={{ background: BRAND_SURFACE }}>
       <div className="br-grid" aria-hidden="true" />
@@ -282,7 +293,12 @@ export function Finish({
 
         {synced ? (
           <>
-            <p className="mt-8 text-sm text-white/80">Final score</p>
+            {title && (
+              <p className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#f5b301] px-4 py-1.5 text-base font-extrabold uppercase tracking-wide text-[#3b2a00]">
+                <Trophy className="h-4 w-4" /> Title earned: {title.name}
+              </p>
+            )}
+            <p className="mt-6 text-sm text-white/80">Final score</p>
             <p className="text-[clamp(4.5rem,16vw,8rem)] font-extrabold leading-none tracking-tight">{state.totalScore}</p>
             {rank && (
               <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-lg font-bold">
@@ -337,6 +353,13 @@ export function Finish({
             Finish — next player
           </button>
         </div>
+        {synced && (
+          <p className="mx-auto mt-6 max-w-md rounded-2xl border border-white/25 bg-white/10 px-4 py-3 text-sm text-white/90">
+            <strong>Your e-certificate is ready.</strong> On your phone, open{" "}
+            <span className="font-mono font-semibold">pharmawallah.com/battle-royale</span> → <strong>My result</strong>, and
+            type your Player ID <span className="font-mono font-semibold">{state.participant.code}</span> and your email.
+          </p>
+        )}
         <p className="mt-4 text-xs text-white/75">Final results are announced when the competition closes.</p>
       </motion.div>
     </div>

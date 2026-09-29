@@ -33,7 +33,19 @@ server-authoritative game engine, its Game Code identity model, or its admin rol
 - **Closing:** freeze (sets `leaderboard_frozen_at`, closes the arena) → finalise (Top N winners)
   → notify. Finalise refuses an unfrozen board.
 
+- **Public UI (2026-09-29):** `/battle-royale` is a three-button menu (Register · Play · My result);
+  sub-pages have one "← menu" link, not tabs — keep it that simple, players are non-technical.
+  Live top 3 = `Podium` (home page under the hero, event page, leaderboard); the home section hides
+  itself 14 days after `event_date`.
+- **Titles & certificates:** `titles.ts` (absolute thresholds, never rank). `/status` returns
+  `titles` + `certificate`; `certificate/draw.ts` draws it on canvas (PDF via lazy jsPDF, PNG).
+  `winner` design only when finalised and `final_status = winner`; otherwise participation.
+
 ## Procedure
+- New title → add to `TITLES` (order = precedence) and `earnedTitles`, plus a test; the landing,
+  instructions and certificate pick it up.
+- Certificate change → edit `draw.ts` only (one drawing feeds preview, PNG and PDF); check both
+  designs through a temporary route and read the screenshot.
 - New setting → column in `br_settings` + `SettingsRow`/`toPublicSettings` + `settingsSchema` + form.
 - Engine change → edit the v2 SQL, re-run it (idempotent; it ends with `notify pgrst`), extend
   `scripts/battle-royale-engine.test.sql`, run it on a throwaway Postgres.

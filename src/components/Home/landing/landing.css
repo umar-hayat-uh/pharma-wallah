@@ -177,9 +177,10 @@
   display: grid;
   grid-template-rows: 1fr auto;
   min-height: calc(100svh - 76px);
-  /* The meta strip above the headline was removed (2026-09-13), so the top
-     padding now does the spacing it used to. */
-  padding-block: clamp(28px, 4vw, 56px) clamp(24px, 3.5vw, 48px);
+  /* The headline sits right under the header, and the whole hero — headline,
+     lede and both buttons — fits one screen (user request, 2026-09-29). It
+     used to stack ~144px of padding above the headline at desktop. */
+  padding-block: 0 clamp(16px, 2vw, 32px);
 }
 
 .pw-idx .hero__stage {
@@ -187,14 +188,18 @@
   grid-template-columns: repeat(12, minmax(0, 1fr));
   align-items: end;
   column-gap: 20px;
-  padding-block: clamp(32px, 6vw, 88px) clamp(20px, 3vw, 40px);
+  padding-block: clamp(12px, 1.6vw, 28px) clamp(16px, 2vw, 28px);
 }
 
 .pw-idx .hero__title {
   position: relative;
   grid-column: 1 / -1;
   margin: 0;
-  font-size: var(--t-hero);
+  /* Also capped by the viewport's height: three lines at 0.84 plus the
+     underline are ~2.75em, and the header, paddings and the foot (lede +
+     buttons) take ~270px — so on a short laptop screen the headline shrinks
+     rather than pushing the buttons below the fold. Phones override below. */
+  font-size: max(3.6rem, min(var(--t-hero), calc((100svh - 270px) / 2.75)));
   font-weight: 800;
   line-height: 0.84;
   letter-spacing: -0.058em;
@@ -1347,7 +1352,10 @@
     min-height: 0;
   }
   .pw-idx .hero__stage {
-    padding-block: 44px 28px;
+    padding-block: 20px 28px;
+  }
+  .pw-idx .hero__title {
+    font-size: var(--t-hero);
   }
   .pw-idx .hero__title .step {
     padding-left: 0;
