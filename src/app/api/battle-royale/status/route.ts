@@ -3,8 +3,8 @@ import { brCredentialLimiter, checkLimit } from "@/lib/rateLimit";
 import { firstIssue, statusSchema } from "@/lib/battle-royale/schemas";
 import { clientIpFrom, db, errorResponse, GENERIC_ERROR, readJson, readSettings } from "@/lib/battle-royale/server";
 import { formatSlot } from "@/lib/battle-royale/format";
-import { accuracy, allowedMsFromPlan, earnedTitles, perfectRounds } from "@/lib/battle-royale/titles";
-import type { BattlePlan, RoundResult, StatusPayload } from "@/lib/battle-royale/types";
+import { readResult } from "@/lib/battle-royale/result";
+import type { StatusPayload } from "@/lib/battle-royale/types";
 
 /*
  * "Where am I?" for a participant: registered → payment approved → code
@@ -34,50 +34,13 @@ export async function POST(req: Request) {
     return errorResponse("We couldn't find that registration. Check your Player ID and the email you registered with.", 404);
   }
 
-  const [{ data: score }, { data: board }, { data: attempt }, settings] = await Promise.all([
-    svc.from("br_scores").select("*").eq("participant_id", p.id).maybeSingle(),
-    svc.from("br_leaderboard").select("rank").eq("participant_id", p.id).maybeSingle(),
-    svc.from("br_attempts").select("status, public_plan, round_results").eq("participant_id", p.id).neq("status", "void").maybeSingle(),
-    readSettings(),
-  ]);
+  const settings = await readSettings();
+  const result = await readResult(svc, p, settings);
   const slotRaw = (p as { slot: unknown }).slot;
   const slot = (Array.isArray(slotRaw) ? slotRaw[0] : slotRaw) as { name: string; start_time: string; end_time: string } | null;
 
-  // Titles come from the player's own battle (titles.ts), so they are final the
-  // moment the battle is. The certificate is the gold "Top N" design only once
-  // results are finalised — before that nobody is labelled a winner (skill: Do Not).
-  const finalStatus = score
-    ? settings?.resultsFinalized || score.status_overridden ? score.final_status : "pending"
-    : "pending";
-  const titles =
-    score && attempt?.status === "completed"
-      ? earnedTitles({
-          correct: score.correct_count,
-          questions: score.total_questions,
-          timeMs: score.total_time_ms,
-          allowedMs: allowedMsFromPlan(attempt.public_plan as BattlePlan | null),
-          perfect: perfectRounds(attempt.round_results as Partial<Record<"1" | "2" | "3", RoundResult>> | null),
-        })
-      : [];
-  const finalized = settings?.resultsFinalized ?? false;
-  const certificate: StatusPayload["certificate"] =
-    score && titles.length > 0 && p.registration_status === "registered"
-      ? {
-          kind: finalStatus === "winner" ? "winner" : "participant",
-          name: p.name,
-          code: p.participant_code,
-          university: p.university ?? "",
-          total: score.total_score,
-          accuracy: Math.round(accuracy(score.correct_count, score.total_questions) * 100),
-          rank: finalized ? board?.rank ?? null : null,
-          title: titles[0].name,
-          eventTitle: settings?.eventTitle || "PharmaWallah Battle Royale",
-          eventDate: settings?.eventDate ?? null,
-          completedAt: score.completed_at,
-        }
-      : null;
-
   const body: StatusPayload = {
+    ...result,
     participant: {
       name: p.name,
       code: p.participant_code,
@@ -89,26 +52,8 @@ export async function POST(req: Request) {
       registered: true,
       paid: p.payment_status !== "unpaid",
       codeIssued: Boolean(p.code_issued_at),
-      played: attempt?.status === "completed",
+      played: result.attemptStatus === "completed",
     },
-    attemptStatus: (attempt?.status as StatusPayload["attemptStatus"]) ?? null,
-    score: score
-      ? {
-          rounds: [score.round1_score, score.round2_score, score.round3_score],
-          total: score.total_score,
-          correct: score.correct_count,
-          questions: score.total_questions,
-          timeMs: score.total_time_ms,
-          finalStatus,
-        }
-      : null,
-    rank: board?.rank ?? null,
-    finalized,
-    closed: settings?.eventClosed ?? false,
-    titles,
-    certificate,
-    frozen: Boolean(settings?.leaderboardFrozenAt),
-    winnersCount: settings?.winnersCount ?? 10,
   };
   return NextResponse.json(body);
 }

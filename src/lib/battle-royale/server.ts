@@ -158,7 +158,7 @@ export type SettingsRow = {
   entry_fee: number; contact_text: string; round1_count: number; round2_count: number; round3_count: number;
   round1_seconds: number; grid_size: number; sync_grace_seconds: number; winners_count: number; registration_open: boolean;
   competition_open: boolean; leaderboard_frozen_at: string | null; results_finalized: boolean;
-  show_full_names: boolean; rules: unknown;
+  rules: unknown;
   /** Added 2026-09-29 (20260929_battle_royale_closed.sql); absent on an older database. */
   event_closed?: boolean;
 };
@@ -181,7 +181,6 @@ export function toPublicSettings(r: SettingsRow): PublicSettings {
     competitionOpen: r.competition_open,
     leaderboardFrozenAt: r.leaderboard_frozen_at,
     resultsFinalized: r.results_finalized,
-    showFullNames: r.show_full_names,
     eventClosed: r.event_closed ?? false,
     rules: Array.isArray(r.rules) ? r.rules.filter((x): x is string => typeof x === "string") : [],
   };

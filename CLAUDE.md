@@ -69,7 +69,7 @@ node --test scripts/community.test.mts                                 # 19 unit
 node --test scripts/ai-guide.test.mts                                  # 34 unit tests, AI Guide pure layer
 node --test scripts/dissolution-rate.test.mts                          # 28 unit tests, Dissolution Rate Constant
 node --test scripts/split-for-ads.test.mts                             # 6 unit tests, lesson ad spacing
-node --test scripts/battle-royale.test.mts                             # 22 unit tests, Battle Royale schemas/format/station/titles
+node --test scripts/battle-royale.test.mts                             # 23 unit tests, Battle Royale schemas/format/station/titles
 node scripts/build-molecule-library.mts   # regenerate the Molecular Lab library from PubChem (network)
 ```
 
@@ -292,6 +292,10 @@ These are conventions **observed in the code**, not aspirations.
   and `ListAgents`, and announce which shared files you are taking, before editing one.
 
 ### Recently Completed
+- **Battle Royale fixes (2026-09-30)** — full names on the board; certificates found by picking your name
+  (no Player ID or email); ranking is now total then **shorter time**; Top-10 SQL in
+  `supabase/queries/battle_royale_top10.sql`. **Owner: run `supabase/migrations/20260930_battle_royale_ranking.sql`,
+  then Unfinalise → Finalise** (the new order swaps 10th/11th). See §8.
 - **Battle Royale polish (2026-09-29)** — live top-3 podium on the home page (under the hero) and the
   leaderboard; `/battle-royale` is a three-button game menu; downloadable e-certificates (gold
   Achievement for the Top N once final, Participation for everyone) and performance titles; the home
@@ -700,6 +704,60 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 
 > Newest first. Never paste source code here. Archive entries older than ~10 into
 > `.claude/history/YYYY-MM.md`.
+
+### 2026-09-30 — Battle Royale: full names, certificates by name, time-first ranking, Top-10 SQL
+
+"follow protocol": leaderboard showed "Umar H." instead of full names; players forget Player IDs, so find
+the certificate by picking your name from a dropdown (no email); an SQL to extract the Top 10. Mid-task:
+"ranking is not correct — the shorter the time, put them up".
+
+**Completed**
+- **Full names on the board, always.** The board shortened names because `br_settings.show_full_names`
+  defaults to off; the projection now prints `name` as stored, the admin toggle is gone, and the Upstash
+  cache key moved to `v2` so cached "Ayesha K." rows die at deploy. (The station greeting still uses the
+  short form — it is not the board.)
+- **Certificate by name.** `/battle-royale/status` now leads with a type-to-search dropdown: pick your name
+  (university + Player ID shown to tell namesakes apart — the live data has two "Kinza zafar") and the
+  score, titles and certificate open with Download PDF / image. Only registered players who finished a
+  battle are listed. Player ID + email remains behind a link for the pre-battle tracker and is hidden once
+  the tournament is closed. Station finish screen and How to play copy updated to "pick your name".
+- **Ranking: total, then shorter battle time** — Round 3 no longer breaks ties. New
+  `supabase/migrations/20260930_battle_royale_ranking.sql` (view, index, rule text; idempotent), also
+  appended to `supabase/battle_royale_setup.sql`. Tie copy updated on the leaderboard, FAQ and instructions.
+- **Top-10 SQL**: `supabase/queries/battle_royale_top10.sql` — rank, Player ID, name, email, phone,
+  university, year, student ID, rounds, total, correct, battle time, status, finish time (PKT).
+
+**Files**
+- New: `src/app/api/battle-royale/certificates/route.ts`, `src/lib/battle-royale/result.ts`,
+  `src/components/battle-royale/{CertificateSearch,ResultView}.tsx`, the migration and query above.
+- Edited: `leaderboard.ts`, `status/route.ts` (now uses `readResult`), `types.ts` (`ResultPayload`,
+  `CertificateMatch`; `showFullNames` removed), `format.ts` (`certificateQuery`), `server.ts`, `schemas.ts`,
+  `admin/settings/route.ts`, `SettingsForm.tsx`, `StatusClient.tsx`, `status/page.tsx`, `instructions/page.tsx`,
+  `constants.ts`, `LeaderboardClient.tsx`, `battle/Panels.tsx`, `rateLimit.ts` (`brLookupLimiter`, 60/min/IP),
+  `scripts/battle-royale.test.mts` (+1 test).
+
+**Architecture & Decisions**
+- **No email check on the name lookup, deliberately**: it returns only what the public board already shows
+  (plus titles derived from it). Payment state, email, phone and Game Code stay out (MEMORY 186).
+- **The migration does not re-label winners.** On the live data the new order swaps 10th and 11th — Syeda
+  Maha Fatima (155, 3:28.8) moves into the Top 10 and syeda mehak (155, 3:50.7) drops out. Who gets the
+  prize is the owner's call, so the SQL changes only the order; Unfinalise → Finalise applies it.
+- The `show_full_names` column is left in the database, unread (no destructive migration).
+
+**Verification**
+- `npx tsc --noEmit` → 0 errors. `node --test scripts/battle-royale.test.mts` → **23 pass**.
+- `npm run build` → exit 0, shared JS **88.6 kB**, middleware **81.9 kB** (unchanged); `/battle-royale/status` 162 kB.
+- Throwaway Postgres 16: `battle_royale_setup.sql` applied twice, the migration re-run on a finalised board,
+  the screenshot's 11 players seeded — the 165s now order 2:40, 2:59, 3:00, 3:45, 4:22, 4:46; the Top-10
+  query returns the expected 10 rows.
+- Dev server against live Supabase (**GET only**): search by name, multi-word, Player ID prefix, and
+  wildcard input (→ nothing); certificate by code (winner design for rank 1), 404/400 paths; full names on
+  the board. Headless Chrome at 1440 and 390: type "kinza" → 2 options → keyboard select → Certificate of
+  Participation rendered, 0 console errors, 0 overflow. Screenshots read.
+- **NOT verified:** the migration on the real Supabase (owner runs it); PDF/PNG download clicks; Safari; a real phone.
+
+**Remaining (owner)** — run `supabase/migrations/20260930_battle_royale_ranking.sql` in the Supabase SQL
+editor; then, if the Top 10 should follow the new order, admin → Results → Unfinalise → Finalise. Deploy.
 
 ### 2026-09-29 (later) — Battle Royale: "Close tournament" admin button
 
@@ -1499,153 +1557,7 @@ sheet (Cs = 3.5, seven corrected readings) and its expected answers.
 
 ---
 
-### 2026-09-22 — Calculator refinement standard written up as a skill
-
-Session `9ac71ea2`, "follow protocol" + a 25-section user brief ("PharmaWallah Calculator — Global
-Refinement Instructions"), with the explicit instruction **"for now just create this skill."** No
-calculator was changed.
-
-**Completed**
-- New `.claude/skills/calculator-refinement/SKILL.md` (~300 lines). It is the brief translated into
-  this repo: not a restatement, but a mapping of each requirement onto the component or helper that
-  already delivers it, plus an honest list of what the kit does **not** have.
-- **Every claim in it was read from source**, not from documentation: the kit's exports and their
-  props (`NumberField`'s `units=` select, `ResultCard`'s `empty`/`interpretation`, `LabActions`'
-  Calculate/Reset/Copy/Download/Print and its `IS_MOBILE_APP` gating), the parsers and formatters
-  (`toNumber`, `fieldError`, `numericError`, `formatSig`/`formatFixed`/`formatScientific`), the
-  analytical layer (`DataTable`, `CountStepper`, `ChartPanel`, `CHART`, `chartSvg`, `Checked<T>`),
-  and the two real on-screen orders, taken from `bmi-calculator` and `calibration-curve-calculator`.
-- **Starting point measured, not estimated** (counted over the 104 tool pages): 35 have a unit
-  selector, 37 import Recharts, 15 build a lab record, 9 use `DataTable`, 6 use `ExampleChips`
-  (68 have some example affordance), 3 ever print scientific notation.
-
-**Files**
-- New `.claude/skills/calculator-refinement/SKILL.md`.
-- `.claude/SKILLS.md` — domain-skill row + a composing stack.
-- `.claude/skills/calculator-tool/SKILL.md` — a pointer at the top: that skill owns creating,
-  registering and medical safety; this one owns quality. **Two stale counts corrected** while
-  there: "97 pharmacy calculation tools" → 104 (98 registered), and "`tool-index.ts` lists 93" →
-  98 (gotcha 142). The same "97" in `.claude/SKILLS.md`'s row was corrected too.
-- `.claude/ROADMAP.md` — new Phase 4.7 item (⚪ not started), and **a stale line corrected**: it
-  still said Phase 2 "migrates 81 calculators", which finished 104/104 on 2026-09-20.
-- `.claude/MEMORY.md` — gotchas 143 (the `lab-analysis` barrel imports Recharts at module scope)
-  and 144 (there is no unit conversion beyond mass/volume/amount, and temperature cannot join it).
-- This file — §7 In Progress, this entry.
-
-**Architecture & Decisions**
-- **Two families, not one layout.** The brief's §21 order (inputs → Calculate → result) is how the
-  experimental-data tools already work; the formula tools put the result *first*, which is the only
-  way the answer is visible on a phone without scrolling past every field. The skill names both and
-  says which applies when, rather than forcing one order onto 104 tools.
-- **Brand tokens over the brief's hexes.** The brief names #2563EB/#4ADE80; the product is
-  #1C7BD9/#21B67A and `CHART.primary` is already the brand blue. Same decision the Molecular Lab and
-  the pharmacy counter took, for the same reason — a second near-identical blue on a brand page.
-- **§20's "minimal shadows, few gradients" does not mean stripping the liquid glass.** The user
-  asked for that specifically on 2026-09-20; it is shared kit and one edit there reaches all 104
-  tools and the APK (gotcha 136). The skill scopes §20 to decoration a page adds for itself, and
-  flags kit-level visual change as a separate, deliberate decision.
-- **The refinement is presentation; the maths is not in scope.** The skill's step 2 sends the
-  refiner to the tracker's suspected-faults list *before* touching anything, and requires a
-  before/after number capture. A render bug (stale result, NaN, dead unit selector) may be fixed and
-  must be stated; a formula may not.
-- **The brief's §3 and §23 conflict in practice** — "automatically convert when the unit changes"
-  against "do not unexpectedly erase data". The skill resolves it into a five-point rule (one
-  canonical internal unit, convert once on read, never rewrite the typed value, never clear, state
-  the choice on screen), because double conversion is this repo's classic silent calculator bug.
-
-**Verification**
-- Skill content checked against source for every named export, prop and file path.
-- Counts produced by `grep -rl` over `src/app/(site)/calculation-tools/(tools)`; the tool-directory
-  count (104) matches `MEMORY.md` gotcha 131.
-- Section order conformed to the house order documented at the foot of `.claude/SKILLS.md`.
-- **Not run, because no product code changed:** `npx tsc --noEmit`, `npm run build`,
-  `npm run mobile:build`, the `node --test` suites, no browser pass. Lint does not run in this repo.
-- **Not verified:** whether importing `ExampleChips` actually lands Recharts in a tool's bundle —
-  the module-scope import is a fact, the tree-shaking outcome is not, and the skill says to measure
-  it with a build rather than reason about it.
-
-**Remaining**
-- No calculator has been refined. The standard is unapplied to all 104.
-- The kit gaps the skill lists (unit tables beyond mass/volume/amount, temperature, graph tabs, a
-  notation toggle) are not built — the first tool that needs one builds it, in `lab-math.ts`.
-- Commit (the protocol forbids it here). The tree also carries the previous session's uncommitted
-  `.claude/BRAND_KIT.md`, `CLAUDE.md` and `.claude/MEMORY.md` changes.
-
-**Next**
-- Pick one tool from each family and refine it as the worked reference — `dissolution-calculator`
-  (family B: table → calculations → result → graph, and the brief's own worked example) and one
-  short formula tool — then measure how much of the standard the skill actually carried.
-
-### 2026-09-20 — Brand & content brief for social media (`.claude/BRAND_KIT.md`)
-
-Session `afbe3f0b`, "follow protocol". User is commissioning social media content (image posts)
-from a separate Claude on the web and needed a self-contained brief so that model knows the colour
-scheme, typeface, logo, voice and — critically — which numbers it is allowed to state.
-
-**Completed**
-- New `.claude/BRAND_KIT.md`, written to be pasted whole into a fresh model with no repo access.
-  Eleven sections: what the product is, audience, voice (with an explicit do/don't list), the full
-  colour system, typography, logo construction and usage, visual language, **publishable figures**,
-  a "never claim this" section, post formats and series ideas, and a short copy-paste summary.
-- **Every value was read from source, not from documentation**: brand tokens and the clinical
-  palette from `tailwind.config.ts`; the gradient, the two navy scrim strengths and their measured
-  WCAG ratios from `src/components/page-kit/brand.ts`; Outfit from `src/app/layout.tsx`; the six
-  pillar colours and their marketing lines from `src/components/Home/landing/data.ts`; the story
-  copy from `/about-us`; the mark described by actually rendering `public/icons/icon-512x512.png`
-  and the wordmark by extracting the base64 raster out of `public/images/logo/logo.svg`.
-- **Counts re-measured rather than copied**: 104 tool directories, **98** on the hub across 10
-  categories (parsed from `tool-index.ts`), 69 lesson markdown files, 8 simulations, 3 spotting
-  disciplines, 12 seeded community spaces (counted in the migration), an 83-molecule library, 5 AI
-  Guide modes, APK v1.4 / 8.9 MB / 104 tools, 18 team members.
-- Found the live **Instagram handle** in the codebase — `@pharmawallah_com`, linked from
-  `PharmaWallahQuiz.tsx` — and recorded it, since the user is about to run social accounts.
-- §9's "never claim" section encodes the project's real legal exposure: educational-use-only, the
-  unreviewed clinical content (Known Issue 19), the known formula faults (Known Issue 15) and the
-  copyright position that removed the books library.
-
-**Files**
-- New `.claude/BRAND_KIT.md`.
-- `CLAUDE.md` — §2 doc index row, §7 hub count corrected **93 → 98** with the per-category
-  breakdown (Source-of-Truth rule; the 93 was stale), new Known Issue 20, this entry.
-- `.claude/MEMORY.md` — one new gotcha (derived marketing counts live in two places and drift).
-
-**Architecture & Decisions**
-- **A file, not an artifact.** The deliverable's job is to be pasted into another chat, so a
-  markdown file in the repo beats a rendered page; it also version-controls alongside the tokens it
-  documents, which is what stops it going stale the way the 93 did.
-- **It lives in `.claude/`** because that is where this project keeps durable reference material and
-  `CLAUDE.md` §2 is its index — the brand kit is now discoverable from the entry point.
-- **Figures are quarantined into one section (§8)** with an instruction that nothing outside it may
-  be stated. A model writing marketing copy will invent "trusted by thousands" unless told plainly
-  where the boundary is.
-- **No product code changed.** The stale landing-page constant was recorded, not fixed — it is
-  user-visible copy and the user should make that call.
-
-**Verification**
-- Every hex, count and string in the brief was read back from the file that defines it; the two
-  logo assets were opened and looked at rather than described from the work log.
-- Discrepancy found and reported: landing `STATS.calculators` = 97 vs 104 real / 98 hub
-  (Known Issue 20), and §7's recorded hub count of 93 was wrong (corrected).
-- The DrugBank figures (12,673 drugs and its splits) are carried over from the 2026-09-13 measured
-  entry; they were **not** re-measured here — that needs a live Mongo read.
-- **Not run, because no code changed:** `npx tsc --noEmit`, `npm run build`, no browser pass.
-  Lint is not configured in this repo; no test covers documentation.
-
-**Remaining**
-- Decide whether to set `calculators: 104` in `src/components/Home/landing/data.ts` so the homepage
-  and the marketing agree (Known Issue 20).
-- The footer still carries a placeholder phone number and four `#` social links (Known Issue 13) —
-  worth fixing before driving traffic from Instagram.
-- No brand assets were exported for the designer (no PNG logo on transparent, no colour swatch
-  sheet). `logo.svg` is the white lockup only; a colour lockup does not exist in the repo.
-
-**Next**
-- Export a small asset pack (colour + white logo PNGs, the 512px mark, a swatch card) so the social
-  designer has files as well as hex values.
-
----
-
-> Older entries are in `.claude/history/2026-09.md`: 2026-09-13/20 (pharmacy counter, calculator migration finish, disk diffusion, AI Guide, encyclopedia, community, Molecular Lab, about-us, TLC/colony, APK v1.1–1.3), 2026-09-13 (six analytical-practical calculators, calculation-tools hub rebuild, loading screen, dashboard rebuild, header app CTA +
+> Older entries are in `.claude/history/2026-09.md`: 2026-09-22 (calculator-refinement skill), 2026-09-20 (brand kit), 2026-09-13/20 (pharmacy counter, calculator migration finish, disk diffusion, AI Guide, encyclopedia, community, Molecular Lab, about-us, TLC/colony, APK v1.1–1.3), 2026-09-13 (six analytical-practical calculators, calculation-tools hub rebuild, loading screen, dashboard rebuild, header app CTA +
 > Master Formula, auth pages, redesign Phase 0, top-design landing page, eight laboratory tools) and
 > 2026-09-12 (ADME landing page, AdSense, Outfit, PWA removal, APK distribution, Android app,
 > bootstrap).
@@ -1661,12 +1573,12 @@ scheme, typeface, logo, voice and — critically — which numbers it is allowed
 | --- | --- | --- |
 | Type-check | `npx tsc --noEmit` | **PASSES — 0 errors, re-measured 2026-09-20** after the calculator migration finished (104/104 on the kit). The 4 transient errors a peer recorded in `(tools)/OpioidMMECalculator/page.tsx:229-231` were a `Set` spread needing `downlevelIteration` (gotcha 37) during that migration and are **fixed** — use `Array.from(...)`, not a spread, in this tsconfig. Any error you see now is yours. The app project: `npx tsc --noEmit -p mobile/tsconfig.json` → 0 errors (needs a generated `mobile/app/_generated`, i.e. one `npm run mobile:build`). |
 | Lint | `npm run lint` | **NOT AVAILABLE.** No ESLint config; the command opens an interactive setup prompt. Do not report lint as passing. |
-| Build | `npm run build` | **PASSES — re-verified 2026-09-29** after the Battle Royale podium/certificates work (isolated copy): exit 0, shared JS **88.6 kB**, middleware **81.9 kB**, `/` 223 kB first load. **Earlier: PASSES — re-verified 2026-09-20 after the calculator migration finished** (isolated copy of the tree; peers had agreed not to build in the shared root): exit 0, shared JS **88.5 kB**, middleware **81.9 kB**. All 104 calculators then swept against `next start` at 1440×900 and 390×844 — 104/104 HTTP 200, hydrated, **0 exceptions, 0 console errors, 0 horizontal overflow**. **Also 2026-09-20 after the AI Guide rebuild** (isolated copy; the peer dev server on :3000 was left alone): exit 0, shared JS **88.5 kB** (unchanged), `/ai-guide` **9.7 kB / 150 kB first load**, `/books-library` no longer emitted. **Also 2026-09-20, after the Disk Diffusion Lab rebuild** (in an isolated copy of the tree — two peer `next dev` servers were running on the shared root and had already corrupted its `.next`, MEMORY gotcha 126): exit 0, **277 route lines**, shared JS **88.5 kB**, middleware 81.9 kB, `/simulations/disk-diffusion` 49.1 kB / **241 kB first load**; jsPDF confirmed absent from the page chunk and present in its own, so the report no longer rides in the first load. One extra expected warning: `buffer-lab`'s ambiguous `duration-[2000ms]` class. **Earlier the same day: PASSES — after the `/encyclopedia` redesign** (in an isolated copy of the tree, the peer sessions' dev servers left alone): exit 0, shared JS **88.5 kB**, `/encyclopedia` **16.3 kB / 113 kB first load**, `/molecular-lab` 60.2 kB / 149 kB. OpenChemLib (1.09 MB) and 3Dmol (568 KB) are lazy chunks only — grep the built shared chunks for both and expect **0 hits** before shipping any new 3D consumer. Two 404s on `/_vercel/insights` and `/_vercel/speed-insights` appear under `next start` locally; they come from `Analytics` / `SpeedInsights` in `src/app/layout.tsx` and only resolve on Vercel — not a defect. **Earlier: PASSES — 2026-09-16 after Molecular Lab** (in an isolated copy of the tree, dev server left up): exit 0, shared JS **88.4 kB**, middleware 81.9 kB, `/molecular-lab` 59.5 kB / 148 kB first load, `resources.<hash>.json` 1.35 MB in `static/media`. The build also prints several `Dynamic server usage` stack traces (tournament leaderboard, DailyMed, AMR routes) — logged by those handlers, non-fatal, not new. **Before that** (again after the simple `/about-us`: exit 0, shared JS 88.3 kB, `/about-us` 106 kB first load). Earlier the same day: exit 0 in ~2.5 min, 252 route lines, shared JS **88.3 kB**, middleware 81.9 kB; `/calculation-tools/rf-value-calculator` 184 kB and `/cfu-calculator` 183 kB first load; `.next/static/media/opencv.<hash>.js` 10.8 MB emitted as an asset. Same expected warnings as below. **Earlier (2026-09-12):** with the dev server stopped, after the AdSense work (the first successful run since the PWA removal, the shadcn migration and the Outfit switch): exit 0, ~170 routes, middleware 81.8 kB, shared JS 87.8 kB. Stop `npm run dev` first — they share `.next` and corrupt each other (§7 Known Issue 10). **PASSES with a populated `.env`** — exit 0, ~170 routes emitted, middleware 81.8 kB, shared JS 87.8 kB. Only `/_not-found` is static; everything else is `ƒ` (dynamic, server-rendered on demand). **Without `.env` it FAILS**: `Missing environment variable: NEXT_PUBLIC_SUPABASE_URL` while collecting page data for `/api/admin/registrations`. Expected non-fatal warnings: the `@supabase/supabase-js` Edge-runtime `process.version` notice, the stale `caniuse-lite` Browserslist notice, and two webpack "Serializing big strings" cache notices. |
+| Build | `npm run build` | **PASSES — re-verified 2026-09-30** after the Battle Royale certificate search (exit 0, shared JS 88.6 kB, middleware 81.9 kB). **2026-09-29** after the Battle Royale podium/certificates work (isolated copy): exit 0, shared JS **88.6 kB**, middleware **81.9 kB**, `/` 223 kB first load. **Earlier: PASSES — re-verified 2026-09-20 after the calculator migration finished** (isolated copy of the tree; peers had agreed not to build in the shared root): exit 0, shared JS **88.5 kB**, middleware **81.9 kB**. All 104 calculators then swept against `next start` at 1440×900 and 390×844 — 104/104 HTTP 200, hydrated, **0 exceptions, 0 console errors, 0 horizontal overflow**. **Also 2026-09-20 after the AI Guide rebuild** (isolated copy; the peer dev server on :3000 was left alone): exit 0, shared JS **88.5 kB** (unchanged), `/ai-guide` **9.7 kB / 150 kB first load**, `/books-library` no longer emitted. **Also 2026-09-20, after the Disk Diffusion Lab rebuild** (in an isolated copy of the tree — two peer `next dev` servers were running on the shared root and had already corrupted its `.next`, MEMORY gotcha 126): exit 0, **277 route lines**, shared JS **88.5 kB**, middleware 81.9 kB, `/simulations/disk-diffusion` 49.1 kB / **241 kB first load**; jsPDF confirmed absent from the page chunk and present in its own, so the report no longer rides in the first load. One extra expected warning: `buffer-lab`'s ambiguous `duration-[2000ms]` class. **Earlier the same day: PASSES — after the `/encyclopedia` redesign** (in an isolated copy of the tree, the peer sessions' dev servers left alone): exit 0, shared JS **88.5 kB**, `/encyclopedia` **16.3 kB / 113 kB first load**, `/molecular-lab` 60.2 kB / 149 kB. OpenChemLib (1.09 MB) and 3Dmol (568 KB) are lazy chunks only — grep the built shared chunks for both and expect **0 hits** before shipping any new 3D consumer. Two 404s on `/_vercel/insights` and `/_vercel/speed-insights` appear under `next start` locally; they come from `Analytics` / `SpeedInsights` in `src/app/layout.tsx` and only resolve on Vercel — not a defect. **Earlier: PASSES — 2026-09-16 after Molecular Lab** (in an isolated copy of the tree, dev server left up): exit 0, shared JS **88.4 kB**, middleware 81.9 kB, `/molecular-lab` 59.5 kB / 148 kB first load, `resources.<hash>.json` 1.35 MB in `static/media`. The build also prints several `Dynamic server usage` stack traces (tournament leaderboard, DailyMed, AMR routes) — logged by those handlers, non-fatal, not new. **Before that** (again after the simple `/about-us`: exit 0, shared JS 88.3 kB, `/about-us` 106 kB first load). Earlier the same day: exit 0 in ~2.5 min, 252 route lines, shared JS **88.3 kB**, middleware 81.9 kB; `/calculation-tools/rf-value-calculator` 184 kB and `/cfu-calculator` 183 kB first load; `.next/static/media/opencv.<hash>.js` 10.8 MB emitted as an asset. Same expected warnings as below. **Earlier (2026-09-12):** with the dev server stopped, after the AdSense work (the first successful run since the PWA removal, the shadcn migration and the Outfit switch): exit 0, ~170 routes, middleware 81.8 kB, shared JS 87.8 kB. Stop `npm run dev` first — they share `.next` and corrupt each other (§7 Known Issue 10). **PASSES with a populated `.env`** — exit 0, ~170 routes emitted, middleware 81.8 kB, shared JS 87.8 kB. Only `/_not-found` is static; everything else is `ƒ` (dynamic, server-rendered on demand). **Without `.env` it FAILS**: `Missing environment variable: NEXT_PUBLIC_SUPABASE_URL` while collecting page data for `/api/admin/registrations`. Expected non-fatal warnings: the `@supabase/supabase-js` Edge-runtime `process.version` notice, the stale `caniuse-lite` Browserslist notice, and two webpack "Serializing big strings" cache notices. |
 | Mobile build | `npm run mobile:build` | **PASSES (2026-09-22, ~3 min)** — re-measured after the iOS target landed and the three Capacitor plugins were installed: exit 0, **106 HTML files** under `mobile/out/calculation-tools/` (105 tools + the hub), CSS **88,734 bytes**, shared JS **88.3 kB**; **0** files match the JWT-shaped secret pattern and **0** contain an ad string. This one export now feeds three native targets — `cap sync android`, `cap sync ios` and the Tauri desktop build. **Earlier: PASSES (2026-09-20, ~2 min)** — after the calculator migration and the liquid-glass kit change: exit 0, **108 HTML files**, 106 entries under `mobile/out/calculation-tools/`, CSS **84,243 + 4,210 bytes**. The glass ships to the APK: `calcSheen`/`calcTide` and the `[@media(hover:none)]` phone path are all present in the exported CSS, and the export renders at 390 px with `backdrop-filter: none`. **Earlier (2026-09-16, ~2 min)** — 105 HTML files under `mobile/out/calculation-tools/`, home `/` 125 kB first load, shared JS 88.2 kB, CSS **113,194 bytes**, `mobile/out` 22 MB (OpenCV.js is 10.8 MB of it). Secret scan: use the JWT-shaped pattern (gotcha 90). **Earlier (v1.1):** 109 static pages, 108 HTML files, 105 under `mobile/out/calculation-tools/`, shared JS 87.9 kB, CSS in two files **98,751 + 4,210 bytes**, 12 MB (re-measured 2026-09-13 by the v1.1 APK build, with 85 of 104 tools on the kit; 103,829 + 4,210 before). Independent of `.env` and safe to run while `npm run dev` is up (separate `mobile/.next`). **Also assert zero ad strings in `mobile/out`** — see `.claude/skills/adsense-monetization/SKILL.md`. A ~10 KB stylesheet is the silent Tailwind failure (gotcha 23). |
 | iOS compile | `.github/workflows/ios-app.yml` (Actions → "iOS app" → Run workflow) | **PASSES — first ever run 2026-09-22, `macos-latest`, 5m22s, commit `5b8788e`, conclusion `success`, every step green.** Builds twice with no Apple account and no secrets: **Simulator** (Debug, `-sdk iphonesimulator`) and the **arm64 device slice** (Release, `-sdk iphoneos`, `CODE_SIGNING_ALLOWED=NO`), and uploads `App.app` as the `pharmawallah-ios-simulator-app` artifact. Two guards run before the compile and are part of the baseline: `Info.plist` must request **no permissions**, and **≥100** calculator pages must be in the synced bundle. Needs the committed shared scheme `ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme` (MEMORY gotcha 159). **This is a compile baseline only** — no signed `.ipa`, and the app has still never been *run* (§7 Known Issue 21). Do not report the iOS app as tested on a device. |
 | iOS sync | `npm run ios:sync` (i.e. `cap sync ios`) | **PASSES (2026-09-22, ~4 s after the build)** — exit 0 on **Linux**; Capacitor 8 uses the SPM template so no CocoaPods is involved. Reports **3 Capacitor plugins for ios** (`@capacitor/filesystem@8.1.3`, `@capacitor/keyboard@8.0.5`, `@capacitor/share@8.0.2`) and rewrites `ios/App/CapApp-SPM/Package.swift`. Also assert: `Info.plist` parses with `plistlib` and has **zero** `*UsageDescription` keys, and `ios/App/App/public/calculation-tools` holds one `index.html` per tool. **There is no iOS build baseline** — compiling needs Xcode on macOS and has never been done (§7 Known Issue 21). Do not report the iOS app as building. |
 | APK | `npm run mobile:apk` | **PASSES (2026-09-20, v1.4 / versionCode 5, ~2 min)** — signed V2 release APK **9,369,674 B (8.9 MB)**, certificate SHA-256 `afe4c18e…5b03` **unchanged from v1.3**, so it installs as an update; published file byte-identical to the Gradle output; 104 tool pages inside. **Earlier (2026-09-16, v1.3 / versionCode 4, ~2.5 min)** — signed V2 release APK **9,347,799 B** (8.9 MB), same certificate SHA-256 `afe4c18e…5b03` as v1.2; published file byte-identical to the Gradle output. **Earlier:** (2026-09-14, v1.2 / versionCode 3, built by `pharma-wallah-4b` — new launcher icon + redesigned Serial Dose tool) — signed V2 release APK, 5,945,495 B, copied to `public/downloads/`; same certificate as v1.0/v1.1. Needs JDK 21 (auto-selected) and `android/keystore.properties`. Check `aapt dump badging` for the version and `apksigner verify --print-certs` for the certificate. |
-| Tests | `node --test scripts/pharmacy-counter.test.mts` · `node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts` · `node --test scripts/molecular-lab.test.mts` · `node --test scripts/community.test.mts` · `node --test scripts/ai-guide.test.mts` · `node --test scripts/dissolution-rate.test.mts` · `node --test scripts/split-for-ads.test.mts` · `node --test scripts/battle-royale.test.mts` | **47 pass, 0 fail** (2026-09-20, Community Pharmacy pure layer, ~0.5 s — case-data integrity, the check grader, verification truths, labels, expiry, inventory, the calculators, scoring) · **41 pass, 0 fail** (2026-09-16; 21 TLC + 20 colony, ~10 s) · **21 pass, 0 fail** (2026-09-16, Molecular Lab, ~12 s, real OpenChemLib) · **19 pass, 0 fail** (2026-09-20, community pure layer, <1 s) · **34 pass, 0 fail** (2026-09-20, AI Guide pure layer — request clamps, Gemini history rules, NDJSON framing, study modes — <1 s). · **28 pass, 0 fail** (2026-09-22, Dissolution Rate Constant pure layer — every column of the supplied practical sheet, both k columns proven distinct, the average against 0.000291833 and against each rejected averaging range, division-by-zero paths, duplicate/backwards times, both notations — <1 s). · **6 pass, 0 fail** (2026-09-24, lesson ad spacing — heading-only breaks, never inside a code fence, word-count gaps, lossless over all 69 lesson files, <1 s). · **22 pass, 0 fail** (2026-09-29, Battle Royale — display helpers, schema round-trips, station, titles). These cover eight features' pure modules only — there is no framework, no CI, and nothing else is tested. Report them by name. **The community's SQL is verified separately** by running its migration twice against a throwaway local Postgres 16 and asserting RLS from a `nobypassrls` role — see the `community-system` skill. |
+| Tests | `node --test scripts/pharmacy-counter.test.mts` · `node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts` · `node --test scripts/molecular-lab.test.mts` · `node --test scripts/community.test.mts` · `node --test scripts/ai-guide.test.mts` · `node --test scripts/dissolution-rate.test.mts` · `node --test scripts/split-for-ads.test.mts` · `node --test scripts/battle-royale.test.mts` | **47 pass, 0 fail** (2026-09-20, Community Pharmacy pure layer, ~0.5 s — case-data integrity, the check grader, verification truths, labels, expiry, inventory, the calculators, scoring) · **41 pass, 0 fail** (2026-09-16; 21 TLC + 20 colony, ~10 s) · **21 pass, 0 fail** (2026-09-16, Molecular Lab, ~12 s, real OpenChemLib) · **19 pass, 0 fail** (2026-09-20, community pure layer, <1 s) · **34 pass, 0 fail** (2026-09-20, AI Guide pure layer — request clamps, Gemini history rules, NDJSON framing, study modes — <1 s). · **28 pass, 0 fail** (2026-09-22, Dissolution Rate Constant pure layer — every column of the supplied practical sheet, both k columns proven distinct, the average against 0.000291833 and against each rejected averaging range, division-by-zero paths, duplicate/backwards times, both notations — <1 s). · **6 pass, 0 fail** (2026-09-24, lesson ad spacing — heading-only breaks, never inside a code fence, word-count gaps, lossless over all 69 lesson files, <1 s). · **23 pass, 0 fail** (2026-09-30, Battle Royale — display helpers, schema round-trips, station, titles, certificate search input). These cover eight features' pure modules only — there is no framework, no CI, and nothing else is tested. Report them by name. **The community's SQL is verified separately** by running its migration twice against a throwaway local Postgres 16 and asserting RLS from a `nobypassrls` role — see the `community-system` skill. |
 
 ---
 

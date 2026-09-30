@@ -357,7 +357,7 @@ export function Finish({
           <p className="mx-auto mt-6 max-w-md rounded-2xl border border-white/25 bg-white/10 px-4 py-3 text-sm text-white/90">
             <strong>Your e-certificate is ready.</strong> On your phone, open{" "}
             <span className="font-mono font-semibold">pharmawallah.com/battle-royale</span> → <strong>My result</strong>, and
-            type your Player ID <span className="font-mono font-semibold">{state.participant.code}</span> and your email.
+            pick your name from the list.
           </p>
         )}
         <p className="mt-4 text-xs text-white/75">Final results are announced when the competition closes.</p>

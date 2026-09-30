@@ -7,7 +7,7 @@ import { getPublicSettings } from "@/lib/battle-royale/server";
 
 export const metadata: Metadata = {
   title: "My result & certificate — Battle Royale | PharmaWallah",
-  description: "See your Battle Royale score, rank and titles, and download your e-certificate.",
+  description: "Find your name to see your Battle Royale score, rank and titles, and download your e-certificate.",
   robots: { index: false, follow: true },
 };
 
@@ -18,11 +18,11 @@ export default async function StatusPage() {
       <PageHero
         eyebrow="Battle Royale · My result"
         title="My result & certificate"
-        lead="Type your Player ID and the email you registered with. After your battle, your score, titles and e-certificate are here."
+        lead="Type your name and pick it from the list. After your battle, your score, titles and e-certificate are here — download it as a PDF or picture."
         trail={[{ label: "Battle Royale", href: BR_BASE }, { label: "My result" }]}
       />
       <div className="mx-auto max-w-3xl px-5 py-10 sm:px-6 sm:py-14">
-        <StatusClient />
+        <StatusClient closed={closed} />
       </div>
       <EventFooter closed={closed} />
     </>

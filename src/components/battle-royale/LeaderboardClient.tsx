@@ -214,7 +214,7 @@ export function LeaderboardClient({
           <p className="mt-3 text-sm text-[#16181d]/55">Showing the top {rows.length} of {board.totalRanked} ranked participants.</p>
         )}
         <p className="mt-3 text-xs text-[#16181d]/45">
-          Ranked by total score, then Round 3, then faster answering time. The gold line marks the Top {board?.winnersCount ?? 10}.
+          Ranked by total score; on a tie, the shorter battle time ranks higher. The gold line marks the Top {board?.winnersCount ?? 10}.
           {board && ` Updated ${formatTime(board.updatedAt)}.`}
         </p>
 

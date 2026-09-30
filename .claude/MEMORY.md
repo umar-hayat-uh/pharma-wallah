@@ -1241,6 +1241,19 @@ Traps that will otherwise be rediscovered painfully.
 184. **Battle Royale "closed" is its own column (`br_settings.event_closed`)**, set by the admin
     "Close tournament" action together with registration off, battles off and a freeze. Don't derive
     it from those three: frozen + switches off is also the normal verify step. (2026-09-29)
+185. **Battle Royale ranking = total score, then the SHORTER battle time** (2026-09-30, user). Round 3
+    no longer breaks ties. The order lives in the `br_leaderboard` view
+    (`20260930_battle_royale_ranking.sql`), and `br_finalize_results` labels winners from that view — so
+    changing the order does **not** re-label already-finalised winners; Unfinalise → Finalise does. On the
+    real data the change swapped 10th and 11th (two players tied on 155).
+186. **Certificates are found by name, publicly** (2026-09-30, user). `GET /api/battle-royale/certificates`
+    lists registered players *with a `br_scores` row* (`br_scores!inner`) and returns one player's result by
+    Player ID with no email — safe only because every field is already on the public board (name,
+    university, Player ID, score, rank) or derived from it. Never add payment, email, phone or Game Code to
+    it. Search input goes through `certificateQuery()` so no LIKE wildcard reaches PostgREST. Names on the
+    board are always full; `br_settings.show_full_names` is dead.
+187. **`pkill -f "<pattern>"` inside a Bash call kills that call's own shell** when the pattern also appears in
+    the command line (exit 144). Stop a background dev server with TaskStop instead. (2026-09-30)
 
 ## 9. Working preferences (observed)
 

@@ -27,7 +27,8 @@ server-authoritative game engine, its Game Code identity model, or its admin rol
   arrival + the round's time + `sync_grace_seconds`; later = 0 for the round.
 - **Round 1 is a word search** generated in SQL (`br_make_wordsearch`, 8 directions); positions stay
   server-side and `br_ws_path_spells` verifies each claimed path.
-- **Scoring:** correctness only (no speed bonus in v2). Ranking: total, R3, server-measured battle time.
+- **Scoring:** correctness only (no speed bonus in v2). Ranking (since 2026-09-30): total, then the shorter
+  server-measured battle time — Round 3 no longer breaks ties. Names on the board are always full.
 - **Security:** RLS on, no policies; EXECUTE on `br_*` functions revoked from anon/authenticated.
   Route handlers use the service client. Admins = rows in `br_admins` (`admin` | `desk`).
 - **Closing:** freeze (sets `leaderboard_frozen_at`, closes the arena) → finalise (Top N winners)
@@ -40,6 +41,10 @@ server-authoritative game engine, its Game Code identity model, or its admin rol
 - **Titles & certificates:** `titles.ts` (absolute thresholds, never rank). `/status` returns
   `titles` + `certificate`; `certificate/draw.ts` draws it on canvas (PDF via lazy jsPDF, PNG).
   `winner` design only when finalised and `final_status = winner`; otherwise participation.
+- **Finding a certificate (2026-09-30):** `/status` leads with a name search (`CertificateSearch` →
+  `/api/battle-royale/certificates`); only finished, registered players are listed and no email is asked.
+  Player ID + email (`status` route) remains for the pre-battle tracker, hidden once closed. Both build the
+  result with `result.ts#readResult` — change certificates there, never in one route.
 
 - **Close tournament (2026-09-29):** admin overview → `results` route `close`/`reopen`. Closed =
   `event_closed` + registration off + battles off + frozen. Public pages check
@@ -51,6 +56,9 @@ server-authoritative game engine, its Game Code identity model, or its admin rol
   instructions and certificate pick it up.
 - Certificate change → edit `draw.ts` only (one drawing feeds preview, PNG and PDF); check both
   designs through a temporary route and read the screenshot.
+- Ranking change → the `br_leaderboard` view (latest: `20260930_battle_royale_ranking.sql`), append the
+  same SQL to `supabase/battle_royale_setup.sql`, update the tie copy (`constants.ts` FAQ, instructions,
+  `LeaderboardClient`, the rules row), then tell the owner to Unfinalise → Finalise if results were final.
 - New setting → column in `br_settings` + `SettingsRow`/`toPublicSettings` + `settingsSchema` + form.
 - Engine change → edit the v2 SQL, re-run it (idempotent; it ends with `notify pgrst`), extend
   `scripts/battle-royale-engine.test.sql`, run it on a throwaway Postgres.
@@ -69,7 +77,7 @@ server-authoritative game engine, its Game Code identity model, or its admin rol
 ## Security Checks
 - [ ] No score, participant or time accepted from a request body (schemas are `.strict()`).
 - [ ] Every admin route starts with `adminGuard(role)`; every admin page with `adminForPage`.
-- [ ] Public payloads never include email, phone or Game Code (leaderboard, check-in, results).
+- [ ] Public payloads never include email, phone or Game Code (leaderboard, check-in, results, certificates).
 - [ ] New `br_*` function → the revoke/grant loop at the end of the migration covers it (re-run).
 
 ## Do Not

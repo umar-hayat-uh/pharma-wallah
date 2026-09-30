@@ -237,3 +237,15 @@ test("titles: allowed time sums every timer; perfect rounds read the graded resu
   assert.equal(t.accuracy(3, 0), 0);
   assert.equal(t.accuracy(30, 20), 1);
 });
+
+test("certificateQuery: name words, Player ID prefixes, and no wildcards get through", () => {
+  assert.deepEqual(f.certificateQuery("  Umar   Hayat "), { words: ["Umar", "Hayat"] });
+  assert.deepEqual(f.certificateQuery("br-2026-00"), { code: "BR-2026-00" });
+  assert.equal(f.certificateQuery("br-"), null);
+  assert.equal(f.certificateQuery("a"), null);
+  assert.equal(f.certificateQuery("%_*"), null);
+  assert.deepEqual(f.certificateQuery("50%_a*b,c(d)"), { words: ["50", "a", "b", "c", "d"].slice(0, 4) });
+  assert.deepEqual(f.certificateQuery("M. Aazib"), { words: ["M", "Aazib"] });
+  assert.deepEqual(f.certificateQuery("مہک"), { words: ["مہک"] });
+  assert.deepEqual(f.certificateQuery("O'Brien-Smith"), { words: ["O'Brien-Smith"] });
+});

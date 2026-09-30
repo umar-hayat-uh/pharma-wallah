@@ -211,7 +211,6 @@ export const settingsSchema = z.object({
   winnersCount: z.coerce.number().int().min(1).max(100),
   registrationOpen: z.boolean(),
   competitionOpen: z.boolean(),
-  showFullNames: z.boolean(),
   rules: z.array(trimmed(400).min(1)).max(30),
 });
 export type SettingsInput = z.input<typeof settingsSchema>;

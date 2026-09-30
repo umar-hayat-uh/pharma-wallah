@@ -54,7 +54,7 @@ export default async function InstructionsPage() {
     ["Register", <>Register <Link href={`${BR_BASE}/register`} className="font-semibold text-[#1C7BD9] hover:underline">online</Link> or at the PharmaWallah desk. Your <strong>Player ID</strong> (like BR-2026-0007) comes by email.</>],
     ["Pay and get your Game Code", <>Pay <strong>Rs. {fee}</strong> at the desk. They hand you a slip with a six-letter <strong>Game Code</strong>. Keep it private — it works once.</>],
     ["Play", <>Sit at any free station, press <strong>Start</strong>, type your Game Code and play the three rounds.</>],
-    ["Get your certificate", <>Open <Link href={`${BR_BASE}/status`} className="font-semibold text-[#1C7BD9] hover:underline">My result</Link>, type your Player ID and email, and download your e-certificate.</>],
+    ["Get your certificate", <>Open <Link href={`${BR_BASE}/status`} className="font-semibold text-[#1C7BD9] hover:underline">My result</Link>, find your name, and download your e-certificate.</>],
   ] as const;
 
   return (
@@ -113,7 +113,7 @@ export default async function InstructionsPage() {
             items={[
               "Every word you find, every correct pair and every correct answer earns points.",
               "Your score = Round 1 + Round 2 + Round 3. The system adds it up — you don't have to.",
-              "If two players tie, the higher Round 3 score wins; then the faster battle.",
+              "If two players tie, the faster battle wins.",
             ]}
           />
         </Section>

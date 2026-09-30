@@ -129,6 +129,11 @@ export const brRegisterLimiter = brLimiter(6, "10 m", "register");
 export const brCredentialLimiter = brLimiter(20, "10 m", "credentials");
 /** Serving and answering inside a running battle. Per attempt token. */
 export const brPlayLimiter = brLimiter(90, "60 s", "play");
+/**
+ * The certificate name search and result-by-name lookup: debounced typing, so
+ * a person makes a few calls a second at most. Per IP.
+ */
+export const brLookupLimiter = brLimiter(60, "60 s", "lookup");
 /** The public board, polled by the stall TV and by phones. Per IP. */
 export const brLeaderboardLimiter = brLimiter(60, "60 s", "leaderboard");
 /** Admin writes, including email sends. Per admin user id. */

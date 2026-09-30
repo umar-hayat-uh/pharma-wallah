@@ -64,13 +64,12 @@ export async function PATCH(req: Request) {
       winners_count: s.winnersCount,
       registration_open: s.registrationOpen,
       competition_open: s.competitionOpen,
-      show_full_names: s.showFullNames,
       rules: s.rules,
       updated_at: new Date().toISOString(),
     })
     .eq("id", 1);
   if (error) return engineErrorResponse(error, "update settings");
   revalidateTag(SETTINGS_TAG);
-  await invalidateLeaderboard(); // names shown in full or short
+  await invalidateLeaderboard(); // Top N may have changed
   return NextResponse.json({ ok: true });
 }

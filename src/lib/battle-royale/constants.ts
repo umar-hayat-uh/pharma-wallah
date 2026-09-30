@@ -107,7 +107,7 @@ export const FAQ = [
   },
   {
     q: "What happens if two people tie?",
-    a: "The higher Round 3 score wins the tie; if that is also equal, the shorter total battle time (measured by our server) wins.",
+    a: "The shorter total battle time (measured by our server) wins the tie.",
   },
   {
     q: "When are winners announced?",

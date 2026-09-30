@@ -79,7 +79,6 @@ export type PublicSettings = {
   competitionOpen: boolean;
   leaderboardFrozenAt: string | null;
   resultsFinalized: boolean;
-  showFullNames: boolean;
   /** "Close tournament": the public pages show only the leaderboard and My result. */
   eventClosed: boolean;
   rules: string[];
@@ -132,11 +131,12 @@ export type RegistrationReceipt = {
   emailStatus: "sent" | "failed";
 };
 
-/** The public status lookup (Player ID + email). */
-export type StatusPayload = {
-  participant: { name: string; code: string; registrationStatus: RegistrationStatus; paymentStatus: PaymentStatus; slot: string };
-  steps: { registered: true; paid: boolean; codeIssued: boolean; played: boolean };
-  attemptStatus: "active" | "completed" | null;
+/**
+ * One finished (or unfinished) player's result — what both public lookups
+ * return: the name search (certificates route) and Player ID + email (status).
+ */
+export type ResultPayload = {
+  participant: { name: string; code: string };
   score: null | {
     rounds: [number, number, number]; total: number; correct: number; questions: number; timeMs: number; finalStatus: FinalStatus;
   };
@@ -151,6 +151,16 @@ export type StatusPayload = {
   frozen: boolean;
   winnersCount: number;
 };
+
+/** The private status lookup (Player ID + email): the result plus the pre-battle tracker. */
+export type StatusPayload = Omit<ResultPayload, "participant"> & {
+  participant: { name: string; code: string; registrationStatus: RegistrationStatus; paymentStatus: PaymentStatus; slot: string };
+  steps: { registered: true; paid: boolean; codeIssued: boolean; played: boolean };
+  attemptStatus: "active" | "completed" | null;
+};
+
+/** One row of the certificate name search. Only players who finished a battle. */
+export type CertificateMatch = { code: string; name: string; university: string };
 
 /** Everything drawn on an e-certificate. `winner` = Top N after finalising. */
 export type CertificateData = {

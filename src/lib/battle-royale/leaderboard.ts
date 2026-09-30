@@ -1,14 +1,13 @@
 /**
  * Battle Royale — the public board. Server-only (service client).
  *
- * The `br_leaderboard` view already ranks (total, then Round 3, then faster
- * time), drops disqualified participants and ignores scores completed after a
- * freeze. This module only projects it onto the public shape — the column list
+ * The `br_leaderboard` view already ranks (total, then the shorter battle
+ * time — 20260930_battle_royale_ranking.sql), drops disqualified
+ * participants and ignores scores completed after a freeze. This module only projects it onto the public shape — the column list
  * below is the whole of what anyone outside the admin can see.
  */
 import { redis } from "@/lib/redis";
 import { db, readSettings } from "./server";
-import { shortName } from "./format";
 import type { FinalStatus, LeaderboardPayload, LeaderboardRow } from "./types";
 
 const PUBLIC_COLUMNS =
@@ -20,11 +19,16 @@ type Row = {
   correct_count: number; total_questions: number; total_time_ms: number; final_status: FinalStatus;
 };
 
-function project(r: Row, fullNames: boolean, finalized: boolean): LeaderboardRow {
+/*
+ * Names are printed in full (user decision 2026-09-30: "Umar H." was not
+ * recognisable, and the certificate search lists full names anyway). The
+ * `br_settings.show_full_names` column still exists but nothing reads it.
+ */
+function project(r: Row, finalized: boolean): LeaderboardRow {
   return {
     rank: r.rank,
     code: r.participant_code,
-    name: fullNames ? r.name : shortName(r.name),
+    name: r.name,
     university: r.university,
     total: r.total_score,
     rounds: [r.round1_score, r.round2_score, r.round3_score],
@@ -44,7 +48,8 @@ function project(r: Row, fullNames: boolean, finalized: boolean): LeaderboardRow
  * Only the shared part is cached; "your row" is looked up per request.
  */
 const CACHE_SECONDS = 20;
-const cacheKey = (limit: number) => `br:leaderboard:v1:${limit}`;
+// v2: rows cached before full names (v1) held "Ayesha K." — a new key drops them at deploy.
+const cacheKey = (limit: number) => `br:leaderboard:v2:${limit}`;
 const CACHED_LIMITS = [20, 50, 100];
 
 export async function invalidateLeaderboard() {
@@ -58,7 +63,7 @@ export async function invalidateLeaderboard() {
 
 type Shared = Omit<LeaderboardPayload, "you">;
 
-async function readShared(limit: number): Promise<{ shared: Shared; full: boolean; fin: boolean } | null> {
+async function readShared(limit: number): Promise<Shared | null> {
   const settings = await readSettings();
   if (!settings) return null;
   const svc = await db();
@@ -75,19 +80,14 @@ async function readShared(limit: number): Promise<{ shared: Shared; full: boolea
     console.error("[battle-royale] leaderboard read failed", top.error);
     return null;
   }
-  const full = settings.showFullNames;
   const fin = settings.resultsFinalized;
   return {
-    full,
-    fin,
-    shared: {
-      rows: (top.data as Row[]).map((r) => project(r, full, fin)),
-      totalRanked: count.count ?? top.data.length,
-      frozenAt: settings.leaderboardFrozenAt,
-      finalized: fin,
-      winnersCount: settings.winnersCount,
-      updatedAt: new Date().toISOString(),
-    },
+    rows: (top.data as Row[]).map((r) => project(r, fin)),
+    totalRanked: count.count ?? top.data.length,
+    frozenAt: settings.leaderboardFrozenAt,
+    finalized: fin,
+    winnersCount: settings.winnersCount,
+    updatedAt: new Date().toISOString(),
   };
 }
 
@@ -103,12 +103,9 @@ export async function readLeaderboard(limit: number, code: string | null): Promi
       console.error("[battle-royale] leaderboard cache read failed", err);
     }
   }
-  let flags: { full: boolean; fin: boolean } | null = null;
   if (!shared) {
-    const fresh = await readShared(size);
-    if (!fresh) return null;
-    shared = fresh.shared;
-    flags = { full: fresh.full, fin: fresh.fin };
+    shared = await readShared(size);
+    if (!shared) return null;
     if (redis) {
       try {
         await redis.set(cacheKey(size), shared, { ex: CACHE_SECONDS });
@@ -122,10 +119,7 @@ export async function readLeaderboard(limit: number, code: string | null): Promi
   if (code) {
     const svc = await db();
     const { data } = await svc.from("br_leaderboard").select(PUBLIC_COLUMNS).eq("participant_code", code).maybeSingle();
-    if (data) {
-      const settings = flags ? null : await readSettings();
-      you = project(data as Row, flags?.full ?? settings?.showFullNames ?? false, flags?.fin ?? shared.finalized);
-    }
+    if (data) you = project(data as Row, shared.finalized);
   }
   return { ...shared, rows: shared.rows.slice(0, limit), you };
 }

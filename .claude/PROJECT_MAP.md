@@ -118,7 +118,11 @@ Separate from the tournament below. Skill: `.claude/skills/battle-royale/`.
 - Home-page podium: `src/components/battle-royale/HomeBattleSection.tsx` (server, streamed from `src/app/page.tsx`
   into `LandingPage`'s `battle` slot); shared `Podium.tsx` + `podium.css` (also on the event page and leaderboard).
 - Titles: `src/lib/battle-royale/titles.ts`. E-certificate: `src/components/battle-royale/certificate/`
-  (`draw.ts` canvas drawing, `Certificate.tsx` preview + PDF/PNG), shown by `StatusClient.tsx` on `/battle-royale/status`.
+  (`draw.ts` canvas drawing, `Certificate.tsx` preview + PDF/PNG), shown by `ResultView.tsx` on `/battle-royale/status`.
+- Certificate by name (2026-09-30): `CertificateSearch.tsx` (combobox) → `GET /api/battle-royale/certificates`
+  (`?q=` search, `?code=` result); the result is built by `src/lib/battle-royale/result.ts`, shared with the
+  Player ID + email `status` route. `StatusClient.tsx` leads with the search.
+- Organiser SQL: `supabase/queries/battle_royale_top10.sql` (Top 10 with contact details, read-only).
 - Tests: `scripts/battle-royale.test.mts` (node --test), `scripts/battle-royale-engine.test.sql` (throwaway Postgres).
 
 ## Tournament (entry-code competition)

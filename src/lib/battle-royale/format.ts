@@ -71,3 +71,25 @@ export function maskEmail(email: string | null): string | null {
   if (!domain) return null;
   return `${local[0] ?? ""}•••@${domain}`;
 }
+
+/**
+ * The certificate name search's input → what to match. A Player ID prefix
+ * ("br-2026-00") searches codes; anything else becomes up to four name words,
+ * each of which must appear. Only letters (any script), digits, apostrophes,
+ * dots and hyphens survive, so no LIKE wildcard (`%`, `_`, `*`) or PostgREST
+ * syntax can reach the query. Null when there is too little to search.
+ */
+// Built with the constructor: this tsconfig targets ES5, which rejects a `u` literal.
+const NOT_NAME_CHAR = new RegExp("[^\\p{L}\\p{M}\\p{N}'.\\-\\s]", "gu");
+
+export function certificateQuery(raw: string): { code: string } | { words: string[] } | null {
+  const q = raw.normalize("NFC").trim().slice(0, 60);
+  if (/^br-[\d-]*$/i.test(q)) return q.length >= 4 ? { code: q.toUpperCase() } : null;
+  const words = q
+    .replace(NOT_NAME_CHAR, " ")
+    .split(/\s+/)
+    .map((w) => w.replace(/^[.'-]+|[.'-]+$/g, ""))
+    .filter(Boolean)
+    .slice(0, 4);
+  return words.join("").length >= 2 ? { words } : null;
+}
