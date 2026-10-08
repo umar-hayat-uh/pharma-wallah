@@ -95,6 +95,7 @@ export const HUB_SUBJECTS: HubSubject[] = [
       { name: "Dissolution Calculator", slug: "dissolution-calculator", desc: "Absorbance → concentration → corrected concentration → % drug release over time" },
       { name: "Cumulative Drug Release Calculator", slug: "cumulative-drug-release-calculator", desc: "Cumulative drug amount and % release, corrected for sample withdrawal" },
       { name: "Dissolution Rate Constant Calculator", slug: "dissolution-rate-constant-calculator", desc: "Midpoint, dC/dt, Cs − C and both k columns from a dissolution practical" },
+      { name: "Drug Stability Kinetics Calculator", slug: "stability-kinetics-calculator", desc: "Order, k, half-life and t90 from a Time vs Absorbance stability practical" },
     ],
   },
   {

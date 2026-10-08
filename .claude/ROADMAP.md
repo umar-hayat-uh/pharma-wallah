@@ -140,6 +140,11 @@ pages, confirm progress tracking records a visit, then batch the rest.
     hub (Pharmaceutics) and in the Android catalogue → **105 directories, 99 on the hub**. Open owner
     decision: whether the reported average covers the interior rows (the sheet's own answer, and the
     default) or all of them — both are on screen as a labelled switch.
+  - ✅ 2026-10-08: **Drug Stability Kinetics Calculator** (`stability-kinetics-calculator`) — the
+    Procaine HCl / 50 °C practical: absorbance → % remaining, zero/first/second-order regressions,
+    order by highest R², k, t½ and t90 (C₀ = 100 %), four graphs, Steps 1–10 lab record, 23 unit tests.
+    Registered on the hub (Pharmaceutics) and in the Android catalogue → **106 directories, 100 hub
+    entries (95 unique)**.
   - Delete the dead legacy registry `src/app/api/calculators.tsx` (419 lines, zero importers).
   - ✅ Migrate older tools to the shared kit (`src/components/calculators/`) — **COMPLETE 2026-09-20,
     104 of 104**, each verified number-for-number against its pre-migration page. Tracker Phase 2 is

@@ -1,8 +1,8 @@
 # Calculator Tool
 
 ## Purpose
-Add or modify one of the 104 pharmacy calculation tools, and make sure it is actually reachable
-from the hub (98 are registered on it).
+Add or modify one of the 106 pharmacy calculation tools, and make sure it is actually reachable
+from the hub (95 unique tools are registered on it, 100 entries — MEMORY 165; re-counted 2026-10-08).
 
 **Improving a tool that already works** — units, examples, the step-by-step working, a graph,
 mobile behaviour — is `.claude/skills/calculator-refinement/SKILL.md`. This skill owns creating,
@@ -31,7 +31,7 @@ src/app/(site)/calculation-tools/
     AnionGapCalculator/page.tsx→ /calculation-tools/AnionGapCalculator
 ```
 
-**104 tool directories exist; `tool-index.ts` lists 98** (re-counted 2026-09-20 by parsing the
+**106 tool directories exist; `tool-index.ts` lists 95 unique tools in 100 entries** (re-counted 2026-10-08; 98 on 2026-09-20 by parsing the
 file; the "93" recorded here before that was stale — MEMORY gotcha 142). Six of the difference are deliberately linked
 from `src/app/clinical/dose-calculators/page.tsx` instead (vancomycin-auc, tpn, renal-dosing-adjuster,
 OpioidMMECalculator, reconstitution-calculator, GeriatricDosingCalculator). **Five are linked from
@@ -134,6 +134,9 @@ plots a practical's graph, copy `(tools)/calibration-curve-calculator/` and buil
   goes to `chartSvg` for `LabReportData.figure`.
 - On screen: `StatTiles` + `ResultTable` + graph + `StepBlock` per row (or `FormulaNote` + `ReportSteps`).
   Don't render the whole `LabReport` card — `LabActions` still gives Copy / PNG / Print from it.
+- Several models compared by R² (reaction order, kinetics): copy `(tools)/stability-kinetics-calculator/` —
+  one `linearFit` per linearised plot, the winner chosen by the highest R², a warning when the margin is
+  small, and the lab record's sections rendered on screen as the worked steps (`ReportSteps`).
 - Verify: Node hand-checks against an independent computation (e.g. covariance for a regression), then
   CDP at 390 and 1440 (hydration, example, NaN/Infinity scan, overflow in `main`, tabs, Copy, Reset).
 

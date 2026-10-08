@@ -15,7 +15,7 @@ The product is unusually broad for its size. Six distinct pillars share one Next
 
 | Pillar | What it is |
 | --- | --- |
-| **Calculation tools** | 104 standalone pharmacy calculators under `/calculation-tools/<tool>` (2026-09-13) |
+| **Calculation tools** | 106 standalone pharmacy calculators under `/calculation-tools/<tool>` (re-counted 2026-10-08) |
 | **Courses & MCQ bank** | Semester → subject → unit markdown lessons + per-subject MCQ banks |
 | **Spotting labs** | Histology / pathology / powder-microscopy slide lessons + timed identification tests |
 | **Simulations** | 8 interactive wet-lab simulations (titration, disk diffusion, UV, staining, …) |
@@ -70,6 +70,7 @@ node --test scripts/ai-guide.test.mts                                  # 34 unit
 node --test scripts/dissolution-rate.test.mts                          # 28 unit tests, Dissolution Rate Constant
 node --test scripts/split-for-ads.test.mts                             # 6 unit tests, lesson ad spacing
 node --test scripts/battle-royale.test.mts                             # 23 unit tests, Battle Royale schemas/format/station/titles
+node --test scripts/stability-kinetics.test.mts                        # 23 unit tests, Drug Stability Kinetics
 node scripts/build-molecule-library.mts   # regenerate the Molecular Lab library from PubChem (network)
 ```
 
@@ -292,6 +293,9 @@ These are conventions **observed in the code**, not aspirations.
   and `ListAgents`, and announce which shared files you are taking, before editing one.
 
 ### Recently Completed
+- **Drug Stability Kinetics Calculator (2026-10-08)** — `/calculation-tools/stability-kinetics-calculator`,
+  the Procaine HCl / 50 °C practical: absorbance → % remaining, three regressions, order by highest R²
+  (the sheet's data are **zero** order, narrowly), k, t½, t90, four graphs, Steps 1–10. See §8.
 - **Battle Royale fixes (2026-09-30)** — full names on the board; certificates found by picking your name
   (no Player ID or email); ranking is now total then **shorter time**; Top-10 SQL in
   `supabase/queries/battle_royale_top10.sql`. **Owner: run `supabase/migrations/20260930_battle_royale_ranking.sql`,
@@ -483,8 +487,8 @@ These are conventions **observed in the code**, not aspirations.
   subjects**. Nine subject files are dead code *and use a different data shape* (`*_META` +
   `*Units` + `*_DIFF_BADGE`) than the registry's `SubjectMeta` interface. A tenth,
   `natural-toxins.ts`, *is* in `SubjectMeta` shape but is still not registered.
-- **Calculation tools hub.** 105 tool directories exist; `HUB_SUBJECTS` in
-  `src/app/(site)/calculation-tools/tool-index.ts` lists **94 unique tools** (99 entries — five tools appear under two subjects, MEMORY 165; corrected 2026-09-23) across 10 categories (re-counted
+- **Calculation tools hub.** 106 tool directories exist; `HUB_SUBJECTS` in
+  `src/app/(site)/calculation-tools/tool-index.ts` lists **95 unique tools** (100 entries — re-counted 2026-10-08 after the Drug Stability Kinetics Calculator joined Pharmaceutics, now 18; was 94/99 — five tools appear under two subjects, MEMORY 165; corrected 2026-09-23) across 10 categories (re-counted
   2026-09-22 by parsing the file: Pharmaceutical Chemistry 16, Clinical & Hospital Pharmacy 18,
   Pharmaceutics **17**, Biopharmaceutics & PK 14, Pharmaceutical Analysis 10, Unit Conversion 6,
   Pharmacology 6, Microbiology 6, Pharmaceutical Engineering 4, Physiology 2 — Pharmaceutics gained
@@ -704,6 +708,66 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 
 > Newest first. Never paste source code here. Archive entries older than ~10 into
 > `.claude/history/YYYY-MM.md`.
+
+### 2026-10-08 — Drug Stability Kinetics Calculator (new tool, 106th)
+
+"follow protocol" + a 16-section user specification for the practical "effect of % drug remaining at
+50 °C on the stability of Procaine HCl … order of kinetics, rate constant, half-life and shelf life".
+
+**Completed**
+- New `/calculation-tools/stability-kinetics-calculator`, registered on the hub under Pharmaceutics and in
+  the Android catalogue. Inputs: drug, temperature (°C, displayed only), A₀, time unit, and a Time |
+  Absorbance table; an example chip loads the sheet (A₀ 0.597, six readings). Everything recalculates live.
+- % drug remaining = (Aₜ/A₀) × 100 per row; zero (%R vs t), first (ln %R vs t) and second (1/%R vs t)
+  order fitted by least squares through the kit's `linearFit` (R² = 1 − SSE/SST); the highest R² decides
+  the order — nothing is assumed. k = −slope / −slope / +slope with order-correct units; t½ and t90 by the
+  spec's formulas with C₀ = 100 % (0.693 and 0.10536 as written on the sheet).
+- Screen: a brand-surface result card ("PROCAINE HCL STABILITY — 50°C" with order, R², k, t½, t90, final
+  % remaining), the % remaining table, the R² comparison table with the winner starred, four graphs (the
+  % remaining graph carries the winning order's fit back-transformed as a dashed trend; the three
+  linearised plots show points, line, equation and R², best one ringed), step-by-step k/t½/t90
+  substitutions, a dynamic interpretation, and **"Complete Practical Calculation" Steps 1–10** — the same
+  sections Copy / PNG / Print file, so screen and record cannot disagree. Scientific principle, method
+  and FAQ below.
+
+**Files**
+- New `src/app/(site)/calculation-tools/(tools)/stability-kinetics-calculator/{_stability-kinetics.ts,page.tsx}`,
+  `scripts/stability-kinetics.test.mts` (23 tests).
+- Edited `src/app/(site)/calculation-tools/tool-index.ts`, `mobile/app/_data/tool-registry.ts` (one entry each).
+
+**Architecture & Decisions**
+- **The sheet's data are zero order, not first.** R² 0.9927 / 0.9902 / 0.9789 → zero order by 0.0026,
+  k = 1.1314 % min⁻¹, t½ = 44.19 min, t90 = 8.839 min. Because the margin is tiny, a warning says the two
+  models are hard to separate (shown whenever ΔR² < 0.01). MEMORY 188.
+- **C₀ = 100 % as the spec says, not the fitted intercept (83.67 %)**, so t90 (8.84 min) lands before the
+  first reading at 5 min (78.7 %). Reproduced, not corrected; the intercept is printed in the R² table and
+  the method note explains it. If the practical meant C₀ = intercept, that is a one-line switch — **owner
+  decision**.
+- Temperature validates as a number but never enters the maths (spec §15: "displayed as an experimental
+  condition"). The accelerated-estimate disclaimer is fixed text in the interpretation, card footer and record.
+- Absorbance must be > 0 (ln and 1/x); ≥ 3 points (two always give R² = 1); readings above A₀ (> 100 %)
+  and repeated times are warned about, not dropped. k ≤ 0 → t½/t90 "not defined" with the reason.
+- Brand tokens and `BRAND_SURFACE`, not the spec's generic palette. No new dependency, no API, ships offline.
+
+**Verification**
+- `npx tsc --noEmit` → **0 errors**. `node --test scripts/stability-kinetics.test.mts` → **23 pass**.
+- `npm run build` → **exit 0**, shared JS 88.6 kB, middleware 81.9 kB (unchanged); tool 13.4 kB / 285 kB.
+- `npm run mobile:build` → **exit 0**, the tool exported, **0** ad strings in `mobile/out`.
+- Dev server + headless Chrome over CDP: **29/29 at 1440×900 and 29/29 at 390×844 (touch)** — example →
+  Calculate → all six % values, the three R², k, t½, t90, "Determined order of kinetics: Zero order", the
+  card title, Steps 1–10, the disclaimer; 4 charts; no NaN/Infinity; no page overflow; changing A₀ to 0.55
+  moves 78.73 → 85.45 %; Reset clears; 0 console errors. Hub lists the tool; page title is its own.
+- Screenshots read at both widths; they caught the t90 substitution clipped in its card at 1440 (mono
+  lines now wrap).
+- **NOT verified:** the Copy / PNG / Print outputs (buttons present, not clicked); a real phone; dark mode;
+  the APK/iOS/desktop packages (only the shared export was built). Lint is not configured.
+
+**Remaining**
+- Commit (the protocol forbids it here). Owner decision on C₀ above. Have a pharmaceutics demonstrator
+  check the tool against a second filled sheet.
+
+**Next**
+- Decide the C₀ convention with the course's practical manual, then commit and deploy.
 
 ### 2026-09-30 — Battle Royale: full names, certificates by name, time-first ranking, Top-10 SQL
 
@@ -1464,100 +1528,9 @@ Capacitor target, `-6c`); file ownership was agreed by message before any shared
 **Next**
 - Run `pnpm tauri:build` on a Windows machine and install the result.
 
-### 2026-09-22 — Dissolution Rate Constant Calculator (new tool, 105th)
-
-Session `cb572d28`, "follow protocol" + a 19-section user specification carrying a real practical
-sheet (Cs = 3.5, seven corrected readings) and its expected answers.
-
-**Completed**
-- New `/calculation-tools/dissolution-rate-constant-calculator`, registered on the hub under
-  Pharmaceutics and in the Android catalogue. It reproduces the supplied practical table rather
-  than substituting a generic dissolution-kinetics model: **Time | Corrected Reading | Midpoint |
-  dC/dt | Cs − C | k = x/y (x = dC/dt) | k = x/y (x = midpoint)**, then the mean of the last column.
-- **The two k columns are kept apart**, as the spec demands — different numerators, separate
-  columns, named in their headers, and a note on screen saying they are two calculations and not
-  two roundings of one.
-- The sheet's conventions are reproduced exactly: the final row's midpoint looks **backwards**
-  ((C previous + C current) / 2, making it a repeat of the row above), the final row's dC/dt is
-  **—** because there is no following time point, and **Cs − C uses the row's own corrected
-  reading, never its midpoint**.
-- Four Recharts graphs with the spec's titles (concentration, midpoint, dC/dt with a zero rule and
-  visible negatives, k with the average as a labelled reference line), a scientific ⇄ decimal
-  notation toggle, editable rows with Add / Delete / Clear / Load example / Calculate, and the
-  lab-record Copy / PNG / Print through `LabActions`.
-- Validation per the spec: Cs numeric and non-zero, numeric times and readings, duplicate times
-  flagged (and their dC/dt refuses to divide by zero), out-of-order times flagged while the rows
-  are still calculated **as entered**, Cs − C = 0 handled, and a negative dC/dt shown with the
-  spec's own wording — "Negative rate detected — review experimental variability." Nothing is
-  deleted, re-sorted or absolute-valued.
-
-**Files**
-- New `src/app/(site)/calculation-tools/(tools)/dissolution-rate-constant-calculator/`:
-  `_dissolution-rate.ts` (pure: validation, the seven columns, the average, display formatting) and
-  `page.tsx` (kit UI, four graphs, worked steps, lab record).
-- New `scripts/dissolution-rate.test.mts` — 28 unit tests.
-- `src/app/(site)/calculation-tools/tool-index.ts`, `mobile/app/_data/tool-registry.ts` — one entry each.
-- `src/components/calculators/lab-analysis/parts.tsx` — `TableColumn.inputClass`, an **optional**
-  per-column input width (default unchanged, so no existing tool moves).
-- `scripts/lib/ts-resolve.mjs` — now also resolves the `@/` alias, so a pure module that imports a
-  kit sibling that way can still be tested under `node --test`. Relative handling untouched.
-
-**Architecture & Decisions**
-- **The spec contradicts itself about the average, and the calculator says so instead of choosing
-  silently.** §8 asks for "the mean of all midpoint-based k values", but the expected answer it
-  states twice (0.000291833) is the mean of only **five** of the seven — t = 10…50. Measured: mean
-  of all seven is 0.000269425; of t = 10–60, 0.000293440; of t = 0–50, 0.000264084. Only the
-  interior five give 0.000291833 exactly. So "Average over" is a labelled `ModeSwitch` with
-  **Practical sheet rows** (interior only) as the default — it reproduces the stated expected
-  output — and **All observations** beside it, with the reason on screen. This is the
-  `calculator-tool` skill's rule (gotcha 67): an alternative method is an option, never a silent
-  substitute. **Owner decision** if the sheet's average was meant to cover all seven.
-- **Brand tokens, not the spec's palette.** §16 names #2563EB/#4ADE80 but also says to use the
-  existing design system; the site's are #1C7BD9/#21B67A. Same call as the Molecular Lab and the
-  pharmacy counter.
-- **Full precision throughout, rounding only at the point of printing**, so the notation toggle
-  cannot change an answer — asserted by a test that computes k from the *displayed* string and
-  proves it differs.
-- The midpoint-based k divides a concentration by a concentration and therefore carries **no
-  unit** as the sheet writes it. That is stated in "How the calculator works" rather than quietly
-  corrected.
-- No new dependency, no API route, no data store — it ships in the offline APK like every other tool.
-
-**Verification**
-- `npx tsc --noEmit` → **0 errors** (whole repo; matches the §9 baseline).
-- `node --test scripts/dissolution-rate.test.mts` → **28 pass, 0 fail**: every column against the
-  supplied sheet, the backward final midpoint, the two k columns proven different row by row, the
-  average against 0.000291833 and against each rejected range, division-by-zero paths, duplicate
-  and backwards times, a reading above Cs, both notations, and that intermediates are not rounded.
-- Headless Chrome over CDP against an isolated dev server on :3211 — **56/56 at 1440×900** and
-  **14/14 at 390×844 with touch**, 0 console errors in both. Driven for real: the example chip
-  fills the sheet; the table prints 8.77352 × 10⁻⁵, 2.50672 × 10⁻⁵, 3.76783 × 10⁻⁶, Cs − C of
-  3.499122648 and 3.498990807, "—" on the final row's two rate columns; the headline average reads
-  2.91833 × 10⁻⁴ and, in decimal, 0.000291833; the k column reads 0.000125336 / 0.000269574 /
-  0.000287909 / 0.000288555 / 0.000311630 / 0.000301497; switching to All observations moves it to
-  0.000269425 and back; four graphs draw 7 / 7 / 6 / 7 points with both reference lines; no
-  NaN/Infinity; no horizontal page overflow at either width and the wide table scrolls in its own box.
-- **Screenshots read at both widths**, and they caught two things no assertion did: `Cs − C` printed
-  as "3.500000000" (trailing-zero noise beside Cs — now trimmed for that column only, while the
-  significant-figure columns keep theirs), and the corrected-reading inputs **clipped** their own
-  values at the kit's fixed `w-[6.5rem]` (hence `TableColumn.inputClass`).
-- **NOT verified:** a real phone or tablet; iOS Safari; screen readers; the print dialog; dark mode
-  (still unreachable site-wide, tracker F13); the APK (not rebuilt). `npm run lint` does not run in
-  this repo.
-
-**Remaining**
-- Commit (the protocol forbids it here). Three peer sessions were live in the tree throughout —
-  an iOS Capacitor target, a Tauri desktop target, and a kit `SourceLink` — so commit selectively.
-- Owner decision: whether the reported average should cover all seven rows instead of the
-  interior five (the switch is already on screen either way).
-
-**Next**
-- Have a pharmaceutics demonstrator check the tool against a filled practical sheet other than the
-  one supplied, then decide the averaging convention.
-
 ---
 
-> Older entries are in `.claude/history/2026-09.md`: 2026-09-22 (calculator-refinement skill), 2026-09-20 (brand kit), 2026-09-13/20 (pharmacy counter, calculator migration finish, disk diffusion, AI Guide, encyclopedia, community, Molecular Lab, about-us, TLC/colony, APK v1.1–1.3), 2026-09-13 (six analytical-practical calculators, calculation-tools hub rebuild, loading screen, dashboard rebuild, header app CTA +
+> Older entries are in `.claude/history/2026-09.md`: 2026-09-22 (Dissolution Rate Constant Calculator, calculator-refinement skill), 2026-09-20 (brand kit), 2026-09-13/20 (pharmacy counter, calculator migration finish, disk diffusion, AI Guide, encyclopedia, community, Molecular Lab, about-us, TLC/colony, APK v1.1–1.3), 2026-09-13 (six analytical-practical calculators, calculation-tools hub rebuild, loading screen, dashboard rebuild, header app CTA +
 > Master Formula, auth pages, redesign Phase 0, top-design landing page, eight laboratory tools) and
 > 2026-09-12 (ADME landing page, AdSense, Outfit, PWA removal, APK distribution, Android app,
 > bootstrap).
@@ -1573,12 +1546,12 @@ sheet (Cs = 3.5, seven corrected readings) and its expected answers.
 | --- | --- | --- |
 | Type-check | `npx tsc --noEmit` | **PASSES — 0 errors, re-measured 2026-09-20** after the calculator migration finished (104/104 on the kit). The 4 transient errors a peer recorded in `(tools)/OpioidMMECalculator/page.tsx:229-231` were a `Set` spread needing `downlevelIteration` (gotcha 37) during that migration and are **fixed** — use `Array.from(...)`, not a spread, in this tsconfig. Any error you see now is yours. The app project: `npx tsc --noEmit -p mobile/tsconfig.json` → 0 errors (needs a generated `mobile/app/_generated`, i.e. one `npm run mobile:build`). |
 | Lint | `npm run lint` | **NOT AVAILABLE.** No ESLint config; the command opens an interactive setup prompt. Do not report lint as passing. |
-| Build | `npm run build` | **PASSES — re-verified 2026-09-30** after the Battle Royale certificate search (exit 0, shared JS 88.6 kB, middleware 81.9 kB). **2026-09-29** after the Battle Royale podium/certificates work (isolated copy): exit 0, shared JS **88.6 kB**, middleware **81.9 kB**, `/` 223 kB first load. **Earlier: PASSES — re-verified 2026-09-20 after the calculator migration finished** (isolated copy of the tree; peers had agreed not to build in the shared root): exit 0, shared JS **88.5 kB**, middleware **81.9 kB**. All 104 calculators then swept against `next start` at 1440×900 and 390×844 — 104/104 HTTP 200, hydrated, **0 exceptions, 0 console errors, 0 horizontal overflow**. **Also 2026-09-20 after the AI Guide rebuild** (isolated copy; the peer dev server on :3000 was left alone): exit 0, shared JS **88.5 kB** (unchanged), `/ai-guide` **9.7 kB / 150 kB first load**, `/books-library` no longer emitted. **Also 2026-09-20, after the Disk Diffusion Lab rebuild** (in an isolated copy of the tree — two peer `next dev` servers were running on the shared root and had already corrupted its `.next`, MEMORY gotcha 126): exit 0, **277 route lines**, shared JS **88.5 kB**, middleware 81.9 kB, `/simulations/disk-diffusion` 49.1 kB / **241 kB first load**; jsPDF confirmed absent from the page chunk and present in its own, so the report no longer rides in the first load. One extra expected warning: `buffer-lab`'s ambiguous `duration-[2000ms]` class. **Earlier the same day: PASSES — after the `/encyclopedia` redesign** (in an isolated copy of the tree, the peer sessions' dev servers left alone): exit 0, shared JS **88.5 kB**, `/encyclopedia` **16.3 kB / 113 kB first load**, `/molecular-lab` 60.2 kB / 149 kB. OpenChemLib (1.09 MB) and 3Dmol (568 KB) are lazy chunks only — grep the built shared chunks for both and expect **0 hits** before shipping any new 3D consumer. Two 404s on `/_vercel/insights` and `/_vercel/speed-insights` appear under `next start` locally; they come from `Analytics` / `SpeedInsights` in `src/app/layout.tsx` and only resolve on Vercel — not a defect. **Earlier: PASSES — 2026-09-16 after Molecular Lab** (in an isolated copy of the tree, dev server left up): exit 0, shared JS **88.4 kB**, middleware 81.9 kB, `/molecular-lab` 59.5 kB / 148 kB first load, `resources.<hash>.json` 1.35 MB in `static/media`. The build also prints several `Dynamic server usage` stack traces (tournament leaderboard, DailyMed, AMR routes) — logged by those handlers, non-fatal, not new. **Before that** (again after the simple `/about-us`: exit 0, shared JS 88.3 kB, `/about-us` 106 kB first load). Earlier the same day: exit 0 in ~2.5 min, 252 route lines, shared JS **88.3 kB**, middleware 81.9 kB; `/calculation-tools/rf-value-calculator` 184 kB and `/cfu-calculator` 183 kB first load; `.next/static/media/opencv.<hash>.js` 10.8 MB emitted as an asset. Same expected warnings as below. **Earlier (2026-09-12):** with the dev server stopped, after the AdSense work (the first successful run since the PWA removal, the shadcn migration and the Outfit switch): exit 0, ~170 routes, middleware 81.8 kB, shared JS 87.8 kB. Stop `npm run dev` first — they share `.next` and corrupt each other (§7 Known Issue 10). **PASSES with a populated `.env`** — exit 0, ~170 routes emitted, middleware 81.8 kB, shared JS 87.8 kB. Only `/_not-found` is static; everything else is `ƒ` (dynamic, server-rendered on demand). **Without `.env` it FAILS**: `Missing environment variable: NEXT_PUBLIC_SUPABASE_URL` while collecting page data for `/api/admin/registrations`. Expected non-fatal warnings: the `@supabase/supabase-js` Edge-runtime `process.version` notice, the stale `caniuse-lite` Browserslist notice, and two webpack "Serializing big strings" cache notices. |
+| Build | `npm run build` | **PASSES — re-verified 2026-10-08** after the Drug Stability Kinetics Calculator (exit 0, shared JS 88.6 kB, middleware 81.9 kB, the tool 13.4 kB / 285 kB first load). **2026-09-30** after the Battle Royale certificate search (exit 0, shared JS 88.6 kB, middleware 81.9 kB). **2026-09-29** after the Battle Royale podium/certificates work (isolated copy): exit 0, shared JS **88.6 kB**, middleware **81.9 kB**, `/` 223 kB first load. **Earlier: PASSES — re-verified 2026-09-20 after the calculator migration finished** (isolated copy of the tree; peers had agreed not to build in the shared root): exit 0, shared JS **88.5 kB**, middleware **81.9 kB**. All 104 calculators then swept against `next start` at 1440×900 and 390×844 — 104/104 HTTP 200, hydrated, **0 exceptions, 0 console errors, 0 horizontal overflow**. **Also 2026-09-20 after the AI Guide rebuild** (isolated copy; the peer dev server on :3000 was left alone): exit 0, shared JS **88.5 kB** (unchanged), `/ai-guide` **9.7 kB / 150 kB first load**, `/books-library` no longer emitted. **Also 2026-09-20, after the Disk Diffusion Lab rebuild** (in an isolated copy of the tree — two peer `next dev` servers were running on the shared root and had already corrupted its `.next`, MEMORY gotcha 126): exit 0, **277 route lines**, shared JS **88.5 kB**, middleware 81.9 kB, `/simulations/disk-diffusion` 49.1 kB / **241 kB first load**; jsPDF confirmed absent from the page chunk and present in its own, so the report no longer rides in the first load. One extra expected warning: `buffer-lab`'s ambiguous `duration-[2000ms]` class. **Earlier the same day: PASSES — after the `/encyclopedia` redesign** (in an isolated copy of the tree, the peer sessions' dev servers left alone): exit 0, shared JS **88.5 kB**, `/encyclopedia` **16.3 kB / 113 kB first load**, `/molecular-lab` 60.2 kB / 149 kB. OpenChemLib (1.09 MB) and 3Dmol (568 KB) are lazy chunks only — grep the built shared chunks for both and expect **0 hits** before shipping any new 3D consumer. Two 404s on `/_vercel/insights` and `/_vercel/speed-insights` appear under `next start` locally; they come from `Analytics` / `SpeedInsights` in `src/app/layout.tsx` and only resolve on Vercel — not a defect. **Earlier: PASSES — 2026-09-16 after Molecular Lab** (in an isolated copy of the tree, dev server left up): exit 0, shared JS **88.4 kB**, middleware 81.9 kB, `/molecular-lab` 59.5 kB / 148 kB first load, `resources.<hash>.json` 1.35 MB in `static/media`. The build also prints several `Dynamic server usage` stack traces (tournament leaderboard, DailyMed, AMR routes) — logged by those handlers, non-fatal, not new. **Before that** (again after the simple `/about-us`: exit 0, shared JS 88.3 kB, `/about-us` 106 kB first load). Earlier the same day: exit 0 in ~2.5 min, 252 route lines, shared JS **88.3 kB**, middleware 81.9 kB; `/calculation-tools/rf-value-calculator` 184 kB and `/cfu-calculator` 183 kB first load; `.next/static/media/opencv.<hash>.js` 10.8 MB emitted as an asset. Same expected warnings as below. **Earlier (2026-09-12):** with the dev server stopped, after the AdSense work (the first successful run since the PWA removal, the shadcn migration and the Outfit switch): exit 0, ~170 routes, middleware 81.8 kB, shared JS 87.8 kB. Stop `npm run dev` first — they share `.next` and corrupt each other (§7 Known Issue 10). **PASSES with a populated `.env`** — exit 0, ~170 routes emitted, middleware 81.8 kB, shared JS 87.8 kB. Only `/_not-found` is static; everything else is `ƒ` (dynamic, server-rendered on demand). **Without `.env` it FAILS**: `Missing environment variable: NEXT_PUBLIC_SUPABASE_URL` while collecting page data for `/api/admin/registrations`. Expected non-fatal warnings: the `@supabase/supabase-js` Edge-runtime `process.version` notice, the stale `caniuse-lite` Browserslist notice, and two webpack "Serializing big strings" cache notices. |
 | Mobile build | `npm run mobile:build` | **PASSES (2026-09-22, ~3 min)** — re-measured after the iOS target landed and the three Capacitor plugins were installed: exit 0, **106 HTML files** under `mobile/out/calculation-tools/` (105 tools + the hub), CSS **88,734 bytes**, shared JS **88.3 kB**; **0** files match the JWT-shaped secret pattern and **0** contain an ad string. This one export now feeds three native targets — `cap sync android`, `cap sync ios` and the Tauri desktop build. **Earlier: PASSES (2026-09-20, ~2 min)** — after the calculator migration and the liquid-glass kit change: exit 0, **108 HTML files**, 106 entries under `mobile/out/calculation-tools/`, CSS **84,243 + 4,210 bytes**. The glass ships to the APK: `calcSheen`/`calcTide` and the `[@media(hover:none)]` phone path are all present in the exported CSS, and the export renders at 390 px with `backdrop-filter: none`. **Earlier (2026-09-16, ~2 min)** — 105 HTML files under `mobile/out/calculation-tools/`, home `/` 125 kB first load, shared JS 88.2 kB, CSS **113,194 bytes**, `mobile/out` 22 MB (OpenCV.js is 10.8 MB of it). Secret scan: use the JWT-shaped pattern (gotcha 90). **Earlier (v1.1):** 109 static pages, 108 HTML files, 105 under `mobile/out/calculation-tools/`, shared JS 87.9 kB, CSS in two files **98,751 + 4,210 bytes**, 12 MB (re-measured 2026-09-13 by the v1.1 APK build, with 85 of 104 tools on the kit; 103,829 + 4,210 before). Independent of `.env` and safe to run while `npm run dev` is up (separate `mobile/.next`). **Also assert zero ad strings in `mobile/out`** — see `.claude/skills/adsense-monetization/SKILL.md`. A ~10 KB stylesheet is the silent Tailwind failure (gotcha 23). |
 | iOS compile | `.github/workflows/ios-app.yml` (Actions → "iOS app" → Run workflow) | **PASSES — first ever run 2026-09-22, `macos-latest`, 5m22s, commit `5b8788e`, conclusion `success`, every step green.** Builds twice with no Apple account and no secrets: **Simulator** (Debug, `-sdk iphonesimulator`) and the **arm64 device slice** (Release, `-sdk iphoneos`, `CODE_SIGNING_ALLOWED=NO`), and uploads `App.app` as the `pharmawallah-ios-simulator-app` artifact. Two guards run before the compile and are part of the baseline: `Info.plist` must request **no permissions**, and **≥100** calculator pages must be in the synced bundle. Needs the committed shared scheme `ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme` (MEMORY gotcha 159). **This is a compile baseline only** — no signed `.ipa`, and the app has still never been *run* (§7 Known Issue 21). Do not report the iOS app as tested on a device. |
 | iOS sync | `npm run ios:sync` (i.e. `cap sync ios`) | **PASSES (2026-09-22, ~4 s after the build)** — exit 0 on **Linux**; Capacitor 8 uses the SPM template so no CocoaPods is involved. Reports **3 Capacitor plugins for ios** (`@capacitor/filesystem@8.1.3`, `@capacitor/keyboard@8.0.5`, `@capacitor/share@8.0.2`) and rewrites `ios/App/CapApp-SPM/Package.swift`. Also assert: `Info.plist` parses with `plistlib` and has **zero** `*UsageDescription` keys, and `ios/App/App/public/calculation-tools` holds one `index.html` per tool. **There is no iOS build baseline** — compiling needs Xcode on macOS and has never been done (§7 Known Issue 21). Do not report the iOS app as building. |
 | APK | `npm run mobile:apk` | **PASSES (2026-09-20, v1.4 / versionCode 5, ~2 min)** — signed V2 release APK **9,369,674 B (8.9 MB)**, certificate SHA-256 `afe4c18e…5b03` **unchanged from v1.3**, so it installs as an update; published file byte-identical to the Gradle output; 104 tool pages inside. **Earlier (2026-09-16, v1.3 / versionCode 4, ~2.5 min)** — signed V2 release APK **9,347,799 B** (8.9 MB), same certificate SHA-256 `afe4c18e…5b03` as v1.2; published file byte-identical to the Gradle output. **Earlier:** (2026-09-14, v1.2 / versionCode 3, built by `pharma-wallah-4b` — new launcher icon + redesigned Serial Dose tool) — signed V2 release APK, 5,945,495 B, copied to `public/downloads/`; same certificate as v1.0/v1.1. Needs JDK 21 (auto-selected) and `android/keystore.properties`. Check `aapt dump badging` for the version and `apksigner verify --print-certs` for the certificate. |
-| Tests | `node --test scripts/pharmacy-counter.test.mts` · `node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts` · `node --test scripts/molecular-lab.test.mts` · `node --test scripts/community.test.mts` · `node --test scripts/ai-guide.test.mts` · `node --test scripts/dissolution-rate.test.mts` · `node --test scripts/split-for-ads.test.mts` · `node --test scripts/battle-royale.test.mts` | **47 pass, 0 fail** (2026-09-20, Community Pharmacy pure layer, ~0.5 s — case-data integrity, the check grader, verification truths, labels, expiry, inventory, the calculators, scoring) · **41 pass, 0 fail** (2026-09-16; 21 TLC + 20 colony, ~10 s) · **21 pass, 0 fail** (2026-09-16, Molecular Lab, ~12 s, real OpenChemLib) · **19 pass, 0 fail** (2026-09-20, community pure layer, <1 s) · **34 pass, 0 fail** (2026-09-20, AI Guide pure layer — request clamps, Gemini history rules, NDJSON framing, study modes — <1 s). · **28 pass, 0 fail** (2026-09-22, Dissolution Rate Constant pure layer — every column of the supplied practical sheet, both k columns proven distinct, the average against 0.000291833 and against each rejected averaging range, division-by-zero paths, duplicate/backwards times, both notations — <1 s). · **6 pass, 0 fail** (2026-09-24, lesson ad spacing — heading-only breaks, never inside a code fence, word-count gaps, lossless over all 69 lesson files, <1 s). · **23 pass, 0 fail** (2026-09-30, Battle Royale — display helpers, schema round-trips, station, titles, certificate search input). These cover eight features' pure modules only — there is no framework, no CI, and nothing else is tested. Report them by name. **The community's SQL is verified separately** by running its migration twice against a throwaway local Postgres 16 and asserting RLS from a `nobypassrls` role — see the `community-system` skill. |
+| Tests | `node --test scripts/pharmacy-counter.test.mts` · `node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts` · `node --test scripts/molecular-lab.test.mts` · `node --test scripts/community.test.mts` · `node --test scripts/ai-guide.test.mts` · `node --test scripts/dissolution-rate.test.mts` · `node --test scripts/split-for-ads.test.mts` · `node --test scripts/battle-royale.test.mts` · `node --test scripts/stability-kinetics.test.mts` | **47 pass, 0 fail** (2026-09-20, Community Pharmacy pure layer, ~0.5 s — case-data integrity, the check grader, verification truths, labels, expiry, inventory, the calculators, scoring) · **41 pass, 0 fail** (2026-09-16; 21 TLC + 20 colony, ~10 s) · **21 pass, 0 fail** (2026-09-16, Molecular Lab, ~12 s, real OpenChemLib) · **19 pass, 0 fail** (2026-09-20, community pure layer, <1 s) · **34 pass, 0 fail** (2026-09-20, AI Guide pure layer — request clamps, Gemini history rules, NDJSON framing, study modes — <1 s). · **28 pass, 0 fail** (2026-09-22, Dissolution Rate Constant pure layer — every column of the supplied practical sheet, both k columns proven distinct, the average against 0.000291833 and against each rejected averaging range, division-by-zero paths, duplicate/backwards times, both notations — <1 s). · **6 pass, 0 fail** (2026-09-24, lesson ad spacing — heading-only breaks, never inside a code fence, word-count gaps, lossless over all 69 lesson files, <1 s). · **23 pass, 0 fail** (2026-09-30, Battle Royale — display helpers, schema round-trips, station, titles, certificate search input). · **23 pass, 0 fail** (2026-10-08, Drug Stability Kinetics — % remaining against the sheet, all three fits against an independent covariance computation, order selection on exact zero/first/second-order data, k/t½/t90 per order, k ≤ 0, validation, interpretation, <1 s). These cover nine features' pure modules only — there is no framework, no CI, and nothing else is tested. Report them by name. **The community's SQL is verified separately** by running its migration twice against a throwaway local Postgres 16 and asserting RLS from a `nobypassrls` role — see the `community-system` skill. |
 
 ---
 

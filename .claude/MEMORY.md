@@ -1254,6 +1254,14 @@ Traps that will otherwise be rediscovered painfully.
     board are always full; `br_settings.show_full_names` is dead.
 187. **`pkill -f "<pattern>"` inside a Bash call kills that call's own shell** when the pattern also appears in
     the command line (exit 144). Stop a background dev server with TaskStop instead. (2026-09-30)
+188. **A stability-kinetics practical's order must be measured, not assumed — and on the sheet's own
+     data it is not first order.** The Procaine HCl / 50 °C sheet (A₀ 0.597, six readings to 50 %
+     remaining) gives R² zero 0.9927 > first 0.9902 > second 0.9789: zero order by 0.0026. Over ≤ 50 %
+     degradation zero and first order are routinely this close, so `stability-kinetics-calculator`
+     warns when ΔR² < 0.01 instead of pretending the choice is decisive. Second trap: with C₀ = 100 %
+     (the sheet's convention) the zero-order t90 is 8.84 min, *before* the first reading at 5 min
+     (78.7 %) — the fitted intercept is 83.7 %, not 100. The formula is reproduced as specified and the
+     intercept is printed beside it; don't "fix" t90 by switching C₀ silently (gotcha 67). (2026-10-08)
 
 ## 9. Working preferences (observed)
 
