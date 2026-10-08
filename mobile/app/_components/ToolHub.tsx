@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Camera, ChevronRight, Clock, Sparkle, Star, Trash2 } from "lucide-react";
+import { ArrowLeft, BookOpen, Camera, ChevronRight, CircleHelp, Clock, Sparkle, Star, Trash2 } from "lucide-react";
 import { START_HERE } from "@/app/(site)/calculation-tools/tool-index";
 import { cn } from "@/lib/utils";
 import { FEATURED, GROUPS, SLUG_SET, TOOL_BY_SLUG, TOTAL, searchTools, type AppGroup, type AppTool } from "../_data/catalogue";
@@ -109,6 +109,29 @@ function HomeView({
 
   return (
     <div className="space-y-7 pt-6">
+      {/* First use = nothing opened yet (Recent is empty): the guide gets a full
+          card. After that it shrinks to the one-line link at the bottom, so it
+          never pushes a returning student's tools down. No extra storage. */}
+      {recent.length === 0 && (
+        <section className="px-4">
+          <Link
+            href="/how-to-use/"
+            className="pw-rise pw-press flex items-center gap-3.5 rounded-3xl border border-primary/20 bg-card p-4 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.5)]"
+          >
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
+              <BookOpen className="h-6 w-6" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[16px] font-bold leading-tight tracking-[-0.01em] text-foreground">New here? Start with the guide</span>
+              <span className="mt-1 block text-[12.5px] leading-snug text-muted-foreground">
+                How to enter values, pick units and read results — for every calculator.
+              </span>
+            </span>
+            <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground/70" />
+          </Link>
+        </section>
+      )}
+
       {recent.length > 0 && (
         <section>
           <SectionTitle
@@ -215,6 +238,14 @@ function HomeView({
           </div>
         </section>
       )}
+
+      <Link
+        href="/how-to-use/"
+        className="mx-auto flex w-fit items-center gap-1.5 rounded-full px-3 py-2 text-[13px] font-medium text-primary"
+      >
+        <CircleHelp className="h-4 w-4" />
+        How to use the calculators
+      </Link>
 
       <p className="px-6 text-center text-[11.5px] leading-relaxed text-muted-foreground">
         Every calculator runs on this phone, with no internet connection. For educational purposes — check results against

@@ -232,14 +232,14 @@ All measured from the codebase on **2026-09-20**. These are safe to publish.
 
 | Fact | Figure |
 | --- | --- |
-| Pharmacy calculators | **105** built (re-counted 2026-09-26; the hub lists 94 unique tools across 10 subject categories, some under two subjects) |
+| Pharmacy calculators | **106** built (re-counted 2026-10-08; the hub lists 95 unique tools across 10 subject categories, some under two subjects) |
 | Calculator categories | Pharmaceutical Chemistry (16), Clinical & Hospital Pharmacy (18), Pharmaceutics (17), Biopharmaceutics & Pharmacokinetics (14), Pharmaceutical Analysis (10), Unit Conversion (6), Pharmacology (6), Microbiology (6), Pharmaceutical Engineering (4), Physiology (2) |
 | Course lessons | **22** published lessons across 4 subjects (re-counted 2026-09-26 — the old "69" counted markdown files, most of them for subjects not yet published) |
 | Wet-lab simulations | **8** — titration, disk diffusion, UV, staining, buffer, dilution, organic ID, lab guide |
 | Spotting disciplines | **3** — histology, pathology, powder microscopy (with timed identification tests) |
 | Drug encyclopedia | **12,673** drugs (4,398 approved, 9,404 small molecules, 3,269 biotech) |
 | Community spaces | **12** pharmacy-specific spaces |
-| Android app | **v1.4**, **8.9 MB**, works fully **offline**, contains all **104** calculators, **ad-free** |
+| Android app | **v1.5** (built 2026-10-08), **9.2 MB**, works fully **offline**, contains all **106** calculators and the how-to-use guide, **ad-free** |
 | Team | **18** students |
 | Price | **Free.** No account required to use the tools |
 
@@ -247,7 +247,7 @@ All measured from the codebase on **2026-09-20**. These are safe to publish.
 
 | # | Pillar | Figure | Line |
 | --- | --- | --- | --- |
-| 01 | Calculations | 105 tools | Clearance, dosing, isotonicity, half-life — every formula a Pharm-D asks of you, worked and explained. |
+| 01 | Calculations | 106 tools | Clearance, dosing, isotonicity, half-life — every formula a Pharm-D asks of you, worked and explained. |
 | 02 | Courses | 22 lessons | Semester by semester, unit by unit, with an MCQ bank behind each subject. |
 | 03 | Spotting | 3 disciplines | Histology, pathology and powder microscopy slides — then a timed identification test. |
 | 04 | Simulations | 8 wet labs | Titration, disk diffusion, UV, staining — run the experiment before the practical. |

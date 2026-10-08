@@ -1262,6 +1262,39 @@ Traps that will otherwise be rediscovered painfully.
      (the sheet's convention) the zero-order t90 is 8.84 min, *before* the first reading at 5 min
      (78.7 %) — the fitted intercept is 83.7 %, not 100. The formula is reproduced as specified and the
      intercept is printed beside it; don't "fix" t90 by switching C₀ silently (gotcha 67). (2026-10-08)
+189. **Two CDP-test traps that look like page bugs.** (a) `innerText` returns text *after* CSS
+     `text-transform`, so an `uppercase` banner reads "DETERMINED ORDER…" — compare case-insensitively.
+     (b) `globals.css` sets `html { scroll-behavior: smooth }`, so `el.scrollIntoView()` is animated and a
+     `getBoundingClientRect()` taken straight after is mid-scroll (`elementFromPoint` → null, hover misses,
+     Recharts tooltip "empty"). Use `scrollIntoView({ behavior: "instant" })`, wait, then measure. Both cost
+     a debugging round on the stability-kinetics tool. (2026-10-08)
+
+190. **Calculators show results as you type; a "Calculate" button is the exception.** Measured over the
+     106 tool pages (2026-10-08): only the 17 lab-practical tools (`LabActions`) have Calculate, and on
+     those it reveals errors or the finished card. Reset is on 103/106, "How this is calculated" on all,
+     unit dropdowns ~35, graphs ~35, "Try an example" ~48, mode tabs ~53, "(optional)" labels ~21. There
+     is **no required-field asterisk** — a tool names what it is waiting for in its empty `ResultCard`.
+     The calculator guide (`src/components/calculator-guide/content.ts`) is written against these
+     facts; re-measure before changing its copy, or when the kit gains a convention.
+
+191. **A non-tool page in the app needs two things, or it breaks silently.** (a) It must live outside
+     `mobile/app/calculation-tools/` — `generate-mobile-routes.mjs` deletes every folder there on each
+     build. (b) `MobileShell` treats any path that isn't `/calculation-tools/<slug>/` as Home and renders
+     **no app bar**, so the page has no way back. `/how-to-use/` is the precedent: `isGuide` in
+     `MobileShell.tsx`. Also add its source folder to `mobile/tailwind.config.ts` `CONTENT` (gotcha 23).
+
+192. **`globals.css` list styling is `ul:not(.prose ul)` — specificity (0,1,2).** A single namespace class
+     (`.pw-guide ul`, 0,1,1) loses to it. Double the class (`.pw-guide.pw-guide ul`) to reset lists in a
+     namespaced stylesheet.
+
+193. **Marketing video traps** (the kit lives outside the repo at
+     `~/personal/pharmawallah-marketing/video/`, owner's decision 2026-10-08 — never add it back here). (a) `background-clip: text` does not reach
+     transformed children: a gradient phrase split into animated word spans renders *invisible* unless
+     each `.w` carries the gradient itself (kit.css does this). (b) `.glass` is `position: relative`, so
+     `class="abs glass"` silently loses its absolute placement unless `.abs.glass` is restated after it.
+     (c) Translucent glass callouts over a white phone screen make white text vanish — looks exactly
+     like a z-index bug; it isn't. (d) zsh aborts a whole `&&` chain on an unmatched glob
+     (`rm -f x/still-*.png`) — use `find … -delete`. (2026-10-08)
 
 ## 9. Working preferences (observed)
 

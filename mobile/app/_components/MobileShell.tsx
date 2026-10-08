@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, CloudOff, Star } from "lucide-react";
+import { ArrowLeft, CircleHelp, CloudOff, Star } from "lucide-react";
 import { CalcDisclaimer } from "@/components/calculators/CalcDisclaimer";
 import { cn } from "@/lib/utils";
 import { TOOL_NAMES } from "../_data/tool-registry";
@@ -33,8 +33,11 @@ export default function MobileShell({ children }: { children: React.ReactNode })
 
   // "/calculation-tools/bmi-calculator/" -> "bmi-calculator"
   const slug = pathname?.match(/^\/calculation-tools\/([^/]+)\/?$/)?.[1];
-  const isHome = !slug;
-  const title = slug ? (TOOL_NAMES[slug] ?? "Calculator") : "PharmaWallah";
+  // The calculator guide (mobile/app/how-to-use) is the one non-tool page with
+  // a bar: without it, the guide would render like Home and have no way back.
+  const isGuide = /^\/how-to-use\/?$/.test(pathname ?? "");
+  const isHome = !slug && !isGuide;
+  const title = slug ? (TOOL_NAMES[slug] ?? "Calculator") : isGuide ? "How to use the calculators" : "PharmaWallah";
   const isSaved = !!slug && saved.includes(slug);
 
   useEffect(() => {
@@ -79,15 +82,27 @@ export default function MobileShell({ children }: { children: React.ReactNode })
             </span>
           )}
 
-          <button
-            type="button"
-            onClick={() => slug && toggleSaved(slug)}
-            aria-pressed={isSaved}
-            aria-label={isSaved ? "Remove from saved" : "Save this calculator"}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/15 ring-1 ring-inset ring-white/20 transition-transform duration-300 ease-out-expo active:scale-90"
-          >
-            <Star className={cn("h-5 w-5 transition-colors", isSaved && "fill-amber-300 text-amber-300")} />
-          </button>
+          {slug && (
+            <Link
+              href="/how-to-use/"
+              aria-label="How to use the calculators"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/15 ring-1 ring-inset ring-white/20 transition-transform duration-300 ease-out-expo active:scale-90 active:bg-white/30"
+            >
+              <CircleHelp className="h-5 w-5" />
+            </Link>
+          )}
+
+          {slug && (
+            <button
+              type="button"
+              onClick={() => toggleSaved(slug)}
+              aria-pressed={isSaved}
+              aria-label={isSaved ? "Remove from saved" : "Save this calculator"}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/15 ring-1 ring-inset ring-white/20 transition-transform duration-300 ease-out-expo active:scale-90"
+            >
+              <Star className={cn("h-5 w-5 transition-colors", isSaved && "fill-amber-300 text-amber-300")} />
+            </button>
+          )}
         </div>
       </header>
 
@@ -96,9 +111,11 @@ export default function MobileShell({ children }: { children: React.ReactNode })
         {/* The web mounts this in the (tools) layout, which never reaches the
             app (generated routes re-export the page only) — so the shell
             carries it for every tool page, and only for tool pages. */}
-        <div className="px-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] pt-2">
-          <CalcDisclaimer />
-        </div>
+        {slug && (
+          <div className="px-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] pt-2">
+            <CalcDisclaimer />
+          </div>
+        )}
       </main>
     </div>
   );

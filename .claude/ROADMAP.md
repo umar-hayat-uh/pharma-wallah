@@ -142,7 +142,8 @@ pages, confirm progress tracking records a visit, then batch the rest.
     default) or all of them — both are on screen as a labelled switch.
   - ✅ 2026-10-08: **Drug Stability Kinetics Calculator** (`stability-kinetics-calculator`) — the
     Procaine HCl / 50 °C practical: absorbance → % remaining, zero/first/second-order regressions,
-    order by highest R², k, t½ and t90 (C₀ = 100 %), four graphs, Steps 1–10 lab record, 23 unit tests.
+    order by highest R², k, t½ and t90 (C₀ = 100 %), four graphs, Graph Analysis card, residuals, Steps 1–10
+    lab record, opens pre-filled with the practical, 26 unit tests.
     Registered on the hub (Pharmaceutics) and in the Android catalogue → **106 directories, 100 hub
     entries (95 unique)**.
   - Delete the dead legacy registry `src/app/api/calculators.tsx` (419 lines, zero importers).
@@ -160,7 +161,10 @@ pages, confirm progress tracking records a visit, then batch the rest.
     "Suspected maths issues". **Owner decision: this is logic work, not migration.**
 - **Important files:** `src/app/(site)/calculation-tools/tool-index.ts`, `(tools)/<slug>/page.tsx`, `src/app/clinical/dose-calculators/page.tsx`
 - **Dependencies:** —
-- **Notes:** Adding a directory does **not** add a card on the web hub (`tool-index.ts` lists 93 of 104). Every tool carries the educational disclaimer from the `(tools)` layout (web) and `MobileShell` (APK) since 2026-09-13.
+- **Notes:** ✅ 2026-10-08: a universal **how-to-use guide** (`src/components/calculator-guide/`, web
+  `/calculation-tools/how-to-use`, app `/how-to-use/`) linked from the hub, every tool, the header and the
+  app. Its copy depends on measured kit behaviour (MEMORY 190) — re-check it when the kit changes.
+  Adding a directory does **not** add a card on the web hub (`tool-index.ts` lists 95 of 106). Every tool carries the educational disclaimer from the `(tools)` layout (web) and `MobileShell` (APK) since 2026-09-13.
   Registry + category are both required. Six tools are intentionally clinical-hub-only, not
   orphans. **The Android app consumes these same files** — keep every tool free of `@/` imports
   and `fetch`, or it breaks offline. See `.claude/skills/android-app-capacitor/SKILL.md`.
@@ -382,8 +386,9 @@ against the real Supabase project or with a real Resend send.
 ## Phase 4.5 — Android app ✅ (distribution in-repo; Play Store not started)
 
 ### Offline calculators APK (Capacitor)
-- **Status:** ✅ Released — **v1.3 (versionCode 4), 2026-09-16**, signed, published at
-  `public/downloads/pharmawallah-calculators.apk` (v1.1 2026-09-13, v1.2 2026-09-14 before it).
+- **Status:** ✅ Built — **v1.5 (versionCode 6), 2026-10-08**, signed with the same key, copied to
+  `public/downloads/pharmawallah-calculators.apk`: 106 calculators + the how-to-use guide. 🟡 **Not
+  deployed** until committed. (v1.4 2026-09-20, v1.3 2026-09-16, v1.1/v1.2 2026-09-13/14 before it.)
 - **Existing implementation:** `mobile/` — a second Next.js project root with `output: "export"`,
   containing all 104 calculators as generated one-line re-exports of the real tool files.
   `capacitor.config.ts` (`webDir: mobile/out`) + `android/` native project. ✅ 2026-09-16: home

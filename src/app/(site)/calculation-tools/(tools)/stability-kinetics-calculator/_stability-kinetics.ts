@@ -20,8 +20,10 @@
 import { toNumber } from "@/components/calculators/lab-math";
 import { duplicateIndexes, fail, linearFit, ok, type Checked, type LinearFit } from "@/components/calculators/lab-analysis/math";
 
-/** Three points is the least that makes R² mean anything: two always give R² = 1. */
-export const MIN_OBSERVATIONS = 3;
+/** A straight line needs two points; the practical needs more, which is warned about below. */
+export const MIN_OBSERVATIONS = 2;
+/** Fewer than this and the R² comparison is flagged as weak. */
+export const RECOMMENDED_OBSERVATIONS = 4;
 export const MAX_OBSERVATIONS = 30;
 
 /** C₀ when the data are expressed as % remaining — the practical's convention. */
@@ -31,16 +33,108 @@ export const LN2_SHEET = 0.693;
 export const T90_FIRST_ORDER = 0.10536;
 /** Below this R² gap the plots are reported as barely distinguishable. */
 export const CLOSE_R2_MARGIN = 0.01;
+/** R² values closer than this are a tie (floating-point noise, e.g. two points fit every line exactly). */
+const R2_TIE = 1e-12;
 
 export type Order = "zero" | "first" | "second";
 export const ORDERS: Order[] = ["zero", "first", "second"];
 
+/* ─── Kinetic models ─────────────────────────────────────────────────────── */
+
+/**
+ * Everything order-specific in one place: what is plotted against time, how k
+ * comes from the slope, its unit, and t½ / t90 with C₀ = 100 %. The analysis,
+ * the graphs and the worked steps all read from here, so a model cannot be
+ * described one way and calculated another.
+ */
+export type KineticModel = {
+  order: Order;
+  label: string;
+  /** The plot, as the comparison table names it. */
+  plot: string;
+  /** The integrated rate law. */
+  law: string;
+  /** y axis quantity. */
+  yLabel: string;
+  /** y written into an equation. */
+  ySymbol: string;
+  /** % remaining → the plotted y. Defined for % > 0 (checked before this is called). */
+  transform: (percent: number) => number;
+  /** k from the fitted slope. */
+  kFromSlope: (slope: number) => number;
+  kRule: string;
+  kUnit: (timeUnit: string) => string;
+  halfLife: (k: number) => number;
+  halfLifeFormula: string[];
+  t90: (k: number) => number;
+  t90Formula: string[];
+};
+
+export const KINETIC_MODELS: Record<Order, KineticModel> = {
+  zero: {
+    order: "zero",
+    label: "Zero",
+    plot: "% Remaining vs Time",
+    law: "C = C₀ − kt",
+    yLabel: "% Drug Remaining",
+    ySymbol: "%R",
+    transform: (p) => p,
+    kFromSlope: (slope) => -slope,
+    kRule: "k = −slope",
+    kUnit: (t) => `% ${t}⁻¹`,
+    halfLife: (k) => C0_PERCENT / (2 * k),
+    halfLifeFormula: ["t½ = C₀ / 2k", `t½ = ${C0_PERCENT} / 2k`],
+    t90: (k) => (0.1 * C0_PERCENT) / k,
+    t90Formula: ["t90 = 0.10 C₀ / k", "t90 = 10 / k"],
+  },
+  first: {
+    order: "first",
+    label: "First",
+    plot: "ln(% Remaining) vs Time",
+    law: "ln C = ln C₀ − kt",
+    yLabel: "ln(% Drug Remaining)",
+    ySymbol: "ln(%R)",
+    transform: (p) => Math.log(p),
+    kFromSlope: (slope) => -slope,
+    kRule: "k = −slope",
+    kUnit: (t) => `${t}⁻¹`,
+    halfLife: (k) => LN2_SHEET / k,
+    halfLifeFormula: [`t½ = ${LN2_SHEET} / k`],
+    t90: (k) => T90_FIRST_ORDER / k,
+    t90Formula: [`t90 = ${T90_FIRST_ORDER} / k`],
+  },
+  second: {
+    order: "second",
+    label: "Second",
+    plot: "1/% Remaining vs Time",
+    law: "1/C = 1/C₀ + kt",
+    yLabel: "1/(% Drug Remaining)",
+    ySymbol: "1/%R",
+    transform: (p) => 1 / p,
+    kFromSlope: (slope) => slope,
+    kRule: "k = slope",
+    kUnit: (t) => `%⁻¹ ${t}⁻¹`,
+    halfLife: (k) => 1 / (k * C0_PERCENT),
+    halfLifeFormula: ["t½ = 1 / (k C₀)", `t½ = 1 / (k × ${C0_PERCENT})`],
+    // 1/(90k) − 1/(100k), the sheet's form; it simplifies to 1/(900k).
+    t90: (k) => 1 / (k * 90) - 1 / (k * C0_PERCENT),
+    t90Formula: ["t90 = 1/(k × 90) − 1/(k × 100)"],
+  },
+};
+
 export const ORDER_LABEL: Record<Order, string> = { zero: "Zero", first: "First", second: "Second" };
 export const ORDER_PLOT: Record<Order, string> = {
-  zero: "% Remaining vs Time",
-  first: "ln(% Remaining) vs Time",
-  second: "1/% Remaining vs Time",
+  zero: KINETIC_MODELS.zero.plot,
+  first: KINETIC_MODELS.first.plot,
+  second: KINETIC_MODELS.second.plot,
 };
+
+/** k's unit for an order and time unit, as the practical writes it. */
+export function kUnit(order: Order, timeUnit: string): string {
+  return KINETIC_MODELS[order].kUnit(timeUnit);
+}
+
+/* ─── Types ──────────────────────────────────────────────────────────────── */
 
 export type ObservationCells = { time: string; absorbance: string };
 
@@ -62,6 +156,8 @@ export type ObservationRow = {
 export type OrderFit = {
   order: Order;
   fit: LinearFit;
+  /** y − ŷ for each point, in input order. */
+  residuals: number[];
   /** k from the slope: −slope for zero and first order, +slope for second. */
   k: number;
 };
@@ -69,7 +165,7 @@ export type OrderFit = {
 export type Derived = {
   order: Order;
   k: number;
-  /** Null with a reason when k ≤ 0 — no degradation, so no half-life. */
+  /** A reason instead of a value when k ≤ 0 — no degradation, so no half-life. */
   halfLife: Checked<number>;
   t90: Checked<number>;
 };
@@ -90,28 +186,15 @@ export type StabilityAnalysis = {
   /** R² of the best order minus the next best — how decisively it won. */
   margin: number | null;
   runnerUp: Order | null;
+  /** True when the best R² is shared with another order. */
+  tie: boolean;
   derived: Derived | null;
   warnings: string[];
 };
 
-/* ─── Units ──────────────────────────────────────────────────────────────── */
-
-/** k's unit for an order and time unit, as the practical writes it. */
-export function kUnit(order: Order, timeUnit: string): string {
-  if (order === "zero") return `% ${timeUnit}⁻¹`;
-  if (order === "first") return `${timeUnit}⁻¹`;
-  return `%⁻¹ ${timeUnit}⁻¹`;
-}
-
 /* ─── Half-life and shelf life ───────────────────────────────────────────── */
 
-/**
- * t½ and t90 for an order, with C₀ = 100 %.
- *
- *   zero:   t½ = C₀ / 2k          t90 = 0.10 C₀ / k
- *   first:  t½ = 0.693 / k        t90 = 0.10536 / k
- *   second: t½ = 1 / (k C₀)       t90 = 1/(90k) − 1/(100k) = 1 / (900k)
- */
+/** t½ and t90 for an order, with C₀ = 100 %. */
 export function deriveFromK(order: Order, k: number): Derived {
   if (!(k > 0)) {
     const why = k === 0
@@ -119,9 +202,8 @@ export function deriveFromK(order: Order, k: number): Derived {
       : `k is negative (${order === "second" ? "the slope is negative" : "the slope is positive"}): % drug remaining rises with time in this fit, which is not degradation. Check A₀ and the absorbance readings.`;
     return { order, k, halfLife: fail(why), t90: fail(why) };
   }
-  if (order === "zero") return { order, k, halfLife: ok(C0_PERCENT / (2 * k)), t90: ok((0.1 * C0_PERCENT) / k) };
-  if (order === "first") return { order, k, halfLife: ok(LN2_SHEET / k), t90: ok(T90_FIRST_ORDER / k) };
-  return { order, k, halfLife: ok(1 / (k * C0_PERCENT)), t90: ok(1 / (k * 90) - 1 / (k * C0_PERCENT)) };
+  const model = KINETIC_MODELS[order];
+  return { order, k, halfLife: ok(model.halfLife(k)), t90: ok(model.t90(k)) };
 }
 
 /**
@@ -153,7 +235,7 @@ export function analyseStability(
   const cellErrors: Record<string, string> = {};
   const warnings: string[] = [];
   const blocking: string[] = [];
-  const empty = { fits: null, best: null, margin: null, runnerUp: null, derived: null, rows: null };
+  const empty = { fits: null, best: null, margin: null, runnerUp: null, tie: false, derived: null, rows: null };
 
   // ── Reference absorbance ──
   const a0 = toNumber(a0Raw);
@@ -182,7 +264,7 @@ export function analyseStability(
     if (row.absorbance.trim() === "") {
       if (show) cellErrors[`${index}:absorbance`] = "Required.";
     } else if (absorbance === null) cellErrors[`${index}:absorbance`] = "Enter a number.";
-    // ln(% remaining) and 1/% remaining both need a positive value.
+    // A zero or negative absorbance is zero or negative % remaining: ln and 1/x are undefined there.
     else if (absorbance <= 0) cellErrors[`${index}:absorbance`] = "Must be greater than zero — ln and 1/x of % remaining need a positive value.";
 
     if (time !== null && time >= 0 && absorbance !== null && absorbance > 0) {
@@ -192,7 +274,7 @@ export function analyseStability(
   });
 
   if (observations.length < MIN_OBSERVATIONS) {
-    blocking.push(`At least ${MIN_OBSERVATIONS} time points are needed — with two, every straight line fits perfectly (R² = 1) and the orders cannot be compared.`);
+    blocking.push(`At least ${MIN_OBSERVATIONS} time points are needed to fit a straight line.`);
   }
 
   const complete =
@@ -213,12 +295,21 @@ export function analyseStability(
       time,
       absorbance: absorbances[index],
       percent,
-      lnPercent: Math.log(percent),
-      inversePercent: 1 / percent,
+      lnPercent: KINETIC_MODELS.first.transform(percent),
+      inversePercent: KINETIC_MODELS.second.transform(percent),
     };
   });
 
   // ── Data checks that do not stop the calculation, but must not pass silently ──
+  if (rows.length === 2) {
+    warnings.push(
+      "Only two time points: any two points lie exactly on a straight line, so all three plots give R² = 1 and the order cannot be told apart. Add more observations before reporting an order.",
+    );
+  } else if (rows.length < RECOMMENDED_OBSERVATIONS) {
+    warnings.push(
+      `Only ${rows.length} time points. A straight line can be fitted, but the R² comparison is more reliable with more experimental observations.`,
+    );
+  }
   const duplicates = duplicateIndexes(times);
   if (duplicates.length > 0) {
     warnings.push(
@@ -233,19 +324,16 @@ export function analyseStability(
   }
 
   // ── The three linearised fits ──
-  const series: Record<Order, number[]> = {
-    zero: rows.map((r) => r.percent),
-    first: rows.map((r) => r.lnPercent),
-    second: rows.map((r) => r.inversePercent),
-  };
   const fits = ORDERS.map((order) => {
-    const fitted = linearFit(rows.map((r, i) => ({ x: r.time, y: series[order][i] })));
+    const model = KINETIC_MODELS[order];
+    const ys = rows.map((r) => model.transform(r.percent));
+    const fitted = linearFit(rows.map((r, i) => ({ x: r.time, y: ys[i] })));
     if (!fitted.ok) return { order, result: fail<OrderFit>(fitted.error) };
     if (fitted.value.r2 === null) {
       return { order, result: fail<OrderFit>("Every value on this plot is the same, so SST = 0 and R² is undefined — no degradation was measured.") };
     }
-    const k = order === "second" ? fitted.value.slope : -fitted.value.slope;
-    return { order, result: ok<OrderFit>({ order, fit: fitted.value, k }) };
+    const residuals = ys.map((y, i) => y - fitted.value.predicted[i]);
+    return { order, result: ok<OrderFit>({ order, fit: fitted.value, residuals, k: model.kFromSlope(fitted.value.slope) }) };
   });
 
   const usable = fits.flatMap((f) => (f.result.ok ? [f.result.value] : []));
@@ -254,13 +342,20 @@ export function analyseStability(
     return { cellErrors, a0Error, temperatureError, blocking: [reason], a0, warnings, ...empty, rows };
   }
 
-  // Highest R² wins. Sorting is stable, so an exact tie keeps the lower order.
-  const ranked = [...usable].sort((a, b) => (b.fit.r2 as number) - (a.fit.r2 as number));
+  // Highest R² wins. R² within R2_TIE of each other count as equal, and the
+  // sort is stable, so a tie keeps the lower order — and is reported as a tie.
+  const r2 = (f: OrderFit) => f.fit.r2 as number;
+  const ranked = [...usable].sort((a, b) => (Math.abs(r2(b) - r2(a)) < R2_TIE ? 0 : r2(b) - r2(a)));
   const best = ranked[0];
   const runnerUp = ranked[1] ?? null;
-  const margin = runnerUp ? (best.fit.r2 as number) - (runnerUp.fit.r2 as number) : null;
+  const margin = runnerUp ? Math.max(0, r2(best) - r2(runnerUp)) : null;
+  const tie = margin !== null && margin < R2_TIE;
 
-  if (runnerUp && margin !== null && margin < CLOSE_R2_MARGIN) {
+  if (tie && runnerUp && rows.length > 2) {
+    warnings.push(
+      `${ORDER_LABEL[best.order]} and ${ORDER_LABEL[runnerUp.order].toLowerCase()} order have the same R², so the data cannot decide between them. ${ORDER_LABEL[best.order]} order is shown first by convention, not because it fits better.`,
+    );
+  } else if (!tie && runnerUp && margin !== null && margin < CLOSE_R2_MARGIN) {
     warnings.push(
       `${ORDER_LABEL[best.order]} and ${ORDER_LABEL[runnerUp.order].toLowerCase()} order fit almost equally well (R² differs by ${margin.toFixed(4)}). The order is chosen by the highest R², as the practical requires, but the data do not separate the two models strongly — more time points, or degradation followed further, would.`,
     );
@@ -271,11 +366,17 @@ export function analyseStability(
 
   return {
     cellErrors, a0Error, temperatureError, blocking, a0, rows, fits, best,
-    margin, runnerUp: runnerUp?.order ?? null, derived, warnings,
+    margin, runnerUp: runnerUp?.order ?? null, tie, derived, warnings,
   };
 }
 
 /* ─── Interpretation ─────────────────────────────────────────────────────── */
+
+/** The fixed accelerated-estimate statement, in the practical's own words. */
+export function shelfLifeDisclaimer(drug: string, temperature: string): string {
+  const at = temperature ? `${temperature}°C` : "test-temperature";
+  return `This t90 represents an experimental degradation estimate under the specified ${at} laboratory conditions and should NOT be interpreted as the actual labeled shelf life or recommended storage stability of ${drug}.`;
+}
 
 /**
  * The practical's conclusion, filled in from the numbers. The last sentence is
@@ -302,13 +403,13 @@ export function interpretation({
   /** Whether % remaining fell from the first to the last reading. */
   falling: boolean;
 }): string[] {
-  const at = temperature ? `At ${temperature} °C` : "Under the test conditions";
+  const at = temperature ? `At ${temperature}°C` : "Under the test conditions";
   return [
-    `${at}, the % drug remaining of ${drug} ${falling ? "decreases with increasing time, indicating degradation of the drug" : "does not fall from the first reading to the last, so this data set shows no clear degradation"}. The reaction order is determined by comparing the linearity (R²) of zero-, first- and second-order kinetic plots; the model with the highest R² is taken as the best-fit kinetic order.`,
+    `${at}, the % drug remaining of ${drug} ${falling ? "decreases with increasing time, indicating degradation of the drug" : "does not fall from the first reading to the last, so this data set shows no clear degradation"}. The reaction order is determined by comparing the linearity (R²) of zero-, first-, and second-order kinetic plots.`,
     `The experimentally determined order is ${ORDER_LABEL[order].toLowerCase()} order with R² = ${r2}.`,
-    `${at}, the calculated rate constant is k = ${rateConstant}.`,
+    `${at}, the calculated rate constant is ${rateConstant}.`,
     `The estimated half-life is ${halfLife}.`,
     `The estimated shelf life (t90) is ${t90}.`,
-    `These values are an experimental, accelerated-degradation estimate at ${temperature ? `${temperature} °C` : "the test temperature"}. They are not the labelled shelf life of ${drug}, which is set from long-term studies at the recommended storage condition.`,
+    shelfLifeDisclaimer(drug, temperature),
   ];
 }

@@ -2,7 +2,7 @@ import React from "react";
 import {
   Pill, FlaskConical, Stethoscope, Microscope, Beaker, BookOpen, TestTube,
   ShoppingCart, FileSearch, ShieldAlert, Atom, ListChecks, Layers, Library, Search,
-  Scale, Activity, HeartPulse, Syringe, FlaskRound,
+  Scale, Activity, HeartPulse, Syringe, FlaskRound, CircleHelp,
 } from "lucide-react";
 
 /*
@@ -36,6 +36,7 @@ export const SUBMENU_ICONS: Record<string, React.ReactNode> = {
   "Microbiology": <Syringe className="w-5 h-5" />,
   "Pharmaceutical Engineering": <FlaskRound className="w-5 h-5" />,
   "Clinical & Hospital Pharmacy": <Stethoscope className="w-5 h-5" />,
+  "How to use the calculators": <CircleHelp className="w-5 h-5" />,
 };
 
 export const SUBMENU_COLORS: Record<string, { icon: string; bg: string; ring: string }> = {
@@ -61,6 +62,7 @@ export const SUBMENU_COLORS: Record<string, { icon: string; bg: string; ring: st
   "Microbiology": { icon: "text-lime-500", bg: "from-lime-50 to-lime-100/40", ring: "group-hover:border-lime-200" },
   "Pharmaceutical Engineering": { icon: "text-orange-500", bg: "from-orange-50 to-orange-100/40", ring: "group-hover:border-orange-200" },
   "Clinical & Hospital Pharmacy": { icon: "text-emerald-500", bg: "from-emerald-50 to-emerald-100/40", ring: "group-hover:border-emerald-200" },
+  "How to use the calculators": { icon: "text-blue-500", bg: "from-blue-50 to-blue-100/40", ring: "group-hover:border-blue-200" },
 };
 
 export const SUBMENU_DESCRIPTIONS: Record<string, string> = {
@@ -86,5 +88,6 @@ export const SUBMENU_DESCRIPTIONS: Record<string, string> = {
   "Microbiology": "Microbial quantification & sterilization calculations",
   "Pharmaceutical Engineering": "Heat transfer, fluid dynamics & scale-up",
   "Clinical & Hospital Pharmacy": "Patient dosing, renal/hepatic adjustments & clinical tools",
+  "How to use the calculators": "A step-by-step guide to entering values, units and reading results",
 };
 

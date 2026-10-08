@@ -76,3 +76,6 @@ android/keystore.properties
 # icons); target/ is hundreds of MB of compiler output.
 /src-tauri/target/
 /src-tauri/gen/
+
+# Ad videos and their kit live outside the repo (~/personal/pharmawallah-marketing); never commit them.
+/marketing/video/

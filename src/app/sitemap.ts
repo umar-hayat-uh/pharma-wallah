@@ -18,6 +18,7 @@ import { semesterToSlug, subjectToSlug } from "@/lib/mcq-utils";
 const STATIC_PATHS = [
   "/",
   "/calculation-tools",
+  "/calculation-tools/how-to-use",
   "/courses",
   "/mcqs-bank",
   "/flash-cards",

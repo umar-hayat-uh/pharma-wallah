@@ -23,6 +23,8 @@ const CONTENT = [
   // without these globs their classes never reach the APK's stylesheet.
   "./src/components/ui/**/*.{js,ts,jsx,tsx,mdx}",
   "./src/components/calculators/**/*.{js,ts,jsx,tsx,mdx}",
+  // The "How to use the calculators" guide, shared with the website.
+  "./src/components/calculator-guide/**/*.{js,ts,jsx,tsx,mdx}",
 ];
 
 for (const dir of [
@@ -30,6 +32,7 @@ for (const dir of [
   "./src/app/(site)/calculation-tools",
   "./src/components/ui",
   "./src/components/calculators",
+  "./src/components/calculator-guide",
 ]) {
   if (!existsSync(dir)) {
     throw new Error(

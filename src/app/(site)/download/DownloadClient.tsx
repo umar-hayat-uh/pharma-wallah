@@ -43,7 +43,7 @@ export type PlatformFile = { href: string; size: string } | null;
  *   Windows — `version` in src-tauri/tauri.conf.json
  * Sizes are NOT here on purpose; they are measured from the file (see page.tsx).
  */
-const ANDROID_VERSION = "1.4";
+const ANDROID_VERSION = "1.5";
 const WINDOWS_VERSION = "1.0.0";
 
 /**

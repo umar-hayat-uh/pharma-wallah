@@ -202,10 +202,42 @@ test("zero, negative or non-numeric absorbance is a cell error, not NaN", () => 
   }
 });
 
-test("fewer than three time points cannot be compared", () => {
-  const a = analyse(SHEET.slice(0, 2));
-  assert.ok(a.blocking.length > 0);
-  assert.equal(a.best, null);
+test("one time point cannot be fitted; two can, with a warning that every model ties at R² = 1", () => {
+  const one = analyse(SHEET.slice(0, 1));
+  assert.ok(one.blocking.length > 0);
+  assert.equal(one.best, null);
+  const two = analyse(SHEET.slice(0, 2));
+  assert.ok(two.best);
+  assert.ok(two.tie);
+  assert.equal(two.best!.order, "zero", "a tie keeps the lowest order");
+  assert.ok(two.warnings.some((w) => w.includes("Only two time points")));
+});
+
+test("three points calculate but warn that more observations are more reliable", () => {
+  const a = analyse(SHEET.slice(0, 3));
+  assert.ok(a.best);
+  assert.ok(a.warnings.some((w) => w.includes("more reliable")));
+  assert.ok(!analyse().warnings.some((w) => w.includes("more reliable")));
+});
+
+test("residuals are y − ŷ and their squares sum to SSE", () => {
+  for (const order of ["zero", "first", "second"] as const) {
+    const f = fitOf(analyse(), order);
+    const sse = f.residuals.reduce((s, e) => s + e * e, 0);
+    close(sse, f.fit.sse, 1e-9);
+    f.residuals.forEach((e, i) => {
+      const y = M.KINETIC_MODELS[order].transform(analyse().rows![i].percent);
+      close(e, y - f.fit.predicted[i], 1e-12);
+    });
+  }
+});
+
+test("the kinetic model definitions carry the practical's k rules and t½/t90 forms", () => {
+  assert.equal(M.KINETIC_MODELS.zero.kFromSlope(-2), 2);
+  assert.equal(M.KINETIC_MODELS.first.kFromSlope(-0.02), 0.02);
+  assert.equal(M.KINETIC_MODELS.second.kFromSlope(0.0003), 0.0003);
+  close(M.KINETIC_MODELS.zero.halfLife(2), 25);
+  close(M.KINETIC_MODELS.zero.t90(2), 5);
 });
 
 test("empty fields are only reported once Calculate has been pressed", () => {
@@ -245,5 +277,6 @@ test("the interpretation fills in the numbers and states it is an accelerated es
   assert.ok(lines[0].includes("decreases with increasing time"));
   assert.ok(lines[1].includes("zero order with R² = 0.9927"));
   assert.ok(lines.some((l) => l.includes("8.839 min")));
-  assert.ok(lines[lines.length - 1].includes("not the labelled shelf life"));
+  assert.ok(lines[lines.length - 1].includes("should NOT be interpreted as the actual labeled shelf life"));
+  assert.ok(lines[lines.length - 1].includes("50°C"));
 });

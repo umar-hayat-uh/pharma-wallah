@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Smartphone, TriangleAlert } from "lucide-react";
+import { ArrowRight, BookOpen, Smartphone, TriangleAlert } from "lucide-react";
 import { BRAND_SURFACE, Eyebrow, FigureRow, PageHero } from "@/components/page-kit";
 import HubCatalogue from "./HubCatalogue";
 import { HUB_SUBJECTS, HUB_TOOL_COUNT, START_HERE, findTool, toolHref } from "./tool-index";
@@ -42,13 +42,24 @@ export default function CalculationToolsPage() {
           </>
         }
         actions={
-          <p className="flex max-w-xl items-start gap-2.5 text-sm leading-relaxed text-[#16181d]/62">
-            <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-[#b45309]" aria-hidden="true" />
-            <span>
-              <strong className="font-semibold text-[#16181d]">Educational use only.</strong> Built for study and
-              reference — not for making clinical decisions.
-            </span>
-          </p>
+          <div className="space-y-4">
+            <Link
+              href="/calculation-tools/how-to-use"
+              prefetch={false}
+              className="group inline-flex h-11 items-center gap-2.5 rounded-xl border border-[#16181d]/15 bg-white px-4 text-[15px] font-semibold text-[#16181d] transition-colors duration-300 hover:border-[#1C7BD9]/40 hover:text-[#1C7BD9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1C7BD9]"
+            >
+              <BookOpen className="h-4 w-4" aria-hidden="true" />
+              New here? How to use the calculators
+              <ArrowRight className="h-4 w-4 transition-transform duration-500 ease-out-expo group-hover:translate-x-0.5" aria-hidden="true" />
+            </Link>
+            <p className="flex max-w-xl items-start gap-2.5 text-sm leading-relaxed text-[#16181d]/62">
+              <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-[#b45309]" aria-hidden="true" />
+              <span>
+                <strong className="font-semibold text-[#16181d]">Educational use only.</strong> Built for study and
+                reference — not for making clinical decisions.
+              </span>
+            </p>
+          </div>
         }
         aside={<StartHere />}
         meta={

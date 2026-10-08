@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { ArrowLeft, Smartphone } from "lucide-react";
+import { ArrowLeft, CircleHelp, Smartphone } from "lucide-react";
 import { AdSlot } from "@/components/calculators/AdSlot";
 import { CalcDisclaimer } from "@/components/calculators/CalcDisclaimer";
 import { Button } from "@/components/ui/button";
@@ -87,6 +87,13 @@ export default function CalculatorToolsLayout({
               <Link href="/calculation-tools">
                 <ArrowLeft />
                 All calculators
+              </Link>
+            </Button>
+            {/* One guide for every tool (src/components/calculator-guide). */}
+            <Button asChild variant="outline" size="sm" className="h-10 px-4">
+              <Link href="/calculation-tools/how-to-use">
+                <CircleHelp />
+                How to use
               </Link>
             </Button>
             <Button asChild variant="outline" size="sm" className="h-10 px-4">

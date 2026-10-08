@@ -368,7 +368,8 @@ export function ChartPanel({
   className,
   heightClass = "h-72 sm:h-[22rem]",
 }: {
-  title: string;
+  /** Usually text; a node lets a tool add a badge (e.g. "Best fit") beside it. */
+  title: React.ReactNode;
   children: React.ReactElement;
   footer?: React.ReactNode;
   className?: string;

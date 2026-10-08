@@ -35,6 +35,7 @@ export const headerData: HeaderItem[] = [
       { label: "Microbiology",                          href: "/calculation-tools#microbiology" },
       { label: "Pharmaceutical Engineering",            href: "/calculation-tools#pharmaceutical-engineering" },
       { label: "Clinical & Hospital Pharmacy",          href: "/calculation-tools#clinical-hospital-pharmacy" },
+      { label: "How to use the calculators",            href: "/calculation-tools/how-to-use" },
     ],
   },
   { label: "Community", href: "/community" },
