@@ -51,7 +51,7 @@ const hand = Caveat({
  *   Hero        a headline whose last word cycles, a taped-up worked example
  *   Battle      Battle Royale's live podium, while the event is current
  *   Tape        the platform's figures on a running readout
- *   Index       SIGNATURE — six pillars; a highlighter swipes the active row
+ *   Index       SIGNATURE — five pillars; a highlighter swipes the active row
  *   Instrument  the tool count, counted up and ringed in red marker; one ruler tick per tool
  *   Offline     the Android app, with its real home screen drawn in markup
  *   Close       "Begin anywhere."

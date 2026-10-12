@@ -16,10 +16,12 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     ModeSwitch,
     type ModeOption,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type KineticsType = "first-order" | "zero-order" | "mixed" | "comparison";
 type SeriesKey = "First-Order" | "Zero-Order" | "Mixed";
@@ -438,6 +440,8 @@ export default function KineticsCalculator() {
                     first-order. When C is much larger than Km, it approaches Vmax — zero-order.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

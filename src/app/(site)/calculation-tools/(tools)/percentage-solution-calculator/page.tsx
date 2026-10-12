@@ -16,10 +16,12 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     ModeSwitch,
     LabNotice,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type PercentType = "wv" | "vv" | "ww";
 type SolveFor = "solute" | "solvent" | "solution" | "percentage";
@@ -528,6 +530,8 @@ export default function PercentageSolutionCalculator() {
                     for w/w).
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

@@ -15,10 +15,12 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     TextField,
     type ResultTone,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type ConcentrationUnit = "w/v%" | "mg/mL" | "mM";
 type Category = "drug" | "preservative" | "buffer" | "other";
@@ -415,6 +417,8 @@ export default function IsotonicityCalculator() {
                     sodium chloride in proportion to its E-value (e.g. dextrose: NaCl to add ÷ 0.18).
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

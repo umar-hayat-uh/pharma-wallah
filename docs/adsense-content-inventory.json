@@ -1,0 +1,2576 @@
+{
+  "summary": {
+    "generated": "2026-10-12",
+    "calculators": 106,
+    "linkedFromHub": 95,
+    "withWorkedExample": 21,
+    "withReferences": 21,
+    "withRecordedFaults": 54,
+    "lessons": 22,
+    "guides": 5
+  },
+  "calculators": [
+    {
+      "slug": "AccumulationIndexCalculator",
+      "url": "/calculation-tools/AccumulationIndexCalculator",
+      "name": "Accumulation Index Calculator",
+      "subjects": [
+        "Biopharmaceutics & Pharmacokinetics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 250,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "AnionGapCalculator",
+      "url": "/calculation-tools/AnionGapCalculator",
+      "name": "Anion Gap Calculator",
+      "subjects": [
+        "Clinical & Hospital Pharmacy"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 324,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "AnionGapCalculator: interpretation low <6 / elevated >12 contradicts page's own normal 8–12; \"Elevated AG metabolic acidosis\" printed without checking bicarbonate."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "AntagonismSimulator",
+      "url": "/calculation-tools/AntagonismSimulator",
+      "name": "Antagonism Simulator",
+      "subjects": [],
+      "linkedFromHub": false,
+      "pageLines": 428,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "Non-competitive `1 − [B]/([B]+KdB)` and uncompetitive `KdB/(KdB+[B])` are algebraically identical → both modes return the same number. True uncompetitive antagonism also shifts EC₅₀ left; not modelled."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "CorrectedCalciumCalculator",
+      "url": "/calculation-tools/CorrectedCalciumCalculator",
+      "name": "Corrected Calcium Calculator",
+      "subjects": [
+        "Clinical & Hospital Pharmacy"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 242,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "DValueCalculator",
+      "url": "/calculation-tools/DValueCalculator",
+      "name": "D-Value Calculator",
+      "subjects": [
+        "Microbiology"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 322,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "DensityConversionCalculator",
+      "url": "/calculation-tools/DensityConversionCalculator",
+      "name": "Weight/Volume Conversion Calculator (Density-Based)",
+      "subjects": [
+        "Unit Conversion"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 410,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "ElectrolyteConversionCalculator",
+      "url": "/calculation-tools/ElectrolyteConversionCalculator",
+      "name": "mmol ↔ mEq ↔ mg Calculator",
+      "subjects": [
+        "Unit Conversion"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 389,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "EmaxModelCalculator",
+      "url": "/calculation-tools/EmaxModelCalculator",
+      "name": "Emax Model Calculator",
+      "subjects": [],
+      "linkedFromHub": false,
+      "pageLines": 333,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "EmaxModelCalculator: bands compare absolute effect with fixed 50/80% instead of half the entered Emax (Emax 80 at C = EC₅₀ → \"Below EC₅₀\"); curves capped at 100%; Hill n ≤ 0 accepted."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "FValueCalculator",
+      "url": "/calculation-tools/FValueCalculator",
+      "name": "F-Value Calculator",
+      "subjects": [
+        "Microbiology"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 315,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "GeriatricDosingCalculator",
+      "url": "/calculation-tools/GeriatricDosingCalculator",
+      "name": "Geriatric Dosing & Safety Calculator",
+      "subjects": [],
+      "linkedFromHub": false,
+      "pageLines": 572,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "**GeriatricDosingCalculator:** renal rule text says min(1, CrCl/100) but dose floors at 0.2 (<CrCl 20 mismatch), frailty floor 0.15; 33% rule uses 0.333; blank age → 65, age > 140 → negative CrCl silently clamped; digoxi"
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "HeatOfNeutralizationCalculator",
+      "url": "/calculation-tools/HeatOfNeutralizationCalculator",
+      "name": "Heat Of Neutralization Calculator",
+      "subjects": [
+        "Pharmaceutical Chemistry"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 383,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "HeatOfNeutralizationCalculator: molar ΔH = +ΔQ/n (positive for warming) vs reference table's −57.9 convention; at ΔQ = 0 \"Exothermic\" + \"heat absorbed\"."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "InsulinSensitivityCalculator",
+      "url": "/calculation-tools/InsulinSensitivityCalculator",
+      "name": "Insulin Sensitivity Calculator",
+      "subjects": [
+        "Clinical & Hospital Pharmacy"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 665,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "InsulinSensitivityCalculator: \"Calculates ~X units\" TDD preview ignores lb (180 lb → ~126 vs correct 57.2 when applied)."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "LogReductionCalculator",
+      "url": "/calculation-tools/LogReductionCalculator",
+      "name": "Log Reduction Calculator",
+      "subjects": [
+        "Microbiology"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 326,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "LogReductionCalculator: \"≥5 log meets sterilization\" contradicts page's own 6-log figure."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "MassConversionCalculator",
+      "url": "/calculation-tools/MassConversionCalculator",
+      "name": "Mass Conversion Calculator",
+      "subjects": [
+        "Unit Conversion"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 385,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "MeanResidenceTimeCalculator",
+      "url": "/calculation-tools/MeanResidenceTimeCalculator",
+      "name": "Mean Residence Time Calculator",
+      "subjects": [
+        "Biopharmaceutics & Pharmacokinetics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 263,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "OpioidConversionCalculator",
+      "url": "/calculation-tools/OpioidConversionCalculator",
+      "name": "Opioid Conversion Calculator",
+      "subjects": [],
+      "linkedFromHub": false,
+      "pageLines": 399,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "Transdermal fentanyl read as mg, not mcg/h: a 25 mcg/h patch → **2500 MME** (published equivalent ≈ 60 mg oral morphine/day). No cross-tolerance reduction anywhere.",
+        "**OpioidConversionCalculator:** fentanyl factor 100/mg with transdermal multiplier 1 and patch dose entered in \"mg\" → 25 → 2500 MME (code comment admits placeholder); methadone flat factor 4 (real ratio is dose-dependent"
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "OpioidMMECalculator",
+      "url": "/calculation-tools/OpioidMMECalculator",
+      "name": "Opioid MME & Equianalgesic Converter",
+      "subjects": [],
+      "linkedFromHub": false,
+      "pageLines": 571,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "Tramadol ×0.1 (CDC 2022: 0.2); oral hydromorphone ×4 (CDC 2022: 5). Rotating **to** a fentanyl patch divides the mcg/h rate by the dosing frequency, halving/quartering a continuous rate.",
+        "**OpioidMMECalculator:** tramadol factor 0.1 (CDC 2022: 0.2); oral hydromorphone 4.0 (CDC 2022: 5; the conversion tool uses 5); rotation TO fentanyl patch divides the 24 h mcg/hr target by a greyed-out frequency (default"
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "OsmolarGapCalculator",
+      "url": "/calculation-tools/OsmolarGapCalculator",
+      "name": "Osmolar Gap Calculator",
+      "subjects": [],
+      "linkedFromHub": false,
+      "pageLines": 370,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "OsmolarGapCalculator: none."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "SodiumCorrectionCalculator",
+      "url": "/calculation-tools/SodiumCorrectionCalculator",
+      "name": "Sodium Correction Calculator",
+      "subjects": [
+        "Clinical & Hospital Pharmacy"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 240,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "StrengthConversionCalculator",
+      "url": "/calculation-tools/StrengthConversionCalculator",
+      "name": "Strength Conversion Calculator",
+      "subjects": [
+        "Unit Conversion"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 458,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "TemperatureConversionCalculator",
+      "url": "/calculation-tools/TemperatureConversionCalculator",
+      "name": "Temperature Conversion Calculator",
+      "subjects": [
+        "Unit Conversion"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 382,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "VolumeConversionCalculator",
+      "url": "/calculation-tools/VolumeConversionCalculator",
+      "name": "Volume Conversion Calculator",
+      "subjects": [
+        "Unit Conversion"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 434,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "accuracy-recovery-calculator",
+      "url": "/calculation-tools/accuracy-recovery-calculator",
+      "name": "Accuracy & % Recovery Calculator",
+      "subjects": [
+        "Pharmaceutical Analysis"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 657,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": true,
+      "mistakes": 6,
+      "hasLimitations": true,
+      "references": [
+        "harris10",
+        "ichQ2R2",
+        "uspValidation"
+      ],
+      "linksGuide": true,
+      "recordedFaults": [],
+      "action": "meets standard"
+    },
+    {
+      "slug": "animal-dose",
+      "url": "/calculation-tools/animal-dose",
+      "name": "Animal Weight-Based Dose Calculator",
+      "subjects": [
+        "Pharmacology"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 347,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "Linear body-weight scaling, not allometric (BSA/Km). A mouse needs ≈12× the human mg/kg; this returns the same mg/kg by construction.",
+        "animal-dose: scales dose linearly by body weight (normalised mg/kg always = adult mg/kg) — standard human↔animal conversion uses BSA/Km factors (rodents ~6–12× more); formatter ignores requested decimals (≥1 → 3 dp; smal"
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "anti-coagulation-risk-calculator",
+      "url": "/calculation-tools/anti-coagulation-risk-calculator",
+      "name": "Anticoagulation Risk Calculator",
+      "subjects": [
+        "Clinical & Hospital Pharmacy"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 749,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "ash-value-calculator",
+      "url": "/calculation-tools/ash-value-calculator",
+      "name": "Ash Value Calculator",
+      "subjects": [
+        "Pharmaceutical Analysis"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 444,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "ash-value-calculator: W₃ < W₁ negative ash counts as \"within limits\"; pass/fail uses ≤15/5/20% while monograph limits are stricter (cellulose ≤0.5% → 2.00% \"passes\")."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "auc-estimator",
+      "url": "/calculation-tools/auc-estimator",
+      "name": "AUC Estimator",
+      "subjects": [
+        "Biopharmaceutics & Pharmacokinetics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 608,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "auc-estimator: unit selector relabels only (dose/CL mode \"ng·h/mL\" 1000× wrong); exposure bands ignore unit/drug; extrapolation from last two points only. OLD PAGE CRASHED on any edit (in-place sort of state) — fixed by "
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "bioavailability-calculator",
+      "url": "/calculation-tools/bioavailability-calculator",
+      "name": "Bioavailability Calculator",
+      "subjects": [
+        "Biopharmaceutics & Pharmacokinetics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 482,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": true,
+      "mistakes": 5,
+      "hasLimitations": true,
+      "references": [
+        "shargel8",
+        "rowland5"
+      ],
+      "linksGuide": true,
+      "recordedFaults": [
+        "bioavailability-calculator: dose estimate uses one textbook F per route; illustrative AUCs = dose × F × 0.5."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "bioequivalence-calculator",
+      "url": "/calculation-tools/bioequivalence-calculator",
+      "name": "Bioequivalence Calculator",
+      "subjects": [
+        "Biopharmaceutics & Pharmacokinetics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 469,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "bioequivalence-calculator: alpha select is ignored (z = 1.645 always). Uses arithmetic ratio + CV-derived SE, not log-transformed GMR with t; \"power\" = 100 − 2×CV. (Stale-state verdict bug that ignored Cmax on first load"
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "bmi-calculator",
+      "url": "/calculation-tools/bmi-calculator",
+      "name": "BMI Calculator",
+      "subjects": [
+        "Clinical & Hospital Pharmacy"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 574,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "bmi-calculator: healthy range + weight-change always WHO 18.5–24.9 even in Asian mode; IBW equations run below 60 in (Hamwi −7.7 kg at 100 cm) and AdjBW builds on it; lbs rounded to 0.1 kg before BMI."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "bsa-calculator",
+      "url": "/calculation-tools/bsa-calculator",
+      "name": "BSA Calculator",
+      "subjects": [
+        "Clinical & Hospital Pharmacy"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 684,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": true,
+      "mistakes": 6,
+      "hasLimitations": true,
+      "references": [
+        "mosteller1987",
+        "ansel16"
+      ],
+      "linksGuide": true,
+      "recordedFaults": [
+        "bsa-calculator: dose uses unrounded BSA, comparison table 3-dp BSA → 0.1 mg differences."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "calibration-curve-calculator",
+      "url": "/calculation-tools/calibration-curve-calculator",
+      "name": "Calibration Curve Calculator",
+      "subjects": [
+        "Pharmaceutical Analysis"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 495,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": true,
+      "mistakes": 6,
+      "hasLimitations": true,
+      "references": [
+        "harris10",
+        "ichQ2R2",
+        "uspValidation"
+      ],
+      "linksGuide": true,
+      "recordedFaults": [],
+      "action": "meets standard"
+    },
+    {
+      "slug": "cfu-calculator",
+      "url": "/calculation-tools/cfu-calculator",
+      "name": "Colony Counter & CFU Calculator",
+      "subjects": [
+        "Microbiology"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 114,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 6,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "cfu-calculator: \"CFU at different dilutions\" chart multiplies the same count by each dilution (doesn't match caption; breaks log scale at 0); message \"Too few colonies (>30)\" should be <30; \"Environmental air\" limits row"
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "child-pugh-calculator",
+      "url": "/calculation-tools/child-pugh-calculator",
+      "name": "Child-Pugh Calculator",
+      "subjects": [
+        "Clinical & Hospital Pharmacy"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 692,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "chromatographic-resolution-calculator",
+      "url": "/calculation-tools/chromatographic-resolution-calculator",
+      "name": "Chromatographic Resolution Calculator",
+      "subjects": [
+        "Pharmaceutical Analysis"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 382,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "clearance-calculator",
+      "url": "/calculation-tools/clearance-calculator",
+      "name": "Clearance Calculator",
+      "subjects": [
+        "Biopharmaceutics & Pharmacokinetics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 455,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": true,
+      "mistakes": 6,
+      "hasLimitations": true,
+      "references": [
+        "shargel8",
+        "rowland5"
+      ],
+      "linksGuide": true,
+      "recordedFaults": [
+        "clearance-calculator: per-kg always 70 kg; organ pie chart fixed illustrative numbers."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "combined-pka-suite",
+      "url": "/calculation-tools/combined-pka-suite",
+      "name": "Combined pKa Suite",
+      "subjects": [
+        "Pharmaceutical Chemistry"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 531,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "combined-pka-suite: ½(pKa − log C) shortcut gives pH 7–15 for very dilute acids; example bands contradict code bands; exactly 50% ionised reads \"Protonated\"; bases treated as acids."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "compressibility-index-calculator",
+      "url": "/calculation-tools/compressibility-index-calculator",
+      "name": "Compressibility Index Calculator",
+      "subjects": [
+        "Pharmaceutics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 401,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "compressibility-index-calculator: Hausner scale (<1.18 Excellent) contradicts table (1.00–1.11) and \"Target <1.25\"; \"USP ≤20% good\" vs Passable band at 20%."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "content-uniformity-calculator",
+      "url": "/calculation-tools/content-uniformity-calculator",
+      "name": "Content Uniformity Calculator",
+      "subjects": [
+        "Pharmaceutics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 481,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "creatinine-calculator",
+      "url": "/calculation-tools/creatinine-calculator",
+      "name": "Creatinine Calculator",
+      "subjects": [
+        "Clinical & Hospital Pharmacy"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 695,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "**creatinine-calculator:** CKD G-stage taken from Cockcroft-Gault CrCl, not eGFR (eGFR 44.7 labelled G3a because CrCl 57.7); dosing tiers (>50/30–50) misaligned with G bands; age ≥140 → negative CrCl (field warning added"
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "cumulative-drug-release-calculator",
+      "url": "/calculation-tools/cumulative-drug-release-calculator",
+      "name": "Cumulative Drug Release Calculator",
+      "subjects": [
+        "Pharmaceutics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 674,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "density-calculator",
+      "url": "/calculation-tools/density-calculator",
+      "name": "Density Calculator",
+      "subjects": [
+        "Pharmaceutics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 342,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "density-calculator: tapped mode subtracts a \"container volume\" (non-standard); bulk mode can print negative density (now flagged)."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "dialysis-diffusion-calculator",
+      "url": "/calculation-tools/dialysis-diffusion-calculator",
+      "name": "Dialysis Membrane / Diffusion Calculator",
+      "subjects": [
+        "Biopharmaceutics & Pharmacokinetics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 730,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "dilution-calculator",
+      "url": "/calculation-tools/dilution-calculator",
+      "name": "Dilution Calculator (C₁V₁ = C₂V₂)",
+      "subjects": [
+        "Pharmaceutical Chemistry"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 306,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": true,
+      "mistakes": 5,
+      "hasLimitations": true,
+      "references": [
+        "ansel16",
+        "martin8"
+      ],
+      "linksGuide": true,
+      "recordedFaults": [
+        "dilution-calculator: C₁/C₂ modes don't check V₂ ≥ V₁."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "dissolution-calculator",
+      "url": "/calculation-tools/dissolution-calculator",
+      "name": "Dissolution Calculator",
+      "subjects": [
+        "Pharmaceutics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 681,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": true,
+      "mistakes": 5,
+      "hasLimitations": true,
+      "references": [
+        "uspDissolution",
+        "fdaDissolution1997",
+        "aulton6"
+      ],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "meets standard"
+    },
+    {
+      "slug": "dissolution-rate-constant-calculator",
+      "url": "/calculation-tools/dissolution-rate-constant-calculator",
+      "name": "Dissolution Rate Constant Calculator",
+      "subjects": [
+        "Pharmaceutics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 815,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 6,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "dose-response-curve-generator",
+      "url": "/calculation-tools/dose-response-curve-generator",
+      "name": "Dose–Response Curve Generator",
+      "subjects": [
+        "Pharmacology"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 491,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "drug-excipient-compatibility-predictor",
+      "url": "/calculation-tools/drug-excipient-compatibility-predictor",
+      "name": "Drug–Excipient Compatibility Predictor",
+      "subjects": [
+        "Pharmaceutics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 463,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "drug-excipient-compatibility-predictor: only primary amines linked to lactose (secondary also Maillard); phenol oxidation advice missing; metals never paired with phenol/thiol."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "drug-half-life-calculator",
+      "url": "/calculation-tools/drug-half-life-calculator",
+      "name": "Drug Half-Life Calculator (Multiple Dose)",
+      "subjects": [],
+      "linkedFromHub": false,
+      "pageLines": 462,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "drug-half-life-calculator: kₑ rounded to 4 dp before other figures (t½ 2000 h → accumulation 139.39 vs ~120.8 unrounded); peak/trough are mg amounts not concentrations. (Decorative sawtooth replaced by a real chart from "
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "drug-receptor-binding-affinity-tool",
+      "url": "/calculation-tools/drug-receptor-binding-affinity-tool",
+      "name": "Drug–Receptor Binding Affinity Tool",
+      "subjects": [
+        "Pharmacology"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 511,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "drying-rate",
+      "url": "/calculation-tools/drying-rate",
+      "name": "Drying Rate Calculator",
+      "subjects": [
+        "Pharmaceutical Engineering"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 392,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "Phase is read from the **final** moisture content alone, not the critical moisture content. Accepts X₁ < X₂ and reports a negative drying rate."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "ed50-td50-ld50-calculator",
+      "url": "/calculation-tools/ed50-td50-ld50-calculator",
+      "name": "ED50 / TD50 / LD50 Calculator",
+      "subjects": [
+        "Pharmacology"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 454,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "`probitTransform` returns the upper-tail deviate for every p — p<0.5 lands above probit 5, **inverting the fitted slope** (real data → slope −2.25). χ² (222.71) and the CI inherit the error. `ed50 = ld50` (ED50 is the LD"
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "gfr-calculator",
+      "url": "/calculation-tools/gfr-calculator",
+      "name": "GFR Calculator",
+      "subjects": [
+        "Clinical & Hospital Pharmacy"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 489,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "half-life-calculator",
+      "url": "/calculation-tools/half-life-calculator",
+      "name": "Half-Life Calculator",
+      "subjects": [
+        "Biopharmaceutics & Pharmacokinetics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 424,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "half-life-calculator: concentration method double-converts time for minutes/days (6 min → 179.96 \"min\", should be 3.00); interpretation bands assume hours for any unit."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "heat-formation-calculator",
+      "url": "/calculation-tools/heat-formation-calculator",
+      "name": "Heat of Formation Calculator",
+      "subjects": [
+        "Pharmaceutical Chemistry"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 288,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "heat-formation-calculator: actually van't Hoff enthalpy of solution, not heat of formation; temps must be > 0 in entered unit (0 °C rejected); at ΔH = 0 badge \"Exothermic\" vs band \"endothermic\"."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "heat-transfer-area",
+      "url": "/calculation-tools/heat-transfer-area",
+      "name": "Heat Transfer Area Calculator",
+      "subjects": [
+        "Pharmaceutical Engineering"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 396,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "The W / BTU-h selector only relabels the ΔT field; the area is always Q/(U·ΔT) in SI and reported in m².",
+        "heat-transfer-area: W/BTU/h selector relabels only (no conversion; area always m²-banded); stale result after alert."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "isotonicity-calculator",
+      "url": "/calculation-tools/isotonicity-calculator",
+      "name": "Isotonicity Calculator",
+      "subjects": [
+        "Pharmaceutics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 450,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": true,
+      "mistakes": 5,
+      "hasLimitations": true,
+      "references": [
+        "ansel16",
+        "martin8",
+        "uspOsmolality"
+      ],
+      "linksGuide": true,
+      "recordedFaults": [
+        "isotonicity-calculator: mM conversion ×0.001 regardless of MW (150 mM = 0.15%); osmolality scaled from 0.9% not computed; alternatives = NaCl ÷ E."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "iv-drip-rate-calculator",
+      "url": "/calculation-tools/iv-drip-rate-calculator",
+      "name": "IV Drip Rate Calculator",
+      "subjects": [
+        "Clinical & Hospital Pharmacy"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 438,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": false,
+      "hasWorkedExample": true,
+      "mistakes": 5,
+      "hasLimitations": true,
+      "references": [
+        "ansel16"
+      ],
+      "linksGuide": true,
+      "recordedFaults": [],
+      "action": "meets standard"
+    },
+    {
+      "slug": "ke-calculator",
+      "url": "/calculation-tools/ke-calculator",
+      "name": "Ke Calculator",
+      "subjects": [
+        "Biopharmaceutics & Pharmacokinetics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 382,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": true,
+      "mistakes": 6,
+      "hasLimitations": true,
+      "references": [
+        "shargel8",
+        "rowland5"
+      ],
+      "linksGuide": true,
+      "recordedFaults": [],
+      "action": "meets standard"
+    },
+    {
+      "slug": "law-absorbance-calculator",
+      "url": "/calculation-tools/law-absorbance-calculator",
+      "name": "Beer-Lambert Law Calculator",
+      "subjects": [
+        "Pharmaceutical Analysis"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 415,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": true,
+      "mistakes": 6,
+      "hasLimitations": true,
+      "references": [
+        "harris10",
+        "iupacGoldBook"
+      ],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "meets standard"
+    },
+    {
+      "slug": "loading-dose-calculator",
+      "url": "/calculation-tools/loading-dose-calculator",
+      "name": "Loading Dose Calculator",
+      "subjects": [
+        "Biopharmaceutics & Pharmacokinetics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 354,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": true,
+      "mistakes": 5,
+      "hasLimitations": true,
+      "references": [
+        "rowland5",
+        "shargel8"
+      ],
+      "linksGuide": true,
+      "recordedFaults": [
+        "loading-dose-calculator: example Vd values are L/kg but used as total L (vancomycin 20×0.7 = 14 mg); weight-based dose always equals plain dose; \">5000 very large\" band unreachable (\">1000\" checked first); digoxin exampl"
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "maintenance-dose-calculator",
+      "url": "/calculation-tools/maintenance-dose-calculator",
+      "name": "Maintenance Dose Calculator",
+      "subjects": [
+        "Biopharmaceutics & Pharmacokinetics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 445,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": true,
+      "mistakes": 6,
+      "hasLimitations": true,
+      "references": [
+        "shargel8",
+        "rowland5"
+      ],
+      "linksGuide": true,
+      "recordedFaults": [
+        "maintenance-dose-calculator: without half-life, time-to-steady-state assumes Vd = 50 L for every drug; q8h classed \"Twice daily\" (≤12 band); several example Cl/targets implausible or mcg."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "mass-molarity-calculator",
+      "url": "/calculation-tools/mass-molarity-calculator",
+      "name": "Mass–Molarity Calculator",
+      "subjects": [
+        "Pharmaceutical Chemistry"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 248,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "master-formula-calculator",
+      "url": "/calculation-tools/master-formula-calculator",
+      "name": "Master Formula Calculator",
+      "subjects": [
+        "Pharmaceutics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 383,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "mg-ml-to-molarity-calculator",
+      "url": "/calculation-tools/mg-ml-to-molarity-calculator",
+      "name": "mg/mL ↔ Molarity Calculator",
+      "subjects": [
+        "Pharmaceutical Chemistry"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 231,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "mixing-time-estimator",
+      "url": "/calculation-tools/mixing-time-estimator",
+      "name": "Mixing Time Estimator",
+      "subjects": [
+        "Pharmaceutical Engineering"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 447,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "Speed is labelled rps and Re uses rps, but the time correlation multiplies by 60 as though rpm → **time 60× too long**."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "molarity-calculator",
+      "url": "/calculation-tools/molarity-calculator",
+      "name": "Molarity Calculator",
+      "subjects": [
+        "Pharmaceutical Chemistry"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 488,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": false,
+      "hasWorkedExample": true,
+      "mistakes": 5,
+      "hasLimitations": true,
+      "references": [
+        "iupacGoldBook",
+        "bipmSI",
+        "martin8"
+      ],
+      "linksGuide": true,
+      "recordedFaults": [
+        "molarity-calculator: blank sg/purity passes validation; 0% purity divides by zero; sg/purity checks block solid mode."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "molecular-weight-finder",
+      "url": "/calculation-tools/molecular-weight-finder",
+      "name": "Molecular Weight Finder",
+      "subjects": [
+        "Pharmaceutical Chemistry"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 521,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "**molecular-weight-finder:** \"10 mg\" quick calc is mmol labelled mol (1000×); parser rejects a count after a bracket (Ca(OH)2, (NH4)2SO4) and hydrate dots."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "normality-calculator",
+      "url": "/calculation-tools/normality-calculator",
+      "name": "Normality Calculator",
+      "subjects": [
+        "Pharmaceutical Chemistry"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 538,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "normality-calculator: invalid n/MW silently falls back to the last Eq.W; sg/purity checks block solids."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "order-kinetics-calculator",
+      "url": "/calculation-tools/order-kinetics-calculator",
+      "name": "First-Order vs Zero-Order Kinetics Tool",
+      "subjects": [
+        "Biopharmaceutics & Pharmacokinetics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 469,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": true,
+      "mistakes": 5,
+      "hasLimitations": true,
+      "references": [
+        "shargel8",
+        "rowland5",
+        "martin8"
+      ],
+      "linksGuide": true,
+      "recordedFaults": [
+        "order-kinetics-calculator: mixed-kinetics simulation steps coarsely over gaps up to 12 h → falls too fast."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "osmolality-calculators",
+      "url": "/calculation-tools/osmolality-calculators",
+      "name": "Osmolality Calculator",
+      "subjects": [
+        "Pharmaceutics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 572,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "Serum osmolar gap is `calculated − calculated` = **always 0** except in the ethanol mode; \"Measured Value\" mode returns the standard formula; urine \"Direct Input\" returns sodium × 2; urine:plasma ratio always divides by "
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "osmolarity-calculators",
+      "url": "/calculation-tools/osmolarity-calculators",
+      "name": "Osmolarity Calculator",
+      "subjects": [
+        "Pharmaceutics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 856,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "pH-pka-relationship-calculator",
+      "url": "/calculation-tools/pH-pka-relationship-calculator",
+      "name": "pH–pKa Calculator (Henderson–Hasselbalch)",
+      "subjects": [
+        "Pharmaceutical Chemistry"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 541,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "pH-pka-relationship-calculator: \"relative buffer capacity %\" peaks at 57.6%, not 100%."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "partition-coefficient-calculator",
+      "url": "/calculation-tools/partition-coefficient-calculator",
+      "name": "Partition / Distribution Coefficient Calculator",
+      "subjects": [
+        "Biopharmaceutics & Pharmacokinetics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 417,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "pedriatic-calculator",
+      "url": "/calculation-tools/pedriatic-calculator",
+      "name": "Pediatric Dose Calculator",
+      "subjects": [
+        "Clinical & Hospital Pharmacy"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 554,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "pedriatic-calculator: mg/kg mode always says \"Appropriate\" (even 0 mg); amoxicillin/prednisolone presets are mg/kg/DAY but field is single dose; diphenhydramine preset uses Young's rule despite 1.25 mg/kg note; Fried's r"
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "percent-purity-calculator",
+      "url": "/calculation-tools/percent-purity-calculator",
+      "name": "Percent Purity Calculator",
+      "subjects": [
+        "Pharmaceutical Analysis"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 366,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": true,
+      "mistakes": 6,
+      "hasLimitations": true,
+      "references": [
+        "beckettStenlake1",
+        "harris10"
+      ],
+      "linksGuide": false,
+      "recordedFaults": [
+        "percent-purity-calculator: original labelled W in mg but examples only work with W in g, E in g/mEq (label now says g; numbers same)."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "percentage-recovery-calculator",
+      "url": "/calculation-tools/percentage-recovery-calculator",
+      "name": "Percentage Recovery Calculator",
+      "subjects": [
+        "Pharmaceutical Analysis"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 604,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": true,
+      "mistakes": 5,
+      "hasLimitations": true,
+      "references": [
+        "ichQ2R2",
+        "uspValidation",
+        "ansel16"
+      ],
+      "linksGuide": true,
+      "recordedFaults": [],
+      "action": "meets standard"
+    },
+    {
+      "slug": "percentage-solution-calculator",
+      "url": "/calculation-tools/percentage-solution-calculator",
+      "name": "Percentage Solution Calculator (w/v, w/w, v/v)",
+      "subjects": [
+        "Pharmaceutical Chemistry"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 559,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": true,
+      "mistakes": 5,
+      "hasLimitations": true,
+      "references": [
+        "ansel16",
+        "martin8"
+      ],
+      "linksGuide": true,
+      "recordedFaults": [
+        "percentage-solution-calculator: no unit conversion (0.9% of 1 L → \"0.009 g\"); w/v solvent = solution − solute subtracts g from mL; \"sig figs\" are decimals."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "percentage-yield-calculator",
+      "url": "/calculation-tools/percentage-yield-calculator",
+      "name": "Percentage Yield Calculator",
+      "subjects": [
+        "Pharmaceutical Chemistry"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 353,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": true,
+      "mistakes": 6,
+      "hasLimitations": true,
+      "references": [
+        "vogel5",
+        "iupacGoldBook"
+      ],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "meets standard"
+    },
+    {
+      "slug": "porosity-calculator",
+      "url": "/calculation-tools/porosity-calculator",
+      "name": "Porosity Calculator",
+      "subjects": [
+        "Pharmaceutics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 333,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "porosity-calculator: <10% classed \"Non-porous\" but scale says \"Very Low\"."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "powder-flowability-calculator",
+      "url": "/calculation-tools/powder-flowability-calculator",
+      "name": "Powder Flowability Calculator",
+      "subjects": [
+        "Pharmaceutics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 314,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "powder-flowability-calculator: bands (<15 Good, <25 Passable, <31 Poor) contradict the page's own scale (16–20 Fair, >25 Poor); samples mislabelled (\"Excellent\" 0.45/0.55 → 18.18% Fair)."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "ppm-ppb-calculator",
+      "url": "/calculation-tools/ppm-ppb-calculator",
+      "name": "ppm / ppb Calculator",
+      "subjects": [
+        "Pharmaceutical Chemistry"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 557,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "qt-interval-calculator",
+      "url": "/calculation-tools/qt-interval-calculator",
+      "name": "QT Interval Calculator",
+      "subjects": [
+        "Clinical & Hospital Pharmacy"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 893,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "qt-interval-calculator: QRS > 120 adjustment applies even with bundle-branch-block unticked (field now always visible so it's not hidden); default QT 430 @ 70 bpm → 453 \"borderline\"."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "rbc-count-calculator",
+      "url": "/calculation-tools/rbc-count-calculator",
+      "name": "RBC Count Calculator",
+      "subjects": [
+        "Physiology"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 513,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "reconstitution-calculator",
+      "url": "/calculation-tools/reconstitution-calculator",
+      "name": "Reconstitution & IV Compounding Calculator",
+      "subjects": [],
+      "linkedFromHub": false,
+      "pageLines": 463,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "relative-density-bottle-calculator",
+      "url": "/calculation-tools/relative-density-bottle-calculator",
+      "name": "Density & Relative Density Bottle Calculator",
+      "subjects": [
+        "Pharmaceutics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 505,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "renal-dosing-adjuster",
+      "url": "/calculation-tools/renal-dosing-adjuster",
+      "name": "Renal Dosing Adjuster",
+      "subjects": [],
+      "linkedFromHub": false,
+      "pageLines": 633,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "reynolds-number",
+      "url": "/calculation-tools/reynolds-number",
+      "name": "Reynolds Number Calculator",
+      "subjects": [
+        "Pharmaceutical Engineering"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 385,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "Blasius (0.316·Re^−0.25) is applied across the **transitional** band 2000–4000 and far above 10⁵, outside its fitted range.",
+        "reynolds-number: Blasius friction factor used in transitional 2000–4000 band; tiny inputs → \"Re 0\", f 973.38; alert fires on every keystroke for invalid values."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "rf-value-calculator",
+      "url": "/calculation-tools/rf-value-calculator",
+      "name": "TLC Rf Analyzer",
+      "subjects": [
+        "Pharmaceutical Analysis"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 139,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 7,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "rf-value-calculator: Rf > 1 labelled \"Very non-polar\" instead of invalid (warning added)."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "serial-diluation",
+      "url": "/calculation-tools/serial-diluation",
+      "name": "Serial Dose Calculator",
+      "subjects": [
+        "Pharmacology"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 677,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "serial-dilution-calculator",
+      "url": "/calculation-tools/serial-dilution-calculator",
+      "name": "Serial Dilution Calculator",
+      "subjects": [
+        "Pharmaceutical Chemistry"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 1113,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": true,
+      "mistakes": 5,
+      "hasLimitations": true,
+      "references": [
+        "ansel16",
+        "martin8"
+      ],
+      "linksGuide": true,
+      "recordedFaults": [],
+      "action": "meets standard"
+    },
+    {
+      "slug": "solubility-calculator",
+      "url": "/calculation-tools/solubility-calculator",
+      "name": "Solubility Calculator",
+      "subjects": [
+        "Pharmaceutical Chemistry"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 319,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "solubility-calculator: \"mg/mL\" = g/L × 1000 (should be ×1); \"mol/L\" divides by gram-equivalent weight (always N/10); S = N × G.W / 10 gives g/100 mL, labelled g/L; bands applied to the number in the chosen unit; \"sig fig"
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "stability-kinetics-calculator",
+      "url": "/calculation-tools/stability-kinetics-calculator",
+      "name": "Drug Stability Kinetics Calculator",
+      "subjects": [
+        "Pharmaceutics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 939,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 6,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "sterile-dose-volume",
+      "url": "/calculation-tools/sterile-dose-volume",
+      "name": "Sterile Dose Volume Calculator",
+      "subjects": [
+        "Pharmaceutics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 399,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "sterilization-calculator",
+      "url": "/calculation-tools/sterilization-calculator",
+      "name": "Sterilization Calculator",
+      "subjects": [
+        "Microbiology"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 364,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "sterilization-calculator: \"lethality curve\" is a flat line; F₀-per-minute table uses ~121.1 °C reference (121 °C → 0.975); standards list (F₀ ≥ 8, ≥2.52) disagrees with result bands (≥6, ≥3); old header formula hard-code"
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "surface-area-particle-size-calculator",
+      "url": "/calculation-tools/surface-area-particle-size-calculator",
+      "name": "Surface Area–Particle Size Calculator",
+      "subjects": [
+        "Pharmaceutics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 573,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "tablet-disintegration-dissolution-profile-plotter",
+      "url": "/calculation-tools/tablet-disintegration-dissolution-profile-plotter",
+      "name": "Tablet Dissolution Profile Plotter",
+      "subjects": [
+        "Pharmaceutics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 408,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "tablet-disintegration-dissolution-profile-plotter: Q check needs a point at exactly 30 min (no interpolation); \"Meets Q=80%\" ignores its own S1 = Q+5% rule."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "theoretical-yield-calculator",
+      "url": "/calculation-tools/theoretical-yield-calculator",
+      "name": "Theoretical Yield Calculator",
+      "subjects": [
+        "Pharmaceutical Chemistry"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 854,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "therapeutic-index-calculator",
+      "url": "/calculation-tools/therapeutic-index-calculator",
+      "name": "Therapeutic Index Calculator",
+      "subjects": [
+        "Pharmacology"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 297,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "tpn",
+      "url": "/calculation-tools/tpn",
+      "name": "TPN Admixture Calculator",
+      "subjects": [],
+      "linkedFromHub": false,
+      "pageLines": 491,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "uv-analyzer-tool",
+      "url": "/calculation-tools/uv-analyzer-tool",
+      "name": "UV-Vis Peak Analyzer",
+      "subjects": [
+        "Pharmaceutical Analysis"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 350,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "uv-analyzer-tool: \"Pure Protein\"/\"Contaminated\" examples read \"Protein contamination\" (A260/280 < 1.5 band labelling inverted for protein samples)."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    },
+    {
+      "slug": "uv-spectrum-plotter",
+      "url": "/calculation-tools/uv-spectrum-plotter",
+      "name": "UV-Vis Spectrum Plotter",
+      "subjects": [
+        "Pharmaceutical Analysis"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 174,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 7,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "vancomycin-auc-calculator",
+      "url": "/calculation-tools/vancomycin-auc-calculator",
+      "name": "Vancomycin AUC/MIC Dosing Calculator",
+      "subjects": [],
+      "linkedFromHub": false,
+      "pageLines": 532,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "volume-distribution-calculator",
+      "url": "/calculation-tools/volume-distribution-calculator",
+      "name": "Volume of Distribution Calculator",
+      "subjects": [
+        "Biopharmaceutics & Pharmacokinetics"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 381,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": true,
+      "mistakes": 6,
+      "hasLimitations": true,
+      "references": [
+        "shargel8",
+        "rowland5"
+      ],
+      "linksGuide": true,
+      "recordedFaults": [],
+      "action": "meets standard"
+    },
+    {
+      "slug": "wbc-count-calculator",
+      "url": "/calculation-tools/wbc-count-calculator",
+      "name": "WBC Count Calculator",
+      "subjects": [
+        "Physiology"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 509,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 5,
+      "hasExampleChips": false,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [],
+      "action": "improve — add worked example, mistakes, references"
+    },
+    {
+      "slug": "zone-of-inhibition-calculator",
+      "url": "/calculation-tools/zone-of-inhibition-calculator",
+      "name": "Zone of Inhibition Calculator",
+      "subjects": [
+        "Microbiology"
+      ],
+      "linkedFromHub": true,
+      "pageLines": 355,
+      "hasFormula": true,
+      "hasAbout": true,
+      "faqCount": 4,
+      "hasExampleChips": true,
+      "hasWorkedExample": false,
+      "mistakes": 0,
+      "hasLimitations": false,
+      "references": [],
+      "linksGuide": false,
+      "recordedFaults": [
+        "zone-of-inhibition-calculator: one set of cut-offs (≥20 S, 15–19 I, <15 R) for every drug despite the drug-specific CLSI table on the page; example labels contradicted bands."
+      ],
+      "action": "repair — recorded formula fault (owner decision)"
+    }
+  ],
+  "lessons": [
+    {
+      "url": "/courses/pharmaceutical-biochemistry/unit1-intro-pharma-biochemistry",
+      "title": "Unit 1: Introduction to Pharmaceutical Biochemistry",
+      "words": 1389,
+      "action": "ok"
+    },
+    {
+      "url": "/courses/pharmaceutical-biochemistry/unit2-carbohydrates",
+      "title": "Unit 2: Basic Chemistry of Biomolecules: Carbohydrates, Lipids, Proteins & Amino Acids",
+      "words": 3617,
+      "action": "ok"
+    },
+    {
+      "url": "/courses/pharmaceutical-biochemistry/unit3-bioenergetics",
+      "title": "Unit 3: Bioenergetics",
+      "words": 3670,
+      "action": "ok"
+    },
+    {
+      "url": "/courses/pharmaceutical-biochemistry/unit4-lipids",
+      "title": "Unit 4: Enzymes: Chemistry, Classification, Kinetics, Inhibition, and Mechanism of Action",
+      "words": 4486,
+      "action": "ok"
+    },
+    {
+      "url": "/courses/pharmaceutical-biochemistry/unit5-vitamins",
+      "title": "Unit 5: Metabolic Fate of Biomolecules: Carbohydrates, Lipids, Proteins & Amino Acids",
+      "words": 4166,
+      "action": "ok"
+    },
+    {
+      "url": "/courses/pharmaceutical-organic-chemistry/unit1-basic-concepts",
+      "title": "Unit 1: Basic Concepts",
+      "words": 5619,
+      "action": "ok"
+    },
+    {
+      "url": "/courses/pharmaceutical-organic-chemistry/unit2-functional-organic-compounds",
+      "title": "Unit 2: Functional Organic Compounds",
+      "words": 7524,
+      "action": "ok"
+    },
+    {
+      "url": "/courses/pharmaceutical-organic-chemistry/unit3-types-of-reactions",
+      "title": "Unit 3: Types of Reactions",
+      "words": 5667,
+      "action": "ok"
+    },
+    {
+      "url": "/courses/pharmaceutical-organic-chemistry/unit4-stereochemistry",
+      "title": "Unit 4: Stereochemistry",
+      "words": 3321,
+      "action": "ok"
+    },
+    {
+      "url": "/courses/physical-pharmacy/unit1-intro-pharmacy-history",
+      "title": "Unit 1: Introduction to Pharmacy and History",
+      "words": 2387,
+      "action": "ok"
+    },
+    {
+      "url": "/courses/physical-pharmacy/unit2-pharmaceutical-literature",
+      "title": "Unit 2: Introduction to Pharmaceutical Literature",
+      "words": 2706,
+      "action": "ok"
+    },
+    {
+      "url": "/courses/physical-pharmacy/unit3-introductory-concepts",
+      "title": "Unit 3: Introductory Concepts in Physical Pharmacy",
+      "words": 2958,
+      "action": "ok"
+    },
+    {
+      "url": "/courses/physical-pharmacy/unit4-physico-chemical-principles",
+      "title": "Unit 4: Physico‑Chemical Principles",
+      "words": 5670,
+      "action": "ok"
+    },
+    {
+      "url": "/courses/physical-pharmacy/unit5-ionization-buffers",
+      "title": "Unit 5: Ionization and Buffers",
+      "words": 3288,
+      "action": "ok"
+    },
+    {
+      "url": "/courses/physical-pharmacy/unit6-micromeritics",
+      "title": "Unit 6: Micromeritics",
+      "words": 4252,
+      "action": "ok"
+    },
+    {
+      "url": "/courses/physiology/unit1-basic-cell-functions",
+      "title": "Unit 1: Basic Cell Functions",
+      "words": 2023,
+      "action": "ok"
+    },
+    {
+      "url": "/courses/physiology/unit2-muscle-physiology",
+      "title": "Unit 2: Muscle Physiology",
+      "words": 3067,
+      "action": "ok"
+    },
+    {
+      "url": "/courses/physiology/unit3-circulation",
+      "title": "Unit 3: Circulation",
+      "words": 2888,
+      "action": "ok"
+    },
+    {
+      "url": "/courses/physiology/unit4-the-heart",
+      "title": "Unit 4: The Heart",
+      "words": 2607,
+      "action": "ok"
+    },
+    {
+      "url": "/courses/physiology/unit5-blood-cells",
+      "title": "Unit 5: The Blood Cells",
+      "words": 2599,
+      "action": "ok"
+    },
+    {
+      "url": "/courses/physiology/unit6-digestion-absorption",
+      "title": "Unit 6: Digestion and Absorption of Food",
+      "words": 2529,
+      "action": "ok"
+    },
+    {
+      "url": "/courses/physiology/unit7-temperature-regulation",
+      "title": "Unit 7: Temperature Regulation",
+      "words": 2680,
+      "action": "ok"
+    }
+  ],
+  "guides": [
+    {
+      "url": "/guides/accuracy-precision-recovery",
+      "title": "Accuracy, Precision and Percentage Recovery in Pharmaceutical Analysis",
+      "approxWords": 3640,
+      "examples": 4,
+      "practice": 7,
+      "review": "team-checked"
+    },
+    {
+      "url": "/guides/dilution-and-concentration",
+      "title": "Dilution and Concentration Calculations",
+      "approxWords": 4312,
+      "examples": 8,
+      "practice": 8,
+      "review": "team-checked"
+    },
+    {
+      "url": "/guides/dose-calculations",
+      "title": "Pharmaceutical Dose Calculations: Units, Body Weight and Body Surface Area",
+      "approxWords": 3566,
+      "examples": 6,
+      "practice": 7,
+      "review": "team-checked"
+    },
+    {
+      "url": "/guides/pharmacokinetic-parameters",
+      "title": "Pharmacokinetic Parameters: AUC, Clearance, Half-Life and Bioavailability",
+      "approxWords": 3307,
+      "examples": 8,
+      "practice": 8,
+      "review": "team-checked"
+    },
+    {
+      "url": "/guides/reaction-kinetics-drug-stability",
+      "title": "Zero-, First- and Second-Order Kinetics in Drug Stability",
+      "approxWords": 4171,
+      "examples": 5,
+      "practice": 8,
+      "review": "team-checked"
+    }
+  ]
+}

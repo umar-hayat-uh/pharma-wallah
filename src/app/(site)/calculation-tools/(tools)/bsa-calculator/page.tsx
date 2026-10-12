@@ -16,11 +16,13 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     ModeSwitch,
     LabNotice,
     type ResultTone,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type BSAFormula = "mosteller" | "dubois" | "haycock" | "gehan_george" | "boyd";
 type HeightUnit = "cm" | "in";
@@ -649,6 +651,8 @@ Generated: ${new Date().toLocaleString()}`;
                     dosing for obese adult patients with cancer, J Clin Oncol 2012 (updated 2021).
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

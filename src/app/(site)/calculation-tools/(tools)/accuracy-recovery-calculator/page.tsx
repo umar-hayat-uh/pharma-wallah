@@ -15,6 +15,7 @@ import {
   CalcAbout,
   CalcList,
   CalcFaq,
+  CalcLearn,
   AdSlot,
   LabActions,
   LabNotice,
@@ -59,6 +60,7 @@ import {
   withinRange,
   type Trial,
 } from "./_accuracy";
+import { LEARN } from "./_learn";
 
 // ─── MODES & EXAMPLES (inputs only — every result is calculated) ─────────────
 
@@ -638,6 +640,8 @@ export default function AccuracyRecoveryCalculatorPage() {
           as for experimental replicates, so it needs at least two trials.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

@@ -10,6 +10,7 @@ export { NumberField, SelectField, type UnitOption } from "./NumberField";
 export { ResultCard, ResultRow, type ResultTone } from "./ResultCard";
 export { FormulaNote, Formula } from "./FormulaNote";
 export { CalcAbout, CalcList, CalcFaq } from "./CalcAbout";
+export { CalcLearn, type CalcEducation, type WorkedExample } from "./CalcLearn";
 export { AdSlot } from "./AdSlot";
 export { CalcDisclaimer } from "./CalcDisclaimer";
 export { SourceLink } from "./SourceLink";

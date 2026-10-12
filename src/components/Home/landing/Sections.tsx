@@ -26,9 +26,10 @@ const TAPE = [
   { num: String(STATS.calculators), label: "Calculators" },
   { num: String(STATS.lessons), label: "Lessons" },
   { num: String(STATS.simulations), label: "Wet labs" },
-  { num: String(STATS.pillars), label: "Pillars" },
+  { num: String(STATS.subjects), label: "Course subjects" },
   { num: "0", label: "Signal needed in the app" },
-  { num: "PK", label: "Pharm-D curriculum" },
+  // Was { "PK", "Pharm-D curriculum" } — read as pharmacokinetics, not Pakistan.
+  { num: "Pharm-D", label: "Pakistan curriculum" },
 ];
 
 /**
@@ -42,10 +43,10 @@ export function Tape() {
       {TAPE.map((item) => (
         <React.Fragment key={item.label}>
           <span className="tape__item">
-            <span className="tape__num">{item.num}</span>
+            <span className="tape__num">{item.num}</span>{" "}
             <span className="mono">{item.label}</span>
           </span>
-          <span className="tape__sep" aria-hidden="true" />
+          <span className="tape__sep" aria-hidden="true" />{" "}
         </React.Fragment>
       ))}
     </div>
@@ -98,8 +99,9 @@ export function Instrument() {
 
         <div className="instrument__side">
           <p className="instrument__lede" data-reveal>
-            <strong>Every formula a Pharm-D asks of you</strong> — worked, unit-aware and explained, from
-            clearance to isotonicity. The same {STATS.calculators} run with no signal at all in the Android app.
+            <strong>The calculations a Pharm-D student meets in practicals and exams</strong> — each with its
+            formula, units and step-by-step working, from clearance to isotonicity. The same {STATS.calculators}{" "}
+            run with no signal at all in the Android app.
           </p>
 
           <ol className="readout" data-reveal>
@@ -113,9 +115,17 @@ export function Instrument() {
             ))}
           </ol>
 
-          <div data-reveal>
+          {/* "All N calculators" pointed at a hub that lists HUB_TOOL_COUNT of them
+              (the rest are clinical tools linked from /clinical/dose-calculators). */}
+          <div className="instrument__ctas" data-reveal>
             <Btn href="/calculation-tools" magnetic>
-              All {STATS.calculators} calculators
+              Browse the calculator index
+            </Btn>
+            <Btn href="/calculation-tools/how-to-use" variant="ghost" magnetic>
+              How to use them
+            </Btn>
+            <Btn href="/guides" variant="ghost" magnetic>
+              Calculation guides
             </Btn>
           </div>
         </div>
@@ -164,7 +174,7 @@ export function Offline() {
           </h2>
           <p className="offline__lede" data-reveal>
             All {STATS.calculators} calculators, installed on your phone. For the lab with no signal, the
-            exam hall, and the hospital basement.
+            hostel, and the hospital basement.
           </p>
           <div data-reveal>
             <Btn href="/download" magnetic>
@@ -271,8 +281,8 @@ export function Close() {
           <Btn href="/courses" variant="ghost" magnetic>
             Courses
           </Btn>
-          <Btn href="/mcqs-bank" variant="ghost" magnetic>
-            MCQ bank
+          <Btn href="/guides" variant="ghost" magnetic>
+            Guides
           </Btn>
         </div>
       </div>

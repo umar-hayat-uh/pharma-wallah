@@ -16,10 +16,12 @@ import {
   CalcAbout,
   CalcList,
   CalcFaq,
+  CalcLearn,
   AdSlot,
   LabNotice,
   type ResultTone,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type Status = "compliant" | "non-compliant" | "marginal";
 
@@ -335,6 +337,8 @@ export default function PercentPurityCalculator() {
         </p>
         <p className="text-xs">Sources: USP General Chapter &lt;541&gt;, European Pharmacopoeia 2.5.</p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

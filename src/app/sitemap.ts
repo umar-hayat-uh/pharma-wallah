@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { SITE_URL, HISTOLOGY_LESSONS, PATHOLOGY_LESSONS, POWDER_LESSONS } from "@/lib/seo";
 import { HUB_SUBJECTS, UNLISTED_TOOLS, toolHref } from "@/app/(site)/calculation-tools/tool-index";
 import { SUBJECTS } from "@/lib/courses/registry";
+import { GUIDES } from "@/lib/guides";
 import { semestersWithQuestions } from "@/lib/mcq-availability";
 import { semesterToSlug, subjectToSlug } from "@/lib/mcq-utils";
 
@@ -19,6 +20,7 @@ const STATIC_PATHS = [
   "/",
   "/calculation-tools",
   "/calculation-tools/how-to-use",
+  "/guides",
   "/courses",
   "/mcqs-bank",
   "/flash-cards",
@@ -46,14 +48,15 @@ const STATIC_PATHS = [
   "/drug-finder",
   "/ai-guide",
   "/community",
-  // Battle Royale (2026-09-27): the public event pages only — the arena,
-  // check-in, results, success and admin are noindexed.
+  // Battle Royale: the menu and the board only. Register and How to play were
+  // listed until 2026-10-12; since the event closed they answer with a client
+  // redirect to /battle-royale (an HTTP 200 with no content of its own), which
+  // a crawler sees as a thin duplicate. Re-add them if the event reopens.
   "/battle-royale",
-  "/battle-royale/register",
-  "/battle-royale/instructions",
   "/battle-royale/leaderboard",
   "/download",
   "/about-us",
+  "/editorial-policy",
   "/faqs",
   "/contact",
   "/careers",
@@ -76,6 +79,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   for (const subject of HUB_SUBJECTS) for (const tool of subject.tools) paths.add(toolHref(tool.slug));
   for (const slug of Object.keys(UNLISTED_TOOLS)) paths.add(toolHref(slug));
+
+  // Drafts are already filtered out of GUIDES.
+  for (const guide of GUIDES) paths.add(`/guides/${guide.slug}`);
 
   for (const subject of SUBJECTS) {
     paths.add(`/courses/${subject.slug}`);

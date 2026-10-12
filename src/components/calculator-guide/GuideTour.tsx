@@ -34,7 +34,7 @@ function buildSteps(facts: GuideFacts): TourStep[] {
   return [
     {
       title: "Choose your calculator",
-      body: `Search by name, or open the subject you're studying. There are ${facts.toolCount} calculators across ${facts.categories.length} subjects.`,
+      body: `Search by name, or open the subject you're studying — the index groups the calculators into ${facts.categories.length} subjects.`,
       picture: <ChooseSketch categories={facts.categories} />,
     },
     {

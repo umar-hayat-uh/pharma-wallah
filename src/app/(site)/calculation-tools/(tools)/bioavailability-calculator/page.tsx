@@ -17,11 +17,13 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     ModeSwitch,
     type ModeOption,
     type ResultTone,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type RouteType = "oral" | "iv" | "im" | "sc" | "transdermal";
 type Method = "auc" | "dose";
@@ -451,6 +453,8 @@ export default function BioavailabilityCalculator() {
                     half the effective dose, which you can copy into the AUC method.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

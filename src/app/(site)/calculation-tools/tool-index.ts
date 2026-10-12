@@ -229,6 +229,19 @@ export const UNLISTED_TOOLS: Record<string, { name: string; desc: string }> = {
 // lists printed 99 for 94 calculators.
 export const HUB_TOOL_COUNT = new Set(HUB_SUBJECTS.flatMap((s) => s.tools.map((t) => t.slug))).size;
 
+/**
+ * Every calculator page on the site: the hub's unique tools plus the unlisted
+ * ones (reachable by URL, the clinical dose-calculators page and the sitemap).
+ * The one figure to print wherever the site says "N calculators" — the landing
+ * page and About used to derive it separately and disagreed (106 vs 95). Pages
+ * that describe *this index* (the hub, its search box) say HUB_TOOL_COUNT and
+ * word it as "in this index".
+ */
+export const CALCULATOR_COUNT = new Set([
+  ...HUB_SUBJECTS.flatMap((s) => s.tools.map((t) => t.slug)),
+  ...Object.keys(UNLISTED_TOOLS),
+]).size;
+
 export function findTool(slug: string): HubTool | undefined {
   for (const subject of HUB_SUBJECTS) {
     const tool = subject.tools.find((t) => t.slug === slug);

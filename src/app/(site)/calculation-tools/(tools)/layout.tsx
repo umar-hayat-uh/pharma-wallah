@@ -7,6 +7,8 @@ import { CalcDisclaimer } from "@/components/calculators/CalcDisclaimer";
 import { Button } from "@/components/ui/button";
 import { HUB_SUBJECTS, UNLISTED_TOOLS } from "../tool-index";
 import { SITE_NAME } from "@/lib/seo";
+import { reportErrorHref } from "@/lib/content/governance";
+import { JsonLd, breadcrumbLd } from "@/lib/structured-data";
 
 
 /**
@@ -19,7 +21,7 @@ import { SITE_NAME } from "@/lib/seo";
  * registered tool is described automatically. Web only: the Android and desktop
  * builds re-export the page files, never this layout.
  */
-export async function generateMetadata(): Promise<Metadata> {
+function currentTool(): { slug: string; name: string; desc: string; subject?: string } | undefined {
   const path = headers().get("x-pathname") ?? "";
   const slug = path.split("/")[2] ?? "";
 
@@ -29,6 +31,11 @@ export async function generateMetadata(): Promise<Metadata> {
     if (tool) found = { name: tool.name, desc: tool.desc, subject: subject.label };
   }
   found ??= UNLISTED_TOOLS[slug];
+  return found && { slug, ...found };
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const found = currentTool();
   if (!found) return {};
 
   const title = `${found.name} | ${SITE_NAME}`;
@@ -64,8 +71,19 @@ export default function CalculatorToolsLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const tool = currentTool();
+
   return (
     <>
+      {tool && (
+        <JsonLd
+          data={breadcrumbLd([
+            { name: "Home", path: "/" },
+            { name: "Calculation tools", path: "/calculation-tools" },
+            { name: tool.name, path: `/calculation-tools/${tool.slug}` },
+          ])}
+        />
+      )}
       {children}
 
       {/* No background colour of its own: unmigrated tools each paint their own
@@ -73,7 +91,27 @@ export default function CalculatorToolsLayout({
       <div className="mx-auto w-full max-w-6xl px-4 pb-10 pt-6 sm:px-6">
         {/* Directly under the tool, before navigation and the ad, so it reads
             as part of the calculator rather than as page furniture. */}
-        <CalcDisclaimer className="mb-6" />
+        <CalcDisclaimer className="mb-4" />
+
+        {/* Who made this and how to correct it (added 2026-10-12, see
+            docs/content-review-policy.md). Deliberately claims no review that
+            has not happened: no calculator has a documented independent
+            pharmacist review, and ~70 formula faults are recorded (CLAUDE.md
+            Known Issue 15) — so the page says so and asks for corrections. */}
+        <p className="mb-6 text-xs leading-relaxed text-muted-foreground">
+          Built by the PharmaWallah team, a group of pharmacy students. This calculator has not been
+          independently reviewed by a pharmacist.{" "}
+          <Link
+            href={reportErrorHref(tool?.name ?? "a calculator")}
+            className="font-medium text-primary underline-offset-2 hover:underline"
+          >
+            Report an error
+          </Link>{" "}
+          ·{" "}
+          <Link href="/editorial-policy" className="font-medium text-primary underline-offset-2 hover:underline">
+            How we build and check our tools
+          </Link>
+        </p>
 
         <nav
           aria-label="Calculator navigation"

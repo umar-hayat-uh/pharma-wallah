@@ -15,10 +15,12 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     ModeSwitch,
     type ResultTone,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type AdministrationRoute = "iv" | "im" | "oral" | "sc";
 type DoseBasis = "weight" | "fixed";
@@ -319,6 +321,8 @@ export default function LoadingDoseCalculator() {
                     different Vd per kg.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

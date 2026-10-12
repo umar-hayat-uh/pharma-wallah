@@ -9,11 +9,11 @@ import { Mark, Note } from "./Marks";
 /**
  * The signature section.
  *
- * Six numbered rows, one per pillar of the product. Whichever row is active
+ * Five numbered rows, one per pillar of the product. Whichever row is active
  * gets a highlighter swipe behind its title in its own marker colour, grows the
  * title through Outfit's weight axis, opens its description, and re-letters the
  * big hand-drawn numeral held beside the list. Reading down the index, the
- * board changes marker six times.
+ * board changes marker five times (six until the ended Tournament row went, 2026-10-12).
  *
  * The first row is marked active in the markup, so the section is fully
  * readable before the motion hook runs, with no JavaScript, and under reduced
@@ -32,13 +32,13 @@ export default function IndexSection() {
     >
       <div className="index__head">
         <p className="index__kicker mono" data-reveal>
-          Index — six ways in
+          Index — five ways in
         </p>
         <h2 className="index__title" id="pw-idx-index-title" data-reveal>
           One degree.
           <br />
           <span className="index__six">
-            Six instruments.
+            Five instruments.
             <Mark kind="squiggle" color="green" className="index__squiggle" />
           </span>
         </h2>

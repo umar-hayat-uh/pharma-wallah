@@ -41,7 +41,7 @@ export default function ClinicalFooter() {
                         <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4">PharmaWallah</h3>
                         <ul className="space-y-3">
                             <li>
-                                <Link href="https://academia.pharmawallah.com/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 hover:text-[#1C7BD9] transition-colors">
+                                <Link href="https://www.pharmawallah.com/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 hover:text-[#1C7BD9] transition-colors">
                                     Academia
                                 </Link>
                             </li>

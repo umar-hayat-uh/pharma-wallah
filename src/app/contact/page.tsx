@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
   Pill, FlaskConical, Beaker, Microscope, Stethoscope, Leaf,
   Send, MapPin, Mail, Instagram,
-  CheckCircle, AlertCircle, MessageSquare, Zap,
+  CheckCircle, AlertCircle, MessageSquare, Zap, Flag,
 } from "lucide-react";
 
 const bgIcons = [
@@ -41,6 +41,9 @@ const SOCIALS = [
   { Icon: Instagram, label: "PharmaWallah on Instagram", href: "https://www.instagram.com/pharmawallah_com/", bg: "bg-pink-50 hover:bg-pink-100", color: "text-pink-600" },
 ];
 
+/** Matches MAX_SUBJECT in /api/contact — a longer prefill would only be rejected on send. */
+const MAX_SUBJECT = 150;
+
 const inputCls = "w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm text-gray-800 placeholder:text-gray-400 bg-white transition-all duration-200";
 
 export default function ContactPage() {
@@ -48,6 +51,18 @@ export default function ContactPage() {
   const [submitting, setSub]    = useState(false);
   const [status, setStatus]     = useState<"idle" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+
+  // Calculator and guide pages link "Report an error" here with
+  // ?subject=Error report: <page title> (reportErrorHref in
+  // src/lib/content/governance.ts). Read in an effect rather than with
+  // useSearchParams, which would force a Suspense boundary on this page.
+  const [isErrorReport, setIsErrorReport] = useState(false);
+  useEffect(() => {
+    const subject = new URLSearchParams(window.location.search).get("subject")?.trim();
+    if (!subject) return;
+    setForm((f) => (f.subject ? f : { ...f, subject: subject.slice(0, MAX_SUBJECT) }));
+    setIsErrorReport(/^error report/i.test(subject));
+  }, []);
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -80,7 +95,7 @@ export default function ContactPage() {
 
       {/* Fixed bg icons */}
       {bgIcons.map(({ Icon, top, left, size }, i) => (
-        <div key={i} className="fixed pointer-events-none text-blue-200 z-0" style={{ top, left }}>
+        <div key={i} aria-hidden="true" className="fixed pointer-events-none text-blue-200 z-0" style={{ top, left }}>
           <Icon size={size} strokeWidth={1.4} />
         </div>
       ))}
@@ -100,8 +115,8 @@ export default function ContactPage() {
             Contact Us
           </h1>
           <p className="text-blue-100 text-lg max-w-2xl leading-relaxed">
-            Have questions, feedback, or need help? We'd love to hear from you.
-            Fill out the form and our team will respond promptly.
+            Questions, feedback, or a mistake you spotted in a calculator or lesson? Send it here —
+            every message is read by the team.
           </p>
         </div>
       </div>
@@ -161,6 +176,22 @@ export default function ContactPage() {
               </div>
             </div>
 
+            {/* How to report a content error — the site's correction channel. */}
+            <div className="relative rounded-2xl border border-amber-200 bg-amber-50/60 p-5 overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-orange-400" />
+              <p className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-widest text-amber-700 mb-1">
+                <Flag className="w-3.5 h-3.5" aria-hidden="true" /> Report a content error
+              </p>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                Name the page, the inputs you used, the value or step that looks wrong, and what you expected —
+                with your source (textbook, pharmacopoeia, practical manual) if you have one. Confirmed errors are
+                corrected on the page.{" "}
+                <Link href="/editorial-policy" className="font-semibold text-blue-700 hover:underline">
+                  How we check content
+                </Link>
+              </p>
+            </div>
+
             {/* Response time note */}
             <div className="relative rounded-2xl border border-blue-100 bg-blue-50/60 p-5 overflow-hidden">
               <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 to-green-400" />
@@ -209,27 +240,31 @@ export default function ContactPage() {
                 <form onSubmit={onSubmit} className="space-y-5">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
-                      <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Full Name *</label>
-                      <input type="text" name="name" required maxLength={100} value={form.name} onChange={onChange}
+                      <label htmlFor="contact-name" className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Full Name *</label>
+                      <input id="contact-name" autoComplete="name" type="text" name="name" required maxLength={100} value={form.name} onChange={onChange}
                         placeholder="Your name" className={inputCls} />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Email *</label>
-                      <input type="email" name="email" required maxLength={200} value={form.email} onChange={onChange}
+                      <label htmlFor="contact-email" className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Email *</label>
+                      <input id="contact-email" autoComplete="email" type="email" name="email" required maxLength={200} value={form.email} onChange={onChange}
                         placeholder="you@example.com" className={inputCls} />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Subject *</label>
-                    <input type="text" name="subject" required maxLength={150} value={form.subject} onChange={onChange}
+                    <label htmlFor="contact-subject" className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Subject *</label>
+                    <input id="contact-subject" type="text" name="subject" required maxLength={150} value={form.subject} onChange={onChange}
                       placeholder="What's this about?" className={inputCls} />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Message *</label>
-                    <textarea name="message" required rows={5} maxLength={5000} value={form.message} onChange={onChange}
-                      placeholder="Tell us how we can help…"
+                    <label htmlFor="contact-message" className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Message *</label>
+                    <textarea id="contact-message" name="message" required rows={5} maxLength={5000} value={form.message} onChange={onChange}
+                      placeholder={
+                        isErrorReport
+                          ? "Which value or step is wrong, the inputs you used, what you expected, and your source if you have one."
+                          : "Tell us how we can help…"
+                      }
                       className={`${inputCls} resize-none`} />
                   </div>
 

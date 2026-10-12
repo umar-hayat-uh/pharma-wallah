@@ -14,28 +14,41 @@ export default function Hero() {
           2026-09-13; the headline now opens the page. */}
       <div className="hero__stage">
         <h1 className="hero__title" id="pw-idx-title" data-hero-title>
-          {/* The sentence as a screen reader should hear it — once, not as four
-              words swapping in and out. Everything visual below is aria-hidden. */}
-          <span className="sr-only">The whole Pharm-D, {HERO_CYCLE[0]}</span>
-          <span className="mask" aria-hidden="true">
-            <span data-line>The whole</span>
-          </span>
-          <span className="mask step" aria-hidden="true">
-            <span data-line>Pharm-D,</span>
-          </span>
-          <span className="mask" aria-hidden="true">
+          {/* The visible lines ARE the heading text, so a crawler, a screen
+              reader and a copy-paste all get "Pharmacy maths, Solved." once.
+              Until 2026-10-12 the h1 held an sr-only copy plus aria-hidden
+              lines plus all four cycle words as text, and its textContent read
+              "The whole Pharm-D, Solved.The wholePharm-D,Solved.Measured.…" —
+              the run-on string the AdSense audit flagged. The {" "} between
+              block lines keeps the words apart in textContent (a space between
+              blocks does not render). The alternate cycle words are drawn from
+              a data attribute by CSS (::before in landing.css), so they never
+              enter the document text; the motion hook only moves the spans. */}
+          <span className="mask">
+            <span data-line>Pharmacy</span>
+          </span>{" "}
+          <span className="mask step">
+            <span data-line>maths,</span>
+          </span>{" "}
+          <span className="mask">
             <span data-line>
               <span className="cycle" data-cycle>
-                {HERO_CYCLE.map((word, i) => (
-                  <span
-                    key={word}
-                    className="cycle__word"
-                    data-cycle-word
-                    style={i === 0 ? undefined : { position: "absolute", left: 0, top: 0, opacity: 0 }}
-                  >
-                    {word}
-                  </span>
-                ))}
+                {HERO_CYCLE.map((word, i) =>
+                  i === 0 ? (
+                    <span key={word} className="cycle__word" data-cycle-word>
+                      {word}
+                    </span>
+                  ) : (
+                    <span
+                      key={word}
+                      className="cycle__word cycle__word--alt"
+                      data-cycle-word
+                      data-word={word}
+                      aria-hidden="true"
+                      style={{ position: "absolute", left: 0, top: 0, opacity: 0 }}
+                    />
+                  ),
+                )}
               </span>
             </span>
           </span>
@@ -55,16 +68,16 @@ export default function Hero() {
 
       <div className="hero__foot">
         <p className="hero__lede" data-in>
-          <strong>{STATS.calculators} calculators, {STATS.lessons} lessons</strong>, spotting slides,{" "}
-          {STATS.simulations} wet-lab simulations and a clinical decision-support suite — built for Doctor of
-          Pharmacy students.
+          <strong>{STATS.calculators} pharmacy calculators</strong> that show their formula and working, for
+          Doctor of Pharmacy students in Pakistan — plus {STATS.lessons} course lessons, spotting slides,{" "}
+          {STATS.simulations} wet-lab simulations and a clinical reference desk.
         </p>
         <div className="hero__ctas" data-in>
           <Btn href="/calculation-tools" magnetic>
             Open the calculators
           </Btn>
-          <Btn href="/courses" variant="ghost" magnetic>
-            Browse courses
+          <Btn href="/calculation-tools/how-to-use" variant="ghost" magnetic>
+            How to use them
           </Btn>
         </div>
       </div>

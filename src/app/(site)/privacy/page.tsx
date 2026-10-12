@@ -126,13 +126,13 @@ export default function PrivacyPage() {
           </p>
           <div className="flex flex-wrap gap-4">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-xs font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-300 inline-block" /> Version 3.0
+              <span className="w-1.5 h-1.5 rounded-full bg-green-300 inline-block" /> Version 3.1
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-xs font-bold">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-300 inline-block" /> Governing Law: Pakistan
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-xs font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-yellow-300 inline-block" /> Last Updated: September 2026
+              <span className="w-1.5 h-1.5 rounded-full bg-yellow-300 inline-block" /> Last Updated: October 2026
             </span>
           </div>
         </div>
@@ -201,11 +201,15 @@ export default function PrivacyPage() {
               <Para>If you create an account, we store your name and email address, and your password is handled by our authentication provider, Supabase (we never see it). You can also sign in with Google, in which case Google shares your name and email address with us. With an account we record your study progress — which course units you have opened or marked as read, your quiz and MCQ results, and time spent — so that your dashboard can show where you left off.</Para>
               <Sub>Community</Sub>
               <Para>Posts, comments and votes you make in the community are stored with your display name and are visible to other visitors.</Para>
+              {/* Added 2026-10-12: Battle Royale registration collects more than an
+                  account does, and the policy did not mention it. */}
+              <Sub>Event registration</Sub>
+              <Para>If you register for a PharmaWallah event such as Battle Royale, we store the details on the registration form — your name, email address, phone number, university, year of study and, if you give it, your student ID — together with your payment status and your game results. Your full name, university and score appear on the event&apos;s public leaderboard and certificate search. Registration emails are sent through Resend.</Para>
               <Sub>Contact and careers forms</Sub>
               <Para>When you use the Contact or Careers form, the name, email address and message you enter are emailed to our team (sent through the email service Resend) so that we can reply.</Para>
               <Sub>AI tools</Sub>
               <Bullets items={[
-                "Questions you ask the AI Guide, and photos you give the Prescription Reader, are sent to Google's Gemini API to generate the answer.",
+                "Questions you ask the AI Guide, photos you give the Prescription Reader, and the written answers you submit in the pathology spot test (for marking) are sent to Google's Gemini API to generate a response. Prescription photos are not stored by PharmaWallah.",
                 "We do not store your AI Guide questions on our servers. Your saved AI Guide conversations are kept only in your own browser, and you can delete them from the Guide at any time.",
               ]} />
               <Sub>Usage and security data</Sub>
@@ -215,7 +219,7 @@ export default function PrivacyPage() {
             <SectionBlock id="cookies" num={3} label="Cookies, Advertising & Third-Party Services" Icon={Lock} accent="from-emerald-600 to-cyan-400" hex="#059669">
               <Sub>Advertising (Google AdSense)</Sub>
               <Bullets items={[
-                "PharmaWallah shows advertisements served by Google AdSense. Third-party vendors, including Google, use cookies to serve ads based on your prior visits to this website and other websites.",
+                "PharmaWallah uses Google AdSense to show advertisements on some pages (not in the Android app). Where ads are shown, third-party vendors, including Google, use cookies to serve ads based on your prior visits to this website and other websites.",
                 "Google's use of advertising cookies enables it and its partners to serve ads to you based on your visits to this site and/or other sites on the Internet.",
                 "You can opt out of personalised advertising in Google's Ads Settings (adssettings.google.com), or opt out of some third-party vendors' use of cookies for personalised advertising at www.aboutads.info.",
               ]} />
@@ -272,7 +276,7 @@ export default function PrivacyPage() {
                 </div>
               </div>
               <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <p className="text-xs text-gray-400">Version 3.0 · Last Updated: 23 September 2026 · Governed by the laws of Pakistan</p>
+                <p className="text-xs text-gray-400">Version 3.1 · Last Updated: 12 October 2026 · Governed by the laws of Pakistan</p>
                 <Link href="/" className="text-xs font-bold text-blue-600 hover:text-blue-700 transition">
                   pharmawallah.com →
                 </Link>

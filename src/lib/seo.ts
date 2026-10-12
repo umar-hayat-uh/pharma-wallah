@@ -24,7 +24,7 @@ export const SITE_NAME = "PharmaWallah";
 
 export const DEFAULT_TITLE = "PharmaWallah — Pharm-D study tools, calculators and lessons";
 export const DEFAULT_DESCRIPTION =
-  "Free study resources for Pharm-D students in Pakistan: over 100 pharmacy calculators with worked formulas, course lessons, MCQ practice, slide spotting and virtual lab simulations.";
+  "Free study resources for Pharm-D students in Pakistan: over 100 pharmacy calculators that show their formulas, calculation guides, course lessons, MCQ practice, slide spotting and virtual lab simulations.";
 
 export type PageMeta = {
   title: string;

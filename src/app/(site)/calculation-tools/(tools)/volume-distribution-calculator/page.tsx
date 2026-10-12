@@ -15,8 +15,10 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 /** Joins class names, skipping falsy ones (kept local: no @/lib imports in tool pages). */
 const cn = (...classes: (string | false | undefined)[]) => classes.filter(Boolean).join(" ");
@@ -350,6 +352,8 @@ export default function VolumeDistributionCalculator() {
                     larger means the drug is held in tissues. Interpretation per the MSD Manual.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

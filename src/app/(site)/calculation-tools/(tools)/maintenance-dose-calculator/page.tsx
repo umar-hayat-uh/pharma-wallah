@@ -15,9 +15,11 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     ModeSwitch,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type DosingInterval = "q4h" | "q6h" | "q8h" | "q12h" | "q24h" | "q48h" | "custom";
 type HalfLifeSource = "estimate" | "known";
@@ -410,6 +412,8 @@ export default function MaintenanceDoseCalculator() {
                     variability.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

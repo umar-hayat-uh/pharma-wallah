@@ -2,7 +2,7 @@ import React from "react";
 import {
   Pill, FlaskConical, Stethoscope, Microscope, Beaker, BookOpen, TestTube,
   ShoppingCart, FileSearch, ShieldAlert, Atom, ListChecks, Layers, Library, Search,
-  Scale, Activity, HeartPulse, Syringe, FlaskRound, CircleHelp,
+  Scale, Activity, HeartPulse, Syringe, FlaskRound, CircleHelp, BookOpenText, Droplets,
 } from "lucide-react";
 
 /*
@@ -14,8 +14,8 @@ import {
  */
 
 export const SUBMENU_ICONS: Record<string, React.ReactNode> = {
-  Material: <BookOpen className="w-5 h-5" />,
-  "MCQ's Bank": <ListChecks className="w-5 h-5" />,
+  Courses: <BookOpen className="w-5 h-5" />,
+  "MCQ Bank": <ListChecks className="w-5 h-5" />,
   "Lab Simulation": <TestTube className="w-5 h-5" />,
   "Slide Spotting": <Microscope className="w-5 h-5" />,
   Flashcards: <Layers className="w-5 h-5" />,
@@ -36,12 +36,14 @@ export const SUBMENU_ICONS: Record<string, React.ReactNode> = {
   "Microbiology": <Syringe className="w-5 h-5" />,
   "Pharmaceutical Engineering": <FlaskRound className="w-5 h-5" />,
   "Clinical & Hospital Pharmacy": <Stethoscope className="w-5 h-5" />,
+  Physiology: <Droplets className="w-5 h-5" />,
   "How to use the calculators": <CircleHelp className="w-5 h-5" />,
+  "Calculation guides": <BookOpenText className="w-5 h-5" />,
 };
 
 export const SUBMENU_COLORS: Record<string, { icon: string; bg: string; ring: string }> = {
-  Material: { icon: "text-blue-500", bg: "from-blue-50 to-blue-100/40", ring: "group-hover:border-blue-200" },
-  "MCQ's Bank": { icon: "text-green-500", bg: "from-green-50 to-green-100/40", ring: "group-hover:border-green-200" },
+  Courses: { icon: "text-blue-500", bg: "from-blue-50 to-blue-100/40", ring: "group-hover:border-blue-200" },
+  "MCQ Bank": { icon: "text-green-500", bg: "from-green-50 to-green-100/40", ring: "group-hover:border-green-200" },
   "Lab Simulation": { icon: "text-purple-500", bg: "from-purple-50 to-purple-100/40", ring: "group-hover:border-purple-200" },
   "Slide Spotting": { icon: "text-sky-500", bg: "from-sky-50 to-sky-100/40", ring: "group-hover:border-sky-200" },
   Flashcards: { icon: "text-amber-500", bg: "from-amber-50 to-amber-100/40", ring: "group-hover:border-amber-200" },
@@ -62,15 +64,19 @@ export const SUBMENU_COLORS: Record<string, { icon: string; bg: string; ring: st
   "Microbiology": { icon: "text-lime-500", bg: "from-lime-50 to-lime-100/40", ring: "group-hover:border-lime-200" },
   "Pharmaceutical Engineering": { icon: "text-orange-500", bg: "from-orange-50 to-orange-100/40", ring: "group-hover:border-orange-200" },
   "Clinical & Hospital Pharmacy": { icon: "text-emerald-500", bg: "from-emerald-50 to-emerald-100/40", ring: "group-hover:border-emerald-200" },
+  Physiology: { icon: "text-red-500", bg: "from-red-50 to-red-100/40", ring: "group-hover:border-red-200" },
   "How to use the calculators": { icon: "text-blue-500", bg: "from-blue-50 to-blue-100/40", ring: "group-hover:border-blue-200" },
+  "Calculation guides": { icon: "text-emerald-500", bg: "from-emerald-50 to-emerald-100/40", ring: "group-hover:border-emerald-200" },
 };
 
 export const SUBMENU_DESCRIPTIONS: Record<string, string> = {
-  Material: "Curated curriculum notes & modules.",
-  "MCQ's Bank": "Extensive practice question sets.",
+  // Descriptions say what exists today (2026-10-12): four subjects have lessons
+  // and MCQ banks; the rest of the syllabus is still being written.
+  Courses: "Lesson notes for the subjects published so far.",
+  "MCQ Bank": "Practice questions for four first-year subjects.",
   "Lab Simulation": "Interactive 2D & 3D experiments.",
   "Slide Spotting": "Histology and pathology practice.",
-  Flashcards: "Quick review with spaced repetition.",
+  Flashcards: "Quick-review cards, subject by subject.",
   "Pharmacy Counter": "Virtual retail dispensing training.",
   "Compounding Lab": "Practice pharmaceutical compounding.",
   "ADR Detective": "Spot and analyze adverse drug reactions.",
@@ -88,6 +94,8 @@ export const SUBMENU_DESCRIPTIONS: Record<string, string> = {
   "Microbiology": "Microbial quantification & sterilization calculations",
   "Pharmaceutical Engineering": "Heat transfer, fluid dynamics & scale-up",
   "Clinical & Hospital Pharmacy": "Patient dosing, renal/hepatic adjustments & clinical tools",
+  Physiology: "WBC and RBC counts from the haemocytometer",
   "How to use the calculators": "A step-by-step guide to entering values, units and reading results",
+  "Calculation guides": "Worked explanations of dilution, kinetics, recovery, PK and dose calculations",
 };
 

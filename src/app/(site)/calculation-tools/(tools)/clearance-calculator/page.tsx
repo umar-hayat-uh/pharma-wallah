@@ -16,11 +16,13 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     ModeSwitch,
     type ModeOption,
     type ResultTone,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 /** Joins class names, skipping falsy ones (kept local: no @/lib imports in tool pages). */
 const cn = (...classes: (string | false | undefined)[]) => classes.filter(Boolean).join(" ");
@@ -424,6 +426,8 @@ export default function ClearanceCalculator() {
                     longer. 0.693 is ln 2.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

@@ -4,9 +4,9 @@ import { join } from "node:path";
 import DownloadClient, { type PlatformFile } from "./DownloadClient";
 
 export const metadata: Metadata = {
-  title: "Download the apps | PharmaWallah",
+  title: "Download the Android app | PharmaWallah",
   description:
-    "PharmaWallah's pharmacy calculators for Windows and Android. Works completely offline — no account, no internet needed after install.",
+    "PharmaWallah's pharmacy calculators as a free Android app. Works completely offline — no account, no internet needed after install.",
   alternates: { canonical: "/download" },
 };
 

@@ -16,10 +16,12 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     ModeSwitch,
     type ModeOption,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type Method = "halfLife" | "clearance" | "concentration";
 
@@ -351,6 +353,8 @@ export default function KeCalculator() {
                     First-order kinetics per the MSD Manual.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

@@ -15,10 +15,12 @@ import {
   CalcAbout,
   CalcList,
   CalcFaq,
+  CalcLearn,
   ModeSwitch,
   AdSlot,
   type ModeOption,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type SubstanceType = "solid" | "liquid";
 type VolumeUnit = "mL" | "L" | "μL";
@@ -457,6 +459,8 @@ export default function MolarityCalculator() {
           solute in it; dividing by MW turns grams into moles.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

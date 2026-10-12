@@ -153,6 +153,17 @@ Separate from the tournament below. Skill: `.claude/skills/battle-royale/`.
 
 ---
 
+## Educational content & governance (added 2026-10-12)
+
+- `src/lib/content/references.ts` — the only citation registry (cite by id). `src/lib/content/governance.ts` — review status, `reportErrorHref`.
+- `src/components/calculators/CalcLearn.tsx` + `(tools)/<slug>/_learn.ts` (21 tools) — worked example, mistakes, limitations, references.
+- `src/lib/guides/` (types, registry, `content/<slug>.ts` ×5) → `src/components/guides/GuideArticle.tsx` → `/guides`, `/guides/[slug]`.
+- `src/app/(site)/editorial-policy/page.tsx` — public editorial & corrections policy (mirror of `docs/content-review-policy.md`).
+- `src/lib/structured-data.tsx` — JSON-LD helpers (home: Organization/WebSite; calculators & guides: BreadcrumbList; guides: Article).
+- `src/lib/battle-royale/ranking.ts` — board tie-break and podium slots.
+- `scripts/content-inventory.mjs` → `docs/adsense-content-inventory.{md,json}`; `scripts/audit-crawl.py` + `scripts/route-inventory.py` → `docs/ADSENSE_ROUTE_INVENTORY.md`.
+- `docs/ADSENSE_*.md`, `docs/CALCULATOR_INVENTORY_AND_ACCURACY.md`, `docs/CONTENT_AND_FEATURE_AUDIT.md`, `docs/PRIVACY_AND_TRUST_AUDIT.md`, `docs/TECHNICAL_SEO_AUDIT.md` — the 2026-10-12 audit set.
+
 ## Calculation tools (106 calculators)
 
 | Piece | File |
@@ -473,4 +484,4 @@ exported. See `.claude/skills/android-app-capacitor/SKILL.md`.
 
 **Not in this repo, by the owner's decision** — every push to `main` deploys the site. The ad kit, the
 renderer, the music synth and the ads live at `/home/umar-hayat/personal/pharmawallah-marketing/video/`
-(procedure in that folder's `README.md`). `/marketing/video/` is gitignored here as a guard.
+(procedure in that folder's `README.md`; the skill is `.claude/skills/reel-ads/`). `/marketing/video/` is gitignored here as a guard.

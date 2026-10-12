@@ -14,6 +14,7 @@ import {
   CalcAbout,
   CalcList,
   CalcFaq,
+  CalcLearn,
   AdSlot,
   LabReport,
   LabActions,
@@ -27,6 +28,7 @@ import {
   formatSig,
   VOLUME_TO_ML,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import {
   CONC_UNITS,
   CONC_UNIT_LIST,
@@ -977,6 +979,8 @@ export default function SerialDilutionCalculator() {
           10.0 mL diluent) so that it still holds 10.0 mL after T2 takes its 1.11 mL.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

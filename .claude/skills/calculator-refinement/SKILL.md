@@ -73,6 +73,14 @@ half-typed row must not flash a wrong answer, and `submitted` is what stops it.
 
 ---
 
+### Teaching section (added 2026-10-12)
+Worked example, common mistakes, limitations, references and related tools now have a shared
+home: a `_learn.ts` (`CalcEducation`) beside the page, rendered by `<CalcLearn content={LEARN} />`
+after the main `FormulaNote` and before `CalcFaq`. References are ids from
+`src/lib/content/references.ts` only. The example's figures must equal what the page prints for
+those inputs and be recomputed independently; keep it off any recorded-fault path. 21 tools have
+one — see `docs/adsense-content-inventory.md` for the rest. MEMORY gotcha 198.
+
 ### Kit mapping — what exists, and what you must build
 
 Check this table before writing anything. Most of the brief is already built.

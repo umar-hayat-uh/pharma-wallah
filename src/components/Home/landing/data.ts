@@ -1,4 +1,4 @@
-import { HUB_SUBJECTS, UNLISTED_TOOLS } from "@/app/(site)/calculation-tools/tool-index";
+import { CALCULATOR_COUNT } from "@/app/(site)/calculation-tools/tool-index";
 import { SUBJECTS } from "@/lib/courses/registry";
 
 /*
@@ -14,25 +14,24 @@ import { SUBJECTS } from "@/lib/courses/registry";
  * at a route that exists under src/app/ (see .claude/PROJECT_MAP.md).
  */
 
-/** Every calculator page: the hub's tools (some are listed under two subjects) plus the unlisted ones. */
-const CALCULATOR_COUNT =
-  new Set(HUB_SUBJECTS.flatMap((subject) => subject.tools.map((tool) => tool.slug))).size +
-  Object.keys(UNLISTED_TOOLS).length;
-
 /** Published course units — the pages a student can actually open. */
 const LESSON_COUNT = SUBJECTS.reduce((n, subject) => n + subject.units.length, 0);
 
 export const STATS = {
+  /** Every calculator page — the one figure About uses too (tool-index.ts). */
   calculators: CALCULATOR_COUNT,
   lessons: LESSON_COUNT,
+  /** Published course subjects: four so far, the rest still being written. */
+  subjects: SUBJECTS.length,
   simulations: 8,
-  pillars: 6,
 } as const;
 
 /* ══════════════════ Hero ══════════════════ */
 
 /** The last line of the headline cycles through what the platform covers. */
-export const HERO_CYCLE = ["Solved.", "Measured.", "Practised.", "Explained."] as const;
+/* (2026-10-12) The headline said "The whole Pharm-D," — an overclaim while four
+   subjects are published. It now names what the site is strongest at. */
+export const HERO_CYCLE = ["Solved.", "Worked.", "Explained.", "Checked."] as const;
 
 /* ══════════════════ The Index — the signature section ══════════════════
    One row per pillar of the product. Each row owns a marker colour: when it is
@@ -56,7 +55,7 @@ export const PILLARS: Pillar[] = [
     num: "01",
     title: "Calculations",
     figure: `${STATS.calculators} tools`,
-    line: "Clearance, dosing, isotonicity, half-life — every formula a Pharm-D asks of you, worked and explained.",
+    line: "Clearance, dosing, isotonicity, half-life, practical-sheet analysis — each tool shows its formula and working.",
     href: "/calculation-tools",
     marker: "#1C7BD9",
     cta: "Open the tools",
@@ -65,7 +64,7 @@ export const PILLARS: Pillar[] = [
     num: "02",
     title: "Courses",
     figure: `${STATS.lessons} lessons`,
-    line: "Semester by semester, unit by unit, with an MCQ bank behind each subject.",
+    line: `${STATS.subjects} subjects so far, unit by unit, each with an MCQ bank. More subjects are being written.`,
     href: "/courses",
     marker: "#1F9D63",
     cta: "Start a subject",
@@ -73,8 +72,9 @@ export const PILLARS: Pillar[] = [
   {
     num: "03",
     title: "Spotting",
-    figure: "3 disciplines",
-    line: "Histology, pathology and powder microscopy slides — then a timed identification test.",
+    figure: "2 slide tests",
+    // Powder microscopy has notes but no slide photographs or test yet (Known Issue 23).
+    line: "Histology and pathology slides, then a timed identification test. Powder-microscopy notes too.",
     href: "/spotting",
     marker: "#F08C2E",
     cta: "Study the slides",
@@ -88,17 +88,11 @@ export const PILLARS: Pillar[] = [
     marker: "#13A89E",
     cta: "Enter the lab",
   },
+  // The Tournament row ("Live scoring" → /tournament/play) was removed on
+  // 2026-10-12: Science Fair 2026 has ended and its pages are noindexed, so the
+  // home page was advertising an event nobody can enter.
   {
     num: "05",
-    title: "Tournament",
-    figure: "Live scoring",
-    line: "A science-fair competition with server-graded answers and a public leaderboard.",
-    href: "/tournament/play",
-    marker: "#E5484D",
-    cta: "Compete",
-  },
-  {
-    num: "06",
     title: "Clinical",
     figure: "Decision support",
     line: "Drug finder, interaction checkers, AMR surveillance and a literature search for practising pharmacists.",

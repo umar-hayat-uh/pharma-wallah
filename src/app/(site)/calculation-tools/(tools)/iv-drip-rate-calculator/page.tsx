@@ -15,10 +15,12 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     ModeSwitch,
     type ResultTone,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type TimeUnit = "hours" | "minutes";
 type DropFactor = "10" | "15" | "20" | "60";
@@ -403,6 +405,8 @@ export default function IVDripRateCalculator() {
                     25 mL/hr or less as a low / KVO (keep vein open) rate.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

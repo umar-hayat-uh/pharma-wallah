@@ -43,7 +43,7 @@ export default function ClinicalCTA() {
                         </Link>
 
                         <Link
-                            href="https://academia.pharmawallah.com/"
+                            href="https://www.pharmawallah.com/"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-2xl bg-transparent border-2 border-slate-600 text-slate-300 font-bold text-sm hover:text-white hover:border-slate-400 hover:bg-slate-800 transition-all duration-300 active:scale-95"

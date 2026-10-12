@@ -8,8 +8,6 @@ import {
   Check,
   CircleAlert,
   Download,
-  ExternalLink,
-  Github,
   Monitor,
   ShieldCheck,
   Smartphone,
@@ -47,15 +45,14 @@ const ANDROID_VERSION = "1.5";
 const WINDOWS_VERSION = "1.0.0";
 
 /**
- * Calculators in the packaged apps: the number of tool directories under
- * src/app/(site)/calculation-tools/(tools)/. Both packaged builds ship every
- * one of them. The generated slug lists that prove this are gitignored, so the
- * web build cannot import them — re-count with
- * `ls src/app/(site)/calculation-tools/\(tools\)/ | wc -l` when tools are added.
+ * Calculators inside the PUBLISHED APK — a property of that binary, not of the
+ * website, so it is not CALCULATOR_COUNT (the site can gain a tool before the
+ * next APK ships). Measured 2026-10-12 on v1.5:
+ * counting the per-tool index.html files under calculation-tools in
+ * `unzip -l public/downloads/pharmawallah-calculators.apk` → 106 (it said 105 while the v1.5 APK already carried 106). Re-measure with
+ * every APK release.
  */
-const TOOL_COUNT = 105;
-
-const RELEASES_URL = "https://github.com/umar-hayat-uh/pharma-wallah/releases";
+const TOOL_COUNT = 106;
 
 type PlatformId = "windows" | "android" | "ios";
 
@@ -79,7 +76,7 @@ const HIGHLIGHTS: { Icon: LucideIcon; title: string; body: string }[] = [
 
 const LIMITS = [
   "Updates are manual for now — come back to this page for a newer version.",
-  "The apps contain the calculators only. Courses, MCQs, spotting labs and the tournament stay on the website.",
+  "The app contains the calculators only. Courses, MCQs, spotting labs and the tournament stay on the website.",
   "Automatic colony counting and TLC spot detection are estimates — check every marker before you use the result.",
   "Educational use only. Check every figure against your own reference before it is used for a patient.",
 ];
@@ -92,6 +89,7 @@ export default function DownloadClient({
   windows: PlatformFile;
 }) {
   const [platform, setPlatform] = useState<PlatformId>("android");
+  const published = [android, windows].filter(Boolean).length;
 
   /*
    * Preselect the visitor's own platform. Deliberately after mount rather than
@@ -103,8 +101,8 @@ export default function DownloadClient({
     const ua = navigator.userAgent;
     if (/Android/i.test(ua)) setPlatform("android");
     else if (/iPhone|iPad|iPod/i.test(ua)) setPlatform("ios");
-    else if (/Windows/i.test(ua)) setPlatform("windows");
-  }, []);
+    else if (/Windows/i.test(ua) && windows) setPlatform("windows");
+  }, [windows]);
 
   return (
     <main className="bg-[#fcfcfa]">
@@ -116,19 +114,21 @@ export default function DownloadClient({
           {/* Scale contrast is the point: the headline is ~4× the lead, and the
               second line carries the promise that makes people download. */}
           <h1 className="mt-4 max-w-4xl text-[clamp(2.4rem,7vw,4.75rem)] font-bold leading-[0.98] tracking-[-0.04em] [text-wrap:balance]">
-            {TOOL_COUNT} pharmacy calculators.
+            {TOOL_COUNT} pharmacy calculators.{" "}
             <span className="block text-white/70">Nothing to sign in to.</span>
           </h1>
 
           <p className="mt-6 max-w-2xl text-[17px] leading-relaxed text-white/90">
-            Install once and every calculator keeps working with the network off — on a Windows PC
-            or an Android phone. No account, no cloud, no data leaving the device.
+            Install the Android app once and every calculator keeps working with the network off. No
+            account, no cloud, no data leaving the device.
           </p>
 
           <dl className="mt-10 flex flex-wrap gap-x-12 gap-y-6">
             {[
               { value: TOOL_COUNT, label: "Calculators" },
-              { value: "2", label: "Platforms" },
+              // Counted from the files actually published, not the targets in
+              // the repo: it said "2" while only the APK existed (2026-10-12).
+              { value: String(published), label: published === 1 ? "Platform" : "Platforms" },
               { value: "0", label: "Accounts needed" },
             ].map((figure) => (
               <div key={figure.label}>
@@ -147,13 +147,24 @@ export default function DownloadClient({
       {/* ── Platform picker ────────────────────────────────────────────── */}
       <section className="mx-auto w-full max-w-6xl px-5 py-14 sm:px-8 md:py-20">
         <Tabs value={platform} onValueChange={(next) => setPlatform(next as PlatformId)}>
-          <TabsList className="mb-8 grid h-auto w-full max-w-2xl grid-cols-3 gap-1.5 rounded-2xl bg-[#f1f2ef] p-1.5">
-            <PlatformTab id="windows" icon={Monitor} label="Windows" />
+          {/* The Windows tab appears only once its installer is published: until
+              2026-10-12 it was the first tab, and its fallback pointed at a
+              GitHub Releases page that has no releases. */}
+          <TabsList
+            className={`mb-8 grid h-auto w-full max-w-2xl gap-1.5 rounded-2xl bg-[#f1f2ef] p-1.5 ${windows ? "grid-cols-3" : "grid-cols-2"}`}
+          >
             <PlatformTab id="android" icon={Smartphone} label="Android" />
+            {windows && <PlatformTab id="windows" icon={Monitor} label="Windows" />}
             <PlatformTab id="ios" icon={Apple} label="iPhone" />
           </TabsList>
+          {!windows && (
+            <p className="-mt-4 mb-8 text-[13.5px] text-[#16181d]/60">
+              Windows and iPhone versions are not released yet. On a computer, every calculator works in your
+              browser.
+            </p>
+          )}
 
-          <TabsContent value="windows">
+          {windows && <TabsContent value="windows">
             <PlatformPanel
               title="PharmaWallah for Windows"
               lead="A desktop program, not a website in a window. The calculators, a searchable values library, a formula reference, unit conversions and a saved calculation history."
@@ -162,7 +173,7 @@ export default function DownloadClient({
               requirement="Windows 10 or 11, 64-bit"
               fileName="PharmaWallah-Setup.exe"
               pendingTitle="The Windows build is not published yet"
-              pendingBody="It is built and verified, but the installer has not been attached to this site. Until it is, the latest build is on GitHub Releases."
+              pendingBody="The installer has not been published yet. Every calculator works in your browser meanwhile."
               steps={[
                 { title: "Download the installer", body: "Your browser saves PharmaWallah-Setup.exe to your Downloads folder." },
                 { title: "Run it", body: "Double-click the file. Windows installs it for your user account only — no administrator password needed." },
@@ -174,7 +185,7 @@ export default function DownloadClient({
                 body: "Windows shows it for every program that is not code-signed, which costs money per year. Download only from this page — a PharmaWallah installer from anywhere else is not ours.",
               }}
             />
-          </TabsContent>
+          </TabsContent>}
 
           <TabsContent value="android">
             <PlatformPanel
@@ -185,7 +196,7 @@ export default function DownloadClient({
               requirement="Android 7.0 or newer"
               fileName="pharmawallah-calculators.apk"
               pendingTitle="The Android build is not available right now"
-              pendingBody="The APK is normally served from this page. If you are seeing this, a release is in progress."
+              pendingBody="The APK is normally served from this page. If you are seeing this, a release is in progress — the calculators work in your browser meanwhile."
               steps={[
                 { title: "Tap Download", body: "Your browser saves pharmawallah-calculators.apk to your Downloads folder." },
                 { title: "Open the file", body: "Tap the download notification, or find the file in your Files app and tap it." },
@@ -209,7 +220,7 @@ export default function DownloadClient({
       <section className="border-y border-[#16181d]/10 bg-white">
         <div className="mx-auto w-full max-w-6xl px-5 py-14 sm:px-8 md:py-20">
           <h2 className="text-[clamp(1.6rem,3vw,2.25rem)] font-bold leading-tight tracking-[-0.03em] text-[#16181d]">
-            The same promise on every platform
+            What you get
           </h2>
 
           <ul className="mt-9 grid gap-5 md:grid-cols-3">
@@ -379,10 +390,9 @@ function PlatformPanel({
               <p className="text-[15px] font-semibold text-[#16181d]">{pendingTitle}</p>
               <p className="mt-2 text-[13px] leading-relaxed text-[#16181d]/65">{pendingBody}</p>
               <Button asChild variant="outline" className="mt-5 w-full">
-                <a href={RELEASES_URL} target="_blank" rel="noopener noreferrer">
-                  <Github />
-                  Open GitHub Releases
-                  <ExternalLink className="opacity-60" />
+                <a href="/calculation-tools">
+                  <Calculator />
+                  Open the calculators
                 </a>
               </Button>
             </div>
@@ -413,7 +423,7 @@ function IosPanel() {
           There is no iPhone download yet — and that is Apple&rsquo;s rule, not an oversight. iOS
           apps cannot be installed from a website the way an Android APK or a Windows installer can;
           they have to come through the App Store or TestFlight, which needs a paid Apple Developer
-          account. The iPhone build exists and is being prepared for TestFlight.
+          account, which PharmaWallah does not have yet. There is no release date.
         </p>
 
         <h3 className="mt-10 font-mono text-[10.5px] uppercase tracking-[0.16em] text-[#16181d]/50">
@@ -427,7 +437,10 @@ function IosPanel() {
             },
             {
               title: "Add it to your Home Screen",
-              body: "Share → Add to Home Screen puts a PharmaWallah icon next to your apps, and it opens without Safari's address bar.",
+              // The PWA manifest was removed on 2026-09-12, so a Home Screen
+              // shortcut opens in Safari like any bookmark — it used to promise
+              // "without Safari's address bar".
+              body: "Share → Add to Home Screen puts a PharmaWallah shortcut next to your apps. It opens the site in Safari.",
             },
             {
               title: "Keep a tab open before a lab",
@@ -453,7 +466,7 @@ function IosPanel() {
       <div className="order-1 lg:order-2">
         <div className="lg:sticky lg:top-[calc(var(--calc-top-offset,0px)+1.5rem)]">
           <div className="rounded-2xl border border-dashed border-[#16181d]/20 bg-white p-6">
-            <Badge variant="secondary">In preparation</Badge>
+            <Badge variant="secondary">Not available yet</Badge>
             <p className="mt-4 text-[15px] font-semibold leading-snug text-[#16181d]">
               Use the website meanwhile
             </p>

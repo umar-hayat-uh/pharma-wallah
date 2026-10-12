@@ -90,6 +90,7 @@ export default function CoursesPage() {
     }, [searchQuery, activeSemFilter, semesters]);
 
     const totalSubjects = SUBJECTS.length;
+    const totalUnits = SUBJECTS.reduce((n, subject) => n + subject.units.length, 0);
 
     const handleFilterClick = useCallback(
         (filter: string) => {
@@ -163,9 +164,9 @@ export default function CoursesPage() {
                         transition={{ duration: 0.5, delay: 0.12 }}
                         className="text-white/85 text-sm sm:text-base md:text-lg max-w-2xl mx-auto mb-8 font-medium leading-relaxed"
                     >
-                        Comprehensive lecture handouts, clinical notes, and unit modules —
-                        structured for sessionals, board finals, and pharmacy licensure
-                        preparation.
+                        Unit-by-unit study notes for the Pharm-D subjects published so far,
+                        each with a matching bank of practice MCQs. More subjects are being
+                        written and appear here when they are finished.
                     </motion.p>
 
                     {/* Search Box */}
@@ -179,7 +180,7 @@ export default function CoursesPage() {
                             <Search className="absolute left-4 w-4 h-4 text-gray-400 pointer-events-none" />
                             <input
                                 type="text"
-                                placeholder="Search subject (Biochemistry, Pharmacology)..."
+                                placeholder="Search subject (Biochemistry, Physiology)..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full pl-11 pr-12 py-3 sm:py-3.5 text-sm text-gray-800 font-medium placeholder:text-gray-400 focus:outline-none bg-transparent"
@@ -211,10 +212,13 @@ export default function CoursesPage() {
                         transition={{ duration: 0.5, delay: 0.24 }}
                         className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-xl mx-auto mt-8"
                     >
+                        {/* Counted from the course registry, never typed (2026-10-12): the
+                            old cards claimed a "Complete Curriculum", "4+ Modules" and an
+                            "HEC Standardized Syllabus" for four Semester 1 subjects. */}
                         {[
-                            { n: `${semesters.length} Semesters`, l: "Complete Curriculum" },
-                            { n: `${totalSubjects}+ Modules`, l: "High-Yield Subjects" },
-                            { n: "HEC & Pharmacy", l: "Standardized Syllabus" },
+                            { n: `${totalSubjects} ${totalSubjects === 1 ? "subject" : "subjects"}`, l: "published so far" },
+                            { n: `${totalUnits} units`, l: "of study notes" },
+                            { n: semesters.map((s) => s.semester.replace("Semester ", "Sem ")).join(", "), l: semesters.length === 1 ? "semester covered" : "semesters covered" },
                         ].map(({ n, l }) => (
                             <div
                                 key={l}

@@ -293,6 +293,21 @@ These are conventions **observed in the code**, not aspirations.
   and `ListAgents`, and announce which shared files you are taking, before editing one.
 
 ### Recently Completed
+- **AdSense remediation (2026-10-12, with session `pharma-wallah-da`)** — teaching sections on 21 calculators,
+  five guides at `/guides`, `/editorial-policy`, honest counts and claims site-wide, JSON-LD, podium order fixed,
+  Terms/Privacy reconciled. **Clinical dosing errors found, not fixed — owner decision.** Reports in `docs/`. See §8.
+- **ad-07 Dose + Dilution reel (2026-10-11)**: 40 s, the Animal Weight-Based Dose and Serial Dose calculators
+  ("Dose Calculation" / "Animal Dose Dilution" in the owner's brief), both typed into in the real app export,
+  rendered with an original music bed. Outside the repo. See §8.
+- **ad-06 Biopharmaceutics calculators reel (2026-10-11)**: 36 s, the whole Biopharm & PK collection, six real
+  calculators driven in the app export (every figure re-derived), white end card, timed voice-over script.
+  Outside the repo. See §8.
+- **ad-05 "No Internet? No Problem." (2026-10-11)**: the offline-app reel from the owner's brief, plus a
+  cover poster and a timed voice-over script. Every app screen was captured with the browser **offline**,
+  so the "works offline" claim is now proven (MEMORY 195). Outside the repo. See §8.
+- **`reel-ads` skill + ad-04 (2026-10-10)** — the owner's reel brief is now a skill (`.claude/skills/reel-ads/`), with the
+  brand overrides spelled out; ad-04 "Stop Calculating the Hard Way" (25 s) uses real app frames captured by driving
+  the app export. Videos stay outside the repo. See §8.
 - **"How to use the calculators" guide + APK v1.5 + two ad videos (2026-10-08)** — one shared guide
   (`src/components/calculator-guide/`) at `/calculation-tools/how-to-use` on the web and `/how-to-use/`
   in the app: an 8-step tour plus a full guide written against what the calculators *actually* do
@@ -716,6 +731,209 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 
 > Newest first. Never paste source code here. Archive entries older than ~10 into
 > `.claude/history/YYYY-MM.md`.
+
+### 2026-10-12 — AdSense "low value content" remediation, two briefs (with session `pharma-wallah-da`)
+
+"follow protocol" + a first remediation brief, then mid-task a "second-pass full-site audit" brief. Split by
+message with peer session `pharma-wallah-da` (counts, hero, download/app claims, Terms/Privacy, nav, 6 tools);
+this session (`-95`) took teaching content, guides, governance, structured data, podium, courses/MCQ claims,
+clinical audit, SEO/domains, crawls and the reports.
+
+**Completed**
+- **Teaching layer**: `CalcLearn` + `_learn.ts` on 21 calculators (worked example equal to the page's own output
+  and re-derived in Python, mistakes, limitations, references, related tools). **Five server-rendered guides**
+  under `/guides` (dilution, dose calculations, kinetics, accuracy/recovery, PK), each with worked examples and
+  practice questions. Citation registry (`references.ts`, 23 sources checked against publisher listings).
+- **Trust**: `/editorial-policy`; a provenance line + "Report an error" on every calculator; review labels that
+  cannot claim a review that did not happen; contact form prefills the subject (da).
+- **Claims**: one `CALCULATOR_COUNT` (106) everywhere (da); Download page Android-only (da); hero h1 no longer
+  concatenates and no longer says "The whole Pharm-D" (da); `/courses` "Complete Curriculum / HEC
+  Standardized Syllabus / 4+ Modules" → derived 4 subjects · 22 units · Sem 1; Terms v1.1 and Privacy v3.1 (da),
+  plus Privacy no longer claims ads are live and discloses the pathology test's Gemini marking.
+- **Podium**: written in rank order (it listed the runner-up first in its text); deterministic tie-break; tests.
+- **SEO**: JSON-LD (Organization/WebSite on `/`, BreadcrumbList on 106 tools and guides, Article on guides);
+  sitemap + guides + editorial policy, − two closed-event soft-redirect pages; clinical links off `academia.`.
+- **Audit**: live and local crawls, 660 MCQs validated, APK inspected, 12 clinical tools audited (read-only).
+
+**Files** — see `docs/ADSENSE_REMEDIATION_CHANGELOG.md` (both sessions, file by file).
+
+**Architecture & Decisions**
+- No formula, data, env, DNS or hosting change. **Clinical dosing errors were found and NOT fixed** — vancomycin
+  AUC/MIC target, renal apixaban tiers, pip-tazo band, geriatric renal rule, MME rotation, fentanyl patch
+  (`docs/CALCULATOR_INVENTORY_AND_ACCURACY.md` §3). Owner decision.
+- No ads added to new pages. The `academia.` → www redirect left to Vercel (MEMORY 201).
+- The first brief's `adsense-remediation-audit.md` / `adsense-educational-content.md` were folded into
+  `ADSENSE_FULL_AUDIT_REPORT.md` and `CONTENT_AND_FEATURE_AUDIT.md` rather than written twice.
+
+**Verification**
+- `npx tsc --noEmit` 0 errors; `-p mobile/tsconfig.json` 0. Tests **256 pass, 0 fail** (11 suites; +7
+  content-governance, +4 ranking). `npm run build` (isolated copy of the final combined tree) exit 0, shared
+  88.6 kB, middleware 81.9 kB. `npm run mobile:build` exit 0, 0 ad strings. Local production crawl: 241 routes,
+  240 × 200 + `/dashboard` 307, 0 soft redirects, 228 sitemap URLs all 200, 113 pages with JSON-LD. Headless
+  Chrome 1440/390 on 13 pages (both sessions): 0 overflow, 0 console errors; screenshots read.
+- NOT verified: Search Console, AdSense account, real phone, Safari, dark mode, a real contact email, MCQ
+  scoring, the APK rebuilt with today's content. Lint is not configured.
+
+**Remaining** — `docs/ADSENSE_MANUAL_VERIFICATION.md`. **Next** — owner decides on the clinical tools, then
+commit both sessions' work as one unit, deploy, resubmit the sitemap.
+
+
+### 2026-10-11 — ad-07 "Dose Calculation + Animal Dose Dilution" reel
+
+"follow protocol. use the skill" + the owner's 40-second, five-scene brief for two calculators.
+
+**Completed** (all outside the repo, `~/personal/pharmawallah-marketing/video/ad-07/`)
+- **Tools, mapped from the brief's names**: "Dose Calculation" → Animal Weight-Based Dose Calculator,
+  "Animal Dose Dilution" → Serial Dose Calculator (both Pharmacology, one workflow). Headlines keep the brief's
+  words; every on-screen tool name is the real one.
+- `ad-07.mp4` (with music) and `ad-07-no-music.mp4`, 40 s. Hook: handwritten dose working → beat drop → the phone.
+  Dose: real keystrokes, result card floats out (empty → 0.0143 → **0.1786 mg**), scroll to the Working.
+  The card swells into a ring that opens on a 2.5 → 0.25 → 0.09 mg/mL tube graphic. Dilution: real keystrokes,
+  result + stat tiles, the dilution formula, the bench plan, "Into the syringe" in green. Then two phones joined
+  by an energy line with the names cut on the beat, and a white end card with the app home, GET THE
+  PHARMAWALLAH APP NOW (4.4 s on screen) and the footer.
+- `capture.mjs` types each tool's **own defaults** over CDP into the app export, one frame per keystroke.
+  `crop.py` cuts the cards; `cues.json` drives the original tech-style music.
+
+**Figures** — from the real pure modules (`_animal.ts`, `_math.ts`) in Node, re-derived in Python, and asserted
+on the captured pages: 500 mg / 70 kg → 25 g → 0.1786 mg (178.57 µg, 7.143 mg/kg), 0.1786 mL at 1.0 mg/mL;
+Carprofen 25 mg in 10 mL → 2.5 → 0.25 → 0.09 mg/mL, 0.1 mL = 0.009 mg (9 µg), 1:27.778×, within ±5%.
+
+**Architecture & Decisions**
+- Brief overrides per the skill: brand `#1C7BD9`/`#21B67A` (not `#2563EB`/`#4ADE80`), Outfit, no black ground
+  (navy only as a scrim), CTA says **Android** (`pharmawallah.com/download`). Built on the kit, not Remotion
+  (no new dependency). The brief's 40 s kept, over the skill's 18–24 s guideline, because the owner asked for it.
+- Animal Dose scales linearly and its own page says it is for following the method: the ad claims no accuracy,
+  labels the values "illustrative · the calculator's own default values", and carries "follow your approved
+  protocol". No animal imagery.
+- Supporting text reads "Animal Weight-Based Dose + Serial Dose", not the brief's labels, so a student can find
+  the tools.
+
+**Verification**
+- Stills at every cut and mid-beat, read; fixed: clipped "?" glyphs, a sheen escaping the logo tile, near-empty
+  frames before the iris, a headline ghost under scene 3. Capture defects found and fixed: smooth scroll and
+  beyond-viewport clipping (MEMORY 197).
+- `ffprobe`: h264 1080×1920 30/1, 40.0 s (+ aac on the music file); `ebur128` −14.0 LUFS; spectrogram shows the
+  groove through the CTA. Seven frames pulled from the MP4 and read. **The music was never listened to** (no
+  audio output here). Not seen inside Instagram/TikTok or on a phone. No repo code changed: tsc/build not re-run.
+
+**Next** — the owner reviews ad-07 (post `-no-music` if using in-app audio).
+
+### 2026-10-11 — ad-06 Biopharmaceutics calculators reel
+
+"Follow protocol, use the skill" + the owner's "Biopharmaceutics Calculators Promotional Reel" brief (six scenes,
+30–40 s, real interfaces, verified tools only, voice-over, sound design, thumbnail, README).
+
+**Completed** (all outside the repo, `~/personal/pharmawallah-marketing/video/ad-06/`)
+- 36 s, 1080×1920, 30 fps, six beats on the brief's storyboard: formula hook on a deep-navy (scrimmed gradient)
+  ground with the real Half-Life screen assembling from flying strips → logo + six real result/graph cards →
+  "Enter your data / Calculate with ease / Visualize your results / Explore more" over real keystrokes in
+  Half-Life (Cl & Vd), Bioavailability and Clearance, the first- vs zero-order plot drawing itself, then the
+  category list and all 14 hub tool names → the Dialysis Membrane practical typed, Calculate tapped, R² and k
+  popping, scrolled to its real ln(1 − B) graph → "Built for pharmacy students" with pharmacy line icons →
+  white end card (logo, "YOUR CALCULATIONS. SIMPLIFIED.", Explore Biopharmaceutics Calculators,
+  PHARMAWALLAH.COM, "Visit now. Start exploring.", Free / No sign-up / Also in the Android app), 4.5 s.
+- `capture.mjs` drives the app export (`mobile/out`) and records what each tool printed in `marks.json`;
+  `crop.py` makes the card crops; `cues.json` → original tech-style bed (−14.1 LUFS);
+  `VOICEOVER.md` + `voiceover.srt` (timed, **not recorded** — no TTS here); `README.md`; `cover.png`.
+
+**Figures** — each printed by the real calculator and re-derived independently: t½ = 0.693 × 100 ÷ 8.66 =
+8.00 h; F = (72/100) ÷ (100/100) = 72.0 %; CL = 500 ÷ 125 = 4.000 L/h; first/zero-order on the tool's defaults;
+Dialysis sheet (the tool's own "Minutes, C1 = 1000 µg/mL" example) slope −0.01496 min⁻¹, intercept −0.000999,
+R² 0.9997, k 0.01496 min⁻¹ = 0.0002494 s⁻¹ (Python least squares, same inputs).
+
+**Architecture & Decisions**
+- Brief overrides per the skill: brand `#1C7BD9`/`#21B67A` (not `#2563EB`/`#4ADE80`), Outfit, no black ground
+  (the "dark" scenes are the navy-scrimmed gradient); kit, not Remotion (no new dependency).
+- **Only fault-free paths are demonstrated** (MEMORY 196): AUC Estimator, Bioequivalence, Loading and
+  Maintenance Dose appear as names only. Half-Life is shown via Cl & Vd — the kₑ route would have flashed a red
+  validation error mid-typing, and its concentration method has a recorded fault.
+- **No count on screen**: the app's category view says 16, the web hub lists 14.
+- 36 s rather than the skill's 18–24 s: the brief asked for 30–40 s explicitly.
+- Taken as `ad-06` because session `pharma-wallah-e0` created `ad-05` the same minute (agreed by message).
+
+**Verification**
+- Stills read at every beat and around every cut (3.95/4.15, 8.95/9.15, 19.4/19.62, 26.95/27.2, 31.45/31.75);
+  they caught "MEET PHARMAWALLAH" wrapping over its subtitle and a card (fixed) and the kₑ error flash (method changed).
+- Full render: `ad-06.mp4` (h264 1080×1920 30/1 + aac) and `ad-06-no-music.mp4`, both 36.0 s (`ffprobe`); eight frames
+  pulled from the MP4 and read; `cover.png` = the end card at 35 s. **Each file is 116 MB (~26 Mbps)** — the kit's
+  full-frame film grain, scaled by the camera every frame, is uncompressible: the grain-free white end card is
+  1.2 MB per 4 s vs 11–19 MB elsewhere. Owner asked about the grain; removing it for ad-06 is the fix if wanted.
+- Music checked by spectrogram (groove runs to ~35 s, no silent CTA) and `ebur128` (−14.1 LUFS). **Never listened to**
+  — no audio output here. Not verified: inside the Instagram/TikTok UI, on a real phone. No repo code changed:
+  `tsc`/build not affected and not re-run.
+
+**Next** — the owner reviews ad-06, records the voice-over from `VOICEOVER.md`, and posts it.
+
+### 2026-10-11 — ad-05 "No Internet? No Problem." (offline-app reel)
+
+"follow protocol, use the skill" + the owner's "Offline Calculator App — Promotional Reel" brief (4 scenes,
+20–25 s, real recordings only, a cover frame "NO INTERNET? NO PROBLEM.").
+
+**Completed** (all outside the repo, `~/personal/pharmawallah-marketing/video/ad-05/`)
+- **24 s, 1080×1920, 30 fps**, CUTS 3.8 · 8.5 · 16.5: an illustrated lab bench (notebook, the Procaine practical
+  sheet, a flask) and a generic phone switching Wi-Fi and mobile data off → "NO INTERNET IN THE LAB?" → the real
+  app home rising with light trails, "YOUR CALCULATORS. EVEN OFFLINE." → three real calculators sliding across
+  the phone: **Dilution** (typed, live result), **Percentage Yield** (typed, Calculate tapped, the lab record),
+  **Stability Kinetics** (Calculate tapped, the result card), under "CALCULATE." / "CHECK YOUR RESULTS." /
+  "GET BACK TO WORK." → iris into a white/blue end card: "BUILT FOR PHARM-D STUDENTS.", the logo,
+  "DOWNLOAD PHARMAWALLAH CALCULATORS", "Your pharmacy calculation companion.", `pharmawallah.com/download`.
+- **Offline is proven, not drawn.** `capture.mjs` fails every non-local request and switches the browser fully
+  offline before typing. Each result is asserted on the offline page. 0 external requests attempted. The
+  "Offline" pill in each app bar is the app's own indicator (MEMORY 195).
+- Figures, each the tool's own example and re-derived in Python: V₂ = 25 mL (solvent 20 mL); yield 84.71 %;
+  Procaine HCl zero order, R² 0.9927, k 1.1314 % min⁻¹, t90 8.839 min.
+- `cover.png` (from `poster.html`), `vo.srt` (the brief's voice-over, timed), `cues.json` + an original tech bed.
+
+**Architecture & Decisions** — brief overrides as the skill says (brand hexes, Outfit, no black ground). There is
+**no Play Store listing**, so the CTA is the live `/download` page (200; serves the 9,595,463 B v1.5 APK). There is
+**no TTS on this machine**, so the voice-over is a script, not audio. The "student in a lab" is drawn as a bench,
+not a person: no stock footage or invented people. Scene 1's phone is labelled in the source as an illustration.
+Peer session `pharma-wallah-95` (ad-06) worked alongside; it shared the :4719 server, and the doc edits were sequenced by message.
+
+**Verification** — `ad-05.mp4` (with music) and `ad-05-no-music.mp4`: h264 1080×1920 30/1, 24.0 s, aac,
+−13.7 LUFS integrated. Ten frames pulled **from the MP4** and read; the chips settle on 25 mL, 20 mL, 84.71 % and
+8.839 min. Stills read at every cut and mid-transition. Seven defects were caught and fixed: a doubled-ghost
+gradient headline, a greyed gradient (text-shadow), a blank app bar over the panned result pages, a headline that
+never exited under `sceneOuts`, and (from the owner's screenshot) an overlapping "Mobile data" tile label, the
+bench not covering the frame's bottom edge, and a preview that showed past the frame. No repo code changed, so
+`tsc`/build were unaffected and not re-run. Music **never listened to** (no audio output here). Not verified:
+inside the Instagram/TikTok UI, a real phone.
+
+**Next** — the owner reviews ad-05, records or adds the voice-over, and posts it (no-music file + in-app audio if preferred).
+
+### 2026-10-10 — `reel-ads` skill + ad-04 "Stop Calculating the Hard Way"
+
+"follow protocol" + the owner's reel-ad design brief → "setup this ads reels skill"; mid-task, a 25 s
+reel spec for the calculators app.
+
+**Completed**
+- **New skill `.claude/skills/reel-ads/`** — `SKILL.md` (the procedure on the existing out-of-repo kit)
+  and `BRIEF.md` (the owner's brief, verbatim). Registered in `SKILLS.md`; MEMORY 194; PROJECT_MAP.
+  It names where the brief is **overridden and why**: brand `#1C7BD9`/`#21B67A` (not `#2563EB`/`#4ADE80`),
+  Outfit (not Inter/Manrope), no black/navy ground, Android-only CTA (iOS/Windows apps were never shipped),
+  offline = the Android app only, the kit not Remotion (no new dependency).
+- **ad-04** (outside the repo, `~/personal/pharmawallah-marketing/video/ad-04/`): 25 s, 1080×1920, 30 fps.
+  Notebook-and-calculator hook with a freeze → phone reveal with light trails → **real app frames**
+  (typing into the Calibration Curve Calculator keystroke by keystroke, the real Calculate tap, the real
+  graph) → rotating phone among real app cards on a deep-navy gradient → icon, "YOUR CALCULATIONS. ONE APP.",
+  GET PHARMAWALLAH, pharmawallah.com. `capture.mjs` drives the app export over CDP to make the frames.
+  Figures: the tool's own Paracetamol 243 nm example + unknown 0.452 AU → m 0.06635, c −0.0005, R² 0.9999,
+  6.82 µg/mL (re-derived in Python).
+
+**Architecture & Decisions** — the owner's restated hexes and "dark navy" were mapped to the brand
+tokens and the navy-scrimmed gradient (CLAUDE.md §6 rule 15); "offline" is claimed for the Android app
+only. Caveat (OFL, the brand's handwriting face) added to the kit for the notebook.
+
+**Verification** — stills read at every cut and mid-beat; three defects found and fixed (camera island
+over the app bar, scene-4 cards showing before the cut, an iris ghost). Full render (~17 min): `ad-04.mp4`
+h264 1080×1920 30/1, 25.0 s, silent (the renderer's default); `ad-04-with-music.mp4` adds aac, −14.0 LUFS.
+Eight frames pulled from the MP4 and read. The spectrogram caught the groove stopping at the 20 s impact
+(a near-silent CTA) — the kit's `music.mjs` gained opt-in `grooveUntil` / `hits` cue fields (ads 01–03
+unaffected, they don't set them). Music **never listened to** (no audio output here).
+No repo code changed: `tsc`/build not affected and not re-run.
+
+**Next** — the owner reviews ad-04 (post the `-no-music` file if using in-app audio).
 
 ### 2026-10-08 — "How to use the calculators" guide, APK v1.5, two ad videos
 
@@ -1658,7 +1876,7 @@ Capacitor target, `-6c`); file ownership was agreed by message before any shared
 | iOS compile | `.github/workflows/ios-app.yml` (Actions → "iOS app" → Run workflow) | **PASSES — first ever run 2026-09-22, `macos-latest`, 5m22s, commit `5b8788e`, conclusion `success`, every step green.** Builds twice with no Apple account and no secrets: **Simulator** (Debug, `-sdk iphonesimulator`) and the **arm64 device slice** (Release, `-sdk iphoneos`, `CODE_SIGNING_ALLOWED=NO`), and uploads `App.app` as the `pharmawallah-ios-simulator-app` artifact. Two guards run before the compile and are part of the baseline: `Info.plist` must request **no permissions**, and **≥100** calculator pages must be in the synced bundle. Needs the committed shared scheme `ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme` (MEMORY gotcha 159). **This is a compile baseline only** — no signed `.ipa`, and the app has still never been *run* (§7 Known Issue 21). Do not report the iOS app as tested on a device. |
 | iOS sync | `npm run ios:sync` (i.e. `cap sync ios`) | **PASSES (2026-09-22, ~4 s after the build)** — exit 0 on **Linux**; Capacitor 8 uses the SPM template so no CocoaPods is involved. Reports **3 Capacitor plugins for ios** (`@capacitor/filesystem@8.1.3`, `@capacitor/keyboard@8.0.5`, `@capacitor/share@8.0.2`) and rewrites `ios/App/CapApp-SPM/Package.swift`. Also assert: `Info.plist` parses with `plistlib` and has **zero** `*UsageDescription` keys, and `ios/App/App/public/calculation-tools` holds one `index.html` per tool. **There is no iOS build baseline** — compiling needs Xcode on macOS and has never been done (§7 Known Issue 21). Do not report the iOS app as building. |
 | APK | `npm run mobile:apk` | **PASSES (2026-10-08, v1.5 / versionCode 6)** — signed V2 release APK **9,595,463 B (9.2 MB)**, certificate SHA-256 `afe4c18e…5b03` **identical to v1.4 (checked against `git show HEAD:` of the old file)**, so it installs as an update; 106 tool pages + `how-to-use/index.html` inside. **Earlier: PASSES (2026-09-20, v1.4 / versionCode 5, ~2 min)** — signed V2 release APK **9,369,674 B (8.9 MB)**, certificate SHA-256 `afe4c18e…5b03` **unchanged from v1.3**, so it installs as an update; published file byte-identical to the Gradle output; 104 tool pages inside. **Earlier (2026-09-16, v1.3 / versionCode 4, ~2.5 min)** — signed V2 release APK **9,347,799 B** (8.9 MB), same certificate SHA-256 `afe4c18e…5b03` as v1.2; published file byte-identical to the Gradle output. **Earlier:** (2026-09-14, v1.2 / versionCode 3, built by `pharma-wallah-4b` — new launcher icon + redesigned Serial Dose tool) — signed V2 release APK, 5,945,495 B, copied to `public/downloads/`; same certificate as v1.0/v1.1. Needs JDK 21 (auto-selected) and `android/keystore.properties`. Check `aapt dump badging` for the version and `apksigner verify --print-certs` for the certificate. |
-| Tests | `node --test scripts/pharmacy-counter.test.mts` · `node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts` · `node --test scripts/molecular-lab.test.mts` · `node --test scripts/community.test.mts` · `node --test scripts/ai-guide.test.mts` · `node --test scripts/dissolution-rate.test.mts` · `node --test scripts/split-for-ads.test.mts` · `node --test scripts/battle-royale.test.mts` · `node --test scripts/stability-kinetics.test.mts` | **47 pass, 0 fail** (2026-09-20, Community Pharmacy pure layer, ~0.5 s — case-data integrity, the check grader, verification truths, labels, expiry, inventory, the calculators, scoring) · **41 pass, 0 fail** (2026-09-16; 21 TLC + 20 colony, ~10 s) · **21 pass, 0 fail** (2026-09-16, Molecular Lab, ~12 s, real OpenChemLib) · **19 pass, 0 fail** (2026-09-20, community pure layer, <1 s) · **34 pass, 0 fail** (2026-09-20, AI Guide pure layer — request clamps, Gemini history rules, NDJSON framing, study modes — <1 s). · **28 pass, 0 fail** (2026-09-22, Dissolution Rate Constant pure layer — every column of the supplied practical sheet, both k columns proven distinct, the average against 0.000291833 and against each rejected averaging range, division-by-zero paths, duplicate/backwards times, both notations — <1 s). · **6 pass, 0 fail** (2026-09-24, lesson ad spacing — heading-only breaks, never inside a code fence, word-count gaps, lossless over all 69 lesson files, <1 s). · **23 pass, 0 fail** (2026-09-30, Battle Royale — display helpers, schema round-trips, station, titles, certificate search input). · **26 pass, 0 fail** (2026-10-08, Drug Stability Kinetics — % remaining against the sheet, residuals, the two-point tie, all three fits against an independent covariance computation, order selection on exact zero/first/second-order data, k/t½/t90 per order, k ≤ 0, validation, interpretation, <1 s). These cover nine features' pure modules only — there is no framework, no CI, and nothing else is tested. Report them by name. **The community's SQL is verified separately** by running its migration twice against a throwaway local Postgres 16 and asserting RLS from a `nobypassrls` role — see the `community-system` skill. |
+| Tests | `node --test scripts/pharmacy-counter.test.mts` · `node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts` · `node --test scripts/molecular-lab.test.mts` · `node --test scripts/community.test.mts` · `node --test scripts/ai-guide.test.mts` · `node --test scripts/dissolution-rate.test.mts` · `node --test scripts/split-for-ads.test.mts` · `node --test scripts/battle-royale.test.mts` · `node --test scripts/stability-kinetics.test.mts` · `node --test scripts/content-governance.test.mts` | **47 pass, 0 fail** (2026-09-20, Community Pharmacy pure layer, ~0.5 s — case-data integrity, the check grader, verification truths, labels, expiry, inventory, the calculators, scoring) · **41 pass, 0 fail** (2026-09-16; 21 TLC + 20 colony, ~10 s) · **21 pass, 0 fail** (2026-09-16, Molecular Lab, ~12 s, real OpenChemLib) · **19 pass, 0 fail** (2026-09-20, community pure layer, <1 s) · **34 pass, 0 fail** (2026-09-20, AI Guide pure layer — request clamps, Gemini history rules, NDJSON framing, study modes — <1 s). · **28 pass, 0 fail** (2026-09-22, Dissolution Rate Constant pure layer — every column of the supplied practical sheet, both k columns proven distinct, the average against 0.000291833 and against each rejected averaging range, division-by-zero paths, duplicate/backwards times, both notations — <1 s). · **6 pass, 0 fail** (2026-09-24, lesson ad spacing — heading-only breaks, never inside a code fence, word-count gaps, lossless over all 69 lesson files, <1 s). · **23 pass, 0 fail** (2026-09-30, Battle Royale — display helpers, schema round-trips, station, titles, certificate search input). · **26 pass, 0 fail** (2026-10-08, Drug Stability Kinetics — % remaining against the sheet, residuals, the two-point tie, all three fits against an independent covariance computation, order selection on exact zero/first/second-order data, k/t½/t90 per order, k ≤ 0, validation, interpretation, <1 s). **7 pass, 0 fail** (2026-10-12, content governance — guides and `_learn.ts` complete, registered references, links resolve, no fake review). Battle Royale is **27** since 2026-10-12 (+4 ranking/podium). Total across all suites: **256**. These cover ten features' pure modules only — there is no framework, no CI, and nothing else is tested. Report them by name. **The community's SQL is verified separately** by running its migration twice against a throwaway local Postgres 16 and asserting RLS from a `nobypassrls` role — see the `community-system` skill. |
 
 ---
 

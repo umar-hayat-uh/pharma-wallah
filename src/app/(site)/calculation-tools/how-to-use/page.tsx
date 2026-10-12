@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { CalculatorGuide, type GuideFacts } from "@/components/calculator-guide";
-import { HUB_SUBJECTS, HUB_TOOL_COUNT } from "../tool-index";
+import { CALCULATOR_COUNT, HUB_SUBJECTS } from "../tool-index";
 import { SITE_NAME } from "@/lib/seo";
 
 /**
@@ -19,7 +19,9 @@ export const metadata: Metadata = {
 // Counted from the hub registry, so the guide's figures match the hub's.
 const FACTS: GuideFacts = {
   platform: "web",
-  toolCount: HUB_TOOL_COUNT,
+  // Every calculator page, the figure the home page and About print (it said
+  // 95 here — the hub's listing — while they said 106).
+  toolCount: CALCULATOR_COUNT,
   categories: HUB_SUBJECTS.map((s) => ({ id: s.id, label: s.label, href: `/calculation-tools#${s.id}` })),
   hubHref: "/calculation-tools",
 };

@@ -16,6 +16,7 @@ import {
   CalcAbout,
   CalcList,
   CalcFaq,
+  CalcLearn,
   AdSlot,
   LabActions,
   LabNotice,
@@ -52,6 +53,7 @@ import {
   type TableRow,
 } from "@/components/calculators/lab-analysis";
 import { analyseCalibration, MAX_STANDARDS, MIN_STANDARDS } from "./_calibration";
+import { LEARN } from "./_learn";
 
 // ─── EXAMPLES (inputs only — every result is calculated) ─────────────────────
 
@@ -476,6 +478,8 @@ export default function CalibrationCurveCalculatorPage() {
           SSE measures how far the points lie from the line, SST how far they lie from their mean.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

@@ -15,12 +15,14 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     ModeSwitch,
     LabNotice,
     formatSig,
     type ModeOption,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type Variable = "V2" | "V1" | "C2" | "C1";
 
@@ -275,6 +277,8 @@ export default function DilutionCalculator() {
                     When solving for a volume, the solvent to add is V₂ − V₁.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

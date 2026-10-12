@@ -11,7 +11,11 @@ import { MapPin, Mail, ArrowUpRight } from "lucide-react";
  * /mcqs, /slide-spotting) — they now point at the routes that exist.
  */
 const resourceLinks = [
-  { label: "Study material", href: "/courses" },
+  // Guides and the how-to page added 2026-10-12: the footer is on every page,
+  // so it is the one place every visitor can find the teaching material.
+  { label: "Calculation guides", href: "/guides" },
+  { label: "How to use the calculators", href: "/calculation-tools/how-to-use" },
+  { label: "Courses", href: "/courses" },
   { label: "Flashcards", href: "/flash-cards" },
   { label: "MCQ bank", href: "/mcqs-bank" },
   { label: "Slide spotting", href: "/spotting" },
@@ -23,6 +27,8 @@ const companyLinks = [
   { label: "About us", href: "/about-us" },
   { label: "Careers", href: "/careers" },
   { label: "FAQs", href: "/faqs" },
+  { label: "Editorial policy", href: "/editorial-policy" },
+  { label: "Report an error", href: "/contact?subject=Error%20report" },
   { label: "Contact", href: "/contact" },
 ];
 
@@ -36,9 +42,11 @@ const quickLinks = headerData.filter((item) => item.href && item.href !== "#");
  * "low value content" review reads as an abandoned template. Add a channel back
  * here only once it has a real address.
  */
+// The footer said info@ while /contact, /terms and /privacy all give support@
+// (2026-10-12) — one address everywhere, and a link rather than bare text.
 const contact = [
-  { Icon: MapPin, text: "Dept. of Pharmacy, University of Karachi" },
-  { Icon: Mail, text: "info@pharmawallah.com" },
+  { Icon: MapPin, text: "Dept. of Pharmacy, University of Karachi", href: null },
+  { Icon: Mail, text: "support@pharmawallah.com", href: "mailto:support@pharmawallah.com" },
 ];
 
 // The one account that exists — also linked from the science-fair quiz.
@@ -105,8 +113,8 @@ const Footer = () => (
             <Image src="/images/logo/logo.svg" alt="PharmaWallah" width={180} height={48} className="h-10 w-auto" />
           </Link>
           <p className="mt-7 text-[1.65rem] font-bold leading-[1.12] tracking-[-0.03em] [text-wrap:balance] sm:text-4xl">
-            Empowering pharmacy students across Pakistan
-            <span className="text-white/65"> with curated resources, MCQ banks and AI-powered learning tools.</span>
+            Pharmacy calculations, shown step by step
+            <span className="text-white/65"> — with guides, lessons and lab practice for Pharm-D students in Pakistan.</span>
           </p>
         </div>
 
@@ -149,10 +157,16 @@ const Footer = () => (
 
         <div className="col-span-2 md:col-span-1">
           <Column title="Contact">
-            {contact.map(({ Icon: IconComp, text }) => (
+            {contact.map(({ Icon: IconComp, text, href }) => (
               <div role="listitem" key={text} className="flex items-start gap-3 text-[15px] leading-snug text-white/90">
                 <IconComp className="mt-0.5 h-4 w-4 shrink-0 text-white/70" aria-hidden="true" />
-                {text}
+                {href ? (
+                  <a href={href} className="break-all transition-colors hover:text-white hover:underline">
+                    {text}
+                  </a>
+                ) : (
+                  text
+                )}
               </div>
             ))}
           </Column>

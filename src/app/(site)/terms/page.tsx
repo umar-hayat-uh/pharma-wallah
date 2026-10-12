@@ -134,13 +134,13 @@ export default function TermsPage() {
           </p>
           <div className="flex flex-wrap gap-4">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-xs font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-300 inline-block" /> Version 1.0
+              <span className="w-1.5 h-1.5 rounded-full bg-green-300 inline-block" /> Version 1.1
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-xs font-bold">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-300 inline-block" /> Governing Law: Pakistan
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-xs font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-yellow-300 inline-block" /> Last Updated: Feb 2025
+              <span className="w-1.5 h-1.5 rounded-full bg-yellow-300 inline-block" /> Last Updated: Oct 2026
             </span>
           </div>
         </div>
@@ -193,13 +193,18 @@ export default function TermsPage() {
             </div>
 
             <SectionBlock id="introduction" num={1} label="Introduction" Icon={FileText} accent="from-blue-600 to-green-400" hex="#2563eb">
-              <Para>Pharmawallah ("we", "our", "us") provides an open-access educational platform including pharmaceutical calculators, drug mechanism explanations, an AI guide tool, and a Pharmacopedia drug encyclopedia. These Terms govern your use of our website at pharmawallah.com (the "Site"). By accessing or using the Site, you agree to be bound by these Terms.</Para>
+              <Para>Pharmawallah ("we", "our", "us") provides an educational platform for pharmacy students, including pharmaceutical calculators, calculation guides, course lessons, spotting slides, lab simulations, an AI study guide, a drug encyclopedia, a community forum and a clinical reference desk. These Terms govern your use of our website at pharmawallah.com (the "Site"). By accessing or using the Site, you agree to be bound by these Terms.</Para>
             </SectionBlock>
 
             <SectionBlock id="use-of-website" num={2} label="Use of Website" Icon={Globe} accent="from-emerald-600 to-cyan-400" hex="#059669">
               <Para>The Site is intended for educational and informational purposes only. You may use the Site only if you are at least 13 years of age and are not barred from using it under applicable law.</Para>
               <Sub>Account Registration</Sub>
-              <Para>Currently, Pharmawallah does not require user registration. All tools and resources are accessible without creating an account. If account features are introduced in the future, additional terms may apply.</Para>
+              {/* Until 2026-10-12 this said the site had no registration. Accounts
+                  exist (dashboard, community, event registration); the privacy
+                  policy was corrected on 2026-09-23 and these terms now match it. */}
+              <Para>The calculators, guides and lessons can be used without an account. Some features — the progress dashboard, posting in the community, and registering for events — need a free account. You are responsible for keeping your sign-in details secure and for activity under your account. To have your account deleted, email us from the address you signed up with.</Para>
+              <Sub>Community Posts</Sub>
+              <Para>You keep ownership of what you post in the community, and you give us permission to display it on the Site. Do not post content you have no right to share (for example, scanned pages of copyrighted textbooks), personal information about patients, or anything abusive. We may remove posts that break these Terms.</Para>
               <Sub>Permitted Use</Sub>
               <Bullets items={[
                 "Access and view content for personal, non-commercial educational purposes",
@@ -240,6 +245,10 @@ export default function TermsPage() {
             <SectionBlock id="disclaimers" num={6} label="Disclaimers" Icon={AlertTriangle} accent="from-rose-500 to-orange-400" hex="#ea580c">
               <Warning>The Site and all content, tools, and AI-generated responses are provided on an "as is" and "as available" basis without any warranties of any kind, either express or implied. Pharmawallah does not warrant that the Site will be uninterrupted, error-free, or free of viruses or other harmful components.</Warning>
               <Para>The educational content, calculators, and AI guide are intended for learning and informational purposes only. They are not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of a qualified healthcare provider.</Para>
+              <Sub>Calculators Are Educational, Not Patient-Specific</Sub>
+              <Para>Our calculators reproduce the standard textbook and practical-manual methods so that students can check their working. They do not know a real patient&apos;s full clinical picture, and they have not been independently reviewed by a pharmacist. Do not use a result to choose, prepare or give a dose for a real patient: use your institution&apos;s approved references and the judgement of a qualified professional.</Para>
+              <Sub>Errors and Corrections</Sub>
+              <Para>The Site is written and checked by pharmacy students, so mistakes can get through. If you find one, please <Link href="/contact?subject=Error%20report" className="font-semibold text-blue-700 hover:underline">report it</Link> — we read every report and correct confirmed errors on the page. Our <Link href="/editorial-policy" className="font-semibold text-blue-700 hover:underline">editorial policy</Link> explains how content is written and checked.</Para>
               <InfoBox hex="#ea580c">
                 <strong>AI Accuracy:</strong> The AI guide tool may occasionally generate incorrect or outdated information. You should independently verify all critical information before relying on it for clinical or professional decisions.
               </InfoBox>
@@ -289,7 +298,7 @@ export default function TermsPage() {
                 </div>
               </div>
               <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <p className="text-xs text-gray-400">Version 1.0 · Last Updated: February 2025 · Governed by the laws of Pakistan</p>
+                <p className="text-xs text-gray-400">Version 1.1 · Last Updated: October 2026 · Governed by the laws of Pakistan</p>
                 <Link href="/" className="text-xs font-bold text-blue-600 hover:text-blue-700 transition">
                   pharmawallah.com →
                 </Link>

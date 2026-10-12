@@ -1295,6 +1295,86 @@ Traps that will otherwise be rediscovered painfully.
      (c) Translucent glass callouts over a white phone screen make white text vanish — looks exactly
      like a z-index bug; it isn't. (d) zsh aborts a whole `&&` chain on an unmatched glob
      (`rm -f x/still-*.png`) — use `find … -delete`. (2026-10-08)
+194. **The owner's reel-ad brief names colours and fonts the brand does not use** (2026-10-10):
+     `#2563EB`/`#4ADE80`/`#0B1220` and Inter/Manrope. Ads use the brand's `#1C7BD9`/`#21B67A`, Outfit,
+     and no black ground — the table in `.claude/skills/reel-ads/SKILL.md` says why. Also: a real phone
+     screenshot of the live site needs no dev server — `google-chrome --headless=new
+     --window-size=390,844 --force-device-scale-factor=3 --screenshot=… <url>` gives 1170×2532.
+195. **"Works offline" can be proven, not just claimed, and the app shows it itself** (2026-10-11, ad-05).
+     Drive the app export over CDP: fail every non-local request (`Fetch.failRequest`), load the page,
+     then `Network.emulateNetworkConditions {offline:true}` (navigator.onLine → false) *before* typing
+     or tapping Calculate. Dilution, Percentage Yield and Stability Kinetics all computed fully offline
+     and the bundle attempted **0** external requests (`ad-05/capture.mjs`, `assets/offline-log.json`).
+     The app bar then shows its own **"Offline"** pill and the home its "Works offline" badge, so real
+     captures carry an honest offline indicator. More video traps (extend 193): (e) a `.grad-text` span
+     that is a whole animated line paints its *own* clipped copy of the text at a different position
+     from the transformed `.w` inside it — a doubled ghost ("CALCULATE." twice); fix in the ad's CSS with
+     `.grad-text:has(.w) { background: none !important; }` (the words carry the gradient). (f)
+     `text-shadow` on a gradient headline shows through the transparent glyphs and greys them — use
+     `filter: drop-shadow`. (g) A background slice of a 7,000 px+ full-page capture paints blank in
+     the render (not decoded in time), and a 13,000 px `captureBeyondViewport` shot came back with a
+     blank app bar — crop the bar into its own small `<img>`. (h) `pkill -f "render.mjs ad-NN"` also
+     matches the Bash tool's own shell and kills it; kill by `pgrep -f "^node video/render.mjs ad-NN"`.
+     (i) A camera layer that pans and zooms must be bigger than the frame — ad-05's frame-sized bench
+     showed a strip of ground along the bottom; give its background `inset: -600px`. (j) Opening
+     `ad.html` in a normal browser window shows past the 1080×1920 frame's edge (looks "cut off"; the
+     render is not) — ad-05's preview branch scales the frame to fit the window.
+196. **Biopharmaceutics ads: which tools are safe to demo, and two counts that disagree** (2026-10-11, ad-06).
+     Of the 14 hub tools, these paths have **no** recorded maths fault and are what ad-06 shows: Half-Life
+     via **Cl & Vd** (its concentration method double-converts minutes/days), Bioavailability from AUC
+     data, Clearance = dose ÷ AUC, the first- vs zero-order plot, Partition Coefficient and Dialysis
+     Membrane practical sheets. Avoid on screen: AUC Estimator units, Bioequivalence (z fixed at 1.645,
+     arithmetic ratio), Loading and Maintenance Dose (tracker "Suspected maths issues"). The app's
+     Biopharm category says **16 calculators** while the web hub lists **14** (the app adds tools the hub
+     files elsewhere), so print no count beside an app screen. Video traps (extend 193/195): (i) typing
+     "0.0…" into a field passes through 0 and flashes the red "Must be greater than 0" error;
+     (j) `kit.through()` rewrites each scene's inline `background` every frame, so an opaque white end
+     card must be an inner div; (k) the kit's `.vignette`/`.grain`/`#motifs` sit above the scenes and grey a
+     white end card. (l) Parallel sessions both created `ad-05` within a minute: check `ListAgents` and
+     `ls video/` before taking a number.
+197. **Animal-dosing ads, and four capture traps** (2026-10-11, ad-07). The owner calls them "Dose
+     Calculation" and "Animal Dose Dilution"; the real tools are the **Animal Weight-Based Dose Calculator**
+     (`animal-dose`) and the **Serial Dose Calculator** (`serial-diluation`, slug misspelt on purpose — it is
+     the URL). Print the real names on screen. Animal Dose scales **linearly** by weight and its own page says
+     it is for following the method, not planning a study — never claim accuracy for it, and carry "follow
+     your approved protocol". Capture traps (extend 193/195/196): (m) the app's `globals.css` sets
+     `html{scroll-behavior:smooth}`, so `scrollTo()` *animates* in a capture and every frame lands at a
+     different scroll — inject `html{scroll-behavior:auto!important}` (ad-07 `capture.mjs`). (n) A
+     `captureBeyondViewport` clip of an element paints the fixed app bar over it and shifts the next
+     frame's scroll — crop cards out of a plain viewport shot at scroll 0 instead (`ad-07/crop.py`). A
+     full-page `clip.scale: 2` on a 2× device gives a **4×** image (1560 px wide). (o) Serial Dose: a
+     cleared field shows a red "Required.", and while any value is invalid the stat tiles disappear and the
+     form jumps ~45 px — type over a selected value, and re-anchor the scroll to the field every frame.
+     (p) Caveat's "?" overhangs its advance, so a clip-path reveal cuts its hook off (reads as "!") — pad
+     the right edge. (q) A ring that grows past the frame before an `iris` opens leaves near-empty frames —
+     cap it on screen and let the iris's own ring take over.
+
+198. **Educational content has a governed shape (2026-10-12, AdSense remediation).** Citations live only in
+   `src/lib/content/references.ts` and are cited by id (a typo fails tsc); add a source only after checking
+   edition/year/publisher and record how in `checked`. Calculator teaching = a `_learn.ts` beside the page
+   (`CalcEducation`) rendered by `<CalcLearn>` after `FormulaNote`, before `CalcFaq`. Guides = typed data in
+   `src/lib/guides/content/<slug>.ts`, server-rendered. Review status is `ContentReview`: `expert-reviewed` needs
+   a named reviewer, qualification and date — **no page has one; never display a review that did not happen.**
+   `scripts/content-governance.test.mts` enforces the structure. Worked examples must equal what the
+   calculator prints for the same inputs (trace its rounding) *and* be recomputed independently.
+199. **A list drawn in a visual order is read in DOM order.** The Battle Royale podium was an `<ol>` written
+   2 · 1 · 3, so its text (screen readers, crawlers, anyone reading the page source) put the runner-up first —
+   reported as "the leaderboard ranks 175 above 185" although the data was right. Write the DOM in rank order
+   and place visually with CSS `order` (`src/lib/battle-royale/ranking.ts` → `podiumSlots`).
+200. **Unknown slugs under dynamic routes are soft 404s site-wide** (`/guides/x`, `/courses/x` → 200 + not-found
+   UI + `noindex`). Cause: the root `loading.tsx` streams before `notFound()` (gotcha 183). `export const
+   dynamicParams = false` does **not** change it (measured under `next start`). Harmless for indexing because
+   the not-found page is noindexed; a real 404 needs the root loading boundary moved.
+201. **`academia.pharmawallah.com` is the same Vercel deployment as www** — a full duplicate, every page
+   canonicalised to www. Redirect it at Vercel, not in middleware: Google sign-in returns to
+   `window.location.origin + /api/auth/callback`, so a host redirect can break an in-flight sign-in, and the
+   Supabase allowed redirect URLs are not in the repo. (`clinical.` is an intended sub-brand; keep it.)
+202. **Two sessions' headless Chromes collided on CDP port 9333** — one session's tab showed the other's pages,
+   producing nonsense results. Use a session-specific `--remote-debugging-port` and `--user-data-dir`.
+203. **Counts on the site have one definition each** (2026-10-12): "calculators" = `CALCULATOR_COUNT` (106, every
+   tool dir, all registered); the hub may say "95 in this index" (`HUB_TOOL_COUNT`); the Download page's 106 is
+   the count *inside the published APK* (re-measure with `unzip -l` after a release). MCQ total 660 is typed in
+   `mcqs-bank/page.tsx` — correct, validated against the banks 2026-10-12.
 
 ## 9. Working preferences (observed)
 

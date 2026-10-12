@@ -34,6 +34,7 @@ hard way in this codebase.
 | `landing-page-motion` | The GSAP landing page at `/`: "The Index" as a scroll-played whiteboard video — marker marks, pen, timeline bar, motion hook, scoped stylesheet | Any change to `/`, its copy, its sections, annotations or animation | `.claude/skills/landing-page-motion/` |
 | `top-design` | Awwwards-level design standard: typography as architecture, composition, custom easing, colour, micro-details, 0–10 scoring rubric | Designing or reviewing any page's visual quality; "make it premium" | `.claude/skills/top-design/` |
 | `adsense-monetization` | Ad placements: the one `AdSlot` component, the env-gated loader, the excluded surfaces | Adding/moving an ad, "ads aren't showing", an AdSense policy warning | `.claude/skills/adsense-monetization/` |
+| `reel-ads` | 9:16 promo reels with the frame-exact HTML video kit that lives **outside** the repo: brief overrides (brand hexes, Outfit, Android-only CTA), real UI, verified figures, original music, render + inspect | "make an ad / reel / promo video", "re-render ad-NN", "the visuals look bland" | `.claude/skills/reel-ads/` (+ `BRIEF.md`, the owner's brief verbatim) |
 
 ## Domain skills
 
@@ -85,6 +86,7 @@ Most real tasks use three. Typical stacks:
 | "Add a clinical interaction checker" | `implement-feature` → `clinical-and-external-apis` → `api-route-conventions` → `caching-and-ratelimiting` |
 | "Redesign the encyclopedia / show more drug data" | `drug-encyclopedia` → `top-design` → `frontend-ui-conventions` → `testing-verification` |
 | "Add a pharmacy counter case / a new medicine" | `pharmacy-counter` → `frontend-ui-conventions` → `testing-verification` |
+| "Make a reel ad for a calculator" | `reel-ads` → `calculator-tool` (read the pure module for real figures) |
 | "Improve the AI tutor" | `ai-gemini-integration` → `security-review` (it is an unthrottled paid endpoint) |
 
 **Always finish with `testing-verification`** — this repo has no tests and a broken lint command,

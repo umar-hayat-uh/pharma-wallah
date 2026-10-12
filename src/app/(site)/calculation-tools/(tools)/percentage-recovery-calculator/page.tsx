@@ -12,6 +12,7 @@ import {
   CalcAbout,
   CalcList,
   CalcFaq,
+  CalcLearn,
   AdSlot,
   LabReport,
   LabActions,
@@ -27,6 +28,7 @@ import {
   MASS_TO_G,
   VOLUME_TO_ML,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 // ─── TYPES & UNIT TABLES ─────────────────────────────────────────────────────
 
@@ -564,6 +566,8 @@ export default function PercentageRecoveryCalculator() {
           mL then gives each amount in mg or mmol.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

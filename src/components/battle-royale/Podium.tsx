@@ -8,6 +8,7 @@
  * stage still reads before anyone has played.
  */
 import type { LeaderboardRow } from "@/lib/battle-royale/types";
+import { PLACE_LABEL, podiumSlots } from "@/lib/battle-royale/ranking";
 import { BRAND_SURFACE } from "@/components/page-kit";
 import { cn } from "@/lib/utils";
 import "./podium.css";
@@ -49,7 +50,9 @@ function Cup({ place, className }: { place: Place; className?: string }) {
   );
 }
 
-const ORDER: Place[] = [2, 1, 3];
+// Visual columns: 2nd on the left, 1st in the middle, 3rd on the right. The
+// list itself is in rank order (podiumSlots) and CSS `order` places it.
+const COLUMN_CLASS: Record<1 | 2 | 3, string> = { 1: "order-1", 2: "order-2", 3: "order-3" };
 const BLOCK_H: Record<Place, string> = { 1: "h-36 sm:h-44", 2: "h-24 sm:h-32", 3: "h-16 sm:h-24" };
 const CUP_W: Record<Place, string> = { 1: "w-20 sm:w-28", 2: "w-16 sm:w-20", 3: "w-14 sm:w-[4.5rem]" };
 
@@ -64,8 +67,7 @@ export function Podium({
   size?: "md" | "lg";
   className?: string;
 }) {
-  // Rank ties share a number; the stage shows the first three rows in board order.
-  const top = rows.slice(0, 3);
+  const slots = podiumSlots(rows);
   return (
     <div
       className={cn("br-podium relative overflow-hidden rounded-[2rem] px-3 pb-0 pt-10 text-white sm:px-8 sm:pt-14", className)}
@@ -82,11 +84,15 @@ export function Podium({
       </div>
 
       <ol className="relative mx-auto grid max-w-3xl grid-cols-3 items-end gap-2 sm:gap-4" aria-label="Top three">
-        {ORDER.map((place, i) => {
-          const r = top[place - 1];
+        {slots.map(({ place, row: r, column }) => {
           const mine = Boolean(r && highlightCode && r.code === highlightCode);
           return (
-            <li key={place} className="br-podium__place flex min-w-0 flex-col items-center" style={{ animationDelay: `${[240, 0, 420][i]}ms` }}>
+            <li
+              key={place}
+              className={cn("br-podium__place flex min-w-0 flex-col items-center", COLUMN_CLASS[column])}
+              style={{ animationDelay: `${{ 1: 0, 2: 240, 3: 420 }[place]}ms` }}
+              aria-label={r ? `${PLACE_LABEL[place]}: ${r.name}, ${r.university}, ${r.total} points` : `${PLACE_LABEL[place]}: not yet claimed`}
+            >
               <div className="mb-2 min-w-0 max-w-full px-1 text-center">
                 <p className={cn("truncate font-bold", size === "lg" ? "text-lg sm:text-2xl" : "text-sm sm:text-lg", !r && "text-white/60")}>
                   {r ? r.name : "Your name here"}
@@ -108,7 +114,7 @@ export function Podium({
                 )}
               >
                 <span className={cn("font-extrabold leading-none text-[#16181d]", place === 1 ? "text-5xl sm:text-7xl" : "text-4xl sm:text-6xl")}>{place}</span>
-                <span className="sr-only">{METAL[place].label}</span>
+                <span className="sr-only">{PLACE_LABEL[place]} ({METAL[place].label})</span>
               </div>
             </li>
           );

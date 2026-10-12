@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, BookOpen, Calculator, FlaskConical, Microscope, Smartphone, Stethoscope } from "lucide-react";
 import { BRAND_BUTTON, BRAND_SURFACE, FigureRow, PageHero, PageSection, Reveal } from "@/components/page-kit";
-import { HUB_TOOL_COUNT } from "@/app/(site)/calculation-tools/tool-index";
+import { CALCULATOR_COUNT } from "@/app/(site)/calculation-tools/tool-index";
 import { SUBJECTS } from "@/lib/courses/registry";
+import { reportErrorHref } from "@/lib/content/governance";
 import { TEAM, TEAM_SECTIONS, type TeamMember } from "@/lib/team";
 import FlipCard from "./FlipCard";
 import { Plate } from "./_Plate";
@@ -26,19 +27,23 @@ const PILLARS = [
     {
         icon: Calculator,
         name: "Calculation tools",
-        note: `${HUB_TOOL_COUNT} calculators, each showing its working step by step.`,
+        note: `${CALCULATOR_COUNT} calculators, each showing its working step by step.`,
         href: "/calculation-tools",
     },
     {
         icon: BookOpen,
         name: "Courses & MCQs",
-        note: `${UNIT_COUNT} units of lesson notes, each ending in practice questions.`,
+        // Only registered subjects are published (four so far); the rest of the
+        // syllabus is still being written, and the card says so rather than
+        // implying the whole Pharm-D is covered.
+        note: `${UNIT_COUNT} lesson units in ${SUBJECTS.length} subjects so far, each subject with an MCQ bank. More subjects are being written.`,
         href: "/courses",
     },
     {
         icon: Microscope,
         name: "Spotting labs",
-        note: "Histology, pathology and powder-microscopy slides, with timed tests.",
+        // The powder-microscopy test is offline until real slide photographs exist (Known Issue 23).
+        note: "Histology and pathology slides with timed identification tests, plus powder-microscopy notes.",
         href: "/spotting",
     },
     {
@@ -113,7 +118,7 @@ export default function AboutPage() {
                         columns={3}
                         figures={[
                             { value: TEAM.length, label: "students on the team", href: "#team" },
-                            { value: HUB_TOOL_COUNT, label: "calculators", href: "/calculation-tools" },
+                            { value: CALCULATOR_COUNT, label: "calculators", href: "/calculation-tools" },
                             { value: UNIT_COUNT, label: "course units", href: "/courses" },
                         ]}
                     />
@@ -132,7 +137,7 @@ export default function AboutPage() {
 
 function Story() {
     return (
-        <PageSection eyebrow="Our story" title="One place for the whole syllabus." ruled={false}>
+        <PageSection eyebrow="Our story" title="One place to find it, and work it out." ruled={false}>
             <div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-14">
                 <Reveal>
                     <p className="text-[clamp(1.25rem,1rem+1vw,1.75rem)] font-semibold leading-snug tracking-[-0.02em] [text-wrap:balance]">
@@ -148,6 +153,14 @@ function Story() {
                     <p>
                         So we started collecting — first for ourselves, then for our year. It is free, it needs no
                         account, and it is written and checked by the students on this page.
+                    </p>
+                    <p>
+                        It is a study aid, not clinical advice. No pharmacist has independently reviewed it yet, and every
+                        calculator carries an educational-use notice.{" "}
+                        <Link href="/editorial-policy" className="font-medium text-[#1c7bd9] underline-offset-4 hover:underline">
+                            How we write and check our content
+                        </Link>
+                        .
                     </p>
                 </Reveal>
             </div>
@@ -325,10 +338,10 @@ function Closing() {
                     </p>
                     <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
                         <Link
-                            href="/contact"
+                            href={reportErrorHref("PharmaWallah")}
                             className="inline-flex h-11 items-center gap-2 rounded-full bg-white px-6 text-[15px] font-semibold text-[#0f4f8f] transition-transform duration-500 ease-out-expo hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
                         >
-                            Contact us
+                            Report a mistake
                             <ArrowRight className="h-4 w-4" aria-hidden="true" />
                         </Link>
                         <Link

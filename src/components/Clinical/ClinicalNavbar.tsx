@@ -257,7 +257,7 @@ export default function ClinicalNavbar() {
                         {/* Desktop CTAs */}
                         <div className="hidden lg:flex items-center gap-3">
                             <a
-                                href="https://academia.pharmawallah.com/"
+                                href="https://www.pharmawallah.com/"
                                 className="px-5 py-2.5 rounded-xl bg-white border-2 border-slate-200 text-slate-700 font-bold text-sm hover:border-[#1C7BD9]/30 hover:text-[#1C7BD9] transition-all duration-300"
                             >
                                 Academia
@@ -412,7 +412,7 @@ export default function ClinicalNavbar() {
 
                             <div className="p-4 border-t border-slate-100 space-y-3 bg-slate-50">
                                 <a
-                                    href="https://academia.pharmawallah.com/"
+                                    href="https://www.pharmawallah.com/"
                                     className="flex items-center justify-center w-full px-5 py-3 rounded-xl bg-white border-2 border-slate-200 text-slate-700 font-bold text-sm hover:border-[#1C7BD9]/30 hover:text-[#1C7BD9] transition-all duration-300"
                                 >
                                     Academia

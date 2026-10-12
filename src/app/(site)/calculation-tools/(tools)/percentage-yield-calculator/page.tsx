@@ -12,6 +12,7 @@ import {
   CalcAbout,
   CalcList,
   CalcFaq,
+  CalcLearn,
   AdSlot,
   LabReport,
   LabActions,
@@ -26,6 +27,7 @@ import {
   readQuery,
   MASS_TO_G,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 // ─── TYPES & CONSTANTS ───────────────────────────────────────────────────────
 
@@ -334,6 +336,8 @@ export default function PercentageYieldCalculator() {
           worked it out.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

@@ -16,10 +16,12 @@ import {
   CalcAbout,
   CalcList,
   CalcFaq,
+  CalcLearn,
   AdSlot,
   ModeSwitch,
   type ResultTone,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type Method = "absorbance" | "concentration" | "epsilon";
 type MolarityUnit = "M" | "mM" | "μM" | "nM";
@@ -384,6 +386,8 @@ export default function BeerLambertCalculator() {
         </p>
         <p className="text-xs">Sources: IUPAC; USP General Chapter &lt;857&gt;; Harris, Quantitative Chemical Analysis.</p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

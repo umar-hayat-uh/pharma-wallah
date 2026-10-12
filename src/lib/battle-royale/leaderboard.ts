@@ -7,6 +7,7 @@
  * below is the whole of what anyone outside the admin can see.
  */
 import { redis } from "@/lib/redis";
+import { compareBoardRows } from "./ranking";
 import { db, readSettings } from "./server";
 import type { FinalStatus, LeaderboardPayload, LeaderboardRow } from "./types";
 
@@ -82,7 +83,8 @@ async function readShared(limit: number): Promise<Shared | null> {
   }
   const fin = settings.resultsFinalized;
   return {
-    rows: (top.data as Row[]).map((r) => project(r, fin)),
+    // Re-sorted with the board's own rule so a tie never depends on row order from PostgREST.
+    rows: (top.data as Row[]).map((r) => project(r, fin)).sort(compareBoardRows),
     totalRanked: count.count ?? top.data.length,
     frozenAt: settings.leaderboardFrozenAt,
     finalized: fin,

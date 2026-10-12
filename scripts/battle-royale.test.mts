@@ -249,3 +249,35 @@ test("certificateQuery: name words, Player ID prefixes, and no wildcards get thr
   assert.deepEqual(f.certificateQuery("مہک"), { words: ["مہک"] });
   assert.deepEqual(f.certificateQuery("O'Brien-Smith"), { words: ["O'Brien-Smith"] });
 });
+
+// ── Board order and podium places (2026-10-12) ───────────────────────────
+// The live board had the runner-up (175) read first in the podium's text
+// because the list was written 2 · 1 · 3. These pin both the order and the tie-break.
+const rk = await import("../src/lib/battle-royale/ranking.ts");
+const row = (code: string, rank: number, total: number, timeMs: number) =>
+  ({ rank, code, name: code, university: "U", total, rounds: [0, 0, 0], correct: 0, questions: 0, timeMs, finalStatus: "pending" }) as never;
+
+test("podium slots are in rank order, with 1st drawn in the middle column", () => {
+  const rows = [row("BR-0043", 2, 175, 270_198), row("BR-0046", 1, 185, 200_739), row("BR-0032", 3, 175, 283_074)];
+  const slots = rk.podiumSlots(rows);
+  assert.deepEqual(slots.map((s: { place: number }) => s.place), [1, 2, 3]);
+  assert.deepEqual(slots.map((s: { row: { code: string } }) => s.row.code), ["BR-0046", "BR-0043", "BR-0032"]);
+  assert.deepEqual(slots.map((s: { column: number }) => s.column), [2, 1, 3]);
+});
+
+test("board order: total first, then the shorter time, then player code", () => {
+  const rows = [row("C", 1, 165, 180_000), row("B", 1, 165, 160_000), row("A", 1, 165, 160_000), row("D", 1, 185, 300_000)];
+  assert.deepEqual([...rows].sort(rk.compareBoardRows).map((r: { code: string }) => r.code), ["D", "A", "B", "C"]);
+});
+
+test("the view's rank still wins over the JS tie-break", () => {
+  const rows = [row("X", 2, 185, 1), row("Y", 1, 175, 999_999)];
+  assert.deepEqual([...rows].sort(rk.compareBoardRows).map((r: { code: string }) => r.code), ["Y", "X"]);
+});
+
+test("an empty or short board leaves the remaining places unclaimed", () => {
+  const slots = rk.podiumSlots([row("Only", 1, 50, 10)]);
+  assert.equal(slots[0].row.code, "Only");
+  assert.equal(slots[1].row, undefined);
+  assert.equal(slots[2].row, undefined);
+});

@@ -15,6 +15,7 @@ import {
   CalcAbout,
   CalcList,
   CalcFaq,
+  CalcLearn,
   AdSlot,
   LabActions,
   LabNotice,
@@ -60,6 +61,7 @@ import {
   MIN_TIME_POINTS,
   type DissolutionResult,
 } from "./_dissolution";
+import { LEARN } from "./_learn";
 
 // ─── EXAMPLES (inputs only — every result is calculated) ─────────────────────
 
@@ -635,6 +637,8 @@ export default function DissolutionCalculatorPage() {
           converted to mg/mL as its own step before the amount is calculated.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

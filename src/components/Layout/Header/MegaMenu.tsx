@@ -44,15 +44,16 @@ const FEATURED: Record<
 > = {
   Resources: {
     eyebrow: "Start here",
-    title: "Your semester, already organised",
-    body: "Notes, past papers and spotting decks mapped to the Pharm-D syllabus — open the semester you are in.",
+    // Said "Notes, past papers and spotting decks" — there are no past papers.
+    title: "Lessons, unit by unit",
+    body: "Lesson notes and MCQ banks for the subjects published so far, plus spotting slides and lab simulations.",
     href: "/courses",
-    cta: "Open study material",
+    cta: "Open the courses",
   },
   "Calculation Tools": {
     eyebrow: "Calculators",
-    title: "Every calculation, worked",
-    body: "Dosage, dilution, kinetics and analysis tools. The whole set also ships offline in the Android app.",
+    title: "Pharmacy calculations, worked",
+    body: "Dosage, dilution, kinetics and analysis tools, each with its formula. The whole set also ships offline in the Android app.",
     href: "/calculation-tools",
     cta: "Browse all calculators",
   },
