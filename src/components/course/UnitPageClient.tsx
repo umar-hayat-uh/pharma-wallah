@@ -33,6 +33,8 @@ interface Props {
   unitIndex: number;
   content: string;
   basePath: string;
+  /** Published guides related to this subject (picked server-side: src/lib/guides/related.ts). */
+  relatedGuides?: { slug: string; title: string }[];
 }
 
 export default function UnitPageClient({
@@ -43,6 +45,7 @@ export default function UnitPageClient({
   unitIndex,
   content,
   basePath,
+  relatedGuides = [],
 }: Props) {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [imgError, setImgError] = useState(false);
@@ -248,6 +251,20 @@ export default function UnitPageClient({
               <div className="mt-8 max-w-4xl mx-auto">
                 <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LESSON} />
               </div>
+            )}
+
+            {/* Related calculation guides (internal linking, 2026-10-13). */}
+            {relatedGuides.length > 0 && (
+              <nav aria-label="Related guides" className="mt-10 max-w-4xl mx-auto rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
+                <p className="text-sm font-bold text-gray-900">Related calculation guides</p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {relatedGuides.map((g) => (
+                    <Link key={g.slug} href={`/guides/${g.slug}`} className="rounded-xl border border-gray-200 px-3 py-2.5 text-sm font-medium text-blue-700 hover:bg-blue-50">
+                      {g.title}
+                    </Link>
+                  ))}
+                </div>
+              </nav>
             )}
 
             {/* Comments */}

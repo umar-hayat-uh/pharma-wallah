@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Activity, LineChart, Plus, RefreshCw, Trash2, Zap } from "lucide-react";
+import { LineChart, Plus, RefreshCw, Trash2, Zap } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,7 +44,9 @@ interface PointRow {
 const METHODS: ModeOption<Method>[] = [
     { value: "single", label: "From dose and CL", description: "AUC = Dose × F / CL", icon: Zap },
     { value: "trapezoidal", label: "Trapezoidal", description: "From concentration–time data", icon: LineChart },
-    { value: "clearance", label: "Multiple doses", description: "Not available yet", icon: Activity },
+    // A "Multiple doses" mode was listed here with no inputs and no result
+    // ("Not available yet"); removed 2026-10-13 rather than shown unfinished.
+    // At steady state, AUC over one interval = Dose × F / CL (the first mode).
 ];
 
 const UNITS: AUCUnit[] = ["mg·h/L", "μg·h/mL", "ng·h/mL"];
@@ -417,14 +419,6 @@ export default function AUCCalculator() {
                     </div>
                 )}
 
-                {method === "clearance" && (
-                    <LabNotice tone="info" title="Not available yet">
-                        The multiple-dose method has no inputs in this tool, so it cannot give a result. For a
-                        dosing interval at steady state, AUC over one interval equals Dose × F / CL — use{" "}
-                        <strong>From dose and CL</strong> with the maintenance dose, or{" "}
-                        <strong>Trapezoidal</strong> with levels measured across one interval.
-                    </LabNotice>
-                )}
 
                 <div>
                     <p className="mb-2 text-xs font-medium text-muted-foreground">

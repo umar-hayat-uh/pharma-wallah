@@ -37,7 +37,7 @@ const PILLARS = [
         // Only registered subjects are published (four so far); the rest of the
         // syllabus is still being written, and the card says so rather than
         // implying the whole Pharm-D is covered.
-        note: `${UNIT_COUNT} lesson units in ${SUBJECTS.length} subjects so far, each subject with an MCQ bank. More subjects are being written.`,
+        note: `${UNIT_COUNT} lesson units in ${SUBJECTS.length} subjects, each subject with an MCQ bank.`,
         href: "/courses",
     },
     {

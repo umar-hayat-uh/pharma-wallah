@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { relatedGuidesForSubject } from "@/lib/guides/related";
 import { JsonLd, breadcrumbLd } from "@/lib/structured-data";
 import { pageMeta } from "@/lib/seo";
 import { SUBJECTS, getUnit } from "@/lib/courses/registry";
@@ -54,6 +55,7 @@ export default function UnitPage({ params }: { params: Params }) {
       unitIndex={index}
       content={content ?? ""}
       basePath={`/courses/${subject.slug}`}
+      relatedGuides={relatedGuidesForSubject(subject.slug)}
       />
     </>
   );

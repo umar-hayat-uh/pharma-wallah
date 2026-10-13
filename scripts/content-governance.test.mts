@@ -100,3 +100,16 @@ test("no content claims an expert review (none has happened yet)", () => {
   // reviewer's name, qualification and date, and update this test.
   for (const g of guides) assert.notEqual(g.meta.review.status, "expert-reviewed", g.slug);
 });
+
+test("a guide added after the first five is published only with a recorded reviewer (2026-10-13 rule)", async () => {
+  const { GUIDES } = await import("../src/lib/guides/index.ts");
+  const { creditsFor, isReviewed } = await import("../src/lib/content/bylines.ts");
+  const grandfathered = new Set([
+    "dilution-and-concentration", "dose-calculations", "reaction-kinetics-drug-stability",
+    "accuracy-precision-recovery", "pharmacokinetic-parameters",
+  ]);
+  for (const g of GUIDES as { slug: string }[]) {
+    if (grandfathered.has(g.slug)) continue;
+    assert.ok(isReviewed(creditsFor(`/guides/${g.slug}`)), `${g.slug} is published without a reviewer in src/lib/content/bylines.ts`);
+  }
+});

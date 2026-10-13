@@ -165,8 +165,7 @@ export default function CoursesPage() {
                         className="text-white/85 text-sm sm:text-base md:text-lg max-w-2xl mx-auto mb-8 font-medium leading-relaxed"
                     >
                         Unit-by-unit study notes for the Pharm-D subjects published so far,
-                        each with a matching bank of practice MCQs. More subjects are being
-                        written and appear here when they are finished.
+                        each with a matching bank of practice MCQs.
                     </motion.p>
 
                     {/* Search Box */}

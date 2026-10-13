@@ -64,7 +64,7 @@ export const PILLARS: Pillar[] = [
     num: "02",
     title: "Courses",
     figure: `${STATS.lessons} lessons`,
-    line: `${STATS.subjects} subjects so far, unit by unit, each with an MCQ bank. More subjects are being written.`,
+    line: `${STATS.subjects} subjects, unit by unit, each with an MCQ bank.`,
     href: "/courses",
     marker: "#1F9D63",
     cta: "Start a subject",
