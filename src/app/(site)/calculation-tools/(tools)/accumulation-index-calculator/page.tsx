@@ -17,7 +17,9 @@ import {
     CalcFaq,
     AdSlot,
     type ResultTone,
+    CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 /** The bands a systematic review of 122 studies settled on. */
 const SCALE = [
@@ -219,6 +221,8 @@ export default function AccumulationIndexCalculator() {
                     frequently is the classic recipe for delayed toxicity.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

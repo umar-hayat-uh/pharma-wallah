@@ -20,7 +20,9 @@ import {
   ModeSwitch,
   LabNotice,
   type ResultTone,
+  CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type Method = "peaks" | "efficiency";
 
@@ -355,6 +357,8 @@ export default function ChromatographicResolutionCalculator() {
         </p>
         <p className="text-xs">Sources: USP &lt;621&gt;; Snyder, Introduction to Modern Liquid Chromatography.</p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

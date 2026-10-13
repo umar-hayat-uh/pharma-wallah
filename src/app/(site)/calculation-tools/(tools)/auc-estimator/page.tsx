@@ -22,7 +22,9 @@ import {
     LabNotice,
     type ModeOption,
     type ResultTone,
+    CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type AUCUnit = "mg·h/L" | "μg·h/mL" | "ng·h/mL";
 type Method = "single" | "trapezoidal" | "clearance";
@@ -581,6 +583,8 @@ export default function AUCCalculator() {
                     fraction (100% = 1) and CL the clearance in L/h, giving mg·h/L.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

@@ -128,6 +128,7 @@ export default function AboutPage() {
 
             <Story />
             <Pillars />
+            <HowItWorks />
             <Team />
             <Closing />
         </div>
@@ -156,14 +157,85 @@ function Story() {
                         account, and it is written and checked by the students on this page.
                     </p>
                     <p>
-                        It is a study aid, not clinical advice. No pharmacist has independently reviewed it yet, and every
-                        calculator carries an educational-use notice.{" "}
+                        It is a study aid, not clinical advice: prepared by the PharmaWallah student team, so verify
+                        results with your textbook or instructor. Every calculator carries an educational-use notice.{" "}
                         <Link href="/editorial-policy" className="font-medium text-[#1c7bd9] underline-offset-4 hover:underline">
                             How we write and check our content
                         </Link>
                         .
                     </p>
                 </Reveal>
+            </div>
+        </PageSection>
+    );
+}
+
+/* ── How it is run, written and checked (2026-10-13) ───────────────────────
+   Every statement here is a fact about how the site works today. The
+   University of Karachi appears only as the address the site already lists —
+   not as a claim of affiliation, review or endorsement (HUMAN_TODO.md asks the
+   owner to confirm the wording). */
+
+const HOW_IT_WORKS: { title: string; body: React.ReactNode }[] = [
+    {
+        title: "Who runs it",
+        body: (
+            <p>
+                PharmaWallah is run by the pharmacy students listed below, as an independent student project. Our
+                postal address is the Department of Pharmacy, University of Karachi, Pakistan.
+            </p>
+        ),
+    },
+    {
+        title: "How content is written and checked",
+        body: (
+            <p>
+                The team writes the calculators, guides and notes. Formulas are compared with the textbook or
+                guideline cited on the page, and every worked example is recalculated independently before it is
+                published. Where a person has reviewed a page, the page names them; where nobody has yet, it says so.{" "}
+                <Link href="/editorial-policy" className="font-medium text-[#1c7bd9] underline-offset-4 hover:underline">
+                    Editorial policy
+                </Link>
+            </p>
+        ),
+    },
+    {
+        title: "Reporting an error",
+        body: (
+            <p>
+                Every calculator, guide and lesson has a “Report an error” link that opens the contact form with the
+                page already named. We check each report against the cited source and correct the page.
+            </p>
+        ),
+    },
+    {
+        title: "Contact",
+        body: (
+            <p>
+                Email{" "}
+                <a href="mailto:support@pharmawallah.com" className="font-medium text-[#1c7bd9] underline-offset-4 hover:underline">
+                    support@pharmawallah.com
+                </a>{" "}
+                or use the{" "}
+                <Link href="/contact" className="font-medium text-[#1c7bd9] underline-offset-4 hover:underline">
+                    contact form
+                </Link>
+                .
+            </p>
+        ),
+    },
+];
+
+function HowItWorks() {
+    return (
+        <PageSection eyebrow="How it works" title="Who runs PharmaWallah, and how we check it.">
+            <div className="grid gap-6 sm:grid-cols-2">
+                {HOW_IT_WORKS.map((item) => (
+                    <div key={item.title} className="rounded-2xl border border-[#16181d]/10 bg-white p-5 text-[15px] leading-relaxed text-[#16181d]/75">
+                        <h3 className="mb-2 text-base font-semibold text-[#16181d]">{item.title}</h3>
+                        {item.body}
+                    </div>
+                ))}
             </div>
         </PageSection>
     );

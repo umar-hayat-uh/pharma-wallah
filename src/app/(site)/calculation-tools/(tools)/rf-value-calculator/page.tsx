@@ -10,8 +10,10 @@ import {
   CalcAbout,
   CalcList,
   CalcFaq,
+  CalcLearn,
   AdSlot,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import { TLCAnalyzer } from "@/components/calculators/tlc/TLCAnalyzer";
 
 // The distance tab carries Recharts; load it only when a student opens that tab.
@@ -100,6 +102,8 @@ export default function RfValueCalculator() {
         </p>
         <p className="text-xs">Sources: Merck TLC guide; Vogel&apos;s Textbook of Practical Organic Chemistry.</p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

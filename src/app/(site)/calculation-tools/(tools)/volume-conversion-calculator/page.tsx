@@ -16,9 +16,11 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     LabNotice,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type VolumeUnit = "mL" | "L" | "μL" | "m³" | "gal" | "fl oz" | "tsp" | "tbsp";
 
@@ -366,6 +368,8 @@ export default function VolumeConversionCalculator() {
                     </Formula>
                 )}
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

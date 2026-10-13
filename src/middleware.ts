@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { LEGACY_CALCULATOR_SLUGS } from '@/lib/legacy-slugs';
+import { needsConsent } from '@/lib/consent';
 
 /**
  * FIX: the original list included '/leaderboard', which redirected every
@@ -38,6 +39,10 @@ export async function middleware(request: NextRequest) {
   // metadata themselves.
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-pathname', request.nextUrl.pathname);
+  // Ad-consent region (src/lib/consent.ts). Overwritten every time, so a client
+  // cannot send its own value.
+  if (needsConsent(request.headers.get('x-vercel-ip-country'))) requestHeaders.set('x-consent-region', '1');
+  else requestHeaders.delete('x-consent-region');
   if (isClinical) {
     // Set a request header so layout.tsx / page.tsx can read it server-side
     requestHeaders.set('x-subdomain', 'clinical');

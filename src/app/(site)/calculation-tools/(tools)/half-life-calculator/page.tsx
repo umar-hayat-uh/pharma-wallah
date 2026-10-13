@@ -18,7 +18,9 @@ import {
     CalcFaq,
     AdSlot,
     ModeSwitch,
+    CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type HalfLifeMethod = "ke" | "clearance" | "fraction";
 type TimeUnit = "hours" | "minutes" | "days";
@@ -397,6 +399,8 @@ export default function HalfLifeCalculator() {
                     in every half-life — 50%, then 25%, 12.5%, and so on.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

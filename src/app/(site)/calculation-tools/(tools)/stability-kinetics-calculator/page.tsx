@@ -18,12 +18,14 @@ import {
   CalcAbout,
   CalcList,
   CalcFaq,
+  CalcLearn,
   AdSlot,
   LabActions,
   LabNotice,
   type LabReportData,
   type LabReportSection,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import { formatFixed } from "@/components/calculators/lab-math";
 import {
   AXIS_TICK,
@@ -904,6 +906,8 @@ export default function StabilityKineticsCalculatorPage() {
         </p>
         <p>Temperature is recorded as the condition of the run. It does not change k: that needs runs at several temperatures and an Arrhenius plot.</p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

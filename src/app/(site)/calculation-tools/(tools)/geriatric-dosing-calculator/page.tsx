@@ -19,7 +19,9 @@ import {
   AdSlot,
   ModeSwitch,
   LabNotice,
+  CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import {
   calculateRules,
   cockcroftGault,
@@ -545,6 +547,8 @@ Generated: ${new Date().toLocaleString()}`;
           below 15%. All doses are rounded to two decimals.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

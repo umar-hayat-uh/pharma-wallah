@@ -20,7 +20,9 @@ import {
     ModeSwitch,
     LabNotice,
     type ResultTone,
+    CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type WeightMethod = "auto" | "actual" | "ibw" | "adjbw";
 type WeightUnit = "kg" | "lbs";
@@ -631,6 +633,8 @@ Generated: ${new Date().toLocaleString()}`;
                     cystatin C-based equations to estimate GFR without race. N Engl J Med. 2021;385(19):1737-1749.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

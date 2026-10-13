@@ -23,7 +23,9 @@ import {
   toNumber,
   type LabReportData,
   type LabReportSection,
+  CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import {
   AXIS_TICK,
   CHART,
@@ -715,6 +717,8 @@ export default function DialysisDiffusionCalculatorPage() {
           B is the volume-corrected ratio. R² = 1 − SSE/SST for the ln(1 − B) line.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

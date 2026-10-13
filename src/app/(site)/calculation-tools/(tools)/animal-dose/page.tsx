@@ -19,7 +19,9 @@ import {
   CalcFaq,
   AdSlot,
   LabNotice,
+  CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import {
   ANIMAL_PRESETS,
   calculateAnimalDose,
@@ -320,6 +322,8 @@ export default function AnimalWeightDoseCalculator() {
           figure always equals the adult mg/kg — that is a property of the method, not a bug.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

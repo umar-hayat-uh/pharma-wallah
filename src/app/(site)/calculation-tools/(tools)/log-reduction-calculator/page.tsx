@@ -19,7 +19,9 @@ import {
   AdSlot,
   LabNotice,
   type ResultTone,
+  CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 /* ── Log ↔ percent reference table (unchanged from the original page) ─────── */
 const CONVERSION_TABLE = [
@@ -299,6 +301,8 @@ export default function LogReductionCalculator() {
           moderate (acceptable for water treatment), 5 and above is high.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

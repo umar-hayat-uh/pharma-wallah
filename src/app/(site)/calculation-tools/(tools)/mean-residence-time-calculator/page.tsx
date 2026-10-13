@@ -25,8 +25,10 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type Method = "halfLife" | "aucAumc";
 
@@ -232,6 +234,8 @@ export default function MeanResidenceTimeCalculator() {
                     from a single compartment after an IV bolus; for anything else, use AUMC/AUC.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

@@ -16,11 +16,13 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     ModeSwitch,
     LabNotice,
     type ModeOption,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type OutputUnit = "g/L" | "mg/mL" | "mol/L";
 
@@ -292,6 +294,8 @@ export default function SolubilityCalculator() {
                     divides it by the gram equivalent weight (mol/L).
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

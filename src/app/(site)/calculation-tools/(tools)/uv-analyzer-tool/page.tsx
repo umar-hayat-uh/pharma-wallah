@@ -16,9 +16,11 @@ import {
   CalcAbout,
   CalcList,
   CalcFaq,
+  CalcLearn,
   AdSlot,
   type ResultTone,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 /** Inputs stay strings so a half-typed value is never silently replaced. */
 type PeakInput = { id: number; wavelength: string; absorbance: string };
@@ -323,6 +325,8 @@ export default function UVVisPeakAnalyzer() {
         </p>
         <p className="text-xs">Sources: Sambrook et al., Molecular Cloning; Thermo Fisher technical guide.</p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

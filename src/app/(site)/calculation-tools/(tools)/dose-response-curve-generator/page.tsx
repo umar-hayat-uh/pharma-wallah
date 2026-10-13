@@ -31,7 +31,9 @@ import {
   AdSlot,
   ModeSwitch,
   LabNotice,
+  CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import { generateCurveData, safeEc50, type CurveParams } from "./_curves";
 
 const COLOR_PALETTE = ["#1C7BD9", "#21B67A", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
@@ -464,6 +466,8 @@ export default function DoseResponseCurveGenerator() {
           keep the logarithm defined.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

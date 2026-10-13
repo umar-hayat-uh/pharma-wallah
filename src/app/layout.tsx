@@ -1,5 +1,5 @@
 import { Outfit } from "next/font/google";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import type { Metadata } from "next";
 // @ts-ignore -- the stylesheet is handled by Next.js at build time.
 import "./globals.css";
@@ -8,6 +8,8 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Script from "next/script";
 import { JsonLd, organizationLd } from "@/lib/structured-data";
+import { ConsentBanner } from "@/components/ConsentBanner";
+import { CONSENT_COOKIE } from "@/lib/consent";
 import AppShell from "@/components/AppShell";
 import ServiceWorkerCleanup from "@/components/ServiceWorkerCleanup";
 import {
@@ -104,6 +106,10 @@ export default async function RootLayout({
   const headersList = await headers();
   const subdomain = headersList.get("x-subdomain");
   const isClinicalSubdomain = subdomain === "clinical";
+  // EEA/UK/CH visitors get the loader only after consenting (src/lib/consent.ts).
+  const consentRegion = headersList.get("x-consent-region") === "1";
+  const consent = cookies().get(CONSENT_COOKIE)?.value;
+  const loadAds = !consentRegion || consent === "granted";
 
   return (
     <html lang="en" className={font.variable} suppressHydrationWarning>
@@ -131,9 +137,13 @@ export default async function RootLayout({
             injected by the Next runtime after hydration, so a crawler reading
             the raw HTML may never see it.
 
-            Unconditional: the loader is also what AdSense verifies against and
-            what Auto ads needs, so it must not be switchable off by a missing
-            env var. Individual ad units are still gated — see AdSlot. */}
+            Unconditional except for consent: the loader is also what AdSense
+            verifies against and what Auto ads needs, so it must not be
+            switchable off by a missing env var. Individual ad units are still
+            gated — see AdSlot. Since 2026-10-13 a visitor in the EEA, UK or
+            Switzerland gets it only after accepting the consent banner. */}
+        {consentRegion && !consent && <ConsentBanner publisherId={PUBLISHER_ID} />}
+        {loadAds && (
         <Script
           id="adsbygoogle-init"
           async
@@ -141,6 +151,7 @@ export default async function RootLayout({
           crossOrigin="anonymous"
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${PUBLISHER_ID}`}
         />
+        )}
       </body>
     </html>
   );

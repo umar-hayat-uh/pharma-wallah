@@ -18,7 +18,9 @@ import {
     CalcFaq,
     AdSlot,
     type ResultTone,
+    CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import { computeEmax, interpretEffect } from "./_math";
 
 const DEFAULTS = { emax: "100", ec50: "5", hill: "1", baseline: "0", conc: "10" };
@@ -306,6 +308,8 @@ export default function EmaxModelCalculator() {
                     steeper (often read as positive cooperativity); below 1 makes it shallower.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

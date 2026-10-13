@@ -15,9 +15,11 @@ import {
   CalcAbout,
   CalcList,
   CalcFaq,
+  CalcLearn,
   AdSlot,
   ModeSwitch,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import { cn } from "@/lib/utils";
 
 type SubstanceType = "solid" | "liquid";
@@ -511,6 +513,8 @@ export default function NormalityCalculator() {
           substance. Dividing mass by Eq.W gives equivalents; dividing by litres gives normality.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

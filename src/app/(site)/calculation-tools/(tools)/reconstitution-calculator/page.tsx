@@ -16,11 +16,13 @@ import {
   CalcAbout,
   CalcList,
   CalcFaq,
+  CalcLearn,
   AdSlot,
   ModeSwitch,
   SourceLink,
   LabNotice,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import {
   RECONSTITUTION_DATABASE,
   calculateReconstitution,
@@ -436,6 +438,8 @@ Generated: ${new Date().toLocaleString()}
           syringe volume as a percentage of the total yield.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

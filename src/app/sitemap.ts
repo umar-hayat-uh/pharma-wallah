@@ -60,6 +60,7 @@ const STATIC_PATHS = [
   "/download",
   "/about-us",
   "/editorial-policy",
+  "/community-guidelines",
   "/faqs",
   "/contact",
   "/careers",

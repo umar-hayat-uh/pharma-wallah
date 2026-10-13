@@ -1758,3 +1758,10 @@ where lower(email) in ('umer@mbxpro.com', 'shayanhusein@gmail.com')
 on conflict (user_id) do update set role = 'admin';
 
 select email, role from public.br_admins;
+
+-- ── 2026-10-13: leaderboard privacy (also supabase/migrations/20261013_battle_royale_privacy.sql) ──
+alter table public.br_participants
+  add column if not exists hide_from_leaderboard boolean not null default false;
+
+-- PostgREST caches the schema; make the new column visible to the API at once.
+notify pgrst, 'reload schema';

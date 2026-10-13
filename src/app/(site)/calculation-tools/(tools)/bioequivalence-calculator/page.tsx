@@ -18,7 +18,9 @@ import {
     CalcList,
     CalcFaq,
     AdSlot,
+    CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 /* ── Constants (unchanged from the original page) ─────────────────────────── */
 
@@ -386,6 +388,8 @@ export default function BioequivalenceCalculator() {
                     learning how N, variability and the ratio drive the result.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

@@ -28,10 +28,12 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     ModeSwitch,
     LabNotice,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import {
     BUFFERS,
     IV_FLUIDS,
@@ -825,6 +827,8 @@ export default function OsmolarityCalculators() {
                 <Formula>Base osmolarity × Concentration + |pH − 7.4| × 10</Formula>
                 <p>Base values are approximate 1× figures (custom buffers use 300 mOsm/L). 250–350 mOsm/L is read as physiological.</p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

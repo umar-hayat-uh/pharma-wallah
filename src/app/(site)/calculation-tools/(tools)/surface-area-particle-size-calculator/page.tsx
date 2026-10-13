@@ -27,11 +27,13 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     ModeSwitch,
     LabNotice,
     type ResultTone,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import {
     calculateFromLaser,
     calculateFromSieve,
@@ -528,6 +530,8 @@ export default function SurfaceAreaParticleSizeCalculator() {
                     dissolution.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

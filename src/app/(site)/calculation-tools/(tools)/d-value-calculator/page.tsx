@@ -25,7 +25,9 @@ import {
     CalcList,
     CalcFaq,
     AdSlot,
+    CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 /** Published D₁₂₁ values, for a sense of scale. */
 const TYPICAL_D = [
@@ -291,6 +293,8 @@ export default function DValueCalculator() {
                     million that a single unit is non-sterile.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

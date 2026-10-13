@@ -15,12 +15,14 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     LabNotice,
     ModeSwitch,
     fieldError,
     type ModeOption,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type Method = "density" | "volume";
 
@@ -306,6 +308,8 @@ export default function PorosityCalculator() {
                     bulk ÷ true density equals solid ÷ total volume.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

@@ -24,7 +24,9 @@ import {
   formatSig,
   type LabReportData,
   type ModeOption,
+  CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import {
   AXIS_TICK,
   CHART,
@@ -647,6 +649,8 @@ export default function CumulativeDrugReleaseCalculatorPage() {
           other method appear here when you switch to it.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

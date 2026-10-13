@@ -16,10 +16,12 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     ModeSwitch,
     AdSlot,
     type ModeOption,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type SolveFor = "pH" | "pKa" | "ratio" | "concentrations";
 type ConcUnit = "M" | "mM" | "μM" | "nM";
@@ -510,6 +512,8 @@ export default function PkaPhCalculator() {
                     are equal (pH = pKa), which is why a buffer works best within about one pH unit of its pKa.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

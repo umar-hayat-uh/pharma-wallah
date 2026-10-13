@@ -91,14 +91,15 @@ export function Podium({
               key={place}
               className={cn("br-podium__place flex min-w-0 flex-col items-center", COLUMN_CLASS[column])}
               style={{ animationDelay: `${{ 1: 0, 2: 240, 3: 420 }[place]}ms` }}
-              aria-label={r ? `${PLACE_LABEL[place]}: ${r.name}, ${r.university}, ${r.total} points` : `${PLACE_LABEL[place]}: not yet claimed`}
+              aria-label={r ? `${PLACE_LABEL[place]}: ${r.name}${r.university ? `, ${r.university}` : ""}, ${r.total} points` : `${PLACE_LABEL[place]}: not yet claimed`}
             >
               <div className="mb-2 min-w-0 max-w-full px-1 text-center">
                 <p className={cn("truncate font-bold", size === "lg" ? "text-lg sm:text-2xl" : "text-sm sm:text-lg", !r && "text-white/60")}>
                   {r ? r.name : "Your name here"}
                 </p>
                 <p className={cn("truncate text-white/75", size === "lg" ? "text-sm sm:text-base" : "text-[11px] sm:text-sm")}>
-                  {r ? r.university : "Play to claim it"}
+                  {/* No institution on the public board since 2026-10-13 (privacy); the line keeps its height. */}
+                  {r ? (r.university || `${r.code}`) : "Play to claim it"}
                 </p>
                 <p className={cn("mt-0.5 font-extrabold tracking-tight", size === "lg" ? "text-3xl sm:text-5xl" : "text-2xl sm:text-4xl", !r && "text-white/40")}>
                   {r ? r.total : "—"}

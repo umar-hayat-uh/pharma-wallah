@@ -16,9 +16,11 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     type ResultTone,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import {
     DEFAULT_POINTS,
     SAMPLE_PROFILES,
@@ -381,6 +383,8 @@ export default function TabletProfilePlotter() {
                     considered similar without f₂.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

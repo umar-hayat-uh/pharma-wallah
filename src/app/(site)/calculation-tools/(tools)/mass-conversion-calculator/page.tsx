@@ -18,7 +18,9 @@ import {
     CalcFaq,
     AdSlot,
     LabNotice,
+    CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type MassUnit = "mg" | "g" | "kg" | "lb" | "oz" | "mcg";
 
@@ -317,6 +319,8 @@ export default function MassConversionCalculator() {
                     </Formula>
                 )}
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

@@ -18,7 +18,9 @@ import {
     CalcFaq,
     AdSlot,
     type ResultTone,
+    CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 /* ── Reference data, unchanged ────────────────────────────────────────────── */
 const REFERENCE_TEMPS = [
@@ -284,6 +286,8 @@ export default function FValueCalculator() {
                     reference multiplies the lethality delivered per minute by ten.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

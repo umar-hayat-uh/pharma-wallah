@@ -75,7 +75,7 @@ export function CertificateSearch() {
     setError(null);
     setLoadingResult(true);
     try {
-      const res = await fetch(`${API}?code=${encodeURIComponent(m.code)}`);
+      const res = await fetch(`${API}?code=${encodeURIComponent(m.code)}&name=${encodeURIComponent(m.name)}`);
       const body = await res.json().catch(() => ({}));
       if (!res.ok || !body.score) setError(body.error ?? "Couldn't load this certificate. Please try again.");
       else setResult(body as Finished);
@@ -148,7 +148,7 @@ export function CertificateSearch() {
     <div className="space-y-4 rounded-3xl border border-[#16181d]/10 bg-white p-6 sm:p-8">
       <div>
         <label htmlFor="cert-q" className="text-sm font-semibold">Your name</label>
-        <p className="text-sm text-[#16181d]/60">Start typing, then pick your name from the list.</p>
+        <p className="text-sm text-[#16181d]/60">Type your full name exactly as you registered it, then pick it from the list.</p>
       </div>
       <div className="relative">
         <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#16181d]/40" aria-hidden="true" />
@@ -190,7 +190,7 @@ export function CertificateSearch() {
           >
             {matches.length === 0 ? (
               <li className="px-3 py-3 text-sm text-[#16181d]/60">
-                {searching ? "Searching…" : "No finished player matches that. Try just your first name."}
+                {searching ? "Searching…" : "No finished player has exactly that name. Check the spelling and type your full name as you registered it."}
               </li>
             ) : (
               matches.map((m, i) => (

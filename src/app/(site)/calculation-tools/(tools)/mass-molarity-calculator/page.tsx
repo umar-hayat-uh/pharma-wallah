@@ -17,7 +17,9 @@ import {
     CalcFaq,
     AdSlot,
     formatSig,
+    CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 /** Worked examples, so a student can see a sensible answer before typing their own. */
 const EXAMPLES = [
@@ -217,6 +219,8 @@ export default function MassMolarityCalculator() {
                     molar mass gives the amount in moles; dividing that by the volume gives moles per litre.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

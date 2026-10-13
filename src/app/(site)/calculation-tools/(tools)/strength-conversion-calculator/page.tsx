@@ -16,9 +16,11 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     LabNotice,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type StrengthFormat = "percent" | "ratio" | "wv" | "ww" | "vv";
 type MassUnit = "mg" | "g";
@@ -431,6 +433,8 @@ export default function StrengthConversionCalculator() {
                     number in the unit label.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

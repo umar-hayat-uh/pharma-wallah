@@ -15,12 +15,14 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     LabNotice,
     fieldError,
     toNumber,
     type ResultTone,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 /* ── Quick samples, g/mL (unchanged) ──────────────────────────────────────── */
 const SAMPLES = [
@@ -287,6 +289,8 @@ export default function PowderFlowabilityCalculator() {
                     its ratio is close to 1.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

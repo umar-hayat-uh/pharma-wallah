@@ -15,11 +15,13 @@ import {
   CalcAbout,
   CalcList,
   CalcFaq,
+  CalcLearn,
   AdSlot,
   LabActions,
   LabNotice,
   type LabReportData,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import {
   CHART,
   CONCENTRATION_UNITS,
@@ -402,6 +404,8 @@ export default function PartitionCoefficientCalculatorPage() {
           group log D values.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

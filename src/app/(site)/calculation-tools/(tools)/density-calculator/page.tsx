@@ -20,7 +20,9 @@ import {
     ModeSwitch,
     fieldError,
     type ModeOption,
+    CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type DensityType = "true" | "bulk" | "tapped";
 
@@ -315,6 +317,8 @@ export default function DensityCalculator() {
                     is a high-density material.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

@@ -16,9 +16,11 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     type ResultTone,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type TemperatureUnit = "C" | "F" | "K";
 
@@ -351,6 +353,8 @@ export default function TemperatureConversionCalculator() {
                     </Formula>
                 )}
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

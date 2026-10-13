@@ -18,7 +18,9 @@ import {
     LabNotice,
     fieldError,
     type ResultTone,
+    CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type FinalResult = "PASS" | "FAIL" | "TEST STAGE 2";
 
@@ -415,6 +417,8 @@ export default function ContentUniformityCalculator() {
                     85–115%. A batch passes Stage 1 when AV ≤ 15.0 and every unit is within that range.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

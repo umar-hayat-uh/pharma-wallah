@@ -84,17 +84,18 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
   },
   {
     id: "labels",
-    title: "What the review labels mean",
+    title: "What the byline under a page means",
     body: (
       <ul>
         <li>
-          <strong>Checked by the PharmaWallah team.</strong> The team has carried out the checks above. No independent
-          pharmacist or academic has reviewed the page. This is the status of every page today.
+          <strong>&ldquo;Prepared by the PharmaWallah student team. Verify results with your textbook or
+          instructor.&rdquo;</strong> The team has carried out the checks above, and no named reviewer has signed the
+          page off. This is the status of every page today.
         </li>
         <li>
-          <strong>Reviewed by [name, qualification, date].</strong> Used only when a named, qualified person has
-          reviewed that specific page and agreed to be named. No page carries this label yet. We will not display a
-          review badge without a real reviewer behind it.
+          <strong>&ldquo;Written by [name] · Reviewed by [name, qualification] on [date]&rdquo;.</strong> Shown only
+          when a real, named person wrote or reviewed that specific page and agreed to be named. No page carries a
+          reviewer yet. We will not display a review without a real reviewer behind it.
         </li>
         <li>
           <strong>Draft.</strong> Work in progress. Drafts are not linked from the site or listed in our sitemap.

@@ -17,11 +17,13 @@ import {
   CalcAbout,
   CalcList,
   CalcFaq,
+  CalcLearn,
   AdSlot,
   ModeSwitch,
   LabNotice,
   type ResultTone,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import {
   calculateBlood,
   calculateGeneral,
@@ -545,6 +547,8 @@ export default function OsmolalityCalculators() {
           plasma × (100 − Hct)/100 + cells × Hct/100.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

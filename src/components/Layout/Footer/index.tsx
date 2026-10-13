@@ -28,6 +28,7 @@ const companyLinks = [
   { label: "Careers", href: "/careers" },
   { label: "FAQs", href: "/faqs" },
   { label: "Editorial policy", href: "/editorial-policy" },
+  { label: "Community guidelines", href: "/community-guidelines" },
   { label: "Report an error", href: "/contact?subject=Error%20report" },
   { label: "Contact", href: "/contact" },
 ];

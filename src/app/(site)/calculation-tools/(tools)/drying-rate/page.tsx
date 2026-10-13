@@ -27,7 +27,9 @@ import {
   AdSlot,
   LabNotice,
   type ResultTone,
+  CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 /* ── Typical moisture contents (values unchanged from the original page) ─── */
 const MATERIAL_DATA = [
@@ -365,6 +367,8 @@ export default function DryingRateCalculator() {
           sizes be compared. The rate is shown to three decimals, the two intermediate figures to two.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

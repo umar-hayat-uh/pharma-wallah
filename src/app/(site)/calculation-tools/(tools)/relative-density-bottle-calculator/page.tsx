@@ -12,6 +12,7 @@ import {
   CalcAbout,
   CalcList,
   CalcFaq,
+  CalcLearn,
   AdSlot,
   LabReport,
   LabActions,
@@ -25,6 +26,7 @@ import {
   formatSig,
   formatFixed,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 // ─── WATER DENSITY ───────────────────────────────────────────────────────────
 
@@ -469,6 +471,8 @@ export default function RelativeDensityBottleCalculator() {
           Example (25 mL bottle): W₁ = 20.500 g, W₂ = 45.450 g, W₃ = 51.950 g gives 31.450 g / 24.950 g = 1.2605.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

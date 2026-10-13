@@ -37,7 +37,11 @@ export type WorkedExample = {
 };
 
 export type CalcEducation = {
+  /** Realistic situations where a student reaches for this tool. */
+  whenToUse?: string[];
   workedExample?: WorkedExample;
+  /** A second example with different numbers (same rules as the first). */
+  extraExample?: WorkedExample;
   mistakes?: string[];
   limitations?: string[];
   refs: ReferenceId[];
@@ -48,55 +52,20 @@ export type CalcEducation = {
 };
 
 export function CalcLearn({ content }: { content: CalcEducation }) {
-  const { workedExample: ex, mistakes, limitations, refs, related, guide } = content;
+  const { whenToUse, workedExample, extraExample, mistakes, limitations, refs, related, guide } = content;
   const references = getReferences(refs);
 
   return (
     <div className="space-y-4">
-      {ex && (
-        <section className="rounded-2xl border border-border/80 bg-card p-4 sm:p-5" aria-labelledby="calc-worked-example">
-          <h2 id="calc-worked-example" className="text-[15px] font-semibold tracking-[-0.01em] text-foreground sm:text-base">
-            Worked example: {ex.title}
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{ex.scenario}</p>
-
-          <dl className="mt-4 grid gap-x-6 gap-y-2 sm:grid-cols-2">
-            {ex.given.map((g) => (
-              <div key={g.label} className="flex items-baseline justify-between gap-3 border-b border-border/60 pb-1.5 text-sm">
-                <dt className="text-muted-foreground">{g.label}</dt>
-                <dd className="text-right font-mono tabular-nums text-foreground">{g.value}</dd>
-              </div>
-            ))}
-          </dl>
-
-          <ol className="mt-4 space-y-2.5" style={{ listStyle: "none", paddingLeft: 0 }}>
-            {ex.steps.map((s, i) => (
-              <li key={s.label} className="flex gap-3 text-sm" style={{ listStyle: "none" }}>
-                <span
-                  className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-primary/10 font-mono text-[11px] font-semibold text-primary"
-                  aria-hidden="true"
-                >
-                  {i + 1}
-                </span>
-                <div className="min-w-0">
-                  <p className="font-medium text-foreground">{s.label}</p>
-                  {/* Mono and wrapping: a long substitution must not push the page sideways on a phone. */}
-                  <p className="mt-0.5 whitespace-pre-wrap break-words font-mono text-[13px] leading-relaxed text-muted-foreground">
-                    {s.working}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ol>
-
-          <p className="mt-4 rounded-lg border border-border/70 border-l-[3px] border-l-primary bg-muted/60 px-3.5 py-2.5 text-sm font-semibold text-foreground">
-            {ex.answer}
-          </p>
-          {ex.interpretation && (
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{ex.interpretation}</p>
-          )}
+      {whenToUse && whenToUse.length > 0 && (
+        <section className="rounded-2xl border border-border/80 bg-card p-4 sm:p-5" aria-label="When you'd use this">
+          <CalcList title="When you'd use this" items={whenToUse} />
         </section>
       )}
+
+      {[workedExample, extraExample].filter((e): e is WorkedExample => Boolean(e)).map((ex, n) => (
+        <WorkedExampleCard key={ex.title} ex={ex} id={n === 0 ? "calc-worked-example" : `calc-worked-example-${n + 1}`} />
+      ))}
 
       {(mistakes?.length || limitations?.length) && (
         <section className="space-y-5 rounded-2xl border border-border/80 bg-card p-4 sm:p-5" aria-label="Common mistakes and limitations">
@@ -154,5 +123,52 @@ export function CalcLearn({ content }: { content: CalcEducation }) {
         </ol>
       </section>
     </div>
+  );
+}
+
+function WorkedExampleCard({ ex, id }: { ex: WorkedExample; id: string }) {
+  return (
+        <section className="rounded-2xl border border-border/80 bg-card p-4 sm:p-5" aria-labelledby={id}>
+          <h2 id={id} className="text-[15px] font-semibold tracking-[-0.01em] text-foreground sm:text-base">
+            Worked example: {ex.title}
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{ex.scenario}</p>
+
+          <dl className="mt-4 grid gap-x-6 gap-y-2 sm:grid-cols-2">
+            {ex.given.map((g) => (
+              <div key={g.label} className="flex items-baseline justify-between gap-3 border-b border-border/60 pb-1.5 text-sm">
+                <dt className="text-muted-foreground">{g.label}</dt>
+                <dd className="text-right font-mono tabular-nums text-foreground">{g.value}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <ol className="mt-4 space-y-2.5" style={{ listStyle: "none", paddingLeft: 0 }}>
+            {ex.steps.map((s, i) => (
+              <li key={s.label} className="flex gap-3 text-sm" style={{ listStyle: "none" }}>
+                <span
+                  className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-primary/10 font-mono text-[11px] font-semibold text-primary"
+                  aria-hidden="true"
+                >
+                  {i + 1}
+                </span>
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground">{s.label}</p>
+                  {/* Mono and wrapping: a long substitution must not push the page sideways on a phone. */}
+                  <p className="mt-0.5 whitespace-pre-wrap break-words font-mono text-[13px] leading-relaxed text-muted-foreground">
+                    {s.working}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+
+          <p className="mt-4 rounded-lg border border-border/70 border-l-[3px] border-l-primary bg-muted/60 px-3.5 py-2.5 text-sm font-semibold text-foreground">
+            {ex.answer}
+          </p>
+          {ex.interpretation && (
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{ex.interpretation}</p>
+          )}
+        </section>
   );
 }

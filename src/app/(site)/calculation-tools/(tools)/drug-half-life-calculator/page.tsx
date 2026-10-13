@@ -28,7 +28,9 @@ import {
     CalcFaq,
     AdSlot,
     formatSig,
+    CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 /** Joins class names, skipping falsy ones (kept local: no @/lib imports in tool pages). */
 const cn = (...classes: (string | false | undefined)[]) => classes.filter(Boolean).join(" ");
@@ -435,6 +437,8 @@ export default function DrugHalfLifeCalculator() {
                     to get concentrations.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

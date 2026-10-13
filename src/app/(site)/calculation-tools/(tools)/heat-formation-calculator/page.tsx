@@ -16,7 +16,9 @@ import {
     CalcList,
     CalcFaq,
     AdSlot,
+    CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type TempUnit = "K" | "C";
 
@@ -261,6 +263,8 @@ export default function HeatFormationCalculator() {
                     converts natural logarithms to base-10 logarithms.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

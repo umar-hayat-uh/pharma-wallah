@@ -13,6 +13,7 @@ import {
   CalcAbout,
   CalcList,
   CalcFaq,
+  CalcLearn,
   AdSlot,
   LabReport,
   LabActions,
@@ -28,6 +29,7 @@ import {
   MASS_TO_G,
   AMOUNT_TO_MOL,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
@@ -780,6 +782,8 @@ export default function TheoreticalYieldCalculator() {
           moles − ξ × its coefficient.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

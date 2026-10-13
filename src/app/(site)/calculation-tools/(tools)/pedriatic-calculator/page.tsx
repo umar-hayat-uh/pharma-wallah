@@ -15,11 +15,13 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     ModeSwitch,
     LabNotice,
     type ResultTone,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type DosingRule = "young" | "clark" | "fried" | "mgkg";
 type WeightUnit = "kg" | "lbs";
@@ -523,6 +525,8 @@ export default function PediatricDosingCalculator() {
                     spread over 70 kg: above 1.75× that figure is flagged high, below 0.35× low.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

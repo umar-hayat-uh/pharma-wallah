@@ -134,7 +134,7 @@ export default function TermsPage() {
           </p>
           <div className="flex flex-wrap gap-4">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-xs font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-300 inline-block" /> Version 1.1
+              <span className="w-1.5 h-1.5 rounded-full bg-green-300 inline-block" /> Version 1.2
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-xs font-bold">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-300 inline-block" /> Governing Law: Pakistan
@@ -202,9 +202,11 @@ export default function TermsPage() {
               {/* Until 2026-10-12 this said the site had no registration. Accounts
                   exist (dashboard, community, event registration); the privacy
                   policy was corrected on 2026-09-23 and these terms now match it. */}
-              <Para>The calculators, guides and lessons can be used without an account. Some features — the progress dashboard, posting in the community, and registering for events — need a free account. You are responsible for keeping your sign-in details secure and for activity under your account. To have your account deleted, email us from the address you signed up with.</Para>
+              <Para>The calculators, guides and lessons can be used without an account. Some features — the progress dashboard and posting in the community — need a free account. Registering for an event such as Battle Royale uses its own form and needs no account. You are responsible for keeping your sign-in details secure and for activity under your account. To have your account deleted, email us from the address you signed up with.</Para>
               <Sub>Community Posts</Sub>
-              <Para>You keep ownership of what you post in the community, and you give us permission to display it on the Site. Do not post content you have no right to share (for example, scanned pages of copyrighted textbooks), personal information about patients, or anything abusive. We may remove posts that break these Terms.</Para>
+              <Para>You keep ownership of what you post in the community, and you give us permission to display it on the Site. Do not post content you have no right to share (for example, scanned pages of copyrighted textbooks), personal information about patients, or anything abusive. We may remove posts that break these Terms or our <Link href="/community-guidelines" className="font-semibold text-blue-700 hover:underline">community guidelines</Link>, and suspend accounts for repeated or serious breaches. Use the Report option on any post or comment to tell us about a problem.</Para>
+              <Sub>Events and Leaderboards</Sub>
+              <Para>If you take part in an event, your first name, rank and score may be shown on its public leaderboard. You can hide your name from the result page.</Para>
               <Sub>Permitted Use</Sub>
               <Bullets items={[
                 "Access and view content for personal, non-commercial educational purposes",
@@ -237,7 +239,7 @@ export default function TermsPage() {
             </SectionBlock>
 
             <SectionBlock id="third-party" num={5} label="Third-Party Services" Icon={ExternalLink} accent="from-sky-500 to-blue-500" hex="#0ea5e9">
-              <Para>The Site may include links to third-party websites, services, or advertisements (e.g., Google AdSense). We do not control and are not responsible for the content or practices of any third-party sites. We encourage you to read the terms and privacy policies of any third-party site you visit.</Para>
+              <Para>The Site may include links to third-party websites and services, and may show advertisements served by Google AdSense (ad units are switched off at present; see the <Link href="/privacy#cookies" className="font-semibold text-blue-700 hover:underline">privacy policy</Link> for cookies and consent). We do not control and are not responsible for the content or practices of any third-party sites. We encourage you to read the terms and privacy policies of any third-party site you visit.</Para>
               <Sub>AI Guide Tool</Sub>
               <Para>Our AI guide may utilize third-party machine learning infrastructure. These providers process query data in accordance with their own terms. By using the AI tool, you consent to the transmission of your queries to such third-party services for the purpose of generating responses.</Para>
             </SectionBlock>
@@ -246,9 +248,9 @@ export default function TermsPage() {
               <Warning>The Site and all content, tools, and AI-generated responses are provided on an "as is" and "as available" basis without any warranties of any kind, either express or implied. Pharmawallah does not warrant that the Site will be uninterrupted, error-free, or free of viruses or other harmful components.</Warning>
               <Para>The educational content, calculators, and AI guide are intended for learning and informational purposes only. They are not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of a qualified healthcare provider.</Para>
               <Sub>Calculators Are Educational, Not Patient-Specific</Sub>
-              <Para>Our calculators reproduce the standard textbook and practical-manual methods so that students can check their working. They do not know a real patient&apos;s full clinical picture, and they have not been independently reviewed by a pharmacist. Do not use a result to choose, prepare or give a dose for a real patient: use your institution&apos;s approved references and the judgement of a qualified professional.</Para>
+              <Para>Our calculators reproduce the standard textbook and practical-manual methods so that students can check their working. They do not know a real patient&apos;s full clinical picture, and they are prepared by the PharmaWallah student team — verify results with your textbook or instructor. Do not use a result to choose, prepare or give a dose for a real patient: use your institution&apos;s approved references and the judgement of a qualified professional.</Para>
               <Sub>Errors and Corrections</Sub>
-              <Para>The Site is written and checked by pharmacy students, so mistakes can get through. If you find one, please <Link href="/contact?subject=Error%20report" className="font-semibold text-blue-700 hover:underline">report it</Link> — we read every report and correct confirmed errors on the page. Our <Link href="/editorial-policy" className="font-semibold text-blue-700 hover:underline">editorial policy</Link> explains how content is written and checked.</Para>
+              <Para>The Site is written and checked by pharmacy students, so mistakes can get through. If you find one, please <Link href="/contact?subject=Error%20report" className="font-semibold text-blue-700 hover:underline">report it</Link> — we read every report and correct confirmed errors on the page. Our <Link href="/editorial-policy" className="font-semibold text-blue-700 hover:underline">editorial policy</Link> explains how content is written and checked. A page names an author or reviewer only when a real person has written or reviewed it.</Para>
               <InfoBox hex="#ea580c">
                 <strong>AI Accuracy:</strong> The AI guide tool may occasionally generate incorrect or outdated information. You should independently verify all critical information before relying on it for clinical or professional decisions.
               </InfoBox>
@@ -298,7 +300,7 @@ export default function TermsPage() {
                 </div>
               </div>
               <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <p className="text-xs text-gray-400">Version 1.1 · Last Updated: October 2026 · Governed by the laws of Pakistan</p>
+                <p className="text-xs text-gray-400">Version 1.2 · Last Updated: October 2026 · Governed by the laws of Pakistan</p>
                 <Link href="/" className="text-xs font-bold text-blue-600 hover:text-blue-700 transition">
                   pharmawallah.com →
                 </Link>

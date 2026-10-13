@@ -7,6 +7,7 @@
  * below is the whole of what anyone outside the admin can see.
  */
 import { redis } from "@/lib/redis";
+import { firstName } from "./format";
 import { compareBoardRows } from "./ranking";
 import { db, readSettings } from "./server";
 import type { FinalStatus, LeaderboardPayload, LeaderboardRow } from "./types";
@@ -21,16 +22,19 @@ type Row = {
 };
 
 /*
- * Names are printed in full (user decision 2026-09-30: "Umar H." was not
- * recognisable, and the certificate search lists full names anyway). The
- * `br_settings.show_full_names` column still exists but nothing reads it.
+ * Privacy (2026-10-13, AdSense remediation — supersedes the 2026-09-30
+ * full-names decision): the public board shows a FIRST NAME only and no
+ * institution, and a player who opted out (br_participants.hide_from_leaderboard,
+ * set from the result page) appears as "Anonymous player". Rank and score stay,
+ * so the order is still checkable. Full names remain on the player's own
+ * certificate only.
  */
-function project(r: Row, finalized: boolean): LeaderboardRow {
+function project(r: Row, finalized: boolean, hidden: ReadonlySet<string>): LeaderboardRow {
   return {
     rank: r.rank,
     code: r.participant_code,
-    name: r.name,
-    university: r.university,
+    name: hidden.has(r.participant_code) ? "Anonymous player" : firstName(r.name),
+    university: "",
     total: r.total_score,
     rounds: [r.round1_score, r.round2_score, r.round3_score],
     correct: r.correct_count,
@@ -49,8 +53,8 @@ function project(r: Row, finalized: boolean): LeaderboardRow {
  * Only the shared part is cached; "your row" is looked up per request.
  */
 const CACHE_SECONDS = 20;
-// v2: rows cached before full names (v1) held "Ayesha K." — a new key drops them at deploy.
-const cacheKey = (limit: number) => `br:leaderboard:v2:${limit}`;
+// v3 (2026-10-13): first names only — a new key drops cached full-name rows at deploy.
+const cacheKey = (limit: number) => `br:leaderboard:v3:${limit}`;
 const CACHED_LIMITS = [20, 50, 100];
 
 export async function invalidateLeaderboard() {
@@ -82,15 +86,33 @@ async function readShared(limit: number): Promise<Shared | null> {
     return null;
   }
   const fin = settings.resultsFinalized;
+  const hidden = await readHidden(svc);
   return {
     // Re-sorted with the board's own rule so a tie never depends on row order from PostgREST.
-    rows: (top.data as Row[]).map((r) => project(r, fin)).sort(compareBoardRows),
+    rows: (top.data as Row[]).map((r) => project(r, fin, hidden)).sort(compareBoardRows),
     totalRanked: count.count ?? top.data.length,
     frozenAt: settings.leaderboardFrozenAt,
     finalized: fin,
     winnersCount: settings.winnersCount,
     updatedAt: new Date().toISOString(),
   };
+}
+
+/**
+ * Player IDs that opted out of the public board. Tolerant of a database where
+ * supabase/migrations/20261013_battle_royale_privacy.sql has not been run yet:
+ * a missing column reads as "nobody opted out".
+ */
+async function readHidden(svc: Awaited<ReturnType<typeof db>>): Promise<Set<string>> {
+  const { data, error } = await svc
+    .from("br_participants")
+    .select("participant_code")
+    .eq("hide_from_leaderboard", true);
+  if (error) {
+    if (!/hide_from_leaderboard/.test(error.message ?? "")) console.error("[battle-royale] opt-out read failed", error);
+    return new Set();
+  }
+  return new Set((data ?? []).map((r: { participant_code: string }) => r.participant_code));
 }
 
 export async function readLeaderboard(limit: number, code: string | null): Promise<LeaderboardPayload | null> {
@@ -121,7 +143,7 @@ export async function readLeaderboard(limit: number, code: string | null): Promi
   if (code) {
     const svc = await db();
     const { data } = await svc.from("br_leaderboard").select(PUBLIC_COLUMNS).eq("participant_code", code).maybeSingle();
-    if (data) you = project(data as Row, shared.finalized);
+    if (data) you = project(data as Row, shared.finalized, await readHidden(svc));
   }
   return { ...shared, rows: shared.rows.slice(0, limit), you };
 }

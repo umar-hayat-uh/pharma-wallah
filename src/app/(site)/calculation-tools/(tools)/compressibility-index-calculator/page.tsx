@@ -19,7 +19,9 @@ import {
     LabNotice,
     fieldError,
     type ResultTone,
+    CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 /* ── Reference scales and table (unchanged text) ──────────────────────────── */
 const CARR_SCALE = [
@@ -374,6 +376,8 @@ export default function CompressibilityIndexCalculator() {
                     for the densities.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

@@ -20,7 +20,9 @@ import {
     LabNotice,
     ModeSwitch,
     type ModeOption,
+    CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type Electrolyte = {
     name: string;
@@ -362,6 +364,8 @@ export default function ElectrolyteConversionCalculator() {
                     </Formula>
                 )}
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

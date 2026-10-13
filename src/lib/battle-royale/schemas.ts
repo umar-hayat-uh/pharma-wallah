@@ -81,6 +81,18 @@ export const statusSchema = z
   .strict();
 export type StatusInput = z.input<typeof statusSchema>;
 
+/** Board opt-out (2026-10-13): same credentials as the status lookup, plus the choice. */
+export const leaderboardPrivacySchema = z
+  .object({
+    playerId: trimmed(20)
+      .toUpperCase()
+      .regex(/^BR-\d{4}-\d{4,}$/, "Your Player ID looks like BR-2026-0001 (it's in your registration email)."),
+    email: trimmed(200).toLowerCase().email("Enter the email you registered with."),
+    hide: z.boolean(),
+  })
+  .strict();
+export type LeaderboardPrivacyInput = z.input<typeof leaderboardPrivacySchema>;
+
 const cell = z.number().int().min(0).max(20);
 const mcqKey = z.enum(["A", "B", "C", "D"]);
 

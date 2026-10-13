@@ -17,7 +17,9 @@ import {
   AdSlot,
   fieldError,
   toNumber,
+  CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -368,6 +370,8 @@ export default function MasterFormulaCalculator() {
           </div>
         </FormulaNote>
       )}
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

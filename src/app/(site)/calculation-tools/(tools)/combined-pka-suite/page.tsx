@@ -19,7 +19,9 @@ import {
     ModeSwitch,
     AdSlot,
     type ModeOption,
+    CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type CalculationMode = "ka-to-pka" | "pka-to-ka" | "ionization" | "ph-from-pka";
 
@@ -500,6 +502,8 @@ export default function PKaSuiteCalculator() {
                     small fraction of the acid dissociates.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

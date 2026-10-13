@@ -16,10 +16,12 @@ import {
   CalcAbout,
   CalcList,
   CalcFaq,
+  CalcLearn,
   AdSlot,
   ModeSwitch,
   LabNotice,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import { cn } from "@/lib/utils";
 
 type ConcentrationUnit = "ppm" | "ppb" | "ppt" | "mg/L" | "μg/L" | "ng/L" | "g/L" | "mol/L" | "M";
@@ -530,6 +532,8 @@ export default function PpmPpbCalculator() {
           conversions assume dilute aqueous solutions at room temperature.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

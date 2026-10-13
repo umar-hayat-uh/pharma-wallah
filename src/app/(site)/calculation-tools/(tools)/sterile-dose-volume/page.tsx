@@ -16,10 +16,12 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     LabNotice,
     type ResultTone,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type ConcentrationUnit = "mg/mL" | "mcg/mL" | "units/mL" | "g/mL" | "percent";
 type VolumeUnit = "mL" | "L" | "mcl";
@@ -372,6 +374,8 @@ export default function SterileDoseVolumeCalculator() {
                     the figure in the unit you chose.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

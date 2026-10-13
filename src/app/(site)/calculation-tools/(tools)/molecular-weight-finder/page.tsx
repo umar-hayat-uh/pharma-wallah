@@ -16,9 +16,11 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     LabNotice,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import { COMMON_FORMULAS, PERIODIC_TABLE, type Element } from "./_elements";
 import { calculateMolecularWeight } from "./_formula";
 
@@ -387,6 +389,8 @@ export default function MolecularWeightCalculator() {
                     the mass. Elements are listed by atomic number.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

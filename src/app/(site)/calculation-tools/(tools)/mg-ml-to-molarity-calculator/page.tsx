@@ -15,9 +15,11 @@ import {
     CalcAbout,
     CalcList,
     CalcFaq,
+    CalcLearn,
     AdSlot,
     formatSig,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 /** Worked examples covering a small molecule, a sugar and a protein. */
 const EXAMPLES = [
@@ -204,6 +206,8 @@ export default function MgMlMolarityCalculator() {
                     mole leaves moles per litre. Multiply by 1000 for mM and by 1,000,000 for µM.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

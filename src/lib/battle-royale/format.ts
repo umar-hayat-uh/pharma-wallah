@@ -93,3 +93,18 @@ export function certificateQuery(raw: string): { code: string } | { words: strin
     .slice(0, 4);
   return words.join("").length >= 2 ? { words } : null;
 }
+
+/**
+ * A name compared for an exact match: NFC, trimmed, single spaces, lower case.
+ * The certificate search returns a player only when the visitor typed their
+ * WHOLE name (2026-10-13), so the public endpoint cannot be used to list names.
+ */
+export function normaliseName(raw: string): string {
+  return raw.normalize("NFC").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+/** First name only, for the public board (2026-10-13 privacy change). */
+export function firstName(raw: string): string {
+  const first = raw.normalize("NFC").trim().split(/\s+/)[0] ?? "";
+  return first ? first.charAt(0).toUpperCase() + first.slice(1) : "Player";
+}

@@ -19,7 +19,9 @@ import {
     AdSlot,
     ModeSwitch,
     type ModeOption,
+    CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 
 type Substance = {
     name: string;
@@ -383,6 +385,8 @@ export default function DensityConversionCalculator() {
                     volume is smaller than its mass in grams; below 1, the volume is larger.
                 </p>
             </FormulaNote>
+
+            <CalcLearn content={LEARN} />
 
             <CalcFaq
                 items={[

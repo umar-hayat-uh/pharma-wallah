@@ -13,6 +13,7 @@ import {
   CalcAbout,
   CalcList,
   CalcFaq,
+  CalcLearn,
   AdSlot,
   LabActions,
   LabNotice,
@@ -20,6 +21,7 @@ import {
   fieldError,
   IS_MOBILE_APP,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -528,6 +530,8 @@ export default function SerialDoseCalculator() {
           µg). The plan stops at six tubes.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

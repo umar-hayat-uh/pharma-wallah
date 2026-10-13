@@ -195,7 +195,7 @@ export function LeaderboardClient({
                           {r.name}
                           {mine && <span className="ml-2 rounded-full bg-[#1C7BD9] px-2 py-0.5 text-[11px] font-bold text-white">You</span>}
                         </p>
-                        <p className="text-xs text-[#16181d]/50">{r.code} · {r.university}</p>
+                        <p className="text-xs text-[#16181d]/50">{r.university ? `${r.code} · ${r.university}` : r.code}</p>
                       </td>
                       <td className="hidden px-4 py-3 text-right md:table-cell">{r.rounds[0]}</td>
                       <td className="hidden px-4 py-3 text-right md:table-cell">{r.rounds[1]}</td>

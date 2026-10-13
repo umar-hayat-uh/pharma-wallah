@@ -9,11 +9,13 @@ import {
   CalcAbout,
   CalcList,
   CalcFaq,
+  CalcLearn,
   AdSlot,
   LabReport,
   LabActions,
   ModeSwitch,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import { SpectrumPanel, useSpectrum } from "./_spectrum";
 import { CalibrationPanel, useCalibration } from "./_calibration";
 
@@ -156,6 +158,8 @@ export default function UvSpectrumPlotter() {
           still computed about the mean absorbance so the two fits can be compared.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

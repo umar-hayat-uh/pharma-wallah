@@ -21,7 +21,9 @@ import {
   LabNotice,
   ModeSwitch,
   type LabReportData,
+  CalcLearn,
 } from "@/components/calculators";
+import { LEARN } from "./_learn";
 import {
   AXIS_TICK,
   CHART,
@@ -780,6 +782,8 @@ export default function DissolutionRateConstantCalculatorPage() {
           control above — the supplied practical table uses the interior rows only.
         </p>
       </FormulaNote>
+
+      <CalcLearn content={LEARN} />
 
       <CalcFaq
         items={[

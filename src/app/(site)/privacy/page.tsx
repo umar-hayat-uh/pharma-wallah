@@ -1,5 +1,6 @@
 "use client";
 
+import { ConsentReset } from "@/components/ConsentBanner";
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -126,7 +127,7 @@ export default function PrivacyPage() {
           </p>
           <div className="flex flex-wrap gap-4">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-xs font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-300 inline-block" /> Version 3.1
+              <span className="w-1.5 h-1.5 rounded-full bg-green-300 inline-block" /> Version 3.2
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-xs font-bold">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-300 inline-block" /> Governing Law: Pakistan
@@ -200,11 +201,18 @@ export default function PrivacyPage() {
               <Sub>Optional accounts</Sub>
               <Para>If you create an account, we store your name and email address, and your password is handled by our authentication provider, Supabase (we never see it). You can also sign in with Google, in which case Google shares your name and email address with us. With an account we record your study progress — which course units you have opened or marked as read, your quiz and MCQ results, and time spent — so that your dashboard can show where you left off.</Para>
               <Sub>Community</Sub>
-              <Para>Posts, comments and votes you make in the community are stored with your display name and are visible to other visitors.</Para>
+              <Para>Posts, comments and votes you make in the community are stored with your display name and are visible to other visitors. If you report a post or comment, we keep the report (your account, the reason and any detail you add) so the team can review it; the person reported is not told who reported them. See the <Link href="/community-guidelines" className="font-semibold text-blue-600 hover:underline">community guidelines</Link>.</Para>
               {/* Added 2026-10-12: Battle Royale registration collects more than an
                   account does, and the policy did not mention it. */}
               <Sub>Event registration</Sub>
-              <Para>If you register for a PharmaWallah event such as Battle Royale, we store the details on the registration form — your name, email address, phone number, university, year of study and, if you give it, your student ID — together with your payment status and your game results. Your full name, university and score appear on the event&apos;s public leaderboard and certificate search. Registration emails are sent through Resend.</Para>
+              <Para>If you register for a PharmaWallah event such as Battle Royale, we store the details on the registration form — your name, email address, phone number, university, year of study and, if you give it, your student ID — together with your payment status and your game results. No account is needed to register. Registration emails are sent through Resend.</Para>
+              {/* Updated 2026-10-13: the public board shows first names only, and players can hide their name. */}
+              <Bullets items={[
+                "The public leaderboard shows only your first name, rank and score — not your surname or university.",
+                "You can hide your name completely from the result page, using your Player ID and the email you registered with; the board then lists you as “Anonymous player”.",
+                "The certificate search finds you only when someone types your full name exactly; it then shows your name, university and Player ID so you can open your certificate. Your full name and university are printed on your certificate.",
+                "Your email address, phone number, student ID and payment status are never shown publicly.",
+              ]} />
               <Sub>Contact and careers forms</Sub>
               <Para>When you use the Contact or Careers form, the name, email address and message you enter are emailed to our team (sent through the email service Resend) so that we can reply.</Para>
               <Sub>AI tools</Sub>
@@ -219,7 +227,7 @@ export default function PrivacyPage() {
             <SectionBlock id="cookies" num={3} label="Cookies, Advertising & Third-Party Services" Icon={Lock} accent="from-emerald-600 to-cyan-400" hex="#059669">
               <Sub>Advertising (Google AdSense)</Sub>
               <Bullets items={[
-                "PharmaWallah uses Google AdSense to show advertisements on some pages (not in the Android app). Where ads are shown, third-party vendors, including Google, use cookies to serve ads based on your prior visits to this website and other websites.",
+                "PharmaWallah uses Google AdSense to show advertisements on some pages (not in the Android app). Ad units are switched off at the moment while our AdSense application is reviewed; Google's AdSense script still loads (subject to consent, below) so that Google can verify the site. When ads are shown, third-party vendors, including Google, use cookies to serve ads based on your prior visits to this website and other websites.",
                 "Google's use of advertising cookies enables it and its partners to serve ads to you based on your visits to this site and/or other sites on the Internet.",
                 "You can opt out of personalised advertising in Google's Ads Settings (adssettings.google.com), or opt out of some third-party vendors' use of cookies for personalised advertising at www.aboutads.info.",
               ]} />
@@ -228,9 +236,18 @@ export default function PrivacyPage() {
                 <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 hover:underline">policies.google.com/technologies/partner-sites</a>.
                 The Android app shows no advertising.
               </Para>
+              <Sub>Consent in the EEA, the UK and Switzerland</Sub>
+              <Para>
+                If you visit from the European Economic Area, the United Kingdom or Switzerland, we ask before loading
+                Google&apos;s advertising script. Until you choose &ldquo;Accept&rdquo;, the script is not loaded and no
+                advertising cookie is set. We remember your choice in a cookie named <code>pw_ad_consent</code> for a year.
+                You can change it here:
+              </Para>
+              <ConsentReset />
               <Sub>Cookies and browser storage we set</Sub>
               <Bullets items={[
                 "Sign-in cookies keep you logged in to your account. They are only set when you sign in.",
+                "pw_ad_consent remembers your advertising-cookie choice, only for visitors from the EEA, the UK and Switzerland.",
                 "Your browser's local storage keeps things like saved AI Guide conversations, saved analyses in the camera tools, molecules saved in the Molecular Lab and display preferences. This stays on your device; clearing your browser data removes it.",
               ]} />
               <Sub>Service providers</Sub>
@@ -242,6 +259,7 @@ export default function PrivacyPage() {
                 "Account and progress data is kept for as long as you have an account. To have your account and its data deleted, email us from the address you signed up with.",
                 "Messages sent through the Contact or Careers form are kept only as long as needed to answer them.",
                 "Community posts stay visible until you delete them or we remove them.",
+                "Event registration and results are kept so that results and certificates stay available. To have yours deleted, email us from the address you registered with.",
                 "Data held by advertising and analytics providers is kept under their own retention policies.",
                 "PharmaWallah is not directed at children under 13, and we do not knowingly collect their personal information.",
               ]} />
@@ -276,7 +294,7 @@ export default function PrivacyPage() {
                 </div>
               </div>
               <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <p className="text-xs text-gray-400">Version 3.1 · Last Updated: 12 October 2026 · Governed by the laws of Pakistan</p>
+                <p className="text-xs text-gray-400">Version 3.2 · Last Updated: 13 October 2026 · Governed by the laws of Pakistan</p>
                 <Link href="/" className="text-xs font-bold text-blue-600 hover:text-blue-700 transition">
                   pharmawallah.com →
                 </Link>

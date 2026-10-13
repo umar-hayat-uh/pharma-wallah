@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { brLookupLimiter, checkLimit } from "@/lib/rateLimit";
 import { clientIpFrom, db, errorResponse, GENERIC_ERROR, readSettings } from "@/lib/battle-royale/server";
-import { certificateQuery } from "@/lib/battle-royale/format";
+import { certificateQuery, normaliseName } from "@/lib/battle-royale/format";
 import { readResult } from "@/lib/battle-royale/result";
 import type { CertificateMatch, ResultPayload } from "@/lib/battle-royale/types";
 
@@ -12,8 +12,15 @@ const CODE_RE = /^BR-\d{4}-\d{4,}$/;
  * "Find your certificate" — no Player ID or email needed (user decision
  * 2026-09-30: players forget their ID). Two reads:
  *
- *   GET ?q=ayesha         → up to 12 players whose name matches
- *   GET ?code=BR-2026-0007 → that player's result and certificate
+ *   GET ?q=Ayesha Khan                  → players whose WHOLE name is exactly that
+ *   GET ?code=BR-2026-0007&name=Ayesha Khan → that player's result and certificate
+ *
+ * Privacy (2026-10-13): the search used to match any part of a name and any
+ * Player-ID prefix, which let anyone list every player's full name and
+ * university (the board itself now shows first names only). Now a player is
+ * returned only for their exact full name (case and spacing ignored), and the
+ * certificate read needs that name with the code — Player IDs are sequential,
+ * so a code alone would be enumerable.
  *
  * Only registered players who FINISHED a battle are searchable, and the
  * payload is the same thing the public leaderboard already prints (name,
@@ -31,6 +38,8 @@ export async function GET(req: Request) {
 
   if (code) {
     if (!CODE_RE.test(code)) return errorResponse("That Player ID isn't valid.", 400);
+    const name = normaliseName(url.searchParams.get("name")?.slice(0, 100) ?? "");
+    if (!name) return errorResponse("Type your full name to open your certificate.", 400);
     const { data: p, error } = await svc
       .from("br_participants")
       .select("id, name, university, participant_code, registration_status")
@@ -41,27 +50,33 @@ export async function GET(req: Request) {
       console.error("[battle-royale] certificate lookup failed", error);
       return errorResponse(GENERIC_ERROR, 500);
     }
-    const result = p ? await readResult(svc, p, await readSettings()) : null;
+    // Same answer for "no such code" and "wrong name", so neither can be probed.
+    const result = p && normaliseName(p.name) === name ? await readResult(svc, p, await readSettings()) : null;
     if (!result?.certificate) return errorResponse("No certificate yet for this player — it appears once the battle is finished.", 404);
     const { attemptStatus: _omit, ...body } = result;
     return NextResponse.json(body satisfies ResultPayload, { headers: { "Cache-Control": "private, no-store" } });
   }
 
-  const query = certificateQuery(url.searchParams.get("q") ?? "");
-  if (!query) return NextResponse.json({ matches: [] });
+  const raw = url.searchParams.get("q") ?? "";
+  const query = certificateQuery(raw);
+  // Player-ID searches are no longer offered (enumerable); names only.
+  if (!query || "code" in query) return NextResponse.json({ matches: [] });
 
   // `!inner` keeps only participants with a br_scores row, i.e. a finished battle.
   let request = svc
     .from("br_participants")
     .select("participant_code, name, university, br_scores!inner(participant_id)")
     .eq("registration_status", "registered");
-  if ("code" in query) request = request.ilike("participant_code", `${query.code}%`);
-  else for (const w of query.words) request = request.ilike("name", `%${w}%`);
+  for (const w of query.words) request = request.ilike("name", `%${w}%`);
   const { data, error } = await request.order("name", { ascending: true }).limit(MAX_MATCHES);
   if (error) {
     console.error("[battle-royale] certificate search failed", error);
     return errorResponse(GENERIC_ERROR, 500);
   }
-  const matches: CertificateMatch[] = (data ?? []).map((r) => ({ code: r.participant_code, name: r.name, university: r.university ?? "" }));
+  // The ilike narrows candidates; only an exact whole-name match is returned.
+  const wanted = normaliseName(raw);
+  const matches: CertificateMatch[] = (data ?? [])
+    .filter((r) => normaliseName(r.name) === wanted)
+    .map((r) => ({ code: r.participant_code, name: r.name, university: r.university ?? "" }));
   return NextResponse.json({ matches }, { headers: { "Cache-Control": "private, no-store" } });
 }

@@ -281,3 +281,17 @@ test("an empty or short board leaves the remaining places unclaimed", () => {
   assert.equal(slots[1].row, undefined);
   assert.equal(slots[2].row, undefined);
 });
+
+// ── Leaderboard privacy (2026-10-13) ─────────────────────────────────────
+test("firstName: first word only, capitalised, never empty", () => {
+  assert.equal(f.firstName("manahil batool"), "Manahil");
+  assert.equal(f.firstName("  Syeda Maha Fatima "), "Syeda");
+  assert.equal(f.firstName("M. Aazib"), "M.");
+  assert.equal(f.firstName("   "), "Player");
+});
+
+test("normaliseName: exact-match comparison ignores case and spacing only", () => {
+  assert.equal(f.normaliseName("  Kinza   Zafar "), "kinza zafar");
+  assert.equal(f.normaliseName("KINZA ZAFAR"), f.normaliseName("kinza zafar"));
+  assert.notEqual(f.normaliseName("Kinza"), f.normaliseName("Kinza Zafar"));
+});
