@@ -24,25 +24,47 @@ def get(url):
         return e.code, dict(e.headers), e.read().decode("utf-8", "ignore") if e.fp else ""
     except Exception as e:
         return 0, {}, str(e)
+PLACEHOLDER = re.compile(r"coming soon|being written|more (?:subjects|lessons|guides) (?:are|will be)|under construction|lorem ipsum|placeholder|not available yet|in preparation", re.I)
+def meta(body, attr, name):
+    m = re.search(r'<meta[^>]*%s="%s"[^>]*content="([^"]*)"' % (attr, re.escape(name)), body) or \
+        re.search(r'<meta[^>]*content="([^"]*)"[^>]*%s="%s"' % (attr, re.escape(name)), body)
+    return html.unescape(m.group(1)) if m else None
+def blocks(fragment):
+    """Visible text of an HTML fragment as block-level lines (no scripts, styles, svg)."""
+    f = re.sub(r"<(script|style|svg|noscript|template)\b.*?</\1>", " ", fragment, flags=re.S | re.I)
+    f = re.sub(r"</?(p|div|li|h[1-6]|tr|td|th|section|article|br|dt|dd|summary|button|a|label|span)\b[^>]*>", "\n", f, flags=re.I)
+    f = re.sub(r"<[^>]+>", " ", f)
+    lines = [re.sub(r"\s+", " ", html.unescape(l)).strip() for l in f.split("\n")]
+    return [l for l in lines if l]
 def analyse(path):
     st, hd, body = get(base + path)
     t = re.search(r"<title>(.*?)</title>", body, re.S)
     can = re.search(r'rel="canonical" href="([^"]+)"', body)
-    rob = re.search(r'<meta name="robots" content="([^"]+)"', body)
     h1 = re.search(r"<h1[^>]*>(.*?)</h1>", body, re.S)
+    mm = re.search(r"<main\b[^>]*>(.*)</main>", body, re.S)
+    main_html = mm.group(1) if mm else body
+    lines = blocks(main_html)
     text = re.sub(r"<script.*?</script>|<style.*?</style>|<[^>]+>", " ", body, flags=re.S)
     links = set()
     for m in re.finditer(r'href="([^"#]+)', body):
         u = html.unescape(m.group(1))
         p = urllib.parse.urlparse(u)
-        if (p.netloc in ("", host, "www.pharmawallah.com")) and u.startswith(("/", base, WWW)) and not re.search(r"\.(png|jpe?g|svg|webp|ico|css|js|json|xml|txt|pdf|apk|woff2?)$", p.path) and not p.path.startswith(("/_next", "/api/")):
+        if (p.netloc in ("", host, "www.pharmawallah.com")) and u.startswith(("/", base, WWW)) and not re.search(r"\.(png|jpe?g|svg|webp|avif|ico|css|js|json|xml|txt|pdf|apk|woff2?)$", p.path, re.I) and not p.path.startswith(("/_next", "/api/")):
             links.add(p.path.rstrip("/") or "/")
     return {
         "path": path, "status": st, "location": hd.get("Location") or hd.get("location"),
+        "contentType": hd.get("Content-Type") or hd.get("content-type"),
         "title": html.unescape(t.group(1).strip()) if t else None,
-        "canonical": can.group(1) if can else None, "robots": rob.group(1) if rob else None,
+        "description": meta(body, "name", "description"),
+        "ogTitle": meta(body, "property", "og:title"), "ogDescription": meta(body, "property", "og:description"),
+        "ogUrl": meta(body, "property", "og:url"),
+        "canonical": can.group(1) if can else None, "robots": meta(body, "name", "robots"),
         "h1": re.sub(r"<[^>]+>|\s+", " ", html.unescape(h1.group(1))).strip()[:120] if h1 else None,
-        "words": len(text.split()), "ldjson": body.count("application/ld+json"),
+        "words": len(text.split()), "mainWords": sum(len(l.split()) for l in lines), "mainLines": lines,
+        "ldjson": body.count("application/ld+json"),
+        "adsLoader": "adsbygoogle.js" in body, "adsMeta": 'google-adsense-account' in body,
+        "adMarkers": len(re.findall(r">\s*Advertisement\s*<|class=\"adsbygoogle|data-ad-slot", body)),
+        "placeholderHits": sorted(set(m.group(0).lower() for m in PLACEHOLDER.finditer(" ".join(lines)))),
         "softRedirect": "NEXT_REDIRECT" in body, "notFoundUI": ("404" in (t.group(1) if t else "")) or "could not be found" in body,
         "links": sorted(links),
     }
