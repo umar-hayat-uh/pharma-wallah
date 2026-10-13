@@ -54,8 +54,26 @@ export const INDEXING: Record<string, Rule> = {
   "/spotting/pathology/test": { match: "exact", index: false, reason: "a timed test, 51 unique words" },
   "/spotting/powder-microscopy/test": { match: "exact", index: false, reason: "being rebuilt (no images)" },
 
+  // ── Under 300 unique words at the 2026-10-13 audit (Phase 5 rule) ───────
+  // Hubs and lists are noindex,FOLLOW: their links are still crawled, so the
+  // lessons, units and guides they lead to stay discoverable and indexable.
+  // NOT applied to /contact, /faqs and /careers (116–133 words): trust pages a
+  // reviewer looks for, kept indexable on purpose (see HUMAN_TODO.md).
+  "/mcqs-bank": { match: "prefix", index: false, reason: "quiz hubs and banks: 52–157 unique words; questions load into a quiz UI" },
+  "/courses": { match: "exact", index: false, reason: "163 unique words — a list of subjects (units stay indexed)" },
+  "/courses/physiology": { match: "exact", index: false, reason: "151 unique words — a unit list" },
+  "/courses/pharmaceutical-organic-chemistry": { match: "exact", index: false, reason: "190 unique words — a unit list" },
+  "/courses/pharmaceutical-biochemistry": { match: "exact", index: false, reason: "200 unique words — a unit list" },
+  "/courses/physical-pharmacy": { match: "exact", index: false, reason: "233 unique words — a unit list" },
+  "/guides": { match: "exact", index: false, reason: "280 unique words — the list of guides (guides stay indexed)" },
+  "/spotting": { match: "exact", index: false, reason: "230 unique words — a hub" },
+  "/spotting/powder-microscopy/lessons": { match: "exact", index: false, reason: "135 unique words; no slide images yet (Known Issue 23)" },
+  "/spotting/pathology/acute-appendicitis": { match: "exact", index: false, reason: "286 unique words" },
+  "/spotting/histology/lessons/wbcs": { match: "exact", index: false, reason: "297 unique words" },
+  "/simulations/lab-guide": { match: "exact", index: false, reason: "188 unique words" },
+
   // ── Duplicates ─────────────────────────────────────────────────────────
-  "/mcqs-bank/semester-4/physical-pharmacy": { match: "exact", index: false, reason: "same bank as Semester 1 (canonicalises there)" },
+  // (/mcqs-bank/semester-4/physical-pharmacy, a duplicate of Semester 1, is covered by the /mcqs-bank prefix above.)
 
   // ── Clinical sub-brand: search shells and tool lists ───────────────────
   "/clinical/encyclopedia": { match: "prefix", index: false, reason: "DrugBank text (Known Issue 16)" },

@@ -293,6 +293,9 @@ These are conventions **observed in the code**, not aspirations.
   and `ListAgents`, and announce which shared files you are taking, before editing one.
 
 ### Recently Completed
+- **AdSense remediation, phases 1–5 (2026-10-13)** — audit, kebab-case URLs with 301s, per-page metadata, noindex
+  table, ad units off by default, consent banner, bylines, Sources on 76 calculators, 25 draft guides, board
+  privacy, privacy v3.2 / terms v1.2. **Owner: see `HUMAN_TODO.md`.** See §8.
 - **AdSense remediation (2026-10-12, with session `pharma-wallah-da`)** — teaching sections on 21 calculators,
   five guides at `/guides`, `/editorial-policy`, honest counts and claims site-wide, JSON-LD, podium order fixed,
   Terms/Privacy reconciled. **Clinical dosing errors found, not fixed — owner decision.** Reports in `docs/`. See §8.
@@ -731,6 +734,41 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 
 > Newest first. Never paste source code here. Archive entries older than ~10 into
 > `.claude/history/YYYY-MM.md`.
+
+### 2026-10-13 — AdSense remediation, phased (audit → technical → trust → content → verification)
+
+User brief (5 phases, commit after each) + mid-task "also update the privacy policy and terms". Commits:
+`2ed77ea` (P1), `49ebe5d` + `241643d` (P2), `35284b1` (P3), `4fa1cee` (P4), P5 (this entry). Not pushed.
+
+**Completed**
+- **P1** `AUDIT.md`: route-by-route crawl of a production build (unique words, titles, descriptions, OG,
+  placeholder language, raw vs rendered). Found 46 pages with the home page's OG tags, 23 mixed-case URLs,
+  70 thin indexable pages, 26 pages (all course units) whose content arrived only via JS streaming, and
+  labelled empty ad boxes on every content page in production.
+- **P2** `pageMeta()` (title/description/canonical/OG together, fitted to 60 / 120–160 chars); 23 calculator
+  slugs → kebab-case with exact-match 301s in middleware and app/desktop slug migration; units read markdown
+  synchronously; `src/lib/indexing.ts` noindex table feeding metadata + sitemap; sitemap lastmod from git;
+  `ads.txt` exactly one line; ad units behind `NEXT_PUBLIC_ADS_ENABLED`, label removed; Organization JSON-LD
+  site-wide, breadcrumbs on courses.
+- **P3** bylines registry + neutral note (replacing "not independently reviewed"); Sources on 76/106 calculators;
+  About "how it works"; EEA/UK/CH consent banner gating the loader; Battle Royale board first names only + opt-out
+  + exact-name certificate search; `/community-guidelines`; privacy v3.2 and terms v1.2.
+- **P4** ~230-word home intro (server slot); unfinished wording removed; AUC "Multiple doses — not available"
+  mode removed; 25 draft guides + 25 briefs (status draft, unpublished); unit → guide links.
+- **P5** final build + crawl: 185 indexable = 185 in sitemap, 0 noindex in sitemap, 0 duplicate titles/
+  descriptions, 0 home OG, 0 mixed-case, 0 JS-only, 0 ad elements (built with dummy slot IDs set), loader on
+  every page; `HUMAN_TODO.md`; `docs/AUDIT-after-2026-10-13.md`.
+
+**Architecture & Decisions** — no formula changed. `/contact`, `/faqs`, `/careers` kept indexable though thin
+(trust pages). The University of Karachi is presented as an address only. The consent banner is basic, not a
+certified CMP (HUMAN_TODO). A crawl caught layout `robots` inheritance noindexing all units — fixed (MEMORY 205).
+The clinical dosing errors from 2026-10-12 remain an owner decision.
+
+**Verification** — `tsc` 0 errors (web, mobile, desktop). 259 tests pass, 0 fail (11 suites). Builds exit 0,
+shared 88.6 kB, middleware 82.5 kB (+0.6: slug map, consent). `mobile:build` exit 0, 0 ad strings, no mixed-case
+paths. Consent: DE without cookie → no loader + banner; PK → loader; DE + granted → loader. Board API returns first
+names; partial name search → none; code without name → 400. NOT verified: Search Console, real EEA traffic,
+the privacy migration on Supabase, a phone, Safari.
 
 ### 2026-10-12 — AdSense "low value content" remediation, two briefs (with session `pharma-wallah-da`)
 
@@ -1876,7 +1914,7 @@ Capacitor target, `-6c`); file ownership was agreed by message before any shared
 | iOS compile | `.github/workflows/ios-app.yml` (Actions → "iOS app" → Run workflow) | **PASSES — first ever run 2026-09-22, `macos-latest`, 5m22s, commit `5b8788e`, conclusion `success`, every step green.** Builds twice with no Apple account and no secrets: **Simulator** (Debug, `-sdk iphonesimulator`) and the **arm64 device slice** (Release, `-sdk iphoneos`, `CODE_SIGNING_ALLOWED=NO`), and uploads `App.app` as the `pharmawallah-ios-simulator-app` artifact. Two guards run before the compile and are part of the baseline: `Info.plist` must request **no permissions**, and **≥100** calculator pages must be in the synced bundle. Needs the committed shared scheme `ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme` (MEMORY gotcha 159). **This is a compile baseline only** — no signed `.ipa`, and the app has still never been *run* (§7 Known Issue 21). Do not report the iOS app as tested on a device. |
 | iOS sync | `npm run ios:sync` (i.e. `cap sync ios`) | **PASSES (2026-09-22, ~4 s after the build)** — exit 0 on **Linux**; Capacitor 8 uses the SPM template so no CocoaPods is involved. Reports **3 Capacitor plugins for ios** (`@capacitor/filesystem@8.1.3`, `@capacitor/keyboard@8.0.5`, `@capacitor/share@8.0.2`) and rewrites `ios/App/CapApp-SPM/Package.swift`. Also assert: `Info.plist` parses with `plistlib` and has **zero** `*UsageDescription` keys, and `ios/App/App/public/calculation-tools` holds one `index.html` per tool. **There is no iOS build baseline** — compiling needs Xcode on macOS and has never been done (§7 Known Issue 21). Do not report the iOS app as building. |
 | APK | `npm run mobile:apk` | **PASSES (2026-10-08, v1.5 / versionCode 6)** — signed V2 release APK **9,595,463 B (9.2 MB)**, certificate SHA-256 `afe4c18e…5b03` **identical to v1.4 (checked against `git show HEAD:` of the old file)**, so it installs as an update; 106 tool pages + `how-to-use/index.html` inside. **Earlier: PASSES (2026-09-20, v1.4 / versionCode 5, ~2 min)** — signed V2 release APK **9,369,674 B (8.9 MB)**, certificate SHA-256 `afe4c18e…5b03` **unchanged from v1.3**, so it installs as an update; published file byte-identical to the Gradle output; 104 tool pages inside. **Earlier (2026-09-16, v1.3 / versionCode 4, ~2.5 min)** — signed V2 release APK **9,347,799 B** (8.9 MB), same certificate SHA-256 `afe4c18e…5b03` as v1.2; published file byte-identical to the Gradle output. **Earlier:** (2026-09-14, v1.2 / versionCode 3, built by `pharma-wallah-4b` — new launcher icon + redesigned Serial Dose tool) — signed V2 release APK, 5,945,495 B, copied to `public/downloads/`; same certificate as v1.0/v1.1. Needs JDK 21 (auto-selected) and `android/keystore.properties`. Check `aapt dump badging` for the version and `apksigner verify --print-certs` for the certificate. |
-| Tests | `node --test scripts/pharmacy-counter.test.mts` · `node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts` · `node --test scripts/molecular-lab.test.mts` · `node --test scripts/community.test.mts` · `node --test scripts/ai-guide.test.mts` · `node --test scripts/dissolution-rate.test.mts` · `node --test scripts/split-for-ads.test.mts` · `node --test scripts/battle-royale.test.mts` · `node --test scripts/stability-kinetics.test.mts` · `node --test scripts/content-governance.test.mts` | **47 pass, 0 fail** (2026-09-20, Community Pharmacy pure layer, ~0.5 s — case-data integrity, the check grader, verification truths, labels, expiry, inventory, the calculators, scoring) · **41 pass, 0 fail** (2026-09-16; 21 TLC + 20 colony, ~10 s) · **21 pass, 0 fail** (2026-09-16, Molecular Lab, ~12 s, real OpenChemLib) · **19 pass, 0 fail** (2026-09-20, community pure layer, <1 s) · **34 pass, 0 fail** (2026-09-20, AI Guide pure layer — request clamps, Gemini history rules, NDJSON framing, study modes — <1 s). · **28 pass, 0 fail** (2026-09-22, Dissolution Rate Constant pure layer — every column of the supplied practical sheet, both k columns proven distinct, the average against 0.000291833 and against each rejected averaging range, division-by-zero paths, duplicate/backwards times, both notations — <1 s). · **6 pass, 0 fail** (2026-09-24, lesson ad spacing — heading-only breaks, never inside a code fence, word-count gaps, lossless over all 69 lesson files, <1 s). · **23 pass, 0 fail** (2026-09-30, Battle Royale — display helpers, schema round-trips, station, titles, certificate search input). · **26 pass, 0 fail** (2026-10-08, Drug Stability Kinetics — % remaining against the sheet, residuals, the two-point tie, all three fits against an independent covariance computation, order selection on exact zero/first/second-order data, k/t½/t90 per order, k ≤ 0, validation, interpretation, <1 s). **7 pass, 0 fail** (2026-10-12, content governance — guides and `_learn.ts` complete, registered references, links resolve, no fake review). Battle Royale is **27** since 2026-10-12 (+4 ranking/podium). Total across all suites: **256**. These cover ten features' pure modules only — there is no framework, no CI, and nothing else is tested. Report them by name. **The community's SQL is verified separately** by running its migration twice against a throwaway local Postgres 16 and asserting RLS from a `nobypassrls` role — see the `community-system` skill. |
+| Tests | `node --test scripts/pharmacy-counter.test.mts` · `node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts` · `node --test scripts/molecular-lab.test.mts` · `node --test scripts/community.test.mts` · `node --test scripts/ai-guide.test.mts` · `node --test scripts/dissolution-rate.test.mts` · `node --test scripts/split-for-ads.test.mts` · `node --test scripts/battle-royale.test.mts` · `node --test scripts/stability-kinetics.test.mts` · `node --test scripts/content-governance.test.mts` | **47 pass, 0 fail** (2026-09-20, Community Pharmacy pure layer, ~0.5 s — case-data integrity, the check grader, verification truths, labels, expiry, inventory, the calculators, scoring) · **41 pass, 0 fail** (2026-09-16; 21 TLC + 20 colony, ~10 s) · **21 pass, 0 fail** (2026-09-16, Molecular Lab, ~12 s, real OpenChemLib) · **19 pass, 0 fail** (2026-09-20, community pure layer, <1 s) · **34 pass, 0 fail** (2026-09-20, AI Guide pure layer — request clamps, Gemini history rules, NDJSON framing, study modes — <1 s). · **28 pass, 0 fail** (2026-09-22, Dissolution Rate Constant pure layer — every column of the supplied practical sheet, both k columns proven distinct, the average against 0.000291833 and against each rejected averaging range, division-by-zero paths, duplicate/backwards times, both notations — <1 s). · **6 pass, 0 fail** (2026-09-24, lesson ad spacing — heading-only breaks, never inside a code fence, word-count gaps, lossless over all 69 lesson files, <1 s). · **23 pass, 0 fail** (2026-09-30, Battle Royale — display helpers, schema round-trips, station, titles, certificate search input). · **26 pass, 0 fail** (2026-10-08, Drug Stability Kinetics — % remaining against the sheet, residuals, the two-point tie, all three fits against an independent covariance computation, order selection on exact zero/first/second-order data, k/t½/t90 per order, k ≤ 0, validation, interpretation, <1 s). **8 pass, 0 fail** (2026-10-13, content governance — incl. drafts, and the publish-only-with-reviewer rule). Battle Royale is **29** since 2026-10-13 (+2 name privacy). Total across all suites: **259**. These cover ten features' pure modules only — there is no framework, no CI, and nothing else is tested. Report them by name. **The community's SQL is verified separately** by running its migration twice against a throwaway local Postgres 16 and asserting RLS from a `nobypassrls` role — see the `community-system` skill. |
 
 ---
 

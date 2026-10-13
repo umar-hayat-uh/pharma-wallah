@@ -164,6 +164,16 @@ Separate from the tournament below. Skill: `.claude/skills/battle-royale/`.
 - `scripts/content-inventory.mjs` → `docs/adsense-content-inventory.{md,json}`; `scripts/audit-crawl.py` + `scripts/route-inventory.py` → `docs/ADSENSE_ROUTE_INVENTORY.md`.
 - `docs/ADSENSE_*.md`, `docs/CALCULATOR_INVENTORY_AND_ACCURACY.md`, `docs/CONTENT_AND_FEATURE_AUDIT.md`, `docs/PRIVACY_AND_TRUST_AUDIT.md`, `docs/TECHNICAL_SEO_AUDIT.md` — the 2026-10-12 audit set.
 
+## AdSense remediation, 2026-10-13 (phases 1–5)
+
+- `AUDIT.md` (before) / `docs/AUDIT-after-2026-10-13.md` (after) ← `scripts/audit-crawl.py` + `scripts/audit-report.py`.
+- `HUMAN_TODO.md` — everything a person must do (reviewers, drafts, Search Console, CMP, migrations).
+- `src/lib/indexing.ts` (noindex switches) · `src/lib/legacy-slugs.ts` (old URL → new) · `src/lib/consent.ts` + `src/components/ConsentBanner.tsx`.
+- `src/lib/seo.ts` → `pageMeta()`, `fitTitle()`, `fitDescription()`. `scripts/gen-lastmod.mjs` → `src/generated/lastmod.json` (sitemap lastmod).
+- `src/lib/content/bylines.ts` + `src/components/content/ContentByline.tsx`. `src/lib/guides/related.ts` (unit → guides).
+- `src/components/Home/HomeIntro.tsx`; `/community-guidelines`; `/api/battle-royale/privacy` + `LeaderboardPrivacyForm`.
+- 25 draft guides `src/lib/guides/content/*`, briefs `content/briefs/*.md`.
+
 ## Calculation tools (106 calculators)
 
 | Piece | File |

@@ -23,6 +23,10 @@ app, the PDF export, AdSense's viewability measurement, or AdSense policy.
 
 ## Architecture Context
 
+**2026-10-13: every ad unit is behind `NEXT_PUBLIC_ADS_ENABLED` (default off) and the "Advertisement" label is
+gone** — see MEMORY 204. The placement table below is what renders once the switch is on. EEA/UK/CH visitors get
+the loader only after consent (`src/lib/consent.ts`).
+
 **One component, one loader. The loader always ships; the ad *units* are env-gated.**
 
 - `src/app/layout.tsx` renders the loader `<Script>` **unconditionally**, with

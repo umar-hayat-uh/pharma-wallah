@@ -302,12 +302,13 @@ PubMed 10/60s (its own inline limiter in the route).
 (PubMed works without them at a lower rate limit), `NEXT_PUBLIC_GEMINI_API_KEY` (should be removed).
 
 **Advertising (all `NEXT_PUBLIC_*`, all public by nature — none is a secret):**
-`NEXT_PUBLIC_ADSENSE_CLIENT` is the publisher ID and the **master switch**: without it
-`src/app/layout.tsx` renders no loader script and `AdSlot` renders nothing, so the site makes zero
-ad requests. `_CALCULATOR`, `_CALCULATOR_FOOTER`, `_LESSON`, `_LIST` are the per-placement
-ad-unit IDs (`_HOME_1/2/3` are unused since 2026-09-13, when the landing page's ad bands were removed); a blank one renders
-nothing in production and a labelled placeholder in dev. `NEXT_PUBLIC_IS_MOBILE_APP` is set only by
-`mobile/next.config.mjs` and makes `AdSlot` return `null`.
+`NEXT_PUBLIC_ADS_ENABLED` (since 2026-10-13) is the **master switch for ad units**: unless it is `true`,
+`AdSlot` renders nothing anywhere, whatever slot IDs are set (MEMORY 204). `NEXT_PUBLIC_ADSENSE_CLIENT`
+only overrides the publisher ID, which is hardcoded in `src/lib/adsense.ts`; the loader and the
+`google-adsense-account` meta tag ship regardless (EEA/UK/CH: after consent). `_CALCULATOR`,
+`_CALCULATOR_FOOTER`, `_CALCULATOR_INLINE`, `_LESSON`, `_LIST` are the per-placement ad-unit IDs (set in
+Vercel; `_HOME_1/2/3` unused since 2026-09-13). `NEXT_PUBLIC_IS_MOBILE_APP` is set by the app and desktop
+builds and makes `AdSlot` return `null`.
 
 `NODE_ENV` is read for cookie `secure` flags, the mongo dev-cache, and to disable PWA in dev.
 
@@ -1246,7 +1247,7 @@ Traps that will otherwise be rediscovered painfully.
     (`20260930_battle_royale_ranking.sql`), and `br_finalize_results` labels winners from that view — so
     changing the order does **not** re-label already-finalised winners; Unfinalise → Finalise does. On the
     real data the change swapped 10th and 11th (two players tied on 155).
-186. **Certificates are found by name, publicly** (2026-09-30, user). `GET /api/battle-royale/certificates`
+186. **(Superseded by 210, 2026-10-13.) Certificates are found by name, publicly** (2026-09-30, user). `GET /api/battle-royale/certificates`
     lists registered players *with a `br_scores` row* (`br_scores!inner`) and returns one player's result by
     Player ID with no email — safe only because every field is already on the public board (name,
     university, Player ID, score, rank) or derived from it. Never add payment, email, phone or Game Code to
@@ -1375,6 +1376,35 @@ Traps that will otherwise be rediscovered painfully.
    tool dir, all registered); the hub may say "95 in this index" (`HUB_TOOL_COUNT`); the Download page's 106 is
    the count *inside the published APK* (re-measure with `unzip -l` after a release). MCQ total 660 is typed in
    `mcqs-bank/page.tsx` — correct, validated against the banks 2026-10-12.
+
+204. **Ad units are behind `NEXT_PUBLIC_ADS_ENABLED` (2026-10-13), default OFF.** With it unset `AdSlot`
+   renders nothing — no box, no "Advertisement" label (there is no label any more) — even when slot IDs are set.
+   The AdSense loader and `google-adsense-account` meta stay on, so verification/review still work. Turn it on in
+   Vercel only after approval. EEA/UK/CH visitors get the loader only after accepting `ConsentBanner`
+   (`src/lib/consent.ts`, `x-vercel-ip-country` → middleware → `x-consent-region`); it is a basic banner, not a
+   certified CMP.
+205. **Next metadata is inherited down the tree, `robots` included.** `/courses/layout.tsx` became noindexed and
+   all 22 unit pages silently inherited `noindex` because their metadata didn't set `robots`. `pageMeta()` now
+   always sets `robots` explicitly. Any page under a noindexed layout must set its own `robots`.
+206. **One noindex switch per route: `src/lib/indexing.ts`** (read by metadata and the sitemap). 55 routes off on
+   2026-10-13, each with the reason and what "ready" means. `/contact`, `/faqs`, `/careers` are under 300 unique
+   words but kept indexable on purpose (trust pages).
+207. **Calculator slugs are lowercase kebab-case since 2026-10-13.** 23 old mixed-case URLs 301 from middleware via
+   `src/lib/legacy-slugs.ts` (exact match — Next's redirect matching is case-insensitive and would loop on
+   `pH-pka…` → `ph-pka…`). The app's saved/recent lists and desktop history map old slugs through the same table.
+   Never remove an entry.
+208. **An async server page under the root `loading.tsx` streams its content after the shell** in a hidden
+   `<div id="S:…">`; a no-JS crawler sees an empty `<main>`. Course units now read their markdown synchronously
+   (`getUnitMarkdownSync`) so the lesson is in the first HTML. Prefer sync reads for content pages.
+209. **Bylines come only from `src/lib/content/bylines.ts`** (empty; a person fills it). No reviewer + date → the
+   neutral note "Prepared by the PharmaWallah student team. Verify results with your textbook or instructor."
+   25 guide drafts are registered but filtered (`status: "draft"`); `content-governance.test.mts` refuses to
+   publish a new guide without a recorded reviewer.
+210. **Battle Royale board privacy (2026-10-13, supersedes MEMORY 186's full names):** first names only, no
+   institution, opt-out via `/api/battle-royale/privacy` (Player ID + email; needs the 20261013 migration); the
+   certificate search returns a player only for an exact full name and needs the name with a Player ID.
+211. **Port 3306 is the local MySQL server** — `next start -p 3306` fails with EADDRINUSE and a crawl against it
+   "reaches 1 page". Use 3300–3305 / 3311+.
 
 ## 9. Working preferences (observed)
 

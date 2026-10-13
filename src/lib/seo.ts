@@ -464,7 +464,10 @@ export function pageMeta(m: {
     title,
     description,
     alternates: { canonical: url },
-    ...(m.noindex || isNoindex(m.path) ? { robots: { index: false, follow: true } } : {}),
+    // Always explicit: Next merges metadata down the tree, so a page that left
+    // `robots` unset inherited its layout's — /courses/layout.tsx is noindexed,
+    // and for a moment all 22 course units were too (caught by the 2026-10-13 crawl).
+    robots: m.noindex || isNoindex(m.path) ? { index: false, follow: true } : { index: true, follow: true },
     openGraph: {
       title,
       description,
