@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { creditsFor, isReviewed } from "@/lib/content/bylines";
 import { notFound } from "next/navigation";
 import { GuideArticle } from "@/components/guides/GuideArticle";
 import { GUIDES, findGuide } from "@/lib/guides";
-import { SITE_NAME } from "@/lib/seo";
+import { SITE_NAME, pageMeta } from "@/lib/seo";
 import { JsonLd, articleLd, breadcrumbLd } from "@/lib/structured-data";
 
 // An unknown slug renders the not-found UI with HTTP 200, not 404: the root
@@ -17,24 +18,34 @@ export function generateStaticParams() {
 export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
   const guide = findGuide(params.slug);
   if (!guide) return {};
-  const title = `${guide.title} | ${SITE_NAME}`;
-  return {
-    title,
+  return pageMeta({
+    title: `${guide.title} | ${SITE_NAME}`,
     description: guide.description,
-    alternates: { canonical: `/guides/${guide.slug}` },
-    openGraph: { title, description: guide.description, type: "article", modifiedTime: guide.meta.updated },
-  };
+    path: `/guides/${guide.slug}`,
+    extra: [`A ${guide.category.toLowerCase()} guide with worked examples and practice questions.`],
+    type: "article",
+    modifiedTime: guide.meta.updated,
+  });
 }
 
 export default function GuidePage({ params }: { params: { slug: string } }) {
   const guide = findGuide(params.slug);
   if (!guide) notFound();
   const path = `/guides/${guide.slug}`;
+  const credits = creditsFor(path);
 
   return (
     <>
       <JsonLd
-        data={articleLd({ title: guide.title, description: guide.description, path, updated: guide.meta.updated, author: guide.meta.author })}
+        data={articleLd({
+          title: guide.title,
+          description: guide.description,
+          path,
+          updated: guide.meta.updated,
+          author: guide.meta.author,
+          personAuthor: credits.authorName?.trim() || undefined,
+          reviewedBy: isReviewed(credits) ? credits.reviewerName : undefined,
+        })}
       />
       <JsonLd
         data={breadcrumbLd([

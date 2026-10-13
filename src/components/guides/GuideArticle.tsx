@@ -2,7 +2,8 @@ import Link from "next/link";
 import { AlertTriangle, ArrowRight, BookOpenText, Calculator, Info } from "lucide-react";
 import { PageHero } from "@/components/page-kit";
 import { getReferences } from "@/lib/content/references";
-import { formatDate, reviewLabel, reportErrorHref } from "@/lib/content/governance";
+import { formatDate, reportErrorHref } from "@/lib/content/governance";
+import { ContentByline } from "@/components/content/ContentByline";
 import { findGuide, readingMinutes } from "@/lib/guides";
 import type { Guide, GuideBlock } from "@/lib/guides/types";
 import { cn } from "@/lib/utils";
@@ -160,7 +161,6 @@ export function GuideArticle({ guide }: { guide: Guide }) {
         lead={guide.description}
         meta={
           <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-sm text-[#16181d]/65">
-            <span>By {guide.meta.author}</span>
             <span>Updated {formatDate(guide.meta.updated)}</span>
             <span>{readingMinutes(guide)} min read</span>
           </div>
@@ -175,12 +175,9 @@ export function GuideArticle({ guide }: { guide: Guide }) {
                 {p}
               </p>
             ))}
-            <p className="rounded-xl border border-[#16181d]/10 bg-white px-4 py-3 text-sm text-[#16181d]/70">
-              {reviewLabel(guide.meta.review)}{" "}
-              <Link href="/editorial-policy" className="font-medium text-[#1C7BD9] underline-offset-2 hover:underline">
-                How we write and check guides
-              </Link>
-            </p>
+            <div className="rounded-xl border border-[#16181d]/10 bg-white px-4 py-3">
+              <ContentByline path={`/guides/${guide.slug}`} pageTitle={guide.title} className="text-sm" />
+            </div>
           </div>
 
           <section aria-labelledby="objectives" className="space-y-4">

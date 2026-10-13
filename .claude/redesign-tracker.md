@@ -218,7 +218,7 @@ re-run — **results must match exactly**. Record the pairs in the tool's row be
 `@/components/ui`, `@/components/calculators`. After each batch: `npm run mobile:build`, CSS not
 ~10 KB, HTML count unchanged (98), 0 ad strings, 0 secrets.
 
-`DValueCalculator` and `SodiumCorrectionCalculator` are already on the kit and carry the **user's
+`d-value-calculator` and `sodium-correction-calculator` are already on the kit and carry the **user's
 own uncommitted edits** — do not touch without asking.
 
 | # | Tool (directory = URL) | Lines | Reached from | Status | Batch |
@@ -229,8 +229,8 @@ own uncommitted edits** — do not touch without asking.
 | 3 | [x] `solubility-calculator` | 384 | hub | done 2026-09-13 (a8/A1, before/after numbers match) | C1 |
 | 4 | [x] `dilution-calculator` | 388 | hub | done 2026-09-13 (a8/A1, before/after numbers match) | C1 |
 | 5 | [x] `heat-formation-calculator` | 474 | hub | done 2026-09-13 (a8/A1, before/after numbers match) | C1 |
-| 6 | [x] `HeatOfNeutralizationCalculator` | 493 | hub | done 2026-09-13 (a8/A1, before/after numbers match) | C2 |
-| 7 | [x] `pH-pka-relationship-calculator` | 504 | hub | done 2026-09-13 (9c, before/after numbers match) | C2 |
+| 6 | [x] `heat-of-neutralization-calculator` | 493 | hub | done 2026-09-13 (a8/A1, before/after numbers match) | C2 |
+| 7 | [x] `ph-pka-relationship-calculator` | 504 | hub | done 2026-09-13 (9c, before/after numbers match) | C2 |
 | 8 | [x] `molarity-calculator` | 576 | hub | done 2026-09-13 (9c, before/after numbers match) | C2 |
 | 9 | [x] `combined-pka-suite` | 654 | hub | done 2026-09-13 (9c, before/after numbers match) | C2 |
 | 10 | [x] `percentage-solution-calculator` | 729 | hub | done 2026-09-13 (9c, before/after numbers match) | C2 |
@@ -241,12 +241,12 @@ own uncommitted edits** — do not touch without asking.
 | 15 | [x] `theoretical-yield-calculator` | 853 | hub | done (pre-existing) | — |
 | 16 | [x] `serial-dilution-calculator` | 1108 | hub | done (pre-existing) | — |
 | | **Unit Conversion** — 6 tools | | | | |
-| 17 | [x] `MassConversionCalculator` | 370 | hub | done 2026-09-13 (a8/A4, before/after numbers match) | C3 |
-| 18 | [x] `VolumeConversionCalculator` | 380 | hub | done 2026-09-13 (a8/A4, before/after numbers match) | C3 |
-| 19 | [x] `TemperatureConversionCalculator` | 429 | hub | done 2026-09-13 (a8/A4, before/after numbers match) | C4 |
-| 20 | [x] `StrengthConversionCalculator` | 437 | hub | done 2026-09-13 (a8/A4, before/after numbers match) | C4 |
-| 21 | [x] `ElectrolyteConversionCalculator` | 467 | hub | done 2026-09-13 (a8/A4, before/after numbers match) | C4 |
-| 22 | [x] `DensityConversionCalculator` | 512 | hub | done 2026-09-13 (a8/A4, before/after numbers match) | C4 |
+| 17 | [x] `mass-conversion-calculator` | 370 | hub | done 2026-09-13 (a8/A4, before/after numbers match) | C3 |
+| 18 | [x] `volume-conversion-calculator` | 380 | hub | done 2026-09-13 (a8/A4, before/after numbers match) | C3 |
+| 19 | [x] `temperature-conversion-calculator` | 429 | hub | done 2026-09-13 (a8/A4, before/after numbers match) | C4 |
+| 20 | [x] `strength-conversion-calculator` | 437 | hub | done 2026-09-13 (a8/A4, before/after numbers match) | C4 |
+| 21 | [x] `electrolyte-conversion-calculator` | 467 | hub | done 2026-09-13 (a8/A4, before/after numbers match) | C4 |
+| 22 | [x] `density-conversion-calculator` | 512 | hub | done 2026-09-13 (a8/A4, before/after numbers match) | C4 |
 | | **Pharmaceutics** — 13 tools | | | | |
 | 23 | [x] `powder-flowability-calculator` | 309 | hub | done 2026-09-13 (3d/R1, before/after numbers match) | C4 |
 | 24 | [x] `density-calculator` | 348 | hub | done 2026-09-13 (3d/R1, before/after numbers match) | C5 |
@@ -272,8 +272,8 @@ own uncommitted edits** — do not touch without asking.
 | 43 | [x] `half-life-calculator` | 535 | hub | done 2026-09-13 (a8/A9, before/after numbers match) | C8 |
 | 44 | [x] `loading-dose-calculator` | 538 | hub | done 2026-09-13 (a8/A9, before/after numbers match) | C8 |
 | 45 | [x] `maintenance-dose-calculator` | 567 | hub | done 2026-09-13 (a8/A9, before/after numbers match) | C9 |
-| 46 | [x] `AccumulationIndexCalculator` | 249 | hub | done (pre-existing) | — |
-| 47 | [x] `MeanResidenceTimeCalculator` | 262 | hub | done (pre-existing) | — |
+| 46 | [x] `accumulation-index-calculator` | 249 | hub | done (pre-existing) | — |
+| 47 | [x] `mean-residence-time-calculator` | 262 | hub | done (pre-existing) | — |
 | | **Pharmacology** — 6 tools | | | | |
 | 48 | [x] `drug-receptor-binding-affinity-tool` | 386 | hub | done 2026-09-20 (86, before/after numbers match) | C9 |
 | 49 | [x] `ed50-td50-ld50-calculator` | 459 | hub | done 2026-09-20 (86, before/after numbers match) | C9 |
@@ -294,43 +294,43 @@ own uncommitted edits** — do not touch without asking.
 | 62 | [x] `wbc-count-calculator` | 508 | hub | done (pre-existing) | — |
 | 63 | [x] `rbc-count-calculator` | 512 | hub | done (pre-existing) | — |
 | | **Microbiology** — 6 tools | | | | |
-| 64 | [x] `LogReductionCalculator` | 233 | hub | done 2026-09-13 (3d/R3, before/after numbers match) | C11 |
+| 64 | [x] `log-reduction-calculator` | 233 | hub | done 2026-09-13 (3d/R3, before/after numbers match) | C11 |
 | 65 | [x] `zone-of-inhibition-calculator` | 289 | hub | done 2026-09-13 (3d/R3, before/after numbers match) | C11 |
 | 66 | [x] `sterilization-calculator` | 292 | hub | done 2026-09-13 (3d/R3, before/after numbers match) | C11 |
 | 67 | [x] `cfu-calculator` | 673 | hub | rebuilt 2026-09-16 as the offline Colony Counter & CFU Calculator (new page on the kit, not a migration — see note in the maths-issue list) | C12 |
-| 68 | [x] `FValueCalculator` | 314 | hub | done (pre-existing) | — |
-| 69 | [x] `DValueCalculator` | 321 | hub | done (pre-existing) | — |
+| 68 | [x] `f-value-calculator` | 314 | hub | done (pre-existing) | — |
+| 69 | [x] `d-value-calculator` | 321 | hub | done (pre-existing) | — |
 | | **Pharmaceutical Engineering** — 4 tools | | | | |
 | 70 | [x] `heat-transfer-area` | 223 | hub | done 2026-09-20 (86, before/after numbers match) | C12 |
 | 71 | [x] `drying-rate` | 264 | hub | done 2026-09-20 (86, before/after numbers match) | C12 |
 | 72 | [x] `reynolds-number` | 270 | hub | done 2026-09-20 (86, before/after numbers match) | C12 |
 | 73 | [x] `mixing-time-estimator` | 318 | hub | done 2026-09-20 (86, before/after numbers match) | C12 |
 | | **Clinical & Hospital Pharmacy** — 13 tools | | | | |
-| 74 | [x] `AnionGapCalculator` | 218 | hub | done 2026-09-13 (a8/A14, before/after numbers match) | C13 |
+| 74 | [x] `anion-gap-calculator` | 218 | hub | done 2026-09-13 (a8/A14, before/after numbers match) | C13 |
 | 75 | [x] `iv-drip-rate-calculator` | 679 | hub | done 2026-09-13 (a8/A14, before/after numbers match) | C13 |
 | 76 | [x] `pedriatic-calculator` | 821 | hub | done 2026-09-13 (a8/A14, before/after numbers match) | C13 |
 | 77 | [x] `bmi-calculator` | 881 | hub | done 2026-09-13 (a8/A14, before/after numbers match) | C13 |
 | 78 | [x] `child-pugh-calculator` | 895 | hub | done 2026-09-13 (3d/R4, before/after numbers match) | C13 |
 | 79 | [x] `anti-coagulation-risk-calculator` | 904 | hub | done 2026-09-13 (3d/R4, before/after numbers match) | C14 |
-| 80 | [x] `InsulinSensitivityCalculator` | 931 | hub | done 2026-09-13 (3d/R4, before/after numbers match) | C14 |
+| 80 | [x] `insulin-sensitivity-calculator` | 931 | hub | done 2026-09-13 (3d/R4, before/after numbers match) | C14 |
 | 81 | [x] `bsa-calculator` | 940 | hub | done 2026-09-13 (3d/R4, before/after numbers match) | C14 |
 | 82 | [x] `creatinine-calculator` | 974 | hub | done 2026-09-13 (3d/R4, before/after numbers match) | C14 |
 | 83 | [x] `qt-interval-calculator` | 1059 | hub | done 2026-09-13 (3d/R4, before/after numbers match) | C14 |
-| 84 | [x] `SodiumCorrectionCalculator` | 239 | hub | done (pre-existing) | — |
-| 85 | [x] `CorrectedCalciumCalculator` | 241 | hub | done (pre-existing) | — |
+| 84 | [x] `sodium-correction-calculator` | 239 | hub | done (pre-existing) | — |
+| 85 | [x] `corrected-calcium-calculator` | 241 | hub | done (pre-existing) | — |
 | 86 | [x] `gfr-calculator` | 488 | hub | done (pre-existing) | — |
 | | **Clinical-only (linked from /clinical/dose-calculators)** — 6 tools | | | | |
-| 87 | [x] `OpioidMMECalculator` | 883 | clinical | done 2026-09-20 (86, before/after numbers match) | C15 |
-| 88 | [x] `GeriatricDosingCalculator` | 1050 | clinical | done 2026-09-20 (86, before/after numbers match) | C15 |
+| 87 | [x] `opioid-mme-calculator` | 883 | clinical | done 2026-09-20 (86, before/after numbers match) | C15 |
+| 88 | [x] `geriatric-dosing-calculator` | 1050 | clinical | done 2026-09-20 (86, before/after numbers match) | C15 |
 | 89 | [x] `vancomycin-auc-calculator` | 1163 | clinical | done 2026-09-20 (86, before/after numbers match) | C15 |
 | 90 | [x] `tpn` | 1175 | clinical | done 2026-09-20 (86, before/after numbers match) | C15 |
 | 91 | [x] `reconstitution-calculator` | 1315 | clinical | done 2026-09-20 (86, before/after numbers match) | C15 |
 | 92 | [x] `renal-dosing-adjuster` | 2249 | clinical | done 2026-09-20 (86, before/after numbers match) | C16 |
 | | **Orphans (linked from nowhere on the web)** — 5 tools | | | | |
-| 93 | [x] `EmaxModelCalculator` | 225 | ORPHAN | done 2026-09-13 (3d/R5, before/after numbers match) | C16 |
-| 94 | [x] `AntagonismSimulator` | 268 | ORPHAN | done 2026-09-20 (86, before/after numbers match) | C16 |
-| 95 | [x] `OsmolarGapCalculator` | 371 | ORPHAN | done 2026-09-13 (9c, before/after numbers match) | C16 |
-| 96 | [x] `OpioidConversionCalculator` | 382 | ORPHAN | done 2026-09-20 (86, before/after numbers match) | C16 |
+| 93 | [x] `emax-model-calculator` | 225 | ORPHAN | done 2026-09-13 (3d/R5, before/after numbers match) | C16 |
+| 94 | [x] `antagonism-simulator` | 268 | ORPHAN | done 2026-09-20 (86, before/after numbers match) | C16 |
+| 95 | [x] `osmolar-gap-calculator` | 371 | ORPHAN | done 2026-09-13 (9c, before/after numbers match) | C16 |
+| 96 | [x] `opioid-conversion-calculator` | 382 | ORPHAN | done 2026-09-20 (86, before/after numbers match) | C16 |
 | 97 | [x] `drug-half-life-calculator` | 432 | ORPHAN | done 2026-09-13 (3d/R2, before/after numbers match) | C17 |
 
 <!-- 97 tools at the start (104 after the six analytical-practical tools + master formula).
@@ -350,17 +350,17 @@ logic work and needs the owner's decision.
 
 | Tool | Fault | Evidence |
 | --- | --- | --- |
-| `OpioidConversionCalculator` | Transdermal fentanyl read as mg, not mcg/h: a 25 mcg/h patch → **2500 MME** (published equivalent ≈ 60 mg oral morphine/day). No cross-tolerance reduction anywhere. | CDP: fentanyl/td 25 → MME 2500.0, converted 2500.00 |
-| `OpioidMMECalculator` | Tramadol ×0.1 (CDC 2022: 0.2); oral hydromorphone ×4 (CDC 2022: 5). Rotating **to** a fentanyl patch divides the mcg/h rate by the dosing frequency, halving/quartering a continuous rate. | registry constants; preset E tramadol 101.3 mg/day |
+| `opioid-conversion-calculator` | Transdermal fentanyl read as mg, not mcg/h: a 25 mcg/h patch → **2500 MME** (published equivalent ≈ 60 mg oral morphine/day). No cross-tolerance reduction anywhere. | CDP: fentanyl/td 25 → MME 2500.0, converted 2500.00 |
+| `opioid-mme-calculator` | Tramadol ×0.1 (CDC 2022: 0.2); oral hydromorphone ×4 (CDC 2022: 5). Rotating **to** a fentanyl patch divides the mcg/h rate by the dosing frequency, halving/quartering a continuous rate. | registry constants; preset E tramadol 101.3 mg/day |
 | `ed50-td50-ld50-calculator` | `probitTransform` returns the upper-tail deviate for every p — p<0.5 lands above probit 5, **inverting the fitted slope** (real data → slope −2.25). χ² (222.71) and the CI inherit the error. `ed50 = ld50` (ED50 is the LD50). **No TD50 at all**, despite the name. | CDP: 4 dose groups → "Probit = 8.51 + -2.25 × log(Dose)" |
-| `AntagonismSimulator` | Non-competitive `1 − [B]/([B]+KdB)` and uncompetitive `KdB/(KdB+[B])` are algebraically identical → both modes return the same number. True uncompetitive antagonism also shifts EC₅₀ left; not modelled. | CDP: both modes 41.7% / 1.00× |
+| `antagonism-simulator` | Non-competitive `1 − [B]/([B]+KdB)` and uncompetitive `KdB/(KdB+[B])` are algebraically identical → both modes return the same number. True uncompetitive antagonism also shifts EC₅₀ left; not modelled. | CDP: both modes 41.7% / 1.00× |
 | `mixing-time-estimator` | Speed is labelled rps and Re uses rps, but the time correlation multiplies by 60 as though rpm → **time 60× too long**. | CDP: D 2 m, d 0.7 m, N 2 rps → 980 s (t = K(D/d)²/N gives 16.3 s) |
 | `heat-transfer-area` | The W / BTU-h selector only relabels the ΔT field; the area is always Q/(U·ΔT) in SI and reported in m². | CDP: switching the unit changes no result |
 | `drying-rate` | Phase is read from the **final** moisture content alone, not the critical moisture content. Accepts X₁ < X₂ and reports a negative drying rate. | CDP: X₁ 0.1 / X₂ 0.3 → −0.200 kg/m²·h |
 | `osmolality-calculators` | Serum osmolar gap is `calculated − calculated` = **always 0** except in the ethanol mode; "Measured Value" mode returns the standard formula; urine "Direct Input" returns sodium × 2; urine:plasma ratio always divides by a hard-coded 290; blood "Standard Calculation" ignores haematocrit entirely. | CDP: gap 0.0 in standard/measured; blood calculated 290 at Hct 45 and 55 |
 | `animal-dose` | Linear body-weight scaling, not allometric (BSA/Km). A mouse needs ≈12× the human mg/kg; this returns the same mg/kg by construction. | CDP: normalised mg/kg identical across mouse/rat/rabbit |
 | `reynolds-number` | Blasius (0.316·Re^−0.25) is applied across the **transitional** band 2000–4000 and far above 10⁵, outside its fitted range. | code + CDP f = 0.0427 at Re 3000 |
-| `GeriatricDosingCalculator`, `vancomycin-auc-calculator`, `tpn`, `reconstitution-calculator`, `renal-dosing-adjuster`, `drug-receptor-binding-affinity-tool`, `dose-response-curve-generator` | No maths faults found. Each was hand-checked end to end against its own formula (see the session's work-log entry). | — |
+| `geriatric-dosing-calculator`, `vancomycin-auc-calculator`, `tpn`, `reconstitution-calculator`, `renal-dosing-adjuster`, `drug-receptor-binding-affinity-tool`, `dose-response-curve-generator` | No maths faults found. Each was hand-checked end to end against its own formula (see the session's work-log entry). | — |
 
 **Render bugs fixed during this migration** (numbers unchanged; allowed by the migration rule and
 stated here): a stale result left on screen after invalid input on `heat-transfer-area`,

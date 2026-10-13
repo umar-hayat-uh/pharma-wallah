@@ -390,8 +390,8 @@ Traps that will otherwise be rediscovered painfully.
    `page.tsx`). Six of the difference are
    intentionally linked from `src/app/clinical/dose-calculators/page.tsx` (which links 9 tools; 3 are
    also on the hub); the other five
-   (`AntagonismSimulator`, `EmaxModelCalculator`, `drug-half-life-calculator`,
-   `OsmolarGapCalculator`, `OpioidConversionCalculator`) are linked from **nowhere** on the web —
+   (`antagonism-simulator`, `emax-model-calculator`, `drug-half-life-calculator`,
+   `osmolar-gap-calculator`, `opioid-conversion-calculator`) are linked from **nowhere** on the web —
    reachable only by typing the URL. Adding a directory does **not** add a row; add
    `{ name, slug, desc }` to its subject in `tool-index.ts`. (Since the 2026-09-13 hub rebuild tools
    are nested in their subject, so the old "in `allTools` but in no category" failure is gone.)
@@ -1486,7 +1486,7 @@ Traps that will otherwise be rediscovered painfully.
      in `lab-analysis/parts.tsx` is a **label list, not a converter**, and there is no time, length,
      pressure or temperature table anywhere. Temperature cannot join those tables at all — °C/°F/K
      need an offset, not a factor. A tool that offers a unit dropdown is doing its own arithmetic,
-     which is why two shipped with selectors that change nothing (`DensityConversionCalculator`,
+     which is why two shipped with selectors that change nothing (`density-conversion-calculator`,
      `heat-transfer-area` — Known Issue 15). New shared tables belong in `lab-math.ts`, the file
      that already ships inside the APK.
 

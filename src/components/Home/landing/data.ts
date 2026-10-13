@@ -108,6 +108,6 @@ export const SAMPLE_TOOLS = [
   { name: "Isotonicity", href: "/calculation-tools/isotonicity-calculator" },
   { name: "IV drip rate", href: "/calculation-tools/iv-drip-rate-calculator" },
   { name: "Loading dose", href: "/calculation-tools/loading-dose-calculator" },
-  { name: "Corrected calcium", href: "/calculation-tools/CorrectedCalciumCalculator" },
+  { name: "Corrected calcium", href: "/calculation-tools/corrected-calcium-calculator" },
   { name: "Therapeutic index", href: "/calculation-tools/therapeutic-index-calculator" },
 ] as const;

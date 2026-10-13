@@ -3,12 +3,14 @@
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
-import { ADSENSE_CLIENT, IS_PACKAGED_APP as IS_MOBILE_APP } from "@/lib/adsense";
+import { ADS_ENABLED, ADSENSE_CLIENT, IS_PACKAGED_APP as IS_MOBILE_APP } from "@/lib/adsense";
 
 /**
  * A Google AdSense placement.
  *
- * Deliberately renders NOTHING in three cases:
+ * Deliberately renders NOTHING in four cases:
+ *  - while ADS_ENABLED is off (the default until AdSense approves the site —
+ *    see src/lib/adsense.ts); no placeholder, no label, no reserved space;
  *  - inside the Android app, which is offline by design and must not phone home
  *    to an ad network (it would also breach AdSense policy to serve ads there);
  *  - in production when this placement's slot ID is not configured, so the
@@ -27,18 +29,16 @@ export function AdSlot({
   slot,
   format = "auto",
   className,
-  label = "Advertisement",
 }: {
   /** The AdSense ad-unit ID for this placement. */
   slot?: string;
   format?: "auto" | "rectangle" | "horizontal" | "vertical";
   className?: string;
-  label?: string;
 }) {
   const pushed = useRef(false);
 
   useEffect(() => {
-    if (IS_MOBILE_APP || !ADSENSE_CLIENT || !slot) return;
+    if (!ADS_ENABLED || IS_MOBILE_APP || !ADSENSE_CLIENT || !slot) return;
     // React runs effects twice in development StrictMode; pushing the same slot
     // twice makes AdSense log "already have ads in them".
     if (pushed.current) return;
@@ -51,7 +51,7 @@ export function AdSlot({
     }
   }, [slot]);
 
-  if (IS_MOBILE_APP) return null;
+  if (!ADS_ENABLED || IS_MOBILE_APP) return null;
 
   if (!ADSENSE_CLIENT || !slot) {
     if (process.env.NODE_ENV !== "development") return null;
@@ -77,7 +77,6 @@ export function AdSlot({
 
   return (
     <div data-html2canvas-ignore="true" className={cn("overflow-hidden rounded-xl print:hidden", className)}>
-      <p className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
       <ins
         className="adsbygoogle block"
         style={{ display: "block" }}

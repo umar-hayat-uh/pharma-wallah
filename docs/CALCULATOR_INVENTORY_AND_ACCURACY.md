@@ -21,7 +21,7 @@ counted different things, and some had gone stale.
 | Available offline in the app | **106** | `ONLINE_ONLY_SLUGS` is empty | ad-05 capture with all non-local requests failed (MEMORY 195). Three tools link to an external source page; those links say "needs a connection" offline (`SourceLink`) |
 | Duplicates | **0** | — | `serial-diluation` (Serial **Dose**) and `serial-dilution-calculator` are different tools; the misspelt slugs `serial-diluation` and `pedriatic-calculator` are kept because they are live URLs |
 | Deprecated / unavailable | **0** | — | live crawl: every calculator route returns 200 |
-| Not strictly calculators (simulators/plotters in the collection) | 5 | — | `AntagonismSimulator`, `dose-response-curve-generator`, `uv-spectrum-plotter`, `tablet-disintegration-dissolution-profile-plotter`, `drug-excipient-compatibility-predictor`. They are interactive tools that compute; counted as calculators, which is how the site presents them |
+| Not strictly calculators (simulators/plotters in the collection) | 5 | — | `antagonism-simulator`, `dose-response-curve-generator`, `uv-spectrum-plotter`, `tablet-disintegration-dissolution-profile-plotter`, `drug-excipient-compatibility-predictor`. They are interactive tools that compute; counted as calculators, which is how the site presents them |
 
 **Where each old figure came from (CONFIRMED, now FIXED by `pharma-wallah-da`):** home 106 =
 hub-unique + unlisted (correct); hub 94/95 = unique hub tools (correct for "in this index", wrong

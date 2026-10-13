@@ -61,12 +61,12 @@ export function UnitConverter() {
         </p>
         <ul className="mt-3 flex flex-wrap gap-2">
           {[
-            "StrengthConversionCalculator",
-            "ElectrolyteConversionCalculator",
-            "DensityConversionCalculator",
-            "TemperatureConversionCalculator",
-            "MassConversionCalculator",
-            "VolumeConversionCalculator",
+            "strength-conversion-calculator",
+            "electrolyte-conversion-calculator",
+            "density-conversion-calculator",
+            "temperature-conversion-calculator",
+            "mass-conversion-calculator",
+            "volume-conversion-calculator",
           ].map((slug) => (
             <li key={slug}>
               <Link

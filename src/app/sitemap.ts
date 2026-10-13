@@ -3,6 +3,9 @@ import { SITE_URL, HISTOLOGY_LESSONS, PATHOLOGY_LESSONS, POWDER_LESSONS } from "
 import { HUB_SUBJECTS, UNLISTED_TOOLS, toolHref } from "@/app/(site)/calculation-tools/tool-index";
 import { SUBJECTS } from "@/lib/courses/registry";
 import { GUIDES } from "@/lib/guides";
+import { isNoindex } from "@/lib/indexing";
+// Last git commit date per path (scripts/gen-lastmod.mjs) — true dates, never the build time.
+import LASTMOD from "@/generated/lastmod.json";
 import { semestersWithQuestions } from "@/lib/mcq-availability";
 import { semesterToSlug, subjectToSlug } from "@/lib/mcq-utils";
 
@@ -107,8 +110,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
   for (const id of Object.keys(PATHOLOGY_LESSONS)) paths.add(`/spotting/pathology/${id}`);
   for (const id of Object.keys(POWDER_LESSONS)) paths.add(`/spotting/powder-microscopy/lessons/${id}`);
 
-  return Array.from(paths).map((path) => ({
+  // Anything switched off in src/lib/indexing.ts stays out, so a noindexed page
+  // is never also submitted for indexing.
+  return Array.from(paths).filter((path) => !isNoindex(path)).map((path) => ({
     url: `${SITE_URL}${path === "/" ? "" : path}`,
+    ...((LASTMOD as Record<string, string>)[path] ? { lastModified: (LASTMOD as Record<string, string>)[path] } : {}),
     changeFrequency: "monthly",
     priority: path === "/" ? 1 : path.split("/").length <= 2 ? 0.8 : 0.6,
   }));

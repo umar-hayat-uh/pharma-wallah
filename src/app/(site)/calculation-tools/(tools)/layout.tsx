@@ -6,8 +6,8 @@ import { AdSlot } from "@/components/calculators/AdSlot";
 import { CalcDisclaimer } from "@/components/calculators/CalcDisclaimer";
 import { Button } from "@/components/ui/button";
 import { HUB_SUBJECTS, UNLISTED_TOOLS } from "../tool-index";
-import { SITE_NAME } from "@/lib/seo";
-import { reportErrorHref } from "@/lib/content/governance";
+import { SITE_NAME, pageMeta } from "@/lib/seo";
+import { ContentByline } from "@/components/content/ContentByline";
 import { JsonLd, breadcrumbLd } from "@/lib/structured-data";
 
 
@@ -38,12 +38,15 @@ export async function generateMetadata(): Promise<Metadata> {
   const found = currentTool();
   if (!found) return {};
 
-  const title = `${found.name} | ${SITE_NAME}`;
-  const description = `${found.desc}. Free ${
-    found.subject ? `${found.subject.toLowerCase()} ` : "pharmacy "
-  }calculator for Pharm-D students, with the formula and worked steps.`;
-
-  return { title, description, openGraph: { title, description } };
+  return pageMeta({
+    title: `${found.name} | ${SITE_NAME}`,
+    description: found.desc,
+    path: `/calculation-tools/${found.slug}`,
+    extra: [
+      `Free ${found.subject ? `${found.subject.toLowerCase()} ` : "pharmacy "}calculator for Pharm-D students.`,
+      "Shows the formula and the worked steps.",
+    ],
+  });
 }
 
 /**
@@ -93,25 +96,15 @@ export default function CalculatorToolsLayout({
             as part of the calculator rather than as page furniture. */}
         <CalcDisclaimer className="mb-4" />
 
-        {/* Who made this and how to correct it (added 2026-10-12, see
-            docs/content-review-policy.md). Deliberately claims no review that
-            has not happened: no calculator has a documented independent
-            pharmacist review, and ~70 formula faults are recorded (CLAUDE.md
-            Known Issue 15) — so the page says so and asks for corrections. */}
-        <p className="mb-6 text-xs leading-relaxed text-muted-foreground">
-          Built by the PharmaWallah team, a group of pharmacy students. This calculator has not been
-          independently reviewed by a pharmacist.{" "}
-          <Link
-            href={reportErrorHref(tool?.name ?? "a calculator")}
-            className="font-medium text-primary underline-offset-2 hover:underline"
-          >
-            Report an error
-          </Link>{" "}
-          ·{" "}
-          <Link href="/editorial-policy" className="font-medium text-primary underline-offset-2 hover:underline">
-            How we build and check our tools
-          </Link>
-        </p>
+        {/* Who wrote and reviewed this tool, or the neutral note when nobody has
+            reviewed it (src/lib/content/bylines.ts — filled in by a person). */}
+        {tool && (
+          <ContentByline
+            path={`/calculation-tools/${tool.slug}`}
+            pageTitle={tool.name}
+            className="mb-6"
+          />
+        )}
 
         <nav
           aria-label="Calculator navigation"

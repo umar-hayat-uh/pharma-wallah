@@ -54,7 +54,7 @@ export const LEARN: CalcEducation = {
             why: "Work out F from AUC data instead of assuming it.",
         },
         {
-            slug: "AccumulationIndexCalculator",
+            slug: "accumulation-index-calculator",
             name: "Accumulation Index Calculator",
             why: "See how long repeated doses take to build up without a loading dose.",
         },

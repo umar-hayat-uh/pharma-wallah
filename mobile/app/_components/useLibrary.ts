@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { currentCalculatorSlug } from "@/lib/legacy-slugs";
 
 /**
  * Recently opened and saved (starred) calculators, kept in localStorage on the
@@ -20,7 +21,11 @@ function read(key: string): string[] {
   try {
     const raw = window.localStorage.getItem(key);
     const parsed: unknown = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.filter((s): s is string => typeof s === "string") : [];
+    // Slugs saved before the 2026-10-13 rename are mapped to the new ones, so a
+    // student's starred and recent tools survive the app update.
+    return Array.isArray(parsed)
+      ? Array.from(new Set(parsed.filter((s): s is string => typeof s === "string").map(currentCalculatorSlug)))
+      : [];
   } catch {
     return [];
   }

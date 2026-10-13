@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import Link from "next/link";
 import { ArrowRight, BookOpen, Calculator, FlaskConical, Microscope, Smartphone, Stethoscope } from "lucide-react";
 import { BRAND_BUTTON, BRAND_SURFACE, FigureRow, PageHero, PageSection, Reveal } from "@/components/page-kit";
@@ -9,12 +10,12 @@ import { TEAM, TEAM_SECTIONS, type TeamMember } from "@/lib/team";
 import FlipCard from "./FlipCard";
 import { Plate } from "./_Plate";
 
-export const metadata: Metadata = {
-    title: "About PharmaWallah — the students who build it",
-    description:
-        "PharmaWallah is built by pharmacy students in Karachi for the Pharm-D syllabus they are studying themselves. Meet the team and see what they make.",
-    alternates: { canonical: "/about-us" },
-};
+export const metadata: Metadata = pageMeta({
+  title: "About PharmaWallah — the students who build it",
+  description:
+    "PharmaWallah is built by pharmacy students in Karachi for the Pharm-D syllabus they are studying themselves. Meet the team and see what they make.",
+  path: "/about-us",
+});
 
 /** Units live in the course registry, so the figure can never drift (MEMORY.md gotcha 47). */
 const UNIT_COUNT = SUBJECTS.reduce((total, subject) => total + subject.units.length, 0);

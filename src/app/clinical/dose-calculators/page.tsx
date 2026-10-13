@@ -30,7 +30,7 @@ const doseCalculators = [
     },
     {
         title: "Geriatric Dose Calculator",
-        href: "/calculation-tools/GeriatricDosingCalculator",
+        href: "/calculation-tools/geriatric-dosing-calculator",
         description: "Weight‑based dosing for elderly patients",
         icon: "stethoscope",
         color: "teal",
@@ -51,7 +51,7 @@ const doseCalculators = [
     },
     {
         title: "Opioid MME Calculator",
-        href: "/calculation-tools/OpioidMMECalculator",
+        href: "/calculation-tools/opioid-mme-calculator",
         description: "Convert opioid doses to Morphine Milligram Equivalents",
         icon: "droplet",
         color: "teal",
@@ -81,7 +81,7 @@ const doseCalculators = [
     },
     {
         title: "Insulin Sensitivity Calculator",
-        href: "/calculation-tools/InsulinSensitivityCalculator",
+        href: "/calculation-tools/insulin-sensitivity-calculator",
         description: "Insulin dosing adjustments",
         icon: "syringe",
         color: "emerald",

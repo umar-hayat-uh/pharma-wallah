@@ -42,7 +42,7 @@ export const pharmaCo: Tool[] = [
       },
       {
         name: "pH-pKa Relationship(Henderson-hasselbalch) Calculator",
-        link: "/calculation-tools/pH-pka-relationship-calculator",
+        link: "/calculation-tools/ph-pka-relationship-calculator",
       },
       {
         name: "Percentage Solution Calculator (w/v, v/v, w/w)",
@@ -62,7 +62,7 @@ export const pharmaCo: Tool[] = [
       },
       {
         name: "Heat Of Neutralization Calculator",
-        link: "/calculation-tools/HeatOfNeutralizationCalculator",
+        link: "/calculation-tools/heat-of-neutralization-calculator",
       },
       {
         name: "ppm ppb Calculator",
@@ -346,72 +346,72 @@ export const pharmaCo: Tool[] = [
     gradient: "from-blue-600 to-green-500",
     tools: [
       {
-        name: "MassConversionCalculator",
-        link: "/calculation-tools/MassConversionCalculator",
+        name: "mass-conversion-calculator",
+        link: "/calculation-tools/mass-conversion-calculator",
       },
       {
-        name: "VolumeConversionCalculator",
-        link: "/calculation-tools/VolumeConversionCalculator",
+        name: "volume-conversion-calculator",
+        link: "/calculation-tools/volume-conversion-calculator",
       },
       {
-        name: "ElectrolyteConversionCalculator",
-        link: "/calculation-tools/ElectrolyteConversionCalculator",
+        name: "electrolyte-conversion-calculator",
+        link: "/calculation-tools/electrolyte-conversion-calculator",
       },
       {
-        name: "TemperatureConversionCalculator",
-        link: "/calculation-tools/TemperatureConversionCalculator",
+        name: "temperature-conversion-calculator",
+        link: "/calculation-tools/temperature-conversion-calculator",
       },
       {
-        name: "StrengthConversionCalculator",
-        link: "/calculation-tools/StrengthConversionCalculator",
+        name: "strength-conversion-calculator",
+        link: "/calculation-tools/strength-conversion-calculator",
       },
       {
-        name: "DensityConversionCalculator",
-        link: "/calculation-tools/DensityConversionCalculator",
+        name: "density-conversion-calculator",
+        link: "/calculation-tools/density-conversion-calculator",
       },
       {
-        name: "InsulinSensitivityCalculator",
-        link: "/calculation-tools/InsulinSensitivityCalculator",
+        name: "insulin-sensitivity-calculator",
+        link: "/calculation-tools/insulin-sensitivity-calculator",
       },
       {
-        name: "CorrectedCalciumCalculator",
-        link: "/calculation-tools/CorrectedCalciumCalculator",
+        name: "corrected-calcium-calculator",
+        link: "/calculation-tools/corrected-calcium-calculator",
       },
        {
-        name: "SodiumCorrectionCalculator",
-        link: "/calculation-tools/SodiumCorrectionCalculator",
+        name: "sodium-correction-calculator",
+        link: "/calculation-tools/sodium-correction-calculator",
       },
        {
-        name: "AnionGapCalculator",
-        link: "/calculation-tools/AnionGapCalculator",
+        name: "anion-gap-calculator",
+        link: "/calculation-tools/anion-gap-calculator",
       },
       {
-        name: "LogReductionCalculator",
-        link: "/calculation-tools/LogReductionCalculator",
+        name: "log-reduction-calculator",
+        link: "/calculation-tools/log-reduction-calculator",
       },
       {
-        name: "FValueCalculator",
-        link: "/calculation-tools/FValueCalculator",
+        name: "f-value-calculator",
+        link: "/calculation-tools/f-value-calculator",
       },
       {
-        name: "DValueCalculator",
-        link: "/calculation-tools/DValueCalculator",
+        name: "d-value-calculator",
+        link: "/calculation-tools/d-value-calculator",
       },
       {
-        name: "MeanResidenceTimeCalculator",
-        link: "/calculation-tools/MeanResidenceTimeCalculator",
+        name: "mean-residence-time-calculator",
+        link: "/calculation-tools/mean-residence-time-calculator",
       },
       {
-        name: "AccumulationIndexCalculator",
-        link: "/calculation-tools/AccumulationIndexCalculator",
+        name: "accumulation-index-calculator",
+        link: "/calculation-tools/accumulation-index-calculator",
       },
       {
-        name: "EmaxModelCalculator",
-        link: "/calculation-tools/EmaxModelCalculator",
+        name: "emax-model-calculator",
+        link: "/calculation-tools/emax-model-calculator",
       },
       {
-        name: "AntagonismSimulator",
-        link: "/calculation-tools/AntagonismSimulator",
+        name: "antagonism-simulator",
+        link: "/calculation-tools/antagonism-simulator",
       },
     ],
     

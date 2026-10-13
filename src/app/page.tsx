@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import LandingPage from "@/components/Home/landing/LandingPage";
 import ClinicalLandingPage from "@/components/Clinical/ClinicalLandingPage";
 import { HomeBattleSection } from "@/components/battle-royale/HomeBattleSection";
-import { JsonLd, organizationLd, websiteLd } from "@/lib/structured-data";
+import { JsonLd, websiteLd } from "@/lib/structured-data";
 
 /*
  * The student-facing landing page.
@@ -23,11 +23,10 @@ export default function Home() {
 
   // The Battle Royale podium sits under the hero while the event is current
   // (it hides itself when it isn't). Streamed, so it never delays the hero.
-  // Organization + WebSite JSON-LD go on the home page only, where they
-  // describe the page itself (src/lib/structured-data.tsx).
+  // WebSite JSON-LD describes the home page itself; Organization is emitted
+  // site-wide by the root layout (src/lib/structured-data.tsx).
   return (
     <>
-      <JsonLd data={organizationLd()} />
       <JsonLd data={websiteLd()} />
       <LandingPage
         battle={

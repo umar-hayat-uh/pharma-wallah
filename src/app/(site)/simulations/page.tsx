@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { pageMeta } from "@/lib/seo";
 import Link from 'next/link';
 import {
   Beaker,
@@ -11,11 +12,12 @@ import {
   Clock,
 } from 'lucide-react';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
   title: 'Interactive Simulations — PharmaWallah',
   description:
     'Explore pharmacy and chemistry lab simulations. Practice disk diffusion antibiotic testing, solution dilution techniques, acid‑base titration, microbiology staining, organic compound identification, buffer preparation, UV‑Vis spectrophotometry, and determination of bleeding time (Duke’s method) with real‑time feedback and downloadable reports.',
-};
+  path: "/simulations",
+});
 
 const simulations = [
   {

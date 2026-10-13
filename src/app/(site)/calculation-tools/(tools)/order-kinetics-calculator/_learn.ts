@@ -60,7 +60,7 @@ export const LEARN: CalcEducation = {
       why: "Decides the order from real stability data by comparing the three linear plots.",
     },
     {
-      slug: "AccumulationIndexCalculator",
+      slug: "accumulation-index-calculator",
       name: "Accumulation Index Calculator",
       why: "Takes a first-order half-life on to repeated dosing.",
     },

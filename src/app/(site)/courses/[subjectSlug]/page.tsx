@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { JsonLd, breadcrumbLd } from "@/lib/structured-data";
+import { pageMeta } from "@/lib/seo";
 import { notFound } from "next/navigation";
 import { BookOpen, Clock, ChevronRight, GraduationCap, Zap, Play, Layers, Sparkles, Trophy } from "lucide-react";
 import { SUBJECTS, getSubject } from "@/lib/courses/registry";
@@ -16,10 +18,12 @@ export function generateStaticParams() {
 export function generateMetadata({ params }: { params: Params }): Metadata {
   const subject = getSubject(params.subjectSlug);
   if (!subject) return {};
-  return {
-    title: `${subject.title} | Pharmawallah`,
+  return pageMeta({
+    title: `${subject.title} Notes | PharmaWallah`,
     description: subject.description,
-  };
+    path: `/courses/${subject.slug}`,
+    extra: [`${subject.units.length} units of study notes for the Pharm-D course, each linked to practice MCQs.`],
+  });
 }
 
 export const revalidate = 3600;
@@ -33,6 +37,13 @@ export default function SubjectPage({ params }: { params: Params }) {
 
   return (
     <section className="min-h-screen bg-gray-50/80">
+      <JsonLd
+        data={breadcrumbLd([
+          { name: "Home", path: "/" },
+          { name: "Courses", path: "/courses" },
+          { name: subject.title, path: basePath },
+        ])}
+      />
       {/* ══ HERO HEADER ══ */}
       <div className={`relative bg-gradient-to-r ${subject.gradient || "from-blue-600 to-indigo-600"} overflow-hidden shadow-xl py-12 sm:py-16 text-white`}>
         <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-white/10 blur-xl pointer-events-none" />

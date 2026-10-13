@@ -11,8 +11,8 @@
   },
   "calculators": [
     {
-      "slug": "AccumulationIndexCalculator",
-      "url": "/calculation-tools/AccumulationIndexCalculator",
+      "slug": "accumulation-index-calculator",
+      "url": "/calculation-tools/accumulation-index-calculator",
       "name": "Accumulation Index Calculator",
       "subjects": [
         "Biopharmaceutics & Pharmacokinetics"
@@ -32,8 +32,8 @@
       "action": "improve — add worked example, mistakes, references"
     },
     {
-      "slug": "AnionGapCalculator",
-      "url": "/calculation-tools/AnionGapCalculator",
+      "slug": "anion-gap-calculator",
+      "url": "/calculation-tools/anion-gap-calculator",
       "name": "Anion Gap Calculator",
       "subjects": [
         "Clinical & Hospital Pharmacy"
@@ -55,8 +55,8 @@
       "action": "repair — recorded formula fault (owner decision)"
     },
     {
-      "slug": "AntagonismSimulator",
-      "url": "/calculation-tools/AntagonismSimulator",
+      "slug": "antagonism-simulator",
+      "url": "/calculation-tools/antagonism-simulator",
       "name": "Antagonism Simulator",
       "subjects": [],
       "linkedFromHub": false,
@@ -76,8 +76,8 @@
       "action": "repair — recorded formula fault (owner decision)"
     },
     {
-      "slug": "CorrectedCalciumCalculator",
-      "url": "/calculation-tools/CorrectedCalciumCalculator",
+      "slug": "corrected-calcium-calculator",
+      "url": "/calculation-tools/corrected-calcium-calculator",
       "name": "Corrected Calcium Calculator",
       "subjects": [
         "Clinical & Hospital Pharmacy"
@@ -97,8 +97,8 @@
       "action": "improve — add worked example, mistakes, references"
     },
     {
-      "slug": "DValueCalculator",
-      "url": "/calculation-tools/DValueCalculator",
+      "slug": "d-value-calculator",
+      "url": "/calculation-tools/d-value-calculator",
       "name": "D-Value Calculator",
       "subjects": [
         "Microbiology"
@@ -118,8 +118,8 @@
       "action": "improve — add worked example, mistakes, references"
     },
     {
-      "slug": "DensityConversionCalculator",
-      "url": "/calculation-tools/DensityConversionCalculator",
+      "slug": "density-conversion-calculator",
+      "url": "/calculation-tools/density-conversion-calculator",
       "name": "Weight/Volume Conversion Calculator (Density-Based)",
       "subjects": [
         "Unit Conversion"
@@ -139,8 +139,8 @@
       "action": "improve — add worked example, mistakes, references"
     },
     {
-      "slug": "ElectrolyteConversionCalculator",
-      "url": "/calculation-tools/ElectrolyteConversionCalculator",
+      "slug": "electrolyte-conversion-calculator",
+      "url": "/calculation-tools/electrolyte-conversion-calculator",
       "name": "mmol ↔ mEq ↔ mg Calculator",
       "subjects": [
         "Unit Conversion"
@@ -160,8 +160,8 @@
       "action": "improve — add worked example, mistakes, references"
     },
     {
-      "slug": "EmaxModelCalculator",
-      "url": "/calculation-tools/EmaxModelCalculator",
+      "slug": "emax-model-calculator",
+      "url": "/calculation-tools/emax-model-calculator",
       "name": "Emax Model Calculator",
       "subjects": [],
       "linkedFromHub": false,
@@ -181,8 +181,8 @@
       "action": "repair — recorded formula fault (owner decision)"
     },
     {
-      "slug": "FValueCalculator",
-      "url": "/calculation-tools/FValueCalculator",
+      "slug": "f-value-calculator",
+      "url": "/calculation-tools/f-value-calculator",
       "name": "F-Value Calculator",
       "subjects": [
         "Microbiology"
@@ -202,8 +202,8 @@
       "action": "improve — add worked example, mistakes, references"
     },
     {
-      "slug": "GeriatricDosingCalculator",
-      "url": "/calculation-tools/GeriatricDosingCalculator",
+      "slug": "geriatric-dosing-calculator",
+      "url": "/calculation-tools/geriatric-dosing-calculator",
       "name": "Geriatric Dosing & Safety Calculator",
       "subjects": [],
       "linkedFromHub": false,
@@ -223,8 +223,8 @@
       "action": "repair — recorded formula fault (owner decision)"
     },
     {
-      "slug": "HeatOfNeutralizationCalculator",
-      "url": "/calculation-tools/HeatOfNeutralizationCalculator",
+      "slug": "heat-of-neutralization-calculator",
+      "url": "/calculation-tools/heat-of-neutralization-calculator",
       "name": "Heat Of Neutralization Calculator",
       "subjects": [
         "Pharmaceutical Chemistry"
@@ -246,8 +246,8 @@
       "action": "repair — recorded formula fault (owner decision)"
     },
     {
-      "slug": "InsulinSensitivityCalculator",
-      "url": "/calculation-tools/InsulinSensitivityCalculator",
+      "slug": "insulin-sensitivity-calculator",
+      "url": "/calculation-tools/insulin-sensitivity-calculator",
       "name": "Insulin Sensitivity Calculator",
       "subjects": [
         "Clinical & Hospital Pharmacy"
@@ -269,8 +269,8 @@
       "action": "repair — recorded formula fault (owner decision)"
     },
     {
-      "slug": "LogReductionCalculator",
-      "url": "/calculation-tools/LogReductionCalculator",
+      "slug": "log-reduction-calculator",
+      "url": "/calculation-tools/log-reduction-calculator",
       "name": "Log Reduction Calculator",
       "subjects": [
         "Microbiology"
@@ -292,8 +292,8 @@
       "action": "repair — recorded formula fault (owner decision)"
     },
     {
-      "slug": "MassConversionCalculator",
-      "url": "/calculation-tools/MassConversionCalculator",
+      "slug": "mass-conversion-calculator",
+      "url": "/calculation-tools/mass-conversion-calculator",
       "name": "Mass Conversion Calculator",
       "subjects": [
         "Unit Conversion"
@@ -313,8 +313,8 @@
       "action": "improve — add worked example, mistakes, references"
     },
     {
-      "slug": "MeanResidenceTimeCalculator",
-      "url": "/calculation-tools/MeanResidenceTimeCalculator",
+      "slug": "mean-residence-time-calculator",
+      "url": "/calculation-tools/mean-residence-time-calculator",
       "name": "Mean Residence Time Calculator",
       "subjects": [
         "Biopharmaceutics & Pharmacokinetics"
@@ -334,8 +334,8 @@
       "action": "improve — add worked example, mistakes, references"
     },
     {
-      "slug": "OpioidConversionCalculator",
-      "url": "/calculation-tools/OpioidConversionCalculator",
+      "slug": "opioid-conversion-calculator",
+      "url": "/calculation-tools/opioid-conversion-calculator",
       "name": "Opioid Conversion Calculator",
       "subjects": [],
       "linkedFromHub": false,
@@ -356,8 +356,8 @@
       "action": "repair — recorded formula fault (owner decision)"
     },
     {
-      "slug": "OpioidMMECalculator",
-      "url": "/calculation-tools/OpioidMMECalculator",
+      "slug": "opioid-mme-calculator",
+      "url": "/calculation-tools/opioid-mme-calculator",
       "name": "Opioid MME & Equianalgesic Converter",
       "subjects": [],
       "linkedFromHub": false,
@@ -378,8 +378,8 @@
       "action": "repair — recorded formula fault (owner decision)"
     },
     {
-      "slug": "OsmolarGapCalculator",
-      "url": "/calculation-tools/OsmolarGapCalculator",
+      "slug": "osmolar-gap-calculator",
+      "url": "/calculation-tools/osmolar-gap-calculator",
       "name": "Osmolar Gap Calculator",
       "subjects": [],
       "linkedFromHub": false,
@@ -399,8 +399,8 @@
       "action": "repair — recorded formula fault (owner decision)"
     },
     {
-      "slug": "SodiumCorrectionCalculator",
-      "url": "/calculation-tools/SodiumCorrectionCalculator",
+      "slug": "sodium-correction-calculator",
+      "url": "/calculation-tools/sodium-correction-calculator",
       "name": "Sodium Correction Calculator",
       "subjects": [
         "Clinical & Hospital Pharmacy"
@@ -420,8 +420,8 @@
       "action": "improve — add worked example, mistakes, references"
     },
     {
-      "slug": "StrengthConversionCalculator",
-      "url": "/calculation-tools/StrengthConversionCalculator",
+      "slug": "strength-conversion-calculator",
+      "url": "/calculation-tools/strength-conversion-calculator",
       "name": "Strength Conversion Calculator",
       "subjects": [
         "Unit Conversion"
@@ -441,8 +441,8 @@
       "action": "improve — add worked example, mistakes, references"
     },
     {
-      "slug": "TemperatureConversionCalculator",
-      "url": "/calculation-tools/TemperatureConversionCalculator",
+      "slug": "temperature-conversion-calculator",
+      "url": "/calculation-tools/temperature-conversion-calculator",
       "name": "Temperature Conversion Calculator",
       "subjects": [
         "Unit Conversion"
@@ -462,8 +462,8 @@
       "action": "improve — add worked example, mistakes, references"
     },
     {
-      "slug": "VolumeConversionCalculator",
-      "url": "/calculation-tools/VolumeConversionCalculator",
+      "slug": "volume-conversion-calculator",
+      "url": "/calculation-tools/volume-conversion-calculator",
       "name": "Volume Conversion Calculator",
       "subjects": [
         "Unit Conversion"
@@ -1643,8 +1643,8 @@
       "action": "improve — add worked example, mistakes, references"
     },
     {
-      "slug": "pH-pka-relationship-calculator",
-      "url": "/calculation-tools/pH-pka-relationship-calculator",
+      "slug": "ph-pka-relationship-calculator",
+      "url": "/calculation-tools/ph-pka-relationship-calculator",
       "name": "pH–pKa Calculator (Henderson–Hasselbalch)",
       "subjects": [
         "Pharmaceutical Chemistry"

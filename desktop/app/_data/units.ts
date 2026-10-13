@@ -38,7 +38,7 @@ export const LINEAR_FAMILIES: LinearFamily[] = [
     units: { ...MASS_TO_G, ng: 1e-9, lb: 453.59237, oz: 28.349523125 },
     canonical: "g",
     note: "1 lb = 0.45359237 kg exactly. Weight-based dosing is done in kg.",
-    slug: "MassConversionCalculator",
+    slug: "mass-conversion-calculator",
   },
   {
     id: "volume",
@@ -46,7 +46,7 @@ export const LINEAR_FAMILIES: LinearFamily[] = [
     units: { ...VOLUME_TO_ML, "cm³": 1, "fl oz (US)": 29.5735295625, "tsp (5 mL)": 5, "tbsp (15 mL)": 15 },
     canonical: "mL",
     note: "1 mL = 1 cm³. The 5 mL teaspoon is the metric medicine spoon, not a kitchen one.",
-    slug: "VolumeConversionCalculator",
+    slug: "volume-conversion-calculator",
   },
   {
     id: "amount",
@@ -70,7 +70,7 @@ export const LINEAR_FAMILIES: LinearFamily[] = [
     },
     canonical: "mg/mL",
     note: "ppm equals mg/L only when the solution's density is 1 g/mL. mg/dL is the usual laboratory unit for glucose and creatinine.",
-    slug: "StrengthConversionCalculator",
+    slug: "strength-conversion-calculator",
   },
   {
     id: "length",

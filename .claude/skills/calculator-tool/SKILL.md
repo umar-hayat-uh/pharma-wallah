@@ -28,15 +28,15 @@ src/app/(site)/calculation-tools/
   tool-index.ts                ← THE REGISTRY: HUB_SUBJECTS[].tools[] = { name, slug, desc }
   (tools)/                     route group — adds no URL segment
     bmi-calculator/page.tsx    → /calculation-tools/bmi-calculator
-    AnionGapCalculator/page.tsx→ /calculation-tools/AnionGapCalculator
+    AnionGapCalculator/page.tsx→ /calculation-tools/anion-gap-calculator
 ```
 
 **106 tool directories exist; `tool-index.ts` lists 95 unique tools in 100 entries** (re-counted 2026-10-08; 98 on 2026-09-20 by parsing the
 file; the "93" recorded here before that was stale — MEMORY gotcha 142). Six of the difference are deliberately linked
 from `src/app/clinical/dose-calculators/page.tsx` instead (vancomycin-auc, tpn, renal-dosing-adjuster,
 OpioidMMECalculator, reconstitution-calculator, GeriatricDosingCalculator). **Five are linked from
-nowhere** — `AntagonismSimulator`, `EmaxModelCalculator`, `drug-half-life-calculator`,
-`OsmolarGapCalculator`, `OpioidConversionCalculator` — a tracked roadmap item.
+nowhere** — `antagonism-simulator`, `emax-model-calculator`, `drug-half-life-calculator`,
+`osmolar-gap-calculator`, `opioid-conversion-calculator` — a tracked roadmap item.
 
 **Directory naming is inconsistent and that is the status quo**: some `kebab-case`, some
 `PascalCase`. The directory name *is* the URL. Match the neighbouring tool rather than imposing a

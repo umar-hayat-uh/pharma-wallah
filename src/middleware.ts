@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { LEGACY_CALCULATOR_SLUGS } from '@/lib/legacy-slugs';
 
 /**
  * FIX: the original list included '/leaderboard', which redirected every
@@ -16,6 +17,17 @@ const PROTECTED_PATHS = [
 ];
 
 export async function middleware(request: NextRequest) {
+  /* ── Renamed calculator URLs (2026-10-13) ─────────────────────────────
+     Exact, case-sensitive match, answered with a 301 before anything else
+     runs. See src/lib/legacy-slugs.ts for why this is not in next.config. */
+  const calc = request.nextUrl.pathname.match(/^\/calculation-tools\/([^/]+)\/?$/);
+  const renamed = calc && LEGACY_CALCULATOR_SLUGS[calc[1]];
+  if (renamed) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/calculation-tools/${renamed}`;
+    return NextResponse.redirect(url, 301);
+  }
+
   /* ── Hostname-based subdomain detection ─────────────────────────── */
   const host = request.headers.get('host') || request.headers.get('x-forwarded-host') || '';
   const isClinical = host.startsWith('clinical.');

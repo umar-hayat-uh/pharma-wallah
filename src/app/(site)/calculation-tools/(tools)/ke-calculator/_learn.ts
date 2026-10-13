@@ -56,7 +56,7 @@ export const LEARN: CalcEducation = {
             why: "Get CL from a dose and AUC, or from an infusion at steady state.",
         },
         {
-            slug: "AccumulationIndexCalculator",
+            slug: "accumulation-index-calculator",
             name: "Accumulation Index Calculator",
             why: "See how kₑ and the dosing interval decide how much a repeated dose builds up.",
         },

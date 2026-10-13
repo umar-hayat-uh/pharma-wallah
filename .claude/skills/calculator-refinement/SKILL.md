@@ -285,7 +285,7 @@ Then, in the browser — this is the part that actually proves the refinement:
 - **Rounding an intermediate**, then using it. Shows up as a last-digit drift the student cannot
   reproduce by hand — which is exactly what these tools are for.
 - **A unit selector wired to state but not to the maths.** Two tools shipped like this
-  (`DensityConversionCalculator`, `heat-transfer-area`). Changing the unit does nothing.
+  (`density-conversion-calculator`, `heat-transfer-area`). Changing the unit does nothing.
 - **"Fixing" a formula during a presentation pass.** Record it; ask.
 - **A graph added because the section exists.** If it carries no information, leave it out (§11).
 - **Silently normalising experimental data** so the curve looks nice.

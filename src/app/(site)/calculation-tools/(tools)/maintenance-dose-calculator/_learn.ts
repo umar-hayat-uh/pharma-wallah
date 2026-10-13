@@ -52,7 +52,7 @@ export const LEARN: CalcEducation = {
     refs: ["shargel8", "rowland5"],
     related: [
         {
-            slug: "AccumulationIndexCalculator",
+            slug: "accumulation-index-calculator",
             name: "Accumulation Index Calculator",
             why: "Explore how R = 1 ÷ (1 − e^(−kτ)) changes as you shorten or lengthen τ for the same half-life.",
         },

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { CalculatorGuide, type GuideFacts } from "@/components/calculator-guide";
 import { CALCULATOR_COUNT, HUB_SUBJECTS } from "../tool-index";
-import { SITE_NAME } from "@/lib/seo";
+import { SITE_NAME, pageMeta } from "@/lib/seo";
 
 /**
  * /calculation-tools/how-to-use — the calculator guide on the website.
@@ -10,11 +10,12 @@ import { SITE_NAME } from "@/lib/seo";
  * and both app route generators turn every folder in it into a tool page. The
  * apps mount the same guide from `mobile/app/how-to-use/`.
  */
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
   title: `How to Use the Calculators — a guide for pharmacy students | ${SITE_NAME}`,
   description:
     "A step-by-step guide to every PharmaWallah calculator: choosing a tool, entering values and units, reading results, formulas, tables and graphs, fixing common errors and verifying your answer.",
-};
+  path: "/calculation-tools/how-to-use",
+});
 
 // Counted from the hub registry, so the guide's figures match the hub's.
 const FACTS: GuideFacts = {

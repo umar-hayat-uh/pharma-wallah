@@ -3,15 +3,15 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { PageHero, PageSection } from "@/components/page-kit";
 import { GUIDES, readingMinutes } from "@/lib/guides";
-import { SITE_NAME } from "@/lib/seo";
+import { SITE_NAME, pageMeta } from "@/lib/seo";
 import { JsonLd, breadcrumbLd } from "@/lib/structured-data";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
   title: `Pharmacy Calculation Guides | ${SITE_NAME}`,
   description:
     "Worked, step-by-step guides to the calculations in a Pharm-D course: dilutions, doses, reaction kinetics, analytical recovery and pharmacokinetics, with practice questions.",
-  alternates: { canonical: "/guides" },
-};
+  path: "/guides",
+});
 
 export default function GuidesIndex() {
   return (

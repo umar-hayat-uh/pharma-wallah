@@ -68,6 +68,9 @@ export function articleLd(a: {
   path: string;
   updated: string;
   author: string;
+  /** From src/lib/content/bylines.ts — only a real, filled-in person. */
+  personAuthor?: string;
+  reviewedBy?: string;
 }): JsonValue {
   return {
     "@context": "https://schema.org",
@@ -77,10 +80,13 @@ export function articleLd(a: {
     mainEntityOfPage: `${SITE_URL}${a.path}`,
     dateModified: a.updated,
     inLanguage: "en",
-    // The team is an organisation, so it is named as one — not as a Person.
-    author: { "@type": "Organization", name: a.author, url: `${SITE_URL}/about-us` },
-    // Inline rather than an @id reference: the Organization node is only
-    // emitted on the home page, and a reference must resolve on its own page.
+    // A Person only when a real author is recorded; otherwise the team, as an
+    // Organization. Never a guessed or placeholder name.
+    author: a.personAuthor
+      ? { "@type": "Person", name: a.personAuthor }
+      : { "@type": "Organization", name: a.author, url: `${SITE_URL}/about-us` },
+    ...(a.reviewedBy ? { reviewedBy: { "@type": "Person", name: a.reviewedBy } } : {}),
+    // Inline rather than an @id reference, so the Article is complete on its own.
     publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL, logo: `${SITE_URL}/icons/icon-512x512.png` },
   };
 }

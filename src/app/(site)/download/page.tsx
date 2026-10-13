@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { statSync } from "node:fs";
 import { join } from "node:path";
 import DownloadClient, { type PlatformFile } from "./DownloadClient";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
   title: "Download the Android app | PharmaWallah",
   description:
     "PharmaWallah's pharmacy calculators as a free Android app. Works completely offline — no account, no internet needed after install.",
-  alternates: { canonical: "/download" },
-};
+  path: "/download",
+});
 
 /**
  * Measures the release files on disk at build time.

@@ -1,5 +1,6 @@
 "use client";
 
+import { currentCalculatorSlug } from "@/lib/legacy-slugs";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FileDown, Printer, Trash2 } from "lucide-react";
@@ -249,7 +250,7 @@ function HistoryCard({
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2" data-print="hide">
           <Button asChild size="sm" variant="outline">
-            <Link href={toolHref(entry.slug)}>Open calculator</Link>
+            <Link href={toolHref(currentCalculatorSlug(entry.slug))}>Open calculator</Link>
           </Button>
           <Button size="sm" variant="outline" disabled={busy} onClick={() => void exportOne("pdf")}>
             <FileDown />

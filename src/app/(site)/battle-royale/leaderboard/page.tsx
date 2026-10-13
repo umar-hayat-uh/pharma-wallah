@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { LeaderboardClient } from "@/components/battle-royale/LeaderboardClient";
 import { readLeaderboard } from "@/lib/battle-royale/leaderboard";
 import { getPublicSettings } from "@/lib/battle-royale/server";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
   title: "Leaderboard — Battle Royale | PharmaWallah",
-  description: "Live PharmaWallah Battle Royale leaderboard: ranks, round scores and totals. The Top 10 at closing win a Goodie Hamper.",
-  alternates: { canonical: "https://www.pharmawallah.com/battle-royale/leaderboard" },
-};
+  description:
+    "Live PharmaWallah Battle Royale leaderboard: ranks, round scores and totals. The Top 10 at closing win a Goodie Hamper.",
+  path: "/battle-royale/leaderboard",
+});
 
 /** Server-rendered first paint (so the board is readable before hydration), then polled. */
 export default async function LeaderboardPage({ searchParams }: { searchParams: { code?: string } }) {

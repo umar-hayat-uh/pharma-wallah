@@ -16,6 +16,8 @@ import UnitTracker from "@/components/UnitTracker";
 import UnitSidebar from "./UnitSidebar";
 import MobileUnitNav from "./MobileUnitNav";
 import MarkdownRenderer from "./MarkdownRenderer";
+import { ContentByline } from "@/components/content/ContentByline";
+import { ADS_ENABLED } from "@/lib/adsense";
 import { splitForAds } from "@/lib/ads/split-for-ads";
 import PdfDownloadButton from "./PdfDownloadButton";
 import LessonCheckpoint from "./LessonCheckpoint";
@@ -167,6 +169,9 @@ export default function UnitPageClient({
                 </div>
               )}
 
+              {/* Byline or the neutral note (src/lib/content/bylines.ts). */}
+              <ContentByline path={`${basePath}/${unit.id}`} pageTitle={unit.title} className="px-1" />
+
               {/* Markdown notes */}
               <div
                 className="bg-white rounded-2xl border border-gray-200 shadow-sm p-3 sm:p-5 md:p-8 overflow-hidden"
@@ -178,7 +183,7 @@ export default function UnitPageClient({
                   // data-html2canvas-ignore, so the PDF export skips them.
                   lessonChunks.map((chunk, i) => (
                     <Fragment key={i}>
-                      {i > 0 && (
+                      {i > 0 && ADS_ENABLED && (
                         <div className="my-8">
                           <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LESSON} className="min-h-[280px]" />
                         </div>

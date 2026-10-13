@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 
 import CommunityPharmacyLab from "@/components/Simulations/CommunityPharmacy/CommunityPharmacyLab";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
   title: "Community Pharmacy Simulation Lab — PharmaWallah",
   description:
     "Stand behind a community-pharmacy counter. Receive a prescription, read the patient's record, run the ten clinical checks yourself, select the right pack from the right batch, label it, counsel the patient, document the encounter and take payment — or decide it belongs to a doctor.",
-  alternates: { canonical: "/pharmacy-counter" },
-};
+  path: "/pharmacy-counter",
+});
 
 export default function PharmacyCounterPage() {
   // The pharmacy's own date is resolved once, on the server, and passed down.

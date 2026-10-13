@@ -127,11 +127,11 @@ pages, confirm progress tracking records a visit, then batch the rest.
 - **Remaining work:**
   - Validate the colony counter and TLC detector on **real** plate photos (only synthetic fixtures
     exist) — add them to `test-data/colony-counter/fixtures.json` with who counted them and how.
-  - Five tools (`AntagonismSimulator`, `EmaxModelCalculator`, `drug-half-life-calculator`,
-    `OsmolarGapCalculator`, `OpioidConversionCalculator`) are **reachable only by typed URL on the
+  - Five tools (`antagonism-simulator`, `emax-model-calculator`, `drug-half-life-calculator`,
+    `osmolar-gap-calculator`, `opioid-conversion-calculator`) are **reachable only by typed URL on the
     web** — add them to `tool-index.ts`, or to the clinical hub. All five already ship in the Android
-    app. Audited 2026-09-13: `OsmolarGapCalculator` is complete and correct (best to list);
-    `OpioidConversionCalculator` is **not clinically safe** (one ×3 IV factor for every opioid) — keep it
+    app. Audited 2026-09-13: `osmolar-gap-calculator` is complete and correct (best to list);
+    `opioid-conversion-calculator` is **not clinically safe** (one ×3 IV factor for every opioid) — keep it
     unlisted; `drug-half-life-calculator` is only partly working.
   - **Formula faults found by the 2026-09-13 hub audit** — see CLAUDE.md §7 Known Issues 15.
   - ✅ 2026-09-22: **Dissolution Rate Constant Calculator** (`dissolution-rate-constant-calculator`) —
@@ -154,7 +154,7 @@ pages, confirm progress tracking records a visit, then batch the rest.
   - 🔄 **Decide the calculator formula fixes — now the top calculator item.** Migration kept every
     formula, so ~80 suspected faults are still live (the 2026-09-13 batch plus ~10 more found on
     2026-09-20). They are *stated on screen* on the affected pages but not corrected. Priority order:
-    `OpioidConversionCalculator` (fentanyl patch read as mg → 2500 MME) and `OpioidMMECalculator`
+    `opioid-conversion-calculator` (fentanyl patch read as mg → 2500 MME) and `opioid-mme-calculator`
     (tramadol/hydromorphone factors, patch rate divided by frequency), then
     `ed50-td50-ld50-calculator` (inverted probit slope, ED50 = LD50, no TD50), then
     `creatinine-calculator` staging and `mixing-time-estimator` (60×). Tracker →
@@ -351,8 +351,8 @@ against the real Supabase project or with a real Resend send.
 
 ### Surface the unlinked calculators
 - **Status:** 🟡 Partial — done on Android, **still outstanding on the web**.
-- **Remaining work:** Add `AntagonismSimulator`, `EmaxModelCalculator`,
-  `drug-half-life-calculator`, `OsmolarGapCalculator` and `OpioidConversionCalculator` to
+- **Remaining work:** Add `antagonism-simulator`, `emax-model-calculator`,
+  `drug-half-life-calculator`, `osmolar-gap-calculator` and `opioid-conversion-calculator` to
   their subject in `src/app/(site)/calculation-tools/tool-index.ts`, or to `src/app/clinical/dose-calculators/page.tsx`.
 - **Important files:** `src/app/(site)/calculation-tools/tool-index.ts`
 - **Dependencies:** None

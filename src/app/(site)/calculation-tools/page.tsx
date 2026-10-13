@@ -1,3 +1,4 @@
+import { pageMeta } from "@/lib/seo";
 import { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, BookOpen, Smartphone, TriangleAlert } from "lucide-react";
@@ -5,11 +6,12 @@ import { BRAND_SURFACE, Eyebrow, FigureRow, PageHero } from "@/components/page-k
 import HubCatalogue from "./HubCatalogue";
 import { HUB_SUBJECTS, HUB_TOOL_COUNT, START_HERE, findTool, toolHref } from "./tool-index";
 
-export const metadata: Metadata = {
-  title: "Pharmaceutical Calculation Tools | Advanced Calculators",
+export const metadata: Metadata = pageMeta({
+  title: "Pharmacy Calculators for Pharm-D Students | PharmaWallah",
   description:
-    "Professional pharmacy calculators and formula tools for pharmaceutical chemistry and healthcare professionals",
-};
+    "Free pharmacy calculators for Pharm-D students: dilutions, molarity, dose, pharmacokinetics, stability and analysis, each with its formula and worked steps.",
+  path: "/calculation-tools",
+});
 
 /**
  * /calculation-tools — the calculator index.

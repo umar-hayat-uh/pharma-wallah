@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { Suspense } from "react";
 import EncyclopediaClient from "@/components/encyclopedia/EncyclopediaClient";
 import EncyclopediaFigures, { EncyclopediaFiguresFallback } from "@/components/encyclopedia/EncyclopediaFigures";
@@ -7,11 +8,12 @@ import EncyclopediaFigures, { EncyclopediaFiguresFallback } from "@/components/e
 // metadata was omitted): it can export metadata, hand the URL's search to the
 // client for the first render, and stream the database figures.
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
   title: "Drug Encyclopedia (Pharmacopedia) | PharmaWallah",
   description:
     "Search DrugBank drug monographs by generic or British name, DrugBank ID, CAS or UNII — indication, mechanism, pharmacokinetics, interactions, products and chemistry.",
-};
+  path: "/encyclopedia",
+});
 
 type Params = { q?: string | string[]; page?: string | string[]; drug?: string | string[] };
 

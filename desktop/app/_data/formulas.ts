@@ -138,7 +138,7 @@ const ENTRIES: FormulaEntry[] = [
       { symbol: "[HA]", meaning: "concentration of the unionised acid" },
     ],
     note: "For a base, pH = pKa + log([base]/[conjugate acid]). At pH = pKa the two forms are equal.",
-    slug: "pH-pka-relationship-calculator",
+    slug: "ph-pka-relationship-calculator",
     keywords: ["pka", "buffer", "ionisation", "ionization"],
   },
   {
@@ -491,7 +491,7 @@ const ENTRIES: FormulaEntry[] = [
       { symbol: "AG", meaning: "mEq/L; some laboratories include K⁺" },
     ],
     note: "Correct for albumin: add 2.5 mEq/L for every 1 g/dL the albumin is below 4.",
-    slug: "AnionGapCalculator",
+    slug: "anion-gap-calculator",
     keywords: ["acidosis", "gap", "electrolyte"],
   },
   {
@@ -503,7 +503,7 @@ const ENTRIES: FormulaEntry[] = [
       { symbol: "measured Ca", meaning: "total serum calcium, mg/dL" },
     ],
     note: "An approximation only; ionised calcium is the measurement that settles the question.",
-    slug: "CorrectedCalciumCalculator",
+    slug: "corrected-calcium-calculator",
     keywords: ["calcium", "albumin", "hypocalcaemia"],
   },
 
@@ -543,7 +543,7 @@ const ENTRIES: FormulaEntry[] = [
       { symbol: "D", meaning: "time to reduce the population tenfold at a stated temperature" },
       { symbol: "N₀, N", meaning: "population before and after" },
     ],
-    slug: "DValueCalculator",
+    slug: "d-value-calculator",
     keywords: ["decimal reduction", "sterilisation", "log kill", "bioburden"],
   },
   {
@@ -555,7 +555,7 @@ const ENTRIES: FormulaEntry[] = [
       { symbol: "Z", meaning: "temperature change that alters D tenfold; ~10 °C for moist heat" },
       { symbol: "F₀", meaning: "equivalent minutes at 121.1 °C with z = 10 °C" },
     ],
-    slug: "FValueCalculator",
+    slug: "f-value-calculator",
     keywords: ["autoclave", "F0", "z value", "moist heat"],
   },
   {

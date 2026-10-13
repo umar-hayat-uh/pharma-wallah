@@ -178,7 +178,7 @@ Separate from the tournament below. Skill: `.claude/skills/battle-royale/`.
 | **Android app catalogue (all 104)** | `mobile/app/_data/tool-registry.ts` |
 | **Shared calculator kit** | `src/components/calculators/` — shell, fields, result card, `AdSlot`, and the lab layer below. **All 104 tool pages import it** (complete 2026-09-20) |
 | Liquid-glass surfaces | `src/components/calculators/ResultCard.tsx` and `ModeSwitch.tsx` — transform-only `animate-calc-sheen` / `animate-calc-tide` layers behind the content; keyframes are in `tailwind.config.ts`. `ModeSwitch` uses `backdrop-saturate` on fine pointers only and a pre-saturated fill under `[@media(hover:none)]`. Reaches the APK, which re-exports the real tool pages |
-| Pure maths siblings (`_x.ts` next to a large tool page) | `dose-response-curve-generator/_curves.ts` (Hill curves), `ed50-td50-ld50-calculator/_probit.ts` (probit regression), `OpioidMMECalculator/_mme.ts`, `GeriatricDosingCalculator/_geriatric.ts`, `vancomycin-auc-calculator/_vanco.ts` (1-compartment PK + dose optimiser), `tpn/_tpn.ts` (admixture engine), `osmolality-calculators/_osmolality.ts` (5 calculators), `reconstitution-calculator/_recon.ts` (11-drug database), `animal-dose/_animal.ts`, `renal-dosing-adjuster/_renal.ts` (20-drug database + CrCl/CKD-EPI/KDIGO). Each is DOM-free and hand-checkable with `node` |
+| Pure maths siblings (`_x.ts` next to a large tool page) | `dose-response-curve-generator/_curves.ts` (Hill curves), `ed50-td50-ld50-calculator/_probit.ts` (probit regression), `opioid-mme-calculator/_mme.ts`, `geriatric-dosing-calculator/_geriatric.ts`, `vancomycin-auc-calculator/_vanco.ts` (1-compartment PK + dose optimiser), `tpn/_tpn.ts` (admixture engine), `osmolality-calculators/_osmolality.ts` (5 calculators), `reconstitution-calculator/_recon.ts` (11-drug database), `animal-dose/_animal.ts`, `renal-dosing-adjuster/_renal.ts` (20-drug database + CrCl/CKD-EPI/KDIGO). Each is DOM-free and hand-checkable with `node` |
 | **"How to use the calculators" guide** (2026-10-08) | `src/components/calculator-guide/` — `CalculatorGuide.tsx` (the page), `GuideTour.tsx` (8-step tour: Back/Next/Skip, arrows, swipe), `illustrations.tsx` (generic sketches, never screenshots), `content.ts` (all copy as data + the measured facts it relies on, MEMORY 190), `guide.css` (`.pw-guide`). Web route `src/app/(site)/calculation-tools/how-to-use/page.tsx` (outside `(tools)/` on purpose); app route `mobile/app/how-to-use/page.tsx`. Entry points: hub hero link, "How to use" in `(tools)/layout.tsx`, header menu (`menuData`/`menuMeta`), sitemap; in the app the ? in `MobileShell` and the first-use card in `ToolHub` |
 | Calculator disclaimer ("educational purposes only") | `src/components/calculators/CalcDisclaimer.tsx`, mounted only in `(tools)/layout.tsx` (web) and `mobile/app/_components/MobileShell.tsx` (APK) |
 | Master Formula Calculator (Dosage Form Lab) | `src/app/(site)/calculation-tools/(tools)/master-formula-calculator/` — `page.tsx` + pure `_scale.ts` (`%`/`q.s.` not scaled) |
@@ -197,7 +197,7 @@ Separate from the tournament below. Skill: `.claude/skills/battle-royale/`.
 | Android route generator | `scripts/generate-mobile-routes.mjs` |
 
 Naming is inconsistent by design-drift: some directories are `kebab-case`, others `PascalCase`
-(`AnionGapCalculator`). Match whatever the neighbouring tool does; the URL is the directory name.
+(`anion-gap-calculator`). Match whatever the neighbouring tool does; the URL is the directory name.
 
 ---
 
@@ -416,7 +416,7 @@ Rebuilt 2026-09-20; replaced the flat Q&A. Schema is **not** applied automatical
 | `src/lib/courses/subjects/natural-toxins.ts` | Correct `SubjectMeta` shape, but not in the `SUBJECTS` array |
 | `src/lib/models/Review.ts`, `src/lib/models/userProgress.ts` | Models with no route; progress moved to Supabase |
 | `/api/reviews` in `PROTECTED_PATHS` | Route does not exist |
-| `(tools)/OsmolarGapCalculator`, `(tools)/OpioidConversionCalculator` | Pages exist, linked from nowhere **on the web**; both ship on the Android app |
+| `(tools)/osmolar-gap-calculator`, `(tools)/opioid-conversion-calculator` | Pages exist, linked from nowhere **on the web**; both ship on the Android app |
 | `next-auth`, `next-cloudinary`, `next-mdx-remote` | Installed, zero importers |
 | `npm run predeploy` / `deploy` | gh-pages scripts that cannot work (no static export) |
 

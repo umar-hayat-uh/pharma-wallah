@@ -19,6 +19,8 @@
  * double it.
  */
 
+import { isNoindex } from "./indexing";
+
 export const SITE_URL = "https://www.pharmawallah.com";
 export const SITE_NAME = "PharmaWallah";
 
@@ -257,15 +259,8 @@ const STATIC_META: Record<string, PageMeta> = {
  * tournament pages still work for anyone with a link, but a finished event's
  * entry forms and games are not content for a search result or an ad review.
  */
-const NOINDEX_PREFIXES = [
-  "/dashboard",
-  "/admin",
-  "/tournament",
-  "/leaderboard",
-  "/pw",
-  "/community/submit",
-  "/community/saved",
-];
+// Route-level noindex switches live in src/lib/indexing.ts (one table, also read
+// by the sitemap). Pages with fixed metadata above may still set `noindex`.
 
 /* ── Pages whose metadata is derived from a slug ────────────────────────── */
 
@@ -389,7 +384,7 @@ function derivedMeta(path: string, mcq?: McqLookup): PageMeta | undefined {
  */
 export function metaForPath(path: string, mcq?: McqLookup): PageMeta | undefined {
   const exact = STATIC_META[path] ?? derivedMeta(path, mcq);
-  if (NOINDEX_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`))) {
+  if (isNoindex(path)) {
     return {
       title: exact?.title ?? DEFAULT_TITLE,
       description: exact?.description ?? DEFAULT_DESCRIPTION,
@@ -408,4 +403,76 @@ export function metaForPath(path: string, mcq?: McqLookup): PageMeta | undefined
 export function canonicalFor(path: string, isClinicalHost: boolean): string {
   const p = isClinicalHost && path === "/" ? "/clinical" : path;
   return `${SITE_URL}${p === "/" ? "" : p}` || SITE_URL;
+}
+
+/* ── Lengths and complete per-page metadata (2026-10-13) ───────────────────
+ *
+ * Search results show roughly 60 characters of a title and 120–160 of a
+ * description. Titles are fitted by dropping the brand suffix, then a trailing
+ * parenthetical or "— …" clause; descriptions are padded with the page's own
+ * context sentence and cut at a word boundary. Nothing generic is invented.
+ */
+
+export const TITLE_MAX = 60;
+export const DESCRIPTION_MIN = 120;
+export const DESCRIPTION_MAX = 160;
+
+export function fitTitle(title: string): string {
+  if (title.length <= TITLE_MAX) return title;
+  const suffix = ` | ${SITE_NAME}`;
+  let t = title.endsWith(suffix) ? title.slice(0, -suffix.length) : title;
+  if (`${t}${suffix}`.length <= TITLE_MAX) return `${t}${suffix}`;
+  if (t.length > TITLE_MAX) t = t.replace(/\s*\([^)]*\)\s*$/, "");
+  if (t.length > TITLE_MAX) t = t.replace(/\s+[—–:|-]\s+.*$/, "");
+  if (t.length > TITLE_MAX) t = `${t.slice(0, TITLE_MAX - 1).replace(/\s+\S*$/, "")}…`;
+  return `${t}${suffix}`.length <= TITLE_MAX ? `${t}${suffix}` : t;
+}
+
+/** `extra` sentences (most specific first) are appended until the minimum is met. */
+export function fitDescription(description: string, extra: string[] = []): string {
+  let d = description.trim().replace(/\s+/g, " ");
+  if (d && !/[.!?…]$/.test(d)) d += ".";
+  for (const sentence of extra) {
+    if (d.length >= DESCRIPTION_MIN) break;
+    d = `${d} ${sentence.trim()}`;
+  }
+  if (d.length < DESCRIPTION_MIN) d = `${d} From PharmaWallah, free study tools for Pharm-D students in Pakistan.`;
+  if (d.length > DESCRIPTION_MAX) d = `${d.slice(0, DESCRIPTION_MAX - 1).replace(/\s+\S*$/, "").replace(/[,;:—–-]$/, "")}…`;
+  return d;
+}
+
+/**
+ * Full metadata for a page that sets its own: fitted title and description,
+ * canonical, and Open Graph built from the SAME title and description. Without
+ * the explicit `openGraph`, a page inherits the root layout's — which, for any
+ * path not in STATIC_META, was the home page's (46 pages, AUDIT.md 2026-10-13).
+ */
+export function pageMeta(m: {
+  title: string;
+  description: string;
+  path: string;
+  /** Sentences to pad a short description with. */
+  extra?: string[];
+  noindex?: boolean;
+  type?: "website" | "article";
+  modifiedTime?: string;
+}): import("next").Metadata {
+  const title = fitTitle(m.title);
+  const description = fitDescription(m.description, m.extra);
+  const url = `${SITE_URL}${m.path === "/" ? "" : m.path}`;
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    ...(m.noindex || isNoindex(m.path) ? { robots: { index: false, follow: true } } : {}),
+    openGraph: {
+      title,
+      description,
+      url,
+      siteName: SITE_NAME,
+      type: m.type ?? "website",
+      locale: "en_PK",
+      ...(m.modifiedTime ? { modifiedTime: m.modifiedTime } : {}),
+    },
+  };
 }

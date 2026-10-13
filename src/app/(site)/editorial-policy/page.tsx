@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHero, PageSection } from "@/components/page-kit";
-import { SITE_NAME } from "@/lib/seo";
+import { SITE_NAME, pageMeta } from "@/lib/seo";
 import { formatDate } from "@/lib/content/governance";
 
 /**
@@ -12,12 +12,12 @@ import { formatDate } from "@/lib/content/governance";
  * whether to trust a number, and an overstated process is worse than none.
  */
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
   title: `Editorial and Corrections Policy | ${SITE_NAME}`,
   description:
     "How PharmaWallah writes, checks and corrects its calculators and guides, what our review labels mean, and how to report an error.",
-  alternates: { canonical: "/editorial-policy" },
-};
+  path: "/editorial-policy",
+});
 
 const UPDATED = "2026-10-12";
 

@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Script from "next/script";
+import { JsonLd, organizationLd } from "@/lib/structured-data";
 import AppShell from "@/components/AppShell";
 import ServiceWorkerCleanup from "@/components/ServiceWorkerCleanup";
 import {
@@ -16,6 +17,8 @@ import {
   DEFAULT_DESCRIPTION,
   metaForPath,
   canonicalFor,
+  fitTitle,
+  fitDescription,
 } from "@/lib/seo";
 import { mcqLookup } from "@/lib/mcq-availability";
 import { ADSENSE_CLIENT } from "@/lib/adsense";
@@ -63,8 +66,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const lookupPath = isClinical && path === "/" ? "/clinical" : path;
   const page = metaForPath(lookupPath, mcqLookup);
 
-  const title = page?.title ?? DEFAULT_TITLE;
-  const description = page?.description ?? DEFAULT_DESCRIPTION;
+  // Fitted to ~60 / 120–160 characters, as pageMeta() does for pages with their own metadata.
+  const title = fitTitle(page?.title ?? DEFAULT_TITLE);
+  const description = fitDescription(page?.description ?? DEFAULT_DESCRIPTION);
   const canonical = canonicalFor(page?.canonicalPath ?? path, isClinical);
 
   return {
@@ -109,6 +113,9 @@ export default async function RootLayout({
             {children}
           </AppShell>
         </ThemeProvider>
+
+        {/* Organization JSON-LD on every page (site-wide identity for search). */}
+        <JsonLd data={organizationLd()} />
 
         <ServiceWorkerCleanup />
 
