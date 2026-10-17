@@ -157,7 +157,7 @@ export default function CareersPage() {
                       role="alert"
                       className="relative flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 mb-6 overflow-hidden">
                       <p className="text-sm font-semibold text-red-700">
-                        {err} You can also write to support@pharmawallah.com.
+                        {err} You can also write to shayan@pharmawallah.com.
                       </p>
                     </motion.div>
                   )}

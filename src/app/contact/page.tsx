@@ -28,8 +28,8 @@ const CONTACT_INFO = [
   },
   {
     Icon: Mail, label: "Email",
-    value: "support@pharmawallah.com",
-    href: "mailto:support@pharmawallah.com",
+    value: "shayan@pharmawallah.com",
+    href: "mailto:shayan@pharmawallah.com",
     iconBg: "bg-green-50", iconColor: "text-green-600",
     gradient: "from-green-500 to-teal-400",
   },
@@ -231,7 +231,7 @@ export default function ContactPage() {
                       className="relative flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 mb-6 overflow-hidden">
                       <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
                       <p className="text-sm font-semibold text-red-700">
-                        {errorMsg} You can also write to support@pharmawallah.com.
+                        {errorMsg} You can also write to shayan@pharmawallah.com.
                       </p>
                     </motion.div>
                   )}

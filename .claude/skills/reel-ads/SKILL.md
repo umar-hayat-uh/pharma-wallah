@@ -38,12 +38,14 @@ guard. Work in `/home/umar-hayat/personal/pharmawallah-marketing/video/` (not a 
 | `_kit/kit.js` | `window.kit`: `show enter words type sheen burst wipe through bloom count ground camera seg ease clamp config` — every value a pure function of `t` |
 | `_kit/music.mjs` | Original synthesised bed from `cues.json` (styles `phonk` default, `funk`, `piano`, `tech`) + whooshes/clicks/chimes/pops/riser/impact on the cues; mastered to −14 LUFS |
 | `_kit/assets/` | `outfit-latin.woff2`, `JetBrainsMono-Regular.ttf`, `mark.png` (the real logo mark) |
+| `_kit/vendor/gsap/` | gsap 3.15 + DrawSVG, MotionPath, CustomEase — copied from the repo's `node_modules` (no npm in the kit) |
 | `ad-01/` | 106 calculators + how-to-use guide, 20 s, glass look |
 | `ad-02/` | Drug Stability Kinetics Calculator, 22 s, glass look, every figure from `analyseStability()` |
 | `ad-03/` | "Dead zone" — the offline Android app, 20 s, blueprint look |
 | `ad-05/` | "No Internet? No Problem.", 24 s: the offline app. Three real calculators captured **offline** (`capture.mjs`), an illustrated lab-bench hook, a white/blue end card, a cover poster (`poster.html` → `cover.png`) and a timed voice-over script (`vo.srt`, not recorded: no TTS here) |
 | `ad-06/` | Biopharmaceutics & PK collection, 36 s (the brief asked 30–40): six real tools driven by `capture.mjs` (Cl & Vd half-life, bioavailability, clearance, first- vs zero-order plot, dialysis-membrane practical, category list), cards cropped by `crop.py`, white end card, `VOICEOVER.md` + `voiceover.srt` (not recorded) |
 | `ad-07/` | Animal Weight-Based Dose + Serial Dose ("Dose Calculation" / "Animal Dose Dilution" in the owner's words), 40 s (the brief asked 40): both tools typed into keystroke by keystroke (`capture.mjs`, scroll pinned), result cards cropped from viewport shots (`crop.py`) and floated out of the phone, ring → dilution-tube transition, two phones joined by an energy line, white end card |
+| `ad-08/` | "One Platform. A Whole Pharmacy Lab.", 20 s, **white ground, animated with GSAP** (one paused timeline, `render(t)` = `tl.seek(t)`): four real tools on their own example chips (Dilution, First-/Zero-Order Kinetics, Calibration Curve, Dissolution); each chart's **own SVG marks** redrawn with DrawSVG over the same chart shot bare (`capture.mjs`). New transition types (magnet assemble, container transform, 3D carousel, deck deal, column shutter) and the `"swipe"` cut sound + `"bright"` music style |
 | `ad-04/` | "Stop Calculating the Hard Way", 25 s — **the reference for real app screens**: `capture.mjs` + `cdp.mjs` drive the app export and screenshot every keystroke; one persistent 3D phone (`#rig`, keyframed in `phone(t)`) carries them through all five scenes |
 
 A scene file `ad-NN/ad.html` defines `window.DURATION`, `window.STILLS`, a `CUTS` array and
@@ -103,7 +105,12 @@ that does not exist.
      offline page. It writes `assets/offline-log.json` (0 external requests so far). The app bar's
      own "Offline" pill appears in every frame, an honest indicator you don't have to draw (MEMORY 195).
    Never fake an interface state the product cannot reach.
-6. **Build with kit helpers only**: `kit.config.sceneOuts = true`; `through([[el,a,b],…], t,
+6. **Motion — two engines, pick one per ad.** *GSAP* (ad-08, the owner's preference since 2026-10-17 for
+   "GSAP-like visuals"): load `../_kit/vendor/gsap/*.min.js`, build one `gsap.timeline({ paused: true })` lazily
+   inside `render(t)` and `tl.seek(t)`; never the GSAP ticker. Use `fromTo` for entrances (immediateRender hides
+   them from frame 0), CustomEase for snaps, MotionPath for curved flights, DrawSVG for lines. Split headlines
+   into one masked row per visual line (MEMORY 212t). Or *the kit*:
+   **Build with kit helpers only**: `kit.config.sceneOuts = true`; `through([[el,a,b],…], t,
    {styles})` for cuts — vary the style per cut (`zoom whip rise spin flip slide iris blinds`);
    `type` for kinetic words, `enter` for cards, `count` for number reveals, `sheen`/`burst` when a
    result lands, `camera` for the push, `bloom` at cuts, `ground` for the backdrop. 3D phone
@@ -193,6 +200,10 @@ that does not exist.
 - Near-empty frames before an `iris` → whatever leads into it (a growing ring) left the frame too early.
 - Opacity silently ignored → NaN from `seg(t, Infinity, Infinity)`; the kit clamps it now.
 - zsh aborts on an unmatched glob (`rm -f still-*.png`) → `find ad-NN -name 'still-*' -delete`.
+- Owner asked for different transitions/sound from the last ad → don't reuse a `through()` style or the default
+  whoosh; `cues.json` `"cutSound": "swipe"` (+ `snaps`) and styles `tech`/`bright`/`piano`/`funk` exist (ad-08).
+- A CDP `clip` on a scrolled page is blank, and a page wider than the phone offsets the visual viewport —
+  shoot the viewport and crop by `visualViewport.pageTop` (ad-08, MEMORY 212).
 - Someone opens a half-rendered file → only trust `ad-NN.mp4`, never `*.part.mp4`.
 
 ## Do Not
@@ -202,7 +213,7 @@ that does not exist.
 - Advertise the iOS or Windows app, or offline use of the website.
 - Embed commercial music (Montagem Gloria etc.). The owner posts `-no-music` and adds trending audio in-app.
 - Invent users, ratings, testimonials or "trusted by" figures.
-- Add Remotion or any npm package to the kit without asking.
+- Add Remotion or any npm package to the kit without asking. (GSAP is vendored as plain files since 2026-10-17, at the owner's request.)
 
 ## Update Project Knowledge
 - New ad → a line in `~/personal/pharmawallah-marketing/README.md`'s layout list and a short

@@ -213,8 +213,8 @@ const HOW_IT_WORKS: { title: string; body: React.ReactNode }[] = [
         body: (
             <p>
                 Email{" "}
-                <a href="mailto:support@pharmawallah.com" className="font-medium text-[#1c7bd9] underline-offset-4 hover:underline">
-                    support@pharmawallah.com
+                <a href="mailto:shayan@pharmawallah.com" className="font-medium text-[#1c7bd9] underline-offset-4 hover:underline">
+                    shayan@pharmawallah.com
                 </a>{" "}
                 or use the{" "}
                 <Link href="/contact" className="font-medium text-[#1c7bd9] underline-offset-4 hover:underline">

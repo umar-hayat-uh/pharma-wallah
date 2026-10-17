@@ -170,9 +170,9 @@ export default function TermsPage() {
               <div className="mt-6 relative rounded-2xl border border-gray-200 bg-white overflow-hidden p-4">
                 <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-600 to-green-400" />
                 <p className="text-xs font-extrabold text-gray-700 mb-0.5">Questions?</p>
-                <a href="mailto:support@pharmawallah.com"
+                <a href="mailto:shayan@pharmawallah.com"
                   className="text-xs text-blue-600 hover:text-blue-700 font-medium break-all">
-                  support@pharmawallah.com
+                  shayan@pharmawallah.com
                 </a>
               </div>
             </div>
@@ -293,9 +293,9 @@ export default function TermsPage() {
                 </div>
                 <div>
                   <p className="text-[10px] font-extrabold uppercase tracking-widest text-blue-500 mb-0.5">Email Support</p>
-                  <a href="mailto:support@pharmawallah.com"
+                  <a href="mailto:shayan@pharmawallah.com"
                     className="text-base font-extrabold text-blue-700 hover:text-blue-800 transition">
-                    support@pharmawallah.com
+                    shayan@pharmawallah.com
                   </a>
                 </div>
               </div>

@@ -1405,6 +1405,17 @@ Traps that will otherwise be rediscovered painfully.
    certificate search returns a player only for an exact full name and needs the name with a Player ID.
 211. **Port 3306 is the local MySQL server** — `next start -p 3306` fails with EADDRINUSE and a crawl against it
    "reaches 1 page". Use 3300–3305 / 3311+.
+212. **GSAP can drive a frame-exact reel, and three capture/mask traps** (2026-10-17, ad-08). The owner asked for
+   GSAP visuals: build ONE paused `gsap.timeline()` and make `render(t)` = `tl.seek(t)` — still a pure function of
+   t, so `render.mjs` is unchanged. gsap 3.15 + DrawSVG/MotionPath/CustomEase are vendored (copied, no npm) in
+   the kit's `_kit/vendor/gsap/` (Standard no-charge licence). Real chart lines can be redrawn honestly: export
+   the Recharts `svg.recharts-surface` marks, shoot the card with `.recharts-line, .recharts-scatter` hidden,
+   lay the SVG back at its measured offset and DrawSVG it (`ad-08/capture.mjs`). A dashed line can't be
+   DrawSVG'd — draw a solid copy inside a `<mask>` instead. Traps: (r) a CDP `clip` on a *scrolled* page came
+   back blank — shoot the viewport and crop; (s) a page wider than the phone (the Dissolution table) gets a
+   layout viewport taller than the visual one, offset inside it, so `scrollY` lies — aim and crop by
+   `visualViewport.pageTop/offsetTop`; (t) a masked headline line that *wraps* lets its chars exit into the row
+   above, unclipped — one visual row per mask, `white-space: nowrap`.
 
 ## 9. Working preferences (observed)
 

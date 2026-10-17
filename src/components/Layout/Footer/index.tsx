@@ -43,11 +43,12 @@ const quickLinks = headerData.filter((item) => item.href && item.href !== "#");
  * "low value content" review reads as an abandoned template. Add a channel back
  * here only once it has a real address.
  */
-// The footer said info@ while /contact, /terms and /privacy all give support@
-// (2026-10-12) — one address everywhere, and a link rather than bare text.
+// The footer said info@ while /contact, /terms and /privacy all gave support@
+// (2026-10-12) — one address everywhere, and a link rather than bare text. Since 2026-10-17
+// that address is shayan@ (owner request).
 const contact = [
   { Icon: MapPin, text: "Dept. of Pharmacy, University of Karachi", href: null },
-  { Icon: Mail, text: "support@pharmawallah.com", href: "mailto:support@pharmawallah.com" },
+  { Icon: Mail, text: "shayan@pharmawallah.com", href: "mailto:shayan@pharmawallah.com" },
 ];
 
 // The one account that exists — also linked from the science-fair quiz.

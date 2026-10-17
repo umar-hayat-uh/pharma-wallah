@@ -22,7 +22,7 @@ Nothing below can be done by code. Work top to bottom.
   guides and the 21 calculators that have worked examples (list: `docs/adsense-content-inventory.md`).
 - [ ] Confirm the About/footer wording "Department of Pharmacy, University of Karachi" is how the owner
   wants the address described (it is presented as an address only, not an affiliation or endorsement).
-- [ ] Confirm which inbox is monitored: `support@pharmawallah.com`.
+- [ ] Confirm `shayan@pharmawallah.com` receives mail — it is the public contact address since 2026-10-17.
 
 ## 3. Draft guides (25, `src/lib/guides/content/*.ts`, briefs in `content/briefs/`)
 
