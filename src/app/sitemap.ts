@@ -3,6 +3,7 @@ import { SITE_URL, HISTOLOGY_LESSONS, PATHOLOGY_LESSONS, POWDER_LESSONS } from "
 import { HUB_SUBJECTS, UNLISTED_TOOLS, toolHref } from "@/app/(site)/calculation-tools/tool-index";
 import { SUBJECTS } from "@/lib/courses/registry";
 import { GUIDES } from "@/lib/guides";
+import { BONES, JOINTS, boneHref, jointHref } from "@/lib/osteology/registry";
 import { isNoindex } from "@/lib/indexing";
 // Last git commit date per path (scripts/gen-lastmod.mjs) — true dates, never the build time.
 import LASTMOD from "@/generated/lastmod.json";
@@ -45,6 +46,10 @@ const STATIC_PATHS = [
   "/encyclopedia",
   "/molecular-lab",
   "/pharmacy-counter",
+  "/osteology-lab",
+  "/osteology-lab/bones",
+  "/osteology-lab/joints",
+  "/osteology-lab/about",
   "/compounding-lab",
   "/antibiogram-simulator",
   "/adr-detective",
@@ -83,6 +88,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   for (const subject of HUB_SUBJECTS) for (const tool of subject.tools) paths.add(toolHref(tool.slug));
   for (const slug of Object.keys(UNLISTED_TOOLS)) paths.add(toolHref(slug));
+
+  for (const b of BONES) paths.add(boneHref(b.slug));
+  for (const j of JOINTS) paths.add(jointHref(j.slug));
 
   // Drafts are already filtered out of GUIDES.
   for (const guide of GUIDES) paths.add(`/guides/${guide.slug}`);

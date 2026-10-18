@@ -285,6 +285,12 @@ Naming is inconsistent by design-drift: some directories are `kebab-case`, other
 | Antibiogram simulator | `src/app/(site)/antibiogram-simulator/page.tsx`, `src/components/AntibiogramSimulator.tsx` |
 | Compounding lab | `src/app/(site)/compounding-lab/page.tsx`, `src/components/ExtemporaneousCompoundingLab.tsx` |
 | ~~AI colony counting~~ | `src/app/api/scan-colonies/route.ts` — **no caller since 2026-09-16** (the CFU tool counts on the device); still called by APK v1.0–1.2 on phones. Unauthenticated, not rate-limited — see CLAUDE.md Known Issue 17 |
+| Osteology & Arthrology Lab (`/osteology-lab`) | pages `src/app/(site)/osteology-lab/` (home, `bones/[slug]`, `joints/[slug]`, spotting, viva, exam, progress, about; `layout.tsx` = tabs + phone bottom bar) |
+| — content (one file per bone / joint), registry, types | `src/lib/osteology/{bones,joints}/*.ts`, `registry.ts`, `types.ts` |
+| — 3D assets registry, attribution, view presets | `src/lib/osteology/{models,attribution,views}.ts`, generated `src/lib/osteology/generated/{models,spotting-images}.json`, files `public/models/osteology/*.glb`, `public/images/osteology/spotting/*.webp` |
+| — question engine, exam presets, signed tokens (server-only) | `src/lib/osteology/{questions,exam-config,token,server,spotting-images}.ts`; routes `src/app/api/osteology/{session,check,submit}/route.ts` |
+| — three.js viewer, explorers, practice/exam UI, progress store | `src/components/osteology/` (`viewer/{Viewer3D,ModelViewer}.tsx`, `BoneExplorer`, `JointExplorer`, `PracticeSession`, `ExamRunner`, `ExamResults`, `VivaTrainer`, `SkeletonViva`, `ProgressOverview`, `progress-store.ts`, `osteology.css`) |
+| — asset pipeline (Blender, Z-Anatomy) | `scripts/osteology/{export-zanatomy.py,render-spotting.py,hash-images.mjs,zanatomy-specs.json,README.md}`; tests `scripts/osteology.test.mts` |
 | Molecular Lab (was Molecule Viewer; `/molecule-viewer` 308-redirects via `next.config.mjs`) | `src/app/(site)/molecular-lab/page.tsx` → `src/components/molecular-lab/MolecularLab.tsx` |
 | — molecule graph, valence, formula, undo | `molecular-lab/{graph,history}.ts` |
 | — rings, aromaticity, functional groups, learning tasks, measurements | `molecular-lab/{groups,learning,measure}.ts` |

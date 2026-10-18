@@ -109,6 +109,20 @@ export const contactLimiter = redis
     })
   : null;
 
+/**
+ * Osteology Lab practice and mock exams (/api/osteology/*). Anonymous, cheap (no
+ * database or AI call per request), so generous: a student answering quickly makes
+ * one check call every few seconds. Per IP. Stops a script walking the answer checks.
+ */
+export const osteologyLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(90, "60 s"),
+      analytics: true,
+      prefix: "ratelimit:osteology",
+    })
+  : null;
+
 /*
  * Battle Royale (/battle-royale). Several people may share one connection at
  * the stall — a campus network, or the desk's own laptop — so the per-IP

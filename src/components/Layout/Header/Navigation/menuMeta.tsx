@@ -1,7 +1,8 @@
 import React from "react";
 import {
+  Bone,
   Pill, FlaskConical, Stethoscope, Microscope, Beaker, BookOpen, TestTube,
-  ShoppingCart, FileSearch, ShieldAlert, Atom, ListChecks, Layers, Library, Search,
+  ShoppingCart, FileSearch, Atom, ListChecks, Layers, Library, Search,
   Scale, Activity, HeartPulse, Syringe, FlaskRound, CircleHelp, BookOpenText, Droplets,
 } from "lucide-react";
 
@@ -24,8 +25,8 @@ export const SUBMENU_ICONS: Record<string, React.ReactNode> = {
   "ADR Detective": <Search className="w-5 h-5" />,
   "Prescription Reader": <FileSearch className="w-5 h-5" />,
   "Books Library": <Library className="w-5 h-5" />,
-  "Antibiogram Simulator": <ShieldAlert className="w-5 h-5" />,
   "Molecular Lab": <Atom className="w-5 h-5" />,
+  "Osteology Lab": <Bone className="w-5 h-5" />,
   // ── Calculation Tools categories ──
   "Pharmaceutical Chemistry": <Beaker className="w-5 h-5" />,
   "Unit Conversion": <Scale className="w-5 h-5" />,
@@ -52,7 +53,7 @@ export const SUBMENU_COLORS: Record<string, { icon: string; bg: string; ring: st
   "ADR Detective": { icon: "text-red-500", bg: "from-red-50 to-red-100/40", ring: "group-hover:border-red-200" },
   "Prescription Reader": { icon: "text-cyan-500", bg: "from-cyan-50 to-cyan-100/40", ring: "group-hover:border-cyan-200" },
   "Books Library": { icon: "text-emerald-500", bg: "from-emerald-50 to-emerald-100/40", ring: "group-hover:border-emerald-200" },
-  "Antibiogram Simulator": { icon: "text-rose-500", bg: "from-rose-50 to-rose-100/40", ring: "group-hover:border-rose-200" },
+  "Osteology Lab": { icon: "text-blue-600", bg: "from-blue-50 to-green-50/60", ring: "group-hover:border-blue-200" },
   "Molecular Lab": { icon: "text-indigo-500", bg: "from-indigo-50 to-indigo-100/40", ring: "group-hover:border-indigo-200" },
   // ── Calculation Tools categories ──
   "Pharmaceutical Chemistry": { icon: "text-violet-500", bg: "from-violet-50 to-violet-100/40", ring: "group-hover:border-violet-200" },
@@ -82,8 +83,8 @@ export const SUBMENU_DESCRIPTIONS: Record<string, string> = {
   "ADR Detective": "Spot and analyze adverse drug reactions.",
   "Prescription Reader": "Decipher and analyze Rx forms.",
   "Books Library": "Comprehensive textbook collection.",
-  "Antibiogram Simulator": "Analyze resistance patterns.",
   "Molecular Lab": "Build, edit and explore molecules in 2D and 3D.",
+  "Osteology Lab": "Bones and joints in 3D, spotting, viva and mock practicals.",
   // ── Calculation Tools categories ──
   "Pharmaceutical Chemistry": "Solution prep, concentration & chemical analysis tools",
   "Unit Conversion": "Mass, volume, temperature & unit conversions",

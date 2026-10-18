@@ -223,6 +223,22 @@ pages, confirm progress tracking records a visit, then batch the rest.
 - **Important files:** `src/components/molecular-lab/`, `scripts/build-molecule-library.mts`
 - **Dependencies:** `openchemlib` 9.25.0 (new), `3dmol` 2.5.5 (now bundled); PubChem and RCSB from the browser.
 
+### Virtual Osteology & Arthrology Lab
+- **Status:** 🟡 Built and verified in headless Chrome (2026-10-18, session `pharma-wallah-06`); **not** on a real
+  phone, **not** reviewed by a named anatomy teacher, **not** deployed.
+- **Existing implementation:** `/osteology-lab` — 22 bones/bone groups and all 17 joints of the brief
+  (9 upper limb, 8 pelvis/lower limb), each a server-rendered lesson with a three.js 3D model exported from
+  Z-Anatomy (landmark markers at Z-Anatomy's own anchors; joints with capsule, ligaments, discs as separate meshes),
+  side determination, attachments, articulations, viva and exam questions. Spotting practice (191 renders, never
+  X-rays), viva trainer + full-skeleton identification, 8 timed mock-exam presets marked server-side, progress
+  (device + account via existing tables). 17 unit tests.
+- **Remaining work:** real specimen photographs (needs licensed images or the department's own); a named reviewer
+  in `bylines.ts`; movement animations; an admin screen for exam presets (today: `exam-config.ts`); syllabus
+  matching once the university's outline is available; the brief's sections after §14 (it arrived truncated).
+- **Important files:** `src/lib/osteology/`, `src/components/osteology/`, `src/app/(site)/osteology-lab/`,
+  `src/app/api/osteology/`, `scripts/osteology/`, skill `osteology-lab`.
+- **Dependencies:** none new (`three` 0.185 was already installed). Assets: Z-Anatomy (CC BY-SA 4.0).
+
 ### Simulations
 - **Status:** ✅ Implemented
 - **Existing implementation:** 8 labs (titration, buffer, dilution, disk diffusion, UV, staining,

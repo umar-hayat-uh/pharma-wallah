@@ -1,0 +1,52 @@
+/*
+ * Osteology Lab — the few rules Tailwind utilities cannot express. Namespaced; nothing
+ * here touches another page (CLAUDE.md §6 rule 14).
+ */
+
+/* globals.css bullets every ul/li with `ul:not(.prose ul)` — specificity (0,1,2), which
+   beats a plain `ul.class` (0,1,1). The doubled class lifts these to (0,2,1)/(0,2,2)
+   (MEMORY gotchas 60, 192). */
+ul.pw-osteo-list.pw-osteo-list,
+ol.pw-osteo-list.pw-osteo-list {
+  /* Only what globals.css sets (list-disc pl-6 mb-4), so Tailwind margins still apply.
+     A list that needs horizontal padding gets it from a wrapper. */
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: 0;
+}
+ul.pw-osteo-list.pw-osteo-list > li,
+ol.pw-osteo-list.pw-osteo-list > li {
+  margin-bottom: 0; /* globals: mb-2 — margin-top stays free for space-y-* */
+  color: inherit;
+}
+
+/* Prose lists inside the lab keep a marker, in the lab's ink. */
+.pw-osteo-prose.pw-osteo-prose ul,
+.pw-osteo-prose.pw-osteo-prose ol {
+  padding-left: 1.15rem;
+  margin: 0.25rem 0 0;
+  color: inherit;
+}
+.pw-osteo-prose.pw-osteo-prose ul { list-style: disc; }
+.pw-osteo-prose.pw-osteo-prose ol { list-style: decimal; }
+.pw-osteo-prose.pw-osteo-prose li { margin: 0.25rem 0; color: inherit; padding-left: 0.15rem; }
+.pw-osteo-prose li::marker { color: #1c7bd9; }
+
+/* Phones: the lab's bottom bar sits where the site's back-to-top button is; lift it. */
+@media (max-width: 767px) {
+  html:has(.pw-osteo-bottomnav) .back-to-top {
+    transform: translateY(-4.25rem);
+  }
+}
+
+/* Offset in-page anchors so a heading is not hidden under the site header. */
+.pw-osteo-anchor {
+  scroll-margin-top: 6rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pw-osteo-root * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -155,6 +155,30 @@ export const REFERENCES = {
     checked: "IUPAC's own online edition.",
   },
 
+  // ── Anatomy (Osteology & Arthrology Lab, 2026-10-18) ───────────────────
+  graysStudents5: {
+    citation: "Drake RL, Vogl AW, Mitchell AWM. Gray's Anatomy for Students. 5th ed. Philadelphia: Elsevier; 2023.",
+    supports: "Bones of the limbs, pelvis, vertebral column and thorax; joint classification, ligaments and movements.",
+    checked: "2026-10-18, Elsevier Health UK/EU listings (ISBN 9780323934237, date of publication 03/2023).",
+  },
+  moore9: {
+    citation: "Moore KL, Dalley AF, Agur AMR. Moore's Clinically Oriented Anatomy. 9th ed. Philadelphia: Wolters Kluwer; 2023.",
+    supports: "Limb joints and their ligaments, movements, and clinical correlations of bones and joints.",
+    checked: "2026-10-18, university library catalogue (c2023; ISBN 9781975154127 and others) and retailer listings of the 9th edition.",
+  },
+  ta2: {
+    citation: "Federative International Programme for Anatomical Terminology (FIPAT). Terminologia Anatomica. 2nd ed. FIPAT.library.dal.ca; 2019.",
+    url: "https://fipat.library.dal.ca/TA2",
+    supports: "Official English anatomical terms for bones, bone features, joints and ligaments.",
+    checked: "2026-10-18, FIPAT's own TA2 page (published online 2019, adopted by IFAA 2020).",
+  },
+  zAnatomy: {
+    citation: "Kervyn G, Zielinski M, Vinent L, et al. Z-Anatomy: the libre 3D atlas of anatomy. Models derived from BodyParts3D, The Database Center for Life Science (CC BY-SA 2.1 JP). CC BY-SA 4.0.",
+    url: "https://www.z-anatomy.com/",
+    supports: "The 3D bone, ligament and joint models, and the position of every 3D landmark marker.",
+    checked: "2026-10-18, the Z-Anatomy model repository's License.txt (github.com/Z-Anatomy/Models-of-human-anatomy).",
+  },
+
   // ── Primary literature ──────────────────────────────────────────────────
   cockcroftGault1976: {
     citation: "Cockcroft DW, Gault MH. Prediction of creatinine clearance from serum creatinine. Nephron. 1976;16(1):31–41.",

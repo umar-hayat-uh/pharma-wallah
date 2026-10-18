@@ -255,6 +255,8 @@ Invariants:
 | `tournament:leaderboard:v1` | `leaderboard-data.ts` | 30s |
 | `ratelimit:progress:read` / `:write` | `src/lib/rateLimit.ts` | sliding window |
 | `rl:validate-code` / `rl:game-questions` / `rl:submit-score` / `rl:register` | `src/lib/tournament-redis.ts` | sliding window |
+| `ratelimit:osteology` | `osteologyLimiter`, all `/api/osteology/*` (per IP, 90/60s) | sliding window |
+| `osteology:recorded:{tokenId}` | `/api/osteology/submit` — one history row per exam paper | 24h |
 
 Rate limits, as configured: progress read 20/10s and write 10/10s (keyed by **user id**);
 validate-code 20/60s, game-questions 10/60s, submit-score 8/60s, register 5/10min (keyed by **IP**);
@@ -1416,6 +1418,43 @@ Traps that will otherwise be rediscovered painfully.
    layout viewport taller than the visual one, offset inside it, so `scrollY` lies — aim and crop by
    `visualViewport.pageTop/offsetTop`; (t) a masked headline line that *wraps* lets its chars exit into the row
    above, unclipped — one visual row per mask, `white-space: nowrap`.
+213. **The Osteology Lab's 3D assets come from Z-Anatomy through a committed Blender pipeline** (2026-10-18,
+   `scripts/osteology/README.md`). Z-Anatomy ships ONE `.blend` (in `Z-Anatomy.zip`, a plain git blob — the
+   `media.githubusercontent.com` LFS URL returns an empty file; use `raw.githubusercontent.com`). No GLB exists
+   upstream. Portable Blender 4.2 headless with `--disable-autoexec` (the file embeds an add-on). Licence: CC BY-SA
+   4.0 + BodyParts3D CC BY-SA 2.1 JP — credit both; the GLBs/renders are share-alike, the code is not.
+214. **A Z-Anatomy landmark = a FONT label parented to the bone (`.t` right / `.s` left) + a 2-vertex leader mesh
+   (`.j` / `.i`) placed by Hook modifiers.** Read the *evaluated* mesh or the points are wrong. The leader end
+   nearest the bone is the anatomist's point: the lab uses it unmodified as the 3D marker (`models.json`
+   `landmarks[].p`) — never estimate a landmark position. Only foramina/notches/the sacral hiatus sit off the
+   surface (`offMm`). Z-Anatomy labels L3 as its typical vertebra and the sixth rib as its typical rib — only those.
+   Patella, most carpals/metacarpals/phalanges have few or no labels.
+215. **Blender's glTF exporter crashes on Z-Anatomy's materials** (IndexError in its node-tree search). The exporter
+   swaps them for plain `Bone`/`Cartilage`/`Ligament`/`Capsule`/`Fibrocartilage`/`Membrane` materials, keeping per-face
+   slots — that is how articular cartilage shows blue in the viewer. Blender 4.2's option is `export_texcoords`
+   (plural). **three.js's GLTFLoader strips `.` from node names** (`Femur.r` → `Femurr`); the original is in
+   `object.userData.name` — use that for picking/highlighting. **Blender also suffixes a clashing object name**
+   (`Sacrum` → `Sacrum.001`) and that suffixed name is what the GLB carries: an export copy named like its source
+   (every midline bone; every skeleton part) silently stopped matching the manifest, so taps and highlights hit
+   nothing. The exporter renames the source aside (`~src`) first; `osteology.test.mts` checks GLB node names.
+216. **Osteology Lab answer integrity**: the question engine (`src/lib/osteology/questions.ts`) is deterministic from
+   (filter, seed), so a signed token (`token.ts`, HMAC with a key DERIVED from `SUPABASE_SERVICE_ROLE_KEY` — no new
+   env var) carries only the seed and rules; the server rebuilds the paper to check/grade. `/api/osteology/check`
+   refuses exam tokens. Spotting images are published under content-hash names (`hash-images.mjs`) because an image
+   id names its answer — `spotting-images.ts` is server-only by convention (`server-only` is NOT installed). A deploy
+   that changes the question pool makes in-flight papers 409 (pool hash in the token) — intended.
+217. **Osteology progress uses existing tables only**: visits → `spotting_progress` (lesson_id `osteology:<kind>:<slug>`,
+   category `osteology`); completion → a SECOND row `osteology-done:<kind>:<slug>` (category `osteology-done`) because
+   `spotting_progress` has no `completed` column; exams → `quiz_attempts` (`quiz_id` `osteology:<preset>`), written by
+   the server after grading, once per token (Redis `osteology:recorded:<id>` SET NX, fails open → a rare duplicate).
+218. **`ul.pw-osteo-list` (0,1,1) LOSES to globals' `ul:not(.prose ul)` (0,1,2)** — the lab doubles the class. But
+   override only what globals sets (`list-style`, `padding-left`, `margin-bottom`, li `margin-bottom`/colour): forcing
+   `margin`/`padding` at that specificity silently cancels Tailwind `mt-*`/`px-*`/`space-y-*` on the same list.
+219. **Headless WebGL works**: `google-chrome --headless=new --enable-unsafe-swiftshader --use-angle=swiftshader` draws
+   the three.js viewer (software). `Emulation.setTouchEmulationEnabled` rejects `maxTouchPoints: 0` — omit it when
+   disabling. In this machine's headless profile the site renders in a serif fallback, header included — not a page bug.
+220. **`next/dynamic` does not forward refs** to the lazily loaded component — the lab's viewer takes a `command` prop
+   (`{ n, kind, … }`, `n` incremented so a repeated command still fires) instead of an imperative handle.
 
 ## 9. Working preferences (observed)
 

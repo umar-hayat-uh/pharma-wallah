@@ -13,6 +13,13 @@
 const SRC = new URL("../../src/", import.meta.url).href;
 
 export async function resolve(specifier, context, next) {
+  // App modules import generated JSON plainly (webpack/tsc need nothing more);
+  // Node refuses a JSON import without `with { type: "json" }`, so add it here.
+  if (specifier.endsWith(".json")) {
+    context = { ...context, importAttributes: { ...context.importAttributes, type: "json" } };
+    const resolved = await next(specifier.startsWith("@/") ? `${SRC}${specifier.slice(2)}` : specifier, context);
+    return { ...resolved, importAttributes: { type: "json" } };
+  }
   if (specifier.startsWith("@/")) {
     const target = `${SRC}${specifier.slice(2)}`;
     if (!/\.[cm]?[jt]sx?$|\.json$/.test(target)) {
