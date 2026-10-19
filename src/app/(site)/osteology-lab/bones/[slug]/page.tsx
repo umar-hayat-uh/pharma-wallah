@@ -53,7 +53,9 @@ export default function BonePage({ params }: { params: { slug: string } }) {
       <PageHero
         trail={[{ label: "Osteology Lab", href: "/osteology-lab" }, { label: "Bones", href: "/osteology-lab/bones" }, { label: bone.name }]}
         eyebrow={`${REGION_LABEL[bone.region]} · ${bone.group}`}
-        title={bone.name}
+        // Long anatomical words ("Metacarpophalangeal") are wider than a 320 px phone at the title's
+        // minimum size: let them hyphenate, and break as a last resort, instead of widening the page.
+        title={<span lang="en" className="hyphens-auto [overflow-wrap:anywhere]">{bone.name}</span>}
         lead={bone.summary}
         actions={<LessonProgress kind="bone" slug={bone.slug} name={bone.name} />}
         meta={
@@ -112,7 +114,7 @@ export default function BonePage({ params }: { params: { slug: string } }) {
                   With the{" "}
                   {a.withSlug ? <Link className="font-semibold text-brandBlue underline-offset-2 hover:underline" href={boneHref(a.withSlug)}>{a.with.toLowerCase()}</Link> : <strong>{a.with.toLowerCase()}</strong>}{" "}
                   at the {a.jointSlug ? <Link className="text-brandBlue underline-offset-2 hover:underline" href={jointHref(a.jointSlug)}>{a.joint}</Link> : a.joint}
-                  {" "}— {a.surface}.
+                  {" "}— {a.surface.replace(/\.$/, "")}.
                 </li>
               ))}
             </ul>
@@ -120,7 +122,18 @@ export default function BonePage({ params }: { params: { slug: string } }) {
 
           {bone.attachments.length > 0 && (
             <Card id="attachments" title="Muscle and ligament attachments" className="lg:col-span-2">
-              <div className="-mx-1 overflow-x-auto">
+              {/* Phones: stacked, not a table cut off at the screen edge (from `sm` up, the table). */}
+              <ul className="pw-osteo-list space-y-3 sm:hidden">
+                {bone.attachments.map((a, i) => (
+                  <li key={i}>
+                    <div className="rounded-xl border border-[#16181d]/10 bg-[#fafbfc] p-4 text-sm leading-relaxed">
+                      <p className="font-semibold text-[#16181d]">{a.structure} <span className="font-medium capitalize text-brandBlue">· {a.kind}</span></p>
+                      <p className="mt-1">{a.site}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <div className="-mx-1 hidden overflow-x-auto sm:block">
                 <table className="w-full min-w-[32rem] text-left text-sm">
                   <thead>
                     <tr className="border-b border-[#16181d]/10 text-[#5b616b]">

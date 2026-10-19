@@ -46,6 +46,7 @@ guard. Work in `/home/umar-hayat/personal/pharmawallah-marketing/video/` (not a 
 | `ad-06/` | Biopharmaceutics & PK collection, 36 s (the brief asked 30–40): six real tools driven by `capture.mjs` (Cl & Vd half-life, bioavailability, clearance, first- vs zero-order plot, dialysis-membrane practical, category list), cards cropped by `crop.py`, white end card, `VOICEOVER.md` + `voiceover.srt` (not recorded) |
 | `ad-07/` | Animal Weight-Based Dose + Serial Dose ("Dose Calculation" / "Animal Dose Dilution" in the owner's words), 40 s (the brief asked 40): both tools typed into keystroke by keystroke (`capture.mjs`, scroll pinned), result cards cropped from viewport shots (`crop.py`) and floated out of the phone, ring → dilution-tube transition, two phones joined by an energy line, white end card |
 | `ad-08/` | "One Platform. A Whole Pharmacy Lab.", 20 s, **white ground, animated with GSAP** (one paused timeline, `render(t)` = `tl.seek(t)`): four real tools on their own example chips (Dilution, First-/Zero-Order Kinetics, Calibration Curve, Dissolution); each chart's **own SVG marks** redrawn with DrawSVG over the same chart shot bare (`capture.mjs`). New transition types (magnet assemble, container transform, 3D carousel, deck deal, column shutter) and the `"swipe"` cut sound + `"bright"` music style |
+| `ad-09/` | Virtual Osteology Lab, 30 s: **the lab's own 3D models drawn live with three.js** (`_kit/vendor/three/`, GLBs embedded in `assets/models.js`, `window.READY`), six humerus labels on Z-Anatomy's anchors in anatomical columns, real lab screens from a local production build (`capture.mjs`); the lab was not deployed, so the end card says "coming soon" / "follow for updates" |
 | `ad-04/` | "Stop Calculating the Hard Way", 25 s — **the reference for real app screens**: `capture.mjs` + `cdp.mjs` drive the app export and screenshot every keystroke; one persistent 3D phone (`#rig`, keyframed in `phone(t)`) carries them through all five scenes |
 
 A scene file `ad-NN/ad.html` defines `window.DURATION`, `window.STILLS`, a `CUTS` array and
@@ -105,7 +106,8 @@ that does not exist.
      offline page. It writes `assets/offline-log.json` (0 external requests so far). The app bar's
      own "Offline" pill appears in every frame, an honest indicator you don't have to draw (MEMORY 195).
    Never fake an interface state the product cannot reach.
-6. **Motion — two engines, pick one per ad.** *GSAP* (ad-08, the owner's preference since 2026-10-17 for
+6. **3D (ad-09)**: when the subject is a 3D model the product ships, draw it live with `_kit/vendor/three/three-gltf.min.js` (the kit README's "Or three.js") rather than rendering frames elsewhere — no Blender download, frame-exact, and labels can be projected from real anchors.
+   **Motion — two engines, pick one per ad.** *GSAP* (ad-08, the owner's preference since 2026-10-17 for
    "GSAP-like visuals"): load `../_kit/vendor/gsap/*.min.js`, build one `gsap.timeline({ paused: true })` lazily
    inside `render(t)` and `tl.seek(t)`; never the GSAP ticker. Use `fromTo` for entrances (immediateRender hides
    them from frame 0), CustomEase for snaps, MotionPath for curved flights, DrawSVG for lines. Split headlines
@@ -204,6 +206,7 @@ that does not exist.
   whoosh; `cues.json` `"cutSound": "swipe"` (+ `snaps`) and styles `tech`/`bright`/`piano`/`funk` exist (ad-08).
 - A CDP `clip` on a scrolled page is blank, and a page wider than the phone offsets the visual viewport —
   shoot the viewport and crop by `visualViewport.pageTop` (ad-08, MEMORY 212).
+- A GSAP `fromTo` whose from-state is visible (opacity > 0, a flash, a ring) shows it on **every earlier frame** when the timeline is seeked — use `set` + `to` (ad-09: a whole 3D canvas was hidden for 24 s).
 - Someone opens a half-rendered file → only trust `ad-NN.mp4`, never `*.part.mp4`.
 
 ## Do Not

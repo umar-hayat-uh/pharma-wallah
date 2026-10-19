@@ -31,6 +31,12 @@ ol.pw-osteo-list.pw-osteo-list > li {
 .pw-osteo-prose.pw-osteo-prose ol { list-style: decimal; }
 .pw-osteo-prose.pw-osteo-prose li { margin: 0.25rem 0; color: inherit; padding-left: 0.15rem; }
 .pw-osteo-prose li::marker { color: #1c7bd9; }
+/* A component list (stacked cards) inside prose is not prose: no marker, no indent. Same
+   specificity as the prose rules above, so it must stay after them. Tailwind's space-y-*
+   ((0,3,0)) still spaces the items. */
+.pw-osteo-prose ul.pw-osteo-list,
+.pw-osteo-prose ol.pw-osteo-list { list-style: none; padding-left: 0; margin-top: 0; }
+.pw-osteo-prose .pw-osteo-list > li { padding-left: 0; margin: 0; }   /* style the card on an inner box */
 
 /* Phones: the lab's bottom bar sits where the site's back-to-top button is; lift it. */
 @media (max-width: 767px) {

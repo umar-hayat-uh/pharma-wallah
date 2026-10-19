@@ -7,9 +7,14 @@ import { cn } from "@/lib/utils";
 import { getReferences, type ReferenceId } from "@/lib/content/references";
 import type { QA } from "@/lib/osteology/types";
 
+/**
+ * `min-w-0`: cards are grid items, and a grid item's default `min-width: auto` let a wide table inside
+ * (attachments, ligaments) widen the whole page on a phone instead of scrolling in its own box
+ * (MEMORY gotcha 61; measured 2026-10-18: +202 px at 360 px wide).
+ */
 export function Card({ id, title, children, className }: { id?: string; title: string; children: React.ReactNode; className?: string }) {
   return (
-    <section id={id} aria-labelledby={id ? `${id}-h` : undefined} className={cn("pw-osteo-anchor rounded-2xl border border-[#16181d]/10 bg-white p-5 sm:p-6", className)}>
+    <section id={id} aria-labelledby={id ? `${id}-h` : undefined} className={cn("pw-osteo-anchor min-w-0 rounded-2xl border border-[#16181d]/10 bg-white p-5 sm:p-6", className)}>
       <h2 id={id ? `${id}-h` : undefined} className="text-lg font-bold tracking-tight">{title}</h2>
       <div className="pw-osteo-prose mt-3 text-[15px] leading-relaxed text-[#2b2f36]">{children}</div>
     </section>

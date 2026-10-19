@@ -53,7 +53,9 @@ export default function JointPage({ params }: { params: { slug: string } }) {
       <PageHero
         trail={[{ label: "Osteology Lab", href: "/osteology-lab" }, { label: "Joints", href: "/osteology-lab/joints" }, { label: joint.name }]}
         eyebrow={REGION_LABEL[joint.region]}
-        title={joint.name}
+        // Long anatomical words ("Metacarpophalangeal") are wider than a 320 px phone at the title's
+        // minimum size: let them hyphenate, and break as a last resort, instead of widening the page.
+        title={<span lang="en" className="hyphens-auto [overflow-wrap:anywhere]">{joint.name}</span>}
         lead={joint.summary}
         actions={<LessonProgress kind="joint" slug={joint.slug} name={joint.name} />}
         meta={
@@ -119,7 +121,21 @@ export default function JointPage({ params }: { params: { slug: string } }) {
           )}
 
           <Card id="ligaments" title="Ligaments & supporting structures" className="lg:col-span-2">
-            <div className="-mx-1 overflow-x-auto">
+            {/* Phones: one stacked card per structure — a three-column table cut off at the
+                screen edge read as broken. The table returns from `sm` up. */}
+            <ul className="pw-osteo-list space-y-3 sm:hidden">
+              {structures.map((s) => (
+                <li key={s.name}>
+                  {/* Card styles on an inner box: prose list rules out-rank Tailwind padding on an <li>. */}
+                  <div className="rounded-xl border border-[#16181d]/10 bg-[#fafbfc] p-4 text-sm leading-relaxed">
+                    <p className="font-semibold text-[#16181d]">{s.name}</p>
+                    <p className="mt-1"><span className="font-semibold text-[#5b616b]">Attachments / position: </span>{s.attachments}</p>
+                    <p className="mt-1"><span className="font-semibold text-[#5b616b]">Role: </span>{s.role}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="-mx-1 hidden overflow-x-auto sm:block">
               <table className="w-full min-w-[36rem] text-left text-sm">
                 <thead>
                   <tr className="border-b border-[#16181d]/10 text-[#5b616b]">

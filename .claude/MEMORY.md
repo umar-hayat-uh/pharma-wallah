@@ -1423,6 +1423,8 @@ Traps that will otherwise be rediscovered painfully.
    `media.githubusercontent.com` LFS URL returns an empty file; use `raw.githubusercontent.com`). No GLB exists
    upstream. Portable Blender 4.2 headless with `--disable-autoexec` (the file embeds an add-on). Licence: CC BY-SA
    4.0 + BodyParts3D CC BY-SA 2.1 JP — credit both; the GLBs/renders are share-alike, the code is not.
+   The Blender binary and `Startup.blend` were downloaded into the session scratchpad and are **gone after a session
+   restart** — re-download both (README) to re-export. Marketing reels need neither: three.js draws the GLBs live (ad-09).
 214. **A Z-Anatomy landmark = a FONT label parented to the bone (`.t` right / `.s` left) + a 2-vertex leader mesh
    (`.j` / `.i`) placed by Hook modifiers.** Read the *evaluated* mesh or the points are wrong. The leader end
    nearest the bone is the anatomist's point: the lab uses it unmodified as the 3D marker (`models.json`
@@ -1455,6 +1457,18 @@ Traps that will otherwise be rediscovered painfully.
    disabling. In this machine's headless profile the site renders in a serif fallback, header included — not a page bug.
 220. **`next/dynamic` does not forward refs** to the lazily loaded component — the lab's viewer takes a `command` prop
    (`{ n, kind, … }`, `n` incremented so a repeated command still fires) instead of an imperative handle.
+
+221. **"0 overflow at 390 px" can be a false pass in mobile emulation** (2026-10-18, user: lab lessons "breaking on
+   mobile"). With `mobile: true`, an over-wide element widens the LAYOUT viewport, so `innerWidth` grows with it and
+   `scrollWidth − innerWidth` reads 0. Compare `document.documentElement.scrollWidth` against the emulated width you set.
+   Causes found in the lab: a table in an `overflow-x-auto` box inside a **grid item without `min-w-0`** (gotcha 61) widened
+   lesson pages by 200–300 px at 360 px, and the H1 "Metacarpophalangeal" overflowed 320 px (titles now `hyphens-auto
+   [overflow-wrap:anywhere]`). Wide tables become stacked cards below `sm`. Sweep all 39 lessons at 360 and 320.
+222. **A GSAP `fromTo` in a SEEKED timeline paints its from-state on every earlier time** (ad-09). `fromTo(opacity 0→1)` at
+   24 s hid a canvas for the whole film; a flash `fromTo(0.55→0)` greyed the opening. Use `tl.set(from, at)` + `tl.to(to, at)`
+   whenever the from-state differs from what should show before `at`. Same trap in the lab's exam clock in spirit: an
+   effect keyed on an object that changes every interaction (`[run]`) restarted the interval and froze the countdown —
+   key effects on a stable id (`run.token`).
 
 ## 9. Working preferences (observed)
 

@@ -180,12 +180,16 @@ function ExamRunnerInner({ initialPreset, rootRef }: { initialPreset?: string | 
     [],
   );
 
-  // Clock + auto-submit.
+  // Clock + auto-submit. Keyed on the paper's token, not on `run`: `run` is a new object on
+  // every answer and every move between stations, and restarting the interval each time froze
+  // the countdown for a student moving faster than once a second.
+  const paper = run?.token;
   useEffect(() => {
-    if (!run) return;
+    if (!paper) return;
+    setNow(Date.now());
     const t = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(t);
-  }, [run]);
+  }, [paper]);
   useEffect(() => {
     if (run && now >= run.deadline && !submittedRef.current && !submitting) void submit(run);
   }, [now, run, submit, submitting]);

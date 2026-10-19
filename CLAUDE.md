@@ -295,6 +295,8 @@ These are conventions **observed in the code**, not aspirations.
   and `ListAgents`, and announce which shared files you are taking, before editing one.
 
 ### Recently Completed
+- **ad-09 Virtual Osteology Lab reel + lab mobile fixes (2026-10-18, later)** — 30 s reel with the lab's own 3D models drawn
+  live by three.js (outside the repo); lessons no longer overflow phones; exam clock fixed. See §8.
 - **Virtual Osteology & Arthrology Lab (2026-10-18)** — `/osteology-lab`: 22 bones and all 17 joints of the brief
   in 3D from Z-Anatomy (repeatable Blender pipeline, landmark markers at Z-Anatomy's own anchors), lessons,
   articulation explorer, spotting (191 renders, no X-rays), viva + skeleton identification, 8 timed mock exams marked
@@ -744,6 +746,34 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 
 > Newest first. Never paste source code here. Archive entries older than ~10 into
 > `.claude/history/YYYY-MM.md`.
+
+### 2026-10-18 (later) — Osteology Lab mobile fixes + ad-09 "Virtual Osteology Lab" reel
+
+User: lesson and test pages "breaking on mobile"; then the owner's 30-second reel brief for the lab; mid-task "why
+download, just use something else, do HTML" (the scratchpad holding Blender had been wiped by a session restart).
+
+**Mobile (in the repo)** — reproduced at 360/320 px: every bone/joint lesson was 200–300 px wider than the screen (a table
+in a grid item without `min-w-0`), "Metacarpophalangeal" overflowed 320 px, and the exam countdown froze while moving
+between stations (its interval was keyed on `run`, which changes on every answer). Fixed: `Card` gets `min-w-0`; long
+titles hyphenate; attachments/ligaments are stacked cards below `sm` (tables from `sm` up); the clock is keyed on the
+paper's token; a double full stop in articulations. Verified on `next start`: all 39 lessons at 360 and 320 px →
+0 overflow; spotting (10 questions) and the 30-station exam stay within the screen; timer 15:00 → 14:54 after 6 s of
+rapid navigation; screenshots read. `tsc` 0 errors; `npm run build` exit 0 (shared 88.7 kB, middleware 82.5 kB);
+osteology tests 17/17. My earlier "0 overflow at 390 px" was a false pass (MEMORY 221).
+
+**ad-09** (outside the repo, `~/personal/pharmawallah-marketing/video/ad-09/`) — 30 s, 1080×1920, 30 fps: dark hook
+(humerus · scapula · femur · knee) → light sweep → brand lockup → "EXPLORE IN 3D / IDENTIFY LANDMARKS" with five
+Z-Anatomy labels on the anterior humerus → "UNDERSTAND ARTICULATIONS" (shoulder, glenoid labrum) → deck of real lab
+screens (spotting, shoulder lesson, viva, exam) → phone (drag, tap a landmark, joint lesson) → end card. **The 3D is the
+lab's own GLBs drawn live with three.js** — bundled once into `_kit/vendor/three/` with the repo's esbuild (no install,
+no Blender); labels are projected from Z-Anatomy anchors and shown only when visible, in anatomical columns. App screens
+captured from a local production build. **The lab is not deployed**, so the end card says "coming soon" / "follow for
+updates". Kit change: `render.mjs` adds SwiftShader flags and waits on an optional `window.READY` (older ads unaffected).
+Verified: stills read around every beat (caught: canvas hidden by a seeked `fromTo`, invisible gradient subtitle, bones
+over headlines, labels crossing the bone, a ripple showing early — all fixed, MEMORY 222); `ffprobe` h264 1080×1920
+30/1, 30.0 s (+aac); −13.7 LUFS; ten frames pulled from the MP4 and read. **Not verified:** the music was never listened
+to (no audio output); no voice recorded (no TTS — script in `voiceover.srt` + README); not seen in Instagram/TikTok or on
+a phone.
 
 ### 2026-10-18 — Virtual Osteology & Arthrology Lab (`/osteology-lab`)
 
