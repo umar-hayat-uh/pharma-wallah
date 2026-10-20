@@ -28,6 +28,7 @@
 | Where are external drug/literature API clients? | `src/lib/api/*.ts` |
 | Where are the brand colours? | `tailwind.config.ts` (`brandBlue`, `brandGreen`, `clinical*`) |
 | Where is the clinical subdomain detected? | `src/middleware.ts` → `x-subdomain` header → `src/app/layout.tsx` |
+| Where are the lab simulations? | `/virtual-labs` (4 × 3D labs) — `src/lib/virtual-labs/` + `src/components/virtual-labs/`; legacy `/simulations` removed 2026-10-20. See `.claude/skills/virtual-labs/SKILL.md` |
 | How do I add an ad? | `<AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_*} />` — `.claude/skills/adsense-monetization/SKILL.md` |
 
 ---
@@ -254,20 +255,40 @@ Naming is inconsistent by design-drift: some directories are `kebab-case`, other
 
 ---
 
-## Simulations (interactive labs)
+## Virtual Labs (3D, added 2026-10-20)
+
+Skill: `.claude/skills/virtual-labs/SKILL.md`. Replaced the legacy `/simulations` labs (hub, titration, buffer,
+dilution, disk diffusion, UV, staining, organic ID, lab guide) and `/compounding-lab` — all **removed 2026-10-20**.
+Permanent redirects in `next.config.mjs`: `/simulations` and `/simulations/:path*` → `/virtual-labs`,
+`/simulations/titration` → the titration lab, `/compounding-lab` → the Simple Syrup lab. Old code is in git history only.
 
 | Piece | File |
 | --- | --- |
-| Hub | `src/app/(site)/simulations/page.tsx` |
-| Titration / buffer / UV / staining / organic-ID | `src/app/(site)/simulations/<lab>/page.tsx` |
-| Dilution lab | `src/components/Simulations/DilutionLab/DilutionLabSim.tsx` |
-| Disk diffusion lab (Theory + simulation) | `src/app/(site)/simulations/disk-diffusion/page.tsx` → `src/components/Simulations/DiskDiffusion/DiskDiffusionLab.tsx` |
-| — pure model: zones, placement rules, coverage, technique score | `DiskDiffusion/{engine.ts,data.ts,types.ts}` |
-| — stage machine and every rule about what is allowed | `DiskDiffusion/useLabMachine.ts` |
-| — Theory: Principle · Materials · Lab Guide · Interpretation · Safety | `DiskDiffusion/{TheorySection,LabGuide,illustrations,PreLabCheck}.tsx` |
-| — bench: layout, plate interaction, incubation and growth timers | `DiskDiffusion/{SimulationWorkspace,stages,PetriDish,equipment}.tsx` |
-| — measurement, results, completion, PDF | `DiskDiffusion/{MeasurementTool,ResultsDashboard,CompletionScreen}.tsx`, `report.ts` |
-| Lab guide | `src/app/(site)/simulations/lab-guide/page.tsx` |
+| Landing (server: catalogue cards, curriculum badges, credits from the manifest) | `src/app/(site)/virtual-labs/page.tsx` (card images expected at `public/images/virtual-labs/<id>.webp`) |
+| Acid–base titration (Pharmaceutical Chemistry) | `src/app/(site)/virtual-labs/pharmaceutical-chemistry/acid-base-titration/page.tsx` → `src/components/virtual-labs/labs/TitrationLab.tsx` |
+| Simple Syrup (Pharmaceutics) | `src/app/(site)/virtual-labs/pharmaceutics/simple-syrup/page.tsx` → `labs/SyrupLab.tsx` |
+| Graded dose–response (Pharmacology) | `src/app/(site)/virtual-labs/pharmacology/dose-response/page.tsx` → `labs/DoseResponseLab.tsx` (extra "Graph" tab) |
+| Powdered clove microscopy (Pharmacognosy) | `src/app/(site)/virtual-labs/pharmacognosy/powdered-clove/page.tsx` → `labs/CloveLab.tsx` (extra microscope tab) |
+| One lab, start to finish (briefing → bench → assessment → results; tracking) | `src/components/virtual-labs/LabExperience.tsx` |
+| 3D viewport (`next/dynamic` ssr:false; loads only its own room; `window.__vlab`) | `src/components/virtual-labs/Viewport.tsx`, `webgl.ts` |
+| Shared three.js runtime (walking, colliders, picking, focus tweens, quality tiers, markers, dispose) | `src/components/virtual-labs/three/runtime.ts`, `three/types.ts` |
+| Rooms | `three/rooms/{chemistry,pharmaceutics,pharmacology,pharmacognosy}.ts` + `rooms/helpers.ts` (`RoomBuilder`, `TOP`) |
+| Procedural parts (furniture, glassware, instruments, materials, canvas textures) | `three/{kit,glass,instruments,materials,textures}.ts` |
+| Bench panels (every 3D action as a control) + 2D instruments + eyepiece | `src/components/virtual-labs/benches/{Titration,Syrup,Dose,Clove}Bench.tsx`, `instruments2d.tsx`, `MicroscopeView.tsx`, `types.ts` |
+| Interface (HUD, procedure, equipment, notebook, assessment, results, overlays, UI kit) | `src/components/virtual-labs/interface/*.tsx`; namespaced CSS `virtual-labs.css` (`.pw-vlab`) |
+| Engine (pure): experiment contract, run machine (undo/hints/answers/submit/scoring) | `src/lib/virtual-labs/engine/{types,machine}.ts` |
+| Calculations (pure science) | `src/lib/virtual-labs/calculations/{titration,syrup,doseResponse,microscopy}.ts` |
+| Experiment definitions + room visual derivations | `src/lib/virtual-labs/experiments/{titration,syrup,doseResponse,clove,index}.ts` |
+| Catalogue (exactly 4) / curriculum statuses / shared labels | `src/lib/virtual-labs/{catalog,curriculum,labels}.ts` |
+| Asset manifest (licences, decisions, used + rejected) | `src/lib/virtual-labs/assets/manifest.ts`; files `public/models/virtual-labs/{environments,specimens}/` |
+| Progress (localStorage `pw-vlabs:v1`, quality pref) + landing badge | `src/lib/virtual-labs/progress.ts`, `src/components/virtual-labs/LabProgressBadge.tsx` |
+| Tests (39: catalogue, engine, formulas, each lab end to end) | `scripts/virtual-labs.test.mts` |
+| Docs | `docs/virtual-labs/` (`IMPLEMENTATION_PLAN.md`; code comments also cite `CURRICULUM_MAPPING.md`, `ASSET_RESEARCH.md`, `ASSET_LICENSES.md`, `EXPERIMENT_CATALOG.md` — not present as of 2026-10-20) |
+
+## Simulations & other labs
+
+| Piece | File |
+| --- | --- |
 | **Community Pharmacy Simulation Lab** | `/pharmacy-counter` → `src/components/Simulations/CommunityPharmacy/` |
 | ↳ page (server, metadata, resolves the pharmacy's date) | `src/app/(site)/pharmacy-counter/page.tsx` |
 | ↳ shell (three zones, persistence, tracking) | `CommunityPharmacy/CommunityPharmacyLab.tsx` |
@@ -283,7 +304,7 @@ Naming is inconsistent by design-drift: some directories are `kebab-case`, other
 | ↳ bespoke surfaces (namespaced `.pw-cph`) | `CommunityPharmacy/pharmacy.css` |
 | ↳ tests | `scripts/pharmacy-counter.test.mts` |
 | Antibiogram simulator | `src/app/(site)/antibiogram-simulator/page.tsx`, `src/components/AntibiogramSimulator.tsx` |
-| Compounding lab | `src/app/(site)/compounding-lab/page.tsx`, `src/components/ExtemporaneousCompoundingLab.tsx` |
+| ~~Compounding lab~~ | **Removed 2026-10-20** (`/compounding-lab` → redirects to `/virtual-labs/pharmaceutics/simple-syrup`); `ExtemporaneousCompoundingLab.tsx` deleted |
 | ~~AI colony counting~~ | `src/app/api/scan-colonies/route.ts` — **no caller since 2026-09-16** (the CFU tool counts on the device); still called by APK v1.0–1.2 on phones. Unauthenticated, not rate-limited — see CLAUDE.md Known Issue 17 |
 | Osteology & Arthrology Lab (`/osteology-lab`) | pages `src/app/(site)/osteology-lab/` (home, `bones/[slug]`, `joints/[slug]`, spotting, viva, exam, progress, about; `layout.tsx` = tabs + phone bottom bar) |
 | — content (one file per bone / joint), registry, types | `src/lib/osteology/{bones,joints}/*.ts`, `registry.ts`, `types.ts` |

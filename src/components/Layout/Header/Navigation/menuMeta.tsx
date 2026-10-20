@@ -1,7 +1,7 @@
 import React from "react";
 import {
   Bone,
-  Pill, FlaskConical, Stethoscope, Microscope, Beaker, BookOpen, TestTube,
+  Pill, Stethoscope, Microscope, Beaker, BookOpen, TestTube,
   ShoppingCart, FileSearch, Atom, ListChecks, Layers, Library, Search,
   Scale, Activity, HeartPulse, Syringe, FlaskRound, CircleHelp, BookOpenText, Droplets,
 } from "lucide-react";
@@ -17,11 +17,10 @@ import {
 export const SUBMENU_ICONS: Record<string, React.ReactNode> = {
   Courses: <BookOpen className="w-5 h-5" />,
   "MCQ Bank": <ListChecks className="w-5 h-5" />,
-  "Lab Simulation": <TestTube className="w-5 h-5" />,
+  "Virtual Labs": <TestTube className="w-5 h-5" />,
   "Slide Spotting": <Microscope className="w-5 h-5" />,
   Flashcards: <Layers className="w-5 h-5" />,
   "Pharmacy Counter": <ShoppingCart className="w-5 h-5" />,
-  "Compounding Lab": <FlaskConical className="w-5 h-5" />,
   "ADR Detective": <Search className="w-5 h-5" />,
   "Prescription Reader": <FileSearch className="w-5 h-5" />,
   "Books Library": <Library className="w-5 h-5" />,
@@ -45,11 +44,10 @@ export const SUBMENU_ICONS: Record<string, React.ReactNode> = {
 export const SUBMENU_COLORS: Record<string, { icon: string; bg: string; ring: string }> = {
   Courses: { icon: "text-blue-500", bg: "from-blue-50 to-blue-100/40", ring: "group-hover:border-blue-200" },
   "MCQ Bank": { icon: "text-green-500", bg: "from-green-50 to-green-100/40", ring: "group-hover:border-green-200" },
-  "Lab Simulation": { icon: "text-purple-500", bg: "from-purple-50 to-purple-100/40", ring: "group-hover:border-purple-200" },
+  "Virtual Labs": { icon: "text-purple-500", bg: "from-purple-50 to-purple-100/40", ring: "group-hover:border-purple-200" },
   "Slide Spotting": { icon: "text-sky-500", bg: "from-sky-50 to-sky-100/40", ring: "group-hover:border-sky-200" },
   Flashcards: { icon: "text-amber-500", bg: "from-amber-50 to-amber-100/40", ring: "group-hover:border-amber-200" },
   "Pharmacy Counter": { icon: "text-orange-500", bg: "from-orange-50 to-orange-100/40", ring: "group-hover:border-orange-200" },
-  "Compounding Lab": { icon: "text-teal-500", bg: "from-teal-50 to-teal-100/40", ring: "group-hover:border-teal-200" },
   "ADR Detective": { icon: "text-red-500", bg: "from-red-50 to-red-100/40", ring: "group-hover:border-red-200" },
   "Prescription Reader": { icon: "text-cyan-500", bg: "from-cyan-50 to-cyan-100/40", ring: "group-hover:border-cyan-200" },
   "Books Library": { icon: "text-emerald-500", bg: "from-emerald-50 to-emerald-100/40", ring: "group-hover:border-emerald-200" },
@@ -75,11 +73,10 @@ export const SUBMENU_DESCRIPTIONS: Record<string, string> = {
   // and MCQ banks; the rest of the syllabus is still being written.
   Courses: "Lesson notes for the subjects published so far.",
   "MCQ Bank": "Practice questions for four first-year subjects.",
-  "Lab Simulation": "Interactive 2D & 3D experiments.",
+  "Virtual Labs": "Four 3D lab practicals, one experiment each.",
   "Slide Spotting": "Histology and pathology practice.",
   Flashcards: "Quick-review cards, subject by subject.",
   "Pharmacy Counter": "Virtual retail dispensing training.",
-  "Compounding Lab": "Practice pharmaceutical compounding.",
   "ADR Detective": "Spot and analyze adverse drug reactions.",
   "Prescription Reader": "Decipher and analyze Rx forms.",
   "Books Library": "Comprehensive textbook collection.",

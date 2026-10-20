@@ -69,6 +69,18 @@ const nextConfig = {
       { source: "/documentation", destination: "/", permanent: true },
       // A single-drug demo page with a search box that did nothing.
       { source: "/flash-cards/sample", destination: "/flash-cards", permanent: true },
+      // The legacy /simulations hub, its eight labs and /compounding-lab were
+      // removed on 2026-10-20 in favour of /virtual-labs. Titration and the
+      // compounding lab have a direct successor; every other old lab lands on
+      // the Virtual Labs index. Specific rules first — Next matches in order.
+      { source: "/simulations", destination: "/virtual-labs", permanent: true },
+      {
+        source: "/simulations/titration",
+        destination: "/virtual-labs/pharmaceutical-chemistry/acid-base-titration",
+        permanent: true,
+      },
+      { source: "/simulations/:path*", destination: "/virtual-labs", permanent: true },
+      { source: "/compounding-lab", destination: "/virtual-labs/pharmaceutics/simple-syrup", permanent: true },
     ];
   },
 

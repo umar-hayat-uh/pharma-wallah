@@ -54,9 +54,9 @@ export const GUIDE_RESOURCES: GuideResource[] = [
     blurb: "Histology, pathology and powder-microscopy slides, plus timed identification tests.",
   },
   {
-    href: "/simulations",
-    label: "Lab simulations",
-    blurb: "Titration, disk diffusion, staining and other wet-lab procedures, run in the browser.",
+    href: "/virtual-labs",
+    label: "Virtual Labs",
+    blurb: "Four 3D lab practicals: a titration assay, Simple Syrup, a dose–response curve and clove powder microscopy.",
   },
   {
     href: "/molecular-lab",

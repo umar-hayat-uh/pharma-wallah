@@ -1,0 +1,40 @@
+/*
+ * Virtual Labs — the few rules Tailwind utilities cannot express. Namespaced under the
+ * lab pages; nothing here touches another page (CLAUDE.md §6 rule 14).
+ *
+ * globals.css bullets every ul/li with `ul:not(.prose ul)` (specificity 0,1,2), which beats
+ * a plain utility class. The doubled classes lift these to (0,2,1)/(0,2,2) — MEMORY 218.
+ */
+ul.vl-list.vl-list,
+ol.vl-list.vl-list {
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: 0;
+}
+ul.vl-bullets.vl-bullets,
+ol.vl-bullets.vl-bullets {
+  list-style: disc;
+  padding-left: 1.15rem;
+  margin-bottom: 0;
+}
+ol.vl-bullets.vl-bullets { list-style: decimal; }
+ul.vl-list.vl-list > li,
+ol.vl-list.vl-list > li,
+ul.vl-bullets.vl-bullets > li,
+ol.vl-bullets.vl-bullets > li {
+  margin-bottom: 0;
+  color: inherit;
+}
+
+/* A thin, calm scrollbar for the side panels. */
+.vl-scroll { scrollbar-width: thin; scrollbar-color: rgba(22, 24, 29, 0.2) transparent; }
+
+/* The burette/cylinder reading strip: magnified, with a meniscus that sits at the true level. */
+.vl-tick { font-variant-numeric: tabular-nums; }
+
+@media print {
+  .vl-noprint { display: none !important; }
+  .vl-print-only { display: block !important; }
+  .vl-report { box-shadow: none !important; border: 0 !important; }
+}
+.vl-print-only { display: none; }

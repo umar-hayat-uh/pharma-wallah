@@ -90,37 +90,6 @@ const STATIC_META: Record<string, PageMeta> = {
     noindex: true,
   },
 
-  "/simulations/titration": {
-    title: brand("Acid–Base Titration Simulation"),
-    description:
-      "Acid–base titration explained and simulated: the theory of standard solutions and end points, then a virtual titration to find an unknown concentration.",
-  },
-  "/simulations/buffer-lab": {
-    title: brand("Buffer Preparation Lab"),
-    description:
-      "How buffers resist pH change and why they matter in pharmacy — eye drops, IV fluids, drug stability — with the Henderson–Hasselbalch equation, a quiz and a buffer simulation.",
-  },
-  "/simulations/uv-lab": {
-    title: brand("UV-Vis Spectrophotometry Lab"),
-    description:
-      "A virtual UV-visible spectrophotometer: the Beer–Lambert law, building a calibration curve and measuring an unknown's absorbance.",
-  },
-  "/simulations/staining-lab": {
-    title: brand("Bacterial Staining Lab — simple, Gram and special stains"),
-    description:
-      "Why bacteria are stained and how: simple, Gram, capsule and endospore staining, with the reagents, the procedure and what each result looks like under the microscope.",
-  },
-  "/simulations/organic-id-lab": {
-    title: brand("Organic Compound Identification Lab"),
-    description:
-      "Identify an unknown organic compound systematically — physical state, solubility, element detection and functional group tests — in a guided virtual lab.",
-  },
-  "/simulations/lab-guide": {
-    title: brand("Determination of Bleeding Time — lab guide"),
-    description:
-      "A step-by-step physiology practical: determining bleeding time by Duke's method — equipment, biosafety precautions and the six-step procedure.",
-  },
-
   "/antibiogram-simulator": {
     title: brand("Antibiogram Simulator — empirical antibiotic choice"),
     description:
@@ -130,11 +99,6 @@ const STATIC_META: Record<string, PageMeta> = {
     title: brand("ADR Detective — adverse drug reaction cases"),
     description:
       "Clinical mystery cases for pharmacy students: read the history and identify the drug behind each adverse reaction.",
-  },
-  "/compounding-lab": {
-    title: brand("Extemporaneous Compounding Lab"),
-    description:
-      "A formulation library for pharmacy compounding — ointments, capsules, gels, suppositories and sterile IV preparations — with study cards, a quiz and a compounding simulation for each.",
   },
   "/drug-finder": {
     title: brand("Drug Finder — brand and generic names (RxNorm)"),

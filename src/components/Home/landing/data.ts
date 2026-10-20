@@ -23,7 +23,10 @@ export const STATS = {
   lessons: LESSON_COUNT,
   /** Published course subjects: four so far, the rest still being written. */
   subjects: SUBJECTS.length,
-  simulations: 8,
+  /** 3D virtual labs — LAB_IDS in src/lib/virtual-labs/catalog.ts. Kept as a literal
+      so the home bundle does not pull in the lab catalogue; update both together.
+      (Was `simulations: 8` until the legacy /simulations labs were removed, 2026-10-20.) */
+  virtualLabs: 4,
 } as const;
 
 /* ══════════════════ Hero ══════════════════ */
@@ -81,10 +84,10 @@ export const PILLARS: Pillar[] = [
   },
   {
     num: "04",
-    title: "Simulations",
-    figure: `${STATS.simulations} wet labs`,
-    line: "Titration, disk diffusion, UV, staining — run the experiment before the practical.",
-    href: "/simulations",
+    title: "Virtual Labs",
+    figure: `${STATS.virtualLabs} 3D labs`,
+    line: "Titration assay, Simple Syrup, a dose–response curve, clove powder microscopy — run the practical before the practical.",
+    href: "/virtual-labs",
     marker: "#13A89E",
     cta: "Enter the lab",
   },

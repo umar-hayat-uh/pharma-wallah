@@ -49,9 +49,9 @@ const PILLARS = [
     },
     {
         icon: FlaskConical,
-        name: "Simulations",
-        note: "Wet-lab practicals run start to finish — titration, staining, UV and more.",
-        href: "/simulations",
+        name: "Virtual Labs",
+        note: "Four 3D lab practicals run start to finish — titration assay, Simple Syrup, dose–response and clove powder.",
+        href: "/virtual-labs",
     },
     {
         icon: Stethoscope,

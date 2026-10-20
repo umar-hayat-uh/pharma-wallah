@@ -9,12 +9,11 @@ export const headerData: HeaderItem[] = [
     submenu: [
       { label: "Courses", href: "/courses" },
       { label: "MCQ Bank", href: "/mcqs-bank" },
-      { label: "Lab Simulation", href: "/simulations" },
+      { label: "Virtual Labs", href: "/virtual-labs" },
       { label: "Slide Spotting", href: "/spotting" },
       { label: "Osteology Lab", href: "/osteology-lab" },
       { label: "Flashcards", href: "/flash-cards" },
       { label: "Pharmacy Counter", href: "/pharmacy-counter" },
-      { label: "Compounding Lab", href: "/compounding-lab" },
       { label: "ADR Detective", href: "/adr-detective" },
       { label: "Prescription Reader", href: "/prescription-reader" },
       { label: "AI Guide", href: "/ai-guide" },

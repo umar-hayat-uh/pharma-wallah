@@ -47,7 +47,8 @@ hard way in this codebase.
 | `community-system` | The Reddit-shaped community: schema, RLS, triggers, server-authoritative voting, local SQL verification | Any community change; "add a space"; comment ordering; voting | `.claude/skills/community-system/` |
 | `tournament-system` | Entry codes, server-authoritative scoring, leaderboard, admin | Any tournament or admin work | `.claude/skills/tournament-system/` |
 | `battle-royale` | Pharma Fest Battle Royale: SQL game engine, Game Code + cookie auth, `br_admins`, Resend emails, local Supabase stand-in for testing | Any `/battle-royale` work | `.claude/skills/battle-royale/` |
-| `lab-simulation` | Build or upgrade an interactive lab under `/simulations`: pure model, stage machine, illustrated Lab Guide, a procedure the student performs | Any simulation work; "the sim just animates" | `.claude/skills/lab-simulation/` |
+| `virtual-labs` | The 3D Virtual Pharmacy Labs at `/virtual-labs` (4 labs, one experiment each): pure experiment engine + run machine, plain three.js rooms loaded per lab, bench panels that mirror every 3D action, honest curriculum statuses and asset manifest | Anything on `/virtual-labs`; an experiment's science or mistakes; a room or equipment; a curriculum status; "the lab simulation" | `.claude/skills/virtual-labs/` |
+| `lab-simulation` | **Redirect stub** — the legacy `/simulations` labs and `/compounding-lab` were removed on 2026-10-20; points to `virtual-labs` and `pharmacy-counter` | Someone asks for the old simulations | `.claude/skills/lab-simulation/` |
 | `pharmacy-counter` | The Community Pharmacy Simulation Lab at `/pharmacy-counter`: the fourteen-stage workflow, the ten checks that never reveal their own answer, blocking findings, inventory and expiry, scoring | Anything under `src/components/Simulations/CommunityPharmacy/`; adding a case, a medicine or a check | `.claude/skills/pharmacy-counter/` |
 | `spotting-lessons` | Histology/pathology/powder lessons, timed tests, AI grading | Adding slides or fixing a spotting test | `.claude/skills/spotting-lessons/` |
 | `osteology-lab` | The Virtual Osteology & Arthrology Lab: Z-Anatomy → Blender → GLB pipeline, sourced landmark markers, bone/joint content, server-held answer keys, signed exam tokens | Anything on `/osteology-lab`; adding a bone or joint; a landmark or exam setting | `.claude/skills/osteology-lab/` |
@@ -87,6 +88,7 @@ Most real tasks use three. Typical stacks:
 | "Add a clinical interaction checker" | `implement-feature` → `clinical-and-external-apis` → `api-route-conventions` → `caching-and-ratelimiting` |
 | "Redesign the encyclopedia / show more drug data" | `drug-encyclopedia` → `top-design` → `frontend-ui-conventions` → `testing-verification` |
 | "Add a pharmacy counter case / a new medicine" | `pharmacy-counter` → `frontend-ui-conventions` → `testing-verification` |
+| "Change a virtual lab's experiment / room" | `virtual-labs` → `frontend-ui-conventions` → `testing-verification` |
 | "Make a reel ad for a calculator" | `reel-ads` → `calculator-tool` (read the pure module for real figures) |
 | "Improve the AI tutor" | `ai-gemini-integration` → `security-review` (it is an unthrottled paid endpoint) |
 

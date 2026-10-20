@@ -341,7 +341,7 @@ export const STUDY_LINKS: StudyLink[] = [
   { label: "MCQ bank", href: "/mcqs-bank", icon: FileText, blurb: "Timed subject quizzes" },
   { label: "Flashcards", href: "/flash-cards", icon: Layers, blurb: "Spaced recall" },
   { label: "Spotting", href: "/spotting", icon: Microscope, blurb: "Slides & identification" },
-  { label: "Simulations", href: "/simulations", icon: FlaskConical, blurb: "Wet-lab practice" },
+  { label: "Virtual Labs", href: "/virtual-labs", icon: FlaskConical, blurb: "3D lab practicals" },
   { label: "Calculators", href: "/calculation-tools", icon: Calculator, blurb: "Pharmacy maths" },
 ];
 

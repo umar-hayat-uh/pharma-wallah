@@ -239,31 +239,43 @@ pages, confirm progress tracking records a visit, then batch the rest.
   `src/app/api/osteology/`, `scripts/osteology/`, skill `osteology-lab`.
 - **Dependencies:** none new (`three` 0.185 was already installed). Assets: Z-Anatomy (CC BY-SA 4.0).
 
+### Virtual Labs (3D)
+- **Status:** ✅ Implemented 2026-10-20 — 4 labs, one experiment each. **Not deployed. Not faculty-reviewed.**
+  Verified by 39 unit tests (`scripts/virtual-labs.test.mts`) and headless Chrome with software WebGL; not on a
+  real phone.
+- **Existing implementation:** `/virtual-labs` landing + four 3D rooms (plain three.js, loaded per lab):
+  acid–base titration assay of citric acid (Pharmaceutical Chemistry), Simple Syrup preparation and evaluation
+  (Pharmaceutics), graded dose–response on a simulated isolated tissue (Pharmacology), powdered clove microscopy
+  (Pharmacognosy). Pure experiment engine with undo, hints, technique mistakes that change the result, an
+  assessment and a results report; every 3D action also in the bench panel (2D lab, no-WebGL fallback);
+  progress on the device and via `useTracker`. Curriculum status `source_verified` for all four (UoK PHC-607,
+  PHT-402, PHL-612, PHG-411); asset manifest with licences. Skill: `.claude/skills/virtual-labs/`.
+- **Remaining work:** faculty review of each lab (a named reviewer before any status rises to
+  `faculty_reviewed`); real clove micrographs (the one Commons photo is `needs_review`, the eyepiece view is
+  schematic); deploy + phone check; possible further experiments per lab — **not in this release** (the test
+  pins the catalogue at four).
+- **Important files:** `src/lib/virtual-labs/`, `src/components/virtual-labs/`, `src/app/(site)/virtual-labs/`,
+  `public/models/virtual-labs/`, `scripts/virtual-labs.test.mts`.
+- **Dependencies:** none new (`three` already installed). Assets: Poly Haven CC0, one Wikimedia Commons CC BY-SA 4.0 photo.
+
 ### Simulations
-- **Status:** ✅ Implemented
-- **Existing implementation:** 8 labs (titration, buffer, dilution, disk diffusion, UV, staining,
-  organic ID, lab guide) plus the antibiogram simulator, compounding lab, and **Molecular Lab**
-  (`/molecular-lab`, 2026-09-16 — replaced the Molecule Viewer; see below).
-  Canvas work via `konva`/`react-konva`, 3D via `three`/`3dmol`.
-  **Disk diffusion was rebuilt on 2026-09-20** as the reference shape for the rest: a pure model
-  (`engine.ts`) and stage machine separated from presentation, a Theory section with an illustrated
-  nine-step Lab Guide, a procedure the student performs (standardise, swab, place disks under enforced
-  spacing, incubate, **measure the zones with a calliper**), configurable interpretive criteria that
-  name their source, and a completion screen scored on technique. See `.claude/skills/lab-simulation/`.
+- **Status:** ✅ Implemented (what remains after 2026-10-20)
+- **Legacy `/simulations` removed 2026-10-20.** The hub and its 8 labs (titration, buffer, dilution, disk
+  diffusion, UV, staining, organic ID, lab guide) and `/compounding-lab` were deleted and replaced by the
+  Virtual Labs above (`/compounding-lab` redirects to the Simple Syrup lab). Remaining here: the antibiogram
+  simulator, the pharmacy counter (below) and **Molecular Lab** (`/molecular-lab`, 2026-09-16 — replaced the
+  Molecule Viewer; see above). `.claude/skills/lab-simulation/` is now a redirect stub.
 - **The pharmacy counter is now a simulation too (2026-09-20).** `/pharmacy-counter` was rebuilt as
   the **Community Pharmacy Simulation Lab** in the same shape: pure `data/` + `engine/` layer,
   a stage machine (`engine/flow.ts`), presentation separated out, and **47 unit tests**. Fourteen
   gated stages plus a ten-stage minor-ailment path, ten clinical checks the student performs, an
   inventory that depletes, a label printer, counselling and a competency debrief. Ten cases.
   See `.claude/skills/pharmacy-counter/SKILL.md`.
-  **Still single files:** titration, buffer, dilution, UV, staining, organic ID, lab guide,
-  antibiogram simulator, compounding lab.
-- **Remaining work:** the other **seven labs are still single 600–1,600-line files** and are still
-  mostly watch-and-click — converting them to the disk-diffusion shape is the outstanding work here,
-  highest value first (titration and staining are the most used). The simulations hub page has an
-  under-construction branch — verify it is not shown for shipped labs. None of the simulations is
-  covered by a test, and only disk diffusion records progress via `useTracker`.
-- **Important files:** `src/app/(site)/simulations/`, `src/components/Simulations/`
+  **Still a single file:** the antibiogram simulator.
+- **Remaining work:** the antibiogram simulator is untested and not on the engine shape. (The old
+  "convert the seven single-file labs" item is closed — those labs were removed on 2026-10-20, not converted.)
+- **Important files:** `src/components/Simulations/CommunityPharmacy/`, `src/app/(site)/antibiogram-simulator/`,
+  `src/components/AntibiogramSimulator.tsx`
 - **Dependencies:** None. (`/api/scan-colonies` has had no web caller since 2026-09-16.)
 
 ### Progress tracking & dashboard

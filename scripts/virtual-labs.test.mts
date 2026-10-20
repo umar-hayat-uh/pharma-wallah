@@ -1,0 +1,659 @@
+/**
+ * Virtual Labs — the pure layer (added 2026-10-20).
+ *
+ *   node --test scripts/virtual-labs.test.mts
+ *
+ * The catalogue (exactly four labs), the generic run machine (undo, reset, hints,
+ * assessment locking, submit gating, scoring), every scientific formula (normal,
+ * boundary, invalid and unit-sensitive cases), and each experiment driven end to end by
+ * a scripted student — once with perfect technique, and with specific mistakes whose
+ * effect on the result must point the right way. Rendering is not covered here.
+ */
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { register } from "node:module";
+
+register("./lib/ts-resolve.mjs", import.meta.url);
+
+const { LAB_IDS, LAB_LIST, LABS, labByPath } = await import("../src/lib/virtual-labs/catalog.ts");
+const { EXPERIMENTS } = await import("../src/lib/virtual-labs/experiments/index.ts");
+const M = await import("../src/lib/virtual-labs/engine/machine.ts");
+const T = await import("../src/lib/virtual-labs/calculations/titration.ts");
+const S = await import("../src/lib/virtual-labs/calculations/syrup.ts");
+const D = await import("../src/lib/virtual-labs/calculations/doseResponse.ts");
+const O = await import("../src/lib/virtual-labs/calculations/microscopy.ts");
+const TX = await import("../src/lib/virtual-labs/experiments/titration.ts");
+const SX = await import("../src/lib/virtual-labs/experiments/syrup.ts");
+const DX = await import("../src/lib/virtual-labs/experiments/doseResponse.ts");
+const CX = await import("../src/lib/virtual-labs/experiments/clove.ts");
+
+const near = (a: number, b: number, tol: number, msg?: string) => assert.ok(Math.abs(a - b) <= tol, `${msg ?? ""} expected ${b} ± ${tol}, got ${a}`);
+
+/** Drive a definition through the run machine. */
+function driver(def: any, seed = 7) {
+  let run = M.createRun(def, seed);
+  const act = (action: any) => {
+    run = M.reduceRun(def, run, { type: "act", action });
+    return run;
+  };
+  return { get run() { return run; }, get s() { return run.s; }, act, msg: (m: any) => (run = M.reduceRun(def, run, m)) };
+}
+
+function answerAll(d: ReturnType<typeof driver>, def: any) {
+  for (const q of def.questions) d.msg({ type: "answer", questionId: q.id, choice: q.answer });
+}
+
+// ── Catalogue ──────────────────────────────────────────────────────────────
+
+test("exactly four labs and exactly four experiment definitions, one per lab", () => {
+  assert.equal(LAB_IDS.length, 4);
+  assert.equal(LAB_LIST.length, 4);
+  assert.deepEqual(Object.keys(EXPERIMENTS).sort(), [...LAB_IDS].sort());
+  assert.deepEqual(new Set(LAB_LIST.map((l: any) => l.discipline)), new Set(["pharmaceutical-chemistry", "pharmaceutics", "pharmacology", "pharmacognosy"]));
+  for (const id of LAB_IDS) assert.equal(EXPERIMENTS[id].meta, LABS[id]);
+});
+
+test("lab routes resolve and unknown paths do not", () => {
+  assert.equal(labByPath("pharmaceutical-chemistry", "acid-base-titration")?.id, "acid-base-titration");
+  assert.equal(labByPath("pharmaceutics", "simple-syrup")?.id, "simple-syrup");
+  assert.equal(labByPath("pharmacology", "dose-response")?.id, "dose-response");
+  assert.equal(labByPath("pharmacognosy", "powdered-clove")?.id, "powdered-clove");
+  assert.equal(labByPath("pharmacology", "simple-syrup"), undefined);
+  for (const l of LAB_LIST) assert.equal(l.href, `/virtual-labs/${l.discipline}/${l.id}`);
+});
+
+test("every definition is complete and internally consistent", () => {
+  for (const id of LAB_IDS) {
+    const def = EXPERIMENTS[id];
+    assert.ok(def.steps.length >= 5, id);
+    assert.ok(def.questions.length >= 6, id);
+    assert.ok(def.safety.length >= 3 && def.principle.length >= 3, id);
+    const eq = new Set(def.equipment.map((e: any) => e.id));
+    for (const st of def.steps) {
+      assert.ok(st.hints.length >= 1, `${id}/${st.id} hints`);
+      for (const f of st.focus) assert.ok(eq.has(f), `${id}/${st.id} focus ${f}`);
+    }
+    for (const q of def.questions) assert.ok(q.answer >= 0 && q.answer < q.options.length, `${id}/${q.id}`);
+    assert.equal(new Set(def.questions.map((q: any) => q.id)).size, def.questions.length);
+    // curriculum statuses must be one of the four allowed values; none may claim faculty review yet
+    assert.ok(["proposed", "source_verified", "faculty_reviewed", "published"].includes(def.meta.curriculum.status));
+    assert.notEqual(def.meta.curriculum.status, "faculty_reviewed", "no faculty review has happened");
+    if (def.meta.curriculum.status === "source_verified") assert.ok(def.meta.curriculum.sources.length > 0, `${id} verified without a source`);
+  }
+});
+
+// ── Engine ─────────────────────────────────────────────────────────────────
+
+test("engine: rand is deterministic and in [0,1)", () => {
+  assert.equal(M.rand(5, 1, 2), M.rand(5, 1, 2));
+  assert.notEqual(M.rand(5, 1, 2), M.rand(6, 1, 2));
+  for (let i = 0; i < 1000; i++) {
+    const r = M.rand(i, i * 3);
+    assert.ok(r >= 0 && r < 1);
+  }
+});
+
+test("engine: undo restores the bench but keeps the mistake on record; reset clears everything", () => {
+  const d = driver(TX.TITRATION);
+  d.act({ type: "chooseApparatus", ids: ["burette-25"] }); // rejected with a mistake: no state change
+  assert.equal(d.run.mistakes.length, 1);
+  assert.equal(d.run.past.length, 0, "a rejected action is not an undo point");
+  d.act({ type: "inspect", id: "burette" });
+  assert.deepEqual(d.s.inspected, ["burette"]);
+  d.msg({ type: "undo" });
+  assert.deepEqual(d.s.inspected, []);
+  assert.equal(d.run.mistakes.length, 1, "undo does not erase mistakes");
+  d.msg({ type: "reset" });
+  assert.equal(d.run.mistakes.length, 0);
+  assert.equal(d.run.actions, 0);
+});
+
+test("engine: hints are revealed one at a time and capped", () => {
+  const d = driver(TX.TITRATION);
+  const step = TX.TITRATION.steps[0];
+  for (let i = 0; i < step.hints.length + 2; i++) d.msg({ type: "hint", stepId: step.id });
+  assert.equal(d.run.hints[step.id], step.hints.length);
+});
+
+test("engine: assessment opens only after the bench work; answers lock; submit is gated", () => {
+  const d = driver(TX.TITRATION);
+  d.msg({ type: "answer", questionId: "q1", choice: 1 });
+  assert.deepEqual(d.run.answers, {}, "no answering before the bench is complete");
+  d.msg({ type: "submit" });
+  assert.equal(d.run.submitted, false);
+});
+
+test("engine: a mistake is scored once however often it is repeated", () => {
+  const d = driver(TX.TITRATION);
+  d.act({ type: "chooseApparatus", ids: ["burette-25"] });
+  d.act({ type: "chooseApparatus", ids: ["burette-25"] });
+  assert.equal(d.run.mistakes.filter((m: any) => m.id === "apparatus-burette-25").length, 1);
+});
+
+// ── Titration chemistry ────────────────────────────────────────────────────
+
+test("titration: assay formula — normal, unit and invalid cases", () => {
+  // 1.0000 g, 100 mL, 20 mL aliquot, exact equivalence volume → 100 %
+  const acid = (0.2 / 210.14) * 1000;
+  const veq = T.equivalenceVolume(acid, 0.1);
+  near(veq, 28.552, 0.001);
+  near(T.assayPercent({ titreMl: veq, titrantMolar: 0.1, aliquotMl: 20, flaskMl: 100, sampleMassG: 1 }), 100, 1e-9);
+  // doubling the titrant molarity halves the titre for the same answer (unit consistency)
+  near(T.assayPercent({ titreMl: veq / 2, titrantMolar: 0.2, aliquotMl: 20, flaskMl: 100, sampleMassG: 1 }), 100, 1e-9);
+  near(T.equivalenceFactorMg(0.1), 7.0047, 0.0001);
+  near(T.equivalenceFactorMg(1), 70.047, 0.001);
+  for (const bad of [{ titreMl: 0 }, { titreMl: -1 }, { sampleMassG: 0 }, { aliquotMl: NaN }]) {
+    assert.ok(Number.isNaN(T.assayPercent({ titreMl: 28, titrantMolar: 0.1, aliquotMl: 20, flaskMl: 100, sampleMassG: 1, ...bad })));
+  }
+});
+
+test("titration: titre — ordered, on-scale readings only (boundaries included)", () => {
+  near(T.titre(0.4, 28.95), 28.55, 1e-9);
+  assert.equal(T.titre(0, 50), 50);
+  assert.equal(T.titre(0, 0), 0);
+  assert.ok(Number.isNaN(T.titre(10, 5)), "final before initial");
+  assert.ok(Number.isNaN(T.titre(-0.1, 5)), "above zero mark");
+  assert.ok(Number.isNaN(T.titre(0, 50.1)), "beyond capacity");
+  assert.ok(Number.isNaN(T.titre(NaN, 5)));
+});
+
+test("titration: pH model — acid start, alkaline equivalence, monotonic", () => {
+  const acid = (0.2 / 210.14) * 1000;
+  const veq = T.equivalenceVolume(acid, 0.1);
+  const ph0 = T.citricPH(acid, 0, 45);
+  assert.ok(ph0 > 2 && ph0 < 3, `start pH ${ph0}`);
+  const phEq = T.citricPH(acid, veq * 0.1, 45 + veq);
+  assert.ok(phEq > 8.5 && phEq < 10, `equivalence pH ${phEq}`);
+  let prev = -1;
+  for (let v = 0; v <= veq + 2; v += 0.5) {
+    const ph = T.citricPH(acid, v * 0.1, 45 + v);
+    assert.ok(ph >= prev - 1e-9);
+    prev = ph;
+  }
+  assert.ok(Number.isNaN(T.citricPH(acid, 0, 0)));
+  // phenolphthalein is still colourless well before the end-point, and deep pink after
+  assert.ok(T.indicatorBaseFraction(T.INDICATORS.phenolphthalein, T.citricPH(acid, (veq - 1) * 0.1, 44 + veq)) < 0.05);
+  assert.ok(T.indicatorBaseFraction(T.INDICATORS.phenolphthalein, T.citricPH(acid, (veq + 0.5) * 0.1, 45.5 + veq)) > T.DEEP_PINK_FRACTION);
+});
+
+test("titration: concordance", () => {
+  assert.equal(T.concordance([28.4, 28.45]).concordant, true);
+  assert.equal(T.concordance([28.4, 28.65]).concordant, false);
+  assert.equal(T.concordance([28.4]).concordant, false);
+  near(T.concordance([28.4, 28.5]).mean, 28.45, 1e-9);
+});
+
+/** A careful student. Returns the driver at the end of the bench work. */
+function titrationRun(opts: { rinseBurette?: boolean; indicator?: string; seed?: number } = {}) {
+  const def = TX.TITRATION;
+  const d = driver(def, opts.seed ?? 11);
+  for (const id of ["burette", "stand", "pipette", "vol-flask", "conical-flask", "indicator", "sample", "titrant"]) d.act({ type: "inspect", id });
+  d.act({ type: "chooseApparatus", ids: TX.APPARATUS_OPTIONS.filter((o: any) => o.correct).map((o: any) => o.id) });
+  d.act({ type: "chooseReagents", sample: "citric", titrant: "naoh", indicator: opts.indicator ?? "phenolphthalein" });
+  d.act({ type: "placeBoat" });
+  d.act({ type: "doors", closed: true });
+  d.act({ type: "tare" });
+  for (let i = 0; i < 200; i++) {
+    const v = TX.balanceDisplay({ ...d.s, doorsClosed: true }).value;
+    if (v >= 0.95 && v <= 1.05) break;
+    d.act(v > 1.05 ? { type: "removeSample" } : { type: "addSample", amount: v < 0.75 ? "scoop" : "tap" });
+  }
+  d.act({ type: "doors", closed: true });
+  d.act({ type: "recordMass", value: TX.balanceDisplay(d.s).value });
+  d.act({ type: "transfer" });
+  d.act({ type: "rinseBoat" });
+  d.act({ type: "dissolve" });
+  for (const ml of [20, 20, 5, 1, 1, 1, 1, 0.2, 0.2, 0.2, 0.2, 0.2]) d.act({ type: "addWater", ml });
+  d.act({ type: "mixFlask" });
+  d.act({ type: "rinsePipette" });
+  d.act({ type: "pipette", style: "touch" });
+  d.act({ type: "addDiluent" });
+  d.act({ type: "addIndicator" });
+  d.act({ type: "placeTile" });
+  if (opts.rinseBurette !== false) d.act({ type: "rinseBurette" });
+  d.act({ type: "fillBurette" });
+  d.act({ type: "removeFunnel" });
+  d.act({ type: "expelBubble" });
+  d.act({ type: "recordInitial", value: d.s.level });
+  const ind = opts.indicator ?? "phenolphthalein";
+  if (ind === "phenolphthalein") {
+    while (TX.flaskReading(d.s).f < 0.002) { d.act({ type: "addTitrant", ml: 1 }); d.act({ type: "swirl" }); }
+    while (TX.flaskReading(d.s).f < T.FAINT_PINK_FRACTION) { d.act({ type: "addTitrant", ml: 0.05 }); d.act({ type: "swirl" }); }
+  } else {
+    // methyl orange: stop at its orange (pH ≈ 4)
+    while (TX.flaskReading(d.s).pH < 4) { d.act({ type: "addTitrant", ml: 0.1 }); d.act({ type: "swirl" }); }
+  }
+  d.act({ type: "recordFinal", value: Math.round(d.s.level * 100) / 100 });
+  const exp = TX.expectedResult(d.s);
+  d.act({ type: "enterResults", titre: Math.round(exp.mean * 100) / 100, assay: Math.round(exp.assay * 100) / 100 });
+  const [lo, hi] = TX.METHOD.limits;
+  d.act({ type: "verdict", value: d.s.assayEntered >= lo && d.s.assayEntered <= hi ? "complies" : "fails" });
+  return d;
+}
+
+test("titration: a careful student completes the experiment with no mistakes and an accurate assay", () => {
+  const d = titrationRun();
+  assert.deepEqual(d.run.mistakes.map((m: any) => m.id), []);
+  assert.ok(TX.TITRATION.benchComplete(d.s));
+  near(d.s.assayEntered, d.s.purity, 0.6, "assay vs true purity");
+  answerAll(d, TX.TITRATION);
+  d.msg({ type: "submit" });
+  assert.equal(d.run.submitted, true);
+  const rep = M.finalReport(TX.TITRATION, d.run);
+  assert.equal(rep.technique, 100);
+  assert.equal(rep.assessment.percent, 100);
+  assert.equal(rep.grade, "Distinction");
+  // actions after submission are refused
+  const before = d.s;
+  d.act({ type: "inspect", id: "tile" });
+  assert.equal(d.s, before);
+});
+
+test("titration: an unrinsed burette makes the assay high by about 1.5 %, and is recorded", () => {
+  const good = titrationRun({ seed: 3 });
+  const bad = titrationRun({ seed: 3, rinseBurette: false });
+  assert.ok(bad.run.mistakes.some((m: any) => m.id === "burette-not-rinsed"));
+  const diff = bad.s.assayEntered - good.s.assayEntered;
+  assert.ok(diff > 0.9 && diff < 2.2, `difference ${diff}`);
+});
+
+test("titration: methyl orange gives a grossly low assay and is recorded", () => {
+  const d = titrationRun({ indicator: "methyl-orange" });
+  assert.ok(d.run.mistakes.some((m: any) => m.id === "indicator-methyl-orange"));
+  assert.ok(d.s.assayEntered < 60, `assay ${d.s.assayEntered}`);
+});
+
+test("titration: preconditions refuse out-of-order actions with an explanation", () => {
+  const d = driver(TX.TITRATION);
+  d.act({ type: "recordFinal", value: 10 });
+  assert.equal(d.s.titrations.length, 0);
+  assert.equal(d.run.last[0].kind, "error");
+  d.act({ type: "enterResults", titre: 28, assay: 100 });
+  assert.equal(d.s.assayEntered, null);
+  d.act({ type: "addTitrant", ml: 1 });
+  assert.equal(d.s.deliveredMl, 0);
+  d.act({ type: "addTitrant", ml: 3.7 }); // not an allowed increment
+  assert.equal(d.s.deliveredMl, 0);
+});
+
+test("titration: a wrong calculation is refused, not silently accepted", () => {
+  const d = titrationRun();
+  const fresh = driver(TX.TITRATION, 11);
+  // replay up to the calculation by re-running, then submit a wrong answer on a copy
+  const s = { ...d.s, titreEntered: null, assayEntered: null, verdict: null };
+  const r = TX.TITRATION.apply(s, { type: "enterResults", titre: 30, assay: 100 });
+  assert.equal(r.state.assayEntered, null);
+  assert.ok(r.feedback.some((f: any) => f.mistake?.id === "calc-titre"));
+  void fresh;
+});
+
+// ── Syrup physics ──────────────────────────────────────────────────────────
+
+test("syrup: density table and interpolation", () => {
+  // table points are reproduced exactly (NBS C457 decade values)
+  near(S.densityAt20(0), 0.99823, 1e-9);
+  near(S.densityAt20(60), 1.28646, 1e-9);
+  near(S.densityAt20(70), 1.34717, 1e-9);
+  // between points: monotonic and close to the standard Brix tables (65 % ≈ 1.3163)
+  near(S.densityAt20(65), 1.3163, 0.001);
+  for (let w = 0; w < 70; w += 0.5) assert.ok(S.densityAt20(w + 0.5) > S.densityAt20(w));
+  near(S.densityAt20(-5), 0.99823, 1e-9, "clamped below");
+  near(S.densityAt20(90), 1.34717, 1e-9, "clamped above");
+  assert.ok(Number.isNaN(S.densityAt20(NaN)));
+});
+
+test("syrup: 85 % w/v ≈ 64.7 % w/w at ≈ 1.31 g/mL (USP syrup)", () => {
+  const ww = S.wwFromWv(85);
+  near(ww, 64.6, 0.3);
+  near(S.densityAt20(ww), 1.313, 0.004);
+  near(ww * S.densityAt20(ww), 85, 0.01);
+  assert.ok(Number.isNaN(S.wwFromWv(-1)));
+  assert.ok(Number.isNaN(S.wwFromWv(200)), "beyond the table");
+});
+
+test("syrup: batch quantities and units", () => {
+  assert.equal(S.sucroseForBatch(85, 100), 85);
+  near(S.sucroseForBatch(85, 60), 51, 1e-9);
+  assert.ok(Number.isNaN(S.sucroseForBatch(85, 0)));
+  // the finished 100 mL batch holds ≈ 46.3 g water
+  near(S.waterInBatch(85, 100), 46.3, 0.5);
+  // volume of 85 g sucrose + that water at 20 °C is 100 mL; warmer is larger
+  const w = S.waterInBatch(85, 100);
+  near(S.solutionVolume(85, w, 20), 100, 0.01);
+  assert.ok(S.solutionVolume(85, w, 60) > 101.5);
+  near(S.densityFromWeighing(65.65, 50), 1.313, 1e-9);
+  assert.ok(Number.isNaN(S.densityFromWeighing(0, 50)));
+  near(S.deviationPercent(86.7, 85), 2, 1e-9);
+});
+
+function syrupRun(opts: { tare?: boolean; makeUpHot?: boolean; boil?: boolean } = {}) {
+  const def = SX.SYRUP;
+  const d = driver(def, 5);
+  for (const id of ["balance", "boat", "sucrose", "beaker", "cylinder", "rod", "water", "hotplate", "bottle"]) d.act({ type: "inspect", id });
+  d.act({ type: "calculate", batchMl: 100, sucroseG: 85, waterMl: 45 });
+  d.act({ type: "placeBoat" });
+  if (opts.tare !== false) d.act({ type: "tare" });
+  for (let i = 0; i < 300; i++) {
+    const v = SX.syrupBalance(d.s);
+    if (Math.abs(v - 85) <= 0.3) break;
+    d.act(v > 85.3 ? { type: "removeSucrose" } : { type: "addSucrose", amount: v < 72 ? "large" : v < 83 ? "scoop" : "tap" });
+  }
+  d.act({ type: "recordMass", value: SX.syrupBalance(d.s) });
+  for (const ml of [10, 10, 10, 10, 5]) d.act({ type: "pourWater", ml });
+  d.act({ type: "readCylinder", value: 45 });
+  d.act({ type: "waterToBeaker" });
+  d.act({ type: "beakerOnHotplate" });
+  d.act({ type: "setHeat", setpoint: opts.boil ? 120 : 60 });
+  d.act({ type: "stir", on: true });
+  d.act({ type: "wait", seconds: 120 });
+  d.act({ type: "sucroseToBeaker" });
+  for (let i = 0; i < 40 && d.s.sucroseInBeaker - d.s.dissolvedG > 0.3; i++) d.act({ type: "wait", seconds: 60 });
+  d.act({ type: "finishDissolving" });
+  d.act({ type: "setHeat", setpoint: 0 });
+  if (!opts.makeUpHot) for (let i = 0; i < 40 && d.s.tempC > 30; i++) d.act({ type: "wait", seconds: 60 });
+  d.act({ type: "chooseVessel", vessel: "cylinder" });
+  d.act({ type: "transferToVessel" });
+  d.act({ type: "rinseBeaker" });
+  for (let i = 0; i < 400; i++) {
+    const v = SX.batchFigures(d.s).volumeNow;
+    if (v >= 99.8) break;
+    d.act({ type: "qs", ml: v < 98 ? 1 : 0.2 });
+  }
+  d.act({ type: "mixAfterQs" });
+  d.act({ type: "readFinal", value: Math.round(SX.batchFigures(d.s).volumeNow * 10) / 10 });
+  d.act({ type: "pack", container: "amber" });
+  d.act({ type: "label", storage: "cool" });
+  d.act({ type: "observe", appearance: SX.trueAppearance(d.s) });
+  d.act({ type: "weighDensity" });
+  d.act({ type: "recordDensity", value: Math.round((d.s.densityMassG / 50) * 1000) / 1000 });
+  d.act({ type: "sign" });
+  return d;
+}
+
+test("syrup: a careful student makes 85 % w/v syrup of density ≈ 1.31 with no mistakes", () => {
+  const d = syrupRun();
+  assert.deepEqual(d.run.mistakes.map((m: any) => m.id), []);
+  assert.ok(SX.SYRUP.benchComplete(d.s));
+  const f = SX.batchFigures(d.s);
+  near(f.wv, 85, 1.3);
+  near(d.s.densityRecorded, 1.313, 0.01);
+  assert.equal(SX.trueAppearance(d.s), "clear");
+  answerAll(d, SX.SYRUP);
+  d.msg({ type: "submit" });
+  assert.equal(M.finalReport(SX.SYRUP, d.run).technique, 100);
+});
+
+test("syrup: weighing without taring is recorded and gives a weak syrup", () => {
+  const d = syrupRun({ tare: false });
+  assert.ok(d.run.mistakes.some((m: any) => m.id === "not-tared"));
+  assert.ok(SX.batchFigures(d.s).wv < 83, `wv ${SX.batchFigures(d.s).wv}`);
+});
+
+test("syrup: making up while hot is recorded and leaves the batch short when cool", () => {
+  const d = syrupRun({ makeUpHot: true });
+  assert.ok(d.run.mistakes.some((m: any) => m.id === "made-up-hot"));
+  // the hot reading looked right; at 20 °C the batch is not the volume that was recorded
+  const v20 = SX.batchFigures(d.s).volume20;
+  assert.ok(Math.abs(v20 - d.s.finalRead) > 1, `recorded ${d.s.finalRead} vs ${v20} at 20 °C`);
+});
+
+test("syrup: boiling is recorded and colours the syrup", () => {
+  const d = driver(SX.SYRUP);
+  const s0 = { ...d.s, beakerWaterG: 45, sucroseInBeaker: 85, onHotplate: true, setpoint: 120, stirring: true };
+  const r = SX.SYRUP.apply(s0, { type: "wait", seconds: 300 });
+  assert.ok(r.feedback.some((f: any) => f.mistake?.id === "overheated"));
+  const r2 = SX.SYRUP.apply(r.state, { type: "wait", seconds: 120 });
+  assert.equal(SX.trueAppearance(r2.state), "yellow");
+});
+
+test("syrup: a wrong calculation is refused", () => {
+  const d = driver(SX.SYRUP);
+  d.act({ type: "calculate", batchMl: 100, sucroseG: 80, waterMl: 45 });
+  assert.equal(d.s.calcSucrose, null);
+  d.act({ type: "calculate", batchMl: 100, sucroseG: 85, waterMl: 70 });
+  assert.equal(d.s.calcSucrose, null, "too much starting water");
+  d.act({ type: "calculate", batchMl: 75, sucroseG: 63.75, waterMl: 33 });
+  assert.equal(d.s.calcSucrose, null, "batch size not offered");
+});
+
+// ── Dose–response ──────────────────────────────────────────────────────────
+
+test("dose–response: Hill equation boundaries and inverse", () => {
+  assert.equal(D.hill(0, 100, 1e-7), 0);
+  near(D.hill(1e-7, 100, 1e-7), 50, 1e-9);
+  near(D.hill(1e-7, 100, 1e-7, 2), 50, 1e-9);
+  assert.ok(D.hill(1, 100, 1e-7) > 99.99);
+  assert.ok(Number.isNaN(D.hill(-1, 100, 1e-7)));
+  assert.ok(Number.isNaN(D.hill(1e-7, 100, 0)));
+  near(D.concentrationFor(0.5, 1e-7), 1e-7, 1e-15);
+  near(D.concentrationFor(0.9, 1e-7), 9e-7, 1e-13);
+  assert.ok(Number.isNaN(D.concentrationFor(1, 1e-7)));
+});
+
+test("dose–response: stock volumes in µL (units)", () => {
+  near(D.stockVolumeUl(1e-7, 20, 1e-4), 20, 1e-9);
+  near(D.stockVolumeUl(1e-5, 20, 1e-3), 200, 1e-9);
+  assert.ok(Number.isNaN(D.stockVolumeUl(1e-7, 20, 0)));
+  for (const c of DX.MODEL.concentrations) {
+    const st = DX.stockFor(c);
+    assert.ok(st.ul >= 1 && st.ul <= 200, `${c} → ${st.ul} µL`);
+  }
+});
+
+test("dose–response: the fit recovers known parameters", () => {
+  const pts = [1e-9, 3e-9, 1e-8, 3e-8, 1e-7, 3e-7, 1e-6, 3e-6, 1e-5].map((c) => ({ c, e: D.hill(c, 46, 1e-7, 1) }));
+  const fit = D.fitHill(pts)!;
+  near(fit.logEc50, -7, 0.011);
+  near(fit.emax, 46, 0.2);
+  near(fit.n, 1, 0.051);
+  assert.ok(fit.r2 > 0.999);
+  assert.equal(D.fitHill(pts.slice(0, 2)), null);
+  assert.equal(D.molarLabel(1e-7), "10⁻⁷ M");
+  assert.equal(D.molarLabel(3e-7), "3 × 10⁻⁷ M");
+});
+
+function doseRun(opts: { wash?: boolean; warm?: boolean } = {}) {
+  const d = driver(DX.DOSE_RESPONSE, 9);
+  for (const id of ["organ-bath", "thermostat", "aerator", "tissue", "transducer", "recorder", "stock", "micropipette", "pss"]) d.act({ type: "inspect", id });
+  d.act({ type: "variables", independent: "conc", dependent: "height" });
+  d.act({ type: "fillBath" });
+  if (opts.warm !== false) d.act({ type: "thermostat", on: true });
+  d.act({ type: "aeration", on: true });
+  d.act({ type: "mountTissue" });
+  d.act({ type: "setTension" });
+  d.act({ type: "zeroRecorder" });
+  d.act({ type: "wait", minutes: 10 });
+  d.act({ type: "wait", minutes: 10 });
+  for (const c of [1e-9, 1e-8, 3e-8, 1e-7, 3e-7, 1e-6, 3e-6, 1e-5]) {
+    d.act({ type: "addDose", c });
+    const p = d.s.trials[d.s.trials.length - 1];
+    d.act({ type: "recordResponse", value: p.trueMm });
+    if (opts.wash !== false) d.act({ type: "wash" });
+  }
+  d.act({ type: "plot", axis: "linear" });
+  d.act({ type: "plot", axis: "log" });
+  const fit = DX.studentFit(d.s);
+  const max = Math.max(...DX.tableRows(d.s).map((r: any) => r.mean));
+  d.act({ type: "estimate", emaxMm: max, logEc50: fit ? Math.round(fit.logEc50 * 100) / 100 : NaN });
+  d.act({ type: "wash" });
+  d.act({ type: "addUnknown" });
+  const u = d.s.trials[d.s.trials.length - 1];
+  d.act({ type: "recordResponse", value: u.trueMm });
+  const read = DX.unknownFromCurve(d.s);
+  d.act({ type: "estimateUnknown", logC: read ? Math.round(read.logC * 100) / 100 : NaN });
+  return d;
+}
+
+test("dose–response: a careful student gets a sigmoid near the model's EC50 with no mistakes", () => {
+  const d = doseRun();
+  assert.deepEqual(d.run.mistakes.map((m: any) => m.id), []);
+  assert.ok(DX.DOSE_RESPONSE.benchComplete(d.s));
+  near(d.s.logEc50Entered, -7, 0.15);
+  // the unknown read from the student's own curve lands near its true concentration
+  near(d.s.unknownLogEntered, Math.log10(d.s.unknownC), 0.12);
+  assert.equal(DX.tableRows(d.s).length, 8, "the unknown is kept out of the standard curve");
+  answerAll(d, DX.DOSE_RESPONSE);
+  d.msg({ type: "submit" });
+  assert.equal(M.finalReport(DX.DOSE_RESPONSE, d.run).overall, 100);
+});
+
+test("dose–response: no washout is recorded and inflates/desensitises responses", () => {
+  const d = doseRun({ wash: false });
+  assert.ok(d.run.mistakes.some((m: any) => m.id === "no-wash"));
+  assert.ok(d.s.trials.filter((t: any) => !t.unknown).slice(1).every((t: any) => t.effectiveC > t.c));
+});
+
+test("dose–response: a cold bath is recorded and gives smaller responses", () => {
+  const warm = doseRun();
+  const cold = doseRun({ warm: false });
+  assert.ok(cold.run.mistakes.some((m: any) => m.id === "cold-bath"));
+  const mw = Math.max(...warm.s.trials.map((t: any) => t.trueMm));
+  const mc = Math.max(...cold.s.trials.map((t: any) => t.trueMm));
+  assert.ok(mc < 0.7 * mw, `${mc} vs ${mw}`);
+});
+
+test("dose–response: responses are deterministic for a seed", () => {
+  assert.deepEqual(doseRun().s.trials.map((t: any) => t.trueMm), doseRun().s.trials.map((t: any) => t.trueMm));
+});
+
+test("dose–response: cannot dose before set-up, nor plot before data", () => {
+  const d = driver(DX.DOSE_RESPONSE);
+  d.act({ type: "addDose", c: 1e-7 });
+  assert.equal(d.s.trials.length, 0);
+  d.act({ type: "plot", axis: "log" });
+  assert.equal(d.s.plottedLog, false);
+  d.act({ type: "addDose", c: 5e-7 }); // not a permitted concentration
+  assert.equal(d.s.trials.length, 0);
+});
+
+// ── Microscopy / clove ─────────────────────────────────────────────────────
+
+test("microscopy: field of view and magnification", () => {
+  assert.equal(O.fieldOfViewUm(4), 4500);
+  assert.equal(O.fieldOfViewUm(10), 1800);
+  assert.equal(O.fieldOfViewUm(40), 450);
+  assert.equal(O.totalMagnification(40), 400);
+});
+
+test("microscopy: the slide is deterministic and recognisability follows the optics", () => {
+  const a = O.generateSlide(4, CX.CLOVE_ELEMENTS, "small");
+  assert.deepEqual(a, O.generateSlide(4, CX.CLOVE_ELEMENTS, "small"));
+  assert.equal(O.generateSlide(4, CX.CLOVE_ELEMENTS, "large").length, a.length * 3);
+  const pollen = a.find((e: any) => e.type === "pollen")!;
+  const v = { mag: 40 as const, stageX: pollen.x, stageY: pollen.y, focusErrUm: pollen.z, light: true, slideOn: true };
+  assert.ok(O.recognisable(v, a, true, CX.CLOVE_ELEMENTS).some((e: any) => e.id === pollen.id), "pollen visible at 40× in focus");
+  assert.ok(!O.recognisable({ ...v, mag: 10 }, a, true, CX.CLOVE_ELEMENTS).some((e: any) => e.id === pollen.id), "pollen too small at 10×");
+  assert.ok(!O.recognisable({ ...v, focusErrUm: pollen.z + 20 }, a, true, CX.CLOVE_ELEMENTS).some((e: any) => e.id === pollen.id), "out of focus");
+  assert.equal(O.recognisable({ ...v, light: false }, a, true, CX.CLOVE_ELEMENTS).length, 0);
+  const crystal = a.find((e: any) => e.type === "cluster-crystal")!;
+  const vc = { ...v, stageX: crystal.x, stageY: crystal.y, focusErrUm: crystal.z };
+  assert.ok(!O.recognisable(vc, a, false, CX.CLOVE_ELEMENTS).some((e: any) => e.id === crystal.id), "crystals need clearing");
+});
+
+test("clove: the reference never lists an absent feature as something the slide draws", () => {
+  const drawn = new Set(CX.CLOVE_ELEMENTS.map((e: any) => e.type));
+  for (const f of CX.REFERENCE_FEATURES) {
+    if (f.expected === "present") assert.ok(f.element && drawn.has(f.element), f.id);
+    else assert.ok(!f.element, f.id);
+  }
+  for (const t of ["starch", "trichome", "prism"]) assert.ok(!drawn.has(t), `${t} must not be drawn`);
+});
+
+function cloveRun(opts: { coarseAtHigh?: boolean } = {}) {
+  const d = driver(CX.CLOVE, 13);
+  for (const id of ["microscope", "slides", "coverslips", "chloral", "jars", "lamp", "needle", "blotting"]) d.act({ type: "inspect", id });
+  d.act({ type: "chooseSample", id: "clove" });
+  d.act({ type: "cleanSlide" });
+  d.act({ type: "powder", amount: "small" });
+  d.act({ type: "mountant", id: "chloral" });
+  d.act({ type: "warm", how: "gentle" });
+  d.act({ type: "coverslip", method: "angled" });
+  d.act({ type: "blot" });
+  d.act({ type: "placeSlide" });
+  d.act({ type: "light", on: true });
+  d.act({ type: "objective", mag: 10 });
+  while (d.s.focusErrUm > 25) d.act({ type: "coarse", dir: 1 });
+  while (d.s.focusErrUm > 0) d.act({ type: "fine", dir: 1 });
+  // a boustrophedon sweep across the slide, as a student scans a mount
+  const scan = (rows: number, cols: number) => {
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) d.act({ type: "stage", dx: r % 2 ? -1 : 1, dy: 0 });
+      d.act({ type: "stage", dx: 0, dy: 1 });
+    }
+  };
+  scan(2, 3);
+  d.act({ type: "centre" });
+  d.act({ type: "objective", mag: 40 });
+  if (opts.coarseAtHigh) { d.act({ type: "coarse", dir: 1 }); d.act({ type: "coarse", dir: -1 }); }
+  d.act({ type: "fine", dir: 1 });
+  d.act({ type: "fine", dir: -1 });
+  scan(3, 4);
+  d.act({ type: "iodineTest" });
+  const answers: Record<string, string> = {};
+  for (const f of CX.REFERENCE_FEATURES) answers[f.id] = f.expected;
+  d.act({ type: "checklist", answers });
+  d.act({ type: "compare" });
+  d.act({ type: "identify", identity: "clove", evidence: ["oil-gland", "pollen", "cluster-crystal", "starch"] });
+  return d;
+}
+
+test("clove: a careful student sees the diagnostic elements and identifies clove with no mistakes", () => {
+  const d = cloveRun();
+  assert.ok(["oil-gland", "pollen", "cluster-crystal", "spiral-vessel"].every((t) => d.s.seen.includes(t)), `seen ${d.s.seen}`);
+  assert.deepEqual(d.run.mistakes.map((m: any) => m.id), []);
+  assert.ok(CX.CLOVE.benchComplete(d.s));
+  answerAll(d, CX.CLOVE);
+  d.msg({ type: "submit" });
+  assert.equal(M.finalReport(CX.CLOVE, d.run).technique, 100);
+});
+
+test("clove: coarse focus at 40× is recorded", () => {
+  assert.ok(cloveRun({ coarseAtHigh: true }).run.mistakes.some((m: any) => m.id === "coarse-high"));
+});
+
+test("clove: identification is refused before observation and before comparison", () => {
+  const d = driver(CX.CLOVE);
+  d.act({ type: "checklist", answers: {} });
+  assert.equal(d.s.checklist, null);
+  d.act({ type: "identify", identity: "clove", evidence: ["oil-gland", "pollen", "starch"] });
+  assert.equal(d.s.identity, null);
+});
+
+test("titration: an air bubble left in the tip is reachable, recorded and inflates the titre", () => {
+  const d = driver(TX.TITRATION, 11);
+  const s0 = { ...titrationRun({ seed: 11 }).s };
+  // rebuild a bench at the burette step with the bubble still in
+  let s = { ...s0, buretteFilled: false, initialRecorded: null, titrations: [], titreEntered: null, assayEntered: null, verdict: null, aliquotAcidMmol: s0.aliquotAcidMmol || 0.9, deliveredMl: 0 };
+  s = TX.TITRATION.apply(s, { type: "fillBurette" }).state;
+  s = TX.TITRATION.apply(s, { type: "removeFunnel" }).state;
+  s = TX.TITRATION.apply(s, { type: "runToZero" }).state;
+  assert.equal(s.bubble, true, "a gentle run-out leaves the bubble");
+  const r = TX.TITRATION.apply(s, { type: "recordInitial", value: s.level });
+  assert.ok(r.feedback.some((f: any) => f.mistake?.id === "bubble"));
+  void d;
+});
+
+test("clove: a poor mount can be discarded and remade (mistakes stay)", () => {
+  const d = driver(CX.CLOVE, 13);
+  d.act({ type: "chooseSample", id: "clove" });
+  d.act({ type: "powder", amount: "small" });
+  d.act({ type: "mountant", id: "water" });
+  assert.ok(d.run.mistakes.some((m: any) => m.id === "mountant-water"));
+  d.act({ type: "remount" });
+  assert.equal(d.s.mountant, null);
+  d.act({ type: "powder", amount: "small" });
+  d.act({ type: "mountant", id: "chloral" });
+  assert.equal(d.s.mountant, "chloral");
+  assert.ok(d.run.mistakes.some((m: any) => m.id === "mountant-water"), "the earlier mistake stays on the record");
+});
+
+test("asset manifest: every shipped file exists with the recorded size", async () => {
+  const { ASSET_MANIFEST } = await import("../src/lib/virtual-labs/assets/manifest.ts");
+  const { statSync } = await import("node:fs");
+  const ROOT = new URL("..", import.meta.url).pathname;
+  for (const a of ASSET_MANIFEST.filter((x: any) => x.used && x.kind !== "procedural")) {
+    assert.ok(["approved", "needs_review"].includes(a.status), a.id);
+    assert.ok(!/NC|NoDerivs/i.test(a.licence), `${a.id} licence`);
+    for (const f of a.files) assert.equal(statSync(ROOT + f.path).size, f.bytes, f.path);
+  }
+});

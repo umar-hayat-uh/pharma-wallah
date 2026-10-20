@@ -23,14 +23,14 @@ def ptype(p):
         ("/calculation-tools/how-to-use", "Guide (calculators)"), ("/calculation-tools/", "Calculator"),
         ("/calculation-tools", "Calculator hub"), ("/guides/", "Guide"), ("/guides", "Guide index"),
         ("/courses/", "Course"), ("/courses", "Course hub"), ("/mcqs-bank", "MCQ bank"),
-        ("/spotting", "Spotting"), ("/simulations", "Simulation"), ("/clinical", "Clinical"),
+        ("/spotting", "Spotting"), ("/virtual-labs", "Virtual lab"), ("/clinical", "Clinical"),
         ("/battle-royale", "Event"), ("/tournament", "Event (ended)"), ("/community", "Community"),
         ("/encyclopedia", "Drug encyclopedia"), ("/dashboard", "Account"),
     ]
     for prefix, t in rules:
         if p == prefix or p.startswith(prefix):
             return t
-    tools = {"/molecular-lab", "/pharmacy-counter", "/compounding-lab", "/antibiogram-simulator", "/adr-detective",
+    tools = {"/molecular-lab", "/pharmacy-counter", "/antibiogram-simulator", "/adr-detective",
              "/drug-finder", "/ai-guide", "/prescription-reader", "/flash-cards"}
     if p in tools:
         return "Interactive tool"

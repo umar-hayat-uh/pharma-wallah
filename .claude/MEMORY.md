@@ -1470,6 +1470,59 @@ Traps that will otherwise be rediscovered painfully.
    effect keyed on an object that changes every interaction (`[run]`) restarted the interval and froze the countdown —
    key effects on a stable id (`run.token`).
 
+223. **Virtual Labs (`/virtual-labs`, 2026-10-20) are plain three.js, and three.js must never reach a page's first
+   load.** No React Three Fiber. `LabExperience` loads `Viewport` with `next/dynamic(..., { ssr: false })`, and
+   `Viewport` imports only the current lab's room (`ROOMS[labId]()` → `three/rooms/<room>.ts`), so one lab never
+   downloads the other three rooms. Anything that statically imports `three` from a shared or server module breaks
+   this. Skill: `virtual-labs`.
+224. **Virtual Labs: the experiment is pure, the room only draws** (2026-10-20). All state changes go through the
+   definition's `apply()` in `src/lib/virtual-labs/experiments/`; the room receives a derived visual object
+   (`titrationVisual(s)` …) as `unknown` and casts it to its own `<Lab>VisualLike` interface — so renaming a visual
+   field type-checks fine and the room silently draws defaults; change both sides. Every 3D action must also be a
+   bench-panel control (`benches/<Lab>Bench.tsx`): that is the 2D lab, the no-WebGL fallback and the keyboard /
+   screen-reader route. `LabExperience` dispatches `{ type: "inspect", id }` for any equipment selection, so every
+   experiment must handle `inspect`.
+225. **One Object3D per interactive id in a Virtual Labs room** (2026-10-20). `LabRuntime` stamps `userData.labId` on
+   every mesh under the registered object, so registering two ids on the same group makes the later id overwrite
+   the earlier and picks report the wrong equipment. The organ-bath rig (`instruments.ts`) therefore returns
+   `parts` (`bath`, `tissue`, `transducer`, `circulator`, `air`) and the pharmacology room registers each part.
+226. **An emissive highlight does not work on lab apparatus** (2026-10-20). Tinting the emissive channel turns
+   glassware and liquids into coloured glass and is invisible on dark metal. `setGlow` (`three/materials.ts`) skips
+   transparent materials and is used only for a light hover tint; the current step's equipment is marked by a
+   floating green chevron sprite above its bounding box (`runtime.ts` `marker()`), not by a glow.
+227. **Camera tweens must advance on real time, not the clamped motion step** (2026-10-20). The frame loop clamps
+   `dt` to 0.05 s for walking; a focus flight driven by that `dt` takes many times longer on a slow device (software
+   WebGL never finished one). Tweens use `Math.min(rawDt, 0.25)`, so a slow device finishes on schedule in fewer frames.
+228. **A Virtual Labs bench `Section` collapses once its step completes** (`interface/ui.tsx`: open only while
+   `current` or toggled). A control needed in a later step therefore vanishes with its own step — the titration's
+   "white tile under the flask" was unreachable during titration until a copy was added to the Titrate section.
+   Put any later-needed control in the later step's section too.
+229. **Importing a constant from a `"use client"` module into a server component gives a client-reference proxy,
+   not the value** (2026-10-20). The landing page's curriculum labels came out empty/wrong when read from a client
+   module; shared display constants now live in `src/lib/virtual-labs/labels.ts`, which deliberately has no
+   `"use client"`. Same rule for any server page that needs a constant a client component also uses.
+230. **The first cold `next dev` compile of a `/virtual-labs/...` route takes ~45 s**, and the browser can throw a
+   `ChunkLoadError` on `app/layout` meanwhile (2026-10-20). Not a code fault: reload once the compile is warm before
+   concluding anything.
+231. **Verifying Virtual Labs headlessly** (2026-10-20): `google-chrome --headless=new --enable-unsafe-swiftshader
+   --use-angle=swiftshader` (gotcha 219). `window.__vlab` exposes `stats()`, `measure(ms)`, `focus(id)` and `reset()`
+   — camera and performance only, never state or answers; keep it that way. A harness must read instruments from
+   the rendered SVG/LCD the way a student would (the 2D scales draw the meniscus and never print the value), and
+   `?seed=N` fixes the run's seed for reproducible results. The 39 unit tests do not cover rendering.
+232. **Virtual Labs engine semantics are deliberate** (`engine/machine.ts` `reduceRun`, 2026-10-20): undo restores the
+   bench but keeps mistakes on the record; each mistake id is scored once; hints are free (counted, not penalised);
+   answers lock on first choice and open only after `benchComplete`; submit is refused until the bench is complete and
+   every question answered. Exactly four experiments — `scripts/virtual-labs.test.mts` fails on a fifth.
+233. **Virtual Labs curriculum statuses are evidence** (2026-10-20): all four are `source_verified` against the UoK
+   Pharm-D practical syllabi as printed (PHC-607, PHT-402, PHL-612, PHG-411, quoted in `curriculum.ts`); none is
+   `faculty_reviewed`, and the test asserts that. Raise a status only with a named reviewer's recorded review, and
+   update the test and the landing page's "none reviewed by faculty" sentence with it.
+234. **Virtual Labs assets** (2026-10-20, `src/lib/virtual-labs/assets/manifest.ts`): Poly Haven CC0 normal + roughness
+   maps (floor, wall) and one CC0 HDRI, loaded on Medium/High quality only; one Wikimedia Commons CC BY-SA 4.0 clove
+   oil-gland photo, shown unmodified with its credit and a "not yet confirmed by our reviewer" label (`needs_review`).
+   Everything else (rooms, glassware, instruments) is procedural geometry. Researched-but-unused and rejected assets
+   (NC, Sketchfab login, BlendKit) are recorded in the manifest too — add a row before shipping any asset.
+
 ## 9. Working preferences (observed)
 
 - Commit messages are short, lowercase, hyphenated subjects (`cology-calcs-added`, `fix-tournament-ui`,

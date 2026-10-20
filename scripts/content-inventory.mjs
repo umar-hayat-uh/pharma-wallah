@@ -184,7 +184,7 @@ md += `
 
 - **Spotting lessons** (histology 16, pathology 15, powder microscopy 3) are page files, not data;
   their word counts need a render. Powder microscopy has no images (CLAUDE.md Known Issue 23).
-- **Simulations, Molecular Lab, Pharmacy Counter, Compounding Lab** are interactive tools whose value
+- **Virtual Labs, Molecular Lab, Pharmacy Counter, Osteology Lab** are interactive tools whose value
   is not measured by word count.
 - **Clinical subdomain pages** share the main site's content (they canonicalise to www).
 

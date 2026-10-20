@@ -70,7 +70,7 @@ export default function Hero() {
         <p className="hero__lede" data-in>
           <strong>{STATS.calculators} pharmacy calculators</strong> that show their formula and working, for
           Doctor of Pharmacy students in Pakistan — plus {STATS.lessons} course lessons, spotting slides,{" "}
-          {STATS.simulations} wet-lab simulations and a clinical reference desk.
+          {STATS.virtualLabs} 3D virtual labs and a clinical reference desk.
         </p>
         <div className="hero__ctas" data-in>
           <Btn href="/calculation-tools" magnetic>

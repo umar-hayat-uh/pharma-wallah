@@ -25,7 +25,7 @@ import { Mark, Note } from "./Marks";
 const TAPE = [
   { num: String(STATS.calculators), label: "Calculators" },
   { num: String(STATS.lessons), label: "Lessons" },
-  { num: String(STATS.simulations), label: "Wet labs" },
+  { num: String(STATS.virtualLabs), label: "3D virtual labs" },
   { num: String(STATS.subjects), label: "Course subjects" },
   { num: "0", label: "Signal needed in the app" },
   // Was { "PK", "Pharm-D curriculum" } — read as pharmacokinetics, not Pakistan.

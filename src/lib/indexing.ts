@@ -43,13 +43,6 @@ export const INDEXING: Record<string, Rule> = {
   "/drug-finder": { match: "exact", index: false, reason: "68 unique words — a search box" },
   "/antibiogram-simulator": { match: "exact", index: false, reason: "143 unique words" },
   "/molecular-lab": { match: "exact", index: false, reason: "195 unique words — an editor" },
-  "/compounding-lab": { match: "exact", index: false, reason: "160 unique words" },
-  "/simulations/titration": { match: "exact", index: false, reason: "38 unique words before the simulation loads" },
-  "/simulations/dilution-lab": { match: "exact", index: false, reason: "29 unique words" },
-  "/simulations/staining-lab": { match: "exact", index: false, reason: "26 unique words" },
-  "/simulations/uv-lab": { match: "exact", index: false, reason: "44 unique words" },
-  "/simulations/buffer-lab": { match: "exact", index: false, reason: "46 unique words" },
-  "/simulations/organic-id-lab": { match: "exact", index: false, reason: "62 unique words" },
   "/osteology-lab/spotting": { match: "exact", index: false, reason: "a practice tool: questions load after Start" },
   "/osteology-lab/exam": { match: "exact", index: false, reason: "a timed exam tool: papers load after Start" },
   "/osteology-lab/viva": { match: "exact", index: false, reason: "a practice tool; its questions are on the bone and joint lessons" },
@@ -74,7 +67,6 @@ export const INDEXING: Record<string, Rule> = {
   "/spotting/powder-microscopy/lessons": { match: "exact", index: false, reason: "135 unique words; no slide images yet (Known Issue 23)" },
   "/spotting/pathology/acute-appendicitis": { match: "exact", index: false, reason: "286 unique words" },
   "/spotting/histology/lessons/wbcs": { match: "exact", index: false, reason: "297 unique words" },
-  "/simulations/lab-guide": { match: "exact", index: false, reason: "188 unique words" },
 
   // ── Duplicates ─────────────────────────────────────────────────────────
   // (/mcqs-bank/semester-4/physical-pharmacy, a duplicate of Semester 1, is covered by the /mcqs-bank prefix above.)
