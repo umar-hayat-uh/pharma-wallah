@@ -4,22 +4,38 @@
  * The eyepiece: a SCHEMATIC ILLUSTRATION of the powder mount, drawn to scale from the
  * slide model (calculations/microscopy.ts) — not a photomicrograph, and labelled so.
  * Each element is drawn from the reference description (experiments/clove.ts); nothing is
- * drawn that the reference does not list. Focus error blurs the whole field; an uncleared
- * mount is murky and hides the elements that need clearing.
+ * drawn that the reference does not list. An uncleared mount is murky and hides the
+ * elements that need clearing; a poor mount hides what `obscured()` says it hides.
+ *
+ * Defocus is drawn PER ELEMENT, from that element's own depth (`focusErr − z`), so an
+ * element looks sharp (≤ 1.6 px of blur) exactly when the optics model counts it as seen —
+ * the drawing and the engine apply one rule (2026-10-21; before, one blur for the whole
+ * field could look in focus at 40× while the engine counted a quarter of the elements).
+ * Browsers without canvas `filter` (older Safari) fall back to one CSS blur for the field.
  */
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { blurPx, fieldOfViewUm, totalMagnification, type SlideElement } from "@/lib/virtual-labs/calculations/microscopy";
-import { cleared, slideOf, type CloveState } from "@/lib/virtual-labs/experiments/clove";
+import { cleared, obscured, slideOf, type CloveState } from "@/lib/virtual-labs/experiments/clove";
 import { rand } from "@/lib/virtual-labs/engine/machine";
 
 const SIZE = 480;
+/** `blurPx` is in screen pixels for a 400 px field; the canvas is SIZE px across. */
+const BLUR_SCALE = SIZE / 400;
+type Paint = (g: CanvasRenderingContext2D) => void;
 
 export function MicroscopeView({ s, large }: { s: CloveState; large?: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
   // the slide is deterministic from (seed, amount): generate it once, not on every render
   const els = useMemo(() => (s.slideOnStage ? slideOf(s) : []), [s.seed, s.powder, s.slideOnStage]); // eslint-disable-line react-hooks/exhaustive-deps
   const fov = fieldOfViewUm(s.mag);
-  const blur = s.slideOnStage ? blurPx({ mag: s.mag, stageX: s.stageX, stageY: s.stageY, focusErrUm: s.focusErrUm, light: s.light, slideOn: true }) : 0;
+  const defocus = (errUm: number) => blurPx({ mag: s.mag, stageX: s.stageX, stageY: s.stageY, focusErrUm: errUm, light: s.light, slideOn: true });
+  const blur = s.slideOnStage ? defocus(s.focusErrUm) : 0;
+  const [perElement, setPerElement] = useState(false);
+  const layerRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const probe = document.createElement("canvas").getContext("2d");
+    setPerElement(!!probe && typeof probe.filter === "string");
+  }, []);
 
   useEffect(() => {
     const c = ref.current;
@@ -47,58 +63,104 @@ export function MicroscopeView({ s, large }: { s: CloveState; large?: boolean })
     }
     const k = SIZE / fov; // px per µm
     const isCleared = cleared(s);
-    // background debris and fine particles (part of any powder mount)
-    for (let i = 0; i < 160; i++) {
-      const x = ((rand(s.seed, 900, i) * 2 - 1) * 2400 - s.stageX) * k + SIZE / 2;
-      const y = ((rand(s.seed, 901, i) * 2 - 1) * 1800 - s.stageY) * k + SIZE / 2;
-      if (x < -20 || y < -20 || x > SIZE + 20 || y > SIZE + 20) continue;
-      g.fillStyle = `rgba(110,72,40,${0.25 + rand(s.seed, 902, i) * 0.3})`;
-      const r = Math.max(0.8, (2 + rand(s.seed, 903, i) * 6) * k * 2);
-      g.beginPath();
-      g.ellipse(x, y, r, r * 0.6, rand(s.seed, 904, i) * 3, 0, Math.PI * 2);
-      g.fill();
-    }
+    // Paint into blur layers: key = blur in canvas px, rounded to ¼ px (0 = sharp, or no filter support).
+    const layers = new Map<number, Paint[]>();
+    const put = (blurScreenPx: number, paint: Paint) => {
+      const key = perElement ? Math.round(blurScreenPx * BLUR_SCALE * 4) / 4 : 0;
+      const list = layers.get(key);
+      if (list) list.push(paint);
+      else layers.set(key, [paint]);
+    };
+    const flush = () => {
+      // most blurred first: out-of-focus material reads as lying behind what is sharp
+      for (const [b, paints] of Array.from(layers.entries()).sort((x, y) => y[0] - x[0])) {
+        if (b === 0) {
+          paints.forEach((p) => p(g));
+          continue;
+        }
+        const layer = (layerRef.current ??= Object.assign(document.createElement("canvas"), { width: SIZE, height: SIZE }));
+        const o = layer.getContext("2d")!;
+        o.clearRect(0, 0, SIZE, SIZE);
+        paints.forEach((p) => p(o));
+        g.filter = `blur(${b}px)`;
+        g.drawImage(layer, 0, 0);
+        g.filter = "none";
+      }
+      layers.clear();
+    };
+    // background debris and fine particles (part of any powder mount), on the mean focal plane
+    put(blur, (o) => {
+      for (let i = 0; i < 160; i++) {
+        const x = ((rand(s.seed, 900, i) * 2 - 1) * 2400 - s.stageX) * k + SIZE / 2;
+        const y = ((rand(s.seed, 901, i) * 2 - 1) * 1800 - s.stageY) * k + SIZE / 2;
+        if (x < -20 || y < -20 || x > SIZE + 20 || y > SIZE + 20) continue;
+        o.fillStyle = `rgba(110,72,40,${0.25 + rand(s.seed, 902, i) * 0.3})`;
+        const r = Math.max(0.8, (2 + rand(s.seed, 903, i) * 6) * k * 2);
+        o.beginPath();
+        o.ellipse(x, y, r, r * 0.6, rand(s.seed, 904, i) * 3, 0, Math.PI * 2);
+        o.fill();
+      }
+    });
+    flush();
     const sorted = [...els].sort((a, b) => b.size - a.size);
     for (const e of sorted) {
       const x = (e.x - s.stageX) * k + SIZE / 2;
       const y = (e.y - s.stageY) * k + SIZE / 2;
       const reach = e.size * k * 3;
       if (x < -reach || y < -reach || x > SIZE + reach || y > SIZE + reach) continue;
-      if (!isCleared && (e.type === "cluster-crystal" || e.type === "epidermis")) {
-        // cell contents still in place: a murky brown fragment, details hidden
-        g.fillStyle = "rgba(120,80,45,0.45)";
-        g.beginPath();
-        g.ellipse(x, y, e.size * k * 1.4, e.size * k, e.rot, 0, Math.PI * 2);
-        g.fill();
-        continue;
-      }
-      draw(g, e, x, y, k);
+      const hidden = obscured(s, e);
+      put(defocus(s.focusErrUm - e.z), (o) => {
+        if ((!isCleared && (e.type === "cluster-crystal" || e.type === "epidermis")) || (hidden && s.powder === "large")) {
+          // cell contents still in place, or buried in a heaped mount: a murky brown fragment, details hidden
+          o.fillStyle = hidden && s.powder === "large" ? "rgba(95,62,35,0.6)" : "rgba(120,80,45,0.45)";
+          o.beginPath();
+          o.ellipse(x, y, e.size * k * 1.4, e.size * k, e.rot, 0, Math.PI * 2);
+          o.fill();
+          return;
+        }
+        draw(o, e, x, y, k);
+        if (hidden) {
+          // under a trapped air bubble: its thick dark rim hides the element's detail
+          const br = Math.max(6, e.size * k * 0.9);
+          o.lineWidth = Math.max(2, br * 0.3);
+          o.strokeStyle = "rgba(30,25,20,0.85)";
+          o.fillStyle = "rgba(255,255,250,0.55)";
+          o.beginPath();
+          o.arc(x, y, br, 0, Math.PI * 2);
+          o.fill();
+          o.stroke();
+        }
+      });
     }
+    flush();
     if (!isCleared) {
       g.fillStyle = "rgba(140,100,60,0.18)";
       g.fillRect(0, 0, SIZE, SIZE);
     }
     if (s.coverslip === "dropped") {
       // air bubbles: thick dark rims, bright centres
-      for (let i = 0; i < 4; i++) {
-        const bx = ((rand(s.seed, 950, i) * 2 - 1) * 2000 - s.stageX) * k + SIZE / 2;
-        const by = ((rand(s.seed, 951, i) * 2 - 1) * 1500 - s.stageY) * k + SIZE / 2;
-        const br = (120 + rand(s.seed, 952, i) * 200) * k;
-        g.lineWidth = Math.max(2, br * 0.12);
-        g.strokeStyle = "rgba(30,25,20,0.85)";
-        g.beginPath();
-        g.arc(bx, by, br, 0, Math.PI * 2);
-        g.stroke();
-      }
+      put(blur, (o) => {
+        for (let i = 0; i < 4; i++) {
+          const bx = ((rand(s.seed, 950, i) * 2 - 1) * 2000 - s.stageX) * k + SIZE / 2;
+          const by = ((rand(s.seed, 951, i) * 2 - 1) * 1500 - s.stageY) * k + SIZE / 2;
+          const br = (120 + rand(s.seed, 952, i) * 200) * k;
+          o.lineWidth = Math.max(2, br * 0.12);
+          o.strokeStyle = "rgba(30,25,20,0.85)";
+          o.beginPath();
+          o.arc(bx, by, br, 0, Math.PI * 2);
+          o.stroke();
+        }
+      });
+      flush();
     }
     g.restore();
-  }, [els, fov, s]);
+  }, [els, fov, s, perElement]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <figure className="space-y-1.5">
       <div className="relative mx-auto aspect-square w-full" style={{ maxWidth: large ? 520 : 300 }}>
         <div className="absolute inset-0 rounded-full bg-[#2b3440] p-[3%] shadow-inner">
-          <canvas ref={ref} width={SIZE} height={SIZE} className="h-full w-full rounded-full" style={{ filter: `blur(${blur.toFixed(1)}px)` }} role="img" aria-label={`Eyepiece view at ${totalMagnification(s.mag)}×, field of view ${(fov / 1000).toFixed(2)} mm. ${!s.slideOnStage ? "No slide on the stage." : !s.light ? "The lamp is off." : blur > 4 ? "The image is out of focus." : "In focus — examine the elements in the field."}`} />
+          <canvas ref={ref} width={SIZE} height={SIZE} className="h-full w-full rounded-full" style={{ filter: perElement ? "none" : `blur(${blur.toFixed(1)}px)` }} role="img" aria-label={`Eyepiece view at ${totalMagnification(s.mag)}×, field of view ${(fov / 1000).toFixed(2)} mm. ${!s.slideOnStage ? "No slide on the stage." : !s.light ? "The lamp is off." : blur > 4 ? "The image is out of focus." : "In focus — examine the elements in the field."}`} />
         </div>
         <span className="absolute bottom-[6%] right-[8%] rounded-md bg-white/85 px-1.5 py-0.5 font-mono text-[10px] text-[#16181d]">{totalMagnification(s.mag)}×</span>
         {s.slideOnStage && s.light && <ScaleBar fov={fov} />}
@@ -114,7 +176,7 @@ function ScaleBar({ fov }: { fov: number }) {
   const um = fov > 2000 ? 500 : fov > 1000 ? 200 : 50;
   const pct = (um / fov) * 100 * 0.94;
   return (
-    <div className="absolute bottom-[12%] left-[14%] text-[10px] font-semibold text-[#16181d]">
+    <div className="absolute bottom-[17%] left-[20%] text-[10px] font-semibold text-[#16181d]">
       <div className="h-1 rounded bg-[#16181d]" style={{ width: `${pct}%`, minWidth: 18 }} />
       <span>{um} µm</span>
     </div>

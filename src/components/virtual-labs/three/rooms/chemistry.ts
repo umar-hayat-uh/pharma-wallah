@@ -8,7 +8,7 @@ import type { MaterialLib } from "../materials";
 import type { BuildContext, RoomBuild } from "../types";
 import { coatHook, extinguisher, eyewashStation, firstAid, fumeHood, mesh, rbox, roomShell, storageCabinet, wallUnits, wasteBin } from "../kit";
 import { beaker, bulbPipette, burette, conicalFlask, dropperBottle, glassFunnel, reagentBottle, volumetricFlask, washBottle } from "../glass";
-import { analyticalBalance, retortStand, whiteTile } from "../instruments";
+import { analyticalBalance, labNotebook, retortStand, whiteTile } from "../instruments";
 import { RoomBuilder, TOP } from "./helpers";
 
 export interface TitrationVisualLike {
@@ -37,7 +37,8 @@ export function buildChemistry(m: MaterialLib, _ctx: BuildContext): RoomBuild {
   r.place(wallUnits(m, 5.2), -1.0, 0, -3.82);
   r.furniture(fumeHood(m, 1.5), 3.6, -3.55, 1.5, 0.85);
   r.bench({ w: 1.6, top: "white" }, -3.9, -1.1, Math.PI / 2); // balance table
-  r.furniture(storageCabinet(m, 1.0, 9), 4.2, 0.2, 1.0, 0.45, -Math.PI / 2);
+  // the glassware cupboard is where the apparatus is chosen (2026-10-21)
+  const cupboard = r.furniture(storageCabinet(m, 1.0, 9), 4.2, 0.2, 1.0, 0.45, -Math.PI / 2);
   r.furniture(storageCabinet(m, 1.0, 11), 4.2, 1.3, 1.0, 0.45, -Math.PI / 2);
   r.stools([-1.5, 1.5], 0.25);
   r.furniture(eyewashStation(m), 2.6, -3.85, 0.3, 0.3);
@@ -86,6 +87,7 @@ export function buildChemistry(m: MaterialLib, _ctx: BuildContext): RoomBuild {
   const b1 = beaker(m, 250);
   r.place(b1.group, -1.25, TOP, z0 - 0.05);
   b1.setVolume(60);
+  const notebook = r.place(labNotebook(m, "Assay of citric acid"), 1.35, TOP, z0 + 0.05, -0.2);
   // pipette rack (simple)
   r.place(mesh(rbox(0.24, 0.02, 0.06, 0.006), m.plasticGrey, 0, 0, 0), -0.95, TOP + 0.01, z0 + 0.12);
 
@@ -106,6 +108,8 @@ export function buildChemistry(m: MaterialLib, _ctx: BuildContext): RoomBuild {
   r.interactive("titrant", "Sodium hydroxide 0.1 M", titrant, { dist: 0.35, lift: 0.06 });
   r.interactive("balance", "Analytical balance", bal.group, { dir: [1, 0], dist: 0.55, lift: 0.22 });
   r.interactive("wash-bottle", "Wash bottle", wash, { dist: 0.35 });
+  r.interactive("cupboard", "Glassware cupboard", cupboard, { dir: [-1, 0], dist: 1.6, lift: -0.1, target: [4.2, 1.15, 0.2] });
+  r.interactive("notebook", "Lab notebook", notebook, { dist: 0.45, lift: 0.3 });
 
   return {
     root: r.root,

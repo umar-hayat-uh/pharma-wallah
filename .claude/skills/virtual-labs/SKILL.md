@@ -2,23 +2,27 @@
 
 ## Purpose
 Change or extend the 3D Virtual Pharmacy Labs at `/virtual-labs` (built 2026-10-20; replaced the legacy
-`/simulations` labs and `/compounding-lab`): four rooms, one complete experiment each — the experiment's
-science, its mistakes and scoring, the three.js room, the bench panel, and the honesty labels (curriculum
-status, asset licences, "simulated" wording).
+`/simulations` labs and `/compounding-lab`; **immersive upgrade 2026-10-21** — full-screen, equipment-driven,
+Learning/Practical modes, sharper rendering, `docs/virtual-labs/UPGRADE_PLAN.md`): four rooms, one complete
+experiment each — the experiment's science, its mistakes and scoring, its instrument controllers, the
+three.js room, and the honesty labels (curriculum status, asset licences, "simulated" wording).
 
 ## Trigger Examples
 - "the titration assay comes out wrong when X" / "change the syrup formula"
 - "add a mistake for not rinsing the pipette" / "the lab doesn't catch Y"
 - "move the balance in the chemistry room" / "the burette looks wrong"
-- "make the hot plate clickable" / "add a new piece of equipment"
+- "make the hot plate clickable" / "add a new piece of equipment" / "add a control to the burette"
+- "the lab is blurry / slow on my phone" / "Learning mode should point at X"
 - "a teacher reviewed the clove lab — mark it reviewed"
 - "add a fifth lab / a second experiment" (read **Do Not** first)
 
 ## Read First
-1. `src/lib/virtual-labs/engine/types.ts` then `engine/machine.ts` — the experiment contract and the run machine.
-2. The experiment you are touching: `src/lib/virtual-labs/experiments/<lab>.ts` + `calculations/<lab>.ts`.
-3. `src/components/virtual-labs/LabExperience.tsx` (one lab, start to finish) and `Viewport.tsx`.
-4. `.claude/MEMORY.md` §8 gotchas **223–234** (this lab) and **219–220** (headless WebGL, `next/dynamic` refs).
+1. `src/lib/virtual-labs/engine/types.ts` then `engine/machine.ts` — the experiment contract (incl. `ControllerDef`,
+   `suggest`, `LabMode`) and the run machine (the equipment gate in `case "act"`).
+2. The experiment you are touching: `src/lib/virtual-labs/experiments/<lab>.ts` (its `CONTROLLERS` and `suggest`) +
+   `calculations/<lab>.ts`, and `benches/<Lab>Controls.tsx`.
+3. `src/components/virtual-labs/LabExperience.tsx` (the immersive shell) and `Viewport.tsx`.
+4. `.claude/MEMORY.md` §8 gotchas **223–234, 235–241** (this lab) and **219–220** (headless WebGL, `next/dynamic` refs).
 5. The legacy lab principles still hold and are summarised under Architecture Context — `lab-simulation` is now
    only a redirect stub.
 
@@ -29,9 +33,12 @@ src/lib/virtual-labs/  (PURE — no React, no DOM, no three.js)
   curriculum.ts        CURRICULUM: status + quoted syllabus sources per lab
   labels.ts            CURRICULUM_LABEL / CURRICULUM_TONE — shared by server AND client (no "use client")
   engine/types.ts      ExperimentDefinition<S, A>: meta, principle, safety, equipment, materials, steps,
-                       questions, initial(seed), apply(s, a), stepComplete, benchComplete, observations, report
-  engine/machine.ts    Run<S> + reduceRun(): act / undo / reset / hint / answer / submit; finalReport();
-                       helpers ok/info/warn/refuse/mistake, rand(seed, …keys), round, fmt
+                       controllers (ControllerDef[]), questions, initial(seed), apply(s, a), suggest(s),
+                       stepComplete, benchComplete, observations, report
+  engine/machine.ts    Run<S> (+ mode, assessed, active, operated) + reduceRun(): act (GATED) / operate /
+                       mode / undo / reset / hint / answer / submit; finalReport() (mode, hintPenalty);
+                       controllersForAction, controllerForEquipment, HINT_COST/HINT_CAP; helpers
+                       ok/info/warn/refuse/mistake, rand(seed, …keys), round, fmt
   calculations/*.ts    the science: titration (citric acid, pKa model, assay), syrup (sucrose density table),
                        doseResponse (Hill equation, fit), microscopy (FOV, magnification, slide generator)
   experiments/*.ts     the four definitions + each one's `<lab>Visual(state)` for the room
@@ -40,17 +47,24 @@ src/lib/virtual-labs/  (PURE — no React, no DOM, no three.js)
   assets/manifest.ts   ASSET_MANIFEST — every researched asset, used or rejected, with licence + decision
 
 src/components/virtual-labs/
-  labs/<Lab>Lab.tsx    3-line wrappers: LabExperience + Bench + visual (+ optional `extra` tab)
-  LabExperience.tsx    phases briefing → lab → assessment → results; useReducer over reduceRun; tracking
+  labs/<Lab>Lab.tsx    3-line wrappers: LabExperience + controls (Record<controllerId, Component>) + visual
+  LabExperience.tsx    phases briefing(+mode cards) → lab → assessment → results. The lab phase is a FIXED
+                       full-viewport layer (z-70, 100dvh, page scroll locked, Fullscreen API on touch entry +
+                       button), Viewport behind, chrome over it; pause on visibilitychange; insets → view offset
   Viewport.tsx         next/dynamic(ssr:false) target; imports ONLY the current lab's room module
-  three/runtime.ts     LabRuntime: renderer, quality tiers, walking + colliders, picking, focus tweens,
-                       on-demand rendering, step markers, window.__vlab, full dispose
+  three/runtime.ts     LabRuntime: renderer, QUALITY tiers (pixel budget per tier, pixelRatioFor), walking +
+                       colliders, picking, Q/E keyboard picking, focus tweens, setInsets (view offset),
+                       setPaused, static shadow maps, on-demand rendering, step markers, one-time onSlow,
+                       window.__vlab, full dispose
   three/rooms/*.ts     chemistry, pharmaceutics, pharmacology, pharmacognosy (+ helpers.ts RoomBuilder, TOP)
   three/{kit,glass,instruments,materials,textures}.ts   procedural furniture, glassware, instruments
-  benches/*.tsx        the 2D control panel per lab (every 3D action lives here too) + instruments2d,
-                       MicroscopeView (eyepiece canvas)
-  interface/*.tsx      Briefing, LabHUD, ProcedurePanel, EquipmentPanel, ObservationSheet, Assessment,
-                       LabResults, Overlays (dialogs, touch pad, prompts), ui (Btn, Section, Choice, ReadingField)
+  benches/<Lab>Controls.tsx  one panel per instrument controller (opened by selecting its equipment) +
+                       instruments2d (scales, LCD, swatch), MicroscopeView (eyepiece canvas)
+  interface/*.tsx      Briefing (mode cards), LabChrome (TopBar, ControllerDock = desktop dock / phone bottom
+                       sheet, NextPrompt, InfoCard), controls (ActBtn, Hl, Group, HoldControl, ControlProvider),
+                       ProcedurePanel (objectives; Learning vs Practical), EquipmentPanel (guide, "Show me"),
+                       ObservationSheet, Assessment, LabResults, Overlays (dialogs, touch pad, prompts,
+                       ControlGuide), ui (Btn, Section, Choice, ReadingField)
 src/app/(site)/virtual-labs/   landing page + /<discipline>/<experiment>/page.tsx (server: metadata + JSON-LD)
 ```
 
@@ -63,15 +77,28 @@ src/app/(site)/virtual-labs/   landing page + /<discipline>/<experiment>/page.ts
   visual object (`titrationVisual(s)` etc.) through `RoomBuild.apply(visual)` and reports clicks back. Each room
   declares its own `<Lab>VisualLike` interface and casts `unknown` to it — **rename a visual field and nothing
   type-checks the room**; update both sides.
-- **Every 3D action is also a bench-panel control.** The 2D lab (no WebGL, error fallback, "Switch to the 2D
-  lab") and keyboard/screen-reader users complete the whole experiment from `benches/<Lab>Bench.tsx`.
-  `LabExperience` dispatches `{ type: "inspect", id }` for any equipment selection, 3D or 2D, so every
-  experiment must handle `inspect`.
+- **The experiment is done ON THE EQUIPMENT (2026-10-21).** Every action type except `inspect` belongs to at
+  least one `ControllerDef`; selecting equipment dispatches `{type:"operate", equipment}` (and `inspect`), which
+  opens that controller; `reduceRun` REFUSES an `act` unless one of the action's controllers is `run.active`
+  (state unchanged, not counted, logged). There is no step-card bench and no "complete step" anywhere; the
+  objectives list only reports `stepComplete`. "Show me" moves the camera, never selects.
+- **Accessible routes select equipment too:** keyboard picking in the room (Q cycles what is in view, E uses
+  it) and the 2D lab (bench-plan buttons; the no-WebGL fallback). Both open the same controllers. Do not add a
+  list that operates instruments directly.
+- **Learning vs Practical** share the room, engine and controllers. Learning: objective text, chevrons on the
+  next instrument, "Next: open the …" + Show me, the suggested control ringed (from `suggest(s)`), how-to lines,
+  free hints. Practical: none of that; hints cost `HINT_COST` (3) technique marks, capped at `HINT_CAP` (15).
+  Learning → Practical only before the first action (else restart); Practical → Learning keeps the bench but
+  `assessed` becomes false and the report says "practice". `suggest()` must never reveal a reading's value, an
+  assessed decision, or "stop" during a titration — the tests check every state of every scripted run.
 - **Engine semantics (`reduceRun`)**: undo restores the bench but **keeps mistakes on the record**; a mistake id
   is **scored once** however often repeated; hints are **free** (counted, not penalised); answers **lock** on the
   first choice and only open once `benchComplete`; `submit` is refused until `benchComplete` and every question
   is answered. Rejected actions are not undo points. `finalReport`: technique = 100 − Σ mistake weights;
   overall = mean(technique, assessment %); grade bands 85/70/50.
+- **Rendering quality is a pixel budget, not a DPR cap** (`QUALITY` in `runtime.ts`): Balanced is the default
+  on every device (Low only for Save-Data or ≤ 2 GB); a phone draws at 2×, not 1× (the old "blurry on mobile"
+  fault). One automatic step down if the first 1.5 s draw < 18 fps and the student has not chosen a tier.
 - **Exactly four experiments.** `scripts/virtual-labs.test.mts` fails on a fifth (the brief forbade padding).
 - **The student reads the instrument.** 2D instruments draw the true state and never print the value
   (`instruments2d.tsx`); recorded readings are checked against the truth within a tolerance.
@@ -107,13 +134,16 @@ src/app/(site)/virtual-labs/   landing page + /<discipline>/<experiment>/page.ts
 3. Dispose anything you create in the room's `dispose()`.
 4. Verify in headless Chrome (below) with `__vlab.focus(id)` screenshots.
 
-### Make equipment interactive
+### Make equipment interactive / add a control
 1. The id must equal an `equipment[].id` in the experiment definition.
 2. `r.interactive(id, label, object, { dir, dist, lift, target })` — **one Object3D per id**. If one model has
    several clickable parts, expose them (as the organ-bath rig's `parts` does) and register each part.
-3. Add the matching control to the bench panel, and add the id to the relevant step's `focus` (the test checks
-   `focus` ⊂ equipment ids). Step equipment is marked by the floating green chevron, not a glow.
-4. If a later step needs a control from an earlier step, put a copy in the later step's `Section` too.
+3. Put the id in a `ControllerDef.equipment` (or it is inspect-only and shows an info card), and add the
+   action's `type` to that controller's `actions`. Add the button to `benches/<Lab>Controls.tsx` as an
+   `ActBtn` (or `HoldControl`); wrap reading fields/forms in `<Hl type="…">` so Learning mode can ring them.
+4. Extend `suggest()` if the new action is part of the correct sequence, and add the id to the step's `focus`.
+5. Controllers render in a phone bottom sheet (~390 × ≤ 58 % of the screen): put what the hand is on first
+   (the burette shows the stopcock first once the initial reading is taken), keep labels short.
 
 ### Raise a curriculum status
 Only with evidence, by the person who did the check the status names. `source_verified` = the practical is in
@@ -126,28 +156,31 @@ Never raise a status to make a card look better.
 ## Files Usually Involved
 `src/lib/virtual-labs/**`, `src/components/virtual-labs/**`, `src/app/(site)/virtual-labs/**`,
 `scripts/virtual-labs.test.mts`, `public/models/virtual-labs/**` (textures, HDRI, clove photo),
-`docs/virtual-labs/*` (only `IMPLEMENTATION_PLAN.md` exists as of 2026-10-20; the curriculum mapping, asset
-research/licences and experiment catalogue cited in code comments are not written yet), `src/lib/indexing.ts` + `src/app/sitemap.ts` (if routes change), `src/hooks/useTracker.ts`.
+`docs/virtual-labs/*` (UPGRADE_PLAN, ARCHITECTURE, ASSET_RESEARCH, ASSET_LICENSES, CURRICULUM_MAPPING,
+EXPERIMENT_CATALOG, TESTING, IMPLEMENTATION_PLAN, REMOVED_LEGACY_SIMULATIONS), `src/lib/indexing.ts` + `src/app/sitemap.ts` (if routes change), `src/hooks/useTracker.ts`.
 
 ## Security Checks
 - [ ] Nothing leaves the browser except `useTracker` events (`type: "virtual-lab"` activity on open/submit,
       `trackQuiz` with `quizId: "virtual-lab:<id>"`). Scores are self-paced practice, never presented as exam results.
 - [ ] No API route, no service-role client, no `NEXT_PUBLIC_*` secret. Adding a server call → rate-limit it.
-- [ ] `window.__vlab` stays camera-only (`stats`, `measure`, `focus`, `reset`) — never expose state or answers.
+- [ ] `window.__vlab` stays camera-only (`stats`, `measure`, `focus`, `reset`, `where`, `moving`) — never expose state or answers.
 - [ ] Every shipped asset has a manifest row with licence, creator and decision; share-alike assets stay unmodified
       and credited where shown.
 
 ## Tests & Verification
 ```bash
-node --test scripts/virtual-labs.test.mts   # 39 tests: catalogue (exactly 4), engine, every formula, each lab end to end
+node --test scripts/virtual-labs.test.mts   # catalogue (exactly 4), engine, equipment gate/bypass, modes, every formula, each lab end to end
 npx tsc --noEmit
 ```
 Then drive it — rendering is not covered by the tests:
 - Headless Chrome with software WebGL: `google-chrome --headless=new --enable-unsafe-swiftshader
   --use-angle=swiftshader`. `window.__vlab.stats()` / `measure(ms)` (draw calls, triangles, fps, load ms),
   `focus(id)` for close-up screenshots, `reset()`.
-- Complete each lab through the **bench panel**, reading instruments from the rendered SVG/LCD the way a student
-  would (never from state). Use `?seed=N` so runs are reproducible.
+- Complete each lab by **tapping its equipment in the canvas** — `__vlab.where(id)` gives a screen point that
+  actually hits the object, `__vlab.moving()` says the camera is still flying (wait for false: software WebGL
+  draws ~1 frame/s, so "two equal samples" is not "settled"), `__vlab.focus(id)` is "Show me" — then operate its
+  controller, reading instruments from the rendered SVG/LCD/swatch (never from state). `?seed=N` for repeats.
+  Set `localStorage["pw-vlabs:quality"]` to fix a tier (otherwise SwiftShader triggers the one-time step-down).
 - At 1440 and 390 px; 2D mode too (Pause → "Switch to the 2D lab"). Assert no console errors, no overflow
   (compare `scrollWidth` with the emulated width — MEMORY 221), results page reached. Read the screenshots.
 - First cold dev compile of a lab route takes ~45 s; a `ChunkLoadError` on `app/layout` then is not a code fault —
@@ -162,8 +195,11 @@ Lint is not configured — say so.
   invisible; `setGlow` skips transparent materials and steps use the chevron sprite (gotcha 226).
 - **Camera flights that never finish on a slow device** — tweens must advance on `min(rawDt, 0.25)`, not the
   0.05-clamped motion `dt` (gotcha 227).
-- **A control disappears** — a `Section` closes once its step is complete; a later step that needs the
-  control must render it too (white tile in Titrate, gotcha 228).
+- **A bypass sneaks back** — any UI that dispatches `act` without the instrument open is refused by the engine
+  (good), but a new action type left out of every `ControllerDef` is unreachable: the test driver throws for it.
+- **The drawing disagrees with the engine** — the titration flask blended pink in below the engine's faint-pink
+  threshold, so students who stopped at the first lasting pink were marked "stopped early" (gotcha 238). An
+  instrument must show a change exactly when the engine counts it.
 - **A constant imported from a `"use client"` module into a server page** becomes a client-reference proxy
   (indexing it yields nothing useful) — keep shared constants in `labels.ts` (gotcha 229).
 - **Visual field renamed on one side only** — room silently draws defaults (no type link through `unknown`).
@@ -175,7 +211,9 @@ Lint is not configured — say so.
   `src/components/virtual-labs/three/` or into anything a non-lab page loads.
 - Do not add a fifth lab or a second experiment to a lab without the owner asking (the test enforces four).
 - Do not compute a number in a bench component or a room — it belongs in `calculations/` or the experiment.
-- Do not reveal a true reading before the student records it; do not make a 3D-only action.
+- Do not reveal a true reading before the student records it; do not add a control that operates an
+  instrument without it being selected (no step cards, no "complete step"); do not let Learning mode point
+  at an answer.
 - Do not raise a curriculum status, or call an asset approved, without evidence.
 - Do not ship an image without a manifest row; do not modify the CC BY-SA clove photo.
 

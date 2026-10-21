@@ -73,18 +73,25 @@ export function useLabProgress() {
 const QKEY = "pw-vlabs:quality";
 export type QualityPref = "low" | "medium" | "high";
 
-/** Default quality: low on small or low-memory devices, medium elsewhere. */
-export function defaultQuality(): QualityPref {
+/**
+ * Default quality ("medium" is shown as Balanced). Until 2026-10-21 every screen under
+ * 768 px got Low — pixel ratio 1 with no antialiasing — which is why the lab looked
+ * blurry on phones: a 3× phone was drawing a ninth of its pixels. Balanced is now the
+ * default everywhere; Low only when the device asks to save data or reports ≤ 2 GB, and
+ * LabExperience steps down once, automatically, if the first measured frames are very
+ * slow. `saved` = the student chose it, so it is never overridden.
+ */
+export function defaultQuality(): { quality: QualityPref; saved: boolean } {
   try {
     const saved = window.localStorage.getItem(QKEY) as QualityPref | null;
-    if (saved === "low" || saved === "medium" || saved === "high") return saved;
+    if (saved === "low" || saved === "medium" || saved === "high") return { quality: saved, saved: true };
   } catch {
     /* ignore */
   }
   const nav = navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean } };
-  if (nav.connection?.saveData) return "low";
-  if ((nav.deviceMemory ?? 8) <= 4 || window.innerWidth < 768) return "low";
-  return "medium";
+  if (nav.connection?.saveData) return { quality: "low", saved: false };
+  if ((nav.deviceMemory ?? 8) <= 2) return { quality: "low", saved: false };
+  return { quality: "medium", saved: false };
 }
 
 export function saveQuality(q: QualityPref) {

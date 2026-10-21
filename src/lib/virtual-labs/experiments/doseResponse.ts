@@ -10,7 +10,7 @@
  * Concentrations are organ-bath concentrations for a teaching model — not doses for
  * any person or animal.
  */
-import type { ExperimentDefinition, ExperimentReport, Feedback, ObservationSection } from "../engine/types";
+import type { ControllerDef, ExperimentDefinition, ExperimentReport, Feedback, ObservationSection, Suggestion } from "../engine/types";
 import { fmt, info, mistake, ok, rand, refuse, round } from "../engine/machine";
 import { concentrationFor, fitHill, hill, molarLabel, percentOfMax, stockVolumeUl } from "../calculations/doseResponse";
 import { LABS } from "../catalog";
@@ -351,6 +351,57 @@ const STEP_DONE: Record<string, (s: DoseState) => boolean> = {
   unknown: (s) => s.unknownLogEntered !== null,
 };
 
+/**
+ * The instruments (2026-10-21 upgrade). Each physical action is available only from the
+ * instrument it is done with; the run machine refuses it otherwise. Two deliberate
+ * overlaps: `recordResponse` is on the dosing station as well as the recorder, because
+ * the student reads the peak off the chart beside the bath while still holding the
+ * pipette (the brief's "dose selector, run-trial control, response readout" station), and
+ * `wait` is on both the bath and the circulator, which each show the bath temperature.
+ * Washing out stays on the bath — it is the drain tap and the salt-solution reservoir,
+ * not the pipette — so a trial is dose → read → wash, one tap between the two via `nearby`.
+ */
+const CONTROLLERS: ControllerDef[] = [
+  { id: "notebook", name: "Lab notebook", equipment: ["notebook"], actions: ["variables"], brief: "Define what you will change and what you will measure.", howTo: ["The independent variable is the one you set.", "The dependent variable is the one you read."], nearby: ["organ-bath"] },
+  { id: "organ-bath", name: "Organ bath", equipment: ["organ-bath", "pss"], actions: ["fillBath", "wash", "wait"], brief: `Fill with ${MODEL.bathMl} mL of salt solution, wash out between doses, and time the rest periods.`, howTo: ["Fill before heating, aerating or mounting anything.", "After each response is recorded, wash out three times."], nearby: ["thermostat", "aerator", "tissue", "dosing"] },
+  { id: "thermostat", name: "Thermostatic circulator", equipment: ["thermostat"], actions: ["thermostat", "wait"], brief: `Keep the bath at ${MODEL.targetC} °C.`, howTo: ["Switch it on once the bath is full.", "Wait until the bath reads 37 °C."], nearby: ["organ-bath", "aerator"] },
+  { id: "aerator", name: "Aeration line", equipment: ["aerator"], actions: ["aeration"], brief: "Oxygenate the tissue with fine, steady bubbles.", howTo: ["Turn it on once the bath is full and leave it on."], nearby: ["organ-bath", "thermostat"] },
+  { id: "tissue", name: "Tissue and transducer", equipment: ["tissue", "transducer"], actions: ["mountTissue", "setTension"], brief: "Mount the tissue strip and set its resting tension.", howTo: ["Tie it to the bath hook below and the transducer above.", "Set 1 g resting tension before zeroing the recorder."], nearby: ["organ-bath", "recorder"] },
+  { id: "dosing", name: "Micropipette", equipment: ["micropipette", "stock"], actions: ["addDose", "addUnknown", "recordResponse"], brief: "Choose a concentration, add it, read the peak.", howTo: ["Choose a concentration: the pipette is set to the stock volume that gives it.", "Read the peak from baseline to top, record it, then wash out at the bath."], nearby: ["organ-bath", "recorder"] },
+  { id: "recorder", name: "Recorder", equipment: ["recorder"], actions: ["zeroRecorder", "recordResponse", "plot", "estimate", "estimateUnknown"], brief: "The trace, your data, and the graph.", howTo: ["Zero only after the resting tension is set.", "Plot on both axes, then read Emax and EC50 from the log plot."], nearby: ["dosing"] },
+];
+
+/**
+ * Learning mode: the next correct move. It names an instrument and a control, never a
+ * value — it points at "add a dose", not at which concentration; at the reading field,
+ * not at the peak; at the analysis form, not at Emax, EC50 or the unknown.
+ */
+function suggest(s: DoseState): Suggestion | null {
+  const to = (controller: string, action: string): Suggestion => ({ controller, action });
+  if (!KEY_ITEMS.every((k) => s.inspected.includes(k))) return null; // inspection is finding, not operating
+  if (!s.variablesOk) return to("notebook", "variables");
+  if (!s.bathFilled) return to("organ-bath", "fillBath");
+  if (!s.thermostatOn) return to("thermostat", "thermostat");
+  if (!s.aerationOn) return to("aerator", "aeration");
+  if (!s.tissueMounted) return to("tissue", "mountTissue");
+  if (!s.tensionSet) return to("tissue", "setTension");
+  if (!s.recorderZeroed) return to("recorder", "zeroRecorder");
+  // a peak on the trace is read before anything else happens to the bath
+  if (s.trials.some((t) => t.recordedMm === null)) return to("dosing", "recordResponse");
+  if (!STEP_DONE.trials(s)) {
+    if (s.trials.length > 0 && !s.washed) return to("organ-bath", "wash");
+    if ((s.trials.length === 0 && s.equilibratedMin < MODEL.equilibrationMin) || s.tempC < MODEL.targetC - 1) return to("organ-bath", "wait");
+    return to("dosing", "addDose");
+  }
+  if (!s.plottedLinear || !s.plottedLog) return to("recorder", "plot");
+  if (s.logEc50Entered === null) return to("recorder", "estimate");
+  if (s.unknownLogEntered === null) {
+    if (!s.trials.some((t) => t.unknown)) return to(s.washed ? "dosing" : "organ-bath", s.washed ? "addUnknown" : "wash");
+    return to("recorder", "estimateUnknown");
+  }
+  return null;
+}
+
 function observations(s: DoseState): ObservationSection[] {
   const rows = tableRows(s);
   return [
@@ -422,12 +473,13 @@ export const DOSE_RESPONSE: ExperimentDefinition<DoseState, DoseAction> = {
     { id: "organ-bath", name: "Organ bath (20 mL, water-jacketed)", description: "A glass chamber surrounded by a jacket of circulating warm water.", use: "Holds the tissue in physiological salt solution at 37 °C; drugs are added to it.", spec: "20 mL working volume" },
     { id: "thermostat", name: "Thermostatic circulator", description: "Pumps water at a set temperature through the bath jacket.", use: "Keeps the bath at 37 °C." },
     { id: "aerator", name: "Aeration line", description: "Delivers fine bubbles of air (or 95 % O₂/5 % CO₂) into the bath.", use: "Oxygenates the tissue and stirs the bath." },
-    { id: "tissue", name: "Tissue strip (simulated)", description: "A smooth-muscle strip, tied at both ends — a model, not a real preparation.", use: "Contracts in response to the agonist." },
+    { id: "tissue", name: "Tissue strip (simulated)", description: "A smooth-muscle strip waiting in a dish of salt solution until it is mounted — a model, not a real preparation.", use: "Tied between the bath hook and the transducer, it contracts in response to the agonist." },
     { id: "transducer", name: "Isotonic transducer on a stand", description: "Converts the tissue's shortening into an electrical signal.", use: "Measures each contraction; it also sets the resting tension." },
     { id: "recorder", name: "Recorder (chart display)", description: "Plots the transducer signal against time.", use: "Each dose produces a peak; its height is the response you record." },
     { id: "stock", name: "Agonist stock solutions", description: `Labelled ${MODEL.stocks.map(molarLabel).join(", ")} stocks of the simulated agonist.`, use: "Small volumes are added to the bath to reach each concentration.", safety: "Pharmacologically active — gloves, no mouth pipetting." },
     { id: "micropipette", name: "Micropipette (10–200 µL)", description: "Adjustable pipette with disposable tips.", use: "Adds the stock volume to the bath." },
     { id: "pss", name: "Physiological salt solution reservoir", description: "Warmed, aerated Tyrode-type solution.", use: "Fills the bath and washes the drug out between doses." },
+    { id: "notebook", name: "Lab notebook", description: "Your record of the experiment: the design, and every response you recorded.", use: "Define the independent and dependent variables before you start." },
   ],
   materials: [
     { id: "agonist", name: MODEL.agonist, detail: "Simulated cholinergic agonist" },
@@ -435,14 +487,15 @@ export const DOSE_RESPONSE: ExperimentDefinition<DoseState, DoseAction> = {
   ],
   steps: [
     { id: "inspect", title: "Inspect the apparatus", objective: "Inspect the organ bath, circulator, aerator, tissue, transducer, recorder, stocks, micropipette and salt-solution reservoir.", hints: ["Select each item to read what it does."], focus: [...KEY_ITEMS] },
-    { id: "design", title: "Define the experiment", objective: "Identify the independent and dependent variables.", hints: ["What do you change? What do you measure?"], focus: ["recorder"] },
-    { id: "setup", title: "Set up the bath", objective: "Fill the bath, switch on the circulator and aeration, mount the tissue, set 1 g tension and zero the recorder.", hints: ["Fill first — never heat or aerate an empty bath.", "Tension before zeroing."], focus: ["organ-bath", "thermostat", "aerator", "transducer"] },
-    { id: "equilibrate", title: "Equilibrate", objective: `Let the tissue equilibrate for at least ${MODEL.equilibrationMin} minutes at 37 °C.`, hints: ["Use the wait buttons; watch the temperature reach 37 °C."], focus: ["organ-bath", "thermostat"] },
-    { id: "trials", title: "Run the trials", objective: `Add at least ${MODEL.minConcentrations} different concentrations — from the foot of the curve (≤ 25 % of your largest response) up to the plateau — recording each peak and washing out between doses.`, hints: ["Start low and work up in half-log steps; the plateau is reached when a higher concentration gives about the same response.", "Add → read the peak → record → wash → next dose."], focus: ["micropipette", "organ-bath", "recorder"] },
+    { id: "design", title: "Define the experiment", objective: "Identify the independent and dependent variables.", hints: ["What do you change? What do you measure?"], focus: ["notebook"] },
+    { id: "setup", title: "Set up the bath", objective: "Fill the bath, switch on the circulator and aeration, mount the tissue, set 1 g tension and zero the recorder.", hints: ["Fill first — never heat or aerate an empty bath.", "Tension before zeroing."], focus: ["organ-bath", "thermostat", "aerator", "tissue", "transducer", "recorder"] },
+    { id: "equilibrate", title: "Equilibrate", objective: `Let the tissue equilibrate for at least ${MODEL.equilibrationMin} minutes at 37 °C.`, hints: ["Wait at the bath or the circulator; watch the temperature reach 37 °C."], focus: ["organ-bath", "thermostat"] },
+    { id: "trials", title: "Run the trials", objective: `Add at least ${MODEL.minConcentrations} different concentrations — from the foot of the curve (≤ 25 % of your largest response) up to the plateau — recording each peak and washing out between doses.`, hints: ["Start low and work up in half-log steps; the plateau is reached when a higher concentration gives about the same response.", "Add → read the peak → record → wash → next dose."], focus: ["micropipette", "stock", "organ-bath"] },
     { id: "plot", title: "Plot the curve", objective: "Plot response against concentration on a linear axis, then on a log axis.", hints: ["Compare the two shapes — which one lets you read EC50?"], focus: ["recorder"] },
-    { id: "analyse", title: "Estimate Emax and EC50", objective: "Read Emax and log EC50 from your graph.", hints: ["Emax is the plateau.", "Half of Emax → across to the curve → down to log C."], focus: [] },
-    { id: "unknown", title: "Find the unknown concentration", objective: "Wash, add test sample U, record its response, and read its concentration from your standard curve.", hints: ["Treat it exactly like a standard: wash first, read the peak, record it.", "Across from its response to your curve, then down to log C."], focus: ["stock", "organ-bath", "recorder"] },
+    { id: "analyse", title: "Estimate Emax and EC50", objective: "Read Emax and log EC50 from your graph.", hints: ["Emax is the plateau.", "Half of Emax → across to the curve → down to log C."], focus: ["recorder"] },
+    { id: "unknown", title: "Find the unknown concentration", objective: "Wash, add test sample U, record its response, and read its concentration from your standard curve.", hints: ["Treat it exactly like a standard: wash first, read the peak, record it.", "Across from its response to your curve, then down to log C."], focus: ["organ-bath", "micropipette", "recorder"] },
   ],
+  controllers: CONTROLLERS,
   questions: [
     { id: "q1", kind: "design", prompt: "Why is the bath washed out between doses?", options: ["To clean the glass", "So each dose acts alone — residual agonist would add to it and desensitise the tissue", "To cool the tissue", "It is optional"], answer: 1, explanation: "Non-cumulative dosing needs the previous agonist removed and the baseline restored." },
     { id: "q2", kind: "interpretation", prompt: "Agonist B has a lower EC50 than agonist A on the same tissue. B is…", options: ["More potent", "More efficacious", "Less potent", "A partial agonist"], answer: 0, explanation: "Potency is position: a lower EC50 means less drug is needed for the same effect." },
@@ -453,6 +506,7 @@ export const DOSE_RESPONSE: ExperimentDefinition<DoseState, DoseAction> = {
     { id: "q7", kind: "viva", prompt: "What are the controlled variables in this experiment?", options: ["Concentration only", "Temperature, resting tension, bath volume and contact time", "Contraction height", "None"], answer: 1, explanation: "Everything except the concentration you vary is held constant so differences in response are due to concentration." },
   ],
   initial,
+  suggest,
   apply,
   stepComplete: (s, id) => STEP_DONE[id]?.(s) ?? false,
   benchComplete: (s) => Object.values(STEP_DONE).every((f) => f(s)),

@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, Printer, RotateCcw, XCircle } from "lucide-react";
 import type { FinalReport } from "@/lib/virtual-labs/engine/machine";
-import type { LabMeta } from "@/lib/virtual-labs/engine/types";
+import type { LabMeta, LabMode } from "@/lib/virtual-labs/engine/types";
 import { ObservationSheet } from "./ObservationSheet";
 import { Btn, Pill } from "./ui";
 
 /** The results summary and printable report — every figure comes from the run itself. */
-export function LabResults({ meta, report, seed, onRetry }: { meta: LabMeta; report: FinalReport; seed: number; onRetry(): void }) {
+export function LabResults({ meta, report, seed, onRetry }: { meta: LabMeta; report: FinalReport; seed: number; onRetry(mode?: LabMode): void }) {
   const r = report;
   return (
     <div className="mx-auto max-w-4xl space-y-5 px-4 py-6 sm:px-6">
@@ -20,9 +20,12 @@ export function LabResults({ meta, report, seed, onRetry }: { meta: LabMeta; rep
           <Stat label="Overall" value={`${r.overall}%`} sub={r.grade} strong />
           <Stat label="Technique" value={`${r.technique}/100`} sub={`${r.mistakes.length} mistake${r.mistakes.length === 1 ? "" : "s"}`} />
           <Stat label="Assessment" value={`${r.assessment.correct}/${r.assessment.total}`} sub={`${r.assessment.percent}%`} />
-          <Stat label="Hints used" value={String(r.hintsUsed)} sub="no penalty" />
+          <Stat label="Hints used" value={String(r.hintsUsed)} sub={r.hintPenalty ? `−${r.hintPenalty} technique` : "no penalty"} />
         </div>
-        <p className="mt-3 text-xs text-[#8a9099]">Run seed {seed} · simulated practice, not an assessed university practical.</p>
+        <p className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[#8a9099]">
+          <Pill tone={r.assessed ? "blue" : "neutral"}>{r.assessed ? "Practical mode — independent run" : "Learning mode — practice"}</Pill>
+          Run seed {seed} · simulated practice, not an assessed university practical.
+        </p>
       </div>
 
       <Block title="Outcome">
@@ -89,9 +92,10 @@ export function LabResults({ meta, report, seed, onRetry }: { meta: LabMeta; rep
       </Block>
 
       <div className="vl-noprint flex flex-wrap gap-3">
-        <Btn variant="primary" onClick={onRetry}>
+        <Btn variant="primary" onClick={() => onRetry()}>
           <RotateCcw className="h-4 w-4" aria-hidden />Retry with a new sample
         </Btn>
+        {!r.assessed && <Btn onClick={() => onRetry("practical")}>Now try it in Practical mode</Btn>}
         <Btn onClick={() => window.print()}>
           <Printer className="h-4 w-4" aria-hidden />Print or save as PDF
         </Btn>

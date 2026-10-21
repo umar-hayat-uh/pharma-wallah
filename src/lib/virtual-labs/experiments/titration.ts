@@ -10,7 +10,7 @@
  * burette dilutes the titrant, an air bubble inflates the titre, an over-filled flask
  * dilutes the sample, and the report shows the result those choices produce.
  */
-import type { ExperimentDefinition, Feedback, ObservationSection, ExperimentReport } from "../engine/types";
+import type { ControllerDef, ExperimentDefinition, Suggestion, Feedback, ObservationSection, ExperimentReport } from "../engine/types";
 import { fmt, info, mistake, ok, rand, refuse, round, warn } from "../engine/machine";
 import {
   CITRIC,
@@ -615,6 +615,67 @@ const STEP_DONE: Record<string, (s: TitrationState) => boolean> = {
   compare: (s) => s.verdict !== null,
 };
 
+/**
+ * The instruments (2026-10-21 upgrade). Each physical action is available only from the
+ * instrument it is done with; the run machine refuses it otherwise. Swirling and the white
+ * tile are on the burette too, because the student titrates with one hand on the stopcock
+ * and the other swirling the flask beneath it.
+ */
+const CONTROLLERS: ControllerDef[] = [
+  { id: "cupboard", name: "Glassware cupboard", equipment: ["cupboard"], actions: ["chooseApparatus"], brief: "Choose the apparatus this assay needs and set it out on the bench.", howTo: ["Tick only what the method needs.", "Exact volumes need Class A volumetric glassware."] },
+  { id: "reagents", name: "Reagent shelf", equipment: ["sample", "titrant", "indicator"], actions: ["chooseReagents"], brief: "Select the sample, the titrant and the indicator.", howTo: ["Read each label before you choose.", "Match the indicator's range to the pH at equivalence."], nearby: ["balance"] },
+  { id: "balance", name: "Analytical balance", equipment: ["balance"], actions: ["placeBoat", "doors", "tare", "addSample", "removeSample", "recordMass"], brief: "Weigh about 1 g of sample to 0.1 mg.", howTo: ["Boat on the pan, close the doors, then tare.", "Scoops to get close, taps to finish; read only when the display says stable."], nearby: ["vol-flask"] },
+  { id: "vol-flask", name: "Volumetric flask", equipment: ["vol-flask", "wash-bottle"], actions: ["transfer", "rinseBoat", "dissolve", "addWater", "mixFlask", "discardFlask"], brief: "Dissolve the sample and make it up to exactly 100 mL.", howTo: ["Rinse the boat and funnel in so nothing is lost.", "Finish with drops until the bottom of the meniscus sits on the mark, then invert."], nearby: ["balance", "pipette"] },
+  { id: "pipette", name: "Bulb pipette", equipment: ["pipette"], actions: ["rinsePipette", "pipette"], brief: "Deliver a 20.00 mL aliquot into the conical flask.", howTo: ["Rinse with a little of the sample solution first.", "Let it drain, then touch the tip against the glass."], nearby: ["vol-flask", "conical-flask"] },
+  { id: "conical-flask", name: "Conical flask", equipment: ["conical-flask", "tile"], actions: ["addDiluent", "addIndicator", "placeTile", "swirl", "newTitration"], brief: "Prepare the aliquot for titration.", howTo: ["Add a little water and two drops of indicator.", "Stand it on the white tile under the burette."], nearby: ["pipette", "burette"] },
+  { id: "burette", name: "Burette", equipment: ["burette", "stand"], actions: ["rinseBurette", "fillBurette", "removeFunnel", "expelBubble", "runToZero", "recordInitial", "addTitrant", "swirl", "placeTile", "recordFinal"], brief: "Fill, read and operate the stopcock.", howTo: ["Rinse with titrant, fill, remove the funnel, clear the air from the tip.", "Hold the valve for a stream; use single drops near the end-point and swirl after each."], nearby: ["conical-flask", "notebook"] },
+  { id: "notebook", name: "Lab notebook", equipment: ["notebook"], actions: ["enterResults", "verdict"], brief: "Calculate the assay from your readings and state the conclusion.", howTo: ["Use the mean of your titres.", "Compare your own result with the limit."], nearby: ["burette"] },
+];
+
+/** Learning mode: the next correct move. Never reveals a reading or the end-point. */
+function suggest(s: TitrationState): Suggestion | null {
+  const to = (controller: string, action: string): Suggestion => ({ controller, action });
+  if (!KEY_ITEMS.every((k) => s.inspected.includes(k))) return null; // inspection is finding, not operating
+  if (!s.apparatusOk) return to("cupboard", "chooseApparatus");
+  if (!STEP_DONE.reagents(s)) return to("reagents", "chooseReagents");
+  if (s.massRecorded === null) {
+    if (!s.boatOn) return to("balance", "placeBoat");
+    if (s.tareG === 0) return to("balance", s.doorsClosed ? "tare" : "doors");
+    const v = balanceDisplay(s).value;
+    if (v < METHOD.sampleTargetG[0]) return to("balance", "addSample");
+    if (v > METHOD.sampleTargetG[1]) return to("balance", "removeSample");
+    return to("balance", s.doorsClosed ? "recordMass" : "doors");
+  }
+  if (!STEP_DONE.solution(s)) {
+    if (!s.transferred) return to("vol-flask", "transfer");
+    if (!s.rinsedBoat) return to("vol-flask", "rinseBoat");
+    if (!s.dissolved) return to("vol-flask", "dissolve");
+    if (s.flaskWaterMl > METHOD.flaskMl + METHOD.flaskToleranceMl) return to("vol-flask", "discardFlask");
+    if (s.flaskWaterMl < METHOD.flaskMl - METHOD.flaskToleranceMl) return to("vol-flask", "addWater");
+    return to("vol-flask", "mixFlask");
+  }
+  // A repeat titration is in progress once "new titration" has reset the flask and its
+  // final reading is not yet on the record.
+  const last = s.titrations[s.titrations.length - 1];
+  const lastIsCurrent = !!last && last.initialRecorded === s.initialRecorded && last.finalTrue === s.level;
+  if (s.titrations.length === 0 || (s.titreEntered === null && !lastIsCurrent)) {
+    if (s.aliquotAcidMmol === 0) return to("pipette", s.pipetteRinsed ? "pipette" : "rinsePipette");
+    if (!s.waterAdded) return to("conical-flask", "addDiluent");
+    if (!s.indicatorAdded) return to("conical-flask", "addIndicator");
+    if (!s.tileUnder) return to("conical-flask", "placeTile");
+    if (!s.buretteFilled) return to("burette", s.buretteRinsed ? "fillBurette" : "rinseBurette");
+    if (!s.funnelRemoved) return to("burette", "removeFunnel");
+    if (s.bubble) return to("burette", "expelBubble");
+    if (s.level < 0) return to("burette", "runToZero");
+    if (s.initialRecorded === null) return to("burette", "recordInitial");
+    // the end-point is the student's judgement: point at the valve, never at "stop"
+    return to("burette", s.swirled ? "addTitrant" : "swirl");
+  }
+  if (s.titreEntered === null) return to("notebook", "enterResults");
+  if (s.verdict === null) return to("notebook", "verdict");
+  return null;
+}
+
 function observations(s: TitrationState): ObservationSection[] {
   const exp = expectedResult(s);
   const conc = concordance(exp.titres);
@@ -711,6 +772,8 @@ export const TITRATION: ExperimentDefinition<TitrationState, TitrationAction> = 
     { id: "titrant", name: "Sodium hydroxide 0.1 M (standardised)", description: `Volumetric solution; the label gives the standardised molarity, ${METHOD.titrantMolar.toFixed(4)} M.`, use: "The titrant in the burette.", safety: "Corrosive." },
     { id: "tile", name: "White tile", description: "A white background under the titration flask.", use: "Makes the first faint colour change visible." },
     { id: "wash-bottle", name: "Wash bottle", description: "Purified water.", use: "Quantitative rinsing, making up to volume, washing down the flask walls." },
+    { id: "cupboard", name: "Glassware cupboard", description: "Volumetric and general glassware, with measuring cylinders and beakers alongside the Class A items.", use: "Choose the apparatus this assay needs and set it out on the bench." },
+    { id: "notebook", name: "Lab notebook", description: "Your record of the experiment: every reading you recorded is already in it.", use: "Calculate the titre and the assay from your own readings, then state whether the sample complies." },
   ],
   materials: [
     { id: "citric", name: "Citric acid monohydrate (simulated sample CA-01)", detail: "C₆H₈O₇·H₂O, Mr 210.14", hazard: "Eye irritant." },
@@ -720,15 +783,15 @@ export const TITRATION: ExperimentDefinition<TitrationState, TitrationAction> = 
   ],
   steps: [
     { id: "inspect", title: "Inspect the bench", objective: "Find and inspect the burette, stand, pipette, volumetric flask, conical flask, indicator, sample and titrant.", hints: ["Hover or tap an item to see its name; select it to read its details.", "The items still to inspect are listed in the procedure panel."], focus: [...KEY_ITEMS] },
-    { id: "apparatus", title: "Set out the apparatus", objective: "Choose the apparatus this assay needs, and only that.", hints: ["The aliquot volume must be exact, and the expected titre is about 28 mL.", "You need a 50 mL burette, a 20 mL bulb pipette and a 100 mL volumetric flask — not a measuring cylinder or beaker."], focus: ["stand", "burette"] },
+    { id: "apparatus", title: "Set out the apparatus", objective: "Choose the apparatus this assay needs, and only that.", hints: ["The aliquot volume must be exact, and the expected titre is about 28 mL.", "You need a 50 mL burette, a 20 mL bulb pipette and a 100 mL volumetric flask — not a measuring cylinder or beaker."], focus: ["cupboard"] },
     { id: "reagents", title: "Choose sample and reagents", objective: "Select the sample, the titrant and an indicator suited to a weak acid–strong base titration.", hints: ["The equivalence point of a weak acid titrated by a strong base is alkaline.", "Phenolphthalein changes colour between pH 8.2 and 10.0."], focus: ["sample", "titrant", "indicator"] },
     { id: "weigh", title: "Weigh the sample", objective: "Tare the empty boat, weigh 0.95–1.05 g of sample with the doors closed, and record the mass.", hints: ["Boat on the pan → close the doors → tare → add sample.", "Use scoops to get close, taps to fine-tune, and close the doors before reading."], focus: ["balance"], safety: "Citric acid irritates the eyes — do not spill it on the bench." },
     { id: "solution", title: "Prepare the sample solution", objective: "Transfer quantitatively, dissolve, make up to the 100 mL mark and mix.", hints: ["Rinse the boat and funnel into the flask so all the sample goes in.", "Bring the bottom of the meniscus exactly to the mark with drops, then stopper and invert."], focus: ["vol-flask"] },
     { id: "aliquot", title: "Take the aliquot", objective: "Rinse the pipette, deliver 20.00 mL into the conical flask, add water and two drops of indicator.", hints: ["Rinse the pipette with a little of the sample solution first.", "A bulb pipette is touched off against the glass — never blown out."], focus: ["pipette", "conical-flask"], safety: "Use the pipette filler." },
     { id: "burette", title: "Prepare the burette", objective: "Rinse with titrant, fill, remove the funnel, expel the air bubble and record the initial reading.", hints: ["Water left in the burette dilutes the titrant — rinse with it twice.", "Read the bottom of the meniscus at eye level, to 0.01 mL."], focus: ["burette", "stand"], safety: "Fill the burette below eye level." },
     { id: "titrate", title: "Titrate", objective: "Run in titrant with swirling until the first permanent faint pink, then record the final reading.", hints: ["Run in quickly at first, then drop by drop once the pink takes longer to fade.", "Swirl after every addition, and stop at the first pink that lasts 30 seconds."], focus: ["burette", "conical-flask", "tile"] },
-    { id: "calculate", title: "Calculate", objective: "Enter the titre and the assay calculated from your own readings.", hints: ["Use the mean of your titres.", "Assay % = titre × M × 210.14/3 × (100/20) ÷ (mass × 1000) × 100."], focus: [] },
-    { id: "compare", title: "Compare with the limit", objective: "Decide whether your result complies with the illustrative limit.", hints: [`The illustrative limit is ${METHOD.limits[0].toFixed(1)}–${METHOD.limits[1].toFixed(1)} %.`], focus: [] },
+    { id: "calculate", title: "Calculate", objective: "Enter the titre and the assay calculated from your own readings.", hints: ["Use the mean of your titres.", "Assay % = titre × M × 210.14/3 × (100/20) ÷ (mass × 1000) × 100."], focus: ["notebook"] },
+    { id: "compare", title: "Compare with the limit", objective: "Decide whether your result complies with the illustrative limit.", hints: [`The illustrative limit is ${METHOD.limits[0].toFixed(1)}–${METHOD.limits[1].toFixed(1)} %.`], focus: ["notebook"] },
   ],
   questions: [
     { id: "q1", kind: "design", prompt: "Why is phenolphthalein, not methyl orange, used for citric acid with NaOH?", options: ["Phenolphthalein is cheaper", "The equivalence point is alkaline (≈ pH 9), inside phenolphthalein's range", "Methyl orange reacts with citric acid", "Phenolphthalein makes the titration faster"], answer: 1, explanation: "A weak acid titrated with a strong base gives an alkaline equivalence point; methyl orange would change after only a fraction of the acid had reacted." },
@@ -742,6 +805,8 @@ export const TITRATION: ExperimentDefinition<TitrationState, TitrationAction> = 
   ],
   initial,
   apply,
+  controllers: CONTROLLERS,
+  suggest,
   stepComplete: (s, id) => STEP_DONE[id]?.(s) ?? false,
   benchComplete: (s) => Object.values(STEP_DONE).every((f) => f(s)),
   observations,
@@ -754,7 +819,11 @@ export function titrationVisual(s: TitrationState) {
   const ind = fr.ind;
   let colour: [number, number, number, number] = [0.93, 0.96, 1, 0.12];
   if (ind && s.indicatorAdded) {
-    const base = s.swirled ? fr.f : Math.max(fr.f, 0.45);
+    // Swirled: colourless until the engine's own faint-pink threshold. Until 2026-10-21 the
+    // colour blended in continuously, so a student who stopped at the first pink that
+    // lasted — as taught — was marked "stopped before the end-point" (found by the browser
+    // harness reading the swatch). Unswirled: the local pink patch where the drop landed.
+    const base = s.swirled ? (fr.f < FAINT_PINK_FRACTION ? 0 : fr.f) : Math.max(fr.f, 0.45);
     const mix = (i: number) => ind.acid[i] * (1 - base) + ind.base[i] * base;
     colour = [mix(0), mix(1), mix(2), Math.max(0.12, ind.acid[3] * (1 - base) + ind.base[3] * base * Math.min(1, base * 1.6))];
   }

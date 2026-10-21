@@ -9,7 +9,7 @@
  * optics model (calculations/microscopy.ts): it must be in the field, in focus and at a
  * magnification that resolves it.
  */
-import type { ExperimentDefinition, ExperimentReport, Feedback, ObservationSection } from "../engine/types";
+import type { ControllerDef, ExperimentDefinition, ExperimentReport, Feedback, ObservationSection, Suggestion } from "../engine/types";
 import { info, mistake, ok, refuse } from "../engine/machine";
 import { OBJECTIVES, fieldOfViewUm, generateSlide, recognisable, totalMagnification, type ElementSpec, type ScopeView, type SlideElement } from "../calculations/microscopy";
 import { LABS } from "../catalog";
@@ -137,10 +137,18 @@ export function view(s: CloveState): ScopeView {
   return { mag: s.mag, stageX: s.stageX, stageY: s.stageY, focusErrUm: s.focusErrUm, light: s.light, slideOn: s.slideOnStage };
 }
 
-/** Recognisable elements now. A heaped mount hides two thirds of what is there. */
+/**
+ * Elements a poor mount hides: a heaped mount buries two thirds of them, a coverslip
+ * dropped flat traps air over a quarter. One rule, used by the engine (what counts as
+ * seen) AND the eyepiece (what is drawn hidden), so the two can never disagree.
+ */
+export function obscured(s: CloveState, e: SlideElement): boolean {
+  return s.powder === "large" ? e.id % 3 !== 0 : s.coverslip === "dropped" ? e.id % 4 === 0 : false;
+}
+
+/** Recognisable elements now. */
 export function visibleNow(s: CloveState): SlideElement[] {
-  const els = recognisable(view(s), slideOf(s), cleared(s), CLOVE_ELEMENTS);
-  return s.powder === "large" ? els.filter((e) => e.id % 3 === 0) : s.coverslip === "dropped" ? els.filter((e) => e.id % 4 !== 0) : els;
+  return recognisable(view(s), slideOf(s), cleared(s), CLOVE_ELEMENTS).filter((e) => !obscured(s, e));
 }
 
 function withSeen(st: CloveState): CloveState {
@@ -340,6 +348,63 @@ const STEP_DONE: Record<string, (s: CloveState) => boolean> = {
   identify: (s) => s.identity !== null,
 };
 
+// ── Instruments (2026-10-21): the bench is operated from the equipment, not from step cards ──
+
+const CONTROLLERS: ControllerDef[] = [
+  { id: "jars", name: "Sample jars", equipment: ["jars"], actions: ["chooseSample"], brief: "Read the labels and take a sample of the drug the practical names.", howTo: ["Pick a jar up to read its label.", "Take a sample only from the jar the practical sheet asks for."], nearby: ["prep"] },
+  { id: "prep", name: "Slide preparation", equipment: ["slides", "needle", "chloral", "lamp", "coverslips", "blotting"], actions: ["cleanSlide", "powder", "mountant", "warm", "coverslip", "blot", "remount", "iodineTest"], brief: "Make a cleared powder mount; the iodine starch test is a separate mount.", howTo: ["Wipe the slide, then a needle-tip of powder and 1–2 drops of mountant.", "Warm gently, lower the coverslip from one edge, blot the edges."], nearby: ["jars", "microscope"] },
+  { id: "microscope", name: "Compound microscope", equipment: ["microscope"], actions: ["placeSlide", "light", "objective", "coarse", "fine", "stage", "centre"], brief: "Focus at low power, then examine at 40× with the fine focus.", howTo: ["Slide on, lamp on, 4× or 10× and the coarse knob until particles are crisp.", "At 40× use only the fine knob; move the stage to scan new fields."], nearby: ["prep", "notebook"] },
+  { id: "notebook", name: "Lab notebook", equipment: ["notebook"], actions: ["checklist", "compare", "identify"], brief: "Record what you saw, compare it with the reference, then identify the powder.", howTo: ["Mark present only what you have seen in the eyepiece.", "The reference opens once your checklist is recorded."], nearby: ["microscope"] },
+];
+
+/**
+ * Learning mode: the next correct move. It names an instrument and a control type only —
+ * never which jar, which features are present or what the powder is. It reads the slide
+ * (`seen`) only through the observe step's own completion rule, so it gives nothing away
+ * about what is in the field.
+ * Null while the bench is being inspected and for the identification itself, which is the
+ * judgement the practical assesses.
+ */
+function suggest(s: CloveState): Suggestion | null {
+  const to = (controller: string, action: string): Suggestion => ({ controller, action });
+  if (!STEP_DONE.inspect(s)) return null; // inspection is finding, not operating
+  if (!STEP_DONE.sample(s)) return to("jars", "chooseSample");
+  if (!STEP_DONE.prepare(s)) {
+    if (!s.powder) return to("prep", s.slideCleaned ? "powder" : "cleanSlide");
+    if (!s.mountant) return to("prep", "mountant");
+    // a water or iodine mount never clears: the only way on is a fresh slide
+    if (s.mountant !== "chloral") return to("prep", "remount");
+    if (!s.warmed) return to("prep", "warm");
+    if (!s.coverslip) return to("prep", "coverslip");
+    return to("prep", "blot");
+  }
+  const mic = (action: string) => to("microscope", action);
+  // the focus pointer follows the image the student can see: coarse while it is a blur,
+  // fine once a coarse turn would jump past the focal plane (and always fine at 40×)
+  const focusKnob = () => (s.mag === 40 || Math.abs(s.focusErrUm) < COARSE_UM ? "fine" : "coarse");
+  // An uncleared mount hides the crystals and the epidermis, so observation cannot be
+  // finished on it: warm a chloral mount (allowed under the coverslip), remake any other.
+  if (!STEP_DONE.observe(s) && !cleared(s)) return to("prep", s.mountant === "chloral" ? "warm" : "remount");
+  if (!STEP_DONE.setup(s)) {
+    if (!s.slideOnStage) return mic("placeSlide");
+    if (!s.light) return mic("light");
+    if (s.mag === 40) return mic("objective"); // back to low power to find the specimen
+    return mic(focusKnob());
+  }
+  if (!STEP_DONE.observe(s)) {
+    if (!s.slideOnStage) return mic("placeSlide");
+    if (!s.light) return mic("light");
+    if (Math.abs(s.focusErrUm) > OBJECTIVES[s.mag].dofUm) return mic(focusKnob());
+    if (s.mag === 4) return mic("objective");
+    // scan a few fields at 10× for the large elements, then go up for pollen and crystals
+    if (s.mag === 10) return mic(s.fieldsVisited < 3 ? "stage" : "objective");
+    return mic(s.usedFineAtHigh ? "stage" : "fine");
+  }
+  if (!s.checklist) return s.iodineDone ? to("notebook", "checklist") : to("prep", "iodineTest");
+  if (!s.compared) return to("notebook", "compare");
+  return null; // the identification is the student's own conclusion
+}
+
 function observations(s: CloveState): ObservationSection[] {
   const names: Record<string, string> = { "oil-gland": "Oil glands in parenchyma", pollen: "Triangular pollen grains", "cluster-crystal": "Cluster crystals", "spiral-vessel": "Spiral vessels", epidermis: "Epidermis with stomata", fibre: "Fibres", sclereid: "Sclereid (occasional)" };
   return [
@@ -409,6 +474,7 @@ export const CLOVE: ExperimentDefinition<CloveState, CloveAction> = {
     { id: "lamp", name: "Spirit lamp", description: "Small flame for warming slides.", use: "Warms the chloral hydrate mount gently to clear it.", safety: "Open flame." },
     { id: "needle", name: "Mounted needle and spatula", description: "Tools for taking a small amount of powder and lowering the coverslip.", use: "A needle-tip of powder; lowering the coverslip at 45°." },
     { id: "blotting", name: "Blotting paper", description: "Absorbent paper strips.", use: "Removes excess mountant from the coverslip edges." },
+    { id: "notebook", name: "Lab notebook", description: "The powder-microscopy record sheet, with the reference description of powdered clove.", use: "The feature checklist, the comparison with the reference and the identification are recorded here." },
   ],
   materials: [
     { id: "clove", name: "Clove, powdered (jar PG-07)", detail: "Dried flower buds of Syzygium aromaticum, dark brown, strongly aromatic" },
@@ -418,12 +484,12 @@ export const CLOVE: ExperimentDefinition<CloveState, CloveAction> = {
   steps: [
     { id: "inspect", title: "Inspect the bench", objective: "Inspect the microscope, slides, coverslips, reagents, sample jars, spirit lamp, needle and blotting paper.", hints: ["Select each item to read about it."], focus: [...KEY_ITEMS] },
     { id: "sample", title: "Select the sample", objective: "Take the correctly labelled jar of powdered clove.", hints: ["Read every label: two jars are clove-related."], focus: ["jars"] },
-    { id: "prepare", title: "Prepare the slide", objective: "Clean slide → a little powder → chloral hydrate → warm gently → coverslip at 45° → blot.", hints: ["As much powder as covers a needle tip.", "Lower the coverslip from one edge to keep air out."], focus: ["slides", "chloral", "lamp", "coverslips", "blotting"], safety: "Chloral hydrate is harmful; warm gently." },
+    { id: "prepare", title: "Prepare the slide", objective: "Clean slide → a little powder → chloral hydrate → warm gently → coverslip at 45° → blot.", hints: ["As much powder as covers a needle tip.", "Lower the coverslip from one edge to keep air out."], focus: ["slides", "needle", "chloral", "lamp", "coverslips", "blotting"], safety: "Chloral hydrate is harmful; warm gently." },
     { id: "setup", title: "Set up the microscope", objective: "Place the slide on the stage, switch on the light, and focus at low power.", hints: ["Start with the 4× or 10× objective and the coarse focus.", "The image is sharp when the edges of particles are crisp."], focus: ["microscope"] },
     { id: "observe", title: "Observe", objective: "Scan several fields at 10× and 40× (fine focus only) and find at least four of the five main elements.", hints: ["Oil glands are large — look at 10×. Pollen and crystals are small — use 40×.", "Move the stage to new fields; focus with the fine knob at 40×."], focus: ["microscope"] },
-    { id: "checklist", title: "Record the features", objective: "Mark each feature on the checklist as present or absent.", hints: ["Mark only what you have seen as present.", "The iodine test settles whether starch is present."], focus: [] },
-    { id: "compare", title: "Compare with the reference", objective: "Compare your observations with the reference description.", hints: ["Open the reference panel."], focus: [] },
-    { id: "identify", title: "Identify", objective: "Name the drug and choose the observations that support it.", hints: ["Use diagnostic features, including what is absent."], focus: [] },
+    { id: "checklist", title: "Record the features", objective: "Mark each feature on the checklist in the lab notebook as present or absent.", hints: ["Mark only what you have seen as present.", "The iodine test (a separate mount, at the slide-preparation station) settles whether starch is present."], focus: ["notebook"] },
+    { id: "compare", title: "Compare with the reference", objective: "Compare your observations with the reference description.", hints: ["The reference description is in the lab notebook, under your recorded checklist."], focus: ["notebook"] },
+    { id: "identify", title: "Identify", objective: "Name the drug and choose the observations that support it.", hints: ["Use diagnostic features, including what is absent."], focus: ["notebook"] },
   ],
   questions: [
     { id: "q1", kind: "viva", prompt: "Which pair of elements is most characteristic of powdered clove?", options: ["Starch grains and cork", "Oil glands in parenchyma and triangular pollen grains", "Stone cells and prism crystals", "Covering trichomes and starch"], answer: 1, explanation: "The schizogenous oil glands and the small triangular pollen grains are the hallmark of clove buds." },
@@ -436,6 +502,8 @@ export const CLOVE: ExperimentDefinition<CloveState, CloveAction> = {
   ],
   initial,
   apply,
+  controllers: CONTROLLERS,
+  suggest,
   stepComplete: (s, id) => STEP_DONE[id]?.(s) ?? false,
   benchComplete: (s) => Object.values(STEP_DONE).every((f) => f(s)),
   observations,

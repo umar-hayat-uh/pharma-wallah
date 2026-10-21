@@ -240,20 +240,25 @@ pages, confirm progress tracking records a visit, then batch the rest.
 - **Dependencies:** none new (`three` 0.185 was already installed). Assets: Z-Anatomy (CC BY-SA 4.0).
 
 ### Virtual Labs (3D)
-- **Status:** ✅ Implemented 2026-10-20 — 4 labs, one experiment each. **Not deployed. Not faculty-reviewed.**
-  Verified by 39 unit tests (`scripts/virtual-labs.test.mts`) and headless Chrome with software WebGL; not on a
-  real phone.
+- **Status:** ✅ Implemented 2026-10-20; ✅ **immersive upgrade 2026-10-21** (equipment-driven controllers, Learning /
+  Practical modes, full-screen layer, pixel-budget quality tiers — `docs/virtual-labs/UPGRADE_PLAN.md`). **Not deployed.
+  Not faculty-reviewed. Not tested on a real phone/GPU.** Verified by the unit tests (`scripts/virtual-labs.test.mts`,
+  incl. equipment-gate bypass tests per lab) and by headless Chrome driving all four labs through their 3D equipment
+  at 1440 × 900 and 390 × 844 touch.
 - **Existing implementation:** `/virtual-labs` landing + four 3D rooms (plain three.js, loaded per lab):
   acid–base titration assay of citric acid (Pharmaceutical Chemistry), Simple Syrup preparation and evaluation
   (Pharmaceutics), graded dose–response on a simulated isolated tissue (Pharmacology), powdered clove microscopy
   (Pharmacognosy). Pure experiment engine with undo, hints, technique mistakes that change the result, an
-  assessment and a results report; every 3D action also in the bench panel (2D lab, no-WebGL fallback);
+  assessment and a results report; since 2026-10-21 every action is performed on its instrument's controller,
+  opened by selecting the equipment (3D, Q/E keyboard, or the 2D bench plan — the no-WebGL fallback);
   progress on the device and via `useTracker`. Curriculum status `source_verified` for all four (UoK PHC-607,
   PHT-402, PHL-612, PHG-411); asset manifest with licences. Skill: `.claude/skills/virtual-labs/`.
 - **Remaining work:** faculty review of each lab (a named reviewer before any status rises to
   `faculty_reviewed`); real clove micrographs (the one Commons photo is `needs_review`, the eyepiece view is
-  schematic); deploy + phone check; possible further experiments per lab — **not in this release** (the test
-  pins the catalogue at four).
+  schematic — a CC BY 4.0 candidate showing more elements is recorded in ASSET_RESEARCH.md's 2026-10-21 addendum);
+  deploy + phone check; owner decision on the syrup start water (45 mL + 2 mL rinse leaves nothing to make up);
+  server-side replay verification of completed runs (scores are labelled practice); possible further experiments
+  per lab — **not in this release** (the test pins the catalogue at four).
 - **Important files:** `src/lib/virtual-labs/`, `src/components/virtual-labs/`, `src/app/(site)/virtual-labs/`,
   `public/models/virtual-labs/`, `scripts/virtual-labs.test.mts`.
 - **Dependencies:** none new (`three` already installed). Assets: Poly Haven CC0, one Wikimedia Commons CC BY-SA 4.0 photo.

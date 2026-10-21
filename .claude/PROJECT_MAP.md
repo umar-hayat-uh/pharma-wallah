@@ -255,7 +255,7 @@ Naming is inconsistent by design-drift: some directories are `kebab-case`, other
 
 ---
 
-## Virtual Labs (3D, added 2026-10-20)
+## Virtual Labs (3D, added 2026-10-20; immersive upgrade 2026-10-21 — `docs/virtual-labs/UPGRADE_PLAN.md`)
 
 Skill: `.claude/skills/virtual-labs/SKILL.md`. Replaced the legacy `/simulations` labs (hub, titration, buffer,
 dilution, disk diffusion, UV, staining, organic ID, lab guide) and `/compounding-lab` — all **removed 2026-10-20**.
@@ -267,16 +267,17 @@ Permanent redirects in `next.config.mjs`: `/simulations` and `/simulations/:path
 | Landing (server: catalogue cards, curriculum badges, credits from the manifest) | `src/app/(site)/virtual-labs/page.tsx` (card images expected at `public/images/virtual-labs/<id>.webp`) |
 | Acid–base titration (Pharmaceutical Chemistry) | `src/app/(site)/virtual-labs/pharmaceutical-chemistry/acid-base-titration/page.tsx` → `src/components/virtual-labs/labs/TitrationLab.tsx` |
 | Simple Syrup (Pharmaceutics) | `src/app/(site)/virtual-labs/pharmaceutics/simple-syrup/page.tsx` → `labs/SyrupLab.tsx` |
-| Graded dose–response (Pharmacology) | `src/app/(site)/virtual-labs/pharmacology/dose-response/page.tsx` → `labs/DoseResponseLab.tsx` (extra "Graph" tab) |
-| Powdered clove microscopy (Pharmacognosy) | `src/app/(site)/virtual-labs/pharmacognosy/powdered-clove/page.tsx` → `labs/CloveLab.tsx` (extra microscope tab) |
-| One lab, start to finish (briefing → bench → assessment → results; tracking) | `src/components/virtual-labs/LabExperience.tsx` |
+| Graded dose–response (Pharmacology) | `src/app/(site)/virtual-labs/pharmacology/dose-response/page.tsx` → `labs/DoseResponseLab.tsx` (graph lives in the recorder controller) |
+| Powdered clove microscopy (Pharmacognosy) | `src/app/(site)/virtual-labs/pharmacognosy/powdered-clove/page.tsx` → `labs/CloveLab.tsx` (eyepiece lives in the microscope controller) |
+| One lab, start to finish (briefing + mode cards → immersive full-screen lab → assessment → results; tracking; fullscreen, scroll lock, pause on hide, insets) | `src/components/virtual-labs/LabExperience.tsx` |
 | 3D viewport (`next/dynamic` ssr:false; loads only its own room; `window.__vlab`) | `src/components/virtual-labs/Viewport.tsx`, `webgl.ts` |
-| Shared three.js runtime (walking, colliders, picking, focus tweens, quality tiers, markers, dispose) | `src/components/virtual-labs/three/runtime.ts`, `three/types.ts` |
+| Shared three.js runtime (walking, colliders, picking + Q/E keyboard picking, focus tweens, pixel-budget quality tiers `QUALITY`, view-offset insets, pause, static shadows, markers, `where`/`moving` for automation, dispose) | `src/components/virtual-labs/three/runtime.ts`, `three/types.ts` |
 | Rooms | `three/rooms/{chemistry,pharmaceutics,pharmacology,pharmacognosy}.ts` + `rooms/helpers.ts` (`RoomBuilder`, `TOP`) |
 | Procedural parts (furniture, glassware, instruments, materials, canvas textures) | `three/{kit,glass,instruments,materials,textures}.ts` |
-| Bench panels (every 3D action as a control) + 2D instruments + eyepiece | `src/components/virtual-labs/benches/{Titration,Syrup,Dose,Clove}Bench.tsx`, `instruments2d.tsx`, `MicroscopeView.tsx`, `types.ts` |
-| Interface (HUD, procedure, equipment, notebook, assessment, results, overlays, UI kit) | `src/components/virtual-labs/interface/*.tsx`; namespaced CSS `virtual-labs.css` (`.pw-vlab`) |
-| Engine (pure): experiment contract, run machine (undo/hints/answers/submit/scoring) | `src/lib/virtual-labs/engine/{types,machine}.ts` |
+| Instrument controllers (one panel per `ControllerDef`, opened by selecting its equipment) + 2D instruments + eyepiece | `src/components/virtual-labs/benches/{Titration,Syrup,Dose,Clove}Controls.tsx`, `instruments2d.tsx`, `MicroscopeView.tsx`, `types.ts` |
+| Immersive chrome (top bar, controller dock / phone bottom sheet, Next prompt, info card) + control kit (`ActBtn`, `Hl`, `HoldControl`, Learning "next" ring) | `src/components/virtual-labs/interface/{LabChrome,controls}.tsx` |
+| Interface (briefing + mode cards, objectives, equipment guide, notebook view, assessment, results, overlays, UI kit) | `src/components/virtual-labs/interface/*.tsx`; namespaced CSS `virtual-labs.css` (`.pw-vlab`, `.vl-immersive`) |
+| Engine (pure): experiment contract (incl. controllers, suggest, modes), run machine (equipment gate, operate, mode, undo/hints/answers/submit/scoring) | `src/lib/virtual-labs/engine/{types,machine}.ts` |
 | Calculations (pure science) | `src/lib/virtual-labs/calculations/{titration,syrup,doseResponse,microscopy}.ts` |
 | Experiment definitions + room visual derivations | `src/lib/virtual-labs/experiments/{titration,syrup,doseResponse,clove,index}.ts` |
 | Catalogue (exactly 4) / curriculum statuses / shared labels | `src/lib/virtual-labs/{catalog,curriculum,labels}.ts` |

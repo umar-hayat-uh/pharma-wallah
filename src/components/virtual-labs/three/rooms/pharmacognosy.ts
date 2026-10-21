@@ -8,7 +8,7 @@ import type { MaterialLib } from "../materials";
 import type { BuildContext, RoomBuild } from "../types";
 import { box, coatHook, cyl, extinguisher, eyewashStation, firstAid, mesh, rbox, roomShell, wasteBin } from "../kit";
 import { dropperBottle } from "../glass";
-import { compoundMicroscope, slide, spiritLamp, storageJar } from "../instruments";
+import { compoundMicroscope, labNotebook, slide, spiritLamp, storageJar } from "../instruments";
 import { labelTexture, mulberry } from "../textures";
 import { RoomBuilder, TOP } from "./helpers";
 
@@ -139,6 +139,8 @@ export function buildPharmacognosy(m: MaterialLib, _ctx: BuildContext): RoomBuil
     jars.add(j);
   });
   r.place(jars, 0.95, TOP, z0 - 0.1);
+  // the record sheet, past the jars: checklist, reference comparison and identification
+  const notebook = r.place(labNotebook(m, "Powder microscopy record"), 1.47, TOP, z0 + 0.04, -0.2);
 
   r.interactive("microscope", "Compound microscope", scope.group, { dist: 0.6, lift: 0.18, target: [0.2, TOP + 0.2, z0 - 0.04] });
   r.interactive("slides", "Microscope slides", slideBox, { dist: 0.3, lift: 0.18 });
@@ -148,6 +150,7 @@ export function buildPharmacognosy(m: MaterialLib, _ctx: BuildContext): RoomBuil
   r.interactive("lamp", "Spirit lamp", lamp, { dist: 0.3, lift: 0.12 });
   r.interactive("needle", "Mounted needle and spatula", tools, { dist: 0.28, lift: 0.18 });
   r.interactive("blotting", "Blotting paper", blot, { dist: 0.28, lift: 0.18 });
+  r.interactive("notebook", "Lab notebook", notebook, { dist: 0.45, lift: 0.3 });
 
   return {
     root: r.root,

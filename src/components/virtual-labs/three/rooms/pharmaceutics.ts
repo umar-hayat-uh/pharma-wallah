@@ -8,7 +8,7 @@ import type { MaterialLib } from "../materials";
 import type { BuildContext, RoomBuild } from "../types";
 import { box, coatHook, cyl, extinguisher, eyewashStation, firstAid, mesh, rbox, reagentBottles, roomShell, storageCabinet, wallUnits, wasteBin } from "../kit";
 import { beaker, glassRod, makeVessel, measuringCylinder, reagentBottle, thermometer, washBottle } from "../glass";
-import { hotPlate, storageJar, topPanBalance } from "../instruments";
+import { hotPlate, labNotebook, storageJar, topPanBalance } from "../instruments";
 import { labelTexture } from "../textures";
 import { RoomBuilder, TOP } from "./helpers";
 
@@ -88,6 +88,10 @@ export function buildPharmaceutics(m: MaterialLib, _ctx: BuildContext): RoomBuil
   const solid = mesh(new THREE.CylinderGeometry(0.026, 0.028, 1, 28), m.powderWhite, 0, 0, 0, false);
   bk.group.add(solid);
   const rod = glassRod(m);
+  // A 3 mm glass rod is too thin to tap with a finger. An invisible 24 mm sleeve along it
+  // takes the taps (the raycaster ignores material visibility); it draws nothing.
+  const rodGrip = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.25, 8), new THREE.MeshBasicMaterial({ visible: false }));
+  rod.add(rodGrip);
   const rodPivot = new THREE.Group();
   rod.position.set(0.0, 0.08, 0);
   rod.rotation.set(0, 0, 0.35);
@@ -117,17 +121,25 @@ export function buildPharmaceutics(m: MaterialLib, _ctx: BuildContext): RoomBuil
   const boats = new THREE.Group();
   for (let i = 0; i < 4; i++) boats.add(mesh(box(0.08, 0.004, 0.08), m.plasticWhite, 0, i * 0.005, 0, false));
   r.place(boats, -0.75, TOP, z0 + 0.1);
+  // the batch record: the formula is calculated here first and the record signed here last
+  const notebook = r.place(labNotebook(m, "Batch record — Simple Syrup"), -0.45, TOP, z0 - 0.02, 0.15);
 
   // ── interactives ──
   r.interactive("balance", "Top-pan balance", bal.group, { dist: 0.45, lift: 0.22 });
   r.interactive("boat", "Weighing boats", boats, { dist: 0.35, lift: 0.18 });
   r.interactive("sucrose", "Sucrose jar", jar, { dist: 0.4, lift: 0.1 });
   r.interactive("hotplate", "Hot plate", plate.group, { dist: 0.5, lift: 0.25 });
-  r.interactive("beaker", "Beaker, 150 mL", bk.group, { dist: 0.38, lift: 0.18, target: [0, TOP + 0.15, z0 - 0.04] });
-  r.interactive("rod", "Glass stirring rod", rodPivot, { dist: 0.35, lift: 0.18, target: [0, TOP + 0.15, z0 - 0.04] });
+  // The beaker (and the rod in it) moves between the bench (x 0.27) and the hot plate
+  // (x 0), but a focus pose is fixed when it is registered — so frame the midpoint from
+  // far enough back that both places are in view. Framing the plate alone left the rod
+  // off-screen while the beaker stood on the bench.
+  const beakerFrame = { dist: 0.62, lift: 0.22, target: [0.135, TOP + 0.12, z0 - 0.01] as [number, number, number] };
+  r.interactive("beaker", "Beaker, 150 mL", bk.group, beakerFrame);
+  r.interactive("rod", "Glass stirring rod", rodPivot, beakerFrame);
   r.interactive("cylinder", "Measuring cylinder, 100 mL", cylinder.group, { dist: 0.5, lift: 0.08 });
   r.interactive("water", "Purified water", carboy, { dist: 0.6, lift: 0.15 });
   r.interactive("bottle", "Dispensing bottle", bottle.group, { dist: 0.35, lift: 0.08 });
+  r.interactive("notebook", "Lab notebook", notebook, { dist: 0.45, lift: 0.3 });
   void wash;
 
   let stirring = false;
@@ -167,6 +179,8 @@ export function buildPharmaceutics(m: MaterialLib, _ctx: BuildContext): RoomBuil
       bk.dispose();
       cylinder.dispose();
       bottle.dispose();
+      rodGrip.geometry.dispose();
+      (rodGrip.material as THREE.Material).dispose();
     },
   };
 }

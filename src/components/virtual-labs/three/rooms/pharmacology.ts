@@ -8,7 +8,7 @@ import type { MaterialLib } from "../materials";
 import type { BuildContext, RoomBuild } from "../types";
 import { box, coatHook, cyl, extinguisher, eyewashStation, firstAid, mesh, rbox, roomShell, storageCabinet, wallUnits, wasteBin } from "../kit";
 import { dropperBottle, reagentBottle } from "../glass";
-import { micropipette, organBathRig, recorder } from "../instruments";
+import { labNotebook, micropipette, organBathRig, recorder } from "../instruments";
 import { RoomBuilder, TOP } from "./helpers";
 
 export interface DoseVisualLike {
@@ -80,10 +80,22 @@ export function buildPharmacology(m: MaterialLib, _ctx: BuildContext): RoomBuild
   pss.position.y = 0.355;
   pssStand.add(pss);
   r.place(pssStand, -0.25, TOP, z0 - 0.2);
-  const tissueTarget: [number, number, number] = [-0.75, TOP + 0.3, z0 - 0.02];
+  // the lab notebook sits beside the recorder: the experiment is designed and written up
+  // here, next to the trace the data come from
+  const notebook = r.place(labNotebook(m, "Dose–response record"), 1.18, TOP, z0 + 0.06, -0.25);
+  // The tissue waits in a dish of salt solution until it is mounted. The strip on the rig
+  // hangs inside the bath glass (a tap there hits the glass) and does not exist before it is
+  // mounted, yet it must be found and inspected first — so the dish is what "tissue" is.
+  const dish = new THREE.Group();
+  dish.add(mesh(cyl(0.045, 0.045, 0.016, 32), m.glass, 0, 0.008, 0, false));
+  dish.add(mesh(cyl(0.042, 0.042, 0.008, 32), new THREE.MeshPhysicalMaterial({ color: 0xe8f6ff, transparent: true, opacity: 0.5, roughness: 0.05, depthWrite: false }), 0, 0.006, 0, false));
+  const waiting = mesh(new THREE.CapsuleGeometry(0.004, 0.05, 6, 12), new THREE.MeshPhysicalMaterial({ color: 0xd98b86, roughness: 0.55, sheen: 0.5 }), 0, 0.009, 0, false);
+  waiting.rotation.z = Math.PI / 2;
+  dish.add(waiting);
+  r.place(dish, -0.55, TOP, z0 + 0.22, 0.4);
 
-  r.interactive("organ-bath", "Organ bath (20 mL)", rig.parts.bath, { target: tissueTarget, dist: 0.5, lift: 0.08 });
-  r.interactive("tissue", "Tissue strip (simulated)", rig.parts.tissue, { target: [-0.75, TOP + 0.26, z0 - 0.02], dist: 0.28, lift: 0.04 });
+  r.interactive("organ-bath", "Organ bath (20 mL)", rig.parts.bath, { target: [-0.75, TOP + 0.3, z0 - 0.02], dist: 0.5, lift: 0.08 });
+  r.interactive("tissue", "Tissue strip (simulated), in salt solution", dish, { dist: 0.3, lift: 0.14 });
   r.interactive("transducer", "Isotonic transducer", rig.parts.transducer, { dist: 0.35, lift: 0.05 });
   r.interactive("thermostat", "Thermostatic circulator", rig.parts.circulator, { dist: 0.6, lift: 0.2 });
   r.interactive("aerator", "Aeration line", rig.parts.air, { dist: 0.45, lift: 0.05 });
@@ -91,6 +103,7 @@ export function buildPharmacology(m: MaterialLib, _ctx: BuildContext): RoomBuild
   r.interactive("stock", "Agonist stock solutions", rack, { dist: 0.38, lift: 0.12 });
   r.interactive("micropipette", "Micropipette", pip, { dist: 0.35, lift: 0.15 });
   r.interactive("pss", "Physiological salt solution", pssStand, { dist: 0.6, lift: 0.1 });
+  r.interactive("notebook", "Lab notebook", notebook, { dist: 0.45, lift: 0.3 });
 
   let aerating = false;
   return {
@@ -104,6 +117,7 @@ export function buildPharmacology(m: MaterialLib, _ctx: BuildContext): RoomBuild
       const last = v.trace.length ? v.trace[v.trace.length - 1] : 0;
       aerating = rig.set({ bathFilled: v.bathFilled, tempC: v.tempC, aeration: v.aeration, thermostat: v.thermostat, tissue: v.tissue, tension: v.tension, contraction: v.washed ? 0 : last });
       rec.set(v.trace, v.pending);
+      waiting.visible = !v.tissue; // once mounted, the strip is on the rig, not in the dish
       return aerating;
     },
     tick(t) {

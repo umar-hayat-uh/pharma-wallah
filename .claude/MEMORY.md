@@ -1522,6 +1522,41 @@ Traps that will otherwise be rediscovered painfully.
    oil-gland photo, shown unmodified with its credit and a "not yet confirmed by our reviewer" label (`needs_review`).
    Everything else (rooms, glassware, instruments) is procedural geometry. Researched-but-unused and rejected assets
    (NC, Sketchfab login, BlendKit) are recorded in the manifest too — add a row before shipping any asset.
+235. **Virtual Labs: the experiment is gated on the equipment, in the engine** (2026-10-21). Each experiment's
+   `controllers: ControllerDef[]` maps equipment → action types; selecting equipment sends `{type:"operate"}`;
+   `reduceRun` refuses any non-`inspect` `act` unless one of its controllers is `run.active` (state unchanged,
+   not counted, logged). The step-card benches are gone (`benches/<Lab>Controls.tsx` replace them). An action
+   type missing from every controller is unreachable — the test driver throws for it. Gotcha 224's "every 3D
+   action is also a bench-panel control" is superseded: the 2D lab and Q/E keyboard picking *select equipment*.
+236. **"Blurry on mobile" was the quality default, not the assets** (2026-10-21). `defaultQuality()` gave every
+   screen < 768 px Low = pixel ratio 1 + no MSAA, i.e. a 3× phone drew a ninth of its pixels. Tiers are now a
+   pixel budget (`QUALITY`/`pixelRatioFor` in `three/runtime.ts`, recomputed on every resize), Balanced is the
+   default everywhere (Low only for Save-Data / ≤ 2 GB), and there is one automatic step-down if the first 1.5 s
+   draw < 18 fps — counted from frames drawn, because a device too slow for 10 frames reports `fps: null`.
+237. **The immersive lab is a fixed layer, so anything it shows must live inside it** (2026-10-21).
+   `LabExperience`'s lab phase is `fixed inset-0 z-[70]` (100dvh, page scroll locked) above the site header
+   (z-50); its dialogs are z-[90] and rendered inside it. Full screen is requested on `document.documentElement`
+   inside the entry tap (the layer isn't mounted yet) and may be refused; iPhone Safari has no element full
+   screen at all. Leaving the lab unmounts and disposes the renderer — reset `ready`/focus state with it.
+238. **An instrument must change exactly when the engine counts the change** (2026-10-21). The titration flask
+   colour blended pink in continuously while `endpointOf` called it "under" until 20 % — a student stopping at
+   the first lasting pink lost 8 marks. Found only when the browser harness judged the end-point from the
+   drawn swatch instead of from state. `titrationVisual` now keeps a swirled flask colourless below
+   `FAINT_PINK_FRACTION`. Drive labs from what is drawn, or this class of bug stays invisible.
+239. **Headless lab harness timing** (2026-10-21): SwiftShader draws ~1 frame/s, so two equal `where()` samples
+   do not mean the camera has stopped — wait on `__vlab.moving() === false`. `__vlab.where(id)` samples a grid
+   through the object's box (a stand's centre is hidden behind its burette). Fix the tier with
+   `localStorage["pw-vlabs:quality"]` or the one-time step-down rebuilds the scene mid-run. Harness:
+   `cdp.mjs`/`helpers.mjs`/`<lab>.mjs` pattern (Node 24's global WebSocket, no puppeteer).
+240. **Learning vs Practical scoring** (2026-10-21, `engine/machine.ts`): hints free in Learning; in an assessed
+   Practical run each costs `HINT_COST` (3) technique marks up to `HINT_CAP` (15). Learning → Practical only on a
+   fresh bench (guided work never counts as assessed); Practical → Learning keeps the bench and sets
+   `assessed: false`. `suggest(s)` must never reveal a reading, an assessed choice, or when to stop titrating —
+   the test driver validates it at every state of every scripted run.
+241. **Panels shift the projection, not the canvas** (2026-10-21). `LabRuntime.setInsets` applies
+   `camera.setViewOffset` (+ a gentle zoom-out) so the operated instrument is centred above a phone's bottom
+   sheet or beside the desktop dock; the raycaster uses the same projection, so picking stays right. The zoom
+   widens the view slightly, so draw-call counts with panels open are not comparable with older measurements.
 
 ## 9. Working preferences (observed)
 

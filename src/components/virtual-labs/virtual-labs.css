@@ -38,3 +38,27 @@ ol.vl-bullets.vl-bullets > li {
   .vl-report { box-shadow: none !important; border: 0 !important; }
 }
 .vl-print-only { display: none; }
+
+/*
+ * The immersive lab layer (2026-10-21). It is `position: fixed; inset: 0`, sized to the
+ * dynamic viewport where supported so phone browser bars do not cut it off, and it
+ * swallows the gestures that would otherwise scroll or zoom the page underneath.
+ */
+.vl-immersive {
+  height: 100vh;
+  height: 100dvh;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.vl-immersive input,
+.vl-immersive textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+.vl-immersive button,
+.vl-immersive a,
+.vl-immersive label { touch-action: manipulation; }
+/* globals.css forces white inputs with !important; keep ours readable when disabled */
+.vl-immersive .vl-input:disabled { background: #f3f5f7 !important; }

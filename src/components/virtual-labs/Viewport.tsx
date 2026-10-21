@@ -11,7 +11,7 @@
 import { useEffect, useRef } from "react";
 import type { LabId } from "@/lib/virtual-labs/catalog";
 import { LabRuntime, type RuntimeStats } from "./three/runtime";
-import type { BuildContext, Quality, RoomBuild } from "./three/types";
+import type { BuildContext, Insets, Quality, RoomBuild } from "./three/types";
 import type { MaterialLib } from "./three/materials";
 
 type Builder = (m: MaterialLib, ctx: BuildContext) => RoomBuild;
@@ -32,18 +32,22 @@ export interface ViewportProps {
   focusCmd: { n: number; id: string | null } | null;
   resetCmd: number;
   move: { x: number; z: number };
+  insets: Insets;
+  /** Tab hidden / app backgrounded: stop rendering. */
+  paused: boolean;
   onHover(id: string | null): void;
   onSelect(id: string): void;
   onFocusChange(id: string | null): void;
   onError(message: string): void;
   onReady(): void;
   onProgress(f: number): void;
+  onSlow?(): void;
 }
 
 declare global {
   interface Window {
     /** Exposed for the performance panel and automated checks: read-only stats. */
-    __vlab?: { stats: () => RuntimeStats; measure: (ms?: number) => Promise<RuntimeStats>; focus: (id: string | null) => void; reset: () => void };
+    __vlab?: { stats: () => RuntimeStats; measure: (ms?: number) => Promise<RuntimeStats>; focus: (id: string | null) => void; reset: () => void; where: (id: string) => { x: number; y: number; hit: boolean } | null; moving: () => boolean };
   }
 }
 
@@ -70,12 +74,15 @@ export default function Viewport(p: ViewportProps) {
             onError: (m) => cb.current.onError(m),
             onProgress: (f) => cb.current.onProgress(f),
             onReady: () => cb.current.onReady(),
+            onSlow: () => cb.current.onSlow?.(),
           });
           rt.current = runtime;
           runtime.setVisual(cb.current.visual);
           runtime.setHighlight(cb.current.highlight);
+          runtime.setInsets(cb.current.insets);
+          runtime.setPaused(cb.current.paused);
           // camera-only hooks for the performance panel and automated screenshots
-          window.__vlab = { stats: () => runtime.stats(), measure: (ms) => runtime.measure(ms), focus: (id) => (id ? runtime.focusOn(id) : runtime.exitFocus()), reset: () => runtime.resetView(true) };
+          window.__vlab = { stats: () => runtime.stats(), measure: (ms) => runtime.measure(ms), focus: (id) => (id ? runtime.focusOn(id) : runtime.exitFocus()), reset: () => runtime.resetView(true), where: (id) => runtime.where(id), moving: () => runtime.moving() };
         } catch (e) {
           cb.current.onError(e instanceof Error && /WebGL/i.test(e.message) ? "This browser could not start 3D graphics (WebGL)." : "The 3D laboratory could not start on this device.");
         }
@@ -111,6 +118,15 @@ export default function Viewport(p: ViewportProps) {
   useEffect(() => {
     rt.current?.setMoveInput(p.move.x, p.move.z);
   }, [p.move.x, p.move.z]);
+
+  const { top, right, bottom, left } = p.insets;
+  useEffect(() => {
+    rt.current?.setInsets({ top, right, bottom, left });
+  }, [top, right, bottom, left]);
+
+  useEffect(() => {
+    rt.current?.setPaused(p.paused);
+  }, [p.paused]);
 
   return <div ref={host} className="absolute inset-0" />;
 }

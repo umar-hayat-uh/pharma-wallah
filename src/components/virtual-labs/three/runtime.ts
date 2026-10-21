@@ -9,7 +9,11 @@
  *    camera flies to a close-up pose where dragging orbits and the wheel dollies.
  *  - Rendering is on demand: a frame is drawn only while something moves, tweens or
  *    animates, which keeps an idle lab from draining a phone battery.
- *  - Quality tiers trade pixel ratio, shadows, antialiasing and the HDRI.
+ *  - Quality tiers trade a drawing-buffer PIXEL BUDGET, shadows, antialiasing and the
+ *    HDRI. Until 2026-10-21 phones got pixel ratio 1 with no antialiasing, which drew a
+ *    3× screen at a ninth of its resolution — the "blurry on mobile" fault. Now each tier
+ *    takes the device's own ratio up to a cap and a megapixel budget (QUALITY below).
+ *  - Shadow maps are redrawn only when the bench changes, not on every camera move.
  *  - Everything it creates is disposed on unmount, including the WebGL context.
  */
 import * as THREE from "three";
@@ -17,7 +21,7 @@ import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { createMaterials, isolateMaterials, setGlow, type MaterialLib } from "./materials";
 import { disposeKitCache } from "./kit";
-import type { BuildContext, Collider, Interactive, Pose, Quality, RoomBuild } from "./types";
+import type { BuildContext, Collider, Insets, Interactive, Pose, Quality, RoomBuild } from "./types";
 
 export interface RuntimeOptions {
   quality: Quality;
@@ -28,6 +32,28 @@ export interface RuntimeOptions {
   onError?: (message: string) => void;
   onProgress?: (fraction: number) => void;
   onReady?: () => void;
+  /** Called once if the first measured frames are very slow (LabExperience may step down). */
+  onSlow?: () => void;
+}
+
+/**
+ * Per tier: the largest device-pixel ratio used, and a drawing-buffer budget in
+ * megapixels. A 390×844 phone at 3× is 2.96 MP: Balanced draws it at 2× (1.3 MP, sharp),
+ * Low at 1.5× (0.74 MP). A 1440×900 laptop at 2× (5.2 MP) is held to the budget instead
+ * of drawing every pixel. Antialiasing stays on except at Low on dense (≥ 2×) screens,
+ * where the pixel density hides the stair-steps anyway.
+ */
+export const QUALITY: Record<Quality, { maxDpr: number; budgetMP: number; shadow: number; anisotropy: number }> = {
+  low: { maxDpr: 1.5, budgetMP: 1.0, shadow: 0, anisotropy: 2 },
+  medium: { maxDpr: 2, budgetMP: 2.4, shadow: 1024, anisotropy: 4 },
+  high: { maxDpr: 2.5, budgetMP: 4.2, shadow: 2048, anisotropy: 8 },
+};
+
+export function pixelRatioFor(q: Quality, cssW: number, cssH: number, dpr: number) {
+  const { maxDpr, budgetMP } = QUALITY[q];
+  const want = Math.min(dpr || 1, maxDpr);
+  const fit = Math.sqrt((budgetMP * 1e6) / Math.max(1, cssW * cssH));
+  return Math.max(1, Math.min(want, fit));
 }
 
 export interface RuntimeStats {
@@ -92,13 +118,15 @@ export class LabRuntime {
     this.host = host;
     this.opts = opts;
     const q = opts.quality;
-    this.renderer = new THREE.WebGLRenderer({ antialias: q !== "low", powerPreference: q === "high" ? "high-performance" : "default", preserveDrawingBuffer: false });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, q === "high" ? 2 : q === "medium" ? 1.5 : 1));
+    const dpr = window.devicePixelRatio || 1;
+    this.renderer = new THREE.WebGLRenderer({ antialias: q !== "low" || dpr < 2, powerPreference: q === "high" ? "high-performance" : "default", preserveDrawingBuffer: false });
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
     this.renderer.shadowMap.enabled = q !== "low";
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = q === "high" ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+    // the room is static between actions: redraw shadows only when the bench changes
+    this.renderer.shadowMap.autoUpdate = false;
     const canvas = this.renderer.domElement;
     canvas.style.display = "block";
     canvas.style.width = "100%";
@@ -106,7 +134,7 @@ export class LabRuntime {
     canvas.style.touchAction = "none";
     canvas.style.outline = "none";
     canvas.tabIndex = 0;
-    canvas.setAttribute("aria-label", "3D laboratory. Click to focus, then use W A S D or the arrow keys to walk and drag to look around. Every action is also available in the side panels.");
+    canvas.setAttribute("aria-label", "3D laboratory. Use W A S D or the arrow keys to walk and drag to look around. Press Q to cycle through the equipment in view and E to use the one named.");
     canvas.setAttribute("role", "application");
     host.appendChild(canvas);
 
@@ -114,7 +142,7 @@ export class LabRuntime {
     this.scene.background = new THREE.Color(0xeef3f7);
     this.setupLights(q);
 
-    const anisotropy = Math.min(this.renderer.capabilities.getMaxAnisotropy(), q === "high" ? 8 : q === "medium" ? 4 : 1);
+    const anisotropy = Math.min(this.renderer.capabilities.getMaxAnisotropy(), QUALITY[q].anisotropy);
     const loader = new THREE.TextureLoader();
     const pending: Promise<void>[] = [];
     const ctx: BuildContext = {
@@ -155,7 +183,10 @@ export class LabRuntime {
       throw e;
     }
     this.scene.add(this.room.root);
+    this.room.root.updateMatrixWorld(true);
     for (const it of this.room.interactives) {
+      // where it stood when its close-up was framed — focusOn re-frames it if it has moved
+      this.root0.set(it.id, new THREE.Box3().setFromObject(it.object).getCenter(new THREE.Vector3()));
       isolateMaterials(it.object);
       it.object.traverse((o) => (o.userData.labId = it.id));
       this.pickables.push(it.object);
@@ -178,12 +209,32 @@ export class LabRuntime {
     canvas.addEventListener("webglcontextlost", this.onContextLost);
     this.cleanups.push(() => canvas.removeEventListener("webglcontextlost", this.onContextLost));
 
+    // canvas textures (labels, scales, displays) honour the tier's filtering too
+    this.scene.traverse((o) => {
+      const mats = (o as THREE.Mesh).material;
+      for (const mat of mats ? (Array.isArray(mats) ? mats : [mats]) : []) {
+        for (const v of Object.values(mat)) if (v instanceof THREE.Texture) v.anisotropy = Math.max(v.anisotropy, anisotropy);
+      }
+    });
+
     Promise.allSettled(pending).then(() => {
       if (this.disposed) return;
       this.loadMs = Math.round(performance.now() - this.loadStart);
       opts.onProgress?.(1);
+      this.shadowsDirty = true;
       this.invalidate();
       opts.onReady?.();
+      // One short measurement after loading; a very slow device is told once, never again.
+      if (opts.onSlow && q !== "low") {
+        window.setTimeout(() => {
+          if (this.disposed || this.paused) return;
+          // frames actually drawn in the window — a device too slow to draw ten of them
+          // reports no fps from stats(), and must count as slow, not as unknown
+          void this.measure(1500).then(() => {
+            if (!this.disposed && !this.paused && this.frameTimes.length / 1.5 < 18) opts.onSlow?.();
+          });
+        }, 400);
+      }
     });
     this.renderer.setAnimationLoop(this.frame);
   }
@@ -195,7 +246,7 @@ export class LabRuntime {
     const key = new THREE.DirectionalLight(0xfff6ea, 2.1);
     key.position.set(-4, 7, -3);
     key.castShadow = q !== "low";
-    key.shadow.mapSize.set(q === "high" ? 2048 : 1024, q === "high" ? 2048 : 1024);
+    key.shadow.mapSize.set(QUALITY[q].shadow || 512, QUALITY[q].shadow || 512);
     key.shadow.camera.left = -7;
     key.shadow.camera.right = 7;
     key.shadow.camera.top = 7;
@@ -255,11 +306,78 @@ export class LabRuntime {
     const w = this.host.clientWidth;
     const h = this.host.clientHeight;
     if (!w || !h) return;
+    // the ratio is recomputed on every resize (rotation, browser bars, full screen) so the
+    // budget holds for the size the canvas actually is
+    this.renderer.setPixelRatio(pixelRatioFor(this.opts.quality, w, h, window.devicePixelRatio || 1));
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.fov = w < 640 ? 68 : 58;
-    this.camera.updateProjectionMatrix();
+    this.applyView();
     this.invalidate();
+  }
+
+  private insets: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
+
+  /**
+   * Panels cover part of the canvas (the controller sheet on a phone covers about half).
+   * Shift the projection so the scene — and a close-up's instrument — is centred in what
+   * is still visible, and widen the view a little when the visible part is small.
+   * Picking stays correct because the raycaster uses the same projection matrix.
+   */
+  setInsets(i: Insets) {
+    this.insets = i;
+    this.applyView();
+    this.invalidate();
+  }
+
+  private applyView() {
+    const w = this.host.clientWidth;
+    const h = this.host.clientHeight;
+    if (!w || !h) return;
+    const { top, right, bottom, left } = this.insets;
+    const ox = (right - left) / 2;
+    const oy = (bottom - top) / 2;
+    if (ox || oy) this.camera.setViewOffset(w, h, ox, oy, w, h);
+    else this.camera.clearViewOffset();
+    const visible = Math.min((w - left - right) / w, (h - top - bottom) / h);
+    this.camera.zoom = THREE.MathUtils.clamp(Math.sqrt(Math.max(0.01, visible)), 0.72, 1);
+    this.camera.updateProjectionMatrix();
+  }
+
+  private paused = false;
+
+  /** Stop the render loop entirely (tab hidden, app backgrounded); resume where it was. */
+  setPaused(p: boolean) {
+    if (p === this.paused || this.disposed) return;
+    this.paused = p;
+    this.keys.clear();
+    this.moveInput.set(0, 0);
+    if (p) this.renderer.setAnimationLoop(null);
+    else {
+      this.clock.getDelta(); // discard the time spent away
+      this.renderer.setAnimationLoop(this.frame);
+      this.invalidate();
+    }
+  }
+
+  private shadowsDirty = true;
+
+  /**
+   * Keyboard picking: Q cycles through the equipment in view, nearest first, and E/Enter
+   * uses it — so the room itself is operable without a pointer.
+   */
+  private cycleHover() {
+    const frustum = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse));
+    const cam = this.camera.position;
+    const items = Array.from(this.byId.values()).map((it) => {
+      const c = new THREE.Box3().setFromObject(it.object).getCenter(new THREE.Vector3());
+      return { id: it.id, d: c.distanceTo(cam), inView: frustum.containsPoint(c) };
+    });
+    const pool = items.filter((x) => x.inView && x.d < 7);
+    const list = (pool.length ? pool : items).sort((a, b) => a.d - b.d);
+    if (!list.length) return;
+    const i = list.findIndex((x) => x.id === this.hovered);
+    this.setHover(list[(i + 1) % list.length].id);
   }
 
   // ── input ────────────────────────────────────────────────────────────────
@@ -273,6 +391,9 @@ export class LabRuntime {
         if (this.focusId) this.exitFocus();
         this.keys.add(k);
         this.invalidate();
+      } else if (k === "q") {
+        e.preventDefault();
+        this.cycleHover();
       } else if (k === "e" || k === "enter") {
         if (this.hovered) this.opts.onSelect?.(this.hovered);
       } else if (k === "escape" && this.focusId) {
@@ -439,6 +560,7 @@ export class LabRuntime {
   setVisual(v: unknown) {
     this.visual = v;
     this.animating = !!this.room.apply(v, this.clock.elapsedTime);
+    this.shadowsDirty = true;
     this.invalidate();
   }
 
@@ -465,8 +587,13 @@ export class LabRuntime {
     this.focusId = id;
     if (prev) this.applyGlow(prev);
     this.applyGlow(id);
-    const pos = new THREE.Vector3(...it.focus.pos);
-    const target = new THREE.Vector3(...it.focus.target);
+    // Close-up poses are framed once, when the room is built. Equipment the experiment moves
+    // (a beaker carried to the hot plate) is followed: the pose shifts by however far the
+    // object has moved since then.
+    const now = new THREE.Box3().setFromObject(it.object).getCenter(new THREE.Vector3());
+    const moved = now.sub(this.root0.get(id) ?? now);
+    const pos = new THREE.Vector3(...it.focus.pos).add(moved);
+    const target = new THREE.Vector3(...it.focus.target).add(moved);
     this.focusTarget.copy(target);
     const off = pos.clone().sub(target);
     this.orbit = { yaw: 0, pitch: 0, dist: off.length() };
@@ -476,6 +603,7 @@ export class LabRuntime {
   }
 
   private orbitBase = new THREE.Vector3(0, 0, 1);
+  private root0 = new Map<string, THREE.Vector3>();
 
   private placeOrbit() {
     const dir = this.orbitBase.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), this.orbit.yaw);
@@ -514,6 +642,37 @@ export class LabRuntime {
       this.tween = null;
     } else this.flyTo(this.walkPos.clone(), this.walkPos.clone().add(this.dirFromAngles()));
     this.invalidate();
+  }
+
+  /**
+   * Where a piece of equipment is on screen (CSS px, page coordinates) and whether a tap
+   * there would actually hit it. Camera geometry only — used by automated checks to tap
+   * the real object the way a student would; it exposes no experiment state.
+   */
+  where(id: string): { x: number; y: number; hit: boolean } | null {
+    const it = this.byId.get(id);
+    if (!it) return null;
+    const bb = new THREE.Box3().setFromObject(it.object);
+    const r = this.renderer.domElement.getBoundingClientRect();
+    const toScreen = (p: THREE.Vector3) => {
+      const c = p.clone().project(this.camera);
+      return { x: r.left + ((c.x + 1) / 2) * r.width, y: r.top + ((1 - c.y) / 2) * r.height, front: c.z < 1 };
+    };
+    // the centre first, then a grid through the box — a stand's centre can be hidden behind
+    // the burette it holds, but its rod and base are still there to tap
+    const pts = [bb.getCenter(new THREE.Vector3())];
+    for (const fy of [0.5, 0.15, 0.85, 0.3, 0.7]) for (const fx of [0.5, 0.25, 0.75]) for (const fz of [0.5, 0.25, 0.75]) pts.push(new THREE.Vector3(bb.min.x + (bb.max.x - bb.min.x) * fx, bb.min.y + (bb.max.y - bb.min.y) * fy, bb.min.z + (bb.max.z - bb.min.z) * fz));
+    for (const p of pts) {
+      const s = toScreen(p);
+      if (s.front && s.x >= r.left && s.x <= r.right && s.y >= r.top && s.y <= r.bottom && this.pick(s.x, s.y) === id) return { x: s.x, y: s.y, hit: true };
+    }
+    const c = toScreen(pts[0]);
+    return { x: c.x, y: c.y, hit: false };
+  }
+
+  /** True while the camera is flying (a close-up or its return). Camera state only. */
+  moving() {
+    return this.tween !== null;
   }
 
   stats(): RuntimeStats {
@@ -631,6 +790,10 @@ export class LabRuntime {
     }
     const forced = performance.now() < this.forceUntil;
     if (this.dirty || moving || forced) {
+      if (this.shadowsDirty || this.animating) {
+        this.renderer.shadowMap.needsUpdate = true;
+        this.shadowsDirty = false;
+      }
       this.renderer.render(this.scene, this.camera);
       this.dirty = false;
       if (moving || forced) {

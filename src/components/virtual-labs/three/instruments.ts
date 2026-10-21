@@ -399,3 +399,22 @@ export function storageJar(m: MaterialLib, title: string, lines: string[], fill:
   g.add(label);
   return g;
 }
+
+/**
+ * The lab notebook (2026-10-21): a hardboard clipboard with a ruled results sheet and a
+ * pen. It is real equipment in every room — calculations and conclusions are entered by
+ * selecting it, not from a panel — so the bench has a place where the paperwork happens.
+ */
+export function labNotebook(m: MaterialLib, title = "Results sheet") {
+  const g = new THREE.Group();
+  g.add(mesh(rbox(0.24, 0.006, 0.32, 0.008), m.wood, 0, 0.003, 0));
+  const sheet = labelTexture(title, ["Name · Date · Batch", "Readings", "Calculation", "Result · Conclusion"], { w: 512, h: 680, accent: "#21B67A" });
+  const paper = mesh(box(0.215, 0.002, 0.29), new THREE.MeshStandardMaterial({ map: sheet, roughness: 0.9 }), 0, 0.0075, 0.008, false);
+  g.add(paper);
+  g.add(mesh(rbox(0.09, 0.012, 0.035, 0.004), m.chrome, 0, 0.012, -0.145));
+  const pen = mesh(cyl(0.0045, 0.0045, 0.14, 12), m.accentBlue, 0.135, 0.006, 0.02);
+  pen.rotation.x = Math.PI / 2;
+  pen.rotation.z = 0.15;
+  g.add(pen);
+  return g;
+}

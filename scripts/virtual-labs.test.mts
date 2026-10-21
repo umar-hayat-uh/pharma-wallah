@@ -29,11 +29,35 @@ const CX = await import("../src/lib/virtual-labs/experiments/clove.ts");
 
 const near = (a: number, b: number, tol: number, msg?: string) => assert.ok(Math.abs(a - b) <= tol, `${msg ?? ""} expected ${b} ± ${tol}, got ${a}`);
 
-/** Drive a definition through the run machine. */
-function driver(def: any, seed = 7) {
-  let run = M.createRun(def, seed);
+/**
+ * Check Learning mode's pointer for a state: it must name a real controller and an action
+ * that controller performs (or be null).
+ */
+function checkSuggestion(def: any, s: any) {
+  const sug = def.suggest(s);
+  if (sug === null) return;
+  const c = def.controllers.find((x: any) => x.id === sug.controller);
+  assert.ok(c, `suggest() names an unknown controller "${sug.controller}"`);
+  assert.ok(c.actions.includes(sug.action), `suggest() points at "${sug.action}", which ${c.id} cannot do`);
+}
+
+/**
+ * Drive a definition through the run machine like a student in the room: before every
+ * physical action, SELECT the instrument it is done with (the "operate" message), exactly
+ * as LabExperience does when the student taps it. Throws if no instrument can perform an
+ * action — so every action a scripted run uses is proven to be reachable on equipment.
+ * Every state along the way also has its Learning-mode suggestion checked.
+ */
+function driver(def: any, seed = 7, mode: "learning" | "practical" = "learning") {
+  let run = M.createRun(def, seed, mode);
   const act = (action: any) => {
+    if (action.type !== "inspect" && !run.submitted) {
+      const via = M.controllersForAction(def, action);
+      if (!via.length) throw new Error(`no instrument in ${def.meta.id} can perform "${action.type}"`);
+      if (!via.some((c: any) => c.id === run.active)) run = M.reduceRun(def, run, { type: "operate", equipment: via[0].equipment[0] });
+    }
     run = M.reduceRun(def, run, { type: "act", action });
+    checkSuggestion(def, run.s);
     return run;
   };
   return { get run() { return run; }, get s() { return run.s; }, act, msg: (m: any) => (run = M.reduceRun(def, run, m)) };
@@ -130,6 +154,152 @@ test("engine: a mistake is scored once however often it is repeated", () => {
   assert.equal(d.run.mistakes.filter((m: any) => m.id === "apparatus-burette-25").length, 1);
 });
 
+test("every definition's instruments are complete and consistent", () => {
+  for (const id of LAB_IDS) {
+    const def = EXPERIMENTS[id];
+    const eq = new Set(def.equipment.map((e: any) => e.id));
+    const ids = new Set(def.controllers.map((c: any) => c.id));
+    assert.equal(ids.size, def.controllers.length, `${id}: duplicate controller id`);
+    assert.ok(def.controllers.length >= 3, `${id}: too few instruments`);
+    for (const c of def.controllers) {
+      assert.ok(c.equipment.length > 0 && c.actions.length > 0, `${id}/${c.id} empty`);
+      for (const e of c.equipment) assert.ok(eq.has(e), `${id}/${c.id}: equipment "${e}" is not in the definition`);
+      assert.ok(!c.actions.includes("inspect"), `${id}/${c.id}: inspecting is selecting, not an instrument action`);
+      for (const n of c.nearby ?? []) assert.ok(ids.has(n), `${id}/${c.id}: nearby "${n}" is not a controller`);
+      assert.ok(c.brief && c.howTo.length > 0, `${id}/${c.id}: needs a brief and Learning-mode how-to`);
+    }
+    // every step that names equipment names something you can select
+    for (const st of def.steps) if (st.id !== "inspect") for (const f of st.focus) assert.ok(def.controllers.some((c: any) => c.equipment.includes(f)) || eq.has(f), `${id}/${st.id}`);
+    // Learning mode's pointer is valid from the very first state
+    checkSuggestion(def, def.initial(5));
+  }
+});
+
+// ── The equipment gate: the bench cannot be operated by bypassing the equipment ──
+
+test("bypass: an action with no instrument open is refused, changes nothing and is logged", () => {
+  for (const id of LAB_IDS) {
+    const def = EXPERIMENTS[id];
+    let run = M.createRun(def, 3);
+    const c = def.controllers[0];
+    const action = { type: c.actions[0] };
+    const after = M.reduceRun(def, run, { type: "act", action });
+    assert.equal(after.s, run.s, `${id}: state changed without the instrument`);
+    assert.equal(after.actions, 0, `${id}: a refused bypass counted as an action`);
+    assert.equal(after.last[0].kind, "error");
+    assert.match(after.last[0].text, /select it in the lab/);
+    assert.equal(after.log.at(-1).kind, "error", `${id}: bypass attempt not logged`);
+  }
+});
+
+test("bypass: an action from the WRONG instrument is refused", () => {
+  for (const id of LAB_IDS) {
+    const def = EXPERIMENTS[id];
+    // every pair of instruments: an action one can do and the other cannot is refused from the other
+    let tested = 0;
+    for (const a of def.controllers) for (const b of def.controllers) {
+      if (a === b) continue;
+      const only = b.actions.find((t: string) => !a.actions.includes(t));
+      if (!only) continue;
+      let r = M.createRun(def, 3);
+      r = M.reduceRun(def, r, { type: "operate", equipment: a.equipment[0] });
+      const after = M.reduceRun(def, r, { type: "act", action: { type: only } });
+      assert.equal(after.s, r.s, `${id}: ${only} worked from ${a.id}`);
+      tested++;
+    }
+    assert.ok(tested >= def.controllers.length, `${id}: too few pairs tested (${tested})`);
+    const [a, b] = def.controllers;
+    const only = b.actions.find((t: string) => !a.actions.includes(t));
+    let run = M.createRun(def, 3);
+    run = M.reduceRun(def, run, { type: "operate", equipment: a.equipment[0] });
+    assert.equal(run.active, a.id);
+    const after = M.reduceRun(def, run, { type: "act", action: { type: only } });
+    assert.equal(after.s, run.s, `${id}: ${only} worked from ${a.id}`);
+    assert.equal(after.last[0].kind, "error");
+  }
+});
+
+test("bypass: selecting the right instrument opens it; closing it closes it; inspect needs no instrument", () => {
+  const def = TX.TITRATION;
+  let run = M.createRun(def, 3);
+  run = M.reduceRun(def, run, { type: "act", action: { type: "inspect", id: "burette" } });
+  assert.deepEqual(run.s.inspected, ["burette"], "inspecting is allowed without operating");
+  run = M.reduceRun(def, run, { type: "operate", equipment: "stand" });
+  assert.equal(run.active, "burette", "the stand opens the burette's controls");
+  run = M.reduceRun(def, run, { type: "operate", equipment: null });
+  assert.equal(run.active, null);
+  run = M.reduceRun(def, run, { type: "operate", equipment: "not-a-thing" });
+  assert.equal(run.active, null);
+  assert.deepEqual(run.operated, ["burette"]);
+});
+
+test("bypass: a titration cannot be completed without operating the burette", () => {
+  // Drive the careful run, but strip the burette from the student's reach: every burette
+  // action is attempted with the conical flask open instead.
+  const def = TX.TITRATION;
+  let run = M.createRun(def, 11);
+  const burette = def.controllers.find((c: any) => c.id === "burette");
+  for (const t of ["rinseBurette", "fillBurette", "removeFunnel", "expelBubble", "recordInitial", "addTitrant", "recordFinal"]) {
+    run = M.reduceRun(def, run, { type: "operate", equipment: "notebook" });
+    const before = run.s;
+    run = M.reduceRun(def, run, { type: "act", action: { type: t, value: 0, ml: 1 } });
+    assert.equal(run.s, before, `${t} worked without the burette`);
+    assert.ok(burette.actions.includes(t));
+  }
+  assert.equal(def.stepComplete(run.s, "titrate"), false);
+  assert.equal(def.benchComplete(run.s), false);
+});
+
+// ── Modes ────────────────────────────────────────────────────────────────────
+
+test("modes: Learning → Practical only on a fresh bench; Practical → Learning makes the run practice", () => {
+  const def = TX.TITRATION;
+  let run = M.createRun(def, 3, "learning");
+  run = M.reduceRun(def, run, { type: "mode", mode: "practical" });
+  assert.equal(run.mode, "practical");
+  assert.equal(run.assessed, true, "switching before any action starts an assessed run");
+  run = M.reduceRun(def, run, { type: "act", action: { type: "inspect", id: "burette" } });
+  run = M.reduceRun(def, run, { type: "mode", mode: "learning" });
+  assert.equal(run.mode, "learning");
+  assert.equal(run.assessed, false);
+  assert.deepEqual(run.s.inspected, ["burette"], "the bench is kept");
+  run = M.reduceRun(def, run, { type: "mode", mode: "practical" });
+  assert.equal(run.mode, "learning", "guided work cannot be carried into an assessed run");
+  assert.match(run.last[0].text, /fresh bench/);
+  run = M.reduceRun(def, run, { type: "reset", mode: "practical" });
+  assert.equal(run.mode, "practical");
+  assert.equal(run.assessed, true);
+});
+
+test("modes: hints are free in Learning and cost technique marks (capped) in Practical", () => {
+  const learn = titrationRun({ mode: "learning" });
+  const prac = titrationRun({ mode: "practical" });
+  for (const d of [learn, prac]) for (let i = 0; i < 3; i++) d.msg({ type: "hint", stepId: "calculate" });
+  for (const d of [learn, prac]) {
+    answerAll(d, TX.TITRATION);
+    d.msg({ type: "submit" });
+  }
+  const rl = M.finalReport(TX.TITRATION, learn.run);
+  const rp = M.finalReport(TX.TITRATION, prac.run);
+  assert.equal(rl.hintPenalty, 0);
+  assert.equal(rl.technique, 100);
+  assert.equal(rp.assessed, true);
+  assert.equal(rp.hintPenalty, 2 * M.HINT_COST, "two hints exist for that step");
+  assert.equal(rp.technique, 100 - 2 * M.HINT_COST);
+  const many = { ...prac.run, hints: { a: 10, b: 10 } };
+  assert.equal(M.finalReport(TX.TITRATION, many).hintPenalty, M.HINT_CAP);
+});
+
+test("modes: Learning suggestions never point at a reading's value or past the end-point", () => {
+  const d = titrationRun();
+  // at the burette, mid-titration, the pointer is the valve or swirl — never "record final"
+  const mid = { ...d.s, titrations: [], titreEntered: null, assayEntered: null, verdict: null, swirled: true };
+  const sug = TX.TITRATION.suggest(mid);
+  assert.equal(sug.controller, "burette");
+  assert.equal(sug.action, "addTitrant");
+  assert.equal(TX.TITRATION.suggest(TX.TITRATION.initial(1)), null, "inspection is the student's search");
+});
+
 // ── Titration chemistry ────────────────────────────────────────────────────
 
 test("titration: assay formula — normal, unit and invalid cases", () => {
@@ -184,9 +354,9 @@ test("titration: concordance", () => {
 });
 
 /** A careful student. Returns the driver at the end of the bench work. */
-function titrationRun(opts: { rinseBurette?: boolean; indicator?: string; seed?: number } = {}) {
+function titrationRun(opts: { rinseBurette?: boolean; indicator?: string; seed?: number; mode?: "learning" | "practical" } = {}) {
   const def = TX.TITRATION;
-  const d = driver(def, opts.seed ?? 11);
+  const d = driver(def, opts.seed ?? 11, opts.mode);
   for (const id of ["burette", "stand", "pipette", "vol-flask", "conical-flask", "indicator", "sample", "titrant"]) d.act({ type: "inspect", id });
   d.act({ type: "chooseApparatus", ids: TX.APPARATUS_OPTIONS.filter((o: any) => o.correct).map((o: any) => o.id) });
   d.act({ type: "chooseReagents", sample: "citric", titrant: "naoh", indicator: opts.indicator ?? "phenolphthalein" });
@@ -285,6 +455,97 @@ test("titration: a wrong calculation is refused, not silently accepted", () => {
   assert.equal(r.state.assayEntered, null);
   assert.ok(r.feedback.some((f: any) => f.mistake?.id === "calc-titre"));
   void fresh;
+});
+
+// ── Syrup instruments ──────────────────────────────────────────────────────
+
+const SYRUP_ACTION_TYPES = ["calculate", "placeBoat", "tare", "addSucrose", "removeSucrose", "recordMass", "pourWater", "readCylinder", "waterToBeaker", "sucroseToBeaker", "beakerOnHotplate", "setHeat", "stir", "wait", "finishDissolving", "chooseVessel", "transferToVessel", "rinseBeaker", "qs", "mixAfterQs", "readFinal", "pack", "label", "observe", "weighDensity", "recordDensity", "sign"];
+
+test("syrup instruments: every action is on an instrument, every instrument is real equipment, each piece opens one", () => {
+  const def = SX.SYRUP;
+  const ids = def.equipment.map((e: any) => e.id);
+  for (const t of SYRUP_ACTION_TYPES) assert.ok(M.controllersForAction(def, { type: t }).length > 0, `no instrument performs ${t}`);
+  for (const c of def.controllers) {
+    for (const e of c.equipment) assert.ok(ids.includes(e), `${c.id} opens on unknown equipment ${e}`);
+    for (const t of c.actions) assert.ok(SYRUP_ACTION_TYPES.includes(t), `${c.id} lists unknown action ${t}`);
+    for (const n of c.nearby ?? []) assert.ok(def.controllers.some((x: any) => x.id === n), `${c.id}: unknown nearby ${n}`);
+  }
+  const owners = def.equipment.map((e: any) => def.controllers.filter((c: any) => c.equipment.includes(e.id)).length);
+  assert.ok(owners.every((n: number) => n <= 1), "a piece of equipment opens more than one instrument");
+  assert.equal(M.controllerForEquipment(def, "sucrose").id, "balance", "the sucrose jar is used at the balance");
+  assert.equal(M.controllerForEquipment(def, "notebook").id, "notebook");
+  // stirring is a mixing-vessel operation: never from the balance, the bottle or the notebook
+  assert.deepEqual(M.controllersForAction(def, { type: "stir" }).map((c: any) => c.id).sort(), ["beaker", "hotplate", "rod"]);
+  assert.deepEqual(M.controllersForAction(def, { type: "mixAfterQs" }).map((c: any) => c.id).sort(), ["cylinder", "rod"]);
+});
+
+test("bypass: syrup sucrose cannot be weighed without the balance, nor dissolved without the mixing vessel", () => {
+  const def = SX.SYRUP;
+  const d = driver(def, 5);
+  for (const id of ["balance", "boat", "sucrose", "beaker", "cylinder", "rod", "water", "hotplate", "bottle"]) d.act({ type: "inspect", id });
+  d.act({ type: "calculate", batchMl: 100, sucroseG: 85, waterMl: 45 });
+  // with the cylinder in hand, the balance cannot be operated
+  d.msg({ type: "operate", equipment: "cylinder" });
+  for (const a of [{ type: "placeBoat" }, { type: "tare" }, { type: "addSucrose", amount: "large" }, { type: "recordMass", value: 0 }]) {
+    const before = d.s;
+    d.msg({ type: "act", action: a });
+    assert.equal(d.s, before, `${a.type} worked without the balance`);
+    assert.equal(d.run.last[0].kind, "error");
+  }
+  assert.equal(def.stepComplete(d.s, "weigh"), false);
+  // weigh and measure properly, then try to dissolve from instruments that cannot mix
+  d.act({ type: "placeBoat" });
+  d.act({ type: "tare" });
+  for (let i = 0; i < 300 && Math.abs(SX.syrupBalance(d.s) - 85) > 0.3; i++) {
+    const v = SX.syrupBalance(d.s);
+    d.act(v > 85.3 ? { type: "removeSucrose" } : { type: "addSucrose", amount: v < 72 ? "large" : v < 83 ? "scoop" : "tap" });
+  }
+  d.act({ type: "recordMass", value: SX.syrupBalance(d.s) });
+  for (const ml of [10, 10, 10, 10, 5]) d.act({ type: "pourWater", ml });
+  d.act({ type: "readCylinder", value: 45 });
+  d.act({ type: "waterToBeaker" });
+  for (const via of ["balance", "bottle", "notebook"]) {
+    d.msg({ type: "operate", equipment: via });
+    for (const a of [{ type: "beakerOnHotplate" }, { type: "stir", on: true }, { type: "sucroseToBeaker" }, { type: "wait", seconds: 300 }, { type: "finishDissolving" }]) {
+      const before = d.s;
+      d.msg({ type: "act", action: a });
+      assert.equal(d.s, before, `${a.type} worked from the ${via}`);
+    }
+  }
+  assert.equal(d.s.stirring, false);
+  assert.equal(d.s.sucroseInBeaker, 0);
+  assert.equal(def.stepComplete(d.s, "dissolve"), false);
+  assert.equal(def.benchComplete(d.s), false);
+});
+
+test("syrup suggest: points at the next control, goes quiet at a meniscus, never names a choice", () => {
+  const def = SX.SYRUP;
+  const s0 = def.initial(5);
+  assert.equal(def.suggest(s0), null, "inspection is the student's search");
+  const inspected = { ...s0, inspected: ["balance", "boat", "sucrose", "beaker", "cylinder", "rod", "water", "hotplate", "bottle"] };
+  assert.deepEqual(def.suggest(inspected), { controller: "notebook", action: "calculate" });
+  const calc = def.apply(inspected, { type: "calculate", batchMl: 100, sucroseG: 85, waterMl: 45 }).state;
+  assert.deepEqual(def.suggest(calc), { controller: "balance", action: "placeBoat" });
+  // the starting water: obviously short → pour; near the target, reading it is the skill
+  const weighed = { ...calc, boatOn: true, tareG: SX.FORMULA.boatMassG, sucroseOnBoat: 85, massRecorded: 85 };
+  assert.deepEqual(def.suggest({ ...weighed, cylinderMl: 20 }), { controller: "cylinder", action: "pourWater" });
+  assert.equal(def.suggest({ ...weighed, cylinderMl: 44 }), null);
+  assert.equal(def.suggest({ ...weighed, cylinderMl: 46 }), null);
+  // making up to volume: quiet near the mark until the student has mixed
+  const d = syrupRun();
+  const atMark = { ...d.s, finalRead: null, mixedAfterQs: false, container: null, storage: null, labelled: false, appearance: null, densityMassG: null, densityRecorded: null, signed: false };
+  assert.equal(def.suggest(atMark), null);
+  assert.deepEqual(def.suggest({ ...atMark, mixedAfterQs: true }), { controller: "cylinder", action: "readFinal" });
+  // packing and evaluating: the control, never the option
+  const packing = { ...atMark, finalRead: 100, mixedAfterQs: true };
+  for (const [s, action] of [[packing, "pack"], [{ ...packing, container: "amber" }, "label"], [{ ...packing, container: "amber", storage: "cool", labelled: true }, "observe"]] as const) {
+    const sug = def.suggest(s);
+    assert.deepEqual(Object.keys(sug).sort(), ["action", "controller"], "a suggestion carries no option or value");
+    assert.equal(sug.controller, "bottle");
+    assert.equal(sug.action, action);
+  }
+  assert.equal(def.suggest(d.s), null, "nothing left once the record is signed");
+  assert.ok(def.benchComplete(d.s));
 });
 
 // ── Syrup physics ──────────────────────────────────────────────────────────
@@ -526,6 +787,100 @@ test("dose–response: cannot dose before set-up, nor plot before data", () => {
   assert.equal(d.s.trials.length, 0);
 });
 
+const DOSE_KEY_ITEMS = ["organ-bath", "thermostat", "aerator", "tissue", "transducer", "recorder", "stock", "micropipette", "pss"];
+
+/** A bath set up and equilibrated through its instruments, ready for the first dose. */
+function doseReady(seed = 9) {
+  const d = driver(DX.DOSE_RESPONSE, seed);
+  for (const id of DOSE_KEY_ITEMS) d.act({ type: "inspect", id });
+  d.act({ type: "variables", independent: "conc", dependent: "height" });
+  for (const a of [{ type: "fillBath" }, { type: "thermostat", on: true }, { type: "aeration", on: true }, { type: "mountTissue" }, { type: "setTension" }, { type: "zeroRecorder" }]) d.act(a);
+  d.act({ type: "wait", minutes: 10 });
+  d.act({ type: "wait", minutes: 10 });
+  return d;
+}
+
+test("bypass: dose–response data come only from doses given with the micropipette, and plot only on the recorder", () => {
+  const def = DX.DOSE_RESPONSE;
+  assert.equal(M.controllerForEquipment(def, "micropipette").id, "dosing");
+  assert.equal(M.controllerForEquipment(def, "stock").id, "dosing");
+  assert.deepEqual(def.controllers.filter((c: any) => c.actions.includes("addDose")).map((c: any) => c.id), ["dosing"], "only the micropipette doses the bath");
+  const d = doseReady();
+  // every other instrument tries to run a trial: nothing reaches the bath
+  for (const c of def.controllers) {
+    if (c.id === "dosing") continue;
+    d.msg({ type: "operate", equipment: c.equipment[0] });
+    const before = d.s;
+    d.msg({ type: "act", action: { type: "addDose", c: 1e-7 } });
+    d.msg({ type: "act", action: { type: "addUnknown" } });
+    assert.equal(d.s, before, `a dose was given from the ${c.id}`);
+  }
+  // with nothing dosed there is no response to record, even from the recorder
+  d.msg({ type: "operate", equipment: "recorder" });
+  d.msg({ type: "act", action: { type: "recordResponse", value: 23 } });
+  assert.equal(d.s.trials.length, 0);
+  assert.equal(def.stepComplete(d.s, "trials"), false);
+  // three real trials through the pipette → exactly three rows, each a recorded peak
+  for (const c of [1e-8, 1e-7, 1e-6]) {
+    d.act({ type: "addDose", c });
+    d.act({ type: "recordResponse", value: d.s.trials.at(-1).trueMm });
+    d.act({ type: "wash" });
+  }
+  assert.deepEqual(DX.tableRows(d.s).map((r: any) => r.c), [1e-8, 1e-7, 1e-6]);
+  // the graph is drawn on the recorder and nowhere else
+  for (const c of def.controllers) {
+    if (c.id === "recorder") continue;
+    d.msg({ type: "operate", equipment: c.equipment[0] });
+    const before = d.s;
+    d.msg({ type: "act", action: { type: "plot", axis: "log" } });
+    d.msg({ type: "act", action: { type: "estimate", emaxMm: 40, logEc50: -7 } });
+    assert.equal(d.s, before, `plotted or analysed from the ${c.id}`);
+  }
+  d.msg({ type: "operate", equipment: "recorder" });
+  d.msg({ type: "act", action: { type: "plot", axis: "log" } });
+  assert.equal(d.s.plottedLog, true);
+});
+
+test("dose–response: following Learning mode's pointer completes the bench with no mistakes, and it never names a value", () => {
+  const def = DX.DOSE_RESPONSE;
+  const d = driver(def, 9);
+  assert.equal(def.suggest(d.s), null, "inspection is the student's search");
+  for (const id of DOSE_KEY_ITEMS.slice(0, 4)) d.act({ type: "inspect", id });
+  assert.equal(def.suggest(d.s), null, "still searching");
+  for (const id of DOSE_KEY_ITEMS.slice(4)) d.act({ type: "inspect", id });
+  const seen = new Set<string>();
+  let next = 0;
+  for (let i = 0; i < 200; i++) {
+    const sug = def.suggest(d.s);
+    if (!sug) break;
+    // a pointer is an instrument and a control — no concentration, peak, Emax, EC50 or U
+    assert.deepEqual(Object.keys(sug).sort(), ["action", "controller"]);
+    seen.add(`${sug.controller}:${sug.action}`);
+    const s = d.s;
+    const pending = s.trials.find((t: any) => t.recordedMm === null);
+    const fit = DX.studentFit(s);
+    const read = DX.unknownFromCurve(s);
+    // the student supplies every judgement: which concentration, what the trace reads, the analysis
+    const a: any =
+      sug.action === "variables" ? { type: "variables", independent: "conc", dependent: "height" }
+      : sug.action === "thermostat" || sug.action === "aeration" ? { type: sug.action, on: true }
+      : sug.action === "wait" ? { type: "wait", minutes: 5 }
+      : sug.action === "addDose" ? { type: "addDose", c: DX.MODEL.concentrations[next++] }
+      : sug.action === "recordResponse" ? { type: "recordResponse", value: pending.trueMm }
+      : sug.action === "plot" ? { type: "plot", axis: s.plottedLinear ? "log" : "linear" }
+      : sug.action === "estimate" ? { type: "estimate", emaxMm: Math.max(...DX.tableRows(s).map((r: any) => r.mean)), logEc50: Math.round(fit.logEc50 * 100) / 100 }
+      : sug.action === "estimateUnknown" ? { type: "estimateUnknown", logC: Math.round(read.logC * 100) / 100 }
+      : { type: sug.action };
+    // operate the instrument the pointer names, as the guided camera walk does
+    d.msg({ type: "operate", equipment: def.controllers.find((c: any) => c.id === sug.controller).equipment[0] });
+    d.act(a);
+  }
+  assert.equal(def.suggest(d.s), null, "nothing left to point at");
+  assert.ok(def.benchComplete(d.s), "the pointer leads to a complete bench");
+  assert.deepEqual(d.run.mistakes.map((m: any) => m.id), [], "the pointer never leads into a mistake (cold, unequilibrated, unwashed)");
+  for (const k of ["notebook:variables", "organ-bath:wait", "dosing:addDose", "dosing:recordResponse", "organ-bath:wash", "recorder:plot", "recorder:estimate", "dosing:addUnknown", "recorder:estimateUnknown"]) assert.ok(seen.has(k), `never pointed at ${k}`);
+});
+
 // ── Microscopy / clove ─────────────────────────────────────────────────────
 
 test("microscopy: field of view and magnification", () => {
@@ -645,6 +1000,115 @@ test("clove: a poor mount can be discarded and remade (mistakes stay)", () => {
   d.act({ type: "mountant", id: "chloral" });
   assert.equal(d.s.mountant, "chloral");
   assert.ok(d.run.mistakes.some((m: any) => m.id === "mountant-water"), "the earlier mistake stays on the record");
+});
+
+/** A clove bench with a correct, cleared mount ready for the microscope (inspected, sampled, prepared). */
+function clovePrepared(seed = 13) {
+  const d = driver(CX.CLOVE, seed);
+  for (const id of ["microscope", "slides", "coverslips", "chloral", "jars", "lamp", "needle", "blotting"]) d.act({ type: "inspect", id });
+  d.act({ type: "chooseSample", id: "clove" });
+  d.act({ type: "cleanSlide" });
+  d.act({ type: "powder", amount: "small" });
+  d.act({ type: "mountant", id: "chloral" });
+  d.act({ type: "warm", how: "gentle" });
+  d.act({ type: "coverslip", method: "angled" });
+  d.act({ type: "blot" });
+  return d;
+}
+
+test("bypass: clove cannot be observed without operating the microscope, nor identified from the notebook alone", () => {
+  const def = CX.CLOVE;
+  let run = clovePrepared().run;
+  assert.ok(def.stepComplete(run.s, "prepare"));
+  const mic = def.controllers.find((c: any) => c.id === "microscope");
+  const scopeWork = [{ type: "placeSlide" }, { type: "light", on: true }, { type: "objective", mag: 10 }, { type: "coarse", dir: 1 }, { type: "fine", dir: 1 }, { type: "stage", dx: 1, dy: 0 }, { type: "centre" }];
+  for (const from of ["slides", "lamp", "notebook", "jars"]) {
+    for (const a of scopeWork) {
+      run = M.reduceRun(def, run, { type: "operate", equipment: from });
+      const before = run.s;
+      run = M.reduceRun(def, run, { type: "act", action: a });
+      assert.equal(run.s, before, `${a.type} worked from the ${from}`);
+      assert.equal(run.last[0].kind, "error");
+      assert.ok(mic.actions.includes(a.type), `${a.type} belongs to the microscope`);
+    }
+  }
+  assert.equal(run.s.slideOnStage, false);
+  assert.equal(def.stepComplete(run.s, "setup"), false);
+  assert.equal(def.stepComplete(run.s, "observe"), false);
+  // the notebook opens, but nothing unseen can be recorded, compared or identified
+  run = M.reduceRun(def, run, { type: "operate", equipment: "notebook" });
+  const answers = Object.fromEntries(CX.REFERENCE_FEATURES.map((f: any) => [f.id, f.expected]));
+  run = M.reduceRun(def, run, { type: "act", action: { type: "checklist", answers } });
+  assert.equal(run.s.checklist, null, "a perfect checklist is refused before anything was observed");
+  run = M.reduceRun(def, run, { type: "act", action: { type: "compare" } });
+  run = M.reduceRun(def, run, { type: "act", action: { type: "identify", identity: "clove", evidence: ["oil-gland", "pollen", "cluster-crystal"] } });
+  assert.equal(run.s.compared, false);
+  assert.equal(run.s.identity, null);
+  // and the microscope cannot write in the notebook
+  run = M.reduceRun(def, run, { type: "operate", equipment: "microscope" });
+  const before = run.s;
+  run = M.reduceRun(def, run, { type: "act", action: { type: "checklist", answers } });
+  assert.equal(run.s, before);
+  assert.match(run.last[0].text, /lab notebook/i);
+  assert.equal(def.benchComplete(run.s), false);
+});
+
+test("modes: clove suggestions name an instrument only — never a jar, a feature or the identity — and lead to a finished observation", () => {
+  const def = CX.CLOVE;
+  assert.equal(def.suggest(def.initial(1)), null, "inspection is the student's search");
+  const shape = (sug: any) => assert.ok(sug === null || Object.keys(sug).sort().join() === "action,controller", `suggest() carries more than a pointer: ${JSON.stringify(sug)}`);
+  // Follow Learning mode's pointer at the microscope, choosing only the knob direction a
+  // student would read off the blur. It must finish the observation without looping.
+  const d = clovePrepared(21);
+  for (let i = 0; i < 400 && !def.stepComplete(d.s, "observe"); i++) {
+    const sug = def.suggest(d.s);
+    shape(sug);
+    assert.ok(sug, "a pointer exists until the observation is complete");
+    assert.equal(sug.controller, "microscope", `pointer left the microscope: ${sug.controller}/${sug.action}`);
+    const s = d.s;
+    const dir = s.focusErrUm > 0 ? 1 : -1;
+    const by: Record<string, any> = {
+      placeSlide: {}, light: { on: true }, coarse: { dir }, fine: { dir }, centre: {},
+      objective: { mag: s.mag === 4 ? 10 : s.mag === 10 ? 40 : 10 },
+      stage: { dx: Math.floor(i / 4) % 2 ? -1 : 1, dy: i % 4 === 3 ? 1 : 0 },
+    };
+    d.act({ type: sug.action, ...by[sug.action] });
+  }
+  assert.ok(def.stepComplete(d.s, "observe"), "following the pointer completes the observation");
+  assert.deepEqual(d.run.mistakes.map((m: any) => m.id), [], "the pointer never leads into a technique mistake");
+  // beyond the observe step's own completion rule the pointer does not read the slide:
+  // whatever was seen (and whatever the seed), the notebook is pointed at the same way
+  const atChecklist = { ...d.s, iodineDone: true };
+  for (const seen of [["oil-gland", "pollen", "cluster-crystal", "spiral-vessel"], ["pollen", "cluster-crystal", "spiral-vessel", "epidermis", "fibre"], CX.CLOVE_ELEMENTS.map((e: any) => e.type)]) {
+    for (const seed of [1, 99]) assert.deepEqual(def.suggest({ ...atChecklist, seen, seed }), { controller: "notebook", action: "checklist" });
+  }
+  assert.deepEqual(def.suggest({ ...d.s, iodineDone: false }), { controller: "prep", action: "iodineTest" });
+  // the identification is the student's own conclusion
+  assert.equal(def.suggest({ ...atChecklist, checklist: {}, compared: true }), null);
+  // an uncleared mount is pointed back to the preparation station, not onward
+  assert.deepEqual(def.suggest({ ...d.s, mountant: "water", checklist: null, seen: [] }), { controller: "prep", action: "remount" });
+  for (const sug of [def.suggest(d.s), def.suggest(def.initial(3))]) shape(sug);
+});
+
+test("clove: the eyepiece draws an element sharp (≤ 1.6 px) exactly when the engine counts it", () => {
+  // MicroscopeView blurs each element by blurPx(focusErr − z) and hides what obscured() hides;
+  // visibleNow() is what the engine records as seen. The two must agree element by element.
+  const base = { ...clovePrepared(13).s, slideOnStage: true, light: true };
+  let checked = 0;
+  for (const mount of [{}, { powder: "large" }, { coverslip: "dropped" }]) {
+    for (const mag of [4, 10, 40] as const) for (const err of [-4, -3, -1.5, 0, 1, 2.9, 3.1, 12, 13, 45, 46]) {
+      const s = { ...base, ...mount, mag, focusErrUm: err };
+      const counted = new Set(CX.visibleNow(s).map((e: any) => e.id));
+      const r = O.fieldOfViewUm(mag) / 2;
+      for (const e of CX.slideOf(s)) {
+        if (Math.hypot(e.x - s.stageX, e.y - s.stageY) > r || e.size < O.OBJECTIVES[mag].minUm) continue;
+        const drawnSharp = O.blurPx({ mag, stageX: 0, stageY: 0, focusErrUm: err - e.z, light: true, slideOn: true }) <= 1.6 + 1e-9 && !CX.obscured(s, e);
+        assert.equal(counted.has(e.id), drawnSharp, `${mag}× err ${err}: element ${e.id} (${e.type}, z ${e.z.toFixed(2)})`);
+        checked++;
+      }
+    }
+  }
+  assert.ok(checked > 500, `only ${checked} element views checked`);
 });
 
 test("asset manifest: every shipped file exists with the recorded size", async () => {

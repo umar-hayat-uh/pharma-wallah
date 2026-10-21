@@ -71,6 +71,43 @@ export interface StepDef {
   safety?: string;
 }
 
+/**
+ * Learning = guided (objective text, hints, "try this" on the right control, the camera
+ * walks you to the next instrument). Practical = independent (a compact checklist, no
+ * guidance, hints cost technique marks). Same room, same engine — only guidance and
+ * scoring differ (2026-10-21 upgrade).
+ */
+export type LabMode = "learning" | "practical";
+
+/**
+ * An instrument controller: the control set a student gets by SELECTING a piece of
+ * equipment in the room. Every physical action belongs to at least one controller, and
+ * the run machine refuses an action unless one of its controllers is the instrument the
+ * student currently has open — so no procedure card, list or shortcut can operate the
+ * bench (docs/virtual-labs/UPGRADE_PLAN.md).
+ */
+export interface ControllerDef {
+  id: string;
+  name: string;
+  /** Equipment ids that open this controller. The first is the one the camera frames. */
+  equipment: string[];
+  /** Action `type`s this controller performs. Overlap between controllers is allowed. */
+  actions: string[];
+  /** One line: what this instrument does in this experiment. */
+  brief: string;
+  /** Learning mode only: how to operate it, in two or three short lines. */
+  howTo: string[];
+  /** Controllers at the same station, offered as one-tap switches once operated. */
+  nearby?: string[];
+}
+
+/** Learning mode's "next" pointer: which instrument, and which control on it. */
+export interface Suggestion {
+  controller: string;
+  /** The action `type` the next correct move uses; the matching control is highlighted. */
+  action: string;
+}
+
 export interface Question {
   id: string;
   /** design = experimental design, interpretation = reading the data, viva = oral-exam style. */
@@ -135,8 +172,16 @@ export interface ExperimentDefinition<S, A> {
   equipment: EquipmentDef[];
   materials: MaterialDef[];
   steps: StepDef[];
+  /** The instruments. Every action type except `inspect` must appear in at least one. */
+  controllers: ControllerDef[];
   questions: Question[];
   initial(seed: number): S;
+  /**
+   * Learning mode: the next correct move for this state, or null when the next move is
+   * a judgement the student must make unaided (a reading, a verdict). Never shown in
+   * Practical mode.
+   */
+  suggest(state: S): Suggestion | null;
   /**
    * The ONLY way state changes. Must be pure and must validate preconditions:
    * an action out of order returns the same state plus an explanation, never throws.

@@ -8,6 +8,14 @@ import type * as THREE from "three";
 
 export type Quality = "low" | "medium" | "high";
 
+/** Screen pixels covered by the lab's panels; the camera centres the scene in the rest. */
+export interface Insets {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
 export interface Pose {
   /** Camera position, metres. */
   pos: [number, number, number];

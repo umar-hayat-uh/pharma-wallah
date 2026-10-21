@@ -127,3 +127,52 @@ These times are dominated by CPU shader compilation and software rasterisation. 
 - Screen-reader use end to end (labels and live regions exist; keyboard-only completion is possible because every action is a button).
 - A browser with WebGL disabled; WebGL context loss.
 - Faculty review of any content.
+
+## 8. Immersive upgrade — 2026-10-21
+
+Scope: `docs/virtual-labs/UPGRADE_PLAN.md`. Everything below was run after the upgrade.
+
+### 8.1 Unit tests — `node --test scripts/virtual-labs.test.mts` → **58 pass, 0 fail**
+New since 2026-10-20: every definition's instruments are consistent (equipment exists, no `inspect` in a controller,
+`nearby` valid, brief + how-to present); **bypass**: an action with no instrument open is refused, changes nothing, is
+not counted and is logged (all four labs); an action from the wrong instrument is refused (every pair, all labs); a
+titration cannot complete without the burette; syrup weighing/dissolving refuse other instruments; dose–response
+cannot dose, record or plot except on its instruments; clove cannot be observed without the microscope nor identified
+from the notebook alone; **modes**: Learning → Practical only on a fresh bench, Practical → Learning makes the run
+practice, hints free in Learning and 3 marks each (cap 15) in Practical; `suggest()` validated at **every state of
+every scripted run** and never points at a reading, an assessed choice or the end-point. The test driver throws if any
+action a scripted run uses has no instrument — so every action is proven reachable on equipment.
+
+### 8.2 Browser — all four labs, through the 3D equipment
+Headless Chrome (SwiftShader), driven over CDP by scripts that **tap the equipment in the canvas**
+(`__vlab.where(id)` → a screen point that hits it; `__vlab.moving()` to wait for the camera), operate each controller,
+and read instruments from what is drawn. Learning at 1440 × 900, Practical at 390 × 844 with touch, each to the results
+page. All runs: technique **100/100**, **0 console errors**, **0 horizontal overflow**.
+
+| Lab | Readings taken from the drawing vs the engine |
+|---|---|
+| Titration (seed 11) | mass 0.9642 g (LCD); flask 100.00 mL (neck meniscus); initial 0.42, final 27.72 mL (burette meniscus); end-point judged from the swatch colour → "faint permanent pink — correct"; assay 100.35 % vs true 100.37 % |
+| Simple Syrup (seed 5) | 84.91 g (LCD); 45.000 mL and 100.865 mL (cylinder meniscus); 59.9 → 29.8 °C (thermometer); "no crystals" from the beaker view; 65.65 g / 50 mL → 1.313 g/mL |
+| Dose–response (seed 9) | eight peaks read off the trace grid (e.g. 23.70 → 23.5 mm, all within ±1 mm); pEC50 7.06 vs model 7.00; unknown 5.1 × 10⁻⁸ vs true 5.8 × 10⁻⁸ M |
+| Powdered clove (seed 13) | focus judged from the eyepiece drawing at 4×/10×/40×; checklist 10 of 10 correct, 5 of 5 main elements, identified as clove (phone, Practical) |
+
+Also probed: phone default tier = Balanced with a 780 × 1688 drawing buffer (was 390 × 844 at Low); pause dialog on
+`visibilitychange`; Q cycles equipment in view and E opens its controller; the full-screen button; the 2D bench plan
+opens the same controllers and no operating control exists before a tile is selected.
+
+### 8.3 Defects found by driving the labs from the drawing (fixed)
+- Titration flask blended pink in below the engine's faint-pink threshold → a student stopping at the first lasting pink
+  lost 8 marks. Now colourless until the threshold (MEMORY 238).
+- Syrup tinted yellow from ~48 s of overheating; the engine calls it yellow at 120 s. Now in step.
+- Clove eyepiece: at 40× the whole field was drawn sharp while the engine counted 1 of 4 elements in focus — blur is
+  now per element from its own depth; elements hidden by a heaped mount or a dropped coverslip were drawn clearly —
+  one `obscured()` rule now drives both the engine and the drawing. A test asserts an element is drawn sharp exactly
+  when the engine counts it.
+- Untappable targets: the stand's centre (behind the burette), a 3 mm stirring rod, the tissue strip inside the bath.
+- Close-up poses did not follow equipment the experiment moves (the beaker to the hot plate) — fixed in the runtime.
+- Phone sheets: burette stopcock below the fold once titrating (now first); dose loop needed scrolling (now fits).
+- Slow-device step-down never fired on a device too slow to report fps.
+
+### 8.4 Not verified (adds to §7)
+A real phone/GPU; iPhone Safari (no element full screen — the layer fills the window instead); the one-time step-down
+on real slow hardware; screen reader end to end in the immersive layer.

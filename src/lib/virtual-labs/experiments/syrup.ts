@@ -10,7 +10,7 @@
  * starting water overshoots the batch volume, making up while hot leaves the batch short
  * once it cools, and long heating above 90 °C inverts and colours the sucrose.
  */
-import type { ExperimentDefinition, ExperimentReport, Feedback, ObservationSection } from "../engine/types";
+import type { ControllerDef, ExperimentDefinition, ExperimentReport, Feedback, ObservationSection, Suggestion } from "../engine/types";
 import { fmt, info, mistake, ok, rand, refuse, round, warn } from "../engine/machine";
 import { SYRUP_EXPANSION_PER_C, densityAt20, deviationPercent, solutionVolume, sucroseForBatch, waterInBatch, wwFromWv } from "../calculations/syrup";
 import { LABS } from "../catalog";
@@ -487,6 +487,85 @@ const STEP_DONE: Record<string, (s: SyrupState) => boolean> = {
   record: (s) => s.signed,
 };
 
+/**
+ * The instruments (2026-10-21). Each equipment id opens exactly one controller (the
+ * engine picks the first that lists it), so the sucrose jar and the boat open the
+ * balance, and the purified-water carboy opens the measuring cylinder it is poured into.
+ * Overlap in `actions` is deliberate: stirring can be done from the rod, the beaker or
+ * the hot plate, so a phone student is not made to hop for every stir.
+ */
+const CONTROLLERS: ControllerDef[] = [
+  { id: "notebook", name: "Batch record", equipment: ["notebook"], actions: ["calculate", "recordDensity", "sign"], brief: "Calculate the formula before you start; review and sign the record at the end.", howTo: [`Sucrose = ${FORMULA.sucroseGPer100mL} g per 100 mL of batch.`, `Start with about ${Math.round(FORMULA.startWaterFraction * 100)} % of the batch volume as water.`], nearby: ["balance"] },
+  { id: "balance", name: "Top-pan balance", equipment: ["balance", "boat", "sucrose"], actions: ["placeBoat", "tare", "addSucrose", "removeSucrose", "recordMass", "weighDensity", "recordDensity"], brief: "Weigh the sucrose in a tared boat; later, weigh 50.0 mL of the syrup.", howTo: ["Boat on the pan, then tare to 0.00 g.", "Large scoops to get close, small scoops and taps to finish."], nearby: ["notebook", "beaker"] },
+  { id: "cylinder", name: "Measuring cylinder", equipment: ["cylinder", "water"], actions: ["pourWater", "readCylinder", "waterToBeaker", "chooseVessel", "transferToVessel", "rinseBeaker", "wait", "qs", "mixAfterQs", "readFinal"], brief: "Measure the starting water; later, make the syrup up to volume in it.", howTo: ["Stand it on the bench and read the bottom of the meniscus at eye level.", "Add the last millilitres in small portions."], nearby: ["beaker", "rod"] },
+  { id: "beaker", name: "Beaker (mixing vessel)", equipment: ["beaker"], actions: ["waterToBeaker", "sucroseToBeaker", "beakerOnHotplate", "stir", "wait", "finishDissolving", "chooseVessel", "transferToVessel", "rinseBeaker"], brief: "Dissolve the sucrose in the starting water, then transfer the syrup.", howTo: ["Water first, then the sucrose gradually while stirring.", "Gentle heat; stir until no crystals remain."], nearby: ["hotplate", "rod", "cylinder"] },
+  { id: "hotplate", name: "Hot plate", equipment: ["hotplate"], actions: ["beakerOnHotplate", "setHeat", "stir", "wait", "finishDissolving"], brief: "Gentle heat speeds dissolution; switch it off to cool.", howTo: ["About 60 °C is enough.", `Above ${FORMULA.overheatC} °C sucrose inverts and colours.`], nearby: ["beaker", "rod"] },
+  { id: "rod", name: "Glass stirring rod", equipment: ["rod"], actions: ["stir", "mixAfterQs"], brief: "Stir while the sucrose dissolves, and again after making up to volume.", howTo: ["Keep stirring while you add the sucrose.", "Water added at the top floats on syrup — stir it through."], nearby: ["beaker", "cylinder"] },
+  { id: "bottle", name: "Dispensing bottle", equipment: ["bottle"], actions: ["pack", "label", "observe"], brief: "Pack, label and look at the finished syrup.", howTo: ["Choose a suitable container and storage statement.", "Record what you actually see."], nearby: ["balance", "notebook"] },
+];
+
+/**
+ * Learning mode: the next correct move. It points at controls, never at a value: it goes
+ * quiet (null) while the student brings a meniscus to the mark, and it never pre-selects
+ * the container, the storage statement or the appearance — those are assessed choices.
+ */
+function suggest(s: SyrupState): Suggestion | null {
+  const to = (controller: string, action: string): Suggestion => ({ controller, action });
+  if (!KEY_ITEMS.every((k) => s.inspected.includes(k))) return null; // inspection is finding, not operating
+  if (s.calcSucrose === null) return to("notebook", "calculate");
+  const batch = s.batchMl ?? 100;
+  if (s.massRecorded === null) {
+    if (!s.boatOn) return to("balance", "placeBoat");
+    if (s.tareG === 0 && s.sucroseOnBoat === 0) return to("balance", "tare");
+    // driven by the LCD the student can see, exactly as a demonstrator would point
+    const v = syrupBalance(s);
+    const tol = FORMULA.weighToleranceGPer100 * (batch / 100);
+    if (v < s.calcSucrose - tol) return to("balance", "addSucrose");
+    if (v > s.calcSucrose + tol) return to("balance", "removeSucrose");
+    return to("balance", "recordMass");
+  }
+  if (s.beakerWaterG === 0) {
+    if (s.cylinderRead === null) {
+      // Far from the target the cylinder obviously needs water; near it, reading the
+      // meniscus is the skill, so Learning mode says nothing.
+      const want = s.calcWater ?? 0;
+      if (s.cylinderMl <= 0 || Math.abs(s.cylinderMl - want) > 5) return to("cylinder", "pourWater");
+      return null;
+    }
+    return to("cylinder", "waterToBeaker");
+  }
+  if (!s.dissolveDone) {
+    if (!s.onHotplate) return to("beaker", "beakerOnHotplate");
+    if (s.setpoint === 0 || s.setpoint >= 100) return to("hotplate", "setHeat"); // setting it ≥ 100 °C already warned
+    if (!s.stirring) return to("beaker", "stir");
+    if (s.sucroseInBeaker === 0) return to("beaker", "sucroseToBeaker");
+    // the beaker panel describes the crystals on the same threshold, so this adds nothing
+    if (s.sucroseInBeaker - s.dissolvedG > 0.3) return to("beaker", "wait");
+    return to("beaker", "finishDissolving");
+  }
+  if (!s.inVessel) {
+    if (s.onHotplate && s.setpoint > 0) return to("hotplate", "setHeat");
+    if (s.tempC > FORMULA.makeUpMaxC) return to("beaker", "wait");
+    if (!s.vessel) return to("beaker", "chooseVessel");
+    return to("beaker", "transferToVessel");
+  }
+  if (s.finalRead === null) {
+    if (!s.rinsed && s.qsWaterG === 0) return to("beaker", "rinseBeaker");
+    if (s.madeUpAtC === null && s.tempC > FORMULA.makeUpMaxC) return to("cylinder", "wait");
+    if (batchFigures(s).volumeNow < batch - 3) return to("cylinder", "qs");
+    // Bringing the meniscus to the mark is the student's call. Once they have mixed,
+    // pointing at the reading field gives nothing away.
+    return s.mixedAfterQs ? to("cylinder", "readFinal") : null;
+  }
+  if (!s.container) return to("bottle", "pack");
+  if (!s.labelled) return to("bottle", "label");
+  if (!s.appearance) return to("bottle", "observe");
+  if (s.densityMassG === null) return to("balance", "weighDensity");
+  if (s.densityRecorded === null) return to("balance", "recordDensity");
+  if (!s.signed) return to("notebook", "sign");
+  return null;
+}
+
 function observations(s: SyrupState): ObservationSection[] {
   const f = batchFigures(s);
   return [
@@ -572,6 +651,7 @@ export const SYRUP: ExperimentDefinition<SyrupState, SyrupAction> = {
     { id: "water", name: "Purified water", description: "Purified water in a wash bottle and a carboy.", use: "The vehicle, and for making up to volume." },
     { id: "hotplate", name: "Hot plate with thermometer", description: "Hot plate with set-points and a glass thermometer in the beaker.", use: "Gentle heat (about 60 °C) speeds dissolution.", safety: "Hot surface." },
     { id: "bottle", name: "Dispensing bottle and label", description: "Clean, dry glass bottle with screw cap.", use: "The finished syrup is packed and labelled in it." },
+    { id: "notebook", name: "Lab notebook (batch record)", description: "Your batch record: every quantity you weighed, measured and recorded is already in it.", use: "Calculate the formula before you start, and review and sign the batch record at the end." },
   ],
   materials: [
     { id: "sucrose", name: "Sucrose", detail: "C₁₂H₂₂O₁₁, white crystalline powder" },
@@ -579,15 +659,15 @@ export const SYRUP: ExperimentDefinition<SyrupState, SyrupAction> = {
   ],
   steps: [
     { id: "inspect", title: "Inspect the bench", objective: "Inspect the balance, boat, sucrose, beaker, measuring cylinder, stirring rod, purified water, hot plate and the bottle.", hints: ["Select each item to read what it is for.", "Items still to inspect are listed in the procedure panel."], focus: [...KEY_ITEMS] },
-    { id: "calculate", title: "Calculate the formula", objective: "Choose a batch size and calculate the sucrose and the starting water.", hints: [`Sucrose = ${FORMULA.sucroseGPer100mL} g per 100 mL.`, `Start with about ${Math.round(FORMULA.startWaterFraction * 100)} % of the batch volume as water.`], focus: [] },
-    { id: "weigh", title: "Weigh the sucrose", objective: "Tare the boat, weigh the sucrose within tolerance, and record the weight.", hints: ["Boat on → tare → add sucrose.", "Large scoops to get close, small scoops and taps to finish."], focus: ["balance", "sucrose"] },
+    { id: "calculate", title: "Calculate the formula", objective: "Choose a batch size and calculate the sucrose and the starting water.", hints: [`Sucrose = ${FORMULA.sucroseGPer100mL} g per 100 mL.`, `Start with about ${Math.round(FORMULA.startWaterFraction * 100)} % of the batch volume as water.`], focus: ["notebook"] },
+    { id: "weigh", title: "Weigh the sucrose", objective: "Tare the boat, weigh the sucrose within tolerance, and record the weight.", hints: ["Boat on → tare → add sucrose.", "Large scoops to get close, small scoops and taps to finish."], focus: ["balance", "boat", "sucrose"] },
     { id: "water", title: "Measure the water", objective: "Measure the starting water in the measuring cylinder, read it, and pour it into the beaker.", hints: ["Read the bottom of the meniscus at eye level.", "Water goes in the beaker before the sucrose."], focus: ["cylinder", "water", "beaker"] },
     { id: "dissolve", title: "Dissolve", objective: "Put the beaker on the hot plate, warm gently, add the sucrose while stirring, and stir until no crystals remain.", hints: ["About 60 °C with continuous stirring dissolves it in a few minutes.", `Above ${FORMULA.overheatC} °C the sucrose inverts and colours.`], focus: ["hotplate", "beaker", "rod"], safety: "Hot surface and hot syrup." },
-    { id: "cool", title: "Cool and transfer", objective: `Switch off the heat, let the syrup cool to ${FORMULA.makeUpMaxC} °C or below, and transfer it to the measuring cylinder.`, hints: ["Wait with the heat off; the thermometer shows the temperature.", "Rinse the beaker into the cylinder with a little purified water."], focus: ["hotplate", "cylinder"] },
+    { id: "cool", title: "Cool and transfer", objective: `Switch off the heat, let the syrup cool to ${FORMULA.makeUpMaxC} °C or below, and transfer it to the measuring cylinder.`, hints: ["Wait with the heat off; the thermometer shows the temperature.", "Rinse the beaker into the cylinder with a little purified water."], focus: ["hotplate", "beaker", "cylinder"] },
     { id: "makeup", title: "Make up to volume", objective: "Add purified water to the batch volume, mix, and record the final volume.", hints: ["Add the last millilitres in 0.5 and 0.2 mL portions.", "Stir after making up — the water floats on the syrup."], focus: ["cylinder", "water", "rod"] },
     { id: "pack", title: "Pack and label", objective: "Pack into a suitable container and choose the storage statement.", hints: ["A clean, dry, well-closed glass bottle.", "Syrup is stored in a cool place — not refrigerated."], focus: ["bottle"] },
     { id: "evaluate", title: "Evaluate", objective: "Record the appearance, then weigh 50.0 mL and calculate the density.", hints: ["Look at the bottle in the room or in the panel.", "Density = mass ÷ 50.0 mL."], focus: ["bottle", "balance"] },
-    { id: "record", title: "Batch record", objective: "Review the batch record and sign it.", hints: ["Everything you did is already in the record — check it, then sign."], focus: [] },
+    { id: "record", title: "Batch record", objective: "Review the batch record and sign it.", hints: ["Everything you did is already in the record — check it, then sign."], focus: ["notebook"] },
   ],
   questions: [
     { id: "q1", kind: "viva", prompt: "Why is Simple Syrup at 85 % w/v self-preserving?", options: ["Sucrose is an antibiotic", "There is too little free water (low water activity) for microbes to grow", "The heat sterilises it permanently", "It contains a preservative"], answer: 1, explanation: "Nearly saturated sugar binds the water; osmotic pressure prevents microbial growth." },
@@ -600,6 +680,8 @@ export const SYRUP: ExperimentDefinition<SyrupState, SyrupAction> = {
   ],
   initial,
   apply,
+  controllers: CONTROLLERS,
+  suggest,
   stepComplete: (s, id) => STEP_DONE[id]?.(s) ?? false,
   benchComplete: (s) => Object.values(STEP_DONE).every((f) => f(s)),
   observations,
@@ -609,7 +691,10 @@ export const SYRUP: ExperimentDefinition<SyrupState, SyrupAction> = {
 export function syrupVisual(s: SyrupState) {
   const f = batchFigures(s);
   const appearance = trueAppearance(s);
-  const yellow = Math.min(1, s.heatDamageS / 240);
+  // The tint appears exactly when trueAppearance() calls the syrup yellow (> 120 s above
+  // the overheat threshold). A ramp from zero showed a yellow beaker the engine still
+  // graded "clear", so a student who recorded what they saw was marked wrong.
+  const yellow = appearance === "yellow" ? Math.min(1, s.heatDamageS / 240) : 0;
   return {
     boatOn: s.boatOn,
     sucroseOnBoat: s.sucroseOnBoat,

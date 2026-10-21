@@ -4,27 +4,27 @@
  * Viewport overlays: the interaction prompt, the latest feedback line, the control guide,
  * the pause menu and the touch walking pad.
  */
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { AlertCircle, CheckCircle2, Info, MousePointerClick, X } from "lucide-react";
 import type { Feedback } from "@/lib/virtual-labs/engine/types";
 import { Btn } from "./ui";
 
-export function InteractionPrompt({ label, focused, onExitFocus }: { label: string | null; focused: string | null; onExitFocus(): void }) {
+export function InteractionPrompt({ label, focused, onExitFocus, touch }: { label: string | null; focused: string | null; onExitFocus(): void; touch?: boolean }) {
   if (focused) {
     return (
-      <div className="pointer-events-auto absolute left-1/2 top-3 flex -translate-x-1/2 items-center gap-2 rounded-full border border-[#16181d]/10 bg-white/95 py-1 pl-4 pr-1 text-sm shadow-sm">
+      <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-[#16181d]/10 bg-white/95 py-1 pl-4 pr-1 text-sm shadow-sm">
         <span className="font-semibold">{focused}</span>
-        <span className="hidden text-[#4a4f57] sm:inline">· drag to turn · scroll to zoom</span>
+        <span className="hidden text-[#4a4f57] sm:inline">· tap it to use it</span>
         <Btn size="sm" variant="soft" onClick={onExitFocus}>Back <span className="hidden sm:inline">(Esc)</span></Btn>
       </div>
     );
   }
   if (!label) return null;
   return (
-    <div className="pointer-events-none absolute left-1/2 top-3 flex -translate-x-1/2 items-center gap-2 rounded-full border border-[#16181d]/10 bg-white/95 px-4 py-1.5 text-sm shadow-sm">
+    <div className="pointer-events-none flex items-center gap-2 rounded-full border border-[#16181d]/10 bg-white/95 px-4 py-1.5 text-sm shadow-sm" aria-live="polite">
       <MousePointerClick className="h-4 w-4 text-brandBlue" aria-hidden />
       <span className="font-semibold">{label}</span>
-      <span className="text-[#4a4f57]">— click or press E to inspect</span>
+      <span className="text-[#4a4f57]">— {touch ? "tap to use" : "click or press E to use"}</span>
     </div>
   );
 }
@@ -48,33 +48,10 @@ export function FeedbackLine({ feedback, inline }: { feedback: Feedback[]; inlin
   );
 }
 
-/**
- * Phones: the student is scrolled down to the bench controls, far from the 3D view, so
- * feedback appears as a toast at the bottom of the screen instead. It clears itself
- * (longer for mistakes, which carry an explanation) and can be dismissed with a tap.
- */
-export function MobileToast({ feedback }: { feedback: Feedback[] }) {
-  const [shown, setShown] = useState(false);
-  useEffect(() => {
-    if (!feedback.length) return;
-    setShown(true);
-    const t = window.setTimeout(() => setShown(false), feedback.some((f) => f.mistake || f.kind === "error") ? 9000 : 4500);
-    return () => window.clearTimeout(t);
-  }, [feedback]);
-  if (!shown || !feedback.length) return null;
-  return (
-    <div className="vl-noprint fixed inset-x-3 bottom-3 z-50 lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-      <button type="button" onClick={() => setShown(false)} className="block w-full text-left" aria-label="Dismiss message">
-        <FeedbackLine feedback={feedback} inline />
-      </button>
-    </div>
-  );
-}
-
 export function Dialog({ title, onClose, children }: { title: string; onClose(): void; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-[60] grid place-items-center bg-[#0b1a2b]/40 p-4" role="dialog" aria-modal="true" aria-label={title} onKeyDown={(e) => e.key === "Escape" && onClose()}>
-      <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-5 shadow-xl">
+    <div className="fixed inset-0 z-[90] grid place-items-center bg-[#0b1a2b]/40 p-4" role="dialog" aria-modal="true" aria-label={title} onKeyDown={(e) => e.key === "Escape" && onClose()}>
+      <div className="vl-scroll max-h-[85vh] max-h-[85dvh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-3xl bg-white p-5 shadow-xl">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-bold">{title}</h2>
           <button type="button" autoFocus onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full hover:bg-[#16181d]/5" aria-label="Close">
@@ -87,21 +64,31 @@ export function Dialog({ title, onClose, children }: { title: string; onClose():
   );
 }
 
-export function ControlGuide() {
-  const rows: [string, string][] = [
-    ["Walk", "W A S D or arrow keys (click the room first) · on a phone, the round pad"],
-    ["Look around", "Drag in the room (mouse or one finger)"],
-    ["Inspect / use equipment", "Click or tap a highlighted item, or press E while hovering"],
-    ["Close-up", "Drag to turn around the item, scroll to zoom, Esc or Back to leave"],
-    ["Guided mode", "The camera takes you to the equipment each step needs"],
-    ["Do the step", "Use the Bench panel — every action is there, so the whole experiment also works without the 3D view"],
-    ["Hints", "Ask in the Steps panel — hints never cost marks"],
-    ["Undo / reset", "In the Bench panel. Undo restores the bench, but a mistake stays in your record"],
-  ];
+export function ControlGuide({ touch, mode }: { touch?: boolean; mode?: "learning" | "practical" }) {
+  const rows: [string, string][] = touch
+    ? [
+        ["Walk", "The round pad, bottom left"],
+        ["Look around", "Swipe anywhere in the room"],
+        ["Use equipment", "Tap it. Its controls open at the bottom; the camera stays on it"],
+        ["Put it down", "✕ on the controls, or walk away"],
+      ]
+    : [
+        ["Walk", "W A S D or the arrow keys (click the room first)"],
+        ["Look around", "Drag in the room"],
+        ["Use equipment", "Click it, or press Q to cycle through what is near you and E to use it"],
+        ["Close-up", "Drag to turn around the item, scroll to zoom"],
+        ["Put it down", "Esc, ✕ on the controls, or walk away"],
+      ];
+  rows.push(
+    ["The experiment", "Every operation is on the instrument itself — select the burette to run titrant, the balance to weigh. The objectives list only shows your progress."],
+    mode === "practical" ? ["Hints", "In the objectives list. In Practical mode each costs marks"] : ["Hints", "In the objectives list, free in Learning mode. Green chevrons and \"Next\" show what to use"],
+    ["Undo", "On the controls or in the menu. Undo restores the bench; a mistake stays on your record"],
+    ["Full screen", "The ⤢ button. Some phones (iPhone Safari) do not allow it — the lab still fills the window"],
+  );
   return (
     <dl className="space-y-2 text-sm">
       {rows.map(([k, v]) => (
-        <div key={k} className="grid grid-cols-[8rem_1fr] gap-3">
+        <div key={k} className="grid grid-cols-[7.5rem_1fr] gap-3">
           <dt className="font-semibold">{k}</dt>
           <dd className="text-[#3a3f47]">{v}</dd>
         </div>
@@ -123,7 +110,7 @@ export function TouchPad({ onMove }: { onMove(x: number, z: number): void }) {
     const a = Math.atan2(dy, dx);
     const x = Math.cos(a) * len;
     const y = Math.sin(a) * len;
-    if (knob.current) knob.current.style.transform = `translate(${x * 28}px, ${y * 28}px)`;
+    if (knob.current) knob.current.style.transform = `translate(${x * 34}px, ${y * 34}px)`;
     onMove(Math.abs(x) < 0.15 ? 0 : x, Math.abs(y) < 0.15 ? 0 : y);
   };
   const stop = () => {
@@ -134,7 +121,8 @@ export function TouchPad({ onMove }: { onMove(x: number, z: number): void }) {
     <div
       ref={ref}
       aria-hidden
-      className="pointer-events-auto absolute bottom-16 left-4 h-24 w-24 touch-none rounded-full border border-white/70 bg-white/45 shadow-sm"
+      className="pointer-events-auto absolute left-4 z-20 h-28 w-28 touch-none rounded-full border-2 border-white/80 bg-white/50 shadow-sm"
+      style={{ bottom: "max(1.5rem, calc(env(safe-area-inset-bottom) + 0.75rem))", left: "max(1rem, env(safe-area-inset-left))" }}
       onPointerDown={(e) => {
         (e.target as HTMLElement).setPointerCapture(e.pointerId);
         handle(e);
@@ -143,7 +131,7 @@ export function TouchPad({ onMove }: { onMove(x: number, z: number): void }) {
       onPointerUp={stop}
       onPointerCancel={stop}
     >
-      <div ref={knob} className="absolute left-1/2 top-1/2 -ml-5 -mt-5 h-10 w-10 rounded-full bg-brandBlue/80 shadow transition-transform duration-75" />
+      <div ref={knob} className="absolute left-1/2 top-1/2 -ml-6 -mt-6 h-12 w-12 rounded-full bg-brandBlue/80 shadow transition-transform duration-75" />
     </div>
   );
 }

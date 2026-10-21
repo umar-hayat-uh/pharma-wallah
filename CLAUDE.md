@@ -72,7 +72,7 @@ node --test scripts/dissolution-rate.test.mts                          # 28 unit
 node --test scripts/split-for-ads.test.mts                             # 6 unit tests, lesson ad spacing
 node --test scripts/battle-royale.test.mts                             # 23 unit tests, Battle Royale schemas/format/station/titles
 node --test scripts/stability-kinetics.test.mts                        # 26 unit tests, Drug Stability Kinetics
-node --test scripts/virtual-labs.test.mts                              # 42 unit tests, Virtual Labs (engine, science, 4 scripted runs, manifest)
+node --test scripts/virtual-labs.test.mts                              # 58 unit tests, Virtual Labs (engine, equipment gate/bypass, modes, science, 4 scripted runs, manifest)
 node --test scripts/osteology.test.mts                                 # 17 unit tests, Osteology Lab (content, assets, questions, token)
 node scripts/build-molecule-library.mts   # regenerate the Molecular Lab library from PubChem (network)
 ```
@@ -296,6 +296,10 @@ These are conventions **observed in the code**, not aspirations.
   and `ListAgents`, and announce which shared files you are taking, before editing one.
 
 ### Recently Completed
+- **Virtual Labs immersive upgrade (2026-10-21)** — experiments are now performed on the 3D equipment (engine-enforced
+  instrument controllers; step cards removed), Learning/Practical modes, a true full-screen layer with phone bottom
+  sheet + joystick, and sharp rendering on phones (the cause was a forced Low tier at 1× pixel ratio). All four labs
+  driven end to end in headless Chrome on desktop and phone. **Not deployed; not on a real phone.** See §8.
 - **3D Virtual Labs (2026-10-20)** — `/virtual-labs`: four plain-three.js rooms (Pharm Chem, Pharmaceutics, Pharmacology,
   Pharmacognosy), one complete experiment each, a pure typed engine, every 3D action also a panel control (2D lab), mobile
   layout. Legacy `/simulations` (8 labs) and `/compounding-lab` removed with 308s. All four UoK syllabus-verified (PHC-607,
@@ -752,6 +756,46 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 > Newest first. Never paste source code here. Archive entries older than ~10 into
 > `.claude/history/YYYY-MM.md`.
 
+### 2026-10-21 — Virtual Labs immersive upgrade (equipment-driven, Learning/Practical, full screen, sharp on phones)
+
+"Follow protocol. finish this properly" + the owner's 13-page upgrade brief (**the PDF ends mid-sentence on p.13**, in
+§10; built to that point). Audit and plan: `docs/virtual-labs/UPGRADE_PLAN.md`. Three lab conversions and their
+browser checks ran as parallel agents; the framework, titration lab and shell were done here.
+
+**Completed**
+- **The experiment is done on the equipment.** Root cause of the brief's complaint: the "Bench" tab was a list of
+  step cards holding every operation, so the room was optional. Now each experiment declares instrument
+  `controllers`; selecting equipment (3D tap, Q/E keyboard, or the 2D bench plan) opens ITS controller; the engine
+  refuses any action unless that instrument is open (unchanged state, logged). Step-card benches deleted. New real
+  equipment: lab notebook in every room (calculations/conclusions), glassware cupboard (titration), tissue dish.
+- **Learning / Practical modes** (two cards on the briefing): Learning marks the next instrument, rings the right
+  control (`suggest()` — never a reading, an assessed choice or "stop"), how-to lines, free hints. Practical: none of
+  that; hints cost 3 marks (cap 15). Switching rules and the report's practice/assessed label: MEMORY 240.
+- **Immersive shell**: fixed full-viewport layer (100dvh, page scroll locked, no site chrome), Fullscreen API (auto on
+  touch entry, button elsewhere, refusal handled), top bar, controller dock / phone bottom sheet, joystick, pause on
+  backgrounding, view offset so the operated instrument stays centred above the sheet, close-ups follow moved equipment.
+- **"Blurry on mobile" fixed at the cause**: every phone was forced to Low = pixel ratio 1, no MSAA. Tiers are now pixel
+  budgets; Balanced is the default (phone draws 2×: 780×1688 buffer vs 390×844); static shadow maps; one-time slow step-down.
+- **Five "drawing disagrees with the engine" bugs fixed** (incl. the clove eyepiece drawing the whole 40× field sharp
+  while the engine counted 1 of 4 elements, and hiding nothing under a poor mount) (found only by reading instruments from the page) — also: titration flask
+  pink before the end-point counted (−8 for following the colour); syrup yellow at ~48 s vs the engine's 120 s; and
+  unreachable tap targets (stand behind burette, 3 mm rod, tissue inside the bath).
+
+**Architecture & Decisions** — plain three.js kept (no R3F). Mouse-look stays drag-to-look (pointer lock hides the
+cursor needed for equipment). The burette's volume is drawn, not printed (reading it is the assessed skill).
+Not done, recorded: KTX2 compression and LOD meshes (not worth it for these assets), server-side replay of runs.
+**Owner decision:** syrup start water 45 mL + 2 mL rinse leaves nothing to make up (USP-faithful 45 %; suggest 40 mL).
+Asset addendum (ASSET_RESEARCH.md): no 3D model beats the procedural ones; a CC BY 4.0 clove-powder figure is a candidate.
+
+**Verification** — see §9 and `docs/virtual-labs/TESTING.md` §8. Unit tests incl. bypass tests per lab; `tsc` 0;
+build in an isolated copy; headless Chrome drove **all four labs end to end by tapping their 3D equipment**, Learning at
+1440×900 and Practical at 390×844 touch, readings taken from the drawing (titration assay 100.35 % vs true 100.37 %;
+dose pEC50 7.06 vs 7.00; syrup density 1.313 g/mL), technique 100, 0 console errors, 0 overflow; 2D route, keyboard
+picking, pause and full screen probed. **NOT verified:** a real phone/GPU/Safari, iPhone full-screen behaviour,
+signed-in progress rows, screen reader end to end. Lint not configured.
+
+**Next** — commit, deploy, open one lab on a real phone; owner: syrup start water.
+
 ### 2026-10-20 — 3D Virtual Pharmacy Laboratories (replacing the legacy simulations)
 
 "Follow protocol" + the owner's 16-page brief (4 labs × 1 experiment, research assets and curriculum, remove the old
@@ -1076,153 +1120,9 @@ R² 0.9997, k 0.01496 min⁻¹ = 0.0002494 s⁻¹ (Python least squares, same in
 
 **Next** — the owner reviews ad-06, records the voice-over from `VOICEOVER.md`, and posts it.
 
-### 2026-10-11 — ad-05 "No Internet? No Problem." (offline-app reel)
-
-"follow protocol, use the skill" + the owner's "Offline Calculator App — Promotional Reel" brief (4 scenes,
-20–25 s, real recordings only, a cover frame "NO INTERNET? NO PROBLEM.").
-
-**Completed** (all outside the repo, `~/personal/pharmawallah-marketing/video/ad-05/`)
-- **24 s, 1080×1920, 30 fps**, CUTS 3.8 · 8.5 · 16.5: an illustrated lab bench (notebook, the Procaine practical
-  sheet, a flask) and a generic phone switching Wi-Fi and mobile data off → "NO INTERNET IN THE LAB?" → the real
-  app home rising with light trails, "YOUR CALCULATORS. EVEN OFFLINE." → three real calculators sliding across
-  the phone: **Dilution** (typed, live result), **Percentage Yield** (typed, Calculate tapped, the lab record),
-  **Stability Kinetics** (Calculate tapped, the result card), under "CALCULATE." / "CHECK YOUR RESULTS." /
-  "GET BACK TO WORK." → iris into a white/blue end card: "BUILT FOR PHARM-D STUDENTS.", the logo,
-  "DOWNLOAD PHARMAWALLAH CALCULATORS", "Your pharmacy calculation companion.", `pharmawallah.com/download`.
-- **Offline is proven, not drawn.** `capture.mjs` fails every non-local request and switches the browser fully
-  offline before typing. Each result is asserted on the offline page. 0 external requests attempted. The
-  "Offline" pill in each app bar is the app's own indicator (MEMORY 195).
-- Figures, each the tool's own example and re-derived in Python: V₂ = 25 mL (solvent 20 mL); yield 84.71 %;
-  Procaine HCl zero order, R² 0.9927, k 1.1314 % min⁻¹, t90 8.839 min.
-- `cover.png` (from `poster.html`), `vo.srt` (the brief's voice-over, timed), `cues.json` + an original tech bed.
-
-**Architecture & Decisions** — brief overrides as the skill says (brand hexes, Outfit, no black ground). There is
-**no Play Store listing**, so the CTA is the live `/download` page (200; serves the 9,595,463 B v1.5 APK). There is
-**no TTS on this machine**, so the voice-over is a script, not audio. The "student in a lab" is drawn as a bench,
-not a person: no stock footage or invented people. Scene 1's phone is labelled in the source as an illustration.
-Peer session `pharma-wallah-95` (ad-06) worked alongside; it shared the :4719 server, and the doc edits were sequenced by message.
-
-**Verification** — `ad-05.mp4` (with music) and `ad-05-no-music.mp4`: h264 1080×1920 30/1, 24.0 s, aac,
-−13.7 LUFS integrated. Ten frames pulled **from the MP4** and read; the chips settle on 25 mL, 20 mL, 84.71 % and
-8.839 min. Stills read at every cut and mid-transition. Seven defects were caught and fixed: a doubled-ghost
-gradient headline, a greyed gradient (text-shadow), a blank app bar over the panned result pages, a headline that
-never exited under `sceneOuts`, and (from the owner's screenshot) an overlapping "Mobile data" tile label, the
-bench not covering the frame's bottom edge, and a preview that showed past the frame. No repo code changed, so
-`tsc`/build were unaffected and not re-run. Music **never listened to** (no audio output here). Not verified:
-inside the Instagram/TikTok UI, a real phone.
-
-**Next** — the owner reviews ad-05, records or adds the voice-over, and posts it (no-music file + in-app audio if preferred).
-
-### 2026-10-10 — `reel-ads` skill + ad-04 "Stop Calculating the Hard Way"
-
-"follow protocol" + the owner's reel-ad design brief → "setup this ads reels skill"; mid-task, a 25 s
-reel spec for the calculators app.
-
-**Completed**
-- **New skill `.claude/skills/reel-ads/`** — `SKILL.md` (the procedure on the existing out-of-repo kit)
-  and `BRIEF.md` (the owner's brief, verbatim). Registered in `SKILLS.md`; MEMORY 194; PROJECT_MAP.
-  It names where the brief is **overridden and why**: brand `#1C7BD9`/`#21B67A` (not `#2563EB`/`#4ADE80`),
-  Outfit (not Inter/Manrope), no black/navy ground, Android-only CTA (iOS/Windows apps were never shipped),
-  offline = the Android app only, the kit not Remotion (no new dependency).
-- **ad-04** (outside the repo, `~/personal/pharmawallah-marketing/video/ad-04/`): 25 s, 1080×1920, 30 fps.
-  Notebook-and-calculator hook with a freeze → phone reveal with light trails → **real app frames**
-  (typing into the Calibration Curve Calculator keystroke by keystroke, the real Calculate tap, the real
-  graph) → rotating phone among real app cards on a deep-navy gradient → icon, "YOUR CALCULATIONS. ONE APP.",
-  GET PHARMAWALLAH, pharmawallah.com. `capture.mjs` drives the app export over CDP to make the frames.
-  Figures: the tool's own Paracetamol 243 nm example + unknown 0.452 AU → m 0.06635, c −0.0005, R² 0.9999,
-  6.82 µg/mL (re-derived in Python).
-
-**Architecture & Decisions** — the owner's restated hexes and "dark navy" were mapped to the brand
-tokens and the navy-scrimmed gradient (CLAUDE.md §6 rule 15); "offline" is claimed for the Android app
-only. Caveat (OFL, the brand's handwriting face) added to the kit for the notebook.
-
-**Verification** — stills read at every cut and mid-beat; three defects found and fixed (camera island
-over the app bar, scene-4 cards showing before the cut, an iris ghost). Full render (~17 min): `ad-04.mp4`
-h264 1080×1920 30/1, 25.0 s, silent (the renderer's default); `ad-04-with-music.mp4` adds aac, −14.0 LUFS.
-Eight frames pulled from the MP4 and read. The spectrogram caught the groove stopping at the 20 s impact
-(a near-silent CTA) — the kit's `music.mjs` gained opt-in `grooveUntil` / `hits` cue fields (ads 01–03
-unaffected, they don't set them). Music **never listened to** (no audio output here).
-No repo code changed: `tsc`/build not affected and not re-run.
-
-**Next** — the owner reviews ad-04 (post the `-no-music` file if using in-app audio).
-
-### 2026-10-08 — "How to use the calculators" guide, APK v1.5, two ad videos
-
-"follow protocol" + a 25-section brief for a universal, beginner-friendly calculator guide (web + app). Later
-the same session: "app updated?" → build APK v1.5 (user: yes); an ad video (user: calculators + guide, 9:16,
-~20 s); "visuals look bland"; a second ad "for this calculator we created" (taken as the Drug Stability
-Kinetics Calculator); music — user asked for phonk or Montagem Gloria.
-
-**Completed**
-- **One guide, two surfaces.** `src/components/calculator-guide/` renders `/calculation-tools/how-to-use`
-  (web) and `/how-to-use/` (app). An 8-step quick tour (Back / Next / Skip / Start calculating, "1 / 8",
-  arrow keys, swipe, reduced motion) and the full guide: before you start, 12 steps, website, app, an
-  honest website-vs-app table, 7 golden rules, the lab workflow, verification (with a clinical warning)
-  and a quick-start cheat sheet. Illustrations are generic sketches on grid paper, never screenshots.
-- **Written against the real UI, not the brief's assumptions** (MEMORY 190): results appear as you type;
-  Calculate exists only on the 17 lab-record tools; no required-field asterisk (the empty result card says
-  what is missing). Categories, counts and hub links come from each surface's registry.
-- **Entry points**: hub hero link, "How to use" under every calculator (`(tools)/layout.tsx`), header
-  Calculation Tools menu, sitemap; in the app a ? in every tool's bar and a "New here?" card on Home that
-  shows until the first calculator is opened (Recent empty), then shrinks to a link — no new storage.
-- **APK v1.5** (versionCode 6) built, signed and copied to `public/downloads/`; `/download` says 1.5.
-  Built from the tree as it stood, so it also carries the peer session's uncommitted stability-kinetics edits.
-- **Ads** — moved out of the repo the same day at the owner's request, to
-  `/home/umar-hayat/personal/pharmawallah-marketing/video/` (README there; `/marketing/video/` gitignored here): a kit (`_kit/kit.css`, `kit.js`: aurora ground, drifting molecule and
-  formula motifs, word-by-word reveals, glass, sheens, bursts, diagonal wipes, camera push), a
-  frame-exact renderer (`render.mjs`, CDP → ffmpeg) and an **original synthesised phonk bed**
-  (`_kit/music.mjs`: cowbell riff, gliding distorted 808, clap, hat rolls, plus whooshes/clicks/chimes/
-  riser/impact placed from each ad's `cues.json`, mastered to −14 LUFS). `ad-01` (calculators + guide,
-  20 s) and `ad-02` (Drug Stability Kinetics, 22 s; every figure from `analyseStability()` on the sheet).
-  Each renders with music and as `-no-music`.
-
-**Files**
-- New: `src/components/calculator-guide/{CalculatorGuide,GuideTour,illustrations}.tsx`, `content.ts`,
-  `guide.css`, `index.ts`; `src/app/(site)/calculation-tools/how-to-use/page.tsx`; `mobile/app/how-to-use/page.tsx`;
-  `.gitignore` (`/marketing/video/`).
-- Edited: `(tools)/layout.tsx`, `calculation-tools/page.tsx`, `menuData.tsx`, `menuMeta.tsx`, `sitemap.ts`,
-  `mobile/app/_components/{MobileShell,ToolHub}.tsx`, `mobile/tailwind.config.ts`, `android/app/build.gradle`,
-  `download/DownloadClient.tsx`, `public/downloads/pharmawallah-calculators.apk`.
-- Knowledge: this file, `.claude/{MEMORY (190–193), PROJECT_MAP, BRAND_KIT}.md`.
-
-**Architecture & Decisions**
-- **A page, not a modal**: no dialog primitive exists; an inline tour needs no focus trap and behaves the
-  same in the WebView. No new dependency.
-- **The app guide lives at `mobile/app/how-to-use/`** — the route generator wipes `calculation-tools/`
-  subfolders, and `MobileShell` needed `isGuide` to give it a back bar (MEMORY 191).
-- **Music**: Montagem Gloria is a commercial track, so it is not embedded. The bed is original; the
-  `-no-music` file is for adding licensed trending audio inside Instagram/TikTok.
-- Dark mode not built: neither the site nor the app has a reachable dark theme (semantic tokens used).
-  The desktop (Tauri) target does not get the guide yet.
-
-**Verification**
-- `npx tsc --noEmit` → **0 errors**. `npm run mobile:build` (isolated copy) → exit 0, see §9.
-- Dev server (isolated copy, :3241) + headless Chrome over CDP at 1440×900 and 390×844 (touch): all 18
-  sections present; tour Next ×8, Back, ←, Skip (focus lands on Quick start), "Start calculating" on the
-  last step; **0 overflow, 0 console errors** at both widths. Own title + www canonical; the guide link is
-  on the hub, a calculator page, the header and the sitemap. Screenshots read; they caught a tour that
-  jumped in height, a graph label collision and a dash in a sample result — fixed.
-- App export served statically, 390×844 touch: first-use card shown with empty Recent and replaced by a
-  link after opening a tool; ? in the tool bar (star kept); guide has a back bar, no star, no disclaimer;
-  swipe advances the tour; back returns Home; 0 overflow, 0 console errors. Screenshots read.
-- APK: `aapt` → versionCode 6 / 1.5; `apksigner` SHA-256 equal to the v1.4 file's; 106 tools + guide inside.
-- Videos: `ffprobe` → 1080×1920, 30 fps, h264 + aac; stills and frames from the final MP4s read; music
-  checked by spectrogram and `ebur128` (−14.0 LUFS, −1.5 dBTP). **The music was never listened to** —
-  there is no audio output here; listen before posting.
-- **NOT verified:** `npm run build` for the website was not re-run by this session (the user stopped it;
-  the peer session reports exit 0 with these changes present); a real phone; the APK installed on a device;
-  dark mode. Lint is not configured.
-
-**Remaining**
-- Commit and deploy (the protocol forbids it here): the APK must ship with the site.
-- The owner posts the **no-music** versions; the ads are outside the repo and never committed.
-
-**Next**
-- Deploy, then post `ad-01`, and point the first-use traffic at the guide.
-
 ---
 
-> Older entries are in `.claude/history/2026-10.md`: 2026-10-08 (Drug Stability Kinetics Calculator); and `.claude/history/2026-09.md`: 2026-09-30 (Battle Royale names/certificates/ranking), 2026-09-29 (Battle Royale podium, certificates, close button), 2026-09-27 (Battle Royale v1/v2), 2026-09-23/24 (ads per page, lesson files), 2026-09-23 (AdSense quality pass), 2026-09-22 (iOS target, Windows desktop target), 2026-09-22 (Dissolution Rate Constant Calculator, calculator-refinement skill), 2026-09-20 (brand kit), 2026-09-13/20 (pharmacy counter, calculator migration finish, disk diffusion, AI Guide, encyclopedia, community, Molecular Lab, about-us, TLC/colony, APK v1.1–1.3), 2026-09-13 (six analytical-practical calculators, calculation-tools hub rebuild, loading screen, dashboard rebuild, header app CTA +
+> Older entries are in `.claude/history/2026-10.md`: 2026-10-11 (ad-05 offline reel), 2026-10-10 (`reel-ads` skill + ad-04), 2026-10-08 (calculator guide, APK v1.5, ad videos), 2026-10-08 (Drug Stability Kinetics Calculator); and `.claude/history/2026-09.md`: 2026-09-30 (Battle Royale names/certificates/ranking), 2026-09-29 (Battle Royale podium, certificates, close button), 2026-09-27 (Battle Royale v1/v2), 2026-09-23/24 (ads per page, lesson files), 2026-09-23 (AdSense quality pass), 2026-09-22 (iOS target, Windows desktop target), 2026-09-22 (Dissolution Rate Constant Calculator, calculator-refinement skill), 2026-09-20 (brand kit), 2026-09-13/20 (pharmacy counter, calculator migration finish, disk diffusion, AI Guide, encyclopedia, community, Molecular Lab, about-us, TLC/colony, APK v1.1–1.3), 2026-09-13 (six analytical-practical calculators, calculation-tools hub rebuild, loading screen, dashboard rebuild, header app CTA +
 > Master Formula, auth pages, redesign Phase 0, top-design landing page, eight laboratory tools) and
 > 2026-09-12 (ADME landing page, AdSense, Outfit, PWA removal, APK distribution, Android app,
 > bootstrap).
@@ -1238,12 +1138,12 @@ Kinetics Calculator); music — user asked for phonk or Montagem Gloria.
 | --- | --- | --- |
 | Type-check | `npx tsc --noEmit` | **PASSES — 0 errors, re-measured 2026-09-20** after the calculator migration finished (104/104 on the kit). The 4 transient errors a peer recorded in `(tools)/opioid-mme-calculator/page.tsx:229-231` were a `Set` spread needing `downlevelIteration` (gotcha 37) during that migration and are **fixed** — use `Array.from(...)`, not a spread, in this tsconfig. Any error you see now is yours. The app project: `npx tsc --noEmit -p mobile/tsconfig.json` → 0 errors (needs a generated `mobile/app/_generated`, i.e. one `npm run mobile:build`). |
 | Lint | `npm run lint` | **NOT AVAILABLE.** No ESLint config; the command opens an interactive setup prompt. Do not report lint as passing. |
-| Build | `npm run build` | **PASSES — re-verified 2026-10-20** after the Virtual Labs (exit 0, shared JS 88.8 kB, middleware 82.5 kB, lab pages 198–202 kB first load; three.js only in async chunks). **2026-10-18** after the Osteology Lab (exit 0, shared JS 88.7 kB, middleware 82.5 kB; lesson pages ~184 kB first load; three.js only in lazy chunks). **2026-10-08** after the Drug Stability Kinetics Calculator (exit 0, shared JS 88.6 kB, middleware 81.9 kB, the tool 14.9 kB / 287 kB first load after the same-day refinement). **2026-09-30** after the Battle Royale certificate search (exit 0, shared JS 88.6 kB, middleware 81.9 kB). **2026-09-29** after the Battle Royale podium/certificates work (isolated copy): exit 0, shared JS **88.6 kB**, middleware **81.9 kB**, `/` 223 kB first load. **Earlier: PASSES — re-verified 2026-09-20 after the calculator migration finished** (isolated copy of the tree; peers had agreed not to build in the shared root): exit 0, shared JS **88.5 kB**, middleware **81.9 kB**. All 104 calculators then swept against `next start` at 1440×900 and 390×844 — 104/104 HTTP 200, hydrated, **0 exceptions, 0 console errors, 0 horizontal overflow**. **Also 2026-09-20 after the AI Guide rebuild** (isolated copy; the peer dev server on :3000 was left alone): exit 0, shared JS **88.5 kB** (unchanged), `/ai-guide` **9.7 kB / 150 kB first load**, `/books-library` no longer emitted. **Also 2026-09-20, after the Disk Diffusion Lab rebuild** (in an isolated copy of the tree — two peer `next dev` servers were running on the shared root and had already corrupted its `.next`, MEMORY gotcha 126): exit 0, **277 route lines**, shared JS **88.5 kB**, middleware 81.9 kB, `/simulations/disk-diffusion` 49.1 kB / **241 kB first load**; jsPDF confirmed absent from the page chunk and present in its own, so the report no longer rides in the first load. One extra expected warning: `buffer-lab`'s ambiguous `duration-[2000ms]` class. **Earlier the same day: PASSES — after the `/encyclopedia` redesign** (in an isolated copy of the tree, the peer sessions' dev servers left alone): exit 0, shared JS **88.5 kB**, `/encyclopedia` **16.3 kB / 113 kB first load**, `/molecular-lab` 60.2 kB / 149 kB. OpenChemLib (1.09 MB) and 3Dmol (568 KB) are lazy chunks only — grep the built shared chunks for both and expect **0 hits** before shipping any new 3D consumer. Two 404s on `/_vercel/insights` and `/_vercel/speed-insights` appear under `next start` locally; they come from `Analytics` / `SpeedInsights` in `src/app/layout.tsx` and only resolve on Vercel — not a defect. **Earlier: PASSES — 2026-09-16 after Molecular Lab** (in an isolated copy of the tree, dev server left up): exit 0, shared JS **88.4 kB**, middleware 81.9 kB, `/molecular-lab` 59.5 kB / 148 kB first load, `resources.<hash>.json` 1.35 MB in `static/media`. The build also prints several `Dynamic server usage` stack traces (tournament leaderboard, DailyMed, AMR routes) — logged by those handlers, non-fatal, not new. **Before that** (again after the simple `/about-us`: exit 0, shared JS 88.3 kB, `/about-us` 106 kB first load). Earlier the same day: exit 0 in ~2.5 min, 252 route lines, shared JS **88.3 kB**, middleware 81.9 kB; `/calculation-tools/rf-value-calculator` 184 kB and `/cfu-calculator` 183 kB first load; `.next/static/media/opencv.<hash>.js` 10.8 MB emitted as an asset. Same expected warnings as below. **Earlier (2026-09-12):** with the dev server stopped, after the AdSense work (the first successful run since the PWA removal, the shadcn migration and the Outfit switch): exit 0, ~170 routes, middleware 81.8 kB, shared JS 87.8 kB. Stop `npm run dev` first — they share `.next` and corrupt each other (§7 Known Issue 10). **PASSES with a populated `.env`** — exit 0, ~170 routes emitted, middleware 81.8 kB, shared JS 87.8 kB. Only `/_not-found` is static; everything else is `ƒ` (dynamic, server-rendered on demand). **Without `.env` it FAILS**: `Missing environment variable: NEXT_PUBLIC_SUPABASE_URL` while collecting page data for `/api/admin/registrations`. Expected non-fatal warnings: the `@supabase/supabase-js` Edge-runtime `process.version` notice, the stale `caniuse-lite` Browserslist notice, and two webpack "Serializing big strings" cache notices. |
+| Build | `npm run build` | **PASSES — re-verified 2026-10-21** after the Virtual Labs immersive upgrade (isolated copy; exit 0, shared JS 88.8 kB, middleware 82.5 kB, lab pages 204–208 kB first load (+6 kB), `/virtual-labs` 108 kB; three.js only in lazy chunks, none in `main-app`/`framework`). **2026-10-20** after the Virtual Labs (exit 0, shared JS 88.8 kB, middleware 82.5 kB, lab pages 198–202 kB first load; three.js only in async chunks). **2026-10-18** after the Osteology Lab (exit 0, shared JS 88.7 kB, middleware 82.5 kB; lesson pages ~184 kB first load; three.js only in lazy chunks). **2026-10-08** after the Drug Stability Kinetics Calculator (exit 0, shared JS 88.6 kB, middleware 81.9 kB, the tool 14.9 kB / 287 kB first load after the same-day refinement). **2026-09-30** after the Battle Royale certificate search (exit 0, shared JS 88.6 kB, middleware 81.9 kB). **2026-09-29** after the Battle Royale podium/certificates work (isolated copy): exit 0, shared JS **88.6 kB**, middleware **81.9 kB**, `/` 223 kB first load. **Earlier: PASSES — re-verified 2026-09-20 after the calculator migration finished** (isolated copy of the tree; peers had agreed not to build in the shared root): exit 0, shared JS **88.5 kB**, middleware **81.9 kB**. All 104 calculators then swept against `next start` at 1440×900 and 390×844 — 104/104 HTTP 200, hydrated, **0 exceptions, 0 console errors, 0 horizontal overflow**. **Also 2026-09-20 after the AI Guide rebuild** (isolated copy; the peer dev server on :3000 was left alone): exit 0, shared JS **88.5 kB** (unchanged), `/ai-guide` **9.7 kB / 150 kB first load**, `/books-library` no longer emitted. **Also 2026-09-20, after the Disk Diffusion Lab rebuild** (in an isolated copy of the tree — two peer `next dev` servers were running on the shared root and had already corrupted its `.next`, MEMORY gotcha 126): exit 0, **277 route lines**, shared JS **88.5 kB**, middleware 81.9 kB, `/simulations/disk-diffusion` 49.1 kB / **241 kB first load**; jsPDF confirmed absent from the page chunk and present in its own, so the report no longer rides in the first load. One extra expected warning: `buffer-lab`'s ambiguous `duration-[2000ms]` class. **Earlier the same day: PASSES — after the `/encyclopedia` redesign** (in an isolated copy of the tree, the peer sessions' dev servers left alone): exit 0, shared JS **88.5 kB**, `/encyclopedia` **16.3 kB / 113 kB first load**, `/molecular-lab` 60.2 kB / 149 kB. OpenChemLib (1.09 MB) and 3Dmol (568 KB) are lazy chunks only — grep the built shared chunks for both and expect **0 hits** before shipping any new 3D consumer. Two 404s on `/_vercel/insights` and `/_vercel/speed-insights` appear under `next start` locally; they come from `Analytics` / `SpeedInsights` in `src/app/layout.tsx` and only resolve on Vercel — not a defect. **Earlier: PASSES — 2026-09-16 after Molecular Lab** (in an isolated copy of the tree, dev server left up): exit 0, shared JS **88.4 kB**, middleware 81.9 kB, `/molecular-lab` 59.5 kB / 148 kB first load, `resources.<hash>.json` 1.35 MB in `static/media`. The build also prints several `Dynamic server usage` stack traces (tournament leaderboard, DailyMed, AMR routes) — logged by those handlers, non-fatal, not new. **Before that** (again after the simple `/about-us`: exit 0, shared JS 88.3 kB, `/about-us` 106 kB first load). Earlier the same day: exit 0 in ~2.5 min, 252 route lines, shared JS **88.3 kB**, middleware 81.9 kB; `/calculation-tools/rf-value-calculator` 184 kB and `/cfu-calculator` 183 kB first load; `.next/static/media/opencv.<hash>.js` 10.8 MB emitted as an asset. Same expected warnings as below. **Earlier (2026-09-12):** with the dev server stopped, after the AdSense work (the first successful run since the PWA removal, the shadcn migration and the Outfit switch): exit 0, ~170 routes, middleware 81.8 kB, shared JS 87.8 kB. Stop `npm run dev` first — they share `.next` and corrupt each other (§7 Known Issue 10). **PASSES with a populated `.env`** — exit 0, ~170 routes emitted, middleware 81.8 kB, shared JS 87.8 kB. Only `/_not-found` is static; everything else is `ƒ` (dynamic, server-rendered on demand). **Without `.env` it FAILS**: `Missing environment variable: NEXT_PUBLIC_SUPABASE_URL` while collecting page data for `/api/admin/registrations`. Expected non-fatal warnings: the `@supabase/supabase-js` Edge-runtime `process.version` notice, the stale `caniuse-lite` Browserslist notice, and two webpack "Serializing big strings" cache notices. |
 | Mobile build | `npm run mobile:build` | **PASSES (2026-10-08)** after the calculator guide (isolated copy): exit 0, `/how-to-use` 18.7 kB / 162 kB, shared JS **88.3 kB**, main CSS **92,719 B** (+4 kB: the guide's utilities, via the new `calculator-guide` glob), **0** ad strings. **Earlier: PASSES (2026-09-22, ~3 min)** — re-measured after the iOS target landed and the three Capacitor plugins were installed: exit 0, **106 HTML files** under `mobile/out/calculation-tools/` (105 tools + the hub), CSS **88,734 bytes**, shared JS **88.3 kB**; **0** files match the JWT-shaped secret pattern and **0** contain an ad string. This one export now feeds three native targets — `cap sync android`, `cap sync ios` and the Tauri desktop build. **Earlier: PASSES (2026-09-20, ~2 min)** — after the calculator migration and the liquid-glass kit change: exit 0, **108 HTML files**, 106 entries under `mobile/out/calculation-tools/`, CSS **84,243 + 4,210 bytes**. The glass ships to the APK: `calcSheen`/`calcTide` and the `[@media(hover:none)]` phone path are all present in the exported CSS, and the export renders at 390 px with `backdrop-filter: none`. **Earlier (2026-09-16, ~2 min)** — 105 HTML files under `mobile/out/calculation-tools/`, home `/` 125 kB first load, shared JS 88.2 kB, CSS **113,194 bytes**, `mobile/out` 22 MB (OpenCV.js is 10.8 MB of it). Secret scan: use the JWT-shaped pattern (gotcha 90). **Earlier (v1.1):** 109 static pages, 108 HTML files, 105 under `mobile/out/calculation-tools/`, shared JS 87.9 kB, CSS in two files **98,751 + 4,210 bytes**, 12 MB (re-measured 2026-09-13 by the v1.1 APK build, with 85 of 104 tools on the kit; 103,829 + 4,210 before). Independent of `.env` and safe to run while `npm run dev` is up (separate `mobile/.next`). **Also assert zero ad strings in `mobile/out`** — see `.claude/skills/adsense-monetization/SKILL.md`. A ~10 KB stylesheet is the silent Tailwind failure (gotcha 23). |
 | iOS compile | `.github/workflows/ios-app.yml` (Actions → "iOS app" → Run workflow) | **PASSES — first ever run 2026-09-22, `macos-latest`, 5m22s, commit `5b8788e`, conclusion `success`, every step green.** Builds twice with no Apple account and no secrets: **Simulator** (Debug, `-sdk iphonesimulator`) and the **arm64 device slice** (Release, `-sdk iphoneos`, `CODE_SIGNING_ALLOWED=NO`), and uploads `App.app` as the `pharmawallah-ios-simulator-app` artifact. Two guards run before the compile and are part of the baseline: `Info.plist` must request **no permissions**, and **≥100** calculator pages must be in the synced bundle. Needs the committed shared scheme `ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme` (MEMORY gotcha 159). **This is a compile baseline only** — no signed `.ipa`, and the app has still never been *run* (§7 Known Issue 21). Do not report the iOS app as tested on a device. |
 | iOS sync | `npm run ios:sync` (i.e. `cap sync ios`) | **PASSES (2026-09-22, ~4 s after the build)** — exit 0 on **Linux**; Capacitor 8 uses the SPM template so no CocoaPods is involved. Reports **3 Capacitor plugins for ios** (`@capacitor/filesystem@8.1.3`, `@capacitor/keyboard@8.0.5`, `@capacitor/share@8.0.2`) and rewrites `ios/App/CapApp-SPM/Package.swift`. Also assert: `Info.plist` parses with `plistlib` and has **zero** `*UsageDescription` keys, and `ios/App/App/public/calculation-tools` holds one `index.html` per tool. **There is no iOS build baseline** — compiling needs Xcode on macOS and has never been done (§7 Known Issue 21). Do not report the iOS app as building. |
 | APK | `npm run mobile:apk` | **PASSES (2026-10-08, v1.5 / versionCode 6)** — signed V2 release APK **9,595,463 B (9.2 MB)**, certificate SHA-256 `afe4c18e…5b03` **identical to v1.4 (checked against `git show HEAD:` of the old file)**, so it installs as an update; 106 tool pages + `how-to-use/index.html` inside. **Earlier: PASSES (2026-09-20, v1.4 / versionCode 5, ~2 min)** — signed V2 release APK **9,369,674 B (8.9 MB)**, certificate SHA-256 `afe4c18e…5b03` **unchanged from v1.3**, so it installs as an update; published file byte-identical to the Gradle output; 104 tool pages inside. **Earlier (2026-09-16, v1.3 / versionCode 4, ~2.5 min)** — signed V2 release APK **9,347,799 B** (8.9 MB), same certificate SHA-256 `afe4c18e…5b03` as v1.2; published file byte-identical to the Gradle output. **Earlier:** (2026-09-14, v1.2 / versionCode 3, built by `pharma-wallah-4b` — new launcher icon + redesigned Serial Dose tool) — signed V2 release APK, 5,945,495 B, copied to `public/downloads/`; same certificate as v1.0/v1.1. Needs JDK 21 (auto-selected) and `android/keystore.properties`. Check `aapt dump badging` for the version and `apksigner verify --print-certs` for the certificate. |
-| Tests | `node --test scripts/pharmacy-counter.test.mts` · `node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts` · `node --test scripts/molecular-lab.test.mts` · `node --test scripts/community.test.mts` · `node --test scripts/ai-guide.test.mts` · `node --test scripts/dissolution-rate.test.mts` · `node --test scripts/split-for-ads.test.mts` · `node --test scripts/battle-royale.test.mts` · `node --test scripts/stability-kinetics.test.mts` · `node --test scripts/content-governance.test.mts` | **47 pass, 0 fail** (2026-09-20, Community Pharmacy pure layer, ~0.5 s — case-data integrity, the check grader, verification truths, labels, expiry, inventory, the calculators, scoring) · **41 pass, 0 fail** (2026-09-16; 21 TLC + 20 colony, ~10 s) · **21 pass, 0 fail** (2026-09-16, Molecular Lab, ~12 s, real OpenChemLib) · **19 pass, 0 fail** (2026-09-20, community pure layer, <1 s) · **34 pass, 0 fail** (2026-09-20, AI Guide pure layer — request clamps, Gemini history rules, NDJSON framing, study modes — <1 s). · **28 pass, 0 fail** (2026-09-22, Dissolution Rate Constant pure layer — every column of the supplied practical sheet, both k columns proven distinct, the average against 0.000291833 and against each rejected averaging range, division-by-zero paths, duplicate/backwards times, both notations — <1 s). · **6 pass, 0 fail** (2026-09-24, lesson ad spacing — heading-only breaks, never inside a code fence, word-count gaps, lossless over all 69 lesson files, <1 s). · **23 pass, 0 fail** (2026-09-30, Battle Royale — display helpers, schema round-trips, station, titles, certificate search input). · **26 pass, 0 fail** (2026-10-08, Drug Stability Kinetics — % remaining against the sheet, residuals, the two-point tie, all three fits against an independent covariance computation, order selection on exact zero/first/second-order data, k/t½/t90 per order, k ≤ 0, validation, interpretation, <1 s). **8 pass, 0 fail** (2026-10-13, content governance — incl. drafts, and the publish-only-with-reviewer rule). Battle Royale is **29** since 2026-10-13 (+2 name privacy). **17 pass, 0 fail** (2026-10-18, Osteology Lab — content completeness, every zName against the exported models, GLB node names, assets on disk, question determinism/keys/answers, presets fill, grading, token tamper). **42 pass, 0 fail** (2026-10-20, Virtual Labs — catalogue, engine, all four sciences, scripted runs, asset manifest). Total across all suites: **318**. These cover eleven features' pure modules only — there is no framework, no CI, and nothing else is tested. Report them by name. **The community's SQL is verified separately** by running its migration twice against a throwaway local Postgres 16 and asserting RLS from a `nobypassrls` role — see the `community-system` skill. |
+| Tests | `node --test scripts/pharmacy-counter.test.mts` · `node --test scripts/tlc-rf.test.mts scripts/colony-counter.test.mts` · `node --test scripts/molecular-lab.test.mts` · `node --test scripts/community.test.mts` · `node --test scripts/ai-guide.test.mts` · `node --test scripts/dissolution-rate.test.mts` · `node --test scripts/split-for-ads.test.mts` · `node --test scripts/battle-royale.test.mts` · `node --test scripts/stability-kinetics.test.mts` · `node --test scripts/content-governance.test.mts` | **47 pass, 0 fail** (2026-09-20, Community Pharmacy pure layer, ~0.5 s — case-data integrity, the check grader, verification truths, labels, expiry, inventory, the calculators, scoring) · **41 pass, 0 fail** (2026-09-16; 21 TLC + 20 colony, ~10 s) · **21 pass, 0 fail** (2026-09-16, Molecular Lab, ~12 s, real OpenChemLib) · **19 pass, 0 fail** (2026-09-20, community pure layer, <1 s) · **34 pass, 0 fail** (2026-09-20, AI Guide pure layer — request clamps, Gemini history rules, NDJSON framing, study modes — <1 s). · **28 pass, 0 fail** (2026-09-22, Dissolution Rate Constant pure layer — every column of the supplied practical sheet, both k columns proven distinct, the average against 0.000291833 and against each rejected averaging range, division-by-zero paths, duplicate/backwards times, both notations — <1 s). · **6 pass, 0 fail** (2026-09-24, lesson ad spacing — heading-only breaks, never inside a code fence, word-count gaps, lossless over all 69 lesson files, <1 s). · **23 pass, 0 fail** (2026-09-30, Battle Royale — display helpers, schema round-trips, station, titles, certificate search input). · **26 pass, 0 fail** (2026-10-08, Drug Stability Kinetics — % remaining against the sheet, residuals, the two-point tie, all three fits against an independent covariance computation, order selection on exact zero/first/second-order data, k/t½/t90 per order, k ≤ 0, validation, interpretation, <1 s). **8 pass, 0 fail** (2026-10-13, content governance — incl. drafts, and the publish-only-with-reviewer rule). Battle Royale is **29** since 2026-10-13 (+2 name privacy). **17 pass, 0 fail** (2026-10-18, Osteology Lab — content completeness, every zName against the exported models, GLB node names, assets on disk, question determinism/keys/answers, presets fill, grading, token tamper). **58 pass, 0 fail** (2026-10-21, Virtual Labs — catalogue, engine, the equipment gate and bypass attempts per lab, modes and hint cost, `suggest()` validity at every scripted state, all four sciences, scripted runs, asset manifest; was 42). Total across all suites: **334**. These cover eleven features' pure modules only — there is no framework, no CI, and nothing else is tested. Report them by name. **The community's SQL is verified separately** by running its migration twice against a throwaway local Postgres 16 and asserting RLS from a `nobypassrls` role — see the `community-system` skill. |
 
 ---
 
