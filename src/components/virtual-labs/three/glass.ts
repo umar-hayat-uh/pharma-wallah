@@ -8,38 +8,11 @@ import * as THREE from "three";
 import type { MaterialLib } from "./materials";
 import { cachedGeo, cyl, mesh } from "./kit";
 import { graduationTexture, labelTexture } from "./textures";
+import { heightForVolume, radiusAt, type Profile } from "../vessel";
 
-type Profile = [number, number][]; // [radius, y] from the bottom up
+export { heightForVolume };
 
 const lathe = (p: Profile, seg = 48) => new THREE.LatheGeometry(p.map(([r, y]) => new THREE.Vector2(r, y)), seg);
-
-/** Inner radius at height y by linear interpolation of the profile. */
-function radiusAt(p: Profile, y: number) {
-  if (y <= p[0][1]) return p[0][0];
-  for (let i = 1; i < p.length; i++) {
-    if (y <= p[i][1]) {
-      const [r0, y0] = p[i - 1];
-      const [r1, y1] = p[i];
-      return r0 + ((y - y0) / Math.max(1e-9, y1 - y0)) * (r1 - r0);
-    }
-  }
-  return p[p.length - 1][0];
-}
-
-/** Height (m) at which `ml` fills the inner profile. */
-export function heightForVolume(p: Profile, ml: number) {
-  const target = ml / 1e6; // m³
-  const top = p[p.length - 1][1];
-  const base = p[0][1];
-  const dy = (top - base) / 600;
-  let v = 0;
-  for (let y = base; y < top; y += dy) {
-    const r = radiusAt(p, y + dy / 2);
-    v += Math.PI * r * r * dy;
-    if (v >= target) return y + dy;
-  }
-  return top;
-}
 
 /** A liquid body filling an inner profile to height h (with a flat surface). */
 function liquidGeometry(p: Profile, h: number) {

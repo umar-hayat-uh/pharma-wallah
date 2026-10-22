@@ -245,7 +245,11 @@ pages, confirm progress tracking records a visit, then batch the rest.
   Not faculty-reviewed. Not tested on a real phone/GPU.** Verified by the unit tests (`scripts/virtual-labs.test.mts`,
   incl. equipment-gate bypass tests per lab) and by headless Chrome driving all four labs through their 3D equipment
   at 1440 × 900 and 390 × 844 touch.
-- **Existing implementation:** `/virtual-labs` landing + four 3D rooms (plain three.js, loaded per lab):
+- **2026-10-22 — Pharmaceutical Chemistry migrated to Babylon.js** (owner's brief; the other three labs stay on
+  three.js). 🧪 Experimental: built, unit-tested and driven in headless Chrome; **not on a real phone or GPU**,
+  WebGPU path unverified on hardware. `docs/virtual-labs/BABYLON_MIGRATION.md`; rollback `?engine=three` or remove
+  the id from `BABYLON_LABS`.
+- **Existing implementation:** `/virtual-labs` landing + four 3D rooms (three.js; Pharm Chem on Babylon.js since 2026-10-22, loaded per lab):
   acid–base titration assay of citric acid (Pharmaceutical Chemistry), Simple Syrup preparation and evaluation
   (Pharmaceutics), graded dose–response on a simulated isolated tissue (Pharmacology), powdered clove microscopy
   (Pharmacognosy). Pure experiment engine with undo, hints, technique mistakes that change the result, an

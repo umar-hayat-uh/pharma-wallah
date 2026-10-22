@@ -69,7 +69,14 @@ src/app/(site)/virtual-labs/   landing page + /<discipline>/<experiment>/page.ts
 ```
 
 ### Invariants
-- **Plain three.js only** — no React Three Fiber, no new 3D library. `Viewport` is loaded via
+- **Two engines (2026-10-22):** Pharmaceutical Chemistry (`acid-base-titration`) renders with **Babylon.js**
+  (`src/components/virtual-labs/babylon/`, chosen by `BABYLON_LABS` in `Viewport.tsx`, owner's brief); the other three
+  rooms stay on three.js. Both runtimes expose the same methods, so the shell, engine, controllers and automation are
+  shared. `?engine=three` opens the original three.js chemistry room; `?engine=webgl|webgpu` forces Babylon's engine.
+  Shared engine-neutral code lives in `quality.ts`, `vessel.ts`, `art/canvas.ts`. Read
+  `docs/virtual-labs/BABYLON_MIGRATION.md` and MEMORY 242–247 before touching the Babylon room. **Do not migrate
+  another lab without the owner asking.**
+- **Plain three.js for the other rooms** — no React Three Fiber, no further 3D library. `Viewport` is loaded via
   `next/dynamic(..., { ssr: false })` and imports only its own room via `ROOMS[labId]()`. three.js must never be
   in a page's first load, and one lab never downloads another's room.
 - **The experiment is pure and the room is dumb.** `apply()` is the only way state changes; out-of-order
@@ -126,7 +133,11 @@ src/app/(site)/virtual-labs/   landing page + /<discipline>/<experiment>/page.ts
 4. Weights are out of 100 for technique — compare with the lab's existing weights (2–10).
 
 ### Adjust a room
-1. Edit `three/rooms/<room>.ts`. Place with `RoomBuilder.place/furniture/bench/island` (furniture adds a
+0. Pharmaceutical Chemistry: edit `babylon/chemistry.ts` (+ `babylon/apparatus.ts`, `babylon/kit.ts`) — same ids,
+   `TitrationVisualLike`, `interactive(list, id, …)`, `dyn()` for anything that moves or changes (else the static
+   merge bakes it), `casters` for shadows. Verify cheaply without `next dev`: bundle a tiny entry with the repo's
+   esbuild binary, serve it, and screenshot over CDP (MEMORY 242–247; never attach to a guessed debugging port).
+1. Other rooms: edit `three/rooms/<room>.ts`. Place with `RoomBuilder.place/furniture/bench/island` (furniture adds a
    collider); bench height is `TOP` (0.91 m). Reuse `kit.ts` / `glass.ts` / `instruments.ts` parts.
 2. If the room shows new state, add the field to the experiment's `<lab>Visual()` **and** the room's
    `<Lab>VisualLike`, and redraw it in `apply()`. Return `true` from `apply()` only while something animates
@@ -208,7 +219,8 @@ Lint is not configured — say so.
 
 ## Do Not
 - Do not add React Three Fiber, drei, or another 3D/animation library; do not import `three` outside
-  `src/components/virtual-labs/three/` or into anything a non-lab page loads.
+  `src/components/virtual-labs/three/`, or `@babylonjs/*` outside `src/components/virtual-labs/babylon/` (Viewport
+  only via dynamic `import()`), or either into anything a non-lab page loads. The tests enforce the Babylon half.
 - Do not add a fifth lab or a second experiment to a lab without the owner asking (the test enforces four).
 - Do not compute a number in a bench component or a room — it belongs in `calculations/` or the experiment.
 - Do not reveal a true reading before the student records it; do not add a control that operates an

@@ -273,6 +273,8 @@ Permanent redirects in `next.config.mjs`: `/simulations` and `/simulations/:path
 | 3D viewport (`next/dynamic` ssr:false; loads only its own room; `window.__vlab`) | `src/components/virtual-labs/Viewport.tsx`, `webgl.ts` |
 | Shared three.js runtime (walking, colliders, picking + Q/E keyboard picking, focus tweens, pixel-budget quality tiers `QUALITY`, view-offset insets, pause, static shadows, markers, `where`/`moving` for automation, dispose) | `src/components/virtual-labs/three/runtime.ts`, `three/types.ts` |
 | Rooms | `three/rooms/{chemistry,pharmaceutics,pharmacology,pharmacognosy}.ts` + `rooms/helpers.ts` (`RoomBuilder`, `TOP`) |
+| **Babylon.js room — Pharmaceutical Chemistry only (2026-10-22)**: runtime (same API as `LabRuntime`; WebGL 2 baseline, WebGPU on High/`?engine=webgpu` with fallback; static merge per material; render-once shadows), kit + furniture, apparatus, room. Chosen in `Viewport.tsx` (`BABYLON_LABS`); `?engine=three` opens the old room | `src/components/virtual-labs/babylon/{runtime,kit,apparatus,chemistry,types}.ts`; `docs/virtual-labs/BABYLON_MIGRATION.md` |
+| Engine-neutral shared modules (both engines): quality tiers, vessel volume↔height, canvas artwork | `src/components/virtual-labs/{quality,vessel}.ts`, `art/canvas.ts` (three wrappers: `three/textures.ts`) |
 | Procedural parts (furniture, glassware, instruments, materials, canvas textures) | `three/{kit,glass,instruments,materials,textures}.ts` |
 | Instrument controllers (one panel per `ControllerDef`, opened by selecting its equipment) + 2D instruments + eyepiece | `src/components/virtual-labs/benches/{Titration,Syrup,Dose,Clove}Controls.tsx`, `instruments2d.tsx`, `MicroscopeView.tsx`, `types.ts` |
 | Immersive chrome (top bar, controller dock / phone bottom sheet, Next prompt, info card) + control kit (`ActBtn`, `Hl`, `HoldControl`, Learning "next" ring) | `src/components/virtual-labs/interface/{LabChrome,controls}.tsx` |
@@ -283,7 +285,7 @@ Permanent redirects in `next.config.mjs`: `/simulations` and `/simulations/:path
 | Catalogue (exactly 4) / curriculum statuses / shared labels | `src/lib/virtual-labs/{catalog,curriculum,labels}.ts` |
 | Asset manifest (licences, decisions, used + rejected) | `src/lib/virtual-labs/assets/manifest.ts`; files `public/models/virtual-labs/{environments,specimens}/` |
 | Progress (localStorage `pw-vlabs:v1`, quality pref) + landing badge | `src/lib/virtual-labs/progress.ts`, `src/components/virtual-labs/LabProgressBadge.tsx` |
-| Tests (39: catalogue, engine, formulas, each lab end to end) | `scripts/virtual-labs.test.mts` |
+| Tests (65: catalogue, engine, formulas, each lab end to end, Babylon isolation + vessel/quality) | `scripts/virtual-labs.test.mts` |
 | Docs | `docs/virtual-labs/` (`IMPLEMENTATION_PLAN.md`; code comments also cite `CURRICULUM_MAPPING.md`, `ASSET_RESEARCH.md`, `ASSET_LICENSES.md`, `EXPERIMENT_CATALOG.md` — not present as of 2026-10-20) |
 
 ## Simulations & other labs

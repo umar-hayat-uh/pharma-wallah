@@ -1557,6 +1557,31 @@ Traps that will otherwise be rediscovered painfully.
    `camera.setViewOffset` (+ a gentle zoom-out) so the operated instrument is centred above a phone's bottom
    sheet or beside the desktop dock; the raycaster uses the same projection, so picking stays right. The zoom
    widens the view slightly, so draw-call counts with panels open are not comparable with older measurements.
+242. **Pharmaceutical Chemistry is on Babylon.js; the other three labs are on three.js** (2026-10-22, owner's
+   brief). `Viewport.tsx` `BABYLON_LABS` picks the engine; `?engine=three` opens the old room (kept for comparison
+   and rollback); `?engine=webgl|webgpu` forces Babylon's engine. Babylon is imported only from
+   `src/components/virtual-labs/babylon/` and only via dynamic `import()` — a test enforces both. `@babylonjs/core`
+   is pinned exactly (9.30.0); no GUI/loaders/inspector packages.
+243. **Babylon 9.x side-effect imports are silent when missing.** `thinInstanceAdd` is a no-op stub unless
+   `@babylonjs/core/Meshes/thinInstanceMesh` is imported (the shelf bottles vanished); `texture.sphericalPolynomial`
+   needs `Materials/Textures/baseTexture.polynomial`; WebGL dynamic textures need
+   `Engines/Extensions/engine.dynamicTexture`. Bare imports of files NOT listed in the package's `sideEffects` are
+   dropped by the bundler (esbuild warns, webpack does not) — `shadowGeneratorSceneComponent` is one, but the
+   `ShadowGenerator` constructor registers it, so it is not needed.
+244. **`PBRMaterial.clone()` clones its textures; a cloned `DynamicTexture` is a blank canvas that is never
+   uploaded, so it is never ready and `scene.whenReadyAsync()` never resolves** — the room hung on load. Per-
+   equipment material copies (for the hover glow) must reassign the original `albedoTexture`. The runtime now
+   also times readiness out (WebGL 60 s, WebGPU 15 s → WebGL) so a stuck device shows an error, not a spinner.
+245. **Babylon text on planes:** `CreatePlane`'s front faces −z with u along +x; turning it by π to face the
+   student mirrors the text. `Kit.panel` keeps the orientation and shows the BACKSIDE. `labelArc` (cylinder arc,
+   rotated 3π/2 − arc/2) reads correctly. The scene is right-handed so room coordinates match the three.js rooms.
+246. **The volumetric flask profile in `three/glass.ts` holds ~350 mL below the neck**, so the three.js room's
+   "100 mL" ring sits inside the bulb (found 2026-10-22 by a test). The Babylon flask was resized to a real 100 mL
+   Class A shape (mark at y 0.128 m, inside the neck); the three.js model is unchanged because the syrup room may
+   share it — fix it there deliberately if wanted.
+247. **Babylon WebGPU never touches the CDN:** the GLSL→WGSL tools load lazily, only for a shader with no WGSL
+   version, and the runtime hands `glslang`/`twgsl` a never-resolving promise, so such a shader stays not-ready,
+   the 15 s timeout fires and the room rebuilds on WebGL 2. WebGPU is tried only on High or `?engine=webgpu`.
 
 ## 9. Working preferences (observed)
 

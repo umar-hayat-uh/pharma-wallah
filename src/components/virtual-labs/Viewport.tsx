@@ -7,6 +7,12 @@
  *
  * Commands arrive as props with a counter (`n`), because next/dynamic does not forward
  * refs (MEMORY gotcha 220).
+ *
+ * Pharmaceutical Chemistry (acid-base-titration) runs on Babylon.js since 2026-10-22 — the
+ * one lab migrated (docs/virtual-labs/BABYLON_MIGRATION.md); the other three stay on
+ * three.js. Babylon is loaded only for that lab. `?engine=three` opens the original
+ * three.js room (comparison and rollback); `?engine=webgl` / `?engine=webgpu` force
+ * Babylon's engine. Both runtimes expose the same methods, so nothing else can tell.
  */
 import { useEffect, useRef } from "react";
 import type { LabId } from "@/lib/virtual-labs/catalog";
@@ -15,6 +21,26 @@ import type { BuildContext, Insets, Quality, RoomBuild } from "./three/types";
 import type { MaterialLib } from "./three/materials";
 
 type Builder = (m: MaterialLib, ctx: BuildContext) => RoomBuild;
+
+/** What Viewport drives — LabRuntime (three.js) and BabylonLabRuntime both provide it. */
+interface RuntimeLike {
+  setVisual(v: unknown): void;
+  setHighlight(ids: string[]): void;
+  setInsets(i: Insets): void;
+  setPaused(p: boolean): void;
+  setMoveInput(x: number, z: number): void;
+  focusOn(id: string): void;
+  exitFocus(): void;
+  resetView(instant?: boolean): void;
+  where(id: string): { x: number; y: number; hit: boolean } | null;
+  moving(): boolean;
+  stats(): RuntimeStats;
+  measure(ms?: number): Promise<RuntimeStats>;
+  dispose(): void;
+}
+
+/** Labs whose room is drawn by Babylon.js rather than three.js. */
+const BABYLON_LABS: ReadonlySet<LabId> = new Set<LabId>(["acid-base-titration"]);
 
 const ROOMS: Record<LabId, () => Promise<Builder>> = {
   "acid-base-titration": () => import("./three/rooms/chemistry").then((x) => x.buildChemistry),
@@ -47,13 +73,13 @@ export interface ViewportProps {
 declare global {
   interface Window {
     /** Exposed for the performance panel and automated checks: read-only stats. */
-    __vlab?: { stats: () => RuntimeStats; measure: (ms?: number) => Promise<RuntimeStats>; focus: (id: string | null) => void; reset: () => void; where: (id: string) => { x: number; y: number; hit: boolean } | null; moving: () => boolean };
+    __vlab?: { stats: () => RuntimeStats & { engine?: string }; measure: (ms?: number) => Promise<RuntimeStats>; focus: (id: string | null) => void; reset: () => void; where: (id: string) => { x: number; y: number; hit: boolean } | null; moving: () => boolean };
   }
 }
 
 export default function Viewport(p: ViewportProps) {
   const host = useRef<HTMLDivElement>(null);
-  const rt = useRef<LabRuntime | null>(null);
+  const rt = useRef<RuntimeLike | null>(null);
   const cb = useRef(p);
   cb.current = p;
 
@@ -61,28 +87,55 @@ export default function Viewport(p: ViewportProps) {
     let cancelled = false;
     const el = host.current;
     if (!el) return;
+    const callbacks = {
+      quality: p.quality,
+      reducedMotion: p.reducedMotion,
+      onHover: (id: string | null) => cb.current.onHover(id),
+      onSelect: (id: string) => cb.current.onSelect(id),
+      onFocusChange: (id: string | null) => cb.current.onFocusChange(id),
+      onError: (m: string) => cb.current.onError(m),
+      onProgress: (f: number) => cb.current.onProgress(f),
+      onReady: () => cb.current.onReady(),
+      onSlow: () => cb.current.onSlow?.(),
+    };
+    const attach = (runtime: RuntimeLike) => {
+      rt.current = runtime;
+      runtime.setVisual(cb.current.visual);
+      runtime.setHighlight(cb.current.highlight);
+      runtime.setInsets(cb.current.insets);
+      runtime.setPaused(cb.current.paused);
+      // camera-only hooks for the performance panel and automated screenshots
+      window.__vlab = { stats: () => runtime.stats(), measure: (ms) => runtime.measure(ms), focus: (id) => (id ? runtime.focusOn(id) : runtime.exitFocus()), reset: () => runtime.resetView(true), where: (id) => runtime.where(id), moving: () => runtime.moving() };
+    };
+    const engineParam = new URLSearchParams(window.location.search).get("engine");
+    if (BABYLON_LABS.has(p.labId) && engineParam !== "three") {
+      let pending: { dispose(): void } | null = null;
+      Promise.all([import("./babylon/runtime"), import("./babylon/chemistry")])
+        .then(async ([{ BabylonLabRuntime }, { buildChemistry }]) => {
+          if (cancelled) return;
+          const runtime = await BabylonLabRuntime.create(el, buildChemistry, { ...callbacks, engine: engineParam === "webgpu" || engineParam === "webgl" ? engineParam : "auto" });
+          pending = runtime;
+          if (cancelled) return runtime.dispose();
+          attach(runtime);
+        })
+        .catch((e: unknown) => {
+          if (cancelled) return;
+          const msg = e instanceof Error ? e.message : "";
+          if (/chunk|fetch|import/i.test(msg)) cb.current.onError("The 3D laboratory failed to download. Check your connection and try again.");
+          else cb.current.onError(/webgl|context/i.test(msg) ? "This browser could not start 3D graphics (WebGL)." : "The 3D laboratory could not start on this device.");
+        });
+      return () => {
+        cancelled = true;
+        (rt.current ?? pending)?.dispose();
+        rt.current = null;
+        delete window.__vlab;
+      };
+    }
     ROOMS[p.labId]()
       .then((build) => {
         if (cancelled) return;
         try {
-          const runtime = new LabRuntime(el, build, {
-            quality: p.quality,
-            reducedMotion: p.reducedMotion,
-            onHover: (id) => cb.current.onHover(id),
-            onSelect: (id) => cb.current.onSelect(id),
-            onFocusChange: (id) => cb.current.onFocusChange(id),
-            onError: (m) => cb.current.onError(m),
-            onProgress: (f) => cb.current.onProgress(f),
-            onReady: () => cb.current.onReady(),
-            onSlow: () => cb.current.onSlow?.(),
-          });
-          rt.current = runtime;
-          runtime.setVisual(cb.current.visual);
-          runtime.setHighlight(cb.current.highlight);
-          runtime.setInsets(cb.current.insets);
-          runtime.setPaused(cb.current.paused);
-          // camera-only hooks for the performance panel and automated screenshots
-          window.__vlab = { stats: () => runtime.stats(), measure: (ms) => runtime.measure(ms), focus: (id) => (id ? runtime.focusOn(id) : runtime.exitFocus()), reset: () => runtime.resetView(true), where: (id) => runtime.where(id), moving: () => runtime.moving() };
+          attach(new LabRuntime(el, build, callbacks));
         } catch (e) {
           cb.current.onError(e instanceof Error && /WebGL/i.test(e.message) ? "This browser could not start 3D graphics (WebGL)." : "The 3D laboratory could not start on this device.");
         }

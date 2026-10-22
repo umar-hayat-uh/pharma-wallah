@@ -1121,3 +1121,146 @@ test("asset manifest: every shipped file exists with the recorded size", async (
     for (const f of a.files) assert.equal(statSync(ROOT + f.path).size, f.bytes, f.path);
   }
 });
+
+// ── Babylon migration (2026-10-22): the Pharmaceutical Chemistry room moved to Babylon.js ──
+// The pure modules both engines share are tested directly; the engine boundary is checked
+// statically (reading source, never importing browser code), so a stray import of three.js
+// into the Babylon chunk — or of Babylon into any shared bundle — fails here, not in production.
+
+{
+  const V = await import("../src/components/virtual-labs/vessel.ts");
+  const Q = await import("../src/components/virtual-labs/quality.ts");
+  const { readFileSync, readdirSync, statSync } = await import("node:fs");
+  const ROOT = new URL("..", import.meta.url).pathname;
+  const VL = ROOT + "src/components/virtual-labs/";
+  const read = (p: string) => readFileSync(p, "utf8");
+  const walk = (dir: string): string[] =>
+    readdirSync(dir).flatMap((n) => {
+      const p = dir + (dir.endsWith("/") ? "" : "/") + n;
+      return statSync(p).isDirectory() ? walk(p) : /\.(ts|tsx|mts|js|jsx)$/.test(n) ? [p] : [];
+    });
+  /** Every static import / re-export: { spec, typeOnly, text }. Multi-line imports included. */
+  const staticImports = (src: string) => {
+    const out: { spec: string; typeOnly: boolean; text: string }[] = [];
+    const re = /^\s*(import|export)\s+(type\s+)?(?:[^;'"]*?\s+from\s+)?["']([^"']+)["']/gms;
+    for (const m of src.matchAll(re)) out.push({ spec: m[3], typeOnly: !!m[2], text: m[0].trim() });
+    return out;
+  };
+
+  test("babylon migration: heightForVolume matches a cylinder, is monotonic and clamps at the top", () => {
+    const r = 0.02, top = 0.2;
+    const cyl: any = [[r, 0], [r, top]];
+    // The integrator steps 1/600 of the height, so it is within one step everywhere and
+    // within 0.5 % once the level is a third of the way up (a 5 mL level is ~0.5 % high).
+    for (const ml of [5, 20, 100, 200]) {
+      const want = ml / 1e6 / (Math.PI * r * r);
+      const got = V.heightForVolume(cyl, ml);
+      assert.ok(Math.abs(got - want) <= top / 600 + 1e-12, `${ml} mL: ${got} vs ${want} (more than one step)`);
+      if (ml >= 100) assert.ok(Math.abs(got - want) / want <= 0.005, `${ml} mL: ${got} vs ${want}`);
+    }
+    let prev = -1;
+    for (let ml = 0; ml <= 260; ml += 2.5) {
+      const h = V.heightForVolume(cyl, ml);
+      assert.ok(h >= prev, `not monotonic at ${ml} mL`);
+      prev = h;
+    }
+    // capacity is π·0.02²·0.2 m³ ≈ 251 mL: anything over it sits at the rim, never above
+    assert.equal(V.heightForVolume(cyl, 1000), top);
+    assert.equal(V.radiusAt(cyl, 0.1), r);
+  });
+
+  // TODO (defect, recorded 2026-10-22 — source not changed by this test's author): the flask's
+  // inner bulb holds ~351 mL below the neck, so 100 mL fills only to y ≈ 0.025 m and the
+  // calibration ring is drawn inside the bulb. Same profile in three/glass.ts (pre-existing).
+  // Remove `todo` once the bulb is resized to ~100 mL; the test then guards it.
+  test("babylon migration: the 100 mL volumetric flask's mark falls inside its neck", () => {
+    // The profile and inset copied from babylon/apparatus.ts (volumetric flask).
+    const T = 0.0016;
+    const inset = (p: any[], t = T) => p.map(([rr, y]: number[], i: number) => [Math.max(0, rr - t), i === 0 ? y + t : y]);
+    const outer = [[0, 0], [0.0227, 0], [0.0262, 0.007], [0.0271, 0.0262], [0.0227, 0.0455], [0.0105, 0.063], [0.0072, 0.07], [0.0072, 0.165], [0.0082, 0.17]];
+    const inner = inset(outer.slice(0, 8));
+    const mark = V.heightForVolume(inner as any, 100);
+    assert.ok(mark > 0.07 && mark < 0.165, `100 mL mark at y = ${mark}, outside the neck (0.070–0.165)`);
+    // and the source still uses the same profile, so this test guards the real flask
+    const src = read(VL + "babylon/apparatus.ts");
+    assert.ok(src.includes("[[0, 0], [0.0227, 0], [0.0262, 0.007], [0.0271, 0.0262], [0.0227, 0.0455], [0.0105, 0.063], [0.0072, 0.07], [0.0072, 0.165], [0.0082, 0.17]]"), "volumetric flask profile changed in apparatus.ts");
+    assert.match(src, /const T = 0\.0016;/);
+  });
+
+  test("babylon migration: pixelRatioFor — never below 1, phone tiers, laptop held to budget", () => {
+    for (const q of ["low", "medium", "high"] as const)
+      for (const [w, h, d] of [[390, 844, 3], [1440, 900, 2], [3840, 2160, 1], [8000, 8000, 3], [320, 568, 0]])
+        assert.ok(Q.pixelRatioFor(q, w, h, d) >= 1, `${q} ${w}×${h}@${d}`);
+    assert.equal(Q.pixelRatioFor("medium", 390, 844, 3), 2);
+    assert.equal(Q.pixelRatioFor("low", 390, 844, 3), 1.5);
+    const r = Q.pixelRatioFor("medium", 1440, 900, 2);
+    assert.ok(r < 2, `laptop not budgeted (${r})`);
+    assert.ok(1440 * 900 * r * r <= Q.QUALITY.medium.budgetMP * 1e6 + 1, `${1440 * 900 * r * r} px over budget`);
+    assert.equal(Q.QUALITY.medium.budgetMP, 2.4);
+  });
+
+  test("babylon migration: the Babylon room imports no three.js (types from ../three/types only)", () => {
+    const files = walk(VL + "babylon");
+    assert.ok(files.length >= 5, `only ${files.length} babylon files found`);
+    for (const f of files) {
+      const src = read(f);
+      for (const im of staticImports(src)) {
+        if (!/three/.test(im.spec)) continue;
+        assert.ok(im.typeOnly && im.spec === "../three/types", `${f.slice(ROOT.length)}: ${im.text}`);
+      }
+      assert.ok(!/import\(\s*["'](three|[^"']*\/three\/)/.test(src), `${f.slice(ROOT.length)}: dynamic import of three`);
+      assert.ok(!/require\(\s*["']three/.test(src), `${f.slice(ROOT.length)}: require("three")`);
+    }
+  });
+
+  test("babylon migration: nothing outside babylon/ statically imports @babylonjs; Viewport loads it lazily", () => {
+    const BAB = VL + "babylon/";
+    for (const f of walk(ROOT + "src")) {
+      if (f.startsWith(BAB)) continue;
+      const src = read(f);
+      for (const im of staticImports(src)) {
+        assert.ok(!im.spec.startsWith("@babylonjs/"), `${f.slice(ROOT.length)}: ${im.text}`);
+        // a static (non-type) import of the babylon folder would pull Babylon into that bundle
+        if (/(^|\/)babylon\//.test(im.spec)) assert.ok(im.typeOnly, `${f.slice(ROOT.length)}: static ${im.text}`);
+      }
+    }
+    const vp = read(VL + "Viewport.tsx");
+    assert.match(vp, /import\(\s*["']\.\/babylon\/runtime["']\s*\)/);
+    assert.match(vp, /import\(\s*["']\.\/babylon\/chemistry["']\s*\)/);
+    const m = vp.match(/BABYLON_LABS[^=]*=\s*new Set[^(]*\(\s*\[([^\]]*)\]\s*\)/);
+    assert.ok(m, "BABYLON_LABS not found in Viewport.tsx");
+    const labs = [...m[1].matchAll(/["']([^"']+)["']/g)].map((x) => x[1]);
+    assert.deepEqual(labs, ["acid-base-titration"]);
+  });
+
+  test("babylon migration: shared modules import no engine; @babylonjs/core is pinned exactly", () => {
+    for (const f of ["quality.ts", "vessel.ts", "art/canvas.ts"]) {
+      for (const im of staticImports(read(VL + f))) {
+        assert.ok(im.spec !== "three" && !im.spec.startsWith("three/"), `${f}: ${im.text}`);
+        assert.ok(!im.spec.startsWith("@babylonjs/"), `${f}: ${im.text}`);
+        if (/three\//.test(im.spec)) assert.ok(im.typeOnly, `${f}: value import from the three.js folder: ${im.text}`);
+      }
+    }
+    const pkg = JSON.parse(read(ROOT + "package.json"));
+    const v = pkg.dependencies?.["@babylonjs/core"] ?? pkg.devDependencies?.["@babylonjs/core"];
+    assert.ok(v, "@babylonjs/core is not a dependency");
+    assert.match(v, /^\d+\.\d+\.\d+$/, `@babylonjs/core must be pinned exactly, got "${v}"`);
+  });
+
+  test("babylon migration: every titration equipment id the three.js room made selectable, the Babylon room does too", () => {
+    const ids = (src: string, re: RegExp) => new Set([...src.matchAll(re)].map((m) => m[1]));
+    const threeIds = ids(read(VL + "three/rooms/chemistry.ts"), /\br\.interactive\(\s*["']([^"']+)["']/g);
+    const babIds = ids(read(VL + "babylon/chemistry.ts"), /\binteractive\(\s*list\s*,\s*["']([^"']+)["']/g);
+    assert.ok(threeIds.size >= 10, `parsed only ${threeIds.size} three.js ids`);
+    const eq = TX.TITRATION.equipment.map((e: any) => e.id);
+    let checked = 0;
+    for (const id of eq) {
+      if (!threeIds.has(id)) continue;
+      assert.ok(babIds.has(id), `"${id}" is selectable in the three.js room but not in the Babylon room`);
+      checked++;
+    }
+    assert.ok(checked >= 10, `only ${checked} equipment ids compared`);
+    // and every controller's equipment can be reached in the Babylon room
+    for (const c of TX.TITRATION.controllers) assert.ok(c.equipment.some((e: string) => babIds.has(e)), `controller ${c.id} has no selectable equipment in the Babylon room`);
+  });
+}

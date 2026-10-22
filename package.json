@@ -29,6 +29,7 @@
   "dependencies": {
     "3dmol": "^2.5.5",
     "@ai-sdk/google": "^3.0.72",
+    "@babylonjs/core": "9.30.0",
     "@capacitor/android": "^8.5.2",
     "@capacitor/core": "^8.5.2",
     "@capacitor/filesystem": "8.1.3",
