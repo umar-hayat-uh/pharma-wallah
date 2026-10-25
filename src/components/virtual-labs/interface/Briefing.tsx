@@ -4,6 +4,7 @@ import { AlertTriangle, BookOpen, Clock, Compass, FlaskConical, GraduationCap, S
 import type { ExperimentDefinition, LabMode } from "@/lib/virtual-labs/engine/types";
 import { HINT_CAP, HINT_COST } from "@/lib/virtual-labs/engine/machine";
 import { Btn, CURRICULUM_LABEL, CURRICULUM_TONE, Pill } from "./ui";
+import { PROCEDURE_LABEL, PROCEDURE_TONE } from "@/lib/virtual-labs/labels";
 
 /**
  * The concise pre-lab briefing: what, why, how safely, with what — then the two mode
@@ -21,6 +22,7 @@ export function Briefing({ def, onStart, webgl, resume }: { def: ExperimentDefin
         <Pill tone="neutral"><Clock className="h-3.5 w-3.5" aria-hidden />About {meta.minutes} min</Pill>
         <Pill tone="neutral"><GraduationCap className="h-3.5 w-3.5" aria-hidden />{meta.difficulty}</Pill>
         <Pill tone={CURRICULUM_TONE[meta.curriculum.status]}>{CURRICULUM_LABEL[meta.curriculum.status]}</Pill>
+        {meta.procedure && <Pill tone={PROCEDURE_TONE[meta.procedure.status]}>{PROCEDURE_LABEL[meta.procedure.status]}</Pill>}
       </div>
 
       <div className="mt-8 grid gap-4 lg:grid-cols-2">
@@ -50,6 +52,20 @@ export function Briefing({ def, onStart, webgl, resume }: { def: ExperimentDefin
               </li>
             ))}
           </ul>
+        )}
+        {meta.procedure && (
+          <>
+            <p className="mt-4 font-semibold text-[#16181d]">Method and assumptions</p>
+            <p className="mt-1">{PROCEDURE_LABEL[meta.procedure.status]}. Values marked simulated come from a documented teaching model, not real experimental or patient data. Completing this simulation does not qualify anyone for unsupervised laboratory work.</p>
+            {meta.procedure.assumptions.length > 0 && <ul className="vl-bullets mt-2 space-y-1">{meta.procedure.assumptions.map((a) => <li key={a}>{a}</li>)}</ul>}
+            {meta.procedure.sources.length > 0 && (
+              <ul className="vl-list mt-2 space-y-1">
+                {meta.procedure.sources.map((s) => (
+                  <li key={s.label}><a href={s.url} target="_blank" rel="noreferrer" className="font-medium text-brandBlue underline-offset-2 hover:underline">{s.label}</a></li>
+                ))}
+              </ul>
+            )}
+          </>
         )}
       </div>
 

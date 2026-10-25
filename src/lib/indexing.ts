@@ -26,6 +26,7 @@ export const INDEXING: Record<string, Rule> = {
   "/admin": { match: "prefix", index: false, reason: "admin only" },
   "/battle-royale/admin": { match: "prefix", index: false, reason: "admin only" },
   "/pw": { match: "prefix", index: false, reason: "internal" },
+  "/home-preview": { match: "exact", index: false, reason: "preview of the next home page; deleted when it replaces /" },
   "/community/submit": { match: "exact", index: false, reason: "a form, sign-in required" },
   "/community/saved": { match: "exact", index: false, reason: "signed-in only" },
 

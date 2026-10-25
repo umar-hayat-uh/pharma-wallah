@@ -5,6 +5,11 @@ Change the marketing landing page at `/` — its sections, its copy, its marker 
 motion — without breaking scroll, leaking GSAP into the rest of the site, covering an ad, or
 tripping the site-wide CSS that fights it.
 
+> **A replacement is in preview (2026-10-25):** the molecule landing at `/home-preview`
+> (`src/components/Home/molecule-landing/`, no GSAP — CSS + one three.js rAF loop). Until the owner
+> approves the swap, "The Index" below is still what `/` renders. When it is swapped, rewrite this
+> skill around the new page (dock-based flight, MEMORY 250) and delete `/home-preview`.
+
 ## Trigger Examples
 - "change the hero headline / the stats / the pillar list"
 - "add a section / an annotation / a chapter to the landing page"

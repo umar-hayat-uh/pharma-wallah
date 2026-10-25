@@ -59,7 +59,7 @@ const hand = Caveat({
  * Markup and copy live in the section components; all GSAP motion lives in
  * useIndexMotion. Design rationale: .claude/skills/top-design/SKILL.md.
  */
-export default function LandingPage({ battle, intro }: { battle?: React.ReactNode; intro?: React.ReactNode }) {
+export default function LandingPage({ battle }: { battle?: React.ReactNode }) {
   const root = useRef<HTMLDivElement>(null);
   useIndexMotion(root);
 
@@ -79,8 +79,6 @@ export default function LandingPage({ battle, intro }: { battle?: React.ReactNod
           `fixed` and ships its own in-flow spacer, so the hero now sits directly
           beneath it. */}
       <Hero />
-      {/* Plain-text introduction (server-rendered in src/app/page.tsx). */}
-      {intro}
       {/* Battle Royale's live podium (server-rendered in src/app/page.tsx). */}
       {battle}
       <Tape />

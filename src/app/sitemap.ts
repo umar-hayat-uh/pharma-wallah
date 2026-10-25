@@ -4,6 +4,8 @@ import { HUB_SUBJECTS, UNLISTED_TOOLS, toolHref } from "@/app/(site)/calculation
 import { SUBJECTS } from "@/lib/courses/registry";
 import { GUIDES } from "@/lib/guides";
 import { BONES, JOINTS, boneHref, jointHref } from "@/lib/osteology/registry";
+import { LAB_LIST, type ExperimentId } from "@/lib/virtual-labs/catalog";
+import { EXPERIMENTS } from "@/lib/virtual-labs/experiments";
 import { isNoindex } from "@/lib/indexing";
 // Last git commit date per path (scripts/gen-lastmod.mjs) — true dates, never the build time.
 import LASTMOD from "@/generated/lastmod.json";
@@ -42,12 +44,9 @@ const STATIC_PATHS = [
   "/osteology-lab/joints",
   "/osteology-lab/about",
   // The 3D Virtual Labs (2026-10-20) replaced /simulations and /compounding-lab,
-  // which now 308 here (next.config.mjs). Each lab page is indexable.
+  // which now 308 here (next.config.mjs). Each experiment page is indexable and is
+  // added below from the catalogue (only registered experiments).
   "/virtual-labs",
-  "/virtual-labs/pharmaceutical-chemistry/acid-base-titration",
-  "/virtual-labs/pharmaceutics/simple-syrup",
-  "/virtual-labs/pharmacology/dose-response",
-  "/virtual-labs/pharmacognosy/powdered-clove",
   "/antibiogram-simulator",
   "/adr-detective",
   "/drug-finder",
@@ -85,6 +84,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   for (const subject of HUB_SUBJECTS) for (const tool of subject.tools) paths.add(toolHref(tool.slug));
   for (const slug of Object.keys(UNLISTED_TOOLS)) paths.add(toolHref(slug));
+
+  for (const lab of LAB_LIST) if (EXPERIMENTS[lab.id as ExperimentId]) paths.add(lab.href);
 
   for (const b of BONES) paths.add(boneHref(b.slug));
   for (const j of JOINTS) paths.add(jointHref(j.slug));

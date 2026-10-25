@@ -17,6 +17,9 @@ three.js room, and the honesty labels (curriculum status, asset licences, "simul
 - "add a fifth lab / a second experiment" (read **Do Not** first)
 
 ## Read First
+0. **`.claude/skills/pharmawallah-virtual-labs/SKILL.md` — the owner's standard (2026-10-25)**: four rooms keyed by
+   `DisciplineId`, Babylon.js as the target for all four, three shortlisted experiments per lab, a shared robotic
+   tutor, waste routes, procedure status. It says what this skill's invariants must become; this skill says how.
 1. `src/lib/virtual-labs/engine/types.ts` then `engine/machine.ts` — the experiment contract (incl. `ControllerDef`,
    `suggest`, `LabMode`) and the run machine (the equipment gate in `case "act"`).
 2. The experiment you are touching: `src/lib/virtual-labs/experiments/<lab>.ts` (its `CONTROLLERS` and `suggest`) +
@@ -29,7 +32,9 @@ three.js room, and the honesty labels (curriculum status, asset licences, "simul
 ## Architecture Context
 ```
 src/lib/virtual-labs/  (PURE — no React, no DOM, no three.js)
-  catalog.ts           LAB_IDS (exactly 4) + LABS meta + labByPath()
+  catalog.ts           ROOM_IDS (the 4 rooms = DisciplineId) + ROOMS; EXPERIMENT_IDS + LABS meta per EXPERIMENT
+                       (course label, seo, image, curriculum, optional `procedure` = method status/sources/
+                       assumptions); roomOf(), experimentsIn(room), labByPath() (2026-10-25 split, MEMORY 248)
   curriculum.ts        CURRICULUM: status + quoted syllabus sources per lab
   labels.ts            CURRICULUM_LABEL / CURRICULUM_TONE — shared by server AND client (no "use client")
   engine/types.ts      ExperimentDefinition<S, A>: meta, principle, safety, equipment, materials, steps,
@@ -41,8 +46,17 @@ src/lib/virtual-labs/  (PURE — no React, no DOM, no three.js)
                        ok/info/warn/refuse/mistake, rand(seed, …keys), round, fmt
   calculations/*.ts    the science: titration (citric acid, pKa model, assay), syrup (sucrose density table),
                        doseResponse (Hill equation, fit), microscopy (FOV, magnification, slide generator)
-  experiments/*.ts     the four definitions + each one's `<lab>Visual(state)` for the room
-  experiments/index.ts EXPERIMENTS: Record<LabId, ExperimentDefinition>
+  experiments/*.ts     titration, syrup, doseResponse, clove + each one's `<lab>Visual(state)` for the room
+  experiments/pharmaceutics/  (2026-10-25, the owner's shortlist)
+                       contract.ts   EQUIPMENT_PLAN (fixed vs stored→cabinet ids) + the Visual interfaces the
+                                     Babylon room draws — written before both sides; change both together
+                       common.ts     commonKit(cfg): cabinets (retrieve/return, per-cabinet `accepts`), sink/tap/
+                                     rinse, 6 waste streams (wrong stream refused + mistake; hazardous→sink
+                                     refused, weight 8; sink needs the tap running; `alsoOk` for over-cautious)
+                       solutionPrep.ts, liquidProperties.ts, solubilityDissolution.ts — each embeds
+                                     `bench: BenchCommon`, exports PROCEDURE (attached to LABS in index.ts)
+  experiments/index.ts EXPERIMENTS: Record<ExperimentId, ExperimentDefinition>; attaches each PROCEDURE to LABS
+  tutor.ts             RoboPharma's words, DERIVED from run + definition (no own step counter, no AI)
   progress.ts          ("use client") localStorage `pw-vlabs:v1` + quality pref `pw-vlabs:quality`
   assets/manifest.ts   ASSET_MANIFEST — every researched asset, used or rejected, with licence + decision
 
@@ -51,7 +65,12 @@ src/components/virtual-labs/
   LabExperience.tsx    phases briefing(+mode cards) → lab → assessment → results. The lab phase is a FIXED
                        full-viewport layer (z-70, 100dvh, page scroll locked, Fullscreen API on touch entry +
                        button), Viewport behind, chrome over it; pause on visibilitychange; insets → view offset
-  Viewport.tsx         next/dynamic(ssr:false) target; imports ONLY the current lab's room module
+  Viewport.tsx         next/dynamic(ssr:false) target; loads the ROOM by discipline (roomOf), passing
+                       `experiment` into the build context; BABYLON_ROOMS / ROOMS (three.js rollback)
+  labs/LabLoader.tsx   ("use client") experiment id → its lab component, one next/dynamic chunk each
+  tutor/               RoboPharma.tsx (original SVG, 4 moods) + TutorPanel.tsx (bottom-right, collapsible);
+                       mounted for TUTOR_LABS (pharmaceutics) in LabExperience
+  benches/pharmaceutics/  CommonControls (cabinet/sink/waste panels) + one controls file per experiment
   three/runtime.ts     LabRuntime: renderer, QUALITY tiers (pixel budget per tier, pixelRatioFor), walking +
                        colliders, picking, Q/E keyboard picking, focus tweens, setInsets (view offset),
                        setPaused, static shadow maps, on-demand rendering, step markers, one-time onSlow,
@@ -65,7 +84,9 @@ src/components/virtual-labs/
                        ProcedurePanel (objectives; Learning vs Practical), EquipmentPanel (guide, "Show me"),
                        ObservationSheet, Assessment, LabResults, Overlays (dialogs, touch pad, prompts,
                        ControlGuide), ui (Btn, Section, Choice, ReadingField)
-src/app/(site)/virtual-labs/   landing page + /<discipline>/<experiment>/page.tsx (server: metadata + JSON-LD)
+src/app/(site)/virtual-labs/   landing page (rooms → experiments by course) + ONE route
+                       [discipline]/[experiment]/page.tsx (generateStaticParams from the catalogue; metadata from
+                       LABS[id].seo). Adding an experiment never adds a route or a room.
 ```
 
 ### Invariants
@@ -74,8 +95,9 @@ src/app/(site)/virtual-labs/   landing page + /<discipline>/<experiment>/page.ts
   rooms stay on three.js. Both runtimes expose the same methods, so the shell, engine, controllers and automation are
   shared. `?engine=three` opens the original three.js chemistry room; `?engine=webgl|webgpu` forces Babylon's engine.
   Shared engine-neutral code lives in `quality.ts`, `vessel.ts`, `art/canvas.ts`. Read
-  `docs/virtual-labs/BABYLON_MIGRATION.md` and MEMORY 242–247 before touching the Babylon room. **Do not migrate
-  another lab without the owner asking.**
+  `docs/virtual-labs/BABYLON_MIGRATION.md` and MEMORY 242–247 before touching the Babylon room. **Babylon.js is now
+  the target for all four rooms** (owner's standard, 2026-10-25, `pharmawallah-virtual-labs`): migrate one room per
+  change, keep `?engine=three` until the new room is driven end to end, then remove the old one.
 - **Plain three.js for the other rooms** — no React Three Fiber, no further 3D library. `Viewport` is loaded via
   `next/dynamic(..., { ssr: false })` and imports only its own room via `ROOMS[labId]()`. three.js must never be
   in a page's first load, and one lab never downloads another's room.
@@ -106,7 +128,12 @@ src/app/(site)/virtual-labs/   landing page + /<discipline>/<experiment>/page.ts
 - **Rendering quality is a pixel budget, not a DPR cap** (`QUALITY` in `runtime.ts`): Balanced is the default
   on every device (Low only for Save-Data or ≤ 2 GB); a phone draws at 2×, not 1× (the old "blurry on mobile"
   fault). One automatic step down if the first 1.5 s draw < 18 fps and the student has not chosen a tier.
-- **Exactly four experiments.** `scripts/virtual-labs.test.mts` fails on a fifth (the brief forbade padding).
+- **The catalogue is pinned per room** in `scripts/virtual-labs.test.mts`: Pharmaceutics = the owner's three
+  (solution-preparation, liquid-properties, solubility-dissolution) + simple-syrup (kept, owner to decide); one in each
+  other room. A new id needs the owner's shortlist (`pharmawallah-virtual-labs` §Shortlist).
+- **An action field named `mode` is overwritten with the run's mode** by `reduceRun` — experiments use it to score
+  worked solutions (free in Learning; in Practical only after a wrong attempt, costing marks). A panel cannot fake it.
+- **No shadow maps** in either engine (MEMORY 249).
 - **The student reads the instrument.** 2D instruments draw the true state and never print the value
   (`instruments2d.tsx`); recorded readings are checked against the truth within a tolerance.
 - **Deterministic runs.** `rand(seed, …keys)`; `?seed=N` in the URL fixes the seed; the seed prints on the results.
@@ -221,7 +248,8 @@ Lint is not configured — say so.
 - Do not add React Three Fiber, drei, or another 3D/animation library; do not import `three` outside
   `src/components/virtual-labs/three/`, or `@babylonjs/*` outside `src/components/virtual-labs/babylon/` (Viewport
   only via dynamic `import()`), or either into anything a non-lab page loads. The tests enforce the Babylon half.
-- Do not add a fifth lab or a second experiment to a lab without the owner asking (the test enforces four).
+- Do not add a fifth lab. Do not add an experiment that is not on the owner's recorded shortlist
+  (`pharmawallah-virtual-labs` §Shortlist; the test enforces four until then).
 - Do not compute a number in a bench component or a room — it belongs in `calculations/` or the experiment.
 - Do not reveal a true reading before the student records it; do not add a control that operates an
   instrument without it being selected (no step cards, no "complete step"); do not let Learning mode point

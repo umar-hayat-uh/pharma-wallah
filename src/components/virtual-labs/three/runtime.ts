@@ -29,6 +29,8 @@ export { QUALITY, pixelRatioFor };
 
 export interface RuntimeOptions {
   quality: Quality;
+  /** The experiment the room is set up for. */
+  experiment?: string;
   reducedMotion: boolean;
   onHover?: (id: string | null) => void;
   onSelect?: (id: string) => void;
@@ -107,7 +109,7 @@ export class LabRuntime {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
-    this.renderer.shadowMap.enabled = q !== "low";
+    this.renderer.shadowMap.enabled = QUALITY[q].shadow > 0;
     this.renderer.shadowMap.type = q === "high" ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
     // the room is static between actions: redraw shadows only when the bench changes
     this.renderer.shadowMap.autoUpdate = false;
@@ -131,6 +133,7 @@ export class LabRuntime {
     const pending: Promise<void>[] = [];
     const ctx: BuildContext = {
       quality: q,
+      experiment: this.opts.experiment ?? "",
       anisotropy,
       texture: (url, o) => {
         const t = loader.load(url, () => this.invalidate(), undefined, () => this.invalidate());
@@ -177,7 +180,7 @@ export class LabRuntime {
       this.byId.set(it.id, it);
     }
     this.scene.traverse((o) => {
-      if ((o as THREE.Mesh).isMesh && q === "low") (o as THREE.Mesh).castShadow = false;
+      if ((o as THREE.Mesh).isMesh && !QUALITY[q].shadow) (o as THREE.Mesh).castShadow = false;
     });
 
     pending.push(this.setupEnvironment(q));
@@ -229,7 +232,7 @@ export class LabRuntime {
     this.scene.add(new THREE.HemisphereLight(0xf4f8ff, 0xb9c4cf, 0.38));
     const key = new THREE.DirectionalLight(0xfff6ea, 2.1);
     key.position.set(-4, 7, -3);
-    key.castShadow = q !== "low";
+    key.castShadow = QUALITY[q].shadow > 0;
     key.shadow.mapSize.set(QUALITY[q].shadow || 512, QUALITY[q].shadow || 512);
     key.shadow.camera.left = -7;
     key.shadow.camera.right = 7;

@@ -26,9 +26,19 @@ export interface CurriculumRef {
   sources: { label: string; url: string; basis: string }[];
 }
 
+/**
+ * One experiment's catalogue entry. `id` is the EXPERIMENT; `discipline` is the ROOM it
+ * runs in (one of four — an experiment never gets a room of its own; MEMORY 248).
+ */
 export interface LabMeta {
   id: string; // e.g. "acid-base-titration"
   discipline: DisciplineId;
+  /** Course / category label the catalogue groups by, e.g. "Physical Pharmacy". */
+  course: string;
+  /** Page <title> (without the site name) and meta description. */
+  seo: { title: string; description: string };
+  /** Landing-card picture under /public. */
+  image: string;
   disciplineLabel: string;
   labName: string; // "Pharmaceutical Chemistry Laboratory"
   experimentTitle: string;
@@ -38,6 +48,13 @@ export interface LabMeta {
   minutes: number;
   difficulty: Difficulty;
   curriculum: CurriculumRef;
+  /**
+   * How far the METHOD is checked (separate from the curriculum status, which only says
+   * whether the practical appears in a syllabus): verified against a cited source, a
+   * referenced educational simulation with documented assumptions, or proposed and
+   * awaiting instructor confirmation.
+   */
+  procedure?: { status: "verified" | "referenced_simulation" | "proposed"; sources: { label: string; url: string }[]; assumptions: string[] };
 }
 
 export interface EquipmentDef {
@@ -99,6 +116,12 @@ export interface ControllerDef {
   howTo: string[];
   /** Controllers at the same station, offered as one-tap switches once operated. */
   nearby?: string[];
+  /**
+   * Optional narrowing when several controllers share an action type: the controller
+   * performs `action` only if this returns true (e.g. a cabinet operates only its own
+   * door and contents, though every cabinet has a "retrieve" action).
+   */
+  accepts?(action: unknown): boolean;
 }
 
 /** Learning mode's "next" pointer: which instrument, and which control on it. */

@@ -264,11 +264,13 @@ Permanent redirects in `next.config.mjs`: `/simulations` and `/simulations/:path
 
 | Piece | File |
 | --- | --- |
-| Landing (server: catalogue cards, curriculum badges, credits from the manifest) | `src/app/(site)/virtual-labs/page.tsx` (card images expected at `public/images/virtual-labs/<id>.webp`) |
-| Acid–base titration (Pharmaceutical Chemistry) | `src/app/(site)/virtual-labs/pharmaceutical-chemistry/acid-base-titration/page.tsx` → `src/components/virtual-labs/labs/TitrationLab.tsx` |
-| Simple Syrup (Pharmaceutics) | `src/app/(site)/virtual-labs/pharmaceutics/simple-syrup/page.tsx` → `labs/SyrupLab.tsx` |
-| Graded dose–response (Pharmacology) | `src/app/(site)/virtual-labs/pharmacology/dose-response/page.tsx` → `labs/DoseResponseLab.tsx` (graph lives in the recorder controller) |
-| Powdered clove microscopy (Pharmacognosy) | `src/app/(site)/virtual-labs/pharmacognosy/powdered-clove/page.tsx` → `labs/CloveLab.tsx` (eyepiece lives in the microscope controller) |
+| Landing (server: four rooms, each listing its experiments by course; curriculum badges; credits from the manifest) | `src/app/(site)/virtual-labs/page.tsx` (room images `ROOMS[room].image`) |
+| **Every experiment page** — ONE route `/virtual-labs/<discipline>/<experiment>` (2026-10-25; replaced the four static pages, same URLs/titles); `generateStaticParams` + metadata from the catalogue | `src/app/(site)/virtual-labs/[discipline]/[experiment]/page.tsx` → `src/components/virtual-labs/labs/LabLoader.tsx` → `labs/<X>Lab.tsx` |
+| Pharmaceutical Chemistry: acid–base titration | `labs/TitrationLab.tsx` |
+| **Pharmaceutics (4 experiments, one room)**: solution preparation & dilution, physical properties of liquids, solubility & dissolution (owner's shortlist, 2026-10-25) + Simple Syrup | `labs/{SolutionPrep,LiquidProperties,SolubilityDissolution,Syrup}Lab.tsx`; definitions `src/lib/virtual-labs/experiments/pharmaceutics/{solutionPrep,liquidProperties,solubilityDissolution}.ts` + `experiments/syrup.ts`; room↔experiment contract `experiments/pharmaceutics/contract.ts`; cabinets/sink/waste `experiments/pharmaceutics/common.ts` + `benches/pharmaceutics/CommonControls.tsx`; panels `benches/pharmaceutics/*Controls.tsx`; science `calculations/{pharmaceutics,solutionPrep,liquidProperties,solubilityDissolution}.ts`; cited data `docs/virtual-labs/PHARMACEUTICS_REFERENCE_DATA.md` |
+| Pharmacology: graded dose–response | `labs/DoseResponseLab.tsx` (graph lives in the recorder controller) |
+| Pharmacognosy: powdered clove microscopy | `labs/CloveLab.tsx` (eyepiece lives in the microscope controller) |
+| **RoboPharma** lab companion (words derived from the run; SVG robot; collapsible panel; Pharmaceutics only via `TUTOR_LABS`) | `src/lib/virtual-labs/tutor.ts`, `src/components/virtual-labs/tutor/{RoboPharma,TutorPanel}.tsx` |
 | One lab, start to finish (briefing + mode cards → immersive full-screen lab → assessment → results; tracking; fullscreen, scroll lock, pause on hide, insets) | `src/components/virtual-labs/LabExperience.tsx` |
 | 3D viewport (`next/dynamic` ssr:false; loads only its own room; `window.__vlab`) | `src/components/virtual-labs/Viewport.tsx`, `webgl.ts` |
 | Shared three.js runtime (walking, colliders, picking + Q/E keyboard picking, focus tweens, pixel-budget quality tiers `QUALITY`, view-offset insets, pause, static shadows, markers, `where`/`moving` for automation, dispose) | `src/components/virtual-labs/three/runtime.ts`, `three/types.ts` |
@@ -282,10 +284,10 @@ Permanent redirects in `next.config.mjs`: `/simulations` and `/simulations/:path
 | Engine (pure): experiment contract (incl. controllers, suggest, modes), run machine (equipment gate, operate, mode, undo/hints/answers/submit/scoring) | `src/lib/virtual-labs/engine/{types,machine}.ts` |
 | Calculations (pure science) | `src/lib/virtual-labs/calculations/{titration,syrup,doseResponse,microscopy}.ts` |
 | Experiment definitions + room visual derivations | `src/lib/virtual-labs/experiments/{titration,syrup,doseResponse,clove,index}.ts` |
-| Catalogue (exactly 4) / curriculum statuses / shared labels | `src/lib/virtual-labs/{catalog,curriculum,labels}.ts` |
+| Catalogue (4 rooms → experiments; `procedure` method status) / curriculum statuses / shared labels | `src/lib/virtual-labs/{catalog,curriculum,labels}.ts` |
 | Asset manifest (licences, decisions, used + rejected) | `src/lib/virtual-labs/assets/manifest.ts`; files `public/models/virtual-labs/{environments,specimens}/` |
 | Progress (localStorage `pw-vlabs:v1`, quality pref) + landing badge | `src/lib/virtual-labs/progress.ts`, `src/components/virtual-labs/LabProgressBadge.tsx` |
-| Tests (65: catalogue, engine, formulas, each lab end to end, Babylon isolation + vessel/quality) | `scripts/virtual-labs.test.mts` |
+| Tests: catalogue/engine/original four labs/Babylon isolation (66) · Pharmaceutics science (12) · shared bench (9) · solution prep (36) · liquid properties (31) · solubility & dissolution (19) | `scripts/virtual-labs.test.mts`, `scripts/pharmaceutics-lab.test.mts`, `scripts/vlab-*.test.mts` |
 | Docs | `docs/virtual-labs/` (`IMPLEMENTATION_PLAN.md`; code comments also cite `CURRICULUM_MAPPING.md`, `ASSET_RESEARCH.md`, `ASSET_LICENSES.md`, `EXPERIMENT_CATALOG.md` — not present as of 2026-10-20) |
 
 ## Simulations & other labs
@@ -436,6 +438,7 @@ Rebuilt 2026-09-20; replaced the flat Q&A. Schema is **not** applied automatical
 | Blog (MDX) | `markdown/blog/*.mdx`, `src/components/SharedComponent/Blog/` |
 | **Landing page (`/`)** | `src/components/Home/landing/` — `LandingPage.tsx` composes it, `useIndexMotion.ts` holds every GSAP tween, `landing.css` the scoped `.pw-idx` styles, `data.ts` the copy, figures and chapters |
 | Landing page sections | `src/components/Home/landing/{Hero,Specimen,IndexSection,Sections,Chrome,Btn}.tsx`; marker annotations `Marks.tsx`; scroll timeline bar `Player.tsx` |
+| **Next home page — preview (`/home-preview`, noindexed)** | `src/components/Home/molecule-landing/` — `MoleculeLanding.tsx` (markup, reveal, badge, lazy boot), `flight.ts` (three.js paracetamol docking on each section's `.dock`), `molecule-landing.css` (`.pw-mol`), `molecule-data.ts` (GENERATED). Route `src/app/(site)/home-preview/page.tsx` (summarises 4 calculator subjects server-side). Assets: `public/images/home/` from `scripts/home/{render-apparatus.mjs,apparatus-harness.ts,capture-app-screens.mjs,build-home-molecule.mts}` |
 | **Unused** home sections | `src/components/Home/{Hero,Features,Courses,Mentor,Companies,ContactForm}/` — replaced 2026-09-12, still on disk, rendered nowhere |
 | Home page promo strip | `src/components/Home/tournament/` (`OfficialLaunchBanner`, still rendered) |
 | **About / the team (`/about-us`)** | `src/app/(site)/about-us/` — `page.tsx` (server: hero, story, pillars, leadership `LeadCard`s, grouped team), `FlipCard.tsx` (client flip card), `_Plate.tsx` (monogram, or a `photo` if the roster ever sets one) |

@@ -87,7 +87,7 @@ export function controllerForEquipment<S, A>(def: ExperimentDefinition<S, A>, eq
 /** Every controller that can perform this action. Empty for `inspect` (selecting is not operating). */
 export function controllersForAction<S, A>(def: ExperimentDefinition<S, A>, action: A): ControllerDef[] {
   const t = typeOf(action);
-  return def.controllers.filter((c) => c.actions.includes(t));
+  return def.controllers.filter((c) => c.actions.includes(t) && (!c.accepts || c.accepts(action)));
 }
 
 /** The first step whose completion criteria are not yet met (or the last step). */
@@ -120,7 +120,10 @@ export function reduceRun<S, A>(def: ExperimentDefinition<S, A>, run: Run<S>, ms
           return { ...run, log: [...run.log, { at: run.actions, kind: "error" as const, text }].slice(-MAX_LOG), last: [{ kind: "error", text }] };
         }
       }
-      const { state, feedback } = def.apply(run.s, msg.action);
+      // An action field named `mode` is the RUN's mode, stamped here: a panel cannot claim
+      // Learning to get a Practical worked solution for free.
+      const action = msg.action && typeof msg.action === "object" && "mode" in (msg.action as object) ? ({ ...msg.action, mode: run.mode } as A) : msg.action;
+      const { state, feedback } = def.apply(run.s, action);
       const actions = run.actions + 1;
       const mistakes = [...run.mistakes];
       for (const f of feedback) {

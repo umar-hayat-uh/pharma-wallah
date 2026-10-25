@@ -62,3 +62,8 @@ ol.vl-bullets.vl-bullets > li {
 .vl-immersive label { touch-action: manipulation; }
 /* globals.css forces white inputs with !important; keep ours readable when disabled */
 .vl-immersive .vl-input:disabled { background: #f3f5f7 !important; }
+
+/* RoboPharma (tutor/RoboPharma.tsx): a gentle hover, off for reduced motion */
+@keyframes vl-robo-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.vl-robo-float { animation: vl-robo-float 3.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .vl-robo-float { animation: none; } }

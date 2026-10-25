@@ -4,7 +4,6 @@ import LandingPage from "@/components/Home/landing/LandingPage";
 import ClinicalLandingPage from "@/components/Clinical/ClinicalLandingPage";
 import { HomeBattleSection } from "@/components/battle-royale/HomeBattleSection";
 import { JsonLd, websiteLd } from "@/lib/structured-data";
-import { HomeIntro } from "@/components/Home/HomeIntro";
 
 /*
  * The student-facing landing page.
@@ -30,7 +29,6 @@ export default function Home() {
     <>
       <JsonLd data={websiteLd()} />
       <LandingPage
-        intro={<HomeIntro />}
         battle={
           <Suspense fallback={null}>
             <HomeBattleSection />

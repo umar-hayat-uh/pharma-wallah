@@ -1,0 +1,564 @@
+/*
+ * The molecule landing page (preview at /home-preview, 2026-10-25). Scoped to
+ * .pw-mol (CLAUDE.md §6 rule 14), plus html.pw-mol-snap, which MoleculeLanding
+ * sets on <html> only while this page is mounted.
+ *
+ * Every section is exactly one screen below the site header and the page snaps
+ * section to section (owner, after review: "sections follow the viewport").
+ * Full-bleed — no centred container. Dark sections are the brand gradient under
+ * a deeper navy scrim with brand-colour glows on top: darker and more saturated
+ * than BRAND_SURFACE, still never black (rule 15). No backdrop-filter on
+ * anything fixed (rule 16).
+ */
+
+/* ── Snapping, scoped to this page. The site header is 64/76px tall at the top of
+   the page and 60/64px once scrolled, and past 600px it slides away on the way down
+   and back on the way up (Header/index.tsx). So a section is a full screen (the
+   header is gone when you arrive scrolling down) and reserves the header's height
+   as top padding (for when it slides back). The hero sits under the visible header. */
+html.pw-mol-snap {
+  --hdr: 60px;
+  --hdr0: 64px;
+  scroll-snap-type: y mandatory;
+}
+@media (min-width: 1024px) {
+  html.pw-mol-snap { --hdr: 64px; --hdr0: 76px; }
+}
+/* The site footer is not a section: give it a snap point or mandatory snapping
+   would never let the page reach it. */
+html.pw-mol-snap footer { scroll-snap-align: end; }
+
+.pw-mol {
+  --ink: #071a2c;
+  --muted: #3f5469;
+  --ground: #e8f1f7;
+  --card: #ffffff;
+  --line: rgba(7, 26, 44, 0.12);
+  --accent: #1c7bd9;
+  --accent-ink: #1466b8;
+  --mint: #7ff0c3;
+  --brand-gradient: linear-gradient(120deg, #1c7bd9 0%, #21b67a 100%);
+  --bright-gradient: linear-gradient(110deg, #5cb3ff 0%, #4ff0b0 100%);
+  --brand-button: linear-gradient(rgba(6, 18, 36, 0.3), rgba(6, 18, 36, 0.3)), var(--brand-gradient);
+  --brand-button-hover: linear-gradient(rgba(6, 18, 36, 0.42), rgba(6, 18, 36, 0.42)), var(--brand-gradient);
+  --deep:
+    radial-gradient(55% 75% at 90% 10%, rgba(33, 182, 122, 0.4), transparent 62%),
+    radial-gradient(65% 80% at 0% 100%, rgba(28, 123, 217, 0.55), transparent 60%),
+    linear-gradient(rgba(4, 16, 34, 0.6), rgba(4, 16, 34, 0.6)),
+    var(--brand-gradient);
+  --gutter: clamp(20px, 5vw, 112px);
+  color: var(--ink);
+  background: var(--ground);
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+}
+.pw-mol a { color: inherit; text-decoration: none; }
+.pw-mol :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 8px; }
+
+/* ── The molecule: one fixed canvas above the sections, below the site header (z-50). */
+.pw-mol .mol-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+.pw-mol .mol-canvas.ready { opacity: 1; }
+
+/* ── Sections: one screen each, full width */
+.pw-mol [data-flight] {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 100vh;
+  min-height: 100svh;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  overflow: hidden;
+}
+.pw-mol .wrap {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: calc(var(--hdr, 60px) + clamp(8px, 2vh, 24px)) var(--gutter) clamp(16px, 4vh, 48px);
+}
+.pw-mol .dark { background: var(--deep); color: #fff; }
+
+/* ── Shared type: sized by viewport height as well, so a section fits short screens */
+.pw-mol .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+.pw-mol .eyebrow svg { width: 16px; height: 16px; }
+.pw-mol .eyebrow .n {
+  display: inline-grid;
+  place-items: center;
+  min-width: 30px;
+  height: 22px;
+  padding-inline: 6px;
+  border-radius: 999px;
+  background: var(--brand-gradient);
+  color: #fff;
+  letter-spacing: 0.04em;
+}
+.pw-mol .dark .eyebrow { color: var(--mint); }
+.pw-mol .title {
+  margin-top: clamp(8px, 1.4vh, 14px);
+  font-weight: 750;
+  font-size: clamp(28px, min(3.6vw, 5.6vh), 56px);
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+.pw-mol .lede {
+  margin-top: clamp(10px, 1.8vh, 18px);
+  max-width: 62ch;
+  font-size: clamp(15.5px, min(1.2vw, 2.1vh), 18px);
+  line-height: 1.55;
+  color: var(--muted);
+}
+.pw-mol .dark .lede { color: rgba(236, 246, 255, 0.92); }
+.pw-mol .grad { background: var(--brand-gradient); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.pw-mol .dark .grad { background-image: var(--bright-gradient); }
+
+/* ── Buttons (48px targets) */
+.pw-mol .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: clamp(16px, 3vh, 30px); }
+.pw-mol .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 12px 22px;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 650;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.pw-mol .btn svg { width: 18px; height: 18px; flex: none; }
+.pw-mol .btn--primary { background: var(--brand-button); color: #fff; box-shadow: 0 12px 26px -12px rgba(20, 102, 184, 0.75); }
+.pw-mol .btn--primary:hover { background: var(--brand-button-hover); transform: translateY(-1px); }
+.pw-mol .btn--ghost { border: 1.5px solid rgba(7, 26, 44, 0.22); background: #fff; color: var(--ink); }
+.pw-mol .btn--ghost:hover { border-color: var(--accent); color: var(--accent-ink); }
+/* On the dark sections: a white primary is the sharpest thing on the screen. */
+.pw-mol .dark .btn--primary { background: #fff; color: #0b3b66; box-shadow: 0 14px 30px -14px rgba(0, 0, 0, 0.6); }
+.pw-mol .dark .btn--primary:hover { background: #e8f4ff; }
+.pw-mol .dark .btn--ghost { border-color: rgba(255, 255, 255, 0.45); background: rgba(255, 255, 255, 0.06); color: #fff; }
+.pw-mol .dark .btn--ghost:hover { border-color: #fff; background: rgba(255, 255, 255, 0.12); color: #fff; }
+.pw-mol .link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: clamp(6px, 1.4vh, 14px);
+  font-weight: 650;
+  color: var(--accent-ink);
+}
+.pw-mol .dark .link { color: #fff; }
+.pw-mol .link svg { width: 18px; height: 18px; transition: transform 0.2s ease; }
+.pw-mol .link:hover svg { transform: translateX(3px); }
+.pw-mol .dark :focus-visible { outline-color: #fff; }
+
+/* ── Reveal on scroll */
+.pw-mol .reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s ease, transform 0.8s cubic-bezier(0.2, 0.8, 0.15, 1);
+}
+.pw-mol .in .reveal { opacity: 1; transform: none; }
+.pw-mol .in .reveal.d1 { transition-delay: 0.06s; }
+.pw-mol .in .reveal.d2 { transition-delay: 0.12s; }
+.pw-mol .in .reveal.d3 { transition-delay: 0.18s; }
+
+/* ── Two columns: stage | copy, full width */
+.pw-mol .split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(28px, 5vw, 96px);
+}
+.pw-mol .flip .stage { order: 2; }
+
+/* ── Stage: the apparatus, a spotlight, and the dock the molecule parks on */
+.pw-mol .stage {
+  position: relative;
+  width: min(100%, 64svh, 620px);
+  aspect-ratio: 1 / 1;
+  margin-inline: auto;
+}
+.pw-mol .stage::before {
+  content: "";
+  position: absolute;
+  inset: 4%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(28, 123, 217, 0.2), rgba(33, 182, 122, 0.1) 55%, transparent 72%);
+}
+.pw-mol .dark .stage::before { background: radial-gradient(closest-side, rgba(92, 179, 255, 0.28), rgba(79, 240, 176, 0.1) 55%, transparent 72%); }
+.pw-mol .stage .art {
+  position: absolute;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 24px 30px rgba(7, 40, 80, 0.25));
+}
+.pw-mol .dark .stage .art { filter: drop-shadow(0 30px 40px rgba(0, 8, 24, 0.55)); }
+.pw-mol .stage .ghost {
+  position: absolute;
+  font-weight: 800;
+  font-size: min(36svh, 16vw, 240px);
+  line-height: 0.8;
+  letter-spacing: -0.06em;
+  color: rgba(28, 123, 217, 0.12);
+  user-select: none;
+}
+.pw-mol .dark .stage .ghost { color: rgba(255, 255, 255, 0.1); }
+/* The molecule's parking spot. Invisible; flight.ts reads its box every frame. */
+.pw-mol .dock { position: absolute; pointer-events: none; }
+
+/* ── Cards: 2×2 on wide screens, a swipe rail on phones */
+.pw-mol .cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(8px, 1.4vh, 14px);
+  max-width: 760px;
+  margin-top: clamp(14px, 2.8vh, 28px);
+}
+.pw-mol .card {
+  display: block;
+  padding: clamp(12px, 1.9vh, 18px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgba(7, 26, 44, 0.05), 0 8px 20px -16px rgba(7, 26, 44, 0.3);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+.pw-mol a.card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 14px 28px -16px rgba(7, 26, 44, 0.4); }
+.pw-mol .card .top { display: flex; align-items: center; gap: 12px; }
+.pw-mol .card .icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: var(--brand-gradient);
+  color: #fff;
+}
+.pw-mol .card .icon svg { width: 19px; height: 19px; }
+.pw-mol .card .tag { display: block; font-size: 11.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--accent-ink); }
+.pw-mol .card h3 { font-size: 16px; font-weight: 700; line-height: 1.25; }
+.pw-mol .card p { margin-top: 8px; font-size: 14.5px; line-height: 1.45; color: var(--muted); }
+.pw-mol .dark .card { background: rgba(255, 255, 255, 0.07); border-color: rgba(255, 255, 255, 0.18); box-shadow: none; }
+.pw-mol .dark a.card:hover { border-color: rgba(255, 255, 255, 0.55); background: rgba(255, 255, 255, 0.12); }
+.pw-mol .dark .card .tag { color: var(--mint); }
+.pw-mol .dark .card p { color: rgba(236, 246, 255, 0.86); }
+
+/* ── Hero (dark) */
+/* Under the visible header: one screen minus the header's in-flow spacer, no header
+   padding, and a snap point at the very top of the page. */
+.pw-mol .hero { min-height: calc(100vh - var(--hdr0, 64px)); min-height: calc(100svh - var(--hdr0, 64px)); scroll-margin-top: var(--hdr0, 64px); }
+.pw-mol .hero .wrap { padding-top: clamp(16px, 4vh, 48px); }
+.pw-mol .hero .split { grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr); }
+.pw-mol .hero h1 {
+  margin-top: clamp(10px, 1.8vh, 18px);
+  font-weight: 800;
+  font-size: clamp(40px, min(5.4vw, 9vh), 92px);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+}
+.pw-mol .hero h1 .line { display: block; overflow: hidden; padding-bottom: 0.06em; }
+.pw-mol .hero h1 .line > span { display: inline-block; transform: translateY(110%); text-wrap: balance; }
+.pw-mol.loaded .hero h1 .line > span { animation: pw-mol-rise 1s cubic-bezier(0.2, 0.8, 0.15, 1) forwards; }
+.pw-mol .hero h1 .line:nth-child(2) > span { animation-delay: 0.1s; }
+@keyframes pw-mol-rise { to { transform: translateY(0); } }
+.pw-mol .hero .fade { opacity: 0; }
+.pw-mol.loaded .hero .fade { animation: pw-mol-fade 0.8s ease forwards; }
+.pw-mol.loaded .hero .fade.d1 { animation-delay: 0.35s; }
+.pw-mol.loaded .hero .fade.d2 { animation-delay: 0.5s; }
+.pw-mol.loaded .hero .fade.d3 { animation-delay: 0.65s; }
+@keyframes pw-mol-fade { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.pw-mol .stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  max-width: 680px;
+  margin-top: clamp(18px, 3.6vh, 38px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+.pw-mol .stats div { padding: clamp(10px, 1.6vh, 16px) 16px; }
+.pw-mol .stats div + div { border-left: 1px solid rgba(255, 255, 255, 0.16); }
+.pw-mol .stats strong { display: block; font-size: clamp(22px, min(2.2vw, 3.6vh), 32px); font-weight: 800; letter-spacing: -0.02em; background: var(--bright-gradient); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.pw-mol .stats span { display: block; margin-top: 2px; font-size: 13px; line-height: 1.3; color: rgba(236, 246, 255, 0.85); }
+.pw-mol .hero .stage .art--glassware { width: 54%; left: 2%; bottom: 2%; }
+.pw-mol .hero .stage .dock { right: 0; top: 10%; width: 64%; height: 44%; }
+
+/* ── Light sections: white ground with a brand tint, crisp cards */
+.pw-mol .light { background: linear-gradient(180deg, #ffffff 0%, var(--ground) 100%); }
+
+.pw-mol .s1 .stage .art--balance { width: 88%; left: 0; bottom: 6%; }
+.pw-mol .s1 .stage .ghost { right: 0; top: 0; }
+.pw-mol .s1 .stage .dock { right: 0; top: 2%; width: 58%; height: 38%; }
+
+.pw-mol .s2 .stage .art--microscope { width: 62%; right: 4%; bottom: 2%; }
+.pw-mol .s2 .stage .ghost { left: 0; top: 0; }
+.pw-mol .s2 .stage .dock { left: 0; top: 4%; width: 52%; height: 34%; }
+
+.pw-mol .s3 .stage .art--femur { width: 38%; left: 10%; top: 6%; transform: rotate(-8deg); }
+.pw-mol .s3 .stage .ghost { right: 0; bottom: 2%; }
+.pw-mol .s3 .stage .dock { right: 0; top: 16%; width: 56%; height: 40%; }
+
+/* ── App (dark, full width) */
+.pw-mol .app { background:
+    radial-gradient(50% 70% at 80% 30%, rgba(79, 240, 176, 0.32), transparent 62%),
+    radial-gradient(60% 80% at 10% 90%, rgba(28, 123, 217, 0.5), transparent 60%),
+    linear-gradient(rgba(4, 16, 34, 0.6), rgba(4, 16, 34, 0.6)),
+    linear-gradient(240deg, #1c7bd9 0%, #21b67a 100%);
+}
+.pw-mol .app ul { display: grid; gap: clamp(10px, 1.8vh, 16px); max-width: 560px; margin: clamp(16px, 3vh, 28px) 0 0; padding: 0; list-style: none; }
+/* globals.css paints every li gray-700 with a bottom margin; undo it here. */
+.pw-mol .app li { display: flex; gap: 14px; align-items: flex-start; margin: 0; padding: 0; color: #fff; }
+.pw-mol .app li::before { content: none; }
+.pw-mol .app li .icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.pw-mol .app li .icon svg { width: 20px; height: 20px; }
+.pw-mol .app li strong { display: block; font-size: 16.5px; font-weight: 700; }
+.pw-mol .app li span { display: block; margin-top: 2px; font-size: 15px; line-height: 1.45; color: rgba(236, 246, 255, 0.86); }
+.pw-mol .app .actions { align-items: center; gap: 12px 18px; }
+.pw-mol .app .note { font-size: 13.5px; color: rgba(236, 246, 255, 0.8); }
+.pw-mol .phones { position: relative; width: min(100%, 560px); height: min(62svh, 560px); margin-inline: auto; }
+.pw-mol .phone {
+  position: absolute;
+  height: 92%;
+  aspect-ratio: 390 / 844;
+  padding: 7px;
+  border-radius: 34px;
+  background: #06182a;
+  box-shadow: 0 34px 70px -24px rgba(0, 6, 18, 0.75), inset 0 0 0 1.5px rgba(255, 255, 255, 0.16);
+}
+.pw-mol .phone img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; border-radius: 27px; }
+.pw-mol .phone--back { right: 8%; top: 0; transform: rotate(6deg); }
+.pw-mol .phone--front { left: 8%; bottom: 0; transform: rotate(-4deg); }
+.pw-mol .phones .dock { left: 30%; top: 32%; width: 44%; height: 28%; }
+
+/* ── Close (light): five doors, each with its own still */
+.pw-mol .close .wrap { text-align: center; }
+.pw-mol .close .title { font-size: clamp(34px, min(4.6vw, 7vh), 64px); }
+.pw-mol .close .lede { margin-inline: auto; }
+.pw-mol .close .dock { position: relative; display: block; width: min(260px, 60vw); height: clamp(70px, 13vh, 140px); margin: 0 auto clamp(4px, 1.2vh, 12px); }
+.pw-mol .doors {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: clamp(10px, 1.2vw, 18px);
+  margin-top: clamp(18px, 3.6vh, 40px);
+  text-align: left;
+}
+.pw-mol .door {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgba(7, 26, 44, 0.05), 0 12px 26px -18px rgba(7, 26, 44, 0.35);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+.pw-mol .door:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 18px 34px -18px rgba(7, 26, 44, 0.45); }
+.pw-mol .door .art-box {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: clamp(110px, 21vh, 220px);
+  overflow: hidden;
+  background:
+    radial-gradient(60% 70% at 50% 65%, rgba(28, 123, 217, 0.2), transparent 72%),
+    linear-gradient(180deg, #f4f9fd 0%, #e2eef7 100%);
+}
+.pw-mol .door .art-box img {
+  width: auto;
+  height: auto;
+  max-width: 78%;
+  max-height: 86%;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 16px rgba(7, 40, 80, 0.28));
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.15, 1);
+}
+.pw-mol .door:hover .art-box img { transform: translateY(-4px) scale(1.04); }
+/* The app door: the real home screen rising out of a brand panel. */
+.pw-mol .door--app .art-box { background: var(--deep); place-items: end center; }
+.pw-mol .door--app .art-box img {
+  max-width: none;
+  max-height: none;
+  width: 58%;
+  border-radius: 14px 14px 0 0;
+  border: 3px solid #06182a;
+  border-bottom: 0;
+  filter: drop-shadow(0 -6px 18px rgba(0, 0, 0, 0.35));
+  transform: translateY(18%);
+}
+.pw-mol .door--app:hover .art-box img { transform: translateY(12%); }
+.pw-mol .door .txt { display: block; padding: 12px 14px 14px; }
+.pw-mol .door strong { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 16.5px; font-weight: 700; }
+.pw-mol .door strong svg { width: 18px; height: 18px; color: var(--accent-ink); transition: transform 0.2s ease; }
+.pw-mol .door:hover strong svg { transform: translateX(3px); }
+.pw-mol .door .txt > span { display: block; margin-top: 3px; font-size: 14px; line-height: 1.4; color: var(--muted); }
+.pw-mol .quick {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: clamp(14px, 2.6vh, 26px);
+}
+.pw-mol .quick a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 14.5px;
+  font-weight: 600;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.pw-mol .quick a:hover { border-color: var(--accent); color: var(--accent-ink); }
+
+/* ── Badge: names the molecule that is flying (fixed, bottom-right) */
+.pw-mol .badge {
+  position: fixed;
+  z-index: 30;
+  right: var(--gutter);
+  bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 7px 13px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  /* A solid pill, not a blurred one: no backdrop-filter on anything fixed (rule 16). */
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 6px 16px rgba(7, 26, 44, 0.14);
+  font-size: 13px;
+  font-weight: 500;
+  color: #22384d;
+  transition: color 0.4s ease, background 0.4s ease, border-color 0.4s ease;
+}
+.pw-mol .badge b { font-weight: 700; color: var(--accent-ink); transition: color 0.4s ease; }
+.pw-mol .badge svg { width: 17px; height: 17px; }
+.pw-mol .badge:hover b { text-decoration: underline; }
+.pw-mol.on-dark .badge { color: #fff; background: rgba(4, 16, 34, 0.72); border-color: rgba(255, 255, 255, 0.2); }
+.pw-mol.on-dark .badge b { color: var(--mint); }
+
+/* ── Tablets */
+@media (max-width: 1100px) {
+  .pw-mol .doors { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pw-mol .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pw-mol .stats div:nth-child(3) { border-left: 0; }
+  .pw-mol .stats div:nth-child(n + 3) { border-top: 1px solid rgba(255, 255, 255, 0.16); }
+}
+
+/* ── Phones: one column, the stage on top, cards in a swipe rail — still one screen */
+@media (max-width: 760px) {
+  .pw-mol .wrap { padding-top: calc(var(--hdr, 60px) + 8px); padding-bottom: 18px; }
+  .pw-mol .hero .wrap { padding-top: 12px; }
+  .pw-mol .split,
+  .pw-mol .hero .split { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .pw-mol .flip .stage { order: 0; }
+  .pw-mol .stage { width: min(100%, 360px); aspect-ratio: auto; height: 26svh; }
+  .pw-mol .hero .stage { order: -1; height: 22svh; }
+  .pw-mol .stage .ghost { font-size: 22svh; }
+  .pw-mol .hero .stage .art--glassware { width: auto; height: 100%; left: 0; bottom: 0; }
+  .pw-mol .hero .stage .dock { right: 0; top: 4%; width: 66%; height: 80%; }
+  .pw-mol .s1 .stage .art--balance { width: auto; height: 96%; left: 0; bottom: 0; }
+  .pw-mol .s1 .stage .dock { right: 0; top: 0; width: 56%; height: 70%; }
+  .pw-mol .s2 .stage .art--microscope { width: auto; height: 100%; right: 0; bottom: 0; }
+  .pw-mol .s2 .stage .dock { left: 0; top: 10%; width: 58%; height: 70%; }
+  .pw-mol .s3 .stage .art--femur { width: auto; height: 96%; left: 10%; top: 2%; }
+  .pw-mol .s3 .stage .dock { right: 0; top: 10%; width: 62%; height: 72%; }
+  .pw-mol .hero h1 { font-size: clamp(36px, min(10.5vw, 6.4svh), 52px); }
+  .pw-mol .hero .actions .btn { flex: 1 1 0; padding-inline: 10px; font-size: 15px; }
+  .pw-mol .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .pw-mol .stats div { padding: 9px 8px; }
+  .pw-mol .stats div:nth-child(3) { border-left: 1px solid rgba(255, 255, 255, 0.16); }
+  .pw-mol .stats div:nth-child(n + 3) { border-top: 0; }
+  .pw-mol .stats span { font-size: 11.5px; }
+  .pw-mol .cards {
+    display: flex;
+    gap: 10px;
+    margin-inline: calc(-1 * var(--gutter));
+    padding: 2px var(--gutter) 6px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--gutter);
+    scrollbar-width: none;
+  }
+  .pw-mol .cards::-webkit-scrollbar { display: none; }
+  .pw-mol .card { flex: 0 0 78%; scroll-snap-align: start; }
+  .pw-mol .app li span { display: none; }
+  .pw-mol .app li .icon { width: 34px; height: 34px; }
+  .pw-mol .app li { align-items: center; }
+  .pw-mol .phones { order: -1; height: 30svh; }
+  .pw-mol .app .actions .btn { flex: 1 1 100%; }
+  .pw-mol .doors {
+    display: flex;
+    gap: 10px;
+    margin-inline: calc(-1 * var(--gutter));
+    padding: 2px var(--gutter) 6px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--gutter);
+    scrollbar-width: none;
+  }
+  .pw-mol .doors::-webkit-scrollbar { display: none; }
+  .pw-mol .door { flex: 0 0 56%; scroll-snap-align: start; }
+  .pw-mol .door .art-box { height: 18svh; }
+  .pw-mol .quick a { min-height: 44px; }
+  /* A fixed pill over a 390px column covers the copy under it, so phones skip it. */
+  .pw-mol .badge { display: none; }
+}
+
+/* ── Short phones (e.g. 360×740): the same layout, trimmed to stay one screen */
+@media (max-width: 760px) and (max-height: 800px) {
+  .pw-mol .stage { height: 19svh; }
+  .pw-mol .hero .stage { height: 16svh; }
+  .pw-mol .phones { height: 21svh; }
+  /* At this size a 34px corner turns the phone frames into pills. */
+  .pw-mol .phone { padding: 4px; border-radius: 16px; }
+  .pw-mol .phone img { border-radius: 12px; }
+  .pw-mol .lede { font-size: 14.5px; line-height: 1.5; }
+  .pw-mol .title { font-size: 26px; }
+  .pw-mol .hero h1 { font-size: 36px; }
+  .pw-mol .card { padding: 11px 12px; }
+  .pw-mol .card p { margin-top: 6px; font-size: 14px; }
+  .pw-mol .app ul { gap: 8px; margin-top: 12px; }
+  .pw-mol .actions { margin-top: 14px; }
+  .pw-mol .stats { margin-top: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.pw-mol-snap { scroll-behavior: auto; }
+  .pw-mol .hero h1 .line > span { transform: none; animation: none !important; }
+  .pw-mol .hero .fade { opacity: 1; animation: none !important; }
+  .pw-mol .reveal { opacity: 1; transform: none; transition: none; }
+  .pw-mol .mol-canvas { transition: none; }
+  .pw-mol .btn, .pw-mol .card { transition: none; }
+}

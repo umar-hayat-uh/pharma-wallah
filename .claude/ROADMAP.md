@@ -263,6 +263,11 @@ pages, confirm progress tracking records a visit, then batch the rest.
   deploy + phone check; owner decision on the syrup start water (45 mL + 2 mL rinse leaves nothing to make up);
   server-side replay verification of completed runs (scores are labelled practice); possible further experiments
   per lab — **not in this release** (the test pins the catalogue at four).
+- **Target set 2026-10-25 (owner's standard, `.claude/skills/pharmawallah-virtual-labs/`)** — all ⬜ Not started:
+  split room (`DisciplineId`) from experiment id + one registry-driven route (existing URLs kept); schema fields for
+  prerequisites, waste disposal, references, assumptions, `procedureStatus`; **three shortlisted experiments per lab
+  — blocked: the owner's shortlist is not recorded**; the other three rooms on Babylon.js; one shared robotic tutor
+  built on `suggest()`/hints/feedback.
 - **Important files:** `src/lib/virtual-labs/`, `src/components/virtual-labs/`, `src/app/(site)/virtual-labs/`,
   `public/models/virtual-labs/`, `scripts/virtual-labs.test.mts`.
 - **Dependencies:** none new (`three` already installed). Assets: Poly Haven CC0, one Wikimedia Commons CC BY-SA 4.0 photo.

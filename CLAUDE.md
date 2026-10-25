@@ -75,6 +75,7 @@ node --test scripts/battle-royale.test.mts                             # 23 unit
 node --test scripts/stability-kinetics.test.mts                        # 26 unit tests, Drug Stability Kinetics
 node --test scripts/virtual-labs.test.mts                              # 65 unit tests, Virtual Labs (engine, equipment gate/bypass, modes, science, 4 scripted runs, manifest)
 node --test scripts/osteology.test.mts                                 # 17 unit tests, Osteology Lab (content, assets, questions, token)
+node --test scripts/pharmaceutics-lab.test.mts                         # 9 unit tests, Pharmaceutics lab science + RoboPharma sync
 node scripts/build-molecule-library.mts   # regenerate the Molecular Lab library from PubChem (network)
 ```
 
@@ -525,6 +526,12 @@ These are conventions **observed in the code**, not aspirations.
 - `de13a36 optimized-sci-fair-tournament` / `6626383 snake-game` — tournament hardening and games.
 
 ### In Progress
+- **Next home page, in preview (2026-10-25)**: `/home-preview` (noindexed) — the molecule landing (owner's reference
+  brief, rebuilt in our brand after review). **Waiting for the owner's approval to replace "The Index" at `/`.** Not yet
+  built with `npm run build`, so "three.js stays out of the shared chunks" is unproven for this page.
+- **Virtual Labs standard (2026-10-25)**: `.claude/skills/pharmawallah-virtual-labs/` sets the target (3 shortlisted
+  experiments per lab, Babylon for all four rooms, a shared robotic tutor). **Blocked on the owner's shortlist**, which is
+  not recorded anywhere yet.
 - **AdSense**: plumbing done, ad-unit IDs outstanding (Phase 4.6).
 - **Calculator refinement standard (2026-09-22)**: the user's 25-section brief is written up as
   `.claude/skills/calculator-refinement/SKILL.md`. **No calculator has been refined yet** — the
@@ -758,6 +765,121 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 
 > Newest first. Never paste source code here. Archive entries older than ~10 into
 > `.claude/history/YYYY-MM.md`.
+
+### 2026-10-25 — Next home page in preview: the molecule landing (`/home-preview`)
+
+Owner: rebuild the home page after a pasted reference brief ("Melli": a 3D bee flown between full-screen sections)
+in our own brand; choices (asked): a drug molecule, our own 3D apparatus as imagery, preview route first. Then, after
+seeing it: use `ui-ux-pro-max`, remove the leaderboard, add text, add an app-download section, "not sharp, too spacey".
+
+**Completed** — `src/components/Home/molecule-landing/` + `src/app/(site)/home-preview/` (noindexed via
+`indexing.ts`). Paracetamol (Molecular Lab library, CID 1983) as a ball-and-stick, conformer precomputed by
+`scripts/home/build-home-molecule.mts` with the lab's own `generateConformer` (no OpenChemLib at runtime, rule 18);
+three.js loaded by dynamic `import()` after first paint, skipped without WebGL, one still frame per scroll under
+reduced motion. It docks on each section's `.dock` box and flies between them (MEMORY 250). Sections: hero (lede,
+two CTAs, four counted stats), 01 Calculators (4 subjects counted server-side from `HUB_SUBJECTS`; Clinical not
+featured while Known Issue 15 is open), 02 Virtual Labs (brand surface, the 4 experiments), 03 Osteology, Android app
+(real screens of `mobile/out`, phone frames, links to `/download`), close. Battle Royale podium removed from this page
+only. Imagery is our own: Virtual Labs builders (flask cluster, analytical balance, microscope) and the osteology
+femur rendered transparent by `scripts/home/render-apparatus.mjs` at 3×; app screens by `capture-app-screens.mjs`.
+
+**Architecture & Decisions** — The reference's CloudFront assets were not used (someone else's, unknown licence).
+Poppins → Outfit, violet → brand surface, Melli nav/badge/loader dropped (the site header stays; a loader would delay
+the home page). `ui-ux-pro-max`'s design system (Claymorphism, Comic Neue) rejected; its UX rules applied (16px body
+on phones, 60ch lines, 44px+ targets, 4.5:1). Copy claims checked against the repo; "units convert", "every bone on
+the syllabus" and "everything is free" were cut as unverifiable. The badge is hidden on phones (it covered copy).
+
+**Verification** — `npx tsc --noEmit`: 0 errors in these files (the remaining errors are a peer session's
+in-progress `virtual-labs/benches/pharmaceutics/` and stale `.next/types` stubs). `curl /home-preview` → 200,
+`noindex, follow`, copy in the server HTML. Headless Chrome (SwiftShader) on the running dev server at 1440×900,
+390×844 and 360×740 (touch): molecule loads, 6 sections, 0 console errors, 0 horizontal overflow; screenshots read
+and fixed in four rounds. **NOT run:** `npm run build` (the user's dev server shares `.next`, Known Issue 10), so
+bundle size and chunk isolation are unmeasured; no real phone/GPU/Safari; lint not configured.
+
+**Round 2 (same day, owner: "dull, stretched, why a container, fit the viewport, snap, a bit darker", then "fix
+Begin anywhere, add assets")** — full-bleed (no max-width container, no rounded app panel); every section exactly
+one screen with mandatory scroll-snap scoped to this page (`html.pw-mol-snap`, MEMORY 253); hero, 02 and the app on
+a deeper brand surface (gradient under a 0.6 navy scrim + brand glows; white primary buttons), light sections white
+with crisp cards; type sized by viewport height so 1366×768 fits; phones use swipe rails for cards. The close is now
+five image "doors" (balance, microscope, femur, glassware, the app's home screen) plus quick links. Measured with
+headless Chrome: section heights = viewport at 1440×900 (900, hero 824), 1366×768 (768-based) and 390×844 (844,
+hero 780); 0 overflow, 0 console errors.
+
+**Next** — owner reviews `/home-preview`; on approval, build in an isolated copy, grep shared chunks for three.js,
+then render `MoleculeLanding` from `src/app/page.tsx` and delete the preview route.
+
+### 2026-10-25 — `ui-ux-pro-max` skill installed (third-party)
+
+User: install https://github.com/nextlevelbuilder/ui-ux-pro-max-skill "for the ui skill".
+
+**Completed** — `.claude/skills/ui-ux-pro-max/` (MIT, upstream `d14efff`, 3.3 MB): `SKILL.md`, CSV/JSON data,
+`references/`, four Python scripts, upstream `LICENSE`. Installed by hand rather than the global `uipro` npm CLI or
+`/plugin`: same layout as `uipro init --ai claude`, with the 11 `${CLAUDE_PLUGIN_ROOT}` script paths rewritten to the
+project-relative path the CLI writes, and upstream's `scripts/tests/` left out. A marked "PharmaWallah overrides"
+block in its `SKILL.md` subordinates its style/palette/GSAP picks to our brand, Outfit, motion and no-black rules
+(its first suggestion for us was "Flat Design" + a "Contact Sales" CTA). Indexed in `.claude/SKILLS.md`.
+
+**Verification** — read `SKILL.md` and grepped every script: stdlib only, no network, no subprocess; the only write is
+the opt-in `--persist` (`design-system/<slug>/MASTER.md`). Ran `--design-system` and `--stack nextjs` searches →
+results printed, no files written. Not run: tsc/build (no app code changed). Python 3.12.3 is the only prerequisite.
+
+**Next** — none required; updating means re-copying the folder and re-applying the path rewrite + override block.
+
+### 2026-10-25 (later) — Pharmaceutics lab: science core + RoboPharma; no shadows; home intro removed
+
+Owner's "complete Pharmaceutics lab upgrade" brief with a 15-minute limit, plus three requests made mid-task.
+**Only a slice of the brief is done** (see Remaining).
+
+**Completed**
+- `src/lib/virtual-labs/calculations/pharmaceutics.ts`: pure, unit-explicit, NaN for invalid input. Covers mass
+  concentration, % w/v, molarity, C1V1 (refuses to concentrate), serial dilution, density, SG, pycnometer, Ostwald
+  relative viscosity, capillary rise (absolute and relative), gravimetric solubility, USP descriptive terms, and
+  cumulative % dissolved with and without volume replacement. Water constants are cited (CRC/Kell, IAPWS).
+- **RoboPharma** (owner's reference image, original SVG in brand colours, not traced: the reference is a stock
+  image of unknown licence). `lib/virtual-labs/tutor.ts` derives every line from the run: the latest mistake or
+  refusal first, then the step and `suggest()`'s instrument in Learning; the step only in Practical, where hints
+  cost marks as before. `tutor/TutorPanel.tsx` is a collapsible bottom-right card (the joystick is bottom-left)
+  that follows the insets. Mounted for `pharmaceutics` only (`TUTOR_LABS`), so it shows on Simple Syrup today.
+- **No shadow maps on any tier, in either engine** (owner: "no shadows"). The Babylon room drew a soft white patch on
+  the dark bench around the apparatus on a phone (MEMORY 249).
+- **Home "What PharmaWallah is" section removed** (owner). `HomeIntro.tsx` deleted, and the `intro` slot is gone from
+  `LandingPage`. It was the AdSense phase-4 server-rendered home text, so the home page is thinner for review.
+
+**Verification** — `npx tsc --noEmit` 0 errors. `pharmaceutics-lab` 9/0 and `virtual-labs` 65/0. RoboPharma
+rendered to static SVG and screenshotted in four moods (read). **NOT run:** `npm run build`. **NOT checked in a
+browser:** the panel inside the lab, the shadow fix on a phone, the home page. Lint not configured.
+
+**Remaining (the brief)** — the three experiment definitions, controllers and benches; the room's Babylon migration
+and new apparatus (viscometer, pycnometer, capillary, dissolution bath, cabinets, sink, waste); a fume hood only if a
+procedure needs it; splitting the room from the experiment id (MEMORY 248); the Simple Syrup decision; assets.
+
+### 2026-10-25 — `pharmawallah-virtual-labs` skill (the owner's virtual-lab standard)
+
+"Follow protocol. create this skill" + the owner's skill text (four rooms, Babylon.js, registration schema, robotic
+tutor, real equipment, scientific integrity, licences, testing, three shortlisted experiments per lab).
+
+**Completed** — `.claude/skills/pharmawallah-virtual-labs/`: `BRIEF.md` (verbatim) and `SKILL.md` (the brief
+reconciled with the code). The skill maps the brief's lab ids onto the existing `DisciplineId` and has a gap table
+from a read of the code. Met already: equipment-driven experiments, Learning/Practical, quality tiers,
+the licence manifest. Missing: experiments are keyed by experiment, not room; one static page per experiment;
+three rooms still on three.js; schema has no prerequisites, waste disposal, references or procedure status; no
+tutor. The skill also gives procedures (A) add an experiment, (B) migrate a room, (C) a tutor built on
+`suggest()`/hints/feedback with AI allowed only to rephrase reviewed text, and (D) integrity. `virtual-labs` skill
+updated to point at it: Babylon is now the target for all four rooms, "exactly four" stands until the shortlist exists.
+
+**Files** — new: the two skill files. Edited: `.claude/skills/virtual-labs/SKILL.md`, `.claude/SKILLS.md`,
+`.claude/ROADMAP.md` (target items, all ⬜), `.claude/MEMORY.md` (248), this file.
+
+**Architecture & Decisions** — Kept `virtual-labs` (the how-to) and added the standard beside it rather than merging
+them, as with `calculator-refinement`/`reel-ads`. Proposed a separate `procedureStatus` instead of overloading
+`CurriculumStatus` (syllabus presence ≠ method verified). **The approved shortlist is not in the repo**, so the skill
+forbids inventing one and asks for it.
+
+**Verification** — Documentation only. No code changed, so tsc, the tests and the build were not re-run. The new skill
+appears in the session's skill list (it is discovered).
+
+**Next** — owner: send the shortlist (12 titles; do the four existing experiments count toward their lab's three?).
+Then Procedure A step 1: split the room from the experiment id.
 
 ### 2026-10-22 — Pharmaceutical Chemistry virtual lab migrated to Babylon.js (one lab only)
 
@@ -1064,96 +1186,9 @@ clinical audit, SEO/domains, crawls and the reports.
 commit both sessions' work as one unit, deploy, resubmit the sitemap.
 
 
-### 2026-10-11 — ad-07 "Dose Calculation + Animal Dose Dilution" reel
-
-"follow protocol. use the skill" + the owner's 40-second, five-scene brief for two calculators.
-
-**Completed** (all outside the repo, `~/personal/pharmawallah-marketing/video/ad-07/`)
-- **Tools, mapped from the brief's names**: "Dose Calculation" → Animal Weight-Based Dose Calculator,
-  "Animal Dose Dilution" → Serial Dose Calculator (both Pharmacology, one workflow). Headlines keep the brief's
-  words; every on-screen tool name is the real one.
-- `ad-07.mp4` (with music) and `ad-07-no-music.mp4`, 40 s. Hook: handwritten dose working → beat drop → the phone.
-  Dose: real keystrokes, result card floats out (empty → 0.0143 → **0.1786 mg**), scroll to the Working.
-  The card swells into a ring that opens on a 2.5 → 0.25 → 0.09 mg/mL tube graphic. Dilution: real keystrokes,
-  result + stat tiles, the dilution formula, the bench plan, "Into the syringe" in green. Then two phones joined
-  by an energy line with the names cut on the beat, and a white end card with the app home, GET THE
-  PHARMAWALLAH APP NOW (4.4 s on screen) and the footer.
-- `capture.mjs` types each tool's **own defaults** over CDP into the app export, one frame per keystroke.
-  `crop.py` cuts the cards; `cues.json` drives the original tech-style music.
-
-**Figures** — from the real pure modules (`_animal.ts`, `_math.ts`) in Node, re-derived in Python, and asserted
-on the captured pages: 500 mg / 70 kg → 25 g → 0.1786 mg (178.57 µg, 7.143 mg/kg), 0.1786 mL at 1.0 mg/mL;
-Carprofen 25 mg in 10 mL → 2.5 → 0.25 → 0.09 mg/mL, 0.1 mL = 0.009 mg (9 µg), 1:27.778×, within ±5%.
-
-**Architecture & Decisions**
-- Brief overrides per the skill: brand `#1C7BD9`/`#21B67A` (not `#2563EB`/`#4ADE80`), Outfit, no black ground
-  (navy only as a scrim), CTA says **Android** (`pharmawallah.com/download`). Built on the kit, not Remotion
-  (no new dependency). The brief's 40 s kept, over the skill's 18–24 s guideline, because the owner asked for it.
-- Animal Dose scales linearly and its own page says it is for following the method: the ad claims no accuracy,
-  labels the values "illustrative · the calculator's own default values", and carries "follow your approved
-  protocol". No animal imagery.
-- Supporting text reads "Animal Weight-Based Dose + Serial Dose", not the brief's labels, so a student can find
-  the tools.
-
-**Verification**
-- Stills at every cut and mid-beat, read; fixed: clipped "?" glyphs, a sheen escaping the logo tile, near-empty
-  frames before the iris, a headline ghost under scene 3. Capture defects found and fixed: smooth scroll and
-  beyond-viewport clipping (MEMORY 197).
-- `ffprobe`: h264 1080×1920 30/1, 40.0 s (+ aac on the music file); `ebur128` −14.0 LUFS; spectrogram shows the
-  groove through the CTA. Seven frames pulled from the MP4 and read. **The music was never listened to** (no
-  audio output here). Not seen inside Instagram/TikTok or on a phone. No repo code changed: tsc/build not re-run.
-
-**Next** — the owner reviews ad-07 (post `-no-music` if using in-app audio).
-
-### 2026-10-11 — ad-06 Biopharmaceutics calculators reel
-
-"Follow protocol, use the skill" + the owner's "Biopharmaceutics Calculators Promotional Reel" brief (six scenes,
-30–40 s, real interfaces, verified tools only, voice-over, sound design, thumbnail, README).
-
-**Completed** (all outside the repo, `~/personal/pharmawallah-marketing/video/ad-06/`)
-- 36 s, 1080×1920, 30 fps, six beats on the brief's storyboard: formula hook on a deep-navy (scrimmed gradient)
-  ground with the real Half-Life screen assembling from flying strips → logo + six real result/graph cards →
-  "Enter your data / Calculate with ease / Visualize your results / Explore more" over real keystrokes in
-  Half-Life (Cl & Vd), Bioavailability and Clearance, the first- vs zero-order plot drawing itself, then the
-  category list and all 14 hub tool names → the Dialysis Membrane practical typed, Calculate tapped, R² and k
-  popping, scrolled to its real ln(1 − B) graph → "Built for pharmacy students" with pharmacy line icons →
-  white end card (logo, "YOUR CALCULATIONS. SIMPLIFIED.", Explore Biopharmaceutics Calculators,
-  PHARMAWALLAH.COM, "Visit now. Start exploring.", Free / No sign-up / Also in the Android app), 4.5 s.
-- `capture.mjs` drives the app export (`mobile/out`) and records what each tool printed in `marks.json`;
-  `crop.py` makes the card crops; `cues.json` → original tech-style bed (−14.1 LUFS);
-  `VOICEOVER.md` + `voiceover.srt` (timed, **not recorded** — no TTS here); `README.md`; `cover.png`.
-
-**Figures** — each printed by the real calculator and re-derived independently: t½ = 0.693 × 100 ÷ 8.66 =
-8.00 h; F = (72/100) ÷ (100/100) = 72.0 %; CL = 500 ÷ 125 = 4.000 L/h; first/zero-order on the tool's defaults;
-Dialysis sheet (the tool's own "Minutes, C1 = 1000 µg/mL" example) slope −0.01496 min⁻¹, intercept −0.000999,
-R² 0.9997, k 0.01496 min⁻¹ = 0.0002494 s⁻¹ (Python least squares, same inputs).
-
-**Architecture & Decisions**
-- Brief overrides per the skill: brand `#1C7BD9`/`#21B67A` (not `#2563EB`/`#4ADE80`), Outfit, no black ground
-  (the "dark" scenes are the navy-scrimmed gradient); kit, not Remotion (no new dependency).
-- **Only fault-free paths are demonstrated** (MEMORY 196): AUC Estimator, Bioequivalence, Loading and
-  Maintenance Dose appear as names only. Half-Life is shown via Cl & Vd — the kₑ route would have flashed a red
-  validation error mid-typing, and its concentration method has a recorded fault.
-- **No count on screen**: the app's category view says 16, the web hub lists 14.
-- 36 s rather than the skill's 18–24 s: the brief asked for 30–40 s explicitly.
-- Taken as `ad-06` because session `pharma-wallah-e0` created `ad-05` the same minute (agreed by message).
-
-**Verification**
-- Stills read at every beat and around every cut (3.95/4.15, 8.95/9.15, 19.4/19.62, 26.95/27.2, 31.45/31.75);
-  they caught "MEET PHARMAWALLAH" wrapping over its subtitle and a card (fixed) and the kₑ error flash (method changed).
-- Full render: `ad-06.mp4` (h264 1080×1920 30/1 + aac) and `ad-06-no-music.mp4`, both 36.0 s (`ffprobe`); eight frames
-  pulled from the MP4 and read; `cover.png` = the end card at 35 s. **Each file is 116 MB (~26 Mbps)** — the kit's
-  full-frame film grain, scaled by the camera every frame, is uncompressible: the grain-free white end card is
-  1.2 MB per 4 s vs 11–19 MB elsewhere. Owner asked about the grain; removing it for ad-06 is the fix if wanted.
-- Music checked by spectrogram (groove runs to ~35 s, no silent CTA) and `ebur128` (−14.1 LUFS). **Never listened to**
-  — no audio output here. Not verified: inside the Instagram/TikTok UI, on a real phone. No repo code changed:
-  `tsc`/build not affected and not re-run.
-
-**Next** — the owner reviews ad-06, records the voice-over from `VOICEOVER.md`, and posts it.
-
 ---
 
-> Older entries are in `.claude/history/2026-10.md`: 2026-10-11 (ad-05 offline reel), 2026-10-10 (`reel-ads` skill + ad-04), 2026-10-08 (calculator guide, APK v1.5, ad videos), 2026-10-08 (Drug Stability Kinetics Calculator); and `.claude/history/2026-09.md`: 2026-09-30 (Battle Royale names/certificates/ranking), 2026-09-29 (Battle Royale podium, certificates, close button), 2026-09-27 (Battle Royale v1/v2), 2026-09-23/24 (ads per page, lesson files), 2026-09-23 (AdSense quality pass), 2026-09-22 (iOS target, Windows desktop target), 2026-09-22 (Dissolution Rate Constant Calculator, calculator-refinement skill), 2026-09-20 (brand kit), 2026-09-13/20 (pharmacy counter, calculator migration finish, disk diffusion, AI Guide, encyclopedia, community, Molecular Lab, about-us, TLC/colony, APK v1.1–1.3), 2026-09-13 (six analytical-practical calculators, calculation-tools hub rebuild, loading screen, dashboard rebuild, header app CTA +
+> Older entries are in `.claude/history/2026-10.md`: 2026-10-11 (ad-07 dose + dilution reel), 2026-10-11 (ad-06 Biopharmaceutics reel), 2026-10-11 (ad-05 offline reel), 2026-10-10 (`reel-ads` skill + ad-04), 2026-10-08 (calculator guide, APK v1.5, ad videos), 2026-10-08 (Drug Stability Kinetics Calculator); and `.claude/history/2026-09.md`: 2026-09-30 (Battle Royale names/certificates/ranking), 2026-09-29 (Battle Royale podium, certificates, close button), 2026-09-27 (Battle Royale v1/v2), 2026-09-23/24 (ads per page, lesson files), 2026-09-23 (AdSense quality pass), 2026-09-22 (iOS target, Windows desktop target), 2026-09-22 (Dissolution Rate Constant Calculator, calculator-refinement skill), 2026-09-20 (brand kit), 2026-09-13/20 (pharmacy counter, calculator migration finish, disk diffusion, AI Guide, encyclopedia, community, Molecular Lab, about-us, TLC/colony, APK v1.1–1.3), 2026-09-13 (six analytical-practical calculators, calculation-tools hub rebuild, loading screen, dashboard rebuild, header app CTA +
 > Master Formula, auth pages, redesign Phase 0, top-design landing page, eight laboratory tools) and
 > 2026-09-12 (ADME landing page, AdSense, Outfit, PWA removal, APK distribution, Android app,
 > bootstrap).

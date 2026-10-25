@@ -18,7 +18,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type ComponentType } from "react";
 import { usePathname } from "next/navigation";
-import type { LabId } from "@/lib/virtual-labs/catalog";
+import type { ExperimentId } from "@/lib/virtual-labs/catalog";
 import type { ControllerDef, ExperimentDefinition, LabMode } from "@/lib/virtual-labs/engine/types";
 import { controllerForEquipment, createRun, currentStepId, finalReport, reduceRun, stepsDone, HINT_CAP, HINT_COST, type Run, type RunAction } from "@/lib/virtual-labs/engine/machine";
 import { defaultQuality, markCompleted, markStarted, saveQuality, type QualityPref } from "@/lib/virtual-labs/progress";
@@ -31,6 +31,8 @@ import { Assessment } from "./interface/Assessment";
 import { LabResults } from "./interface/LabResults";
 import { ControlGuide, Dialog, FeedbackLine, InteractionPrompt, TouchPad } from "./interface/Overlays";
 import { ControllerDock, InfoCard, NextPrompt, TopBar } from "./interface/LabChrome";
+import { TutorPanel } from "./tutor/TutorPanel";
+import { tutorMessage } from "@/lib/virtual-labs/tutor";
 import { ControlProvider } from "./interface/controls";
 import { Btn } from "./interface/ui";
 import type { BenchProps } from "./benches/types";
@@ -46,7 +48,7 @@ type DialogId = "help" | "menu" | "notebook" | "exit" | null;
 export const QUALITY_LABEL: Record<QualityPref, string> = { low: "Low", medium: "Balanced", high: "High" };
 
 export interface LabExperienceProps<S, A> {
-  labId: LabId;
+  labId: ExperimentId;
   def: ExperimentDefinition<S, A>;
   /** Controller id → its panel. One per `def.controllers` entry. */
   controls: Record<string, ComponentType<BenchProps<S, A>>>;
@@ -85,6 +87,9 @@ function exitFullscreen() {
     /* already out */
   }
 }
+
+/** Labs whose lab phase shows RoboPharma (tutor/TutorPanel.tsx). */
+const TUTOR_LABS: ReadonlySet<string> = new Set(["pharmaceutics"]);
 
 export function LabExperience<S, A>({ labId, def, controls, visual }: LabExperienceProps<S, A>) {
   const pathname = usePathname();
@@ -493,6 +498,18 @@ export function LabExperience<S, A>({ labId, def, controls, visual }: LabExperie
         <div className="pointer-events-none absolute inset-x-2 bottom-3 z-20 flex justify-center lg:inset-x-auto lg:right-3" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
           <InfoCard name={info.name} use={info.use} spec={info.spec} safety={info.safety} onClose={() => { setInfoId(null); focus(null); }} />
         </div>
+      )}
+
+      {/* RoboPharma — Pharmaceutics only for now (owner's brief, 2026-10-25); widen TUTOR_LABS to share it */}
+      {TUTOR_LABS.has(def.meta.discipline) && !info && (
+        <TutorPanel
+          msg={tutorMessage(def, run, run.actions === 0)}
+          bottom={insets.bottom}
+          right={insets.right}
+          reducedMotion={reducedMotion}
+          onShow={showMe}
+          onHint={(s) => dispatch({ type: "hint", stepId: s })}
+        />
       )}
 
       {/* walking pad on touch screens, whenever no instrument is in hand */}

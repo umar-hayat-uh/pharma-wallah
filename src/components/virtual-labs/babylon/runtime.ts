@@ -57,6 +57,8 @@ export type EnginePreference = "auto" | "webgl" | "webgpu";
 
 export interface BabylonRuntimeOptions {
   quality: Quality;
+  /** The experiment the room is set up for (a room serves every experiment registered in it). */
+  experiment?: string;
   reducedMotion: boolean;
   engine?: EnginePreference;
   onHover?: (id: string | null) => void;
@@ -225,7 +227,7 @@ export class BabylonLabRuntime {
     const mats = createMats(scene, q);
     this.kit = new Kit(scene, q, mats);
     try {
-      this.room = build({ scene, kit: this.kit, quality: q });
+      this.room = build({ scene, kit: this.kit, quality: q, experiment: this.opts.experiment ?? "" });
     } catch (e) {
       this.opts.onError?.(`The laboratory could not be built (${e instanceof Error ? e.message : "unknown error"}).`);
       throw e;
@@ -312,8 +314,8 @@ export class BabylonLabRuntime {
 
   private setupShadows(q: Quality) {
     const size = QUALITY[q].shadow;
+    if (!size) return; // no shadow map at all — not even receivers (quality.ts)
     for (const m of this.scene.meshes) m.receiveShadows = true;
-    if (!size) return;
     const sg = new ShadowGenerator(size, this.key);
     sg.usePercentageCloserFiltering = true;
     sg.filteringQuality = q === "high" ? ShadowGenerator.QUALITY_MEDIUM : ShadowGenerator.QUALITY_LOW;

@@ -8,19 +8,24 @@
  * Commands arrive as props with a counter (`n`), because next/dynamic does not forward
  * refs (MEMORY gotcha 220).
  *
- * Pharmaceutical Chemistry (acid-base-titration) runs on Babylon.js since 2026-10-22 — the
- * one lab migrated (docs/virtual-labs/BABYLON_MIGRATION.md); the other three stay on
- * three.js. Babylon is loaded only for that lab. `?engine=three` opens the original
- * three.js room (comparison and rollback); `?engine=webgl` / `?engine=webgpu` force
- * Babylon's engine. Both runtimes expose the same methods, so nothing else can tell.
+ * Two rooms run on Babylon.js: Pharmaceutical Chemistry (since 2026-10-22) and
+ * Pharmaceutics (since 2026-10-25, one room for Simple Syrup and the three shortlisted
+ * experiments) — docs/virtual-labs/BABYLON_MIGRATION.md. Pharmacology and Pharmacognosy
+ * stay on three.js. Babylon is loaded only for a Babylon room. `?engine=three` opens the
+ * original three.js room (comparison and rollback); `?engine=webgl` / `?engine=webgpu`
+ * force Babylon's engine. Both runtimes expose the same methods, so nothing else can tell.
  */
 import { useEffect, useRef } from "react";
-import type { LabId } from "@/lib/virtual-labs/catalog";
+import { roomOf, type ExperimentId } from "@/lib/virtual-labs/catalog";
+import type { DisciplineId } from "@/lib/virtual-labs/engine/types";
 import { LabRuntime, type RuntimeStats } from "./three/runtime";
 import type { BuildContext, Insets, Quality, RoomBuild } from "./three/types";
 import type { MaterialLib } from "./three/materials";
 
 type Builder = (m: MaterialLib, ctx: BuildContext) => RoomBuild;
+// The Babylon builder type lives in the lazy chunk; only its shape is named here.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type BRoomBuilderLike = (ctx: any) => any;
 
 /** What Viewport drives — LabRuntime (three.js) and BabylonLabRuntime both provide it. */
 interface RuntimeLike {
@@ -39,18 +44,25 @@ interface RuntimeLike {
   dispose(): void;
 }
 
-/** Labs whose room is drawn by Babylon.js rather than three.js. */
-const BABYLON_LABS: ReadonlySet<LabId> = new Set<LabId>(["acid-base-titration"]);
+/**
+ * Rooms are keyed by DISCIPLINE (one room per lab), never by experiment: the room builds
+ * itself for `experiment` (MEMORY 248). A room listed in BABYLON_ROOMS is drawn by
+ * Babylon.js; the three.js loader stays as the `?engine=three` rollback.
+ */
+const BABYLON_ROOMS: Partial<Record<DisciplineId, () => Promise<BRoomBuilderLike>>> = {
+  "pharmaceutical-chemistry": () => import("./babylon/chemistry").then((x) => x.buildChemistry as BRoomBuilderLike),
+  pharmaceutics: () => import("./babylon/pharmaceutics").then((x) => x.buildPharmaceutics as BRoomBuilderLike),
+};
 
-const ROOMS: Record<LabId, () => Promise<Builder>> = {
-  "acid-base-titration": () => import("./three/rooms/chemistry").then((x) => x.buildChemistry),
-  "simple-syrup": () => import("./three/rooms/pharmaceutics").then((x) => x.buildPharmaceutics),
-  "dose-response": () => import("./three/rooms/pharmacology").then((x) => x.buildPharmacology),
-  "powdered-clove": () => import("./three/rooms/pharmacognosy").then((x) => x.buildPharmacognosy),
+const ROOMS: Record<DisciplineId, () => Promise<Builder>> = {
+  "pharmaceutical-chemistry": () => import("./three/rooms/chemistry").then((x) => x.buildChemistry),
+  pharmaceutics: () => import("./three/rooms/pharmaceutics").then((x) => x.buildPharmaceutics),
+  pharmacology: () => import("./three/rooms/pharmacology").then((x) => x.buildPharmacology),
+  pharmacognosy: () => import("./three/rooms/pharmacognosy").then((x) => x.buildPharmacognosy),
 };
 
 export interface ViewportProps {
-  labId: LabId;
+  labId: ExperimentId;
   quality: Quality;
   reducedMotion: boolean;
   visual: unknown;
@@ -108,12 +120,14 @@ export default function Viewport(p: ViewportProps) {
       window.__vlab = { stats: () => runtime.stats(), measure: (ms) => runtime.measure(ms), focus: (id) => (id ? runtime.focusOn(id) : runtime.exitFocus()), reset: () => runtime.resetView(true), where: (id) => runtime.where(id), moving: () => runtime.moving() };
     };
     const engineParam = new URLSearchParams(window.location.search).get("engine");
-    if (BABYLON_LABS.has(p.labId) && engineParam !== "three") {
+    const room = roomOf(p.labId);
+    const babylonRoom = BABYLON_ROOMS[room];
+    if (babylonRoom && engineParam !== "three") {
       let pending: { dispose(): void } | null = null;
-      Promise.all([import("./babylon/runtime"), import("./babylon/chemistry")])
-        .then(async ([{ BabylonLabRuntime }, { buildChemistry }]) => {
+      Promise.all([import("./babylon/runtime"), babylonRoom()])
+        .then(async ([{ BabylonLabRuntime }, build]) => {
           if (cancelled) return;
-          const runtime = await BabylonLabRuntime.create(el, buildChemistry, { ...callbacks, engine: engineParam === "webgpu" || engineParam === "webgl" ? engineParam : "auto" });
+          const runtime = await BabylonLabRuntime.create(el, build, { ...callbacks, experiment: p.labId, engine: engineParam === "webgpu" || engineParam === "webgl" ? engineParam : "auto" });
           pending = runtime;
           if (cancelled) return runtime.dispose();
           attach(runtime);
@@ -131,11 +145,11 @@ export default function Viewport(p: ViewportProps) {
         delete window.__vlab;
       };
     }
-    ROOMS[p.labId]()
+    ROOMS[room]()
       .then((build) => {
         if (cancelled) return;
         try {
-          attach(new LabRuntime(el, build, callbacks));
+          attach(new LabRuntime(el, build, { ...callbacks, experiment: p.labId }));
         } catch (e) {
           cb.current.onError(e instanceof Error && /WebGL/i.test(e.message) ? "This browser could not start 3D graphics (WebGL)." : "The 3D laboratory could not start on this device.");
         }

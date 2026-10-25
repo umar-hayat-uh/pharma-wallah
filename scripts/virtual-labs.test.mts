@@ -15,8 +15,10 @@ import { register } from "node:module";
 
 register("./lib/ts-resolve.mjs", import.meta.url);
 
-const { LAB_IDS, LAB_LIST, LABS, labByPath } = await import("../src/lib/virtual-labs/catalog.ts");
+const { EXPERIMENT_IDS, ROOM_IDS, LAB_LIST, LABS, labByPath } = await import("../src/lib/virtual-labs/catalog.ts");
 const { EXPERIMENTS } = await import("../src/lib/virtual-labs/experiments/index.ts");
+// Experiments with a registered definition (the registry must cover the whole catalogue — tested below).
+const LAB_IDS = EXPERIMENT_IDS.filter((id: string) => EXPERIMENTS[id]);
 const M = await import("../src/lib/virtual-labs/engine/machine.ts");
 const T = await import("../src/lib/virtual-labs/calculations/titration.ts");
 const S = await import("../src/lib/virtual-labs/calculations/syrup.ts");
@@ -69,12 +71,26 @@ function answerAll(d: ReturnType<typeof driver>, def: any) {
 
 // ── Catalogue ──────────────────────────────────────────────────────────────
 
-test("exactly four labs and exactly four experiment definitions, one per lab", () => {
-  assert.equal(LAB_IDS.length, 4);
-  assert.equal(LAB_LIST.length, 4);
-  assert.deepEqual(Object.keys(EXPERIMENTS).sort(), [...LAB_IDS].sort());
-  assert.deepEqual(new Set(LAB_LIST.map((l: any) => l.discipline)), new Set(["pharmaceutical-chemistry", "pharmaceutics", "pharmacology", "pharmacognosy"]));
+test("exactly four rooms; the catalogue is exactly the shortlist; every experiment has one existing room", () => {
+  assert.deepEqual([...ROOM_IDS].sort(), ["pharmaceutical-chemistry", "pharmaceutics", "pharmacognosy", "pharmacology"]);
+  // The owner's Pharmaceutics shortlist (2026-10-25) plus Simple Syrup (kept, decision pending),
+  // and one experiment in each other room. A new id here needs the owner's shortlist.
+  const byRoom: Record<string, string[]> = {};
+  for (const l of LAB_LIST) (byRoom[l.discipline] ??= []).push(l.id);
+  assert.deepEqual(byRoom, {
+    "pharmaceutical-chemistry": ["acid-base-titration"],
+    pharmaceutics: ["solution-preparation", "liquid-properties", "solubility-dissolution", "simple-syrup"],
+    pharmacology: ["dose-response"],
+    pharmacognosy: ["powdered-clove"],
+  });
+  assert.equal(new Set(EXPERIMENT_IDS).size, EXPERIMENT_IDS.length, "duplicate experiment id");
+  for (const id of Object.keys(EXPERIMENTS)) assert.ok((EXPERIMENT_IDS as readonly string[]).includes(id), `registered but not catalogued: ${id}`);
   for (const id of LAB_IDS) assert.equal(EXPERIMENTS[id].meta, LABS[id]);
+  for (const l of LAB_LIST) assert.ok(l.course && l.seo.title && l.seo.description && l.image, `${l.id} catalogue fields`);
+});
+
+test("every catalogued experiment has a registered definition", () => {
+  assert.deepEqual([...LAB_IDS], [...EXPERIMENT_IDS]);
 });
 
 test("lab routes resolve and unknown paths do not", () => {
@@ -1227,10 +1243,12 @@ test("asset manifest: every shipped file exists with the recorded size", async (
     const vp = read(VL + "Viewport.tsx");
     assert.match(vp, /import\(\s*["']\.\/babylon\/runtime["']\s*\)/);
     assert.match(vp, /import\(\s*["']\.\/babylon\/chemistry["']\s*\)/);
-    const m = vp.match(/BABYLON_LABS[^=]*=\s*new Set[^(]*\(\s*\[([^\]]*)\]\s*\)/);
-    assert.ok(m, "BABYLON_LABS not found in Viewport.tsx");
-    const labs = [...m[1].matchAll(/["']([^"']+)["']/g)].map((x) => x[1]);
-    assert.deepEqual(labs, ["acid-base-titration"]);
+    const m = vp.match(/BABYLON_ROOMS:[^\n]*>\s*=\s*\{([\s\S]*?)\n\};/);
+    assert.ok(m, "BABYLON_ROOMS not found in Viewport.tsx");
+    const rooms = [...m[1].matchAll(/^\s*"?([a-z-]+)"?\s*:/gm)].map((x) => x[1]);
+    // Rooms drawn by Babylon. Pharmaceutics joins when its Babylon room lands (2026-10-25 brief).
+    assert.ok(rooms.includes("pharmaceutical-chemistry"), `BABYLON_ROOMS: ${rooms}`);
+    for (const r of rooms) assert.ok(["pharmaceutical-chemistry", "pharmaceutics"].includes(r), `unexpected Babylon room ${r}`);
   });
 
   test("babylon migration: shared modules import no engine; @babylonjs/core is pinned exactly", () => {

@@ -55,6 +55,8 @@ export interface RoomBuild {
 
 export interface BuildContext {
   quality: Quality;
+  /** Experiment id the room is set up for. */
+  experiment: string;
   /** Anisotropy the renderer supports (capped by quality). */
   anisotropy: number;
   /** Load a texture from /public, resolving to null on failure (rooms fall back to procedural). */

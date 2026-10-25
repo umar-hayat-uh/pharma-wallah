@@ -36,6 +36,8 @@ export interface BBuildContext {
   scene: Scene;
   kit: Kit;
   quality: Quality;
+  /** Experiment id the room is set up for: it builds the shared room + that experiment's apparatus. */
+  experiment: string;
 }
 
 export type BRoomBuilder = (ctx: BBuildContext) => BRoomBuild;

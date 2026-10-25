@@ -1582,6 +1582,33 @@ Traps that will otherwise be rediscovered painfully.
 247. **Babylon WebGPU never touches the CDN:** the GLSL→WGSL tools load lazily, only for a shader with no WGSL
    version, and the runtime hands `glslang`/`twgsl` a never-resolving promise, so such a shader stays not-ready,
    the 15 s timeout fires and the room rebuilds on WebGL 2. WebGPU is tried only on High or `?engine=webgpu`.
+248. **Virtual Labs `LabId` is the EXPERIMENT id, not the room** (`catalog.ts`: `acid-base-titration`, …). The owner's
+   four-lab architecture (2026-10-25 standard) is `DisciplineId` in `engine/types.ts`. `ROOMS`/`BABYLON_LABS`,
+   `CURRICULUM`, `labs/<X>Lab.tsx` and the four static pages are all keyed by experiment, which holds only while each
+   lab has one experiment. Split the two before adding a second experiment to any lab, and keep the old ids:
+   `pw-vlabs:v1` progress and `trackQuiz` `virtual-lab:<id>` are stored under them. Also: `CurriculumStatus` says
+   whether a practical is *in a syllabus*, not whether its *method* is verified. Those are separate fields.
+
+249. **No shadow maps in the Virtual Labs (2026-10-25, owner).** `QUALITY[*].shadow` is 0 on every tier and both
+   runtimes skip shadow maps when it is 0. The Babylon chemistry room's caster-fitted directional shadow drew a
+   soft white patch on the dark bench around the apparatus on a phone (Balanced tier). Raise it only with a real
+   phone check.
+250. **The home-preview molecule docks on DOM boxes, not screen coordinates (2026-10-25).** A fixed-position
+   keyframe list (the owner's reference brief) only works when every section is exactly 100vh; once sections are
+   content-height it lands on text. `flight.ts` reads each section's `.dock` box every frame and flies between them,
+   so layout stays in CSS. Move a dock in `molecule-landing.css`, never add per-breakpoint flight paths.
+251. **`ui-ux-pro-max --design-system` is tuned for generic products: for "education" it returns Claymorphism,
+   indigo/orange and Comic Neue (children's apps).** Use its `--domain ux` / `landing` / `--stack nextjs` searches;
+   ignore its style/palette/font picks (the override block at the top of its SKILL.md says so).
+252. **Headless-Chrome checks against a running `next dev` can fail right after an edit**: the page loads while the
+   route recompiles, the lazy `import()` fails and is swallowed, and the run reports "molecule not ready" or a
+   `SyntaxError`. Request the page once (curl) and re-run before treating it as a bug.
+253. **The site header slides away on scroll-down past 600px and back on scroll-up** (`Header/index.tsx`,
+   `retracted`), on top of shrinking 76→64 / 64→60px past 60px. Anything that sizes "one screen below the header"
+   is wrong half the time: the home-preview sections are a full 100svh, reserve the header's height as top
+   padding, and use no `scroll-padding-top` (only the hero subtracts the in-flow spacer). `html.pw-mol-snap`
+   turns mandatory scroll-snap on for that page alone; the site `<footer>` gets `scroll-snap-align: end` or it
+   becomes unreachable.
 
 ## 9. Working preferences (observed)
 
