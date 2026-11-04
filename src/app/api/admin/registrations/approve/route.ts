@@ -1,6 +1,7 @@
 import { createServerSupabaseClient, createServiceSupabaseClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 
+import { serviceGate } from "@/lib/service-gate";
 const ADMIN_EMAILS = ["shayanhusein@gmail.com"];
 
 const GAMES_MAP: Record<string, string[]> = {
@@ -25,6 +26,9 @@ function generateCode(): string {
 }
 
 export async function POST(request: Request) {
+    const off = serviceGate("supabase", "supabaseAdmin");
+    if (off) return off;
+
     const userSupabase = await createServerSupabaseClient();
     const { data: { user }, error: authError } = await userSupabase.auth.getUser();
     if (authError || !user || !ADMIN_EMAILS.includes(user.email ?? "")) {

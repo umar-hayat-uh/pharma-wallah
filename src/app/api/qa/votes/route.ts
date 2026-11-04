@@ -1,11 +1,15 @@
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 
+import { serviceGate } from "@/lib/service-gate";
 function errorResponse(message: string, status: number) {
     return NextResponse.json({ error: message }, { status });
 }
 
 export async function POST(req: Request) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
     const supabase = await createServerSupabaseClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -74,6 +78,9 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
     const supabase = await createServerSupabaseClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {

@@ -6,6 +6,7 @@ import { formatSlot } from "@/lib/battle-royale/format";
 import { readResult } from "@/lib/battle-royale/result";
 import type { StatusPayload } from "@/lib/battle-royale/types";
 
+import { serviceGate } from "@/lib/service-gate";
 /*
  * "Where am I?" for a participant: registered → payment approved → code
  * issued → played → result. Needs the Player ID AND the registered email: the
@@ -13,6 +14,9 @@ import type { StatusPayload } from "@/lib/battle-royale/types";
  * (the desk hands it over) or any contact detail.
  */
 export async function POST(req: Request) {
+    const off = serviceGate("supabaseAdmin");
+    if (off) return off;
+
   const { success } = await checkLimit(brCredentialLimiter, clientIpFrom(req.headers));
   if (!success) return errorResponse("Too many lookups from this connection. Please wait a few minutes.", 429);
 

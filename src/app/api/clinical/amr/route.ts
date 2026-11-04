@@ -13,9 +13,13 @@ import {
   AMRFilterOptions,
 } from '@/types/amr';
 
+import { serviceGate } from "@/lib/service-gate";
 export const revalidate = 600; // Cache for 10 minutes
 
 export async function GET(request: NextRequest) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
   try {
     const { searchParams } = new URL(request.url);
     const view = searchParams.get('view') || 'records';

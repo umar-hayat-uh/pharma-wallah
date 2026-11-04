@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { dbConnect } from "@/lib/mongodb";
 import Comment from "@/lib/models/Comment";
 
+import { serviceGate } from "@/lib/service-gate";
 // ---------- simple rate limiter (unchanged) ----------
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const LIMIT = 5;
@@ -23,6 +24,9 @@ function isRateLimited(userId: string): boolean {
 
 // ---------- GET /api/comments ----------
 export async function GET(req: NextRequest) {
+    const off = serviceGate("supabase", "mongo");
+    if (off) return off;
+
   const url = new URL(req.url);
   const unitId = url.searchParams.get("unit");
   const page = parseInt(url.searchParams.get("page") || "0");
@@ -46,6 +50,9 @@ export async function GET(req: NextRequest) {
 
 // ---------- POST /api/comments ----------
 export async function POST(req: NextRequest) {
+    const off = serviceGate("supabase", "mongo");
+    if (off) return off;
+
   // 1. Create a Supabase server client using the App Router cookies
   const cookieStore = cookies();
   const supabase = createServerClient(

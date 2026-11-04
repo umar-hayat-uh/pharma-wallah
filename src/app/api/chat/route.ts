@@ -12,6 +12,7 @@ import {
   toGeminiHistory,
 } from "@/lib/ai-guide/pure";
 
+import { serviceGate } from "@/lib/service-gate";
 /**
  * The AI Guide's chat endpoint.
  *
@@ -73,10 +74,8 @@ function errorResponse(message: string, status: number) {
 }
 
 export async function POST(req: Request) {
-  if (!process.env.GEMINI_API_KEY) {
-    console.error("GEMINI_API_KEY is not set");
-    return errorResponse("Server configuration error. API key missing.", 500);
-  }
+    const off = serviceGate("gemini");
+    if (off) return off;
 
   let body: unknown;
   try {
@@ -122,7 +121,7 @@ export async function POST(req: Request) {
   const latest = conversation[conversation.length - 1].content;
 
   try {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
       systemInstruction: buildSystemPrompt(mode),

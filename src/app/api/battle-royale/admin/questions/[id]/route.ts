@@ -5,6 +5,7 @@ import { firstIssue, questionSchema } from "@/lib/battle-royale/schemas";
 import { toQuestionRow } from "@/lib/battle-royale/questions";
 import { db, engineErrorResponse, errorResponse, readJson } from "@/lib/battle-royale/server";
 
+import { serviceGate } from "@/lib/service-gate";
 type Ctx = { params: { id: string } };
 const idSchema = z.string().uuid();
 
@@ -16,6 +17,9 @@ const idSchema = z.string().uuid();
  * refuses it.
  */
 export async function PATCH(req: Request, { params }: Ctx) {
+    const off = serviceGate("supabase", "supabaseAdmin");
+    if (off) return off;
+
   const guard = await adminGuard("admin");
   if (guard.response) return guard.response;
   if (!idSchema.safeParse(params.id).success) return errorResponse("Question not found.", 404);
@@ -52,6 +56,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
 /** Deletes a question nobody has drawn; retires (deactivates) one that has been. */
 export async function DELETE(_req: Request, { params }: Ctx) {
+    const off = serviceGate("supabase", "supabaseAdmin");
+    if (off) return off;
+
   const guard = await adminGuard("admin");
   if (guard.response) return guard.response;
   if (!idSchema.safeParse(params.id).success) return errorResponse("Question not found.", 404);

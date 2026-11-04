@@ -4,7 +4,10 @@ import { Resend } from "resend";
 import { checkLimit, contactLimiter } from "@/lib/rateLimit";
 import { clientIpFrom } from "@/lib/ai-guide/pure";
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
+import { serviceGate } from "@/lib/service-gate";
+// Created per request, after serviceGate("resend") (2026-11-04): `new Resend()`
+// throws without a key, and at module scope that broke `next build` itself.
+const getResend = () => new Resend(process.env.RESEND_API_KEY!);
 const RECIPIENT_EMAIL = "shayanhusein@gmail.com";
 
 /*
@@ -42,6 +45,9 @@ function escapeHtml(value: string): string {
 }
 
 export async function POST(req: Request) {
+    const off = serviceGate("resend");
+    if (off) return off;
+
   const { success } = await checkLimit(contactLimiter, clientIpFrom(req.headers));
   if (!success) {
     return errorResponse("Too many messages from this connection. Please try again in a few minutes.", 429);
@@ -72,7 +78,7 @@ export async function POST(req: Request) {
   const message = escapeHtml(rawMessage);
 
   try {
-    const { error: sendError } = await resend.emails.send({
+    const { error: sendError } = await getResend().emails.send({
       from: "PharmaWallah Contact <noreply@pharmawallah.com>",  
       to: [RECIPIENT_EMAIL],
       replyTo: rawEmail,

@@ -9,10 +9,14 @@ import {
   errorResponse,
 } from "@/lib/battle-royale/server";
 
+import { serviceGate } from "@/lib/service-gate";
 export const dynamic = "force-dynamic";
 
 /** The battle on this device, with any expired timer applied first. */
 export async function GET(req: Request) {
+    const off = serviceGate("supabaseAdmin");
+    if (off) return off;
+
   const hash = attemptHashFrom(req);
   if (!hash) return NextResponse.json({ state: null });
 
@@ -37,6 +41,9 @@ export async function GET(req: Request) {
 
 /** "Finish" on the results screen: forget this device's battle for the next player. */
 export async function DELETE() {
+    const off = serviceGate("supabaseAdmin");
+    if (off) return off;
+
   const res = NextResponse.json({ ok: true });
   clearAttemptCookie(res);
   return res;

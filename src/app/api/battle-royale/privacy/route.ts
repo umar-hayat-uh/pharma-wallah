@@ -4,6 +4,7 @@ import { firstIssue, leaderboardPrivacySchema } from "@/lib/battle-royale/schema
 import { clientIpFrom, db, errorResponse, GENERIC_ERROR, readJson } from "@/lib/battle-royale/server";
 import { invalidateLeaderboard } from "@/lib/battle-royale/leaderboard";
 
+import { serviceGate } from "@/lib/service-gate";
 /*
  * A player hides (or shows) their name on the public board (2026-10-13). Same
  * proof as the status lookup — Player ID AND the registered email — because
@@ -13,6 +14,9 @@ import { invalidateLeaderboard } from "@/lib/battle-royale/leaderboard";
  * it, this answers 503 and says so rather than pretending to have saved.
  */
 export async function POST(req: Request) {
+    const off = serviceGate("supabaseAdmin");
+    if (off) return off;
+
   const { success } = await checkLimit(brCredentialLimiter, clientIpFrom(req.headers));
   if (!success) return errorResponse("Too many attempts from this connection. Please wait a few minutes.", 429);
 

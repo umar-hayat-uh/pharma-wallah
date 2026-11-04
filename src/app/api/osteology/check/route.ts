@@ -6,10 +6,14 @@ import { NextResponse } from "next/server";
 import { errorResponse, limited, paperFor, readJson } from "@/lib/osteology/server";
 import { verifySession } from "@/lib/osteology/token";
 
+import { serviceGate } from "@/lib/service-gate";
 /** A practice token stays usable for a long study session, not forever. */
 const PRACTICE_TTL_SECONDS = 12 * 60 * 60;
 
 export async function POST(req: Request) {
+    const off = serviceGate("supabaseAdmin");
+    if (off) return off;
+
   const blocked = await limited(req);
   if (blocked) return blocked;
 

@@ -26,10 +26,12 @@ export async function GET(req: NextRequest) {
 
     const queryKey = `finder:${query.toLowerCase()}`;
 
-    await connectDB();
+    // MongoDB is only a cache here: without it (no key, or down) the lookup
+    // still runs live, it just isn't remembered (caches fail open, CLAUDE.md §6 rule 7).
+    const cacheReady = await connectDB().then(() => true, () => false);
 
     // Check cache
-    const cached = await DrugFinderCache.findOne({ queryKey });
+    const cached = cacheReady ? await DrugFinderCache.findOne({ queryKey }).catch(() => null) : null;
     if (cached) {
         return NextResponse.json({ source: "cache", found: true, result: cached });
     }
@@ -99,7 +101,7 @@ export async function GET(req: NextRequest) {
     };
 
     // Save to cache
-    await DrugFinderCache.create(result);
+    if (cacheReady) await DrugFinderCache.create(result).catch((err) => console.error("[cache] write failed", err));
 
     return NextResponse.json({
         source: "live",

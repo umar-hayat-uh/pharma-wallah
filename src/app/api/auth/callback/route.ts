@@ -1,7 +1,11 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { serviceGate } from "@/lib/service-gate";
 export async function GET(request: NextRequest) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
   const next = requestUrl.searchParams.get('next') || '/dashboard';

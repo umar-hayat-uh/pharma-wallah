@@ -6,6 +6,7 @@ import { SETTINGS_TAG, db, engineErrorResponse, errorResponse, readJson, readSet
 import { sendBattleEmails } from "@/lib/battle-royale/email";
 import { invalidateLeaderboard } from "@/lib/battle-royale/leaderboard";
 
+import { serviceGate } from "@/lib/service-gate";
 /** The closed flag is a later column; say which SQL adds it rather than "something went wrong". */
 function closedFlagError(error: { message?: string }, where: string) {
   if (String(error.message ?? "").includes("event_closed")) {
@@ -24,6 +25,9 @@ const MAX_NOTIFY = 150;
  * the announcement.
  */
 export async function POST(req: Request) {
+    const off = serviceGate("supabase", "supabaseAdmin");
+    if (off) return off;
+
   const guard = await adminGuard("admin");
   if (guard.response) return guard.response;
 

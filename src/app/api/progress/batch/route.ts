@@ -9,9 +9,13 @@ import {
   type ProgressEventPayload,
 } from "@/lib/progress-server";
 
+import { serviceGate } from "@/lib/service-gate";
 const MAX_EVENTS_PER_BATCH = 25;
 
 export async function POST(req: Request) {
+    const off = serviceGate("supabase", "supabaseAdmin");
+    if (off) return off;
+
   const userSupabase = await createServerSupabaseClient();
   const { data: { user }, error: authError } = await userSupabase.auth.getUser();
   if (authError || !user) {

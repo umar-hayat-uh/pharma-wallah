@@ -35,6 +35,7 @@ import {
 } from "@/lib/community/server";
 import type { CommunityPost } from "@/lib/community/types";
 
+import { serviceGate } from "@/lib/service-gate";
 // The columns every feed row needs, plus the two embeds. Declared once so the
 // feed and the single-post route cannot drift apart.
 // The author relationship is named explicitly. community_posts reaches
@@ -54,6 +55,9 @@ const POST_SELECT = `
 const FEED_EXCERPT_LEN = 500;
 
 export async function GET(req: Request) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
     const supabase = await createServerSupabaseClient();
     const { searchParams } = new URL(req.url);
 
@@ -220,6 +224,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
     const supabase = await createServerSupabaseClient();
     const {
         data: { user },

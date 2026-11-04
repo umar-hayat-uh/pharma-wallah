@@ -3,6 +3,7 @@ import type { Document } from "mongodb";
 import clientPromise from "../../../../lib/mongodb";
 import { checkLimit, drugSearchLimiter } from "@/lib/rateLimit";
 
+import { serviceGate } from "@/lib/service-gate";
 export const dynamic = "force-dynamic"; // 👈 REQUIRED
 export const runtime = "nodejs";        // ✅ REQUIRED
 
@@ -54,6 +55,9 @@ function clampInt(raw: string | null, fallback: number, min: number, max: number
 }
 
 export async function GET(request: NextRequest) {
+    const off = serviceGate("drugDb");
+    if (off) return off;
+
   const { searchParams } = request.nextUrl;
   const q = (searchParams.get("q") ?? "").trim().slice(0, MAX_QUERY_LENGTH);
   const limit = clampInt(searchParams.get("limit"), 10, 1, MAX_LIMIT);

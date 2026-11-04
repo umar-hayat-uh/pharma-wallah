@@ -12,6 +12,7 @@ import {
   setAttemptCookie,
 } from "@/lib/battle-royale/server";
 
+import { serviceGate } from "@/lib/service-gate";
 /*
  * Enter the arena with the Game Code the desk issued. The code is consumed by
  * `br_start_attempt`; from then on the battle is identified only by the
@@ -22,6 +23,9 @@ import {
  * round. A re-issued code (station failure) resumes the same attempt.
  */
 export async function POST(req: Request) {
+    const off = serviceGate("supabaseAdmin");
+    if (off) return off;
+
   const { success } = await checkLimit(brCredentialLimiter, clientIpFrom(req.headers));
   if (!success) return errorResponse("Too many attempts from this station. Please wait a few minutes.", 429);
 

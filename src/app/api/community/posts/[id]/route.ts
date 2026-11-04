@@ -23,6 +23,7 @@ import {
 } from "@/lib/community/server";
 import type { CommunityPost } from "@/lib/community/types";
 
+import { serviceGate } from "@/lib/service-gate";
 // The author relationship is named explicitly. community_posts reaches
 // community_members two ways — the author FK and the community_saves join table —
 // so a bare `community_members!inner` is ambiguous and PostgREST rejects the
@@ -37,6 +38,9 @@ const POST_SELECT = `
 `;
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
     if (!isValidUUID(params.id)) return errorResponse("Post not found", 404);
 
     const supabase = await createServerSupabaseClient();
@@ -118,6 +122,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 }
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
     if (!isValidUUID(params.id)) return errorResponse("Post not found", 404);
 
     const supabase = await createServerSupabaseClient();
@@ -175,6 +182,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
     if (!isValidUUID(params.id)) return errorResponse("Post not found", 404);
 
     const supabase = await createServerSupabaseClient();

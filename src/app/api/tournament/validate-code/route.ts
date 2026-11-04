@@ -2,6 +2,7 @@ import { createServiceSupabaseClient } from "@/lib/supabase-server";
 import { redis, validateCodeLimiter, getClientIp, checkRateLimit } from "@/lib/tournament-redis";
 import { NextResponse } from "next/server";
 
+import { serviceGate } from "@/lib/service-gate";
 interface CachedCode {
     code: string;
     entry_type: string;
@@ -15,6 +16,9 @@ interface CachedCode {
 const CODE_CACHE_TTL = 300; // 5 min — codes are near-static once generated
 
 export async function GET(request: Request) {
+    const off = serviceGate("supabaseAdmin", "redis");
+    if (off) return off;
+
     const { searchParams } = new URL(request.url);
     const code = searchParams.get("code")?.trim().toUpperCase();
 

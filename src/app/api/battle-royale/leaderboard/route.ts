@@ -3,6 +3,7 @@ import { brLeaderboardLimiter, checkLimit } from "@/lib/rateLimit";
 import { clientIpFrom, errorResponse } from "@/lib/battle-royale/server";
 import { readLeaderboard } from "@/lib/battle-royale/leaderboard";
 
+import { serviceGate } from "@/lib/service-gate";
 const MAX_LIMIT = 100;
 
 /*
@@ -11,6 +12,9 @@ const MAX_LIMIT = 100;
  * full of phones poll this, and a few seconds of staleness is invisible.
  */
 export async function GET(req: Request) {
+    const off = serviceGate("supabaseAdmin");
+    if (off) return off;
+
   const { success } = await checkLimit(brLeaderboardLimiter, clientIpFrom(req.headers));
   if (!success) return errorResponse("Too many requests. The board refreshes on its own.", 429);
 

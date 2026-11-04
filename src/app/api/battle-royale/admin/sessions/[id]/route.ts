@@ -5,10 +5,14 @@ import { adminGuard } from "@/lib/battle-royale/admin";
 import { firstIssue, sessionSchema } from "@/lib/battle-royale/schemas";
 import { SESSIONS_TAG, db, engineErrorResponse, errorResponse, readJson } from "@/lib/battle-royale/server";
 
+import { serviceGate } from "@/lib/service-gate";
 type Ctx = { params: { id: string } };
 const idSchema = z.string().uuid();
 
 export async function PATCH(req: Request, { params }: Ctx) {
+    const off = serviceGate("supabase", "supabaseAdmin");
+    if (off) return off;
+
   const guard = await adminGuard("admin");
   if (guard.response) return guard.response;
   if (!idSchema.safeParse(params.id).success) return errorResponse("Session not found.", 404);
@@ -44,6 +48,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
  * cancel instead if people are relying on that slot.
  */
 export async function DELETE(_req: Request, { params }: Ctx) {
+    const off = serviceGate("supabase", "supabaseAdmin");
+    if (off) return off;
+
   const guard = await adminGuard("admin");
   if (guard.response) return guard.response;
   if (!idSchema.safeParse(params.id).success) return errorResponse("Session not found.", 404);

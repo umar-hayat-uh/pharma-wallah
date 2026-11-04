@@ -5,9 +5,13 @@ import { db, engineErrorResponse, errorResponse, readJson } from "@/lib/battle-r
 import { sendBattleEmail, sendBattleEmails } from "@/lib/battle-royale/email";
 import type { EmailType } from "@/lib/battle-royale/types";
 
+import { serviceGate } from "@/lib/service-gate";
 const MAX_REMINDERS = 150;
 
 export async function POST(req: Request) {
+    const off = serviceGate("supabase", "supabaseAdmin");
+    if (off) return off;
+
   const parsed = emailActionSchema.safeParse(await readJson(req));
   if (!parsed.success) return errorResponse(firstIssue(parsed.error), 400);
   const action = parsed.data;

@@ -10,12 +10,16 @@ import { errorResponse, limited, readJson } from "@/lib/osteology/server";
 import { signSession } from "@/lib/osteology/token";
 import type { Region } from "@/lib/osteology/types";
 
+import { serviceGate } from "@/lib/service-gate";
 const REGIONS: Region[] = ["upper-limb", "lower-limb", "axial"];
 const TYPES = Object.keys(TYPE_LABEL) as QType[];
 const MIN_PRACTICE = 5;
 const MAX_PRACTICE = 30;
 
 export async function POST(req: Request) {
+    const off = serviceGate("supabaseAdmin");
+    if (off) return off;
+
   const blocked = await limited(req);
   if (blocked) return blocked;
 

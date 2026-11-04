@@ -3,9 +3,13 @@ import { connectDB } from "@/lib/mongodb";
 import DrugFoodInteractionModel from "@/lib/models/DrugFoodInteraction";
 import { processDrugInteractions, categorizeInteraction } from "@/lib/drug-food-interactions";
 
+import { serviceGate } from "@/lib/service-gate";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
+    const off = serviceGate("mongo");
+    if (off) return off;
+
     try {
         const { searchParams } = new URL(request.url);
         const mode = searchParams.get("mode") || "drug"; // "drug" | "food" | "autocomplete" | "examples"

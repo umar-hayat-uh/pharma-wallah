@@ -1,6 +1,7 @@
 import { createServerSupabaseClient, createServiceSupabaseClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 
+import { serviceGate } from "@/lib/service-gate";
 const ADMIN_EMAILS = ["shayanhusein@gmail.com"];
 
 const ENTRY_DEFAULTS: Record<string, { games: string[]; maxRetries: number }> = {
@@ -20,6 +21,9 @@ async function requireAdmin() {
 }
 
 export async function GET() {
+    const off = serviceGate("supabase", "supabaseAdmin");
+    if (off) return off;
+
   const user = await requireAdmin();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -35,6 +39,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+    const off = serviceGate("supabase", "supabaseAdmin");
+    if (off) return off;
+
   const user = await requireAdmin();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

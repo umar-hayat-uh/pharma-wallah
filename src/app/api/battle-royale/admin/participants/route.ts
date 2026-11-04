@@ -5,6 +5,7 @@ import { deskRegistrationSchema, firstIssue } from "@/lib/battle-royale/schemas"
 import { SESSIONS_TAG, db, engineErrorResponse, errorResponse, readJson, readSettings } from "@/lib/battle-royale/server";
 import { sendBattleEmail } from "@/lib/battle-royale/email";
 
+import { serviceGate } from "@/lib/service-gate";
 /*
  * Desk registration: a walk-in at the stall. Usually paid on the spot, so the
  * payment is approved and the Game Code issued in the same step, and the
@@ -12,6 +13,9 @@ import { sendBattleEmail } from "@/lib/battle-royale/email";
  * optional — a walk-in may not give one — and never contains the code.
  */
 export async function POST(req: Request) {
+    const off = serviceGate("supabase", "supabaseAdmin");
+    if (off) return off;
+
   const guard = await adminGuard("desk");
   if (guard.response) return guard.response;
 

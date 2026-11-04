@@ -4,6 +4,7 @@ import { MCQ_BANK } from "@/lib/tournament-data/mcq-bank";
 import { FLASHCARD_BANK, normalizeAnswer } from "@/lib/tournament-data/flashcard-bank";
 import { NextResponse } from "next/server";
 
+import { serviceGate } from "@/lib/service-gate";
 type GameType = "mcq" | "flashcard";
 
 interface AttemptSession {
@@ -27,6 +28,9 @@ function sessionKey(code: string, game: string, attemptNumber: number) {
  * answer key to the browser, and without trusting a client-reported score.
  */
 export async function POST(request: Request) {
+    const off = serviceGate("supabaseAdmin", "redis");
+    if (off) return off;
+
     const ip = getClientIp(request);
     const rl = await checkRateLimit(gameQuestionsLimiter, ip);
     if (rl.blocked) {

@@ -4,7 +4,11 @@ import { adminGuard } from "@/lib/battle-royale/admin";
 import { firstIssue, sessionSchema } from "@/lib/battle-royale/schemas";
 import { SESSIONS_TAG, db, engineErrorResponse, errorResponse, readJson } from "@/lib/battle-royale/server";
 
+import { serviceGate } from "@/lib/service-gate";
 export async function POST(req: Request) {
+    const off = serviceGate("supabase", "supabaseAdmin");
+    if (off) return off;
+
   const guard = await adminGuard("admin");
   if (guard.response) return guard.response;
 

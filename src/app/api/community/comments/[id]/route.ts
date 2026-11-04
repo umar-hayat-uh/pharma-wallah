@@ -13,7 +13,11 @@ import { NextResponse } from "next/server";
 import { MAX_COMMENT_LEN } from "@/lib/community/constants";
 import { errorResponse, isValidUUID } from "@/lib/community/server";
 
+import { serviceGate } from "@/lib/service-gate";
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
     if (!isValidUUID(params.id)) return errorResponse("Comment not found", 404);
 
     const supabase = await createServerSupabaseClient();
@@ -58,6 +62,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
     if (!isValidUUID(params.id)) return errorResponse("Comment not found", 404);
 
     const supabase = await createServerSupabaseClient();

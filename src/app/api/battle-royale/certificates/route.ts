@@ -5,6 +5,7 @@ import { certificateQuery, normaliseName } from "@/lib/battle-royale/format";
 import { readResult } from "@/lib/battle-royale/result";
 import type { CertificateMatch, ResultPayload } from "@/lib/battle-royale/types";
 
+import { serviceGate } from "@/lib/service-gate";
 const MAX_MATCHES = 12;
 const CODE_RE = /^BR-\d{4}-\d{4,}$/;
 
@@ -29,6 +30,9 @@ const CODE_RE = /^BR-\d{4}-\d{4,}$/;
  * behind Player ID + email in the status route.
  */
 export async function GET(req: Request) {
+    const off = serviceGate("supabaseAdmin");
+    if (off) return off;
+
   const { success } = await checkLimit(brLookupLimiter, clientIpFrom(req.headers));
   if (!success) return errorResponse("Too many searches from this connection. Please wait a minute.", 429);
 

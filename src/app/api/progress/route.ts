@@ -5,6 +5,7 @@ import { redis, progressCacheKey, PROGRESS_CACHE_TTL_SECONDS } from "@/lib/redis
 import { progressReadLimiter, progressWriteLimiter, checkLimit } from "@/lib/rateLimit";
 import { applyProgressEvent, invalidateProgressCache, ProgressEventValidationError } from "@/lib/progress-server";
 
+import { serviceGate } from "@/lib/service-gate";
 // The dashboard draws a 13-week activity calendar and derives the study streak
 // from these rows, so the read covers a window rather than the newest 20 (which
 // one busy afternoon used to exhaust, blanking the rest of the week). The row
@@ -13,6 +14,9 @@ const ACTIVITY_WINDOW_DAYS = 91;
 const MAX_ACTIVITY_ROWS = 600;
 
 export async function GET() {
+    const off = serviceGate("supabase", "supabaseAdmin");
+    if (off) return off;
+
   const userSupabase = await createServerSupabaseClient();
   const { data: { user }, error: authError } = await userSupabase.auth.getUser();
   if (authError || !user) {
@@ -118,6 +122,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+    const off = serviceGate("supabase", "supabaseAdmin");
+    if (off) return off;
+
   const userSupabase = await createServerSupabaseClient();
   const { data: { user }, error: authError } = await userSupabase.auth.getUser();
   if (authError || !user) {

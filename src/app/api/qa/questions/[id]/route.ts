@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 
+import { serviceGate } from "@/lib/service-gate";
 const MAX_TITLE_LEN = 300;
 const MAX_CONTENT_LEN = 20000;
 
@@ -45,6 +46,9 @@ function isValidUUID(id: string) {
 // ─── GET ───────────────────────────────────────────────────────────────────
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
     if (!isValidUUID(params.id)) {
         return errorResponse("Question not found", 404);
     }
@@ -98,6 +102,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 // ─── PUT ───────────────────────────────────────────────────────────────────
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
     const supabase = await createServerSupabaseClient();
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -154,6 +161,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 // ─── DELETE ────────────────────────────────────────────────────────────────
 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
     const supabase = await createServerSupabaseClient();
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();

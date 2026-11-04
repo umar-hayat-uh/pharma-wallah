@@ -1,35 +1,55 @@
 import { MongoClient } from 'mongodb';
+import { ServiceUnavailableError } from '../src/lib/services';
 
-if (!process.env.MONGODB_USER || !process.env.MONGODB_USER_PASSWORD) {
-    throw new Error('Missing MongoDB credentials in environment variables');
-}
+/*
+ * Connects on first use, not when the module loads (2026-11-04). `next build`
+ * loads every route module while collecting page data, so this file used to
+ * need the MongoDB credentials during the BUILD — and opened a connection from
+ * the build machine. A host's build environment then had to hold the password
+ * (Netlify scans the build environment's secrets against the output). Callers
+ * are unchanged: they `await clientPromise`, which is a lazy awaitable.
+ */
+let clientPromiseInstance: Promise<MongoClient> | null = null;
 
-// Properly encode username and password
-const encodedUsername = encodeURIComponent(process.env.MONGODB_USER);
-const encodedPassword = encodeURIComponent(process.env.MONGODB_USER_PASSWORD);
+function connect(): Promise<MongoClient> {
+    if (clientPromiseInstance) return clientPromiseInstance;
 
-const uri = `mongodb+srv://${encodedUsername}:${encodedPassword}@cluster0.z4rsu0w.mongodb.net/pharmacopedia?retryWrites=true&w=majority&appName=Cluster0`;
-const options = {};
-
-let client: MongoClient;
-let clientPromise: Promise<MongoClient>;
-
-if (process.env.NODE_ENV === 'development') {
-    // In development mode, use a global variable so the client is preserved across module reloads
-    const globalWithMongo = global as typeof globalThis & {
-        _mongoClientPromise?: Promise<MongoClient>;
-    };
-
-    if (!globalWithMongo._mongoClientPromise) {
-        client = new MongoClient(uri, options);
-        globalWithMongo._mongoClientPromise = client.connect();
+    if (!process.env.MONGODB_USER || !process.env.MONGODB_USER_PASSWORD) {
+        // No key → the feature is "unavailable at the moment", not a crash.
+        return Promise.reject(new ServiceUnavailableError('drugDb'));
     }
-    clientPromise = globalWithMongo._mongoClientPromise;
-} else {
-    // In production mode, it's best to not use a global variable
-    client = new MongoClient(uri, options);
-    clientPromise = client.connect();
+
+    // Properly encode username and password
+    const encodedUsername = encodeURIComponent(process.env.MONGODB_USER);
+    const encodedPassword = encodeURIComponent(process.env.MONGODB_USER_PASSWORD);
+
+    const uri = `mongodb+srv://${encodedUsername}:${encodedPassword}@cluster0.z4rsu0w.mongodb.net/pharmacopedia?retryWrites=true&w=majority&appName=Cluster0`;
+    const options = {};
+
+    if (process.env.NODE_ENV === 'development') {
+        // In development mode, use a global variable so the client is preserved across module reloads
+        const globalWithMongo = global as typeof globalThis & {
+            _mongoClientPromise?: Promise<MongoClient>;
+        };
+
+        if (!globalWithMongo._mongoClientPromise) {
+            globalWithMongo._mongoClientPromise = new MongoClient(uri, options).connect();
+        }
+        clientPromiseInstance = globalWithMongo._mongoClientPromise;
+    } else {
+        // In production mode, it's best to not use a global variable
+        clientPromiseInstance = new MongoClient(uri, options).connect();
+    }
+    // A failed connection is not cached, so the next request retries.
+    clientPromiseInstance.catch(() => {
+        clientPromiseInstance = null;
+    });
+    return clientPromiseInstance;
 }
+
+const clientPromise: PromiseLike<MongoClient> = {
+    then: (onFulfilled, onRejected) => connect().then(onFulfilled, onRejected),
+};
 
 export default clientPromise;
 

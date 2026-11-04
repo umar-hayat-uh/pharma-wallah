@@ -4,11 +4,14 @@ import { searchClinicalTrials, TrialStatus } from "@/lib/api/clinicaltrials";
 import { buildCacheKey } from "@/lib/api/cacheKey";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
+import { redis } from "@/lib/redis";
+import { checkLimit } from "@/lib/rateLimit";
 
 
-const ratelimit = new Ratelimit({
-    redis: Redis.fromEnv(),
+// Rate limiting is an optimisation, not a dependency: without Upstash keys
+// there is no limiter and checkLimit() lets the request through (2026-11-04).
+const ratelimit = redis && new Ratelimit({
+    redis,
     limiter: Ratelimit.slidingWindow(10, "1 m"),
 });
 
@@ -32,7 +35,7 @@ export async function GET(req: NextRequest) {
 
     const identifier =
         req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "anonymous";
-    const limited = await ratelimit.limit(`clinicaltrials:${identifier}`);
+    const limited = await checkLimit(ratelimit, `clinicaltrials:${identifier}`);
     if (!limited.success) {
         return NextResponse.json(
             { error: "Too many requests. Please slow down." },

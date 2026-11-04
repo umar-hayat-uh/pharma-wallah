@@ -4,6 +4,7 @@ import { MCQ_BANK } from "@/lib/tournament-data/mcq-bank";
 import { FLASHCARD_BANK } from "@/lib/tournament-data/flashcard-bank";
 import { NextResponse } from "next/server";
 
+import { serviceGate } from "@/lib/service-gate";
 type GameType = "mcq" | "flashcard" | "spotting";
 
 function shuffle<T>(arr: T[]): T[] {
@@ -24,6 +25,9 @@ function toPublicFlashcard(q: (typeof FLASHCARD_BANK)[number]) {
 }
 
 export async function GET(request: Request) {
+    const off = serviceGate("supabaseAdmin", "redis");
+    if (off) return off;
+
     const { searchParams } = new URL(request.url);
     const code = searchParams.get("code")?.trim().toUpperCase();
     const game = searchParams.get("game") as GameType | null;

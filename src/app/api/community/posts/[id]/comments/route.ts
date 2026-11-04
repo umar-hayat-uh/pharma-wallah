@@ -25,7 +25,11 @@ import {
     loadVotes,
 } from "@/lib/community/server";
 
+import { serviceGate } from "@/lib/service-gate";
 export async function GET(req: Request, { params }: { params: { id: string } }) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
     if (!isValidUUID(params.id)) return errorResponse("Post not found", 404);
 
     const supabase = await createServerSupabaseClient();
@@ -86,6 +90,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 }
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
     if (!isValidUUID(params.id)) return errorResponse("Post not found", 404);
 
     const supabase = await createServerSupabaseClient();

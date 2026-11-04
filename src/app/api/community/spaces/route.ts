@@ -13,7 +13,11 @@ import { NextResponse } from "next/server";
 import { errorResponse } from "@/lib/community/server";
 import type { CommunitySpace } from "@/lib/community/types";
 
+import { serviceGate } from "@/lib/service-gate";
 export async function GET(req: Request) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
     const supabase = await createServerSupabaseClient();
 
     const { data: { user: viewer } } = await supabase.auth.getUser();

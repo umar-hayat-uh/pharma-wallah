@@ -3,6 +3,7 @@ import { submitScoreLimiter, getClientIp, checkRateLimit, redis } from "@/lib/to
 import { invalidateLeaderboardCache } from "@/lib/leaderboard-data";
 import { NextResponse } from "next/server";
 
+import { serviceGate } from "@/lib/service-gate";
 interface AttemptSession {
     code: string;
     game: string;
@@ -18,6 +19,9 @@ function sessionKey(code: string, game: string, attemptNumber: number) {
 }
 
 export async function POST(request: Request) {
+    const off = serviceGate("supabaseAdmin", "redis");
+    if (off) return off;
+
     const ip = getClientIp(request);
     const rl = await checkRateLimit(submitScoreLimiter, `${ip}`);
     if (rl.blocked) {

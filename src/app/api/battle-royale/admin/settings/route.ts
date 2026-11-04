@@ -6,6 +6,7 @@ import { firstIssue, settingsSchema } from "@/lib/battle-royale/schemas";
 import { invalidateLeaderboard } from "@/lib/battle-royale/leaderboard";
 import { SETTINGS_TAG, db, engineErrorResponse, errorResponse, readJson, readSettings } from "@/lib/battle-royale/server";
 
+import { serviceGate } from "@/lib/service-gate";
 const CLOSED_MESSAGE = "The tournament is closed. Reopen it on the overview before turning registration or battles back on.";
 
 const settingsToggleSchema = z
@@ -13,6 +14,9 @@ const settingsToggleSchema = z
   .strict();
 
 export async function PATCH(req: Request) {
+    const off = serviceGate("supabase", "supabaseAdmin");
+    if (off) return off;
+
   const guard = await adminGuard("admin");
   if (guard.response) return guard.response;
 

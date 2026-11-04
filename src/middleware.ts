@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { LEGACY_CALCULATOR_SLUGS } from '@/lib/legacy-slugs';
 import { needsConsent } from '@/lib/consent';
+import { isConfigured, UNAVAILABLE_MESSAGE } from '@/lib/services';
 
 /**
  * FIX: the original list included '/leaderboard', which redirected every
@@ -56,6 +57,26 @@ export async function middleware(request: NextRequest) {
   });
   if (isClinical) response.headers.set('x-subdomain', 'clinical');
   /* ── End subdomain detection ────────────────────────────────────── */
+
+  /*
+   * No Supabase keys on this deployment (2026-11-04): nobody can be signed in,
+   * so skip the client entirely — creating it without a URL throws, and this
+   * runs on every request. Account pages go to /signin, which reports that
+   * sign-in is unavailable at the moment; account APIs answer the same 503 as
+   * every other unconfigured feature (src/lib/service-gate.ts).
+   */
+  if (!isConfigured('supabase')) {
+    const pathname = request.nextUrl.pathname;
+    if (PROTECTED_PATHS.some((path) => pathname.startsWith(path))) {
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: UNAVAILABLE_MESSAGE }, { status: 503 });
+      }
+      const redirectUrl = new URL('/signin', request.url);
+      redirectUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(redirectUrl);
+    }
+    return response;
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

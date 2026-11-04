@@ -13,10 +13,14 @@ import { grade } from "@/lib/osteology/questions";
 import { errorResponse, limited, paperFor, readJson } from "@/lib/osteology/server";
 import { verifySession } from "@/lib/osteology/token";
 
+import { serviceGate } from "@/lib/service-gate";
 /** After this, a paper can no longer be graded at all (a tab left open for days). */
 const HARD_EXPIRY_SECONDS = 6 * 60 * 60;
 
 export async function POST(req: Request) {
+    const off = serviceGate("supabaseAdmin");
+    if (off) return off;
+
   const blocked = await limited(req);
   if (blocked) return blocked;
 

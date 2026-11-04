@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "../../../../lib/mongodb";
 
+import { serviceGate } from "@/lib/service-gate";
 export const dynamic = "force-dynamic"; // 👈 REQUIRED
 export const runtime = "nodejs";        // ✅ REQUIRED
 
 
 export async function GET(request: NextRequest) {
+    const off = serviceGate("drugDb");
+    if (off) return off;
+
     try {
         const { searchParams } = request.nextUrl;
         const q = searchParams.get("q")?.trim() || "";

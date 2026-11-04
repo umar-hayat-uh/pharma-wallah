@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 
+import { serviceGate } from "@/lib/service-gate";
 const MAX_LIMIT = 50;
 const MAX_TITLE_LEN = 300;
 const MAX_CONTENT_LEN = 20000;
@@ -28,6 +29,9 @@ function normalizeTags(tags: unknown): string[] {
 }
 
 export async function GET(req: Request) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
     const supabase = await createServerSupabaseClient();
     const { searchParams } = new URL(req.url);
 
@@ -92,6 +96,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
     const supabase = await createServerSupabaseClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {

@@ -27,10 +27,12 @@ export async function GET(req: NextRequest) {
 
     const queryKey = `adverse:${query.toLowerCase()}`;
 
-    await connectDB();
+    // MongoDB is only a cache here: without it (no key, or down) the lookup
+    // still runs live, it just isn't remembered (caches fail open, CLAUDE.md §6 rule 7).
+    const cacheReady = await connectDB().then(() => true, () => false);
 
     // Check cache
-    const cached = await AdverseEffectCache.findOne({ queryKey });
+    const cached = cacheReady ? await AdverseEffectCache.findOne({ queryKey }).catch(() => null) : null;
     if (cached) {
         return NextResponse.json({ source: "cache", found: true, result: cached });
     }
@@ -88,7 +90,7 @@ export async function GET(req: NextRequest) {
     };
 
     // Save to cache (even if one source failed, we cache what we have)
-    await AdverseEffectCache.create(result);
+    if (cacheReady) await AdverseEffectCache.create(result).catch((err) => console.error("[cache] write failed", err));
 
     return NextResponse.json({
         source: "live",

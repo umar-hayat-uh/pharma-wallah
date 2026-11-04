@@ -12,7 +12,11 @@ import { checkLimit, communityWriteLimiter } from "@/lib/rateLimit";
 import { NextResponse } from "next/server";
 import { ensureMember, errorResponse, isValidUUID } from "@/lib/community/server";
 
+import { serviceGate } from "@/lib/service-gate";
 export async function POST(req: Request) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
     const supabase = await createServerSupabaseClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return errorResponse("Sign in to join a space", 401);
@@ -44,6 +48,9 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
     const supabase = await createServerSupabaseClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return errorResponse("Unauthorized", 401);

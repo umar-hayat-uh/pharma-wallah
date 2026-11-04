@@ -14,7 +14,11 @@ import { MAX_BIO_LEN } from "@/lib/community/constants";
 import { ensureMember, errorResponse } from "@/lib/community/server";
 import type { CommunityMe } from "@/lib/community/types";
 
+import { serviceGate } from "@/lib/service-gate";
 export async function GET() {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ me: null });
@@ -51,6 +55,9 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
+    const off = serviceGate("supabase");
+    if (off) return off;
+
     const supabase = await createServerSupabaseClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return errorResponse("Unauthorized", 401);

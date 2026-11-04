@@ -2,15 +2,22 @@
 // Shared MongoDB connection with global cache (prevents reconnecting on hot reload)
 
 import mongoose from "mongoose";
+import { ServiceUnavailableError } from "@/lib/services";
 
-const MONGODB_URI = process.env.MONGODB_URI!;
 const DB_NAME = "pharmawallah"; // consistent database name
 
-if (!MONGODB_URI) {
-  throw new Error(
-    "❌ MONGODB_URI is not defined. Add it to .env.local\n" +
-    "   MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/pharmawallah"
-  );
+/*
+ * Read when a connection is first needed, not when the module loads
+ * (2026-11-04). `next build` loads every route module while collecting page
+ * data, so a module-scope check made the BUILD need the database password —
+ * and a host's build environment then had to hold it (Netlify scans the build
+ * environment's secrets against the output). Now only the running site needs it.
+ */
+function mongoUri(): string {
+  const uri = process.env.MONGODB_URI;
+  // No key → the feature is "unavailable at the moment", not a crash.
+  if (!uri) throw new ServiceUnavailableError("mongo");
+  return uri;
 }
 
 // TypeScript declaration for global cache
@@ -35,7 +42,7 @@ export async function connectDB(): Promise<typeof mongoose> {
       bufferCommands: false,     // don't queue operations while disconnected
       dbName: DB_NAME,           // explicitly set database name
     };
-    cached.promise = mongoose.connect(MONGODB_URI, opts)
+    cached.promise = mongoose.connect(mongoUri(), opts)
       .then(m => {
         console.log("✅ MongoDB connected to database:", m.connection.name);
         return m;

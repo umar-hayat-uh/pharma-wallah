@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import DrugDrugInteractionModel from "@/lib/models/DrugDrugInteraction";
 import { DDISeverity, DrugDrugInteraction } from "@/types/drug-drug";
 
+import { serviceGate } from "@/lib/service-gate";
 export const dynamic = "force-dynamic";
 
 function createPairKey(a: string, b: string): string {
@@ -12,6 +13,9 @@ function createPairKey(a: string, b: string): string {
 }
 
 export async function GET(request: NextRequest) {
+    const off = serviceGate("mongo");
+    if (off) return off;
+
     try {
         const { searchParams } = new URL(request.url);
         const mode = searchParams.get("mode");
@@ -115,6 +119,9 @@ export async function GET(request: NextRequest) {
 
 // 5. Multi-Drug Regimen Evaluation (POST)
 export async function POST(request: NextRequest) {
+    const off = serviceGate("mongo");
+    if (off) return off;
+
     try {
         const body = await request.json();
         const drugs: string[] = body.drugs || [];

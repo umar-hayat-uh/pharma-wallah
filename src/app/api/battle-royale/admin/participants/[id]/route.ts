@@ -7,6 +7,7 @@ import { SESSIONS_TAG, db, engineErrorResponse, errorResponse, GENERIC_ERROR, re
 import { sendBattleEmail } from "@/lib/battle-royale/email";
 import { invalidateLeaderboard } from "@/lib/battle-royale/leaderboard";
 
+import { serviceGate } from "@/lib/service-gate";
 type Ctx = { params: { id: string } };
 const idSchema = z.string().uuid();
 
@@ -17,6 +18,9 @@ const BOARD_ACTIONS: ParticipantAction["action"][] = ["disqualify", "restore", "
 
 /** Full record for the admin drawer — the only place the Game Code is shown after registration. */
 export async function GET(_req: Request, { params }: Ctx) {
+    const off = serviceGate("supabase", "supabaseAdmin");
+    if (off) return off;
+
   const guard = await adminGuard("desk");
   if (guard.response) return guard.response;
   if (!idSchema.safeParse(params.id).success) return errorResponse("Participant not found.", 404);
@@ -54,6 +58,9 @@ export async function GET(_req: Request, { params }: Ctx) {
 }
 
 export async function PATCH(req: Request, { params }: Ctx) {
+    const off = serviceGate("supabase", "supabaseAdmin");
+    if (off) return off;
+
   const parsed = participantActionSchema.safeParse(await readJson(req));
   if (!parsed.success) return errorResponse(firstIssue(parsed.error), 400);
   const action = parsed.data;

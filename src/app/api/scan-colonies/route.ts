@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { serviceGate } from "@/lib/service-gate";
 // POST /api/scan-colonies
 // Body: { imageBase64: string, mediaType?: string }
 // Returns: { colonyCount: number, confidence: 'high'|'medium'|'low', confidencePercent: number, reasoning: string }
@@ -9,6 +10,9 @@ import { NextRequest, NextResponse } from 'next/server';
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
 export async function POST(request: NextRequest) {
+    const off = serviceGate("gemini");
+    if (off) return off;
+
     try {
         const { imageBase64, mediaType } = await request.json();
 

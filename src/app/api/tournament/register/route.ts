@@ -2,7 +2,11 @@ import { createServiceSupabaseClient } from "@/lib/supabase-server";
 import { registerLimiter, getClientIp, checkRateLimit } from "@/lib/tournament-redis";
 import { NextResponse } from "next/server";
 
+import { serviceGate } from "@/lib/service-gate";
 export async function POST(request: Request) {
+    const off = serviceGate("supabaseAdmin", "redis");
+    if (off) return off;
+
     const ip = getClientIp(request);
     const rl = await checkRateLimit(registerLimiter, ip);
     if (rl.blocked) {

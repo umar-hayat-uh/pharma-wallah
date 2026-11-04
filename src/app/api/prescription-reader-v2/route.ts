@@ -2,6 +2,7 @@ import { streamText } from 'ai';
 import { google } from '@ai-sdk/google';
 import { NextRequest } from 'next/server';
 
+import { serviceGate } from "@/lib/service-gate";
 export const runtime = 'edge';
 export const maxDuration = 60;
 
@@ -44,6 +45,9 @@ Only include drugs that are legible. Output ONLY the JSON array.`;
 }
 
 export async function POST(req: NextRequest) {
+    const off = serviceGate("googleAI");
+    if (off) return off;
+
     try {
         const body = await req.json();
         const { imageBase64 } = body;

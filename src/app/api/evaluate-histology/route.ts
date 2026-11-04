@@ -14,7 +14,10 @@ export async function POST(req: Request) {
             });
         }
 
-        const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+        // Server-only key. The old fallback to NEXT_PUBLIC_GEMINI_API_KEY was removed
+        // on 2026-11-04 (Known Issue 3): any NEXT_PUBLIC_ value is shipped to every
+        // browser. Without a key the offline synonym engine below marks the answer.
+        const apiKey = process.env.GEMINI_API_KEY;
 
         // ── 1. If Gemini API Key exists, call Gemini AI ───────────────────────
         if (apiKey) {
