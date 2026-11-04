@@ -23,3 +23,16 @@
   # JS — is still scanned, so a real leak (for example a secret given a
   # NEXT_PUBLIC_ name, or a hardcoded key) still fails the build.
   SECRETS_SCAN_OMIT_PATHS = ".netlify/.next/cache/**,**/opencv.*.js,node_modules/@techstark/opencv-js/**"
+
+  # PUBLIC values, which are in the build output by design. Next.js inlines every
+  # NEXT_PUBLIC_* variable into the pages and the browser JS, so the scan flags
+  # each one that is set in Netlify (it failed on NEXT_PUBLIC_ADSENSE_CLIENT, the
+  # AdSense publisher ID — which is also in /ads.txt and every page's HTML).
+  # The Supabase URL and anon key are public too: they are protected by RLS,
+  # not by secrecy.
+  #
+  # Deliberately NOT listed: NEXT_PUBLIC_GEMINI_API_KEY. It must never be set
+  # (it would publish the Gemini key), so if it ever is, the scan should fail.
+  # Secret keys (service role, MongoDB, Gemini, Resend, Upstash) are never
+  # listed here — scope them to Functions in Netlify; the build needs none.
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_ADSENSE_CLIENT,NEXT_PUBLIC_ADS_ENABLED,NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR,NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR_FOOTER,NEXT_PUBLIC_ADSENSE_SLOT_CALCULATOR_INLINE,NEXT_PUBLIC_ADSENSE_SLOT_LESSON,NEXT_PUBLIC_ADSENSE_SLOT_LIST,NEXT_PUBLIC_ADSENSE_SLOT_HOME_1,NEXT_PUBLIC_ADSENSE_SLOT_HOME_2,NEXT_PUBLIC_ADSENSE_SLOT_HOME_3,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,NEXT_PUBLIC_SITE_URL,NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,NEXT_PUBLIC_IS_MOBILE_APP"

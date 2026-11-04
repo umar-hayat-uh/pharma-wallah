@@ -82,9 +82,11 @@ added there or `next/image` refuses it.
 **Netlify since 2026-11-04** (Next.js Runtime v5, settings in `netlify.toml` + the Netlify UI). The
 Vercel packages (`@vercel/analytics`, `@vercel/speed-insights`) are still mounted and harmlessly 404.
 Netlify's **secrets scan** fails the build if an env value — or, via "smart detection", any
-key-SHAPED string — is in the build output; `netlify.toml` omits only Next's build cache and
-OpenCV.js (its base64 WASM contains `AIza…`/`ASIA…`-shaped runs). Never disable the scan or omit
-real keys. **The build needs NO env vars** (`src/lib/services.ts`): keep secrets scoped to
+key-SHAPED string — is in the build output; `netlify.toml` omits only Next's build cache,
+OpenCV.js (its base64 WASM contains `AIza…`/`ASIA…`-shaped runs) and the PUBLIC `NEXT_PUBLIC_*`
+keys (inlined into pages by design — it first failed on the AdSense publisher ID). A new public
+variable must be added to `SECRETS_SCAN_OMIT_KEYS` there. Never disable the scan, never omit a
+secret key, and never list `NEXT_PUBLIC_GEMINI_API_KEY`. **The build needs NO env vars** (`src/lib/services.ts`): keep secrets scoped to
 Functions/Runtime in Netlify, and NEXT_PUBLIC_* in Builds too (they are inlined at build time).
 A feature whose key is missing answers "unavailable at the moment" — gate new routes with
 `serviceGate()` (hard dependencies only). There is **no CI**.
