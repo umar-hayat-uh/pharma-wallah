@@ -56,6 +56,10 @@ export const AMRExplorer: React.FC = () => {
   const [matrixData, setMatrixData] = useState<AMRMatrixData | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
+  // The API's own sentence when the data can't be loaded at all (e.g. "This
+  // feature is unavailable at the moment…"), shown above the dashboard instead
+  // of a silently empty one (2026-11-04).
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
 
   // Sync state to URL
@@ -99,6 +103,7 @@ export const AMRExplorer: React.FC = () => {
     ])
       .then(([sumRes, recRes, abRes, ctyRes, trdRes, pathRes, specRes, mtxRes]) => {
         if (!isMounted) return;
+        setLoadError(sumRes.success ? null : sumRes.error || sumRes.message || 'The AMR data could not be loaded.');
         if (sumRes.success) setSummary(sumRes.data);
         if (recRes.success) {
           setRecords(recRes.data);
@@ -139,6 +144,11 @@ export const AMRExplorer: React.FC = () => {
       <AMRHeader onOpenDisclaimer={() => setIsDisclaimerOpen(true)} totalRecords={totalRecords} />
 
       <main className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8 space-y-6">
+        {loadError && (
+          <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+            {loadError}
+          </p>
+        )}
         {/* Unified Search */}
         <AMRSearch
           filterOptions={filterOptions}

@@ -56,6 +56,10 @@ export function Feed({ spaceSlug, savedOnly, emptyTitle, emptyBody }: FeedProps)
     const [posts, setPosts] = useState<CommunityPost[]>([]);
     const [nextPage, setNextPage] = useState<number | null>(1);
     const [loading, setLoading] = useState(true);
+    // Why the first page failed, shown in place of the feed (2026-11-04) — a
+    // toast alone vanished after four seconds and left an empty "Nothing here
+    // yet", which read as a quiet community rather than "unavailable".
+    const [loadError, setLoadError] = useState<string | null>(null);
     const [loadingMore, setLoadingMore] = useState(false);
     const [density, setDensity] = useState<"card" | "compact">("card");
     const [searchDraft, setSearchDraft] = useState(query);
@@ -98,6 +102,7 @@ export function Feed({ spaceSlug, savedOnly, emptyTitle, emptyBody }: FeedProps)
     useEffect(() => {
         const id = ++requestId.current;
         setLoading(true);
+        setLoadError(null);
         setPosts([]);
         (async () => {
             try {
@@ -109,7 +114,7 @@ export function Feed({ spaceSlug, savedOnly, emptyTitle, emptyBody }: FeedProps)
                 setNextPage(json.next_page ?? null);
             } catch (err: any) {
                 if (id !== requestId.current) return;
-                toast.error(err?.message || "Could not load the feed");
+                setLoadError(err?.message || "Could not load the feed");
                 setPosts([]);
                 setNextPage(null);
             } finally {
@@ -303,15 +308,15 @@ export function Feed({ spaceSlug, savedOnly, emptyTitle, emptyBody }: FeedProps)
                 <div className="rounded-2xl border border-black/[0.08] bg-white px-6 py-14 text-center">
                     <Inbox className="mx-auto mb-3 text-[#16181d]/20" size={40} />
                     <p className="text-[16px] font-bold text-[#16181d]">
-                        {emptyTitle ?? "Nothing here yet"}
+                        {loadError ? "Posts couldn't be loaded" : (emptyTitle ?? "Nothing here yet")}
                     </p>
                     <p className="mx-auto mt-1 max-w-sm text-[14px] text-[#16181d]/55">
-                        {emptyBody ??
+                        {loadError ?? emptyBody ??
                             (query
                                 ? "No post matches that search. Try a different term, or clear the filter."
                                 : "Be the first to start a discussion here.")}
                     </p>
-                    {!savedOnly && (
+                    {!savedOnly && !loadError && (
                         <Link
                             href={spaceSlug ? `/community/submit?space=${spaceSlug}` : "/community/submit"}
                             className="mt-4 inline-flex items-center rounded-xl px-4 py-2.5 text-[14px] font-semibold text-white"

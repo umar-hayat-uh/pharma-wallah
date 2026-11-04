@@ -16,8 +16,11 @@ export function serviceGate(...services: Service[]): NextResponse | null {
   const missing = services.filter((s) => !isConfigured(s));
   if (missing.length === 0) return null;
   console.warn(`[services] unavailable — not configured: ${missing.join(", ")}`);
+  // `error` is the project convention (CLAUDE.md §6 rule 2); some older routes
+  // answer `{ success, message }` and their screens read those fields instead,
+  // so the 503 carries all three and every screen shows the same sentence.
   return NextResponse.json(
-    { error: UNAVAILABLE_MESSAGE },
+    { error: UNAVAILABLE_MESSAGE, message: UNAVAILABLE_MESSAGE, success: false },
     { status: 503, headers: { "Cache-Control": "no-store" } },
   );
 }
