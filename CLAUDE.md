@@ -611,12 +611,10 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 1. **`npm run lint` is not configured.** There is no `.eslintrc*` / `eslint.config.*` anywhere, so
    `next lint` drops into its interactive "How would you like to configure ESLint?" setup prompt
    and exits without linting. **There is no working lint baseline.**
-2. **`npm run build` fails without a populated `.env`.** `src/lib/supabase-server.ts` validates env
-   vars at *module scope*, so Next's "Collecting page data" phase throws
-   `Error: Missing environment variable: NEXT_PUBLIC_SUPABASE_URL` at `/api/admin/registrations`.
-3. **`NEXT_PUBLIC_GEMINI_API_KEY` is read as a fallback** in `src/app/api/evaluate-histology/route.ts:17`.
-   Any `NEXT_PUBLIC_*` value is shipped to the browser. That variable is **not** in the current
-   `.env` (so nothing is leaking today), but the fallback should be deleted so it cannot be.
+2. ~~`npm run build` fails without a populated `.env`.~~ **Fixed 2026-11-04**: no key is read at
+   module scope any more; the build and the site run with **no env vars at all**, and a feature
+   whose key is missing answers "unavailable at the moment" (`src/lib/services.ts`, §8 entry).
+3. ~~`NEXT_PUBLIC_GEMINI_API_KEY` fallback in `evaluate-histology`~~ **Removed 2026-11-04.**
 4. **The Supabase schema is (almost entirely) not in the repo.** Tables, the
    `tournament_leaderboard_best` view, the `claim_tournament_attempt` RPC, and every RLS policy
    exist only in the Supabase dashboard. Code comments reference a `migration.sql` that is absent.
@@ -765,6 +763,41 @@ existing dead assets into working pages at the lowest risk-per-value ratio in th
 
 > Newest first. Never paste source code here. Archive entries older than ~10 into
 > `.claude/history/YYYY-MM.md`.
+
+### 2026-11-04 — Hosting moved to Netlify; the site runs with no keys ("unavailable at the moment")
+
+Owner moved hosting off Vercel (Cloudflare Workers Free was tried first and abandoned: OpenNext needs
+Next ≥15.5 and the 10 ms CPU limit cannot carry per-request rendering — the half-done migration is in
+the uncommitted worktree `../pharma-wallah-cf`, branch `cloudflare-migration`). On Netlify the build
+passed but the **secrets scan** failed it; the owner then removed every env var and asked that the
+site not require keys and say "unavailable at the moment" instead.
+
+**Completed**
+- `src/lib/services.ts` (`isConfigured`, `UNAVAILABLE_MESSAGE`, `ServiceUnavailableError`) and
+  `src/lib/service-gate.ts` (`serviceGate(...)` → 503 `{ error, message, success:false }`), inserted
+  as the first line of 58 API route files, listing only HARD dependencies. Caches and rate limiters
+  fail open instead (DailyMed/PubMed/ClinicalTrials/MedlinePlus caches + limiters, drug finder and
+  adverse-effects Mongo caches, histology's offline marker).
+- `src/lib/supabase-unavailable.ts`: a stand-in Supabase client (signed-out auth, every query
+  resolves to the unavailable error) returned by all client factories without keys; middleware
+  skips Supabase entirely and sends account pages to /signin, account APIs to 503.
+- No key is read at module load any more: `supabase-server`, `supabase-admin` (lazy proxy), both
+  Mongo modules (lazy; the native one no longer connects during the build), Resend in /api/contact,
+  `Redis.fromEnv()` in the three clinical literature routes.
+- Screens that hid failures now show the sentence: community feed (inline, not a vanishing toast),
+  AMR explorer (notice), encyclopedia (reads `message`).
+- `netlify.toml`: `SECRETS_SCAN_OMIT_PATHS` = Next's build cache + OpenCV.js only (MEMORY note below).
+
+**Verification** — `npx tsc --noEmit`: 0 errors outside stale `.next/types` stubs. Isolated copy built
+with an EMPTY environment: exit 0, 364/364 pages. `next start` with no env: 11 pages 200 (`/dashboard`
+307 → /signin); 13 gated APIs answer 503 with the sentence; DailyMed and PubMed still answer live.
+Headless Chrome 390×844 touch: 0 JS exceptions, 0 overflow; community, encyclopedia search, AMR and
+sign-in all show "unavailable at the moment". Local build output scanned: no `.env` value anywhere,
+key-shaped strings only inside OpenCV's base64 WASM. **Not verified:** a successful Netlify deploy
+(pending push), the site WITH keys on Netlify, Netlify's env scopes.
+
+**Next** — owner: push `netlify.toml`, redeploy; then add keys back in Netlify, secrets scoped to
+Functions/Runtime only (the build needs none).
 
 ### 2026-10-25 — Next home page in preview: the molecule landing (`/home-preview`)
 

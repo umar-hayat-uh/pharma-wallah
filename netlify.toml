@@ -5,13 +5,21 @@
 
 [build.environment]
   # Netlify's secrets scan fails the build when an env var's value appears in
-  # any file after the build. It flagged only Next's webpack BUILD CACHE
+  # any file after the build. It flagged Next's webpack BUILD CACHE
   # (.netlify/.next/cache/webpack/…/0.pack) — a compiler cache Netlify keeps
   # between builds, which is never deployed or served. A local build of the same
   # commit was checked: no secret value from .env appears anywhere in .next,
   # cache included, and none is hardcoded in a tracked file.
   #
-  # Only that cache folder is skipped. Everything that is deployed — server
-  # functions, static pages, client JS — is still scanned, so a real leak (for
-  # example a secret given a NEXT_PUBLIC_ name) still fails the build.
-  SECRETS_SCAN_OMIT_PATHS = ".netlify/.next/cache/**"
+  # The scan's "smart detection" also flags any string SHAPED like a key. It
+  # matches OpenCV.js (the colony counter's library, @techstark/opencv-js,
+  # emitted as static/media/opencv.<hash>.js): the 10 MB WebAssembly binary
+  # embedded in it as base64 contains runs that look like a Google key (AIza…)
+  # and an AWS key (ASIA…). Checked 2026-11-04: every match sits inside that
+  # base64 blob — random binary, not credentials. Only that one library file is
+  # skipped.
+  #
+  # Everything else that is deployed — server functions, static pages, client
+  # JS — is still scanned, so a real leak (for example a secret given a
+  # NEXT_PUBLIC_ name, or a hardcoded key) still fails the build.
+  SECRETS_SCAN_OMIT_PATHS = ".netlify/.next/cache/**,**/opencv.*.js,node_modules/@techstark/opencv-js/**"
