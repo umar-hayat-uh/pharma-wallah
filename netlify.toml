@@ -1,0 +1,17 @@
+# Netlify build settings (2026-11-04).
+#
+# The build command and publish directory stay in the Netlify UI; the Next.js
+# runtime (@netlify/plugin-nextjs) is added by Netlify automatically.
+
+[build.environment]
+  # Netlify's secrets scan fails the build when an env var's value appears in
+  # any file after the build. It flagged only Next's webpack BUILD CACHE
+  # (.netlify/.next/cache/webpack/…/0.pack) — a compiler cache Netlify keeps
+  # between builds, which is never deployed or served. A local build of the same
+  # commit was checked: no secret value from .env appears anywhere in .next,
+  # cache included, and none is hardcoded in a tracked file.
+  #
+  # Only that cache folder is skipped. Everything that is deployed — server
+  # functions, static pages, client JS — is still scanned, so a real leak (for
+  # example a secret given a NEXT_PUBLIC_ name) still fails the build.
+  SECRETS_SCAN_OMIT_PATHS = ".netlify/.next/cache/**"
