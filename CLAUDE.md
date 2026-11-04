@@ -796,8 +796,20 @@ sign-in all show "unavailable at the moment". Local build output scanned: no `.e
 key-shaped strings only inside OpenCV's base64 WASM. **Not verified:** a successful Netlify deploy
 (pending push), the site WITH keys on Netlify, Netlify's env scopes.
 
-**Next** — owner: push `netlify.toml`, redeploy; then add keys back in Netlify, secrets scoped to
-Functions/Runtime only (the build needs none).
+**Later the same day — two more Netlify failures, fixed.** (1) The scan flagged
+`NEXT_PUBLIC_ADSENSE_CLIENT` (public by design): `netlify.toml` now lists every public
+`NEXT_PUBLIC_*` key in `SECRETS_SCAN_OMIT_KEYS` (never `NEXT_PUBLIC_GEMINI_API_KEY`). (2) Build passed
+but the upload failed, "request body too large": the server function was **364 MB**, because the
+download page's runtime `statSync(process.cwd()/public/…)` made Next trace the WHOLE `public/` folder
+(245 MB) into it, plus two copies of sharp's libvips (33 MB). Sizes are now measured once in
+`next.config.mjs` (`env.PW_*_BYTES`) and `experimental.outputFileTracingExcludes` drops `public/` and
+sharp. Measured with `output: "standalone"` in an isolated copy: **86 MB unzipped, 25.2 MB zipped**
+(Netlify allows 50 MB zipped); the standalone server with no env served `/`, a calculator, the
+encyclopedia and a real lesson (2,179 words) with 200, and `/download` still shows 9.2 MB.
+**Rule:** never read `public/` with a runtime path from server code — measure at build time.
+
+**Next** — owner: push, redeploy; then add keys back in Netlify, secrets scoped to Functions only
+(the build needs none).
 
 ### 2026-10-25 — Next home page in preview: the molecule landing (`/home-preview`)
 

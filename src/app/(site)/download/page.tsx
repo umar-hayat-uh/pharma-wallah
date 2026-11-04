@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
-import { statSync } from "node:fs";
-import { join } from "node:path";
 import DownloadClient, { type PlatformFile } from "./DownloadClient";
 
 export const metadata: Metadata = pageMeta({
@@ -23,26 +21,25 @@ export const metadata: Metadata = pageMeta({
  * This is a server component, so the read happens once during `next build` and
  * never in the browser.
  */
-function measure(publicPath: string): PlatformFile {
-  try {
-    const bytes = statSync(join(process.cwd(), "public", publicPath)).size;
-    return {
-      href: publicPath,
-      // One decimal is the right precision here: "8.9 MB" is useful, "8.94 MB"
-      // is noise, and "9 MB" reads like a guess.
-      size: `${(bytes / 1024 / 1024).toFixed(1)} MB`,
-    };
-  } catch {
-    // Not built/committed yet.
-    return null;
-  }
+function measure(publicPath: string, bytesFromBuild: string | undefined): PlatformFile {
+  // Measured by next.config.mjs at build time, not here: a runtime read of
+  // public/ made Next copy the whole folder into the server function
+  // (2026-11-04). "0" or missing = not built/committed yet.
+  const bytes = Number(bytesFromBuild);
+  if (!Number.isFinite(bytes) || bytes <= 0) return null;
+  return {
+    href: publicPath,
+    // One decimal is the right precision here: "8.9 MB" is useful, "8.94 MB"
+    // is noise, and "9 MB" reads like a guess.
+    size: `${(bytes / 1024 / 1024).toFixed(1)} MB`,
+  };
 }
 
 export default function DownloadPage() {
   return (
     <DownloadClient
-      android={measure("/downloads/pharmawallah-calculators.apk")}
-      windows={measure("/downloads/PharmaWallah-Setup.exe")}
+      android={measure("/downloads/pharmawallah-calculators.apk", process.env.PW_ANDROID_APK_BYTES)}
+      windows={measure("/downloads/PharmaWallah-Setup.exe", process.env.PW_WINDOWS_SETUP_BYTES)}
     />
   );
 }

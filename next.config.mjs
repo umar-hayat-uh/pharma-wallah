@@ -1,8 +1,30 @@
 // next.config.mjs
+import { statSync } from "node:fs";
+
+/**
+ * Size in bytes of a file under public/, measured once at BUILD time (2026-11-04).
+ * The download page used to stat the files on every request; that runtime
+ * `process.cwd() + "public"` path made Next's file tracer copy the WHOLE public/
+ * folder (245 MB of previews, slides and models) into the server function, and
+ * Netlify refused to upload it ("request body too large"). "0" = not built yet.
+ */
+function publicFileBytes(path) {
+  try {
+    return String(statSync(new URL(`./public${path}`, import.meta.url)).size);
+  } catch {
+    return "0";
+  }
+}
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+
+  // Inlined into the server bundle at build time (src/app/(site)/download/page.tsx).
+  env: {
+    PW_ANDROID_APK_BYTES: publicFileBytes("/downloads/pharmawallah-calculators.apk"),
+    PW_WINDOWS_SETUP_BYTES: publicFileBytes("/downloads/PharmaWallah-Setup.exe"),
+  },
 
   // Course lesson markdown lives in /content (not public/) and is read from disk
   // at request time by src/lib/courses/content.ts. The file tracer cannot follow
@@ -11,6 +33,19 @@ const nextConfig = {
   experimental: {
     outputFileTracingIncludes: {
       "/courses/[subjectSlug]/[unit]": ["./content/**/*"],
+    },
+    // Never ship these inside the server function (2026-11-04, Netlify's upload
+    // limit). public/ is served by the CDN, never read by server code. sharp's
+    // native libvips (two copies, 33 MB) is only for Next's image optimiser,
+    // which is off (`images.unoptimized`) — Netlify's image CDN does that job.
+    outputFileTracingExcludes: {
+      "*": [
+        "public/**/*",
+        "node_modules/sharp/**/*",
+        "node_modules/@img/**/*",
+        "node_modules/.pnpm/sharp@*/**/*",
+        "node_modules/.pnpm/@img+*/**/*",
+      ],
     },
   },
 

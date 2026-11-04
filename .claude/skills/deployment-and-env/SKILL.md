@@ -91,6 +91,14 @@ Functions/Runtime in Netlify, and NEXT_PUBLIC_* in Builds too (they are inlined 
 A feature whose key is missing answers "unavailable at the moment" — gate new routes with
 `serviceGate()` (hard dependencies only). There is **no CI**.
 
+**Server function size.** Netlify packs all server code into one function and refuses an upload over
+50 MB zipped. Never read `public/` from server code with a runtime path (`process.cwd()` + `"public"`):
+Next's tracer then copies the WHOLE folder (245 MB) into the function. Measure such things in
+`next.config.mjs` at build time instead (see `env.PW_*_BYTES`). `experimental.outputFileTracingExcludes`
+keeps `public/` and sharp out. Check before pushing anything that adds server dependencies: build
+with `output: "standalone"` in an isolated copy, `du -sh .next/standalone`, zip it (baseline 2026-11-04:
+86 MB / 25.2 MB zipped).
+
 The `clinical.*` subdomain requires a DNS record and a domain alias on the host; middleware does
 the rest.
 
